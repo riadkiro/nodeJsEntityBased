@@ -1809,7 +1809,7 @@ module.exports = {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .select('title slug _id customFields relations')
+                .select('title slug _id customFields relations lineDefaults')
                 .populate({ path: 'customFields.field_id', select: 'label fieldType' })
                 .lean();
 
@@ -1883,6 +1883,10 @@ module.exports = {
                 const label = parts.join('').trim() || r.title || r.slug || r._id.toString();
 
                 const result = { id: r._id, label };
+                
+                if (r.lineDefaults) {
+                    result.lineDefaults = r.lineDefaults;
+                }
 
                 // If displayFields requested, add field values for modal picker
                 if (displayFieldIds.length > 0 && r.customFields) {

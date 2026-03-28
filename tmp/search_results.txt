@@ -1,0 +1,17 @@
+=== INCLUDES ===
+1: <%- include('partials/widget-picker') %>
+2: <%- include('../components/tag-picker') %>
+350: <%- include('../components/tag-picker-dropdown') %>
+377: <%- include('../components/tag-picker-dropdown') %>
+1904: <%- include('partials/record-lines') %>
+5231: <%- include('../components/computed-field-renderer', { computedValue: cvData, displayType: cvDisplay, field: cf }) %>
+5774: <%- include('../components/icon-picker', {
+5979: <%- include('partials/record-sidebar') %>
+6040: <%- include('../entity/components/entity-modal') %>
+
+=== gridSchema/linesPanel references ===
+1904: <%- include('partials/record-lines') %>
+2087: <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
+2116: <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
+3563: (locals.gridSchemas || []).filter(gs => gs && gs.schema).map(gs => ({
+7092: gridSchemas: <%- JSON.stringify((locals.gridSchemas || []).filter(gs => gs && gs.schema).map(gs => ({ id: (gs.schemaId || gs.schema._id || '').toString(), name:

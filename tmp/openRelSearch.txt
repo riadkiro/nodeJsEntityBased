@@ -1,0 +1,3 @@
+1688: @focus="openRelationSearch(lineIdx, getRelationCol().key)"
+1945: @focus="openRelationSearch(lineIdx, col.key)"
+4463: openRelationSearch(lineIdx, colKey) {

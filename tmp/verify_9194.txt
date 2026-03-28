@@ -1,0 +1,21 @@
+=== All Entities ===
+
+=== All LineSchemas ===
+  69c232cd0fa7abd357abd677 | Ordonnance Traitement | src: 69c232cd0fa7abd357abd65e
+    - treatment (relation) Traitement
+    - moment (multiselect) Moment
+      options: ["morning","bedtime","before_meal","midi","soir"]
+    - frequency (multiselect) Fréquence
+      options: ["1x_day","2x_day","3x_day","every_8h","every_12h"]
+    - duration (multiselect) Durée
+      options: ["1_day","3_days","5_days","7_days","10_days"]
+    - instructions (textarea) Instructions
+  69c232cd0fa7abd357abd678 | Facture Standard | src: none
+    - description (text) Description
+    - qty (number) Qté
+    - unitPrice (money) P.U. HT
+    - discount (number) Remise %
+    - vatRate (number) TVA %
+    - lineTotal (formula) Total HT
+    - lineVat (formula) TVA
+    - note (textarea) Note

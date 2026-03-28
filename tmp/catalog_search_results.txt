@@ -1,0 +1,380 @@
+=== "catalog" references ===
+440: .lp-catalog-item {
+447: .dark .lp-catalog-item { border-color: #1b2e4b; }
+448: .lp-catalog-item:hover { background: rgba(67, 97, 238, 0.03); }
+449: .lp-catalog-item.selected { background: rgba(67, 97, 238, 0.06); }
+450: .dark .lp-catalog-item.selected { background: rgba(67, 97, 238, 0.12); }
+451: .lp-catalog-check {
+457: .dark .lp-catalog-check { border-color: #3b4a5e; background: #1b2e4b; }
+458: .lp-catalog-item.selected .lp-catalog-check {
+461: .lp-catalog-info { flex: 1; min-width: 0; }
+462: .lp-catalog-title {
+466: .dark .lp-catalog-title { color: #e0e6ed; }
+467: .lp-catalog-sub {
+1639: <!-- Line Type selector (if schema has multiple line types) — catalog/table only -->
+1640: <div x-show="(getSchemaInputMode(schema) === 'catalog') && schema.lineTypes && schema.lineTypes.length > 1"
+1652: <!-- Table (catalog & table modes only, hidden for form mode) -->
+2676: @input="searchCatalog()"
+2718: <div class="lp-catalog-item"
+2720: @click="toggleCatalogItem(item)">
+2721: <div class="lp-catalog-check">
+2725: <div class="lp-catalog-info">
+2726: <div class="lp-catalog-title" x-text="item.label || item.title"></div>
+2734: <p style="font-size: 12px;">Tapez pour rechercher dans le catalogue</p>
+2740: <div class="lp-catalog-item"
+2742: @click="toggleCatalogItem(item)">
+2744: <div class="lp-catalog-check">
+2749: <div class="lp-catalog-info">
+2750: <div class="lp-catalog-title" x-text="item.label || item.title"></div>
+2751: <div class="lp-catalog-sub" x-show="item.description" x-text="item.description"></div>
+3633: // Seed 3 empty rows for schemas with no data (table/catalog modes)
+3766: const url = `/account/${this.accountNumber}/api/catalog-frequent?entityId=${targetEntity}`;
+3778: searchCatalog() {
+3786: this._doCatalogSearch(query);
+3790: async _doCatalogSearch(query) {
+3810: const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searchFields}`;
+3815: console.error('[LinesPanel] Catalog search error:', e);
+3822: toggleCatalogItem(item) {
+3828: // Select — apply default values from catalog
+3987: const url = `/account/${this.accountNumber}/api/document-lines/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(q)}`;
+4222: // Hybrid: merge schema options with catalog-fetched options
+4227: // If line has _catalogOptions for this column, merge them
+4228: if (line._catalogOptions?.[col.key]) {
+4229: for (const co of line._catalogOptions[col.key]) {
+4464: const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${col.config.targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searc
+4484: // Apply defaults from the catalog item (hybrid mode)
+4502: if (!line._catalogOptions) line._catalogOptions = {};
+4503: if (!line._catalogOptions[targetKey]) line._catalogOptions[targetKey] = [];
+4504: if (typeof val === 'string' && !line._catalogOptions[targetKey].find(o => o.value === val)) {
+4505: line._catalogOptions[targetKey].push({ value: val, label: val });
+4508: if (!line._catalogOptions[targetKey].find(o => o.value === v)) {
+4509: line._catalogOptions[targetKey].push({ value: v, label: v });
+4613: // Get schema input mode (defaults to 'catalog' for backward compat)
+4615: return schema?.inputMode || 'catalog';
+
+=== "suggestion" references ===
+1573: <!-- ═══ Empty state with template suggestions ═══ -->
+3414: suggestions: [],
+3973: this.manualAdd.suggestions = [];
+3983: this.manualAdd.suggestions = [];
+3990: this.manualAdd.suggestions = (data.data || []).slice(0, 8);
+3991: this.manualAdd.open = this.manualAdd.suggestions.length > 0;
+3994: this.manualAdd.suggestions = [];
+4000: selectManualSuggestion(sug) {
+4005: // Map custom fields from the suggestion
+4039: this.manualAdd.suggestions = [];
+4078: this.manualAdd.suggestions = [];
+
+=== "dropdown" references (after line 100) ===
+126: /* Relation search dropdown */
+128: .lp-relation-dropdown {
+142: .dark .lp-relation-dropdown {
+146: .lp-relation-dropdown .lp-rel-item {
+152: .lp-relation-dropdown .lp-rel-item:hover {
+578: .lp-ms-dropdown {
+592: .dark .lp-ms-dropdown {
+1203: /* Preset dropdown panel */
+1204: .lp-preset-dropdown {
+1213: .dark .lp-preset-dropdown { background: #0e1726; border-color: #253b5c; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+1425: <!-- Presets button with dropdown -->
+1428: :class="{ 'active': presetDropdown[schema._id] }"
+1429: @click.stop="activeSchemaId = schema._id; togglePresetDropdown(schema._id)">
+1435: <!-- Preset Dropdown -->
+1436: <template x-if="presetDropdown[schema._id]">
+1439: @click.stop="presetDropdown[schema._id] = false"></div>
+1440: <div class="lp-preset-dropdown" @click.stop>
+1449: <div class="lp-preset-item" @click="applyTemplate(preset); presetDropdown[schema._id] = false">
+1479: <div class="lp-preset-item" @click="applyTemplate(preset); presetDropdown[schema._id] = false">
+1497: @click="presetDropdown[schema._id] = false; openSavePresetModal(schema._id)">
+1544: <!-- ═══ Template Picker Dropdown ═══ -->
+1655: :class="(relationSearch.open || msDropdown.open) ? 'overflow-visible' : 'overflow-x-auto'">
+1693: <!-- Dropdown -->
+1695: class="lp-relation-dropdown"
+1762: <!-- Select (tp-style dropdown matching multiselect) -->
+1768: @click.stop="activeSchemaId = schema._id; openSelectDropdown(lineIdx, col.key, $event)">
+1779: <!-- Dropdown (tp-style) -->
+1780: <template x-if="selDropdown.lineIdx === lineIdx && selDropdown.colKey === col.key && selDropdown.open">
+1783: @click.stop="closeSelectDropdown()"></div>
+1784: <div class="tp-dropdown" style="z-index:9999;" @click.stop>
+1788: :value="selDropdown.query"
+1789: @input="selDropdown.query = $event.target.value"
+1816: <template x-if="filterSelOptions(col).length === 0 && !(selDropdown.query || '').trim()">
+1821: <template x-if="(selDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (selDropdown.query || '').trim().
+1825: <span class="tp-create-tag" x-text="selDropdown.query"></span>
+1834: <!-- Multiselect (tp-style inline tag-picker dropdown) -->
+1840: @click.stop="activeSchemaId = schema._id; openMultiselectDropdown(lineIdx, col.key, $event)">
+1851: <!-- Dropdown (tp-style) -->
+1852: <template x-if="msDropdown.lineIdx === lineIdx && msDropdown.colKey === col.key && msDropdown.open">
+1855: @click.stop="closeMultiselectDropdown()"></div>
+1856: <div class="tp-dropdown" style="z-index:9999;" @click.stop>
+1860: :value="msDropdown.query"
+1861: @input="msDropdown.query = $event.target.value"
+1888: <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+1893: <template x-if="(msDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().to
+1897: <span class="tp-create-tag" x-text="msDropdown.query"></span>
+1950: <!-- Dropdown -->
+1952: class="lp-relation-dropdown"
+2370: <!-- Select (ClickUp-style dropdown) -->
+2389: <!-- Dropdown -->
+2390: <div class="tp-dropdown" x-show="formSelOpen[schema._id + '_' + col.key]" x-cloak
+2435: <!-- Multiselect (ClickUp-style dropdown) -->
+2454: <!-- Dropdown -->
+2455: <div class="tp-dropdown" x-show="formSelOpen[schema._id + '_' + col.key]" x-cloak
+2505: <!-- Relation (autocomplete dropdown) -->
+2527: <!-- Dropdown -->
+2528: <div class="tp-dropdown" style="min-width:280px;" x-show="formRelOpen[schema._id + '_' + col.key]" x-cloak
+2827: @click.stop="openMultiselectDropdown('add_' + item._id + '_' + col.key, col.key, $event)">
+2838: <template x-if="msDropdown.lineIdx === ('add_' + item._id + '_' + col.key) && msDropdown.colKey === col.key && msDropdown.open">
+2841: @click.stop="closeMultiselectDropdown()"></div>
+2842: <div class="tp-dropdown" style="z-index:9999;" @click.stop>
+2846: :value="msDropdown.query"
+2847: @input="msDropdown.query = $event.target.value"
+2874: <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+2879: <template x-if="(msDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().to
+2883: <span class="tp-create-tag" x-text="msDropdown.query"></span>
+2929: <div class="lp-modal" style="max-width: 520px;" :style="(editRelOpen || msDropdown.open) ? 'overflow: visible' : ''">
+2943: :style="{ overflow: (editRelOpen || msDropdown.open) ? 'visible' : 'auto' }">
+2968: <!-- Dropdown -->
+2969: <div class="tp-dropdown" style="min-width:280px; z-index:10000;" x-show="editRelOpen" x-cloak
+3056: @click.stop="openMultiselectDropdown('edit_' + editModal.lineIdx + '_' + col.key, col.key, $event)">
+3067: <template x-if="msDropdown.lineIdx === ('edit_' + editModal.lineIdx + '_' + col.key) && msDropdown.colKey === col.key && msDropdown.open">
+3070: @click.stop="closeMultiselectDropdown()"></div>
+3071: <div class="tp-dropdown" style="z-index:9999;" @click.stop>
+3075: :value="msDropdown.query"
+3076: @input="msDropdown.query = $event.target.value"
+3103: <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+3108: <template x-if="(msDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().to
+3112: <span class="tp-create-tag" x-text="msDropdown.query"></span>
+3378: // Multiselect dropdown state
+3379: msDropdown: {
+3386: // Single select dropdown state (tp-style)
+3387: selDropdown: {
+3433: formRelOpen: {},     // { 'schemaId_colKey': boolean } — relation dropdown open
+3435: formSelOpen: {},     // { 'schemaId_colKey': boolean } — select dropdown open
+3438: presetDropdown: {},  // { schemaId: boolean } — preset dropdown open state
+3581: this.presetDropdown[s._id] = false;
+4278: openMultiselectDropdown(lineIdx, colKey, event) {
+4279: if (this.msDropdown.lineIdx === lineIdx && this.msDropdown.colKey === colKey && this.msDropdown.open) {
+4280: this.closeMultiselectDropdown();
+4283: this.msDropdown.lineIdx = lineIdx;
+4284: this.msDropdown.colKey = colKey;
+4285: this.msDropdown.open = true;
+4286: this.msDropdown.query = '';
+4290: closeMultiselectDropdown() {
+4291: this.msDropdown.open = false;
+4292: this.msDropdown.lineIdx = -1;
+4293: this.msDropdown.colKey = '';
+4294: this.msDropdown.query = '';
+4297: // Create new option from multiselect dropdown search (Rechercher ou créer...)
+4299: const label = (this.msDropdown.query || '').trim();
+4308: this.msDropdown.query = '';
+4315: const q = (this.msDropdown.query || '').trim().toLowerCase();
+4320: // ══ Single Select dropdown (tp-style) ══
+4321: openSelectDropdown(lineIdx, colKey, event) {
+4322: if (this.selDropdown.lineIdx === lineIdx && this.selDropdown.colKey === colKey && this.selDropdown.open) {
+4323: this.closeSelectDropdown();
+4326: this.selDropdown.lineIdx = lineIdx;
+4327: this.selDropdown.colKey = colKey;
+4328: this.selDropdown.open = true;
+4329: this.selDropdown.query = '';
+4332: closeSelectDropdown() {
+4333: this.selDropdown.open = false;
+4334: this.selDropdown.lineIdx = -1;
+4335: this.selDropdown.colKey = '';
+4336: this.selDropdown.query = '';
+4341: this.closeSelectDropdown();
+4347: const q = (this.selDropdown.query || '').trim().toLowerCase();
+4388: const label = (this.selDropdown.query || '').trim();
+4395: this.selDropdown.query = '';
+4499: // value as an available option so it appears in the dropdown
+4800: // Also clear relation label and dropdown states
+5016: // Toggle preset dropdown
+5017: togglePresetDropdown(schemaId) {
+5018: const isOpen = this.presetDropdown[schemaId];
+5019: // Close all dropdowns first
+5021: this.presetDropdown[s._id] = false;
+5023: this.presetDropdown[schemaId] = !isOpen;
+
+=== "search" references (in JS section, after line 3000) ===
+3072: <div class="tp-search-wrap">
+3073: <input type="text" class="tp-search-input"
+3367: // Relation search state
+3368: relationSearch: {
+3405: _searchTimer: null,
+3422: editRelSearch: '',
+3430: formRelSearch: {},   // { 'schemaId_colKey': 'search query' } — relation search queries
+3431: formRelResults: {},  // { 'schemaId_colKey': [{id, label}] } — relation search results
+3434: formSelSearch: {},   // { 'schemaId_colKey': 'query' } — select/multiselect search
+3745: if (this.$refs.modalSearchInput) {
+3746: this.$refs.modalSearchInput.focus();
+3778: searchCatalog() {
+3779: clearTimeout(this.addModal._searchTimer);
+3785: this.addModal._searchTimer = setTimeout(() => {
+3786: this._doCatalogSearch(query);
+3790: async _doCatalogSearch(query) {
+3806: const searchFields = (relCol?.config?.searchFields || ['title']).join(',');
+3810: const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searchFields}`;
+3815: console.error('[LinesPanel] Catalog search error:', e);
+3969: searchManualAutocomplete() {
+3987: const url = `/account/${this.accountNumber}/api/document-lines/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(q)}`;
+4104: this.editRelSearch = '';
+4120: async searchEditRelation() {
+4127: let url = `/account/${this.accountNumber}/record/api/search?entityId=${entityId}&page=1&limit=10`;
+4128: if (this.editRelSearch) url += `&q=${encodeURIComponent(this.editRelSearch)}`;
+4133: console.error('Edit relation search failed:', e);
+4297: // Create new option from multiselect dropdown search (Rechercher ou créer...)
+4307: // Clear search
+4432: // ── Relation search (autocomplete) ─────────────────
+4433: openRelationSearch(lineIdx, colKey) {
+4434: this.relationSearch.lineIdx = lineIdx;
+4435: this.relationSearch.colKey = colKey;
+4436: this.relationSearch.open = true;
+4437: this.relationSearch.results = [];
+4438: this.relationSearch.query = '';
+4441: closeRelationSearch() {
+4442: this.relationSearch.open = false;
+4445: searchRelation(lineIdx, colKey, query) {
+4446: this.relationSearch.query = query;
+4447: this.relationSearch.lineIdx = lineIdx;
+4448: this.relationSearch.colKey = colKey;
+4449: this.relationSearch.open = true;
+4451: clearTimeout(this.relationSearch.debounceTimer);
+4452: this.relationSearch.debounceTimer = setTimeout(() => {
+4453: this._doRelationSearch(colKey, query);
+4457: async _doRelationSearch(colKey, query) {
+4461: this.relationSearch.loading = true;
+4463: const searchFields = (col.config.searchFields || ['title']).join(',');
+4464: const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${col.config.targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searc
+4467: this.relationSearch.results = data.data || [];
+4469: console.error('[LinesPanel] Relation search error:', e);
+4470: this.relationSearch.results = [];
+4472: this.relationSearch.loading = false;
+4530: this.closeRelationSearch();
+4907: // Search relation records via API (for form add)
+4908: async searchFormRelation(schemaId, col) {
+4910: const query = this.formRelSearch[key] || '';
+4918: let url = `/account/${this.accountNumber}/record/api/search?entityId=${entityId}&page=1&limit=10`;
+4924: console.error('Relation search failed:', e);
+4934: const label = (this.formSelSearch[key] || '').trim();
+4951: // Clear search
+4952: this.formSelSearch[key] = '';
+
+=== Function declarations (after line 3000) ===
+3457: return (this.activeSchema.columns || [])
+3463: getSchemaLines(schemaId) {
+3467: getSchemaTotals(schemaId) {
+3471: isSchemaOpen(schemaId) {
+3475: toggleSchemaOpen(schemaId) {
+3479: getSchemaLineType(schemaId) {
+3483: setSchemaLineType(schemaId, value) {
+3487: getRelationColForSchema(schema) {
+3489: return (schema.columns || []).find(c => c.type === 'relation') || null;
+3492: getVisibleColumnsForSchema(schema) {
+3494: return (schema.columns || [])
+3500: activateAndOpenModal(schemaId) {
+3506: addLineToSchema(schemaId) {
+3535: async init() {
+3556: async loadSchemas() {
+3603: async loadLines() {
+3671: selectSchema(schemaId) {
+3676: getRelationCol() {
+3678: return (this.activeSchema.columns || []).find(c => c.type === 'relation') || null;
+3682: getRelationLabel(line) {
+3700: getVisibleColumnsForLine(line) {
+3702: return (this.activeSchema.columns || [])
+3712: addLine() {
+3727: openAddModal() {
+3753: closeAddModal() {
+3757: async loadFrequentItems() {
+3778: searchCatalog() {
+3779: clearTimeout(this.addModal._searchTimer);
+3790: async _doCatalogSearch(query) {
+3822: toggleCatalogItem(item) {
+3878: getEditableColumns() {
+3880: return (this.activeSchema.columns || [])
+3885: getSelectedItemValue(itemId, colKey) {
+3890: setSelectedItemValue(itemId, colKey, value) {
+3895: setSelectedItemDuration(itemId, colKey, prop, value) {
+3904: addSelectedItemMultiselect(itemId, colKey, value) {
+3914: toggleSelectedItemMultiselect(itemId, colKey, value) {
+3927: confirmAddLines() {
+3969: searchManualAutocomplete() {
+3970: clearTimeout(this.manualAdd._timer);
+4000: selectManualSuggestion(sug) {
+4043: addManualLine() {
+4083: getEditLines() {
+4089: openEditLine(lineIdx, schemaId) {
+4099: closeEditModal() {
+4109: saveEditLine() {
+4120: async searchEditRelation() {
+4140: removeLine(idx) {
+4150: recomputeLine(line) {
+4164: evaluateFormula(expression, context) {
+4180: recomputeTotals() {
+4221: getSelectOptions(col, line) {
+4238: getOptionLabel(col, value) {
+4244: isOptSelected(currentVal, optValue) {
+4250: addMultiselectValue(line, key, value) {
+4259: removeMultiselectValue(line, key, idx) {
+4266: toggleMultiselectValue(line, key, value) {
+4278: openMultiselectDropdown(lineIdx, colKey, event) {
+4290: closeMultiselectDropdown() {
+4298: msCreateOption(schema, col) {
+4313: filterMsOptions(col) {
+4321: openSelectDropdown(lineIdx, colKey, event) {
+4332: closeSelectDropdown() {
+4339: selectSingleValue(line, key, value) {
+4345: filterSelOptions(col) {
+4353: initTabsSortable() {
+4383: reorderSchema(targetId) {
+4387: selCreateOption(schema, col) {
+4399: getMultiselectOptLabel(col, value) {
+4405: getMultiselectOptStyle(col, value) {
+4427: durationLabel(unit) {
+4433: openRelationSearch(lineIdx, colKey) {
+4441: closeRelationSearch() {
+4445: searchRelation(lineIdx, colKey, query) {
+4451: clearTimeout(this.relationSearch.debounceTimer);
+4457: async _doRelationSearch(colKey, query) {
+4476: selectRelation(lineIdx, col, item) {
+4558: debouncedSave() {
+4561: clearTimeout(this._saveTimers[schemaId]);
+4565: async saveLinesForSchema(schemaId) {
+4614: getSchemaInputMode(schema) {
+4619: setAnalyticsView(schemaId, viewId) {
+4623: getAnalyticsViewConfig(schema, viewId) {
+4629: computeStat(schemaId, column, aggregation) {
+4637: switch (aggregation) {
+4648: return (delta >= 0 ? '+' : '') + delta.toFixed(1);
+4677: return (value.value || 0) + ' ' + this.durationLabel(value.unit || 'day');
+4680: return (value.value || 0) + ' ' + (value.unit || 'mg');
+4717: getNormalRangeIndicator(value, col) {
+4728: getFormColumns(schema) {
+4735: openFormAdd(schema) {
+4748: async submitFormEntry(schema) {
+4812: addInlineOption(schema, col, value) {
+4838: removeInlineOption(schema, col, optValue) {
+4842: clearTimeout(this._pendingDeleteTimer);
+4847: clearTimeout(this._pendingDeleteTimer);
+4879: async saveInlineOptionToSchema(schema, col) {
+4896: toggleFormAddMultiselect(schemaId, colKey, optValue) {
+4908: async searchFormRelation(schemaId, col) {
+4958: async loadTemplates() {
+4984: getTemplatesForSchema(schemaId) {
+4994: async applyTemplate(template) {
+5017: togglePresetDropdown(schemaId) {
+5027: getRecordPresets(schemaId) {
+5045: getGlobalPresets(schemaId) {
+5054: async openSavePresetModal(schemaId) {
+5078: async _refreshLinkedRecords() {
+5138: async confirmSavePreset() {
+5184: alert('Erreur: ' + (data.error || 'Impossible de sauvegarder'));
+5188: alert('Erreur réseau lors de la sauvegarde');
+5195: async deletePreset(presetId) {
+5214: getLinePreviewLabel(line, schemaId) {
+5243: initSortable() {
+5273: getSnapshotTargetRecordId(schema) {
+5286: async saveSnapshot(schema) {
+5355: async loadSnapshotHistory(schema) {
+5377: async deleteSnapshot(schema, snapId) {
+5381: clearTimeout(this._pendingDeleteSnapTimer);

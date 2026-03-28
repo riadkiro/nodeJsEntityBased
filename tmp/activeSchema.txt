@@ -1,0 +1,73 @@
+1369: :class="{ 'active': activeSchemaId === schema._id }"
+1370: @click="activeSchemaId = schema._id"
+1395: <div x-show="activeSchemaId === schema._id">
+1408: @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]"
+1420: @click="activeSchemaId = schema._id"
+1421: @focusin="activeSchemaId = schema._id">
+1429: @click.stop="activeSchemaId = schema._id; togglePresetDropdown(schema._id)">
+1511: @click.stop="activeSchemaId = schema._id; openSavePresetModal(schema._id)">
+1520: @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]">
+1768: @click.stop="activeSchemaId = schema._id; openSelectDropdown(lineIdx, col.key, $event)">
+1840: @click.stop="activeSchemaId = schema._id; openMultiselectDropdown(lineIdx, col.key, $event)">
+1862: @keydown.enter.prevent="msCreateOption(schemas.find(s => s._id === activeSchemaId), col)" />
+1981: <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
+1984: <button type="button" class="lp-row-btn delete" @click="activeSchemaId = schema._id; removeLine(lineIdx)" title="Supprimer">
+2326: <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx, schema._id)" title="Modifier">
+2329: <button type="button" class="lp-row-btn delete" @click="activeSchemaId = schema._id; removeLine(lineIdx)" title="Supprimer">
+2868: @click.stop.prevent="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+3097: @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+3334: activeSchemaId: null,
+3343: return this.linesMap[this.activeSchemaId] || [];
+3346: if (this.activeSchemaId) {
+3347: this.linesMap[this.activeSchemaId] = val;
+3351: return this.totalsMap[this.activeSchemaId] || {};
+3354: if (this.activeSchemaId) {
+3355: this.totalsMap[this.activeSchemaId] = val;
+3359: return this.lineTypeMap[this.activeSchemaId] || 'product';
+3362: if (this.activeSchemaId) {
+3363: this.lineTypeMap[this.activeSchemaId] = val;
+3454: return this.schemas.find(s => s._id === this.activeSchemaId) || null;
+3503: this.activeSchemaId = schemaId;
+3509: this.activeSchemaId = schemaId;
+3587: this.activeSchemaId = this.schemas[0]._id;
+3656: // Recompute formulas for each schema (temporarily switch activeSchemaId for context)
+3657: const savedSchemaId = this.activeSchemaId;
+3659: this.activeSchemaId = s._id;
+3666: this.activeSchemaId = currentIsValid ? savedSchemaId : (this.schemas[0]?._id || null);
+3674: this.activeSchemaId = schemaId;
+3715: const schemaLines = this.linesMap[this.activeSchemaId] || [];
+3718: schemaId: this.activeSchemaId,
+3724: this.linesMap[this.activeSchemaId] = [...schemaLines];
+3858: .find(ld => ld.schemaId && ld.schemaId.toString() === this.activeSchemaId);
+3935: const schemaLines = this.linesMap[this.activeSchemaId] || [];
+3938: schemaId: this.activeSchemaId,
+3956: const allLines = this.linesMap[this.activeSchemaId] || [];
+3965: this.linesMap[this.activeSchemaId] = [...filledLines, ...emptyLines];
+4022: const schemaLines = this.linesMap[this.activeSchemaId] || [];
+4025: schemaId: this.activeSchemaId,
+4037: this.linesMap[this.activeSchemaId] = [...schemaLines];
+4065: const schemaLines = this.linesMap[this.activeSchemaId] || [];
+4068: schemaId: this.activeSchemaId,
+4076: this.linesMap[this.activeSchemaId] = [...schemaLines];
+4089: const schemaId = this.editModal.schemaId || this.activeSchemaId;
+4094: const sid = schemaId || this.activeSchemaId;
+4145: const schemaLines = this.linesMap[this.activeSchemaId] || [];
+4147: this.linesMap[this.activeSchemaId] = [...schemaLines];
+4186: if (!schema || !schema.totals) { this.totalsMap[this.activeSchemaId] = {}; return; }
+4188: const schemaLines = this.linesMap[this.activeSchemaId] || [];
+4207: this.totalsMap[this.activeSchemaId] = t;
+4327: currentLine = (this.linesMap[this.activeSchemaId] || [])[idx];
+4372: currentLine = (this.linesMap[this.activeSchemaId] || [])[idx];
+4550: .find(ld => ld.schemaId && ld.schemaId.toString() === this.activeSchemaId);
+4565: const allLines = this.linesMap[this.activeSchemaId] || [];
+4578: schemaId: this.activeSchemaId,
+4585: this.linesMap[this.activeSchemaId] = [...filledLines, ...emptyLines];
+4591: const schemaId = this.activeSchemaId;
+4621: const prevActive = this.activeSchemaId;
+4622: this.activeSchemaId = schemaId;
+4631: this.activeSchemaId = prevActive;
+4804: this.activeSchemaId = schema._id;
+4841: // Save (activeSchemaId was already set above)
+5061: this.activeSchemaId = schemaId;
+5111: this.activeSchemaId = schemaId;
+5317: this.activeSchemaId = schemaId;

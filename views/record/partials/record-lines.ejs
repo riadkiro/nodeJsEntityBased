@@ -1335,6 +1335,11 @@
         entityId: '<%= locals.entity ? entity._id : '' %>'
     })"
 >
+    <!-- HARD VISUAL MARKER: if you don't see this, this template is not the one rendered -->
+    <div style="position:fixed;left:14px;bottom:14px;z-index:1000001;background:#dc2626;color:#fff;padding:10px 14px;border-radius:10px;border:3px solid #fff;box-shadow:0 10px 28px rgba(0,0,0,0.35);font:800 14px/1.1 system-ui;">
+        RECORD-LINES DEBUG LIVE (EJS/ALPINE) v2026-03-28
+    </div>
+
     <!-- Loading state -->
     <template x-if="loading">
         <div class="panel !p-0 overflow-hidden">
@@ -1679,19 +1684,24 @@
                                     <!-- Row number -->
                                     <td style="padding:2px 4px; font-size:11px; color:#9ca3af;" x-text="lineIdx + 1"></td>
                                     <!-- Relation name (always visible) -->
-                                    <template x-if="getRelationCol()">
+                                    <template x-if="getRelationColForSchema(schema)">
                                         <td style="padding:2px 6px; min-width:120px;">
                                             <div class="lp-relation-wrap">
                                                 <input type="text" class="lp-input"
                                                     style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
+                                                    data-rel-input="1"
+                                                    :data-schema-id="schema._id"
+                                                    :data-line-idx="lineIdx"
+                                                    :data-col-key="getRelationColForSchema(schema).key"
                                                     :value="getRelationLabel(line)"
-                                                    @focus="openRelationSearch(lineIdx, getRelationCol().key)"
-                                                    @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
-                                                    @blur="setTimeout(() => closeRelationSearch(), 200)"
+                                                    @focus="activeSchemaId = schema._id; openRelationSearch(lineIdx, getRelationColForSchema(schema).key)"
+                                                    @input="searchRelation(lineIdx, getRelationColForSchema(schema).key, $event.target.value)"
+                                                    @blur="handleRelationBlur(lineIdx, getRelationColForSchema(schema), $event)"
+                                                    @keydown.enter.prevent="confirmRelationSelection(lineIdx, getRelationColForSchema(schema))"
                                                     @keydown.escape="closeRelationSearch()"
-                                                    :placeholder="'🔍 ' + (getRelationCol()?.label || 'Article')" />
+                                                    :placeholder="'🔍 ' + (getRelationColForSchema(schema)?.label || 'Article')" />
                                                 <!-- Dropdown -->
-                                                <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
+                                                <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationColForSchema(schema).key && relationSearch.open"
                                                     class="lp-relation-dropdown"
                                                     @click.outside="closeRelationSearch()">
                                                     <template x-if="relationSearch.loading">
@@ -1704,8 +1714,11 @@
                                                     </template>
                                                     <template x-for="item in relationSearch.results" :key="item._id">
                                                         <div class="lp-rel-item"
-                                                            @click="selectRelation(lineIdx, getRelationCol(), item)">
+                                                            @mousedown.prevent.stop="console.error('[LINES-HARDLOG] dropdown_mousedown_select', { lineIdx, colKey: getRelationColForSchema(schema)?.key, itemId: item?._id, label: item?.label || item?.title }); selectRelation(lineIdx, getRelationColForSchema(schema), item)"
+                                                            @click.prevent.stop="console.error('[LINES-HARDLOG] dropdown_click_select', { lineIdx, colKey: getRelationColForSchema(schema)?.key, itemId: item?._id, label: item?.label || item?.title }); selectRelation(lineIdx, getRelationColForSchema(schema), item)">
                                                             <span x-text="item.label || item.title"></span>
+                                                            <span x-show="hasLineDefaultsForSchema(item, activeSchemaId)"
+                                                                  style="margin-left:6px;font-size:10px;color:#2563eb;font-weight:700;">★ defaults</span>
                                                         </div>
                                                     </template>
                                                 </div>
@@ -1941,10 +1954,15 @@
                                             <template x-if="col.type === 'relation'">
                                                 <div class="lp-relation-wrap">
                                                     <input type="text" class="lp-input"
+                                                        data-rel-input="1"
+                                                        :data-schema-id="schema._id"
+                                                        :data-line-idx="lineIdx"
+                                                        :data-col-key="col.key"
                                                         :value="line.values[col.key + '_label'] || ''"
                                                         @focus="openRelationSearch(lineIdx, col.key)"
                                                         @input="searchRelation(lineIdx, col.key, $event.target.value)"
-                                                        @blur="setTimeout(() => closeRelationSearch(), 200)"
+                                                        @blur="handleRelationBlur(lineIdx, col, $event)"
+                                                        @keydown.enter.prevent="confirmRelationSelection(lineIdx, col)"
                                                         @keydown.escape="closeRelationSearch()"
                                                         :placeholder="'🔍 ' + col.label" />
                                                     <!-- Dropdown -->
@@ -1961,8 +1979,11 @@
                                                         </template>
                                                         <template x-for="item in relationSearch.results" :key="item._id">
                                                             <div class="lp-rel-item"
-                                                                @click="selectRelation(lineIdx, col, item)">
+                                                                @mousedown.prevent.stop="console.error('[LINES-HARDLOG] form_dropdown_mousedown_select', { lineIdx, colKey: col?.key, itemId: item?._id, label: item?.label || item?.title }); selectRelation(lineIdx, col, item)"
+                                                                @click.prevent.stop="console.error('[LINES-HARDLOG] form_dropdown_click_select', { lineIdx, colKey: col?.key, itemId: item?._id, label: item?.label || item?.title }); selectRelation(lineIdx, col, item)">
                                                                 <span x-text="item.label || item.title"></span>
+                                                                <span x-show="hasLineDefaultsForSchema(item, activeSchemaId)"
+                                                                      style="margin-left:6px;font-size:10px;color:#2563eb;font-weight:700;">★ defaults</span>
                                                             </div>
                                                         </template>
                                                     </div>
@@ -2543,7 +2564,7 @@
                                                             <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Chargement...</div>
                                                         </template>
                                                         <template x-for="result in (formRelResults[schema._id + '_' + col.key] || [])" :key="result.id">
-                                                            <div class="tp-option" @click="formAddValues[schema._id + '_' + col.key] = result.id; formAddValues[schema._id + '_' + col.key + '_label'] = result.label; formRelOpen[schema._id + '_' + col.key] = false">
+                                                            <div class="tp-option" @click="selectFormRelation(schema, col, result)">
                                                                 <div class="tp-option-icon" style="background:#dbeafe;">
                                                                     <iconify-icon x-show="formAddValues[schema._id + '_' + col.key] === result.id" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
                                                                 </div>
@@ -2754,7 +2775,7 @@
                                     <template x-if="addModal.selected.find(s => s._id === item._id)">
                                         <div class="lp-config-fields" @click.stop>
                                             <template x-for="col in getEditableColumns()" :key="col.key">
-                                                <div class="lp-config-field">
+                                                <div class="lp-config-field" x-show="!(addModal.selected.find(s => s._id === item._id)._excludedColumns || []).includes(col.key)">
                                                     <label x-text="col.label"></label>
 
                                                     <!-- Number / Money -->
@@ -3416,6 +3437,8 @@ document.addEventListener('alpine:init', () => {
             _timer: null
         },
 
+
+
         _saveTimers: {},  // per-schema save timers
         editModal: { open: false, lineIdx: -1, schemaId: null },
         editRelOpen: false,
@@ -3448,6 +3471,9 @@ document.addEventListener('alpine:init', () => {
             linkedRecordLabel: '',
             linkedRelationLabel: ''
         },
+        debugDiagEnabled: true,
+        debugVisualEnabled: true,
+        debugDiagHistory: [],
         get activeSchema() {
             return this.schemas.find(s => s._id === this.activeSchemaId) || null;
         },
@@ -3457,6 +3483,227 @@ document.addEventListener('alpine:init', () => {
             return (this.activeSchema.columns || [])
                 .filter(c => c.visible !== false)
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        // Resolve schema-specific lineDefaults from payload (array or object)
+        resolveLineDefaultsForSchema(lineDefaults, schemaId) {
+            if (!lineDefaults || !schemaId) return null;
+
+            if (Array.isArray(lineDefaults)) {
+                const match = lineDefaults.find(ld =>
+                    ld && ld.schemaId && ld.schemaId.toString() === schemaId.toString()
+                );
+                if (match) return match;
+                return lineDefaults.length === 1 ? lineDefaults[0] : null;
+            }
+
+            if (typeof lineDefaults === 'object' && lineDefaults.defaults) {
+                if (!lineDefaults.schemaId || lineDefaults.schemaId.toString() === schemaId.toString()) {
+                    return lineDefaults;
+                }
+            }
+
+            return null;
+        },
+
+        // Normalize incoming default value according to column type
+        normalizeDefaultByColumn(col, rawVal) {
+            if (rawVal === null || rawVal === undefined || rawVal === '') return undefined;
+            if (!col) return rawVal;
+
+            if (col.type === 'select') {
+                return Array.isArray(rawVal) ? (rawVal[0] || '') : rawVal;
+            }
+
+            if (col.type === 'multiselect') {
+                if (Array.isArray(rawVal)) return rawVal.filter(Boolean);
+                if (typeof rawVal === 'string') return rawVal ? [rawVal] : [];
+                return [rawVal];
+            }
+
+            if ((col.type === 'text' || col.type === 'textarea') && Array.isArray(rawVal)) {
+                return rawVal.join(', ');
+            }
+
+            return rawVal;
+        },
+
+        // Apply normalized defaults + meta onto a values object/line
+        applyLineDefaultsToValues(values, schema, lineDefaultsForSchema) {
+            if (!lineDefaultsForSchema || !lineDefaultsForSchema.defaults) {
+                return {
+                    values,
+                    availableOptions: {},
+                    excludedColumns: []
+                };
+            }
+
+            const cols = schema?.columns || [];
+            for (const [key, val] of Object.entries(lineDefaultsForSchema.defaults || {})) {
+                const col = cols.find(c => c.key === key);
+                const normalized = this.normalizeDefaultByColumn(col, val);
+                if (normalized !== undefined) {
+                    values[key] = normalized;
+                }
+            }
+
+            return {
+                values,
+                availableOptions: lineDefaultsForSchema.availableOptions || {},
+                excludedColumns: lineDefaultsForSchema.excludedColumns || []
+            };
+        },
+
+        summarizeLineDefaults(lineDefaults) {
+            if (!lineDefaults) return { type: 'none' };
+            if (Array.isArray(lineDefaults)) {
+                return {
+                    type: 'array',
+                    len: lineDefaults.length,
+                    schemaIds: lineDefaults.map(ld => ld?.schemaId?.toString?.() || ld?.schemaId || null),
+                    defaultsKeys: lineDefaults.map(ld => Object.keys(ld?.defaults || {}))
+                };
+            }
+            if (typeof lineDefaults === 'object') {
+                return {
+                    type: 'object',
+                    schemaId: lineDefaults.schemaId?.toString?.() || lineDefaults.schemaId || null,
+                    defaultsKeys: Object.keys(lineDefaults.defaults || {})
+                };
+            }
+            return { type: typeof lineDefaults };
+        },
+
+        logDiag(step, payload = {}) {
+            if (!this.debugDiagEnabled) return;
+            const entry = {
+                at: new Date().toISOString(),
+                step,
+                payload
+            };
+            this.debugDiagHistory.push(entry);
+            if (this.debugDiagHistory.length > 200) this.debugDiagHistory.shift();
+            try {
+                window.__linesDiag = this.debugDiagHistory;
+            } catch (_) {}
+            console.log(`[LinesDiag] ${step}`, payload);
+            this.visualDiag(step, payload);
+            try {
+                // Persist critical diagnostics server-side so we can inspect without browser console access
+                if (
+                    step.startsWith('select_relation') ||
+                    step.startsWith('catalog_search') ||
+                    step.startsWith('catalog_item_selected') ||
+                    step.startsWith('form_relation_selected')
+                ) {
+                    fetch('/account/' + this.accountNumber + '/api/debug-log', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            source: 'record-lines',
+                            step,
+                            payload,
+                            recordId: this.recordId,
+                            schemaId: this.activeSchemaId
+                        })
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+        },
+
+        ensureVisualDiagUI() {
+            if (!this.debugVisualEnabled) return null;
+
+            let root = document.getElementById('lines-visual-diag-root');
+            if (root) return root;
+
+            root = document.createElement('div');
+            root.id = 'lines-visual-diag-root';
+            root.style.cssText = [
+                'position:fixed',
+                'right:12px',
+                'bottom:12px',
+                'width:520px',
+                'max-width:92vw',
+                'height:48vh',
+                'z-index:999999',
+                'background:#0b1020',
+                'color:#e5edff',
+                'border:2px solid #3b82f6',
+                'border-radius:12px',
+                'box-shadow:0 18px 45px rgba(0,0,0,0.45)',
+                'font-family:Consolas,Monaco,monospace',
+                'display:flex',
+                'flex-direction:column',
+                'overflow:hidden'
+            ].join(';');
+
+            const head = document.createElement('div');
+            head.style.cssText = 'padding:8px 10px;background:#111a33;border-bottom:1px solid #22345e;font-size:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;';
+            head.innerHTML = '<span>LINES DIAG LIVE</span><span style="font-size:11px;opacity:0.8;">manual test mode</span>';
+
+            const body = document.createElement('div');
+            body.id = 'lines-visual-diag-body';
+            body.style.cssText = 'padding:8px;overflow:auto;flex:1;font-size:12px;line-height:1.35;';
+
+            root.appendChild(head);
+            root.appendChild(body);
+            document.body.appendChild(root);
+            return root;
+        },
+
+        visualDiag(step, payload = {}) {
+            if (!this.debugVisualEnabled) return;
+            const root = this.ensureVisualDiagUI();
+            if (!root) return;
+
+            const body = document.getElementById('lines-visual-diag-body');
+            if (!body) return;
+
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const ms = String(now.getMilliseconds()).padStart(3, '0');
+
+            const line = document.createElement('div');
+            line.style.cssText = 'margin-bottom:8px;padding:8px;border:1px solid #26437a;border-radius:8px;background:#101b36;';
+
+            const title = document.createElement('div');
+            title.style.cssText = 'font-size:13px;font-weight:700;color:#93c5fd;margin-bottom:4px;';
+            title.textContent = `[${hh}:${mm}:${ss}.${ms}] ${step}`;
+            line.appendChild(title);
+
+            const pre = document.createElement('pre');
+            pre.style.cssText = 'margin:0;white-space:pre-wrap;word-break:break-word;color:#dbeafe;max-height:180px;overflow:auto;';
+            let text = '';
+            try {
+                text = JSON.stringify(payload, null, 2);
+            } catch (_) {
+                text = String(payload);
+            }
+            if (text.length > 1800) text = text.slice(0, 1800) + '\n...truncated...';
+            pre.textContent = text;
+            line.appendChild(pre);
+
+            body.prepend(line);
+            while (body.children.length > 18) body.removeChild(body.lastChild);
+
+            let toast = document.getElementById('lines-visual-diag-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'lines-visual-diag-toast';
+                toast.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:1000000;background:#111827;color:#fff;border:2px solid #22d3ee;border-radius:10px;padding:10px 16px;font:700 16px/1.2 system-ui;box-shadow:0 8px 30px rgba(0,0,0,0.35);';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = `LINES DIAG: ${step}`;
+            toast.style.display = 'block';
+            clearTimeout(this._diagToastTimer);
+            this._diagToastTimer = setTimeout(() => {
+                const t = document.getElementById('lines-visual-diag-toast');
+                if (t) t.style.display = 'none';
+            }, 1800);
         },
 
         // ── Per-schema helpers ────────────────────────────────
@@ -3533,6 +3780,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         async init() {
+            console.error('[LINES-HARDLOG] init_boot_v2', {
+                recordId: this.recordId,
+                accountNumber: this.accountNumber,
+                entityId: this.entityId,
+                href: window.location.href,
+                ts: new Date().toISOString()
+            });
+            this.installHardEventProbe();
             if (!this.recordId) {
                 this.loading = false;
                 return;
@@ -3555,6 +3810,11 @@ document.addEventListener('alpine:init', () => {
 
         async loadSchemas() {
             try {
+                console.error('[LINES-HARDLOG] loadSchemas_start', {
+                    accountNumber: this.accountNumber,
+                    entityId: this.entityId,
+                    schemaFilter: this._schemaFilter || null
+                });
                 const url = `/account/${this.accountNumber}/api/line-schemas/by-context?entityId=${this.entityId}`;
                 const res = await fetch(url, { credentials: 'include' });
                 const data = await res.json();
@@ -3565,6 +3825,10 @@ document.addEventListener('alpine:init', () => {
                     schemas = schemas.filter(s => s._id === this._schemaFilter || s._id?.toString() === this._schemaFilter);
                 }
                 this.schemas = schemas;
+                console.error('[LINES-HARDLOG] loadSchemas_done', {
+                    count: this.schemas.length,
+                    schemaIds: this.schemas.map(s => s?._id)
+                });
                 this.$nextTick(() => this.initTabsSortable());
 
                 // Initialize per-schema state
@@ -3811,11 +4075,123 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(url, { credentials: 'include' });
                 const data = await res.json();
                 this.addModal.results = data.data || [];
+                this.logDiag('catalog_search_results', {
+                    query,
+                    targetEntity,
+                    count: this.addModal.results.length,
+                    sample: (this.addModal.results || []).slice(0, 3).map(r => ({
+                        id: r._id,
+                        label: r.label || r.title,
+                        lineDefaults: this.summarizeLineDefaults(r.lineDefaults)
+                    }))
+                });
             } catch (e) {
                 console.error('[LinesPanel] Catalog search error:', e);
                 this.addModal.results = [];
+                this.logDiag('catalog_search_error', { query, message: e?.message || String(e) });
             } finally {
                 this.addModal.loading = false;
+            }
+        },
+
+        _hardProbeInstalled: false,
+        installHardEventProbe() {
+            if (this._hardProbeInstalled) return;
+            this._hardProbeInstalled = true;
+
+            const probe = (type, evt) => {
+                const t = evt?.target;
+                if (!t || t.tagName !== 'INPUT') return;
+                const inTable = !!t.closest('table');
+                const cls = t.className || '';
+                if (!inTable && !String(cls).includes('lp-input')) return;
+
+                const linesRoot = !!t.closest('[data-id="lines"]');
+                const tbody = t.closest('tbody[data-schema-id]');
+                const tr = t.closest('tr');
+                const rowIdx = (tbody && tr) ? Array.from(tbody.querySelectorAll(':scope > tr')).indexOf(tr) : -1;
+                const schemaId = tbody?.dataset?.schemaId || null;
+
+                const payload = {
+                    type,
+                    placeholder: t.placeholder || '',
+                    value: t.value || '',
+                    className: cls,
+                    inTable,
+                    linesRoot,
+                    schemaId,
+                    rowIdx,
+                    relInput: t.dataset?.relInput || '',
+                    relSchemaId: t.dataset?.schemaId || '',
+                    relLineIdx: t.dataset?.lineIdx || '',
+                    relColKey: t.dataset?.colKey || '',
+                    rowText: (t.closest('tr')?.innerText || '').slice(0, 180)
+                };
+                console.error('[LINES-HARDLOG] dom_probe', payload);
+                console.error('[LINES-HARDLOG] dom_probe_json', JSON.stringify(payload));
+                this.logDiag('hard_dom_probe', payload);
+
+                // Fallback bridge: if Alpine inline handlers do not fire, route native events to relation logic.
+                try {
+                    this.relationInputFallback(type, evt, t, { linesRoot, schemaId, rowIdx });
+                } catch (e) {
+                    console.error('[LINES-HARDLOG] relation_fallback_error', e);
+                }
+            };
+
+            document.addEventListener('focusin', (e) => probe('focusin', e), true);
+            document.addEventListener('focusout', (e) => probe('blur', e), true);
+            document.addEventListener('input', (e) => probe('input', e), true);
+            document.addEventListener('click', (e) => probe('click', e), true);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === 'Escape') probe('keydown', e);
+            }, true);
+            console.error('[LINES-HARDLOG] dom_probe_installed');
+        },
+
+        relationInputFallback(type, evt, inputEl, ctx) {
+            const ds = inputEl?.dataset || {};
+            const isRelInput = String(ds.relInput || '') === '1';
+            if (!isRelInput) return;
+
+            const schemaId = ds.schemaId || ctx?.schemaId;
+            const rowIdx = Number.isFinite(Number(ds.lineIdx)) ? Number(ds.lineIdx) : ctx?.rowIdx;
+            const colKeyFromDs = ds.colKey || '';
+            if (!schemaId || !(rowIdx >= 0)) return;
+
+            const schema = (this.schemas || []).find(s => (s?._id || '').toString() === String(schemaId));
+            const relCol = this.getRelationColForSchema(schema);
+            const colKey = colKeyFromDs || relCol?.key;
+            if (!schema || !colKey) return;
+
+            this.activeSchemaId = schema._id;
+
+            if (type === 'focusin' || type === 'click') {
+                console.error('[LINES-HARDLOG] relation_fallback_open', { schemaId: schema._id, rowIdx, colKey });
+                this.openRelationSearch(rowIdx, colKey);
+                return;
+            }
+
+            if (type === 'input') {
+                const q = inputEl.value || '';
+                console.error('[LINES-HARDLOG] relation_fallback_input', { schemaId: schema._id, rowIdx, colKey, query: q });
+                this.searchRelation(rowIdx, colKey, q);
+                return;
+            }
+
+            if (type === 'keydown' && evt?.key === 'Enter') {
+                console.error('[LINES-HARDLOG] relation_fallback_enter', { schemaId: schema._id, rowIdx, colKey });
+                this.confirmRelationSelection(rowIdx, relCol || { key: colKey });
+                return;
+            }
+
+            if (type === 'keydown' && evt?.key === 'Escape') {
+                this.closeRelationSearch();
+                return;
+            }
+
+            if (type === 'blur') {
+                this.handleRelationBlur(rowIdx, relCol || { key: colKey }, evt);
             }
         },
 
@@ -3824,11 +4200,19 @@ document.addEventListener('alpine:init', () => {
             if (idx >= 0) {
                 // Deselect
                 this.addModal.selected.splice(idx, 1);
+                this.logDiag('catalog_item_deselected', { itemId: item?._id, label: item?.label || item?.title });
             } else {
                 // Select — apply default values from catalog
-                const values = {};
+                let values = {};
                 const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
                 const cfArray = Array.isArray(item.customFields) ? item.customFields : [];
+                this.logDiag('catalog_item_selected_start', {
+                    itemId: item?._id,
+                    label: item?.label || item?.title,
+                    activeSchemaId: this.activeSchemaId,
+                    lineDefaults: this.summarizeLineDefaults(item?.lineDefaults),
+                    customFieldsType: Array.isArray(item?.customFields) ? 'array' : typeof item?.customFields
+                });
                 if (relCol?.config?.applyDefaults && cfArray.length > 0) {
                     const cfMap = {};
                     cfArray.forEach(cf => {
@@ -3849,11 +4233,31 @@ document.addEventListener('alpine:init', () => {
                 const qtyCol = (this.activeSchema?.columns || []).find(c => c.key === 'qty');
                 if (qtyCol && !values.qty) values.qty = 1;
 
+                // ── Apply lineDefaults (pre-encoded per record) ──
+                let _availableOptions = {};
+                let _excludedColumns = [];
+                const lineDefaultsForSchema = this.resolveLineDefaultsForSchema(item.lineDefaults, this.activeSchemaId);
+                if (lineDefaultsForSchema) {
+                    const applied = this.applyLineDefaultsToValues(values, this.activeSchema, lineDefaultsForSchema);
+                    values = applied.values;
+                    _availableOptions = applied.availableOptions;
+                    _excludedColumns = applied.excludedColumns;
+                }
+                this.logDiag('catalog_item_selected_applied', {
+                    itemId: item?._id,
+                    schemaId: this.activeSchemaId,
+                    matched: !!lineDefaultsForSchema,
+                    matchedSchemaId: lineDefaultsForSchema?.schemaId?.toString?.() || lineDefaultsForSchema?.schemaId || null,
+                    finalValues: values
+                });
+
                 this.addModal.selected.push({
                     _id: item._id,
                     label: item.label || item.title,
                     customFields: cfArray,
-                    values: values
+                    values: values,
+                    _availableOptions,
+                    _excludedColumns
                 });
             }
         },
@@ -3920,7 +4324,9 @@ document.addEventListener('alpine:init', () => {
                     lineType: lineType,
                     values: { ...sel.values },
                     computed: {},
-                    order: schemaLines.length
+                    order: schemaLines.length,
+                    _availableOptions: sel._availableOptions || {},
+                    _excludedColumns: sel._excludedColumns || []
                 };
                 // Set relation ID + label
                 if (relCol) {
@@ -4294,7 +4700,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         filterMsOptions(col) {
-            const opts = col.config?.options || [];
+            let opts = col.config?.options || [];
+            const idx = this.msDropdown.lineIdx;
+            let currentLine = null;
+            if (typeof idx === 'string' && idx.startsWith('add_')) {
+                const itemId = idx.split('_')[1];
+                currentLine = this.addModal.selected.find(s => s._id === itemId);
+            } else if (typeof idx === 'string' && idx.startsWith('edit_')) {
+                currentLine = this.editModal.item;
+            } else if (typeof idx === 'number' && idx >= 0) {
+                currentLine = (this.linesMap[this.activeSchemaId] || [])[idx];
+            }
+            if (currentLine && currentLine._availableOptions && currentLine._availableOptions[col.key] && currentLine._availableOptions[col.key].length > 0) {
+                opts = opts.filter(o => currentLine._availableOptions[col.key].includes(o.value));
+            }
             const q = (this.msDropdown.query || '').trim().toLowerCase();
             if (!q) return opts;
             return opts.filter(o => o.label.toLowerCase().includes(q));
@@ -4326,7 +4745,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         filterSelOptions(col) {
-            const opts = col.config?.options || [];
+            let opts = col.config?.options || [];
+            const idx = this.selDropdown.lineIdx;
+            let currentLine = null;
+            if (typeof idx === 'string' && idx.startsWith('add_')) {
+                const itemId = idx.split('_')[1];
+                currentLine = this.addModal.selected.find(s => s._id === itemId);
+            } else if (typeof idx === 'string' && idx.startsWith('edit_')) {
+                currentLine = this.editModal.item;
+            } else if (typeof idx === 'number' && idx >= 0) {
+                currentLine = (this.linesMap[this.activeSchemaId] || [])[idx];
+            }
+            if (currentLine && currentLine._availableOptions && currentLine._availableOptions[col.key] && currentLine._availableOptions[col.key].length > 0) {
+                opts = opts.filter(o => currentLine._availableOptions[col.key].includes(o.value));
+            }
             const q = (this.selDropdown.query || '').trim().toLowerCase();
             if (!q) return opts;
             return opts.filter(o => o.label.toLowerCase().includes(q));
@@ -4414,6 +4846,8 @@ document.addEventListener('alpine:init', () => {
 
         // ── Relation search (autocomplete) ─────────────────
         openRelationSearch(lineIdx, colKey) {
+            console.error('[LINES-HARDLOG] openRelationSearch', { lineIdx, colKey, activeSchemaId: this.activeSchemaId });
+            this.logDiag('hard_open_relation_search', { lineIdx, colKey, activeSchemaId: this.activeSchemaId });
             this.relationSearch.lineIdx = lineIdx;
             this.relationSearch.colKey = colKey;
             this.relationSearch.open = true;
@@ -4425,7 +4859,83 @@ document.addEventListener('alpine:init', () => {
             this.relationSearch.open = false;
         },
 
+        confirmRelationSelection(lineIdx, col) {
+            console.error('[LINES-HARDLOG] confirmRelationSelection', {
+                lineIdx,
+                colKey: col?.key,
+                open: this.relationSearch.open,
+                resultsCount: (this.relationSearch.results || []).length,
+                query: this.relationSearch.query
+            });
+            this.logDiag('hard_confirm_relation_selection', {
+                lineIdx,
+                colKey: col?.key,
+                open: this.relationSearch.open,
+                resultsCount: (this.relationSearch.results || []).length,
+                query: this.relationSearch.query
+            });
+            if (!col) return;
+            if (this.relationSearch.open &&
+                this.relationSearch.lineIdx === lineIdx &&
+                this.relationSearch.colKey === col.key &&
+                (this.relationSearch.results || []).length > 0) {
+                this.selectRelation(lineIdx, col, this.relationSearch.results[0]);
+            }
+        },
+
+        handleRelationBlur(lineIdx, col, evt) {
+            console.error('[LINES-HARDLOG] handleRelationBlur', {
+                lineIdx,
+                colKey: col?.key,
+                typed: (evt?.target?.value || '').trim(),
+                open: this.relationSearch.open,
+                resultsCount: (this.relationSearch.results || []).length
+            });
+            this.logDiag('hard_handle_relation_blur', {
+                lineIdx,
+                colKey: col?.key,
+                typed: (evt?.target?.value || '').trim(),
+                open: this.relationSearch.open,
+                resultsCount: (this.relationSearch.results || []).length
+            });
+            setTimeout(() => {
+                if (!col) {
+                    this.closeRelationSearch();
+                    return;
+                }
+                const line = this.linesMap[this.activeSchemaId]?.[lineIdx];
+                const hasSelectedId = !!line?.values?.[col.key];
+                const currentLabel = line?.values?.[col.key + '_label'] || '';
+                const typed = (evt?.target?.value || '').trim();
+                const hasResults = (this.relationSearch.results || []).length > 0;
+                const sameAsCurrent = typed && currentLabel && typed.toLowerCase() === currentLabel.toLowerCase();
+
+                // If user typed text but didn't click, auto-pick first suggestion when available.
+                if (
+                    hasResults &&
+                    this.relationSearch.open &&
+                    this.relationSearch.lineIdx === lineIdx &&
+                    this.relationSearch.colKey === col.key &&
+                    (
+                        !hasSelectedId || // empty line
+                        (!!typed && !sameAsCurrent) // user typed something different than current label
+                    )
+                ) {
+                    this.selectRelation(lineIdx, col, this.relationSearch.results[0]);
+                    return;
+                }
+
+                // Re-sync UI input with real state to avoid fake visual selection.
+                if (evt?.target) {
+                    evt.target.value = line?.values?.[col.key + '_label'] || '';
+                }
+                this.closeRelationSearch();
+            }, 200);
+        },
+
         searchRelation(lineIdx, colKey, query) {
+            console.error('[LINES-HARDLOG] searchRelation_input', { lineIdx, colKey, query });
+            this.logDiag('hard_search_relation_input', { lineIdx, colKey, query });
             this.relationSearch.query = query;
             this.relationSearch.lineIdx = lineIdx;
             this.relationSearch.colKey = colKey;
@@ -4448,6 +4958,20 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(url, { credentials: 'include' });
                 const data = await res.json();
                 this.relationSearch.results = data.data || [];
+                console.error('[LINES-HARDLOG] searchRelation_results', {
+                    colKey,
+                    query,
+                    targetEntity: col.config.targetEntity,
+                    count: this.relationSearch.results.length,
+                    sample: (this.relationSearch.results || []).slice(0, 3).map(r => ({ id: r?._id, label: r?.label || r?.title }))
+                });
+                this.logDiag('hard_search_relation_results', {
+                    colKey,
+                    query,
+                    targetEntity: col.config.targetEntity,
+                    count: this.relationSearch.results.length,
+                    sample: (this.relationSearch.results || []).slice(0, 3).map(r => ({ id: r?._id, label: r?.label || r?.title }))
+                });
             } catch (e) {
                 console.error('[LinesPanel] Relation search error:', e);
                 this.relationSearch.results = [];
@@ -4457,8 +4981,50 @@ document.addEventListener('alpine:init', () => {
         },
 
         selectRelation(lineIdx, col, item) {
-            const line = this.lines[lineIdx];
-            if (!line) return;
+            console.error('[LINES-HARDLOG] selectRelation_enter', {
+                lineIdx,
+                colKey: col?.key,
+                itemId: item?._id,
+                itemLabel: item?.label || item?.title,
+                activeSchemaId: this.activeSchemaId,
+                schemasCount: (this.schemas || []).length
+            });
+
+            // ── Resolve the correct schemaId from the column ──
+            // Instead of relying on this.activeSchemaId (which may be stale/wrong in multi-schema views),
+            // find which schema actually owns this relation column.
+            let resolvedSchemaId = this.activeSchemaId;
+            let resolvedSchema = this.activeSchema;
+            for (const s of this.schemas) {
+                if ((s.columns || []).some(c => c.key === col.key && c.type === 'relation')) {
+                    resolvedSchemaId = s._id;
+                    resolvedSchema = s;
+                    break;
+                }
+            }
+            // Ensure activeSchemaId is synchronized
+            this.activeSchemaId = resolvedSchemaId;
+
+            const line = this.linesMap[resolvedSchemaId]?.[lineIdx]; // Use linesMap with resolvedSchemaId
+            if (!line) {
+                console.error('[LINES-HARDLOG] selectRelation_no_line', {
+                    resolvedSchemaId,
+                    lineIdx,
+                    mapKeys: Object.keys(this.linesMap || {}),
+                    lineCount: (this.linesMap[resolvedSchemaId] || []).length
+                });
+                return;
+            }
+            this.logDiag('select_relation_start', {
+                lineIdx,
+                colKey: col?.key,
+                itemId: item?._id,
+                itemLabel: item?.label || item?.title,
+                activeSchemaIdBefore: this.activeSchemaId,
+                resolvedSchemaId,
+                lineDefaults: this.summarizeLineDefaults(item?.lineDefaults),
+                lineValuesBefore: { ...(line.values || {}) }
+            });
 
             // Set the relation value (ID + label)
             line.values[col.key] = item._id;
@@ -4480,7 +5046,7 @@ document.addEventListener('alpine:init', () => {
 
                         // HYBRID: If this is a select/multiselect column, also inject the
                         // value as an available option so it appears in the dropdown
-                        const targetCol = (this.activeSchema?.columns || []).find(c => c.key === targetKey);
+                        const targetCol = (resolvedSchema?.columns || []).find(c => c.key === targetKey);
                         if (targetCol && (targetCol.type === 'select' || targetCol.type === 'multiselect')) {
                             if (!line._catalogOptions) line._catalogOptions = {};
                             if (!line._catalogOptions[targetKey]) line._catalogOptions[targetKey] = [];
@@ -4497,6 +5063,39 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             }
+
+            // ── Apply lineDefaults (pre-encoded per record) ──
+            console.log('[selectRelation] item.lineDefaults:', JSON.stringify(item.lineDefaults), 'resolvedSchemaId:', resolvedSchemaId, 'activeSchemaId:', this.activeSchemaId);
+            const lineDefaultsForSchema = this.resolveLineDefaultsForSchema(item.lineDefaults, resolvedSchemaId);
+            document.title = '[DEBUG] selectRelation: resolved=' + resolvedSchemaId + ' found=' + (lineDefaultsForSchema ? 'YES' : 'NO') + ' isArr=' + Array.isArray(item.lineDefaults) + ' len=' + (Array.isArray(item.lineDefaults) ? item.lineDefaults.length : 'NA');
+            if (lineDefaultsForSchema) {
+                console.log('[selectRelation] Found defaults for schema:', lineDefaultsForSchema.defaults);
+                const applied = this.applyLineDefaultsToValues(line.values || {}, resolvedSchema, lineDefaultsForSchema);
+                line.values = applied.values;
+                line._availableOptions = applied.availableOptions;
+                line._excludedColumns = applied.excludedColumns;
+                console.error('[LINES-HARDLOG] selectRelation_defaults_applied', {
+                    resolvedSchemaId,
+                    defaultsKeys: Object.keys(lineDefaultsForSchema.defaults || {}),
+                    finalValues: line.values
+                });
+            } else {
+                console.log('[selectRelation] No lineDefaults found for schema', this.activeSchemaId);
+                console.error('[LINES-HARDLOG] selectRelation_no_defaults_match', {
+                    resolvedSchemaId,
+                    activeSchemaId: this.activeSchemaId,
+                    itemLineDefaults: this.summarizeLineDefaults(item?.lineDefaults)
+                });
+            }
+            this.logDiag('select_relation_after_defaults', {
+                lineIdx,
+                resolvedSchemaId,
+                matched: !!lineDefaultsForSchema,
+                matchedSchemaId: lineDefaultsForSchema?.schemaId?.toString?.() || lineDefaultsForSchema?.schemaId || null,
+                finalValues: { ...(line.values || {}) },
+                availableOptionsKeys: Object.keys(line._availableOptions || {}),
+                excludedColumns: line._excludedColumns || []
+            });
 
             this.recomputeLine(line);
             this.closeRelationSearch();
@@ -4523,6 +5122,12 @@ document.addEventListener('alpine:init', () => {
                 });
             }
             this.linesMap[this.activeSchemaId] = [...filledLines, ...emptyLines];
+            this.logDiag('select_relation_reordered', {
+                activeSchemaId: this.activeSchemaId,
+                filledCount: filledLines.length,
+                emptyCount: emptyLines.length,
+                firstFilledValues: filledLines[0]?.values || null
+            });
             this.debouncedSave();
         },
 
@@ -4747,7 +5352,9 @@ document.addEventListener('alpine:init', () => {
                 lineType: schema.defaultLineType || 'default',
                 values,
                 computed: {},
-                order: (this.linesMap[schema._id] || []).length
+                order: (this.linesMap[schema._id] || []).length,
+                _availableOptions: this.formAddValues[schema._id + '__availableOptions'] || {},
+                _excludedColumns: this.formAddValues[schema._id + '__excludedColumns'] || []
             };
 
             // For timeseries, insert in sorted order (desc = newest first)
@@ -4877,6 +5484,43 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Search relation records via API (for form add)
+        selectFormRelation(schema, col, result) {
+            const key = schema._id + '_' + col.key;
+            this.formAddValues[key] = result.id;
+            this.formAddValues[key + '_label'] = result.label;
+            this.formRelOpen[key] = false;
+            this.logDiag('form_relation_selected_start', {
+                schemaId: schema?._id,
+                colKey: col?.key,
+                resultId: result?.id,
+                resultLabel: result?.label,
+                lineDefaults: this.summarizeLineDefaults(result?.lineDefaults)
+            });
+
+            // Apply lineDefaults
+            const lineDefaultsForSchema = this.resolveLineDefaultsForSchema(result.lineDefaults, schema._id);
+            if (lineDefaultsForSchema) {
+                const tmpValues = {};
+                const applied = this.applyLineDefaultsToValues(tmpValues, schema, lineDefaultsForSchema);
+                for (const [defKey, val] of Object.entries(applied.values || {})) {
+                    this.formAddValues[schema._id + '_' + defKey] = val;
+                }
+                
+                // Although _availableOptions doesn't have an immediate hook in the quick add "formAddValues" yet, 
+                // we can store them to be applied when the actual row is created.
+                this.formAddValues[schema._id + '__availableOptions'] = applied.availableOptions || {};
+                this.formAddValues[schema._id + '__excludedColumns'] = applied.excludedColumns || {};
+            }
+            this.logDiag('form_relation_selected_after_defaults', {
+                schemaId: schema?._id,
+                matched: !!lineDefaultsForSchema,
+                matchedSchemaId: lineDefaultsForSchema?.schemaId?.toString?.() || lineDefaultsForSchema?.schemaId || null,
+                valuesForSchema: Object.fromEntries(
+                    Object.entries(this.formAddValues || {}).filter(([k]) => k.startsWith(schema._id + '_'))
+                )
+            });
+        },
+
         async searchFormRelation(schemaId, col) {
             const key = schemaId + '_' + col.key;
             const query = this.formRelSearch[key] || '';

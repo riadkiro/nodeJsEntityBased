@@ -1,0 +1,67 @@
+[
+  {
+    "_id": "69c3f0310f5a74287b074443",
+    "documentId": "69c232ce0fa7abd357abd6f3",
+    "schemaId": "69c232cd0fa7abd357abd678",
+    "lineType": "product",
+    "values": {
+      "description": "Dol",
+      "qty": 2,
+      "unitPrice": 20,
+      "discount": "",
+      "vatRate": "",
+      "lineTotal": "",
+      "lineVat": "",
+      "note": "",
+      "traitement": "manual_item_id_2"
+    },
+    "computed": {
+      "lineTotal": 40,
+      "lineVat": 0
+    },
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-25T14:24:49.726Z",
+    "updatedAt": "2026-03-27T19:00:06.598Z"
+  },
+  {
+    "_id": "69c6d3b6960cd8d302d6766f",
+    "documentId": "69c232ce0fa7abd357abd6f3",
+    "schemaId": "69c232cd0fa7abd357abd678",
+    "lineType": "product",
+    "computed": {
+      "lineTotal": 0,
+      "lineVat": 0
+    },
+    "order": 1,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-27T19:00:06.598Z",
+    "updatedAt": "2026-03-27T19:00:06.598Z"
+  },
+  {
+    "_id": "69c7c0ec732fd414a9a07d8a",
+    "documentId": "69c232ce0fa7abd357abd6f3",
+    "schemaId": "69c232cd0fa7abd357abd677",
+    "lineType": "treatment",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-28T11:52:12.435Z",
+    "updatedAt": "2026-03-28T11:52:40.057Z",
+    "computed": {},
+    "values": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg"
+    }
+  },
+  {
+    "_id": "69c7c108732fd414a9a07db2",
+    "documentId": "69c232ce0fa7abd357abd6f3",
+    "schemaId": "69c232cd0fa7abd357abd677",
+    "lineType": "treatment",
+    "order": 1,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-28T11:52:40.057Z",
+    "updatedAt": "2026-03-28T11:52:40.057Z"
+  }
+]

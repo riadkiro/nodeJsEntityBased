@@ -1,0 +1,186 @@
+[
+  {
+    "key": "treatment",
+    "label": "Traitement",
+    "type": "relation",
+    "required": true,
+    "visible": true,
+    "width": "L",
+    "order": 0,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "targetEntity": "69c232cd0fa7abd357abd65e",
+      "searchFields": [
+        "title"
+      ],
+      "displayFields": [
+        "title"
+      ],
+      "applyDefaults": {
+        "description": "title"
+      }
+    },
+    "_id": "69c3b8421071d3eb770636c7"
+  },
+  {
+    "key": "moment",
+    "label": "Moment",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 1,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "morning",
+          "label": "Matin"
+        },
+        {
+          "value": "bedtime",
+          "label": "Au coucher"
+        },
+        {
+          "value": "before_meal",
+          "label": "Avant repas"
+        },
+        {
+          "value": "midi",
+          "label": "Midi"
+        },
+        {
+          "value": "soir",
+          "label": "Soir"
+        },
+        {
+          "value": "si_besoin",
+          "label": "Si besoin"
+        }
+      ]
+    },
+    "_id": "69c3b8421071d3eb770636c8"
+  },
+  {
+    "key": "frequency",
+    "label": "Fréquence",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 2,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "1x_day",
+          "label": "1x / jour"
+        },
+        {
+          "value": "2x_day",
+          "label": "2x / jour"
+        },
+        {
+          "value": "3x_day",
+          "label": "3x / jour"
+        },
+        {
+          "value": "every_8h",
+          "label": "Toutes les 8h"
+        },
+        {
+          "value": "every_12h",
+          "label": "Toutes les 12h"
+        },
+        {
+          "value": "weekly",
+          "label": "1x / semaine"
+        }
+      ]
+    },
+    "_id": "69c3b8421071d3eb770636c9"
+  },
+  {
+    "key": "duration",
+    "label": "Durée",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 3,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "1_day",
+          "label": "1 jour"
+        },
+        {
+          "value": "3_days",
+          "label": "3 jours"
+        },
+        {
+          "value": "5_days",
+          "label": "5 jours"
+        },
+        {
+          "value": "7_days",
+          "label": "7 jours"
+        },
+        {
+          "value": "10_days",
+          "label": "10 jours"
+        },
+        {
+          "value": "14_days",
+          "label": "14 jours"
+        },
+        {
+          "value": "21_days",
+          "label": "21 jours"
+        },
+        {
+          "value": "1_mois",
+          "label": "1 mois"
+        },
+        {
+          "value": "6_mois",
+          "label": "6 mois"
+        }
+      ]
+    },
+    "_id": "69c3b8421071d3eb770636ca"
+  },
+  {
+    "key": "instructions",
+    "label": "Instructions",
+    "type": "textarea",
+    "required": false,
+    "visible": true,
+    "width": "L",
+    "order": 4,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69c3b8421071d3eb770636cb"
+  }
+]

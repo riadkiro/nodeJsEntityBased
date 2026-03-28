@@ -1,0 +1,6 @@
+3704: .filter(c => !(line._excludedColumns || []).includes(c.key))
+3855: let _excludedColumns = [];
+3865: _excludedColumns = lineDefaultsForSchema.excludedColumns || [];
+3874: _excludedColumns
+3943: _excludedColumns: sel._excludedColumns || []
+4558: line._excludedColumns = lineDefaultsForSchema.excludedColumns || [];

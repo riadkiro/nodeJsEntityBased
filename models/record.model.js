@@ -85,6 +85,20 @@ const RecordSchema = new mongoose.Schema({
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],
 
+  // 🔧 Line Defaults (pre-encoded values for Dynamic Table columns)
+  // When this record is selected as a catalog item in a TD,
+  // these defaults auto-populate the line values
+  lineDefaults: [{
+    schemaId: { type: mongoose.Schema.Types.ObjectId, ref: 'LineSchema' },
+    // Default values per column key: { moment: 'apres_repas', frequence: '3x_jour' }
+    defaults: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // Available options per select/multiselect column key: { moment: ['avant_repas', 'apres_repas'] }
+    // Empty = all options available
+    availableOptions: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // Column keys that are N/A for this record: ['dosage']
+    excludedColumns: { type: [String], default: [] }
+  }],
+
   // 👤 Suivi
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

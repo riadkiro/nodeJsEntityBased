@@ -1,45 +1,4 @@
-=== ENTITIES ===
-  patients -> 69c028596b20251b71c9587f
-  rendez-vous -> 69c028596b20251b71c95880
-  consultations -> 69c028596b20251b71c95881
-  prescriptions -> 69c028596b20251b71c95882
-  medicaments -> 69c028596b20251b71c95883
-  factures -> 69c028596b20251b71c95884
-  paiements -> 69c028596b20251b71c95885
-  assurances -> 69c028596b20251b71c95886
-  resultats-labo -> 69c028596b20251b71c95887
-  documents-medicaux -> 69c028596b20251b71c95888
-  plans-traitement -> 69c028596b20251b71c95889
-  personnel -> 69c028596b20251b71c9588a
-  stock -> 69c028596b20251b71c9588b
-  symptomes -> 69c028596b20251b71c9588c
-  pathologies -> 69c028596b20251b71c9588d
-  traitements -> 69c028596b20251b71c9588e
+=== VIEWS FOR CONSULTATION ENTITY ===
 
-Pathologie entity: 69c028596b20251b71c9588d
-Traitement entity: 69c028596b20251b71c9588e
-
-=== RECORD COUNTS ===
-{
-  "patients": 15,
-  "medicaments": 20,
-  "personnel": 4,
-  "symptomes": 20,
-  "rendez-vous": 12,
-  "consultations": 12,
-  "prescriptions": 10,
-  "factures": 10,
-  "paiements": 9,
-  "resultats-labo": 10,
-  "documents-medicaux": 10,
-  "plans-traitement": 6,
-  "stock": 20
-}
-
-Pathologie relations count: 1
-
-Traitement relations count: 1
-
-=== LINE SCHEMA ===
-sourceEntityId: 69c028596b20251b71c9588e
-columns: treatment(relation), moment(multiselect), frequency(multiselect), duration(multiselect), instructions(textarea)
+=== CONSULTATION RECORD ===
+  title: Consult. François Bernard - Angine streptococcique

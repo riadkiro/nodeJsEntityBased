@@ -231,7 +231,7 @@ module.exports = {
             const records = await Record.find(query)
                 .sort({ title: 1 })
                 .limit(20)
-                .select('title slug customFields entityId')
+                .select('title slug customFields entityId lineDefaults')
                 .lean();
 
             console.log('[CatalogSearch] found', records.length, 'records, first:', records[0] ? { _id: records[0]._id, title: records[0].title, entityId: records[0].entityId } : 'none');
@@ -306,7 +306,8 @@ module.exports = {
                     _id: r._id,
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
-                    customFields: cfMap
+                    customFields: cfMap,
+                    lineDefaults: r.lineDefaults || []
                 });
             }
 
@@ -384,7 +385,7 @@ module.exports = {
                     _id: { $in: candidateIds },
                     entityId: entityOid
                 })
-                    .select('title slug customFields entityId relations')
+                    .select('title slug customFields entityId relations lineDefaults')
                     .populate({ path: 'customFields.field_id', select: 'label fieldType' })
                     .limit(15)
                     .lean();
@@ -400,7 +401,7 @@ module.exports = {
                 records = await Record.find({ entityId: entityOid })
                     .sort({ createdAt: -1 })
                     .limit(15)
-                    .select('title slug customFields entityId relations')
+                    .select('title slug customFields entityId relations lineDefaults')
                     .populate({ path: 'customFields.field_id', select: 'label fieldType' })
                     .lean();
             }
@@ -471,7 +472,8 @@ module.exports = {
                     _id: r._id,
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
-                    customFields: cfMap
+                    customFields: cfMap,
+                    lineDefaults: r.lineDefaults || []
                 });
             }
 

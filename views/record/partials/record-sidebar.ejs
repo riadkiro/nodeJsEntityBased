@@ -2531,7 +2531,38 @@
                     this.searchLoading = false;
                 },
 
+                resolveLineDefaultsForSchema(lineDefaults, schemaId) {
+                    if (!lineDefaults || !schemaId) return null;
+                    if (Array.isArray(lineDefaults)) {
+                        const match = lineDefaults.find(ld =>
+                            ld && ld.schemaId && ld.schemaId.toString() === schemaId.toString()
+                        );
+                        if (match) return match;
+                        return lineDefaults.length === 1 ? lineDefaults[0] : null;
+                    }
+                    if (typeof lineDefaults === 'object' && lineDefaults.defaults) {
+                        if (!lineDefaults.schemaId || lineDefaults.schemaId.toString() === schemaId.toString()) {
+                            return lineDefaults;
+                        }
+                    }
+                    return null;
+                },
+
+                normalizeDefaultByColumn(col, val) {
+                    if (!col) return val;
+                    if (col.type === 'select' && Array.isArray(val)) return val[0] || '';
+                    if ((col.type === 'text' || col.type === 'textarea') && Array.isArray(val)) return val.join(', ');
+                    if (col.type === 'multiselect') return Array.isArray(val) ? val : (val ? [val] : []);
+                    return val;
+                },
+
                 selectItem(lineIdx, item) {
+                    console.error('[SIDEBAR-DT] selectItem_start', {
+                        schemaId: this.schemaId,
+                        lineIdx,
+                        itemId: item?._id,
+                        label: item?.label || item?.title
+                    });
                     const relCol = this.columns.find(c => c.type === 'relation');
                     if (!relCol) return;
                     const line = this.lines[lineIdx];
@@ -2542,10 +2573,17 @@
 
                     // Apply defaults from catalog
                     if (relCol.config?.applyDefaults && item.customFields) {
+                        const cfMap = Array.isArray(item.customFields)
+                            ? item.customFields.reduce((acc, cf) => {
+                                const fieldId = (cf?.field_id?._id || cf?.field_id || '').toString();
+                                if (fieldId) acc[fieldId] = cf?.value;
+                                return acc;
+                            }, {})
+                            : item.customFields;
                         for (const [targetKey, sourceExpr] of Object.entries(relCol.config.applyDefaults)) {
                             let val;
                             if (sourceExpr.startsWith('cf.')) {
-                                val = item.customFields[sourceExpr.substring(3)];
+                                val = cfMap[sourceExpr.substring(3)];
                             } else {
                                 val = item[sourceExpr];
                             }
@@ -2554,6 +2592,31 @@
                             }
                         }
                     }
+
+                    // Apply lineDefaults configured on catalog record for this schema
+                    const lineDefaultsForSchema = this.resolveLineDefaultsForSchema(item.lineDefaults, this.schemaId);
+                    if (lineDefaultsForSchema && lineDefaultsForSchema.defaults) {
+                        console.error('[SIDEBAR-DT] lineDefaults_match', {
+                            schemaId: this.schemaId,
+                            keys: Object.keys(lineDefaultsForSchema.defaults || {})
+                        });
+                        for (const [key, val] of Object.entries(lineDefaultsForSchema.defaults || {})) {
+                            const col = this.columns.find(c => c.key === key || (c._id && c._id.toString() === key.toString()));
+                            if (!col) continue;
+                            const normalized = this.normalizeDefaultByColumn(col, val);
+                            if (normalized !== undefined && normalized !== null && normalized !== '') {
+                                line.values[col.key] = normalized;
+                            }
+                        }
+                        line._availableOptions = lineDefaultsForSchema.availableOptions || {};
+                        line._excludedColumns = lineDefaultsForSchema.excludedColumns || [];
+                    } else {
+                        console.error('[SIDEBAR-DT] lineDefaults_no_match', {
+                            schemaId: this.schemaId,
+                            lineDefaultsType: Array.isArray(item?.lineDefaults) ? 'array' : typeof item?.lineDefaults
+                        });
+                    }
+                    console.error('[SIDEBAR-DT] selectItem_finalValues', line.values);
 
                     this.searchOpen = false;
                     this.searchResults = [];

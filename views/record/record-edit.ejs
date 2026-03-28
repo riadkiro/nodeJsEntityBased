@@ -685,6 +685,8 @@ window.__syncClsInputs = function(clsId, ids) {
 
         <!-- Dynamic Table Widget JS -->
         <script src="/js/dt-widget.js"></script>
+        <!-- Dynamic Table React Island -->
+        <script type="module" src="/dist/dynamicTable.js"></script>
         <!-- Alpine Store for sharing tab state across components -->
         <script>
         document.addEventListener('alpine:init', () => {
@@ -1896,12 +1898,14 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                             </div>
                                                                         </div>
                                                                     </template>
-                                                                    <!-- ═══ Dynamic Table Widget ═══ -->
+                                                                    <!-- ═══ Dynamic Table Widget (React Island) ═══ -->
                                                                     <template x-if="block && block.type === 'dynamic-table'">
                                                                         <div style="height: 100%; border-radius: 12px; overflow: visible; position: relative;"
-                                                                             :data-schema-filter="block.config?.schemaId || ''"
-                                                                             :data-enable-doc-preview="block.config?.enableDocPreview ? 'true' : ''">
-                                                                            <%- include('partials/record-lines') %>
+                                                                             data-island="dynamic-table"
+                                                                             data-account-number="<%= account_number %>"
+                                                                             data-record-id="<%= record._id %>"
+                                                                             data-entity-id="<%= entity._id %>"
+                                                                             :data-schema-filter="block.config?.schemaId || ''">
                                                                         </div>
                                                                     </template>
                                                                 </div>
@@ -5977,6 +5981,7 @@ window.__syncClsInputs = function(clsId, ids) {
                         </div>
                     </template>
                     <%- include('partials/record-sidebar') %>
+                    <%- include('partials/record-line-defaults') %>
                 </div>
                 <!-- Empty state for sidebar column (shown in design mode when all panels dragged out) -->
                 <template x-if="designMode">

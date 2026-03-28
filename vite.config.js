@@ -23,6 +23,7 @@ export default defineConfig({
                 multiSelect: path.resolve(__dirname, 'src/islands/multi-select/entry.jsx'),
                 cardBuilder: path.resolve(__dirname, 'src/islands/card-builder/entry.jsx'),
                 cardRendererWidget: path.resolve(__dirname, 'src/islands/card-renderer-widget/entry.jsx'),
+                dynamicTable: path.resolve(__dirname, 'src/islands/dynamic-table/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

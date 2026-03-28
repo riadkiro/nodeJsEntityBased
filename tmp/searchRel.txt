@@ -1,0 +1,3 @@
+1689: @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
+1946: @input="searchRelation(lineIdx, col.key, $event.target.value)"
+4475: searchRelation(lineIdx, colKey, query) {

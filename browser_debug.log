@@ -1,0 +1,1207 @@
+2026-03-28T13:17:00.544Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:17:00.546Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:17:00.547Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:17:45.648Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:17:45.651Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:17:45.653Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:18:09.489Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:18:09.492Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:18:09.493Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:19:22.143Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:19:22.145Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:19:22.146Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:20:01.494Z : {
+  "source": "record-lines",
+  "step": "catalog_search_results",
+  "payload": {
+    "query": "Doli",
+    "targetEntity": "69c232cd0fa7abd357abd65e",
+    "count": 1,
+    "sample": [
+      {
+        "id": "69c232ce0fa7abd357abd6b5",
+        "label": "Doliprane 1000mg",
+        "lineDefaults": {
+          "type": "array",
+          "len": 1,
+          "schemaIds": [
+            "69c232cd0fa7abd357abd677"
+          ],
+          "defaultsKeys": [
+            [
+              "moment",
+              "frequency",
+              "duration",
+              "instructions"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:20:01.496Z : {
+  "source": "record-lines",
+  "step": "catalog_item_selected_start",
+  "payload": {
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "label": "Doliprane 1000mg",
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "customFieldsType": "object"
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:20:01.497Z : {
+  "source": "record-lines",
+  "step": "catalog_item_selected_applied",
+  "payload": {
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "schemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:20:23.422Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:20:23.425Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T13:20:23.426Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:27:56.772Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {}
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:27:56.775Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "treatment_label": "Doliprane 1000mg",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:27:56.776Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "treatment_label": "Doliprane 1000mg",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:28:36.119Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "treatment_label": "Doliprane 1000mg",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:28:36.121Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "treatment_label": "Doliprane 1000mg",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:28:36.122Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "treatment_label": "Doliprane 1000mg",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:40:39.972Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Tramadol 50mg",
+      "treatment": "69c232ce0fa7abd357abd6bf",
+      "description": "Tramadol 50mg"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:40:39.975Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:40:39.976Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 2,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:44:37.874Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Tramadol 50mg",
+      "treatment": "69c232ce0fa7abd357abd6bf",
+      "description": "Tramadol 50mg"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:44:37.877Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Tramadol 50mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:44:37.878Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Tramadol 50mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:46:28.684Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Tramadol 50mg",
+      "treatment": "69c232ce0fa7abd357abd6bf",
+      "description": "Tramadol 50mg"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:46:28.686Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:46:28.687Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 2,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:46:59.978Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:46:59.982Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T14:46:59.983Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 2,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T15:03:49.649Z : {
+  "source": "record-lines",
+  "step": "select_relation_start",
+  "payload": {
+    "lineIdx": 0,
+    "colKey": "treatment",
+    "itemId": "69c232ce0fa7abd357abd6b5",
+    "itemLabel": "Doliprane 1000mg",
+    "activeSchemaIdBefore": "69c232cd0fa7abd357abd677",
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "lineDefaults": {
+      "type": "array",
+      "len": 1,
+      "schemaIds": [
+        "69c232cd0fa7abd357abd677"
+      ],
+      "defaultsKeys": [
+        [
+          "moment",
+          "frequency",
+          "duration",
+          "instructions"
+        ]
+      ]
+    },
+    "lineValuesBefore": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T15:03:49.654Z : {
+  "source": "record-lines",
+  "step": "select_relation_after_defaults",
+  "payload": {
+    "lineIdx": 0,
+    "resolvedSchemaId": "69c232cd0fa7abd357abd677",
+    "matched": true,
+    "matchedSchemaId": "69c232cd0fa7abd357abd677",
+    "finalValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    },
+    "availableOptionsKeys": [],
+    "excludedColumns": []
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}
+2026-03-28T15:03:49.656Z : {
+  "source": "record-lines",
+  "step": "select_relation_reordered",
+  "payload": {
+    "activeSchemaId": "69c232cd0fa7abd357abd677",
+    "filledCount": 1,
+    "emptyCount": 1,
+    "firstFilledValues": {
+      "treatment_label": "Doliprane 1000mg",
+      "treatment": "69c232ce0fa7abd357abd6b5",
+      "description": "Doliprane 1000mg",
+      "moment": [
+        "morning"
+      ],
+      "frequency": [
+        "3x_day"
+      ],
+      "duration": [
+        "7_days"
+      ],
+      "instructions": "Prendre pendant les repas"
+    }
+  },
+  "recordId": "69c232ce0fa7abd357abd6f3",
+  "schemaId": "69c232cd0fa7abd357abd677"
+}

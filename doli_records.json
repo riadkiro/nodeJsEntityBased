@@ -1,0 +1,99 @@
+[
+  {
+    "_id": "69c232cd0fa7abd357abd689",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69c232cd0fa7abd357abd653",
+    "title": "Doliprane 1000mg",
+    "__v": 0,
+    "classificationValues": [],
+    "computedTitle": "Doliprane 1000mg",
+    "createdAt": "2026-03-24T06:44:29.972Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "69c232cd0fa7abd357abd627",
+        "value": "comprime",
+        "_id": "69c2344ce5ea43f655ef2fb9"
+      },
+      {
+        "field_id": "69c232cd0fa7abd357abd628",
+        "value": "1000mg",
+        "_id": "69c2344ce5ea43f655ef2fba"
+      },
+      {
+        "field_id": "69c232cd0fa7abd357abd629",
+        "value": 2.5,
+        "_id": "69c2344ce5ea43f655ef2fbb"
+      },
+      {
+        "field_id": "69c232cd0fa7abd357abd62b",
+        "value": 187,
+        "_id": "69c2344ce5ea43f655ef2fbc"
+      },
+      {
+        "field_id": "69c232cd0fa7abd357abd62a",
+        "value": 10,
+        "_id": "69c2344ce5ea43f655ef2fbd"
+      }
+    ],
+    "relations": [],
+    "updatedAt": "2026-03-24T06:50:52.124Z"
+  },
+  {
+    "_id": "69c232ce0fa7abd357abd6b5",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69c232cd0fa7abd357abd65e",
+    "title": "Doliprane 1000mg",
+    "__v": 1,
+    "classificationValues": [],
+    "computedTitle": "Doliprane 1000mg",
+    "createdAt": "2026-03-24T06:44:30.016Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [],
+    "relations": [
+      {
+        "relationKey": "09fcfe35-abd7-4193-8bbf-8a906921e228",
+        "value": "69c232cd0fa7abd357abd67a",
+        "_id": "69c2344ce5ea43f655ef30c5"
+      }
+    ],
+    "updatedAt": "2026-03-27T08:59:42.670Z",
+    "_denorm": {
+      "relations": []
+    },
+    "attachments": [],
+    "folders": [],
+    "gallery": [],
+    "lineDefaults": [
+      {
+        "schemaId": "69c232cd0fa7abd357abd677",
+        "defaults": {
+          "moment": [
+            "morning"
+          ],
+          "frequency": [
+            "3x_day"
+          ],
+          "duration": [
+            "7_days"
+          ],
+          "instructions": "Prendre pendant les repas"
+        },
+        "excludedColumns": [],
+        "_id": "69c646fec932856e50ea5b44"
+      }
+    ],
+    "medias": [],
+    "order": 0,
+    "published": false,
+    "spaces": [],
+    "status": "draft",
+    "tags": []
+  }
+]

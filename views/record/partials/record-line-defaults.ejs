@@ -1,0 +1,614 @@
+<%# ═══════════════════════════════════════════════════════════════════
+    Line Defaults Panel — Pre-encode default values for Dynamic Table lines
+    Shows when this record's entity is a sourceEntity of at least one LineSchema
+    ═══════════════════════════════════════════════════════════════════ %>
+
+<style>
+    /* ── Line Defaults Panel Styles ─────────────────────── */
+    .ld-panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .dark .ld-panel {
+        background: #1b2e4b;
+        border-color: #253b5c;
+    }
+    .ld-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+    }
+    .ld-panel-header:hover {
+        background: #f9fafb;
+    }
+    .dark .ld-panel-header {
+        border-bottom-color: #253b5c;
+    }
+    .dark .ld-panel-header:hover {
+        background: rgba(255,255,255,0.02);
+    }
+    .ld-panel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .dark .ld-panel-title {
+        color: #bfc9d4;
+    }
+    .ld-panel-title .ld-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(67,97,238,0.12), rgba(67,97,238,0.04));
+        color: #4361ee;
+        flex-shrink: 0;
+    }
+    .ld-panel-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    .dark .ld-panel-badge {
+        background: #253b5c;
+        color: #888ea8;
+    }
+    .ld-panel-body {
+        padding: 0;
+    }
+    .ld-schema-section {
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .ld-schema-section:last-child {
+        border-bottom: none;
+    }
+    .dark .ld-schema-section {
+        border-bottom-color: #253b5c;
+    }
+    .ld-schema-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: #fafbfc;
+        font-size: 11px;
+        font-weight: 600;
+        color: #6b7280;
+    }
+    .dark .ld-schema-header {
+        background: rgba(255,255,255,0.02);
+        color: #888ea8;
+    }
+    .ld-col-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 16px;
+        border-bottom: 1px solid #f9fafb;
+        transition: background 0.1s;
+    }
+    .ld-col-row:last-child { border-bottom: none; }
+    .ld-col-row:hover { background: #fafbfc; }
+    .dark .ld-col-row { border-bottom-color: #1b2e4b; }
+    .dark .ld-col-row:hover { background: rgba(255,255,255,0.02); }
+    .ld-col-row.ld-excluded {
+        opacity: 0.4;
+    }
+    .ld-col-label {
+        flex: 0 0 120px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .dark .ld-col-label {
+        color: #bfc9d4;
+    }
+    .ld-col-input {
+        flex: 1;
+        min-width: 0;
+    }
+    .ld-col-input input,
+    .ld-col-input select {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 12px;
+        background: #fff;
+        color: #374151;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .ld-col-input input:focus,
+    .ld-col-input select:focus {
+        border-color: #4361ee;
+        box-shadow: 0 0 0 2px rgba(67,97,238,0.1);
+    }
+    .dark .ld-col-input input,
+    .dark .ld-col-input select {
+        background: #0e1726;
+        border-color: #253b5c;
+        color: #bfc9d4;
+    }
+    .dark .ld-col-input input:focus,
+    .dark .ld-col-input select:focus {
+        border-color: #4361ee;
+    }
+    .ld-col-actions {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .ld-btn-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        transition: all 0.15s;
+    }
+    .ld-btn-icon:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    .dark .ld-btn-icon:hover {
+        background: #253b5c;
+        color: #bfc9d4;
+    }
+    .ld-btn-icon.ld-active {
+        color: #ef4444;
+        background: rgba(239,68,68,0.08);
+    }
+    .ld-options-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 4px 0;
+    }
+    .ld-option-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.15s;
+        user-select: none;
+    }
+    .ld-option-chip:hover {
+        border-color: #4361ee;
+        color: #4361ee;
+    }
+    .ld-option-chip.ld-chip-active {
+        background: rgba(67,97,238,0.08);
+        border-color: #4361ee;
+        color: #4361ee;
+        font-weight: 600;
+    }
+    .dark .ld-option-chip {
+        border-color: #253b5c;
+        background: #0e1726;
+        color: #888ea8;
+    }
+    .dark .ld-option-chip.ld-chip-active {
+        background: rgba(67,97,238,0.15);
+        border-color: #4361ee;
+        color: #6a8cff;
+    }
+    .ld-save-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 16px;
+        border-top: 1px solid #f3f4f6;
+        background: #fafbfc;
+    }
+    .dark .ld-save-bar {
+        border-top-color: #253b5c;
+        background: rgba(255,255,255,0.02);
+    }
+    .ld-save-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 16px;
+        border-radius: 8px;
+        border: none;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .ld-save-btn-primary {
+        background: #4361ee;
+        color: #fff;
+    }
+    .ld-save-btn-primary:hover {
+        background: #3651d4;
+        box-shadow: 0 2px 8px rgba(67,97,238,0.25);
+    }
+    .ld-save-btn-ghost {
+        background: transparent;
+        color: #6b7280;
+    }
+    .ld-save-btn-ghost:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    .ld-status-msg {
+        font-size: 11px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .ld-empty {
+        padding: 20px 16px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 12px;
+    }
+    .ld-empty iconify-icon {
+        opacity: 0.4;
+        margin-bottom: 4px;
+    }
+</style>
+
+<div x-data="lineDefaultsPanel()" 
+     x-init="init()"
+     x-show="schemas.length > 0"
+     x-cloak
+     class="ld-panel mt-4">
+    
+    <!-- Header -->
+    <div class="ld-panel-header" @click="expanded = !expanded">
+        <div class="ld-panel-title">
+            <div class="ld-icon">
+                <iconify-icon icon="solar:tuning-4-bold-duotone" width="16"></iconify-icon>
+            </div>
+            <span>Défauts Ligne</span>
+            <span x-show="configuredCount > 0" class="ld-panel-badge" 
+                  x-text="configuredCount + ' configuré' + (configuredCount > 1 ? 's' : '')"></span>
+        </div>
+        <iconify-icon :icon="expanded ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" 
+                      width="14" style="color:#9ca3af"></iconify-icon>
+    </div>
+
+    <!-- Body -->
+    <div class="ld-panel-body" x-show="expanded" x-collapse>
+        <template x-for="schema in schemas" :key="schema.schemaId">
+            <div class="ld-schema-section">
+                <!-- Schema header -->
+                <div class="ld-schema-header">
+                    <iconify-icon icon="solar:clipboard-list-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
+                    <span x-text="schema.schemaName"></span>
+                    <span style="font-size:10px;color:#9ca3af" x-text="'(' + schema.columns.length + ' colonnes)'"></span>
+                </div>
+
+                <!-- Columns -->
+                <template x-for="col in schema.columns" :key="col.key">
+                    <div class="ld-col-row" :class="{ 'ld-excluded': col.excluded }">
+                        <!-- Column label -->
+                        <div class="ld-col-label">
+                            <iconify-icon :icon="getColIcon(col.type)" width="13" style="color:#9ca3af"></iconify-icon>
+                            <span x-text="col.label"></span>
+                        </div>
+
+                        <!-- Default value input -->
+                        <div class="ld-col-input" x-show="!col.excluded">
+                            <!-- Text input -->
+                            <template x-if="col.type === 'text' || col.type === 'textarea'">
+                                <input type="text" 
+                                       :value="col.defaultValue || ''"
+                                       @input="setDefault(schema.schemaId, col.key, $event.target.value)"
+                                       :placeholder="'Défaut pour ' + col.label">
+                            </template>
+
+                            <!-- Number input -->
+                            <template x-if="col.type === 'number' || col.type === 'currency'">
+                                <input type="number" step="any"
+                                       :value="col.defaultValue || ''"
+                                       @input="setDefault(schema.schemaId, col.key, $event.target.value)"
+                                       :placeholder="'0'">
+                            </template>
+
+                            <!-- Select input -->
+                            <template x-if="col.type === 'select'">
+                                <div>
+                                    <select @change="setDefault(schema.schemaId, col.key, $event.target.value)">
+                                        <option value="">— Aucun défaut —</option>
+                                        <template x-for="opt in col.allOptions" :key="opt.value || opt">
+                                            <option :value="opt.value || opt" 
+                                                    :selected="col.defaultValue === (opt.value || opt)"
+                                                    x-text="opt.label || opt"></option>
+                                        </template>
+                                    </select>
+                                    <!-- Available options filter -->
+                                    <div class="ld-options-grid" x-show="col.allOptions.length > 0" style="margin-top:6px">
+                                        <span style="font-size:10px;color:#9ca3af;width:100%;margin-bottom:2px">Options activées :</span>
+                                        <template x-for="opt in col.allOptions" :key="'opt-' + (opt.value || opt)">
+                                            <button type="button"
+                                                    class="ld-option-chip"
+                                                    :class="{ 'ld-chip-active': isOptionAvailable(schema.schemaId, col.key, opt.value || opt) }"
+                                                    @click="toggleOption(schema.schemaId, col.key, opt.value || opt)">
+                                                <iconify-icon :icon="isOptionAvailable(schema.schemaId, col.key, opt.value || opt) ? 'solar:check-circle-bold' : 'solar:circle-linear'" 
+                                                              width="12"></iconify-icon>
+                                                <span x-text="opt.label || opt"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Multiselect (checkboxes) -->
+                            <template x-if="col.type === 'multiselect'">
+                                <div class="ld-options-grid">
+                                    <template x-for="opt in col.allOptions" :key="'ms-' + (opt.value || opt)">
+                                        <button type="button"
+                                                class="ld-option-chip"
+                                                :class="{ 'ld-chip-active': isInDefaultArray(schema.schemaId, col.key, opt.value || opt) }"
+                                                @click="toggleDefaultArray(schema.schemaId, col.key, opt.value || opt)">
+                                            <iconify-icon :icon="isInDefaultArray(schema.schemaId, col.key, opt.value || opt) ? 'solar:check-circle-bold' : 'solar:circle-linear'" 
+                                                          width="12"></iconify-icon>
+                                            <span x-text="opt.label || opt"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Fallback for unknown types -->
+                            <template x-if="!['text','textarea','number','currency','select','multiselect'].includes(col.type)">
+                                <input type="text" 
+                                       :value="col.defaultValue || ''"
+                                       @input="setDefault(schema.schemaId, col.key, $event.target.value)"
+                                       :placeholder="'Défaut pour ' + col.label">
+                            </template>
+                        </div>
+
+                        <!-- Excluded message -->
+                        <div class="ld-col-input" x-show="col.excluded" style="font-size:11px;color:#9ca3af;font-style:italic">
+                            N/A pour ce record
+                        </div>
+
+                        <!-- Actions: exclude toggle -->
+                        <div class="ld-col-actions">
+                            <button type="button" class="ld-btn-icon" 
+                                    :class="{ 'ld-active': col.excluded }"
+                                    :title="col.excluded ? 'Réactiver cette colonne' : 'Exclure (N/A)'"
+                                    @click="toggleExcluded(schema.schemaId, col.key)">
+                                <iconify-icon :icon="col.excluded ? 'solar:close-circle-bold' : 'solar:minus-circle-linear'" width="14"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Save bar per schema -->
+                <div class="ld-save-bar">
+                    <div class="ld-status-msg" x-show="saveStatus[schema.schemaId]"
+                         :style="saveStatus[schema.schemaId] === 'saved' ? 'color:#10b981' : saveStatus[schema.schemaId] === 'error' ? 'color:#ef4444' : 'color:#6b7280'">
+                        <iconify-icon :icon="saveStatus[schema.schemaId] === 'saved' ? 'solar:check-circle-bold' : saveStatus[schema.schemaId] === 'error' ? 'solar:danger-circle-bold' : 'line-md:loading-twotone-loop'" width="14"></iconify-icon>
+                        <span x-text="saveStatus[schema.schemaId] === 'saved' ? 'Sauvegardé' : saveStatus[schema.schemaId] === 'error' ? 'Erreur' : 'Sauvegarde...'"></span>
+                    </div>
+                    <button type="button" class="ld-save-btn ld-save-btn-primary" 
+                            @click="saveSchema(schema.schemaId)">
+                        <iconify-icon icon="solar:diskette-bold" width="13"></iconify-icon>
+                        Sauvegarder
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <!-- Empty state -->
+        <div class="ld-empty" x-show="schemas.length === 0">
+            <iconify-icon icon="solar:tuning-4-bold-duotone" width="28"></iconify-icon>
+            <div>Aucun tableau dynamique configuré<br>pour cette entité</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function lineDefaultsPanel() {
+    return {
+        schemas: [],
+        expanded: false,
+        saveStatus: {},
+        accountNumber: '<%= account_number %>',
+        recordId: '<%= record._id.toString() %>',
+        entityId: '<%= entity._id.toString() %>',
+
+        get configuredCount() {
+            let count = 0;
+            for (const schema of this.schemas) {
+                for (const col of schema.columns) {
+                    if (col.defaultValue || col.excluded || col.availableOptions?.length > 0) count++;
+                }
+            }
+            return count;
+        },
+
+        async init() {
+            try {
+                const url = `/account/${this.accountNumber}/api/records/${this.recordId}/line-defaults`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.schemas = data.schemas || [];
+                // Auto-expand if some defaults are already configured
+                if (this.configuredCount > 0) this.expanded = true;
+            } catch (e) {
+                console.error('[LineDefaults] Init error:', e);
+            }
+        },
+
+        getColIcon(type) {
+            const icons = {
+                text: 'solar:text-bold',
+                textarea: 'solar:document-text-linear',
+                number: 'solar:hashtag-linear',
+                currency: 'solar:dollar-minimalistic-linear',
+                select: 'solar:list-check-linear',
+                multiselect: 'solar:checklist-linear',
+                date: 'solar:calendar-linear',
+                duration: 'solar:clock-circle-linear'
+            };
+            return icons[type] || 'solar:widget-linear';
+        },
+
+        // ── Default value management ──
+        setDefault(schemaId, colKey, value) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return;
+            const col = schema.columns.find(c => c.key === colKey);
+            if (col) col.defaultValue = value;
+        },
+
+        // ── Available options management (for select/multiselect) ──
+        isOptionAvailable(schemaId, colKey, optValue) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return true;
+            const col = schema.columns.find(c => c.key === colKey);
+            if (!col) return true;
+            // Empty array = all available
+            if (!col.availableOptions || col.availableOptions.length === 0) return true;
+            return col.availableOptions.includes(optValue);
+        },
+
+        toggleOption(schemaId, colKey, optValue) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return;
+            const col = schema.columns.find(c => c.key === colKey);
+            if (!col) return;
+            if (!col.availableOptions) col.availableOptions = [];
+            
+            // If currently "all available" (empty), start with all options
+            if (col.availableOptions.length === 0) {
+                col.availableOptions = col.allOptions.map(o => o.value || o);
+            }
+            
+            const idx = col.availableOptions.indexOf(optValue);
+            if (idx >= 0) {
+                col.availableOptions.splice(idx, 1);
+                // If all removed, reset to empty (= all available)
+                if (col.availableOptions.length === 0) {
+                    col.availableOptions = [];
+                }
+            } else {
+                col.availableOptions.push(optValue);
+                // If all selected, reset to empty (= all available)
+                if (col.availableOptions.length === col.allOptions.length) {
+                    col.availableOptions = [];
+                }
+            }
+        },
+
+        // ── Multiselect default array management ──
+        isInDefaultArray(schemaId, colKey, optValue) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return false;
+            const col = schema.columns.find(c => c.key === colKey);
+            if (!col || !Array.isArray(col.defaultValue)) return false;
+            return col.defaultValue.includes(optValue);
+        },
+
+        toggleDefaultArray(schemaId, colKey, optValue) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return;
+            const col = schema.columns.find(c => c.key === colKey);
+            if (!col) return;
+            if (!Array.isArray(col.defaultValue)) col.defaultValue = [];
+            const idx = col.defaultValue.indexOf(optValue);
+            if (idx >= 0) {
+                col.defaultValue.splice(idx, 1);
+            } else {
+                col.defaultValue.push(optValue);
+            }
+        },
+
+        // ── Excluded column toggle ──
+        toggleExcluded(schemaId, colKey) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return;
+            const col = schema.columns.find(c => c.key === colKey);
+            if (col) col.excluded = !col.excluded;
+        },
+
+        // ── Save ──
+        async saveSchema(schemaId) {
+            const schema = this.schemas.find(s => s.schemaId === schemaId);
+            if (!schema) return;
+
+            // Build the payload
+            const defaults = {};
+            const availableOptions = {};
+            const excludedColumns = [];
+
+            for (const col of schema.columns) {
+                if (col.excluded) {
+                    excludedColumns.push(col.key);
+                    continue;
+                }
+                if (col.defaultValue !== null && col.defaultValue !== undefined && col.defaultValue !== '') {
+                    defaults[col.key] = col.defaultValue;
+                }
+                if (col.availableOptions && col.availableOptions.length > 0) {
+                    availableOptions[col.key] = col.availableOptions;
+                }
+            }
+
+            this.saveStatus[schemaId] = 'saving';
+            try {
+                const url = `/account/${this.accountNumber}/api/records/${this.recordId}/line-defaults`;
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ schemaId, defaults, availableOptions, excludedColumns })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.saveStatus[schemaId] = 'saved';
+                    setTimeout(() => { this.saveStatus[schemaId] = ''; }, 2000);
+                } else {
+                    this.saveStatus[schemaId] = 'error';
+                    setTimeout(() => { this.saveStatus[schemaId] = ''; }, 3000);
+                }
+            } catch (e) {
+                console.error('[LineDefaults] Save error:', e);
+                this.saveStatus[schemaId] = 'error';
+                setTimeout(() => { this.saveStatus[schemaId] = ''; }, 3000);
+            }
+        }
+    };
+}
+</script>

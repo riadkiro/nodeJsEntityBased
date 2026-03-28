@@ -280,6 +280,62 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
             .sort((a, b) => (a.order || 0) - (b.order || 0))
     }, [schema])
 
+    // Normalize catalog customFields shape (array or object) to { [fieldId]: value }
+    const normalizeCustomFieldsMap = useCallback((customFields) => {
+        if (!customFields) return {}
+        if (Array.isArray(customFields)) {
+            return customFields.reduce((acc, cf) => {
+                const id = cf?.field_id || cf?.fieldId || cf?.id
+                if (id) acc[id] = cf?.value
+                return acc
+            }, {})
+        }
+        if (typeof customFields === 'object') return customFields
+        return {}
+    }, [])
+
+    // Resolve lineDefaults for this schema from a catalog item
+    const resolveItemLineDefaults = useCallback((item) => {
+        if (!item?.lineDefaults || !schemaId) return null
+        const raw = item.lineDefaults
+
+        if (Array.isArray(raw)) {
+            const match = raw.find(ld =>
+                ld?.schemaId && ld.schemaId.toString() === schemaId.toString()
+            )
+            if (match) return match
+            return raw.length === 1 ? raw[0] : null
+        }
+
+        if (typeof raw === 'object' && raw.defaults) {
+            if (!raw.schemaId || raw.schemaId.toString() === schemaId.toString()) return raw
+        }
+
+        return null
+    }, [schemaId])
+
+    // Convert default values to match the expected column type
+    const normalizeDefaultForColumn = useCallback((col, rawValue) => {
+        if (rawValue === null || rawValue === undefined || rawValue === '') return undefined
+        if (!col) return rawValue
+
+        if (col.type === 'select') {
+            return Array.isArray(rawValue) ? (rawValue[0] ?? '') : rawValue
+        }
+
+        if (col.type === 'multiselect') {
+            if (Array.isArray(rawValue)) return rawValue.filter(Boolean)
+            if (typeof rawValue === 'string') return rawValue ? [rawValue] : []
+            return [rawValue]
+        }
+
+        if ((col.type === 'text' || col.type === 'textarea') && Array.isArray(rawValue)) {
+            return rawValue.join(', ')
+        }
+
+        return rawValue
+    }, [])
+
     // Search catalog
     const searchCatalog = useCallback((query) => {
         setSearchQuery(query)
@@ -333,6 +389,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
 
             // Build values using the first text column as default
             const values = {}
+            const customFieldsMap = normalizeCustomFieldsMap(item.customFields)
             const firstTextCol = visibleCols.find(c => ['text', 'relation'].includes(c.type))
             if (firstTextCol) {
                 if (firstTextCol.type === 'relation') {
@@ -348,11 +405,13 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                 for (const col of schema.columns) {
                     if (col.config?.applyDefaults) {
                         for (const [lineKey, sourceFieldPath] of Object.entries(col.config.applyDefaults)) {
-                            if (sourceFieldPath.startsWith('cf.')) {
+                            if (typeof sourceFieldPath === 'string' && sourceFieldPath.startsWith('cf.')) {
                                 const fieldId = sourceFieldPath.substring(3)
-                                if (item.customFields[fieldId] !== undefined) {
-                                    values[lineKey] = item.customFields[fieldId]
+                                if (customFieldsMap[fieldId] !== undefined) {
+                                    values[lineKey] = customFieldsMap[fieldId]
                                 }
+                            } else if (typeof sourceFieldPath === 'string' && item[sourceFieldPath] !== undefined) {
+                                values[lineKey] = item[sourceFieldPath]
                             }
                         }
                     }
@@ -369,6 +428,16 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                 }
             }
 
+            // Apply schema-specific lineDefaults from selected catalog item
+            const lineDefaultsForSchema = resolveItemLineDefaults(item)
+            if (lineDefaultsForSchema?.defaults && schema?.columns) {
+                for (const [key, rawVal] of Object.entries(lineDefaultsForSchema.defaults)) {
+                    const targetCol = schema.columns.find(c => c.key === key)
+                    const normalized = normalizeDefaultForColumn(targetCol, rawVal)
+                    if (normalized !== undefined) values[key] = normalized
+                }
+            }
+
             newLines.push({
                 lineType: schema?.defaultLineType || 'product',
                 values,
@@ -380,7 +449,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         setSelected(new Set())
         setSearchQuery('')
         setSearchResults([])
-    }, [selected, searchResults, visibleCols, schema, lines.length])
+    }, [selected, searchResults, visibleCols, schema, lines.length, normalizeCustomFieldsMap, resolveItemLineDefaults, normalizeDefaultForColumn])
 
     // Add manual line (with just a label)
     const addManualLine = useCallback(() => {
@@ -449,6 +518,16 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
             }
         }
 
+        // Apply schema-specific lineDefaults when selecting a catalog suggestion manually
+        const lineDefaultsForSchema = resolveItemLineDefaults(sug)
+        if (lineDefaultsForSchema?.defaults && schema?.columns) {
+            for (const [key, rawVal] of Object.entries(lineDefaultsForSchema.defaults)) {
+                const targetCol = schema.columns.find(c => c.key === key)
+                const normalized = normalizeDefaultForColumn(targetCol, rawVal)
+                if (normalized !== undefined) values[key] = normalized
+            }
+        }
+
         setLines(prev => [...prev, {
             lineType: schema?.defaultLineType || 'product',
             values,
@@ -457,7 +536,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
 
         setManualInput('')
         setShowManualSuggestions(false)
-    }, [visibleCols, schema])
+    }, [visibleCols, schema, resolveItemLineDefaults, normalizeDefaultForColumn])
 
     // Edit a cell value
     const updateLineValue = useCallback((lineIndex, colKey, value) => {

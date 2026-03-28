@@ -1,0 +1,10 @@
+1794: <template x-for="opt in filterSelOptions(col)" :key="opt.value">
+1816: <template x-if="filterSelOptions(col).length === 0 && !(selDropdown.query || '').trim()">
+1866: <template x-for="opt in filterMsOptions(col)" :key="opt.value">
+1888: <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+2852: <template x-for="opt in filterMsOptions(col)" :key="opt.value">
+2874: <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+3081: <template x-for="opt in filterMsOptions(col)" :key="opt.value">
+3103: <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+4316: filterMsOptions(col) {
+4348: filterSelOptions(col) {

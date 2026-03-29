@@ -39,6 +39,30 @@ module.exports = {
 
             const { entityId, documentType } = req.query;
 
+            // If entity defines explicit gridSchemas, use that as the source of truth.
+            // This prevents duplicated/unwanted tabs coming from broad appliesTo matches.
+            if (entityId) {
+                const Entity = await tenantCollection(req, 'Entity');
+                if (Entity) {
+                    const entity = await Entity.findById(entityId).select('gridSchemas').lean();
+                    const configured = Array.isArray(entity?.gridSchemas) ? entity.gridSchemas : [];
+                    if (configured.length > 0) {
+                        const orderedIds = configured
+                            .filter(gs => gs && gs.schemaId)
+                            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                            .map(gs => gs.schemaId?.toString())
+                            .filter(Boolean);
+
+                        if (orderedIds.length > 0) {
+                            const docs = await LineSchema.find({ _id: { $in: orderedIds } }).lean();
+                            const byId = new Map(docs.map(d => [d._id.toString(), d]));
+                            const orderedDocs = orderedIds.map(id => byId.get(id)).filter(Boolean);
+                            return res.json({ data: orderedDocs });
+                        }
+                    }
+                }
+            }
+
             // Build OR query: entity-specific + global schemas (no entityIds set or empty)
             const conditions = [];
             if (entityId) {

@@ -4,10 +4,25 @@
  */
 import { useState, useCallback, useRef } from 'react'
 
+function isDebugEnabled() {
+    if (typeof window === 'undefined') return false
+    try {
+        return !!window.__DT_DEBUG__ || window.localStorage.getItem('dtDebug') === '1'
+    } catch {
+        return !!window.__DT_DEBUG__
+    }
+}
+
+function dbg(event, payload = {}) {
+    if (!isDebugEnabled()) return
+    console.log('[DT-AUTO]', event, payload)
+}
+
 export default function useCatalog({ accountNumber }) {
     const [searchState, setSearchState] = useState({
         open: false,
         loading: false,
+        schemaId: '',
         lineIdx: -1,
         colKey: '',
         query: '',
@@ -16,10 +31,12 @@ export default function useCatalog({ accountNumber }) {
     const searchTimerRef = useRef(null)
 
     // Open search for a specific line/column
-    const openSearch = useCallback((lineIdx, colKey) => {
+    const openSearch = useCallback((schemaId, lineIdx, colKey) => {
+        dbg('openSearch', { schemaId, lineIdx, colKey })
         setSearchState(prev => ({
             ...prev,
             open: true,
+            schemaId: String(schemaId || ''),
             lineIdx,
             colKey,
             query: '',
@@ -29,15 +46,23 @@ export default function useCatalog({ accountNumber }) {
     }, [])
 
     // Close search
-    const closeSearch = useCallback(() => {
-        setSearchState(prev => ({ ...prev, open: false, results: [] }))
+    const closeSearch = useCallback((context) => {
+        dbg('closeSearch', { context })
+        setSearchState(prev => {
+            // If context is provided (e.g. from an onBlur timeout), only close if the search hasn't moved
+            if (context && (String(prev.schemaId) !== String(context.schemaId || '') || prev.lineIdx !== context.lineIdx)) {
+                return prev
+            }
+            return { ...prev, open: false, results: [] }
+        })
     }, [])
 
     // Search catalog
     // entityId = the target entity (from col.config.targetEntity or schema.sourceEntityId)
     // searchFields = array of fields to search on (from col.config.searchFields)
-    const search = useCallback((lineIdx, colKey, query, entityId, searchFields) => {
-        setSearchState(prev => ({ ...prev, lineIdx, colKey, query }))
+    const search = useCallback((schemaId, lineIdx, colKey, query, entityId, searchFields) => {
+        dbg('search_input', { schemaId, lineIdx, colKey, query, entityId, searchFields })
+        setSearchState(prev => ({ ...prev, schemaId: String(schemaId || ''), lineIdx, colKey, query }))
 
         if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
 
@@ -47,6 +72,7 @@ export default function useCatalog({ accountNumber }) {
         }
 
         if (!entityId) {
+            dbg('search_skip_no_entity', { schemaId, lineIdx, colKey, query })
             return
         }
 
@@ -55,9 +81,17 @@ export default function useCatalog({ accountNumber }) {
                 setSearchState(prev => ({ ...prev, loading: true }))
                 const fields = (searchFields || ['title']).join(',')
                 const url = `/account/${accountNumber}/api/catalog-search?entityId=${entityId}&q=${encodeURIComponent(query)}&searchFields=${fields}`
+                dbg('search_fetch', { schemaId, lineIdx, colKey, query, url })
                 const res = await fetch(url, { credentials: 'include' })
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
                 const data = await res.json()
+                dbg('search_results', {
+                    schemaId,
+                    lineIdx,
+                    colKey,
+                    query,
+                    count: (data.data || []).length
+                })
                 setSearchState(prev => ({
                     ...prev,
                     results: data.data || [],

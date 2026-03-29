@@ -14,33 +14,50 @@ const mongoose = require('mongoose');
 const PRESETS = [
     {
         slug: 'cabinet-medical',
-        name: 'Cabinet Médical',
-        description: 'Configuration complète pour un cabinet médical : patients, consultations, prescriptions, facturation, planning, stock et documents.',
+        name: 'Cabinet Medical',
+        description: 'Configuration complete pour un cabinet medical : patients, consultations, prescriptions, facturation, planning, stock et documents.',
         icon: 'solar:stethoscope-bold-duotone',
         color: '#00ab55',
-        category: 'Santé',
+        category: 'Sante',
         features: [
-            '13 entités métier (Patient, Consultation, Prescription...)',
-            '10+ modèles de documents (Ordonnance, Certificat...)',
-            'Données de démonstration réalistes',
-            'Navigation structurée par activité',
-            'Classifications métier (Statuts, Types...)',
+            '13 entites metier (Patient, Consultation, Prescription...)',
+            '10+ modeles de documents (Ordonnance, Certificat...)',
+            'Donnees de demonstration realistes',
+            'Navigation structuree par activite',
+            'Classifications metier (Statuts, Types...)',
             'Lignes de prescription & facturation'
         ],
         seedModule: './seed-cabinet-medical',
         isComplete: true
     },
     {
+        slug: 'cabinet-dentiste',
+        name: 'Cabinet Dentiste',
+        description: 'Configuration dentaire avec nomenclature des actes, catalogue tarife et TD unique Traitements lie aux consultations.',
+        icon: 'solar:tooth-bold-duotone',
+        color: '#0ea5e9',
+        category: 'Sante',
+        features: [
+            'Import actes depuis Nomenclature (code, categorie, tarif, description)',
+            'Collection Actes utilisable en catalogue',
+            'TD unique Traitements centre sur Consultation',
+            'Sidebar dynamique configuree pour le schema principal',
+            'Donnees de demonstration installables immediatement'
+        ],
+        seedModule: './seed-cabinet-dentiste',
+        isComplete: true
+    },
+    {
         slug: 'notaire',
-        name: 'Étude Notariale',
-        description: 'Configuration de base pour une étude notariale : clients, dossiers, actes, rendez-vous et facturation.',
+        name: 'Etude Notariale',
+        description: 'Configuration de base pour une etude notariale : clients, dossiers, actes, rendez-vous et facturation.',
         icon: 'solar:diploma-verified-bold-duotone',
         color: '#805dca',
         category: 'Juridique',
         features: [
-            '7 entités métier (Client, Dossier, Acte...)',
-            'Navigation par activité',
-            'Données de démonstration légères',
+            '7 entites metier (Client, Dossier, Acte...)',
+            'Navigation par activite',
+            'Donnees de demonstration legeres',
             'Classifications de base'
         ],
         seedModule: './seed-notaire',

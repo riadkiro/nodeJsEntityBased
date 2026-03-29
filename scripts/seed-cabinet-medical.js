@@ -44,6 +44,8 @@ function registerModels(conn) {
         LineSchema: M('LineSchema', s({ name: String, slug: String, description: String, appliesTo: Object, sourceEntityId: mongoose.Schema.Types.ObjectId, lineTypes: [String], columns: Array, totals: Object, defaultLineType: String, meta: Object }), 'lineschemas'),
         View: M('View', s({ name: String, slug: String, entity: mongoose.Schema.Types.ObjectId, cockpitId: mongoose.Schema.Types.ObjectId, icon: String, color: String, order: Number, viewType: String, spaces: [mongoose.Schema.Types.ObjectId], folders: [mongoose.Schema.Types.ObjectId], filters: Array, settings: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'views'),
         CardTemplate: M('CardTemplate', s({ name: String, entityId: mongoose.Schema.Types.ObjectId, context: String, isDefault: Boolean, presetSlug: String, layout: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'cardtemplates'),
+        DocumentLine: M('DocumentLine', s({ documentId: mongoose.Schema.Types.ObjectId, schemaId: mongoose.Schema.Types.ObjectId, lineType: String, values: Object, computed: Object, order: Number, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'documentlines'),
+        GridSnapshot: M('GridSnapshot', s({ schemaId: mongoose.Schema.Types.ObjectId, recordId: mongoose.Schema.Types.ObjectId, targetRecordId: mongoose.Schema.Types.ObjectId, targetEntityId: mongoose.Schema.Types.ObjectId, date: Date, lines: Array, note: String, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'gridsnapshots'),
     };
 }
 
@@ -133,6 +135,20 @@ async function install(conn, userId, presetSlug) {
         { name: 'posologie', label: 'Posologie', type: 'text', ui: { icon: 'solar:pills-bold-duotone', width: 'full', rows: 1 } },
         { name: 'duree_traitement', label: 'Durée du traitement', type: 'string', ui: { icon: 'solar:clock-circle-bold-duotone', width: 'half' } },
         { name: 'notes_prescription', label: 'Notes', type: 'text', ui: { icon: 'solar:notes-bold-duotone', width: 'full', rows: 2 } },
+        // Services / Prestations
+        { name: 'code_prestation', label: 'Code prestation', type: 'string', ui: { icon: 'solar:hashtag-bold-duotone', width: 'half' } },
+        { name: 'prix_ht', label: 'Prix HT', type: 'number', ui: { icon: 'solar:tag-price-bold-duotone', width: 'half' } },
+        { name: 'tva_rate', label: 'TVA (%)', type: 'number', ui: { icon: 'solar:calculator-bold-duotone', width: 'half' } },
+        { name: 'prix_ttc', label: 'Prix TTC', type: 'number', category: 'computed', ui: { icon: 'solar:dollar-bold-duotone', width: 'half' },
+            formula: { fromFunction: 'expression', expression: '%prix_ht% * (1 + %tva_rate% / 100)', sourceFields: {}, dependsOn: ['prix_ht', 'tva_rate'] },
+            render: { display: { table: 'currency', card: 'currency' } }
+        },
+        // Examens catalogue
+        { name: 'code_examen', label: 'Code examen', type: 'string', ui: { icon: 'solar:hashtag-bold-duotone', width: 'half' } },
+        { name: 'unite_mesure', label: 'Unité', type: 'string', ui: { icon: 'solar:ruler-cross-pen-bold-duotone', width: 'half' } },
+        { name: 'valeur_normale', label: 'Valeur normale', type: 'string', ui: { icon: 'solar:chart-bold-duotone', width: 'half' } },
+        { name: 'condition_prelevement', label: 'Condition prélèvement', type: 'string', ui: { icon: 'solar:test-tube-bold-duotone', width: 'half' } },
+        { name: 'delai_resultat', label: 'Délai résultat', type: 'string', ui: { icon: 'solar:clock-circle-bold-duotone', width: 'half' } },
         // Medication
         { name: 'forme', label: 'Forme', type: 'select', type_config: { options: ['Comprimé', 'Gélule', 'Sirop', 'Injectable', 'Crème', 'Suppositoire', 'Gouttes', 'Patch', 'Inhalation'].map(v => ({ label: v, value: slug(v) })) }, ui: { icon: 'solar:pills-bold-duotone', width: 'half' } },
         { name: 'dosage', label: 'Dosage', type: 'string', ui: { icon: 'solar:test-tube-bold-duotone', width: 'half', placeholder: '500mg' } },
@@ -328,6 +344,16 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
         {
+            name: 'Prestation', nameSingular: 'Prestation', namePlural: 'Prestations', slug: 'prestations', icon: 'solar:clipboard-check-bold-duotone', color: '#0ea5e9',
+            fields: ['code_prestation', 'prix_ht', 'tva_rate', 'prix_ttc', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Examen', nameSingular: 'Examen', namePlural: 'Examens', slug: 'examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316',
+            fields: ['code_examen', 'unite_mesure', 'valeur_normale', 'condition_prelevement', 'delai_resultat', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
             name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales', 'reste_a_payer'], statusClassification: 'invoice_status', classifications: [],
             referenceTitleTokens: null,
             sidebarWidgets: [
@@ -469,6 +495,7 @@ async function install(conn, userId, presetSlug) {
         { src: 'documents-medicaux', target: 'patients', label: 'Patient', inverse: 'Documents', card: 'many-to-one' },
         { src: 'plans-traitement', target: 'patients', label: 'Patient', inverse: 'Plans de traitement', card: 'many-to-one' },
         { src: 'consultations', target: 'symptomes', label: 'Symptômes', inverse: 'Consultations', card: 'many-to-many', mode: 'autocomplete' },
+        { src: 'consultations', target: 'examens', label: 'Examens', inverse: 'Consultations', card: 'many-to-many', mode: 'autocomplete' },
         { src: 'pathologies', target: 'patients', label: 'Patient', inverse: 'Pathologies', card: 'many-to-one' },
         { src: 'traitements', target: 'patients', label: 'Patient', inverse: 'Traitements', card: 'many-to-one' },
     ];
@@ -499,6 +526,7 @@ async function install(conn, userId, presetSlug) {
     console.log('\n📐 Setting default layouts...');
     if (E['consultations']) {
         const motifFieldId = f.motif;
+        const diagnosticFieldId = f.diagnostic;
         const noteMedecinFieldId = f.note_medecin;
         const patientRelKey = ids.relationKeys['consultations__patients'];
         const symptomesRelKey = ids.relationKeys['consultations__symptomes'];
@@ -508,12 +536,13 @@ async function install(conn, userId, presetSlug) {
             fields: [
                 { fieldId: motifFieldId.toString(), width: 9, id: `auto_${motifFieldId}`, tabId: 'default' },
                 { fieldId: patientRelKey, width: 3, id: `auto_rel_${patientRelKey}`, tabId: 'default' },
+                { fieldId: diagnosticFieldId.toString(), width: 12, id: `auto_${diagnosticFieldId}`, tabId: 'default' },
                 { fieldId: noteMedecinFieldId.toString(), width: 12, id: `auto_${noteMedecinFieldId}`, tabId: 'default' },
                 { fieldId: symptomesRelKey, width: 12, id: `auto_rel_${symptomesRelKey}`, tabId: 'default' }
             ]
         };
         await db.Entity.findByIdAndUpdate(E['consultations'], { $set: { formLayout: layout, layout: layout } });
-        console.log('   ✅ Consultation layout set: Motif(9), Patient(3), Note(12), Symptômes(12)');
+        console.log('   ✅ Consultation layout set: Motif(9), Patient(3), Diagnostic(12), Note(12), Symptômes(12)');
     }
 
     // =========== 4b. REFERENCE TITLE TOKENS (relation-based) ===========
@@ -665,6 +694,7 @@ async function install(conn, userId, presetSlug) {
                 { entitySlug: 'consultations', name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
                 { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
                 { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
+                { entitySlug: 'examens', name: 'Catalogue examens', icon: 'solar:vial-bold-duotone', color: '#fb923c' },
                 { entitySlug: 'symptomes', name: 'Symptômes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899' },
                 { entitySlug: 'pathologies', name: 'Pathologies', icon: 'solar:virus-bold-duotone', color: '#dc2626' },
                 { entitySlug: 'traitements', name: 'Traitements', icon: 'solar:pills-bold-duotone', color: '#0891b2' },
@@ -678,6 +708,7 @@ async function install(conn, userId, presetSlug) {
         },
         {
             name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', views: [
+                { entitySlug: 'prestations', name: 'Prestations', icon: 'solar:clipboard-check-bold-duotone', color: '#0ea5e9' },
                 { entitySlug: 'factures', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
                 { entitySlug: 'paiements', name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e' },
                 { entitySlug: 'assurances', name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
@@ -726,7 +757,7 @@ async function install(conn, userId, presetSlug) {
     const prescriptionLineSchema = await upsertDoc(db.LineSchema, { slug: 'prescription_v1', 'meta.createdByPreset': PRESET }, {
         name: 'Ordonnance Traitement', slug: 'prescription_v1',
         description: 'Lignes de traitement pour ordonnances médicales',
-        appliesTo: { entityIds: [E['prescriptions'], E['consultations']], documentType: 'prescription' },
+        appliesTo: { entityIds: [E['prescriptions']], documentType: 'prescription' },
         sourceEntityId: E['traitements'],
         lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
         columns: [
@@ -785,6 +816,131 @@ async function install(conn, userId, presetSlug) {
     });
     console.log(`   ✅ LineSchema: Ordonnance Traitement (${prescriptionLineSchema._id})`);
 
+    // Consultation treatment schema (same columns, patient-oriented history)
+    const consultationTreatmentSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_treatment_v1', 'meta.createdByPreset': PRESET }, {
+        name: 'Traitements Consultation', slug: 'consultation_treatment_v1',
+        description: 'Traitements prescrits pendant une consultation',
+        appliesTo: { entityIds: [E['consultations']], documentType: 'consultation' },
+        sourceEntityId: E['traitements'],
+        lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
+        columns: JSON.parse(JSON.stringify(prescriptionLineSchema.columns || [])),
+        totals: {},
+        snapshotConfig: {
+            enabled: true,
+            targetType: 'relation',
+            targetRelationKey: rk['consultations__patients'],
+            targetEntityId: E['patients']
+        }
+    });
+    console.log(`   ✅ LineSchema: Traitements Consultation (${consultationTreatmentSchema._id})`);
+
+    // Consultation Prestations schema (catalog + auto pricing)
+    const consultationPrestationSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_billing_v1', 'meta.createdByPreset': PRESET }, {
+        name: 'Prestations Consultation', slug: 'consultation_billing_v1',
+        description: 'Prestations médicales utilisées pendant la consultation',
+        appliesTo: { entityIds: [E['consultations']], documentType: 'consultation' },
+        sourceEntityId: E['prestations'],
+        lineTypes: ['service', 'note'], defaultLineType: 'service',
+        columns: [
+            {
+                key: 'prestation', label: 'Prestation', type: 'relation', required: true, visible: true, width: 'L', order: 0,
+                showWhen: { lineType: ['service'] },
+                config: {
+                    targetEntity: E['prestations'],
+                    searchFields: ['title', 'code_prestation'],
+                    displayFields: ['title', 'code_prestation'],
+                    applyDefaults: { description: 'title', unitPrice: 'cf.' + f.prix_ht, vatRate: 'cf.' + f.tva_rate, code: 'cf.' + f.code_prestation }
+                }
+            },
+            { key: 'description', label: 'Description', type: 'text', required: false, visible: true, width: 'L', order: 1, showWhen: { lineType: ['service'] }, config: {} },
+            { key: 'code', label: 'Code', type: 'text', required: false, visible: true, width: 'S', order: 2, showWhen: { lineType: ['service'] }, config: {} },
+            { key: 'qty', label: 'Qté', type: 'number', required: true, visible: true, width: 'XS', order: 3, showWhen: { lineType: ['service'] }, config: {} },
+            { key: 'unitPrice', label: 'P.U HT', type: 'number', required: true, visible: true, width: 'S', order: 4, showWhen: { lineType: ['service'] }, config: {} },
+            { key: 'vatRate', label: 'TVA %', type: 'number', required: false, visible: true, width: 'XS', order: 5, showWhen: { lineType: ['service'] }, config: {} },
+            { key: 'lineTotal', label: 'Total HT', type: 'formula', required: false, visible: true, width: 'S', order: 6, showWhen: { lineType: ['service'] }, config: { expression: 'qty * unitPrice', dependencies: ['qty', 'unitPrice'] } },
+            { key: 'lineVat', label: 'TVA', type: 'formula', required: false, visible: true, width: 'S', order: 7, showWhen: { lineType: ['service'] }, config: { expression: 'lineTotal * vatRate / 100', dependencies: ['lineTotal', 'vatRate'] } },
+            { key: 'lineTtc', label: 'Total TTC', type: 'formula', required: false, visible: true, width: 'S', order: 8, showWhen: { lineType: ['service'] }, config: { expression: 'lineTotal + lineVat', dependencies: ['lineTotal', 'lineVat'] } },
+            { key: 'note', label: 'Note', type: 'textarea', required: false, visible: true, width: 'XL', order: 9, showWhen: { lineType: ['note'] }, config: {} }
+        ],
+        totals: { subtotalKey: 'lineTotal', vatKey: 'lineVat', totalFormula: 'subtotal + vat' },
+        snapshotConfig: {
+            enabled: true,
+            targetType: 'relation',
+            targetRelationKey: rk['consultations__patients'],
+            targetEntityId: E['patients']
+        }
+    });
+    console.log(`   ✅ LineSchema: Prestations Consultation (${consultationPrestationSchema._id})`);
+
+    // Exam request schema (catalog of exams to do)
+    const consultationExamSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_exams_v1', 'meta.createdByPreset': PRESET }, {
+        name: 'Examens à réaliser', slug: 'consultation_exams_v1',
+        description: 'Liste des examens demandés pendant une consultation',
+        appliesTo: { entityIds: [E['consultations']], documentType: 'consultation' },
+        sourceEntityId: E['examens'],
+        lineTypes: ['exam', 'note'], defaultLineType: 'exam',
+        columns: [
+            {
+                key: 'exam', label: 'Examen', type: 'relation', required: true, visible: true, width: 'L', order: 0,
+                showWhen: { lineType: ['exam'] },
+                config: {
+                    targetEntity: E['examens'],
+                    searchFields: ['title', 'code_examen'],
+                    displayFields: ['title', 'code_examen'],
+                    applyDefaults: {
+                        description: 'title',
+                        examCode: 'cf.' + f.code_examen,
+                        unit: 'cf.' + f.unite_mesure,
+                        normalRange: 'cf.' + f.valeur_normale,
+                        fasting: 'cf.' + f.condition_prelevement,
+                        turnaround: 'cf.' + f.delai_resultat
+                    }
+                }
+            },
+            { key: 'description', label: 'Description', type: 'text', required: false, visible: true, width: 'L', order: 1, showWhen: { lineType: ['exam'] }, config: {} },
+            { key: 'examCode', label: 'Code', type: 'text', required: false, visible: true, width: 'S', order: 2, showWhen: { lineType: ['exam'] }, config: {} },
+            { key: 'urgency', label: 'Priorité', type: 'select', required: false, visible: true, width: 'XS', order: 3, showWhen: { lineType: ['exam'] }, config: { options: [{ value: 'routine', label: 'Routine' }, { value: 'urgent', label: 'Urgent' }, { value: 'stat', label: 'STAT' }] } },
+            { key: 'status', label: 'Statut', type: 'select', required: false, visible: true, width: 'XS', order: 4, showWhen: { lineType: ['exam'] }, config: { options: [{ value: 'todo', label: 'À faire' }, { value: 'done', label: 'Réalisé' }] } },
+            { key: 'resultValue', label: 'Résultat', type: 'text', required: false, visible: true, width: 'S', order: 5, showWhen: { lineType: ['exam'] }, config: {} },
+            { key: 'unit', label: 'Unité', type: 'text', required: false, visible: true, width: 'XS', order: 6, showWhen: { lineType: ['exam'] }, config: {} },
+            { key: 'normalRange', label: 'Normes', type: 'text', required: false, visible: true, width: 'S', order: 7, showWhen: { lineType: ['exam'] }, config: {} },
+            { key: 'comment', label: 'Commentaire', type: 'textarea', required: false, visible: true, width: 'XL', order: 8, showWhen: { lineType: ['exam', 'note'] }, config: {} }
+        ],
+        totals: {},
+        snapshotConfig: {
+            enabled: true,
+            targetType: 'relation',
+            targetRelationKey: rk['consultations__patients'],
+            targetEntityId: E['patients']
+        }
+    });
+    console.log(`   ✅ LineSchema: Examens Consultation (${consultationExamSchema._id})`);
+
+    // Patient follow-up tables (same UX as treatments)
+    const patientTreatmentSchema = await upsertDoc(db.LineSchema, { slug: 'patient_treatment_followup_v1', 'meta.createdByPreset': PRESET }, {
+        name: 'Traitements Patient', slug: 'patient_treatment_followup_v1',
+        description: 'Suivi longitudinal des traitements du patient',
+        appliesTo: { entityIds: [E['patients']], documentType: 'medical-followup' },
+        sourceEntityId: E['traitements'],
+        lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
+        columns: JSON.parse(JSON.stringify(prescriptionLineSchema.columns || [])),
+        totals: {},
+        snapshotConfig: { enabled: true, targetType: 'record' }
+    });
+    console.log(`   ✅ LineSchema: Traitements Patient (${patientTreatmentSchema._id})`);
+
+    const patientExamSchema = await upsertDoc(db.LineSchema, { slug: 'patient_exam_followup_v1', 'meta.createdByPreset': PRESET }, {
+        name: 'Examens Patient', slug: 'patient_exam_followup_v1',
+        description: 'Historique des examens du patient',
+        appliesTo: { entityIds: [E['patients']], documentType: 'medical-followup' },
+        sourceEntityId: E['examens'],
+        lineTypes: ['exam', 'note'], defaultLineType: 'exam',
+        columns: JSON.parse(JSON.stringify(consultationExamSchema.columns || [])),
+        totals: {},
+        snapshotConfig: { enabled: true, targetType: 'record' }
+    });
+    console.log(`   ✅ LineSchema: Examens Patient (${patientExamSchema._id})`);
+
     // Facture Standard schema
     const invoiceLineSchema = await upsertDoc(db.LineSchema, { slug: 'invoice_v1', 'meta.createdByPreset': PRESET }, {
         name: 'Facture Standard', slug: 'invoice_v1',
@@ -829,13 +985,47 @@ async function install(conn, userId, presetSlug) {
     console.log(`   ✅ LineSchema: Facture Standard (${invoiceLineSchema._id})`);
 
     // Attach schemas to entities via gridSchemas
+    await db.Entity.findByIdAndUpdate(E['consultations'], {
+        $set: {
+            gridSchemas: [
+                { schemaId: consultationTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements' },
+                { schemaId: consultationPrestationSchema._id, position: 'main', order: 1, label: 'Prestations' },
+                { schemaId: consultationExamSchema._id, position: 'main', order: 2, label: 'Examens' }
+            ],
+            sidebarWidgets: [
+                { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } },
+                {
+                    type: 'dynamic-table',
+                    label: 'Traitement',
+                    icon: 'solar:pills-bold-duotone',
+                    color: '#0891b2',
+                    order: 1,
+                    visible: true,
+                    config: {
+                        schemaId: consultationTreatmentSchema._id.toString(),
+                        schemaIds: [consultationTreatmentSchema._id.toString()],
+                        enableAdd: true,
+                        enableDocPreview: false
+                    }
+                }
+            ]
+        }
+    });
     await db.Entity.findByIdAndUpdate(E['prescriptions'], {
         $set: { gridSchemas: [{ schemaId: prescriptionLineSchema._id, position: 'main', order: 0, label: 'Traitements' }] }
     });
     await db.Entity.findByIdAndUpdate(E['factures'], {
         $set: { gridSchemas: [{ schemaId: invoiceLineSchema._id, position: 'main', order: 0, label: 'Lignes de facturation' }] }
     });
-    console.log('   ✅ LineSchemas attached to entities (prescriptions, factures)');
+    await db.Entity.findByIdAndUpdate(E['patients'], {
+        $set: {
+            gridSchemas: [
+                { schemaId: patientTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements patient' },
+                { schemaId: patientExamSchema._id, position: 'main', order: 1, label: 'Examens patient' }
+            ]
+        }
+    });
+    console.log('   ✅ LineSchemas attached to entities (patients, consultations, prescriptions, factures)');
 
     // =========== 6. DEMO RECORDS ===========
     console.log('\n📊 Creating demo records...');
@@ -859,6 +1049,14 @@ async function createDemoRecords(db, ids, userId) {
     const uid = new mongoose.Types.ObjectId(userId);
     const cls = ids.classifications;
     const rk = ids.relationKeys; // relation UUID keys
+    const prescriptionLineSchema = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET }).lean();
+    const consultationTreatmentSchema = await db.LineSchema.findOne({ slug: 'consultation_treatment_v1', 'meta.createdByPreset': PRESET }).lean();
+    const patientTreatmentSchema = await db.LineSchema.findOne({ slug: 'patient_treatment_followup_v1', 'meta.createdByPreset': PRESET }).lean();
+    const consultationPrestationSchema = await db.LineSchema.findOne({ slug: 'consultation_billing_v1', 'meta.createdByPreset': PRESET }).lean();
+    const consultationExamSchema = await db.LineSchema.findOne({ slug: 'consultation_exams_v1', 'meta.createdByPreset': PRESET }).lean();
+    const patientExamSchema = await db.LineSchema.findOne({ slug: 'patient_exam_followup_v1', 'meta.createdByPreset': PRESET }).lean();
+    const invoiceSchema = await db.LineSchema.findOne({ slug: 'invoice_v1', 'meta.createdByPreset': PRESET }).lean();
+    const treatmentSchemaIds = [prescriptionLineSchema?._id, consultationTreatmentSchema?._id, patientTreatmentSchema?._id].filter(Boolean);
 
     // Helper
     const rec = async (entitySlug, title, customs = {}, extras = {}) => {
@@ -934,6 +1132,54 @@ async function createDemoRecords(db, ids, userId) {
         meds.push(doc);
     }
 
+    // -- Prestations (catalog for consultation billing) --
+    const prestations = [];
+    const prestationData = [
+        { t: 'Consultation générale', code: 'CONS-GEN', ht: 250, tva: 0 },
+        { t: 'Consultation spécialisée', code: 'CONS-SPEC', ht: 350, tva: 0 },
+        { t: 'Contrôle / suivi', code: 'CONS-SUIVI', ht: 180, tva: 0 },
+        { t: 'ECG', code: 'ECG-12D', ht: 220, tva: 20 },
+        { t: 'Échographie abdominale', code: 'ECHO-ABD', ht: 500, tva: 20 },
+        { t: 'Radiographie thorax', code: 'RX-THX', ht: 420, tva: 20 },
+        { t: 'Infiltration locale', code: 'INFIL', ht: 300, tva: 20 },
+        { t: 'Pansement complexe', code: 'PANS-C', ht: 160, tva: 20 },
+        { t: 'Suture simple', code: 'SUT-S', ht: 280, tva: 20 },
+        { t: 'Nébulisation', code: 'NEBU', ht: 140, tva: 20 }
+    ];
+    for (const p of prestationData) {
+        const doc = await rec('prestations', p.t, {
+            code_prestation: p.code,
+            prix_ht: p.ht,
+            tva_rate: p.tva
+        });
+        prestations.push(doc);
+    }
+
+    // -- Examens (catalogue) --
+    const examens = [];
+    const examData = [
+        { t: 'TSH ultrasensible', code: 'TSH', unit: 'mUI/L', normal: '0.4 - 4.0', cond: 'À jeun recommandé', delay: '24h' },
+        { t: 'HbA1c', code: 'HBA1C', unit: '%', normal: '4.0 - 5.6', cond: 'Pas de jeûne requis', delay: '24h' },
+        { t: 'Glycémie à jeun', code: 'GLY', unit: 'g/L', normal: '0.70 - 1.10', cond: 'Jeûne 8h', delay: '6h' },
+        { t: 'CRP', code: 'CRP', unit: 'mg/L', normal: '< 5', cond: 'Pas de jeûne requis', delay: '8h' },
+        { t: 'NFS', code: 'NFS', unit: 'G/L', normal: 'Selon paramètres', cond: 'Pas de jeûne requis', delay: '6h' },
+        { t: 'Créatinine', code: 'CREAT', unit: 'mg/L', normal: '6 - 12', cond: 'Hydratation normale', delay: '8h' },
+        { t: 'Bilan lipidique', code: 'LIPID', unit: 'g/L', normal: 'Selon paramètres', cond: 'Jeûne 12h', delay: '24h' },
+        { t: 'ECBU', code: 'ECBU', unit: 'CFU/mL', normal: 'Négatif', cond: 'Urines du matin', delay: '48h' },
+        { t: 'ASAT / ALAT', code: 'HEPA', unit: 'UI/L', normal: '< 40', cond: 'Pas de jeûne requis', delay: '24h' },
+        { t: 'Ferritine', code: 'FER', unit: 'ng/mL', normal: '15 - 150', cond: 'Matin conseillé', delay: '24h' }
+    ];
+    for (const ex of examData) {
+        const doc = await rec('examens', ex.t, {
+            code_examen: ex.code,
+            unite_mesure: ex.unit,
+            valeur_normale: ex.normal,
+            condition_prelevement: ex.cond,
+            delai_resultat: ex.delay
+        });
+        examens.push(doc);
+    }
+
     // -- Staff (4) --
     const staffData = [
         { t: 'Dr. Riad Boukirou', nom: 'Boukirou', prenom: 'Riad', spec: 'Médecine générale', rpps: '10003456789' },
@@ -975,8 +1221,42 @@ async function createDemoRecords(db, ids, userId) {
     ];
     for (let i = 0; i < traitementNames.length; i++) {
         const p = patients[i % patients.length];
+        const title = traitementNames[i];
+        const baseDefaults = {
+            moment: ['morning'],
+            frequency: ['2x_day'],
+            duration: ['7_days'],
+            instructions: 'Prendre pendant les repas'
+        };
+        const normalized = title.toLowerCase();
+        if (normalized.includes('doliprane') || normalized.includes('ibuprof') || normalized.includes('tramadol')) {
+            baseDefaults.frequency = ['3x_day'];
+            baseDefaults.instructions = 'En cas de douleur, après le repas';
+        } else if (normalized.includes('amoxic') || normalized.includes('augmentin')) {
+            baseDefaults.frequency = ['3x_day'];
+            baseDefaults.duration = ['7_days'];
+            baseDefaults.instructions = 'Respecter les horaires, cure complète';
+        } else if (normalized.includes('oméprazole') || normalized.includes('gaviscon')) {
+            baseDefaults.moment = ['before_meal'];
+            baseDefaults.frequency = ['2x_day'];
+        } else if (normalized.includes('metformine') || normalized.includes('amlodipine') || normalized.includes('bisoprolol')) {
+            baseDefaults.duration = ['30_days'];
+            baseDefaults.frequency = ['1x_day'];
+        } else if (normalized.includes('kin') || normalized.includes('rééducation') || normalized.includes('drainage') || normalized.includes('ostéo') || normalized.includes('acupuncture')) {
+            baseDefaults.moment = ['as_needed'];
+            baseDefaults.frequency = ['weekly'];
+            baseDefaults.duration = ['30_days'];
+            baseDefaults.instructions = 'Planifier les séances avec le patient';
+        }
+
+        const lineDefaults = treatmentSchemaIds.map(schemaId => ({
+            schemaId,
+            defaults: baseDefaults
+        }));
+
         const doc = await rec('traitements', traitementNames[i], {}, {
-            relations: [{ relationKey: rk['traitements__patients'], value: p._id }]
+            relations: [{ relationKey: rk['traitements__patients'], value: p._id }],
+            lineDefaults
         });
         traitements.push(doc);
     }
@@ -1067,7 +1347,11 @@ async function createDemoRecords(db, ids, userId) {
         }, {
             relations: [
                 { relationKey: rk['consultations__patients'], value: p._id },
-                ...(consultSymptoms[i] || []).map(sName => ({ relationKey: rk['consultations__symptomes'], value: symIdx[sName]?._id })).filter(r => r.value)
+                ...(consultSymptoms[i] || []).map(sName => ({ relationKey: rk['consultations__symptomes'], value: symIdx[sName]?._id })).filter(r => r.value),
+                ...(examens.length > 0 ? [
+                    { relationKey: rk['consultations__examens'], value: examens[i % examens.length]._id },
+                    { relationKey: rk['consultations__examens'], value: examens[(i + 1) % examens.length]._id }
+                ] : [])
             ],
             classificationValues: consultTypeOpts ? [{ classificationId: cls.consult_type, optionId: consultTypeOpts[typeIdx]?._id, label: consultTypeOpts[typeIdx]?.label, color: consultTypeOpts[typeIdx]?.color }] : []
         });
@@ -1153,6 +1437,276 @@ async function createDemoRecords(db, ids, userId) {
             prix_achat: (1 + Math.random() * 20).toFixed(2), fournisseur: ['MedSupply', 'PharmaCorp', 'SantéPro'][i % 3]
         });
     }
+
+    // ---- BULK DEMO EXPANSION (max data) ----
+    const firstNames = ['Yasmine', 'Karim', 'Lea', 'Omar', 'Ines', 'Samir', 'Maya', 'Hugo', 'Nora', 'Adam', 'Lina', 'Rayan'];
+    const lastNames = ['Bensaid', 'Naji', 'Leclerc', 'Rossi', 'Mansouri', 'Rahimi', 'Dupuis', 'Chevalier', 'Garnier', 'Lacroix'];
+    const consultMotifs = ['Douleur thoracique', 'Suivi diabète', 'Contrôle HTA', 'Céphalées', 'Toux persistante', 'Bilan annuel', 'Lombalgie', 'Fatigue'];
+    const extraPatients = [];
+    for (let i = 0; i < 60; i++) {
+        const fn = firstNames[i % firstNames.length];
+        const ln = lastNames[(i * 3) % lastNames.length];
+        const title = `${fn} ${ln} ${i + 1}`;
+        const birthYear = 1955 + (i % 45);
+        const p = await rec('patients', title, {
+            nom: ln,
+            prenom: fn,
+            date_naissance: new Date(`${birthYear}-${String((i % 12) + 1).padStart(2, '0')}-15`),
+            sexe: i % 2 === 0 ? 'M' : 'F',
+            telephone: `06${String(10000000 + i).slice(-8)}`,
+            email: `${slug(fn)}.${slug(ln)}${i + 1}@mail.com`,
+            medecin_traitant: i % 2 === 0 ? 'Dr. Boukirou' : 'Dr. Cohen',
+            mutuelle: ['MGEN', 'AXA Santé', 'Harmonie Mutuelle'][i % 3]
+        });
+        extraPatients.push(p);
+    }
+    patients.push(...extraPatients);
+
+    const allConsults = [...consults];
+    for (let i = 0; i < 180; i++) {
+        const p = patients[i % patients.length];
+        const motif = consultMotifs[i % consultMotifs.length];
+        const c = await rec('consultations', `Consult. ${p.title} - ${motif} #${i + 1}`, {
+            motif,
+            notes_generales: `Consultation de contrôle ${i + 1}.`
+        }, {
+            relations: [
+                { relationKey: rk['consultations__patients'], value: p._id },
+                ...(examens.length > 1 ? [
+                    { relationKey: rk['consultations__examens'], value: examens[i % examens.length]._id },
+                    { relationKey: rk['consultations__examens'], value: examens[(i + 2) % examens.length]._id }
+                ] : [])
+            ]
+        });
+        allConsults.push(c);
+    }
+    consults.splice(0, consults.length, ...allConsults);
+
+    for (let i = 0; i < 140; i++) {
+        const p = patients[i % patients.length];
+        const c = consults[i % consults.length];
+        const amount = 120 + (i % 7) * 40;
+        await rec('factures', `FAC-DEMO-${String(i + 1).padStart(5, '0')}`, {
+            montant_total: amount,
+            montant_paye: i % 4 === 0 ? amount : (i % 4 === 1 ? Math.floor(amount * 0.5) : 0),
+            date_echeance: new Date(Date.now() + (5 + (i % 45)) * 86400000)
+        }, {
+            relations: [
+                { relationKey: rk['factures__patients'], value: p._id },
+                { relationKey: rk['factures__consultations'], value: c._id }
+            ]
+        });
+    }
+
+    // ---- Seed dynamic table lines + snapshots for richer demo ----
+    const DocumentLine = db.DocumentLine;
+    const GridSnapshot = db.GridSnapshot;
+    const schemasToClear = [
+        consultationTreatmentSchema?._id,
+        consultationPrestationSchema?._id,
+        consultationExamSchema?._id,
+        patientTreatmentSchema?._id,
+        patientExamSchema?._id,
+        invoiceSchema?._id
+    ].filter(Boolean);
+    if (schemasToClear.length > 0) {
+        await DocumentLine.deleteMany({ schemaId: { $in: schemasToClear } });
+        await GridSnapshot.deleteMany({ schemaId: { $in: schemasToClear } });
+    }
+
+    const lineDocs = [];
+    for (let i = 0; i < consults.length; i++) {
+        const c = consults[i];
+        const pRel = (c.relations || []).find(r => r.relationKey === rk['consultations__patients']);
+        const patientId = pRel?.value;
+        if (!patientId) continue;
+
+        if (consultationTreatmentSchema?._id) {
+            const t1 = traitements[i % traitements.length];
+            const t2 = traitements[(i + 3) % traitements.length];
+            const tLines = [t1, t2].map((t, idx) => ({
+                documentId: c._id,
+                schemaId: consultationTreatmentSchema._id,
+                lineType: 'treatment',
+                order: idx,
+                values: {
+                    treatment: t._id.toString(),
+                    treatment_label: t.title,
+                    moment: idx === 0 ? ['morning'] : ['evening'],
+                    frequency: ['2x_day'],
+                    duration: ['7_days'],
+                    instructions: idx === 0 ? 'Après le repas' : 'Le soir au coucher'
+                },
+                computed: {},
+                createdBy: uid
+            }));
+            lineDocs.push(...tLines);
+
+            // snapshot history (2 per consultation -> patient timeline)
+            for (let s = 0; s < 2; s++) {
+                await GridSnapshot.create({
+                    schemaId: consultationTreatmentSchema._id,
+                    recordId: c._id,
+                    targetRecordId: patientId,
+                    targetEntityId: E['patients'],
+                    date: new Date(Date.now() - (i * 2 + s) * 86400000),
+                    lines: tLines.map((l, li) => ({ lineType: l.lineType, values: l.values, computed: l.computed, order: li })),
+                    createdBy: uid
+                });
+            }
+        }
+
+        if (consultationPrestationSchema?._id) {
+            const pr = prestations[i % prestations.length];
+            const qty = (i % 2) + 1;
+            const unitPrice = Number((pr.customFields || []).find(cf => String(cf.field_id) === String(f.prix_ht))?.value || 0);
+            const vatRate = Number((pr.customFields || []).find(cf => String(cf.field_id) === String(f.tva_rate))?.value || 0);
+            const lineTotal = qty * unitPrice;
+            const lineVat = lineTotal * vatRate / 100;
+            const svcLine = {
+                documentId: c._id,
+                schemaId: consultationPrestationSchema._id,
+                lineType: 'service',
+                order: 0,
+                values: {
+                    prestation: pr._id.toString(),
+                    prestation_label: pr.title,
+                    description: pr.title,
+                    code: (pr.customFields || []).find(cf => String(cf.field_id) === String(f.code_prestation))?.value || '',
+                    qty,
+                    unitPrice,
+                    vatRate
+                },
+                computed: { lineTotal, lineVat, lineTtc: lineTotal + lineVat },
+                createdBy: uid
+            };
+            lineDocs.push(svcLine);
+
+            for (let s = 0; s < 2; s++) {
+                await GridSnapshot.create({
+                    schemaId: consultationPrestationSchema._id,
+                    recordId: c._id,
+                    targetRecordId: patientId,
+                    targetEntityId: E['patients'],
+                    date: new Date(Date.now() - (i * 2 + s) * 86400000),
+                    lines: [{ lineType: svcLine.lineType, values: svcLine.values, computed: svcLine.computed, order: 0 }],
+                    createdBy: uid
+                });
+            }
+        }
+
+        if (consultationExamSchema?._id && examens.length > 0) {
+            const ex = examens[i % examens.length];
+            const exCode = (ex.customFields || []).find(cf => String(cf.field_id) === String(f.code_examen))?.value || '';
+            const unit = (ex.customFields || []).find(cf => String(cf.field_id) === String(f.unite_mesure))?.value || '';
+            const normal = (ex.customFields || []).find(cf => String(cf.field_id) === String(f.valeur_normale))?.value || '';
+            const exLine = {
+                documentId: c._id,
+                schemaId: consultationExamSchema._id,
+                lineType: 'exam',
+                order: 0,
+                values: {
+                    exam: ex._id.toString(),
+                    exam_label: ex.title,
+                    description: ex.title,
+                    examCode: exCode,
+                    urgency: i % 6 === 0 ? 'urgent' : 'routine',
+                    status: i % 5 === 0 ? 'done' : 'todo',
+                    resultValue: i % 5 === 0 ? 'Valeur OK' : '',
+                    unit,
+                    normalRange: normal
+                },
+                computed: {},
+                createdBy: uid
+            };
+            lineDocs.push(exLine);
+
+            for (let s = 0; s < 2; s++) {
+                await GridSnapshot.create({
+                    schemaId: consultationExamSchema._id,
+                    recordId: c._id,
+                    targetRecordId: patientId,
+                    targetEntityId: E['patients'],
+                    date: new Date(Date.now() - (i * 2 + s) * 86400000),
+                    lines: [{ lineType: exLine.lineType, values: exLine.values, computed: exLine.computed, order: 0 }],
+                    createdBy: uid
+                });
+            }
+        }
+    }
+
+    // patient tables follow-up
+    for (let i = 0; i < patients.length; i++) {
+        const p = patients[i];
+        if (patientTreatmentSchema?._id) {
+            const t = traitements[i % traitements.length];
+            lineDocs.push({
+                documentId: p._id,
+                schemaId: patientTreatmentSchema._id,
+                lineType: 'treatment',
+                order: 0,
+                values: {
+                    treatment: t._id.toString(),
+                    treatment_label: t.title,
+                    moment: ['morning'],
+                    frequency: ['1x_day'],
+                    duration: ['30_days'],
+                    instructions: 'Suivi patient'
+                },
+                computed: {},
+                createdBy: uid
+            });
+        }
+        if (patientExamSchema?._id && examens.length > 0) {
+            const ex = examens[i % examens.length];
+            lineDocs.push({
+                documentId: p._id,
+                schemaId: patientExamSchema._id,
+                lineType: 'exam',
+                order: 0,
+                values: {
+                    exam: ex._id.toString(),
+                    exam_label: ex.title,
+                    description: ex.title,
+                    status: i % 3 === 0 ? 'done' : 'todo'
+                },
+                computed: {},
+                createdBy: uid
+            });
+        }
+    }
+
+    // invoice lines for facture table demo
+    if (invoiceSchema?._id) {
+        const factures = await db.Record.find({ entityId: E['factures'] }).limit(220).lean();
+        for (let i = 0; i < factures.length; i++) {
+            const pr = prestations[i % prestations.length];
+            const qty = (i % 3) + 1;
+            const unitPrice = Number((pr.customFields || []).find(cf => String(cf.field_id) === String(f.prix_ht))?.value || 100);
+            const vatRate = Number((pr.customFields || []).find(cf => String(cf.field_id) === String(f.tva_rate))?.value || 20);
+            const lineTotal = qty * unitPrice;
+            const lineVat = lineTotal * vatRate / 100;
+            lineDocs.push({
+                documentId: factures[i]._id,
+                schemaId: invoiceSchema._id,
+                lineType: 'service',
+                order: 0,
+                values: {
+                    description: pr.title,
+                    qty,
+                    unitPrice,
+                    discount: 0,
+                    vatRate
+                },
+                computed: { lineTotal, lineVat },
+                createdBy: uid
+            });
+        }
+    }
+
+    if (lineDocs.length > 0) {
+        await DocumentLine.insertMany(lineDocs, { ordered: false });
+    }
 }
 
 // ============================================
@@ -1165,6 +1719,8 @@ async function createDocumentTemplates(db, ids, userId) {
     // Get the prescription LineSchema ID for dynamic tables
     const prescriptionSchemaDoc = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET });
     const prescriptionSchemaId = prescriptionSchemaDoc ? prescriptionSchemaDoc._id.toString() : '';
+    const invoiceSchemaDoc = await db.LineSchema.findOne({ slug: 'invoice_v1', 'meta.createdByPreset': PRESET });
+    const invoiceSchemaId = invoiceSchemaDoc ? invoiceSchemaDoc._id.toString() : '';
 
     // Build Ordonnance template with proper tokens and dynamic treatment table
     const ordonnanceHtml = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;">
@@ -1204,16 +1760,73 @@ async function createDocumentTemplates(db, ids, userId) {
   </div>
 </div>`;
 
+    const certificatHtml = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:100%;">
+  <h1 style="margin:0 0 18px;font-size:22px;color:#1e40af;">CERTIFICAT MÉDICAL</h1>
+  <p style="font-size:14px;line-height:1.7;color:#334155;">
+    Je soussigné(e) Dr. {{user.name}}, certifie avoir examiné ce jour le/la patient(e)
+    <strong>{{consultations.patients.prenom}} {{consultations.patients.nom}}</strong>,
+    né(e) le {{consultations.patients.date_naissance}}.
+  </p>
+  <p style="font-size:14px;line-height:1.7;color:#334155;">
+    L'état de santé constaté ce jour, le {{today}}, nécessite une prise en charge médicale adaptée.
+  </p>
+  <p style="font-size:14px;line-height:1.7;color:#334155;">
+    Motif de consultation: <strong>{{consultations.motif}}</strong>
+  </p>
+  <p style="margin-top:28px;font-size:13px;color:#64748b;">Certificat remis à l'intéressé(e) pour faire valoir ce que de droit.</p>
+  <div style="margin-top:46px;text-align:right;">
+    <p style="margin:0;font-size:13px;font-weight:600;color:#1e293b;">Dr. {{user.name}}</p>
+    <p style="margin:2px 0 0;font-size:11px;color:#64748b;">Date : {{today}}</p>
+  </div>
+</div>`;
+
+    const compteRenduHtml = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:100%;">
+  <h1 style="margin:0 0 18px;font-size:22px;color:#00ab55;">COMPTE RENDU DE CONSULTATION</h1>
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+    <p style="margin:0 0 4px;font-size:12px;"><strong>Patient :</strong> {{consultations.patients.prenom}} {{consultations.patients.nom}}</p>
+    <p style="margin:0 0 4px;font-size:12px;"><strong>Date :</strong> {{today}}</p>
+    <p style="margin:0;font-size:12px;"><strong>Consultation :</strong> {{consultations.title}}</p>
+  </div>
+  <h3 style="margin:10px 0 6px;font-size:14px;color:#334155;">Motif</h3>
+  <p style="margin:0 0 10px;font-size:13px;color:#475569;">{{consultations.motif}}</p>
+  <h3 style="margin:10px 0 6px;font-size:14px;color:#334155;">Examen / Observations</h3>
+  <p style="margin:0 0 10px;font-size:13px;color:#475569;">{{consultations.note_medecin}}</p>
+  <h3 style="margin:10px 0 6px;font-size:14px;color:#334155;">Plan de prise en charge</h3>
+  <p style="margin:0;font-size:13px;color:#475569;">{{consultations.notes_generales}}</p>
+</div>`;
+
+    const factureHtml = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:100%;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+    <div>
+      <h1 style="margin:0;font-size:24px;color:#e2a03f;">FACTURE</h1>
+      <p style="margin:4px 0 0;font-size:12px;color:#64748b;">N° {{factures.title}}</p>
+      <p style="margin:2px 0 0;font-size:12px;color:#64748b;">Date : {{today}}</p>
+    </div>
+    <div style="text-align:right;">
+      <p style="margin:0;font-size:12px;color:#334155;"><strong>Patient :</strong> {{factures.patients.prenom}} {{factures.patients.nom}}</p>
+      <p style="margin:2px 0 0;font-size:12px;color:#334155;"><strong>Échéance :</strong> {{factures.date_echeance}}</p>
+    </div>
+  </div>
+  <div class="dynamic-table" data-table='{"schemaId":"${invoiceSchemaId}","style":"professional","title":"Détail des prestations","showTotals":true}'></div>
+  <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+    <div style="width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;background:#f9fafb;">
+      <p style="margin:0 0 6px;font-size:13px;color:#334155;"><strong>Total :</strong> {{factures.montant_total}}</p>
+      <p style="margin:0 0 6px;font-size:13px;color:#334155;"><strong>Payé :</strong> {{factures.montant_paye}}</p>
+      <p style="margin:0;font-size:13px;color:#ef4444;"><strong>Reste à payer :</strong> {{factures.reste_a_payer}}</p>
+    </div>
+  </div>
+</div>`;
+
     const templateDefs = [
         { name: 'Ordonnance', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', entitySlug: 'consultations', customHtml: ordonnanceHtml },
-        { name: 'Certificat médical', icon: 'solar:diploma-verified-bold-duotone', color: '#3b82f6', entitySlug: 'patients' },
-        { name: 'Compte rendu consultation', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', entitySlug: 'consultations' },
+        { name: 'Certificat médical', icon: 'solar:diploma-verified-bold-duotone', color: '#3b82f6', entitySlug: 'consultations', customHtml: certificatHtml },
+        { name: 'Compte rendu consultation', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', entitySlug: 'consultations', customHtml: compteRenduHtml },
         { name: 'Lettre orientation spécialiste', icon: 'solar:letter-bold-duotone', color: '#8b5cf6', entitySlug: 'consultations' },
         { name: "Demande d'examen labo", icon: 'solar:test-tube-bold-duotone', color: '#f97316', entitySlug: 'patients' },
         { name: 'Arrêt de travail', icon: 'solar:calendar-bold-duotone', color: '#ef4444', entitySlug: 'patients' },
         { name: 'Attestation de présence', icon: 'solar:document-text-bold-duotone', color: '#6366f1', entitySlug: 'patients' },
         { name: 'Fiche patient résumé', icon: 'solar:user-bold-duotone', color: '#3b82f6', entitySlug: 'patients' },
-        { name: 'Facture PDF', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', entitySlug: 'factures' },
+        { name: 'Facture PDF', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', entitySlug: 'factures', customHtml: factureHtml },
         { name: 'Consentement éclairé', icon: 'solar:shield-check-bold-duotone', color: '#22c55e', entitySlug: 'patients' },
     ];
 

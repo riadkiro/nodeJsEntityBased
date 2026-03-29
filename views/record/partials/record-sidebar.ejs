@@ -37,7 +37,7 @@
                         data-sidebar-pm-toggle
                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                         :class="pmOpen ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'"
-                        title="GÃ©rer les panels">
+                        title="Gérer les panels">
                         <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
                     </button>
                     <!-- Panel Manager Dropdown -->
@@ -64,8 +64,8 @@
                             <% 
                             const panelDefinitions = [
                                 { id: 'classifications', label: 'Classifications', icon: 'solar:tag-bold-duotone', color: '#f59e0b' },
-                                { id: 'attachments', label: 'PiÃ¨ces Jointes', icon: 'solar:paperclip-bold-duotone', color: '#6366f1' },
-                                { id: 'smartdoc', label: 'Documents ModÃ¨les', icon: 'solar:document-text-bold-duotone', color: '#06b6d4' },
+                                { id: 'attachments', label: 'Pièces jointes', icon: 'solar:paperclip-bold-duotone', color: '#6366f1' },
+                                { id: 'smartdoc', label: 'Documents modèles', icon: 'solar:document-text-bold-duotone', color: '#06b6d4' },
                                 { id: 'lines', label: 'Tableau Dynamique', icon: 'solar:list-check-bold-duotone', color: '#10b981' },
                             ];
                             // Add relation panels  
@@ -483,7 +483,7 @@
                             onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 5px 16px rgba(67,97,238,0.4)'" 
                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 10px rgba(67,97,238,0.3)'">
                             <iconify-icon :icon="widgetSaving ? 'line-md:loading-twotone-loop' : 'solar:check-read-bold'" width="15"></iconify-icon>
-                            <span x-text="widgetSaving ? 'CrÃ©ation...' : 'CrÃ©er le widget'"></span>
+                            <span x-text="widgetSaving ? 'Création...' : 'Créer le widget'"></span>
                         </button>
                     </div>
                     </div>
@@ -762,7 +762,7 @@
                                                                                      :class="isOpen ? 'tp-trigger--active' : ''"
                                                                                      @click="toggleOpen()">
                                                                                     <template x-if="selectedOptions.length === 0">
-                                                                                        <span class="tp-placeholder">SÃ©lectionner...</span>
+                                                                                        <span class="tp-placeholder">Sélectionner...</span>
                                                                                     </template>
                                                                                     <template x-for="opt in selectedOptions" :key="opt._id">
                                                                                         <span class="tp-tag"
@@ -788,7 +788,7 @@
                                                                                     <!-- Search -->
                                                                                     <div class="tp-search-wrap">
                                                                                         <input type="text" class="tp-search-input"
-                                                                                               placeholder="Rechercher ou crÃ©er..."
+                                                                                               placeholder="Rechercher ou créer..."
                                                                                                x-model="searchQuery"
                                                                                                x-ref="searchInput"
                                                                                                @keydown.enter.prevent="canCreate ? createOption() : null" />
@@ -818,7 +818,7 @@
 
                                                                                         <template x-if="filteredOptions.length === 0 && !canCreate">
                                                                                             <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
-                                                                                                Aucune option trouvÃ©e
+                                                                                                Aucune option trouvée
                                                                                             </div>
                                                                                         </template>
 
@@ -850,7 +850,7 @@
                                                                                     <template x-if="canCreate">
                                                                                         <div class="tp-create-option" @click="createOption()">
                                                                                             <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-                                                                                            <span class="tp-create-label">CrÃ©er</span>
+                                                                                            <span class="tp-create-label">Créer</span>
                                                                                             <span class="tp-create-tag" x-text="searchQuery"></span>
                                                                                         </div>
                                                                                     </template>
@@ -1112,7 +1112,7 @@
                                                     <iconify-icon icon="solar:document-add-linear" width="20" class="text-gray-300 dark:text-gray-600"></iconify-icon>
                                                     <p class="text-[9px] text-gray-400">Aucun document modÃ¨le</p>
                                                     <button type="button" @click.stop="showNewDocModal = true"
-                                                        class="text-[9px] font-semibold text-primary hover:underline transition-all">+ CrÃ©er</button>
+                                                        class="text-[9px] font-semibold text-primary hover:underline transition-all">+ Créer</button>
                                                 </div>
                                             </template>
                                         </div>
@@ -1151,7 +1151,7 @@
                                                         </div>
                                                         <div>
                                                             <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document simple</span>
-                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">CrÃ©er un document unique liÃ© Ã  cet enregistrement</span>
+                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">Créer un document unique lié à cet enregistrement</span>
                                                         </div>
                                                     </button>
                                                     <!-- Document ModÃ¨le -->
@@ -1710,7 +1710,7 @@
                                             <div style="flex: 1; min-width: 0;">
                                                 <textarea x-model="noteContent"
                                                     @blur="saving = true; fetch('/account/<%= account_number %>/api/entity/<%= entity._id %>/sidebar-widgets/<%= sw._id %>', { method: 'PUT', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({ config: { content: noteContent } }) }).finally(() => saving = false)"
-                                                    placeholder="Ã‰crire une note..."
+                                                    placeholder="Écrire une note..."
                                                     style="width: 100%; min-height: 50px; border: none; outline: none; background: transparent; font-size: 12px; color: #4b5563; line-height: 1.6; resize: vertical; padding: 0; font-family: inherit;"
                                                     ></textarea>
                                                 <div x-show="saving" style="font-size: 9px; color: #9ca3af; margin-top: 2px;">Sauvegarde...</div>
@@ -1973,7 +1973,7 @@
                                                                                     @input="doSearch($event.target.value, lineIdx)"
                                                                                     @blur="setTimeout(() => searchOpen = false, 200)"
                                                                                     @keydown.escape="searchOpen = false"
-                                                                                    placeholder="ðŸ” <%= col.label %>" />
+                                                                                    placeholder="🔍 <%= col.label %>" />
                                                                                 <div x-show="searchOpen && searchLineIdx === lineIdx" x-cloak
                                                                                     style="position:absolute; top:100%; left:0; right:0; z-index:9999; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:160px; overflow-y:auto; margin-top:2px;">
                                                                                     <template x-if="searchLoading">
@@ -1982,7 +1982,7 @@
                                                                                         </div>
                                                                                     </template>
                                                                                     <template x-if="!searchLoading && searchResults.length === 0">
-                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">Aucun rÃ©sultat</div>
+                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">Aucun résultat</div>
                                                                                     </template>
                                                                                     <template x-for="item in searchResults" :key="item._id">
                                                                                         <div style="padding:6px 10px; font-size:11px; cursor:pointer; transition:background 0.1s; border-bottom:1px solid #f3f4f6;"
@@ -2000,7 +2000,7 @@
                                                                                      style="min-height:22px;padding:1px 4px;gap:2px;"
                                                                                      @click.stop="openMultiselectDropdown(lineIdx, '<%= col.key %>')">
                                                                                     <template x-if="!line.values['<%= col.key %>'] || (Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].length === 0)">
-                                                                                        <span class="lp-ms-placeholder" style="font-size:10px;">SÃ©lectionner...</span>
+                                                                                        <span class="lp-ms-placeholder" style="font-size:10px;">Sélectionner...</span>
                                                                                     </template>
                                                                                     <% if (col.type === 'multiselect') { %>
                                                                                         <template x-for="selVal in (Array.isArray(line.values['<%= col.key %>']) ? line.values['<%= col.key %>'] : (line.values['<%= col.key %>'] ? [line.values['<%= col.key %>']] : []))" :key="selVal">
@@ -2028,7 +2028,7 @@
                                                                                         <div class="tp-dropdown" style="z-index:9999; min-width:200px; position:absolute; right:0; top:100%; margin-top:4px;" @click.stop>
                                                                                             <div class="tp-search-wrap">
                                                                                                 <input type="text" class="tp-search-input"
-                                                                                                       placeholder="Rechercher ou crÃ©er..."
+                                                                                                       placeholder="Rechercher ou créer..."
                                                                                                        :value="msDropdown.query"
                                                                                                        @input="msDropdown.query = $event.target.value"
                                                                                                        @keydown.enter.prevent="msCreateOption(columns[<%= ci %>])" />
@@ -2064,7 +2064,7 @@
                                                                     <template x-if="(msDropdown.query || '').trim() && !(columns[<%= ci %>].config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
                                                                         <div class="tp-create-option" @click.stop="msCreateOption(columns[<%= ci %>])">
                                                                             <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
-                                                                            <span class="tp-create-label">CrÃ©er</span>
+                                                                            <span class="tp-create-label">Créer</span>
                                                                             <span class="tp-create-tag" x-text="msDropdown.query"></span>
                                                                         </div>
                                                                     </template>

@@ -7619,17 +7619,27 @@ window.__syncClsInputs = function(clsId, ids) {
 
                 async saveColumnLayout() {
                     try {
+                        const payload = {
+                            viewId: `record_panels_${entityId}`,
+                            preferences: {
+                                columnWidths: JSON.parse(JSON.stringify(this.columns)),
+                                extraColumns: JSON.parse(JSON.stringify(this.extraColumns))
+                            }
+                        };
+
                         await fetch(`/account/${accountNumber}/api/account/view-preferences`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({
-                                viewId: `record_panels_${entityId}`,
-                                preferences: {
-                                    columnWidths: JSON.parse(JSON.stringify(this.columns)),
-                                    extraColumns: JSON.parse(JSON.stringify(this.extraColumns))
-                                }
-                            })
+                            body: JSON.stringify(payload)
+                        });
+
+                        // Fallback mirror on user preferences to avoid lost layout on some tenants.
+                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
                         });
                     } catch(e) { console.error('Failed to save column layout:', e); }
                 },
@@ -7657,14 +7667,24 @@ window.__syncClsInputs = function(clsId, ids) {
                     });
 
                     try {
+                        const payload = {
+                            viewId: `record_panels_${entityId}`,
+                            preferences: { panelLayout: { main: mainPanels, sidebar: sidebarPanels, sidebarInner: sidebarInnerPanels, extra: extraPanels } }
+                        };
+
                         await fetch(`/account/${accountNumber}/api/account/view-preferences`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({
-                                viewId: `record_panels_${entityId}`,
-                                preferences: { panelLayout: { main: mainPanels, sidebar: sidebarPanels, sidebarInner: sidebarInnerPanels, extra: extraPanels } }
-                            })
+                            body: JSON.stringify(payload)
+                        });
+
+                        // Fallback mirror on user preferences to avoid lost layout on some tenants.
+                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
                         });
                     } catch(e) { console.error('Failed to save panel layout:', e); }
                 }

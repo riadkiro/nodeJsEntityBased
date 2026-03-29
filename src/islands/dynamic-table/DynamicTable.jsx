@@ -186,6 +186,9 @@ export default function DynamicTable({
     const [snapshotShowAllMap, setSnapshotShowAllMap] = useState({})
     const [snapshotPendingDeleteId, setSnapshotPendingDeleteId] = useState('')
     const deleteTimerRef = useRef(null)
+    const [visibleSchemaIds, setVisibleSchemaIds] = useState([])
+
+    const storageKey = `dt_visible_tabs:${accountNumber || ''}:${entityId || ''}:${recordId || ''}:${schemaFilter || ''}`
 
     const getSnapshotTargetRecordId = useCallback((schema) => {
         const cfg = schema?.snapshotConfig
@@ -242,6 +245,67 @@ export default function DynamicTable({
     useEffect(() => {
         if (schemas.length > 0) loadTemplates()
     }, [schemas, loadTemplates])
+
+    useEffect(() => {
+        if (!schemas.length) return
+        const allIds = schemas.map(s => String(s._id))
+
+        try {
+            const raw = window.localStorage.getItem(storageKey)
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed)) {
+                    const filtered = parsed.map(String).filter(id => allIds.includes(id))
+                    if (filtered.length > 0) {
+                        setVisibleSchemaIds(filtered)
+                        return
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[DynamicTable] visible tabs restore failed:', e)
+        }
+
+        setVisibleSchemaIds(allIds)
+    }, [schemas, storageKey])
+
+    useEffect(() => {
+        if (!visibleSchemaIds.length) return
+        try {
+            window.localStorage.setItem(storageKey, JSON.stringify(visibleSchemaIds))
+        } catch (e) {
+            console.warn('[DynamicTable] visible tabs persist failed:', e)
+        }
+    }, [visibleSchemaIds, storageKey])
+
+    const toggleSchemaVisibility = useCallback((schemaIdRaw) => {
+        const schemaId = String(schemaIdRaw)
+        const allIds = schemas.map(s => String(s._id))
+        setVisibleSchemaIds(prev => {
+            const current = (prev && prev.length > 0 ? prev : allIds).map(String)
+            const exists = current.includes(schemaId)
+            if (!exists) return [...current, schemaId]
+
+            const next = current.filter(id => id !== schemaId)
+            return next.length > 0 ? next : current
+        })
+    }, [schemas])
+
+    const showAllSchemas = useCallback(() => {
+        setVisibleSchemaIds(schemas.map(s => String(s._id)))
+    }, [schemas])
+
+    const effectiveVisibleIds = visibleSchemaIds.length > 0
+        ? visibleSchemaIds
+        : schemas.map(s => String(s._id))
+    const displayedSchemas = schemas.filter(s => effectiveVisibleIds.includes(String(s._id)))
+
+    useEffect(() => {
+        if (!displayedSchemas.length) return
+        if (!displayedSchemas.some(s => String(s._id) === String(activeSchemaId))) {
+            setActiveSchemaId(displayedSchemas[0]._id)
+        }
+    }, [displayedSchemas, activeSchemaId, setActiveSchemaId])
 
     const getTemplatesForSchema = useCallback((schemaId) => {
         const sid = schemaId?.toString()
@@ -600,7 +664,7 @@ export default function DynamicTable({
         return (
             <div style={styles.panel}>
                 <div style={styles.empty}>
-                    <p>Aucun tableau dynamique disponible pour cette entite</p>
+                    <p>Aucun tableau dynamique disponible pour cette entité</p>
                 </div>
             </div>
         )
@@ -614,10 +678,13 @@ export default function DynamicTable({
                     activeSchemaId={activeSchemaId}
                     onSelectSchema={setActiveSchemaId}
                     getSchemaLines={getSchemaLines}
+                    visibleSchemaIds={visibleSchemaIds}
+                    onToggleSchemaVisibility={toggleSchemaVisibility}
+                    onShowAllSchemas={showAllSchemas}
                 />
             )}
 
-            {schemas.map(schema => (
+            {displayedSchemas.map(schema => (
                 <div
                     key={schema._id}
                     style={{ display: activeSchemaId === schema._id ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative' }}
@@ -757,18 +824,19 @@ export default function DynamicTable({
                     )}
 
                     <DataTable
+                        schemaId={schema._id}
                         schema={schema}
                         lines={getSchemaLines(schema._id)}
                         getRelationCol={() => getRelationCol(schema)}
                         getVisibleColumns={(line) => getVisibleColumns(schema, line)}
                         getRelationLabel={(line) => getRelationLabel(line, schema)}
                         searchState={searchState}
-                        onOpenSearch={(lineIdx, colKey) => openSearch(lineIdx, colKey)}
-                        onSearch={(lineIdx, colKey, query) => {
+                        onOpenSearch={(schemaId, lineIdx, colKey) => openSearch(schemaId, lineIdx, colKey)}
+                        onSearch={(schemaId, lineIdx, colKey, query) => {
                             const relCol = getRelationCol(schema)
                             const targetEntity = schema.sourceEntityId || relCol?.config?.targetEntity
                             const searchFields = relCol?.config?.searchFields || ['title']
-                            search(lineIdx, colKey, query, targetEntity, searchFields)
+                            search(schemaId, lineIdx, colKey, query, targetEntity, searchFields)
                         }}
                         onCloseSearch={closeSearch}
                         onSelectRelation={(lineIdx, col, item) => handleSelectRelation(schema._id, lineIdx, col, item)}

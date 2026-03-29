@@ -1,9 +1,10 @@
-﻿/**
+/**
  * DataTable - The editable table (thead + tbody)
  * Renders schema columns with inline editing
  * Includes RelationSearch dropdown inline
  */
-import React, { useRef, useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import CellRenderer from './CellRenderer'
 
 const tableWrapStyle = {
@@ -112,11 +113,9 @@ const relationInputStyle = {
 }
 
 const dropdownStyle = {
-    position: 'absolute',
-    top: '100%',
+    position: 'fixed',
     left: 0,
-    right: 0,
-    zIndex: 1300,
+    zIndex: 6000,
     background: '#fff',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
@@ -135,6 +134,7 @@ const dropdownItemStyle = {
 }
 
 export default function DataTable({
+    schemaId,
     schema,
     lines,
     getRelationCol,
@@ -177,6 +177,7 @@ export default function DataTable({
                     {lines.map((line, lineIdx) => (
                         <TableRow
                             key={line._tempId || line._id || lineIdx}
+                            schemaId={schemaId}
                             line={line}
                             lineIdx={lineIdx}
                             relCol={relCol}
@@ -215,35 +216,67 @@ export default function DataTable({
 }
 
 function TableRow({
+    schemaId,
     line, lineIdx, relCol, visibleCols, relationLabel,
     searchState, onOpenSearch, onSearch, onCloseSearch, onSelectRelation,
     onCellChange, onRemoveLine
 }) {
     const isSearchOpen = searchState.open &&
+        String(searchState.schemaId || '') === String(schemaId || '') &&
         searchState.lineIdx === lineIdx &&
         relCol && searchState.colKey === relCol.key
 
     const [relationInputValue, setRelationInputValue] = useState(relationLabel || '')
+    const [dropdownLayout, setDropdownLayout] = useState({ top: 0, left: 0, width: 0, maxHeight: 180 })
+    const [inputEl, setInputEl] = useState(null)
     const rowIdentity = line?._id || line?._tempId || lineIdx
 
     useEffect(() => {
         setRelationInputValue(relationLabel || '')
     }, [relationLabel, rowIdentity])
 
+    useEffect(() => {
+        if (!isSearchOpen || !inputEl) return
+
+        const updateLayout = () => {
+            const rect = inputEl.getBoundingClientRect()
+            const viewportH = window.innerHeight || document.documentElement.clientHeight || 900
+            const below = viewportH - rect.bottom - 8
+            const above = rect.top - 8
+            const openUp = below < 150 && above > below
+            const maxHeight = Math.max(100, Math.min(220, openUp ? above - 4 : below - 4))
+
+            setDropdownLayout({
+                top: openUp ? Math.max(8, rect.top - maxHeight - 2) : (rect.bottom + 2),
+                left: rect.left,
+                width: rect.width,
+                maxHeight
+            })
+        }
+
+        updateLayout()
+        window.addEventListener('resize', updateLayout)
+        window.addEventListener('scroll', updateLayout, true)
+        return () => {
+            window.removeEventListener('resize', updateLayout)
+            window.removeEventListener('scroll', updateLayout, true)
+        }
+    }, [isSearchOpen, inputEl])
+
     const handleRelationFocus = useCallback((e) => {
         if (relCol) {
             e.target.select()
-            onOpenSearch(lineIdx, relCol.key)
+            onOpenSearch(schemaId, lineIdx, relCol.key)
         }
-    }, [lineIdx, relCol, onOpenSearch])
+    }, [schemaId, lineIdx, relCol, onOpenSearch])
 
     const handleRelationInput = useCallback((e) => {
         const q = e.target.value
         setRelationInputValue(q)
         if (relCol) {
-            onSearch(lineIdx, relCol.key, q)
+            onSearch(schemaId, lineIdx, relCol.key, q)
         }
-    }, [lineIdx, relCol, onSearch])
+    }, [schemaId, lineIdx, relCol, onSearch])
 
     return (
         <tr
@@ -263,16 +296,17 @@ function TableRow({
                         <input
                             type="text"
                             style={relationInputStyle}
+                            ref={setInputEl}
                             value={relationInputValue}
                             onFocus={handleRelationFocus}
                             onInput={handleRelationInput}
-                            onBlur={() => setTimeout(onCloseSearch, 200)}
-                            onKeyDown={(e) => { if (e.key === 'Escape') onCloseSearch() }}
+                            onBlur={() => setTimeout(() => onCloseSearch({ schemaId, lineIdx }), 200)}
+                            onKeyDown={(e) => { if (e.key === 'Escape') onCloseSearch({ schemaId, lineIdx }) }}
                             placeholder={'🔍 ' + (relCol.label || 'Article')}
                         />
 
-                        {isSearchOpen && (searchState.query || searchState.loading || searchState.results.length > 0) && (
-                            <div style={dropdownStyle}>
+                        {isSearchOpen && (searchState.query || searchState.loading || searchState.results.length > 0) && inputEl && createPortal(
+                            <div style={{ ...dropdownStyle, top: dropdownLayout.top, left: dropdownLayout.left, width: dropdownLayout.width, maxHeight: dropdownLayout.maxHeight }}>
                                 {searchState.loading && (
                                     <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#9ca3af' }}>
                                         <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #e5e7eb', borderTopColor: '#4361ee', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
@@ -299,7 +333,8 @@ function TableRow({
                                         <span style={{ fontWeight: 500 }}>{item.label || item.title}</span>
                                     </div>
                                 ))}
-                            </div>
+                            </div>,
+                            document.body
                         )}
                     </div>
                 </td>

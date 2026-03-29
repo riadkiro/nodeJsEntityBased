@@ -120,9 +120,8 @@ const dropdownStyle = {
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-    maxHeight: '180px',
     overflowY: 'auto',
-    marginTop: '2px'
+    minWidth: '220px'
 }
 
 const dropdownItemStyle = {
@@ -247,9 +246,11 @@ function TableRow({
             const maxHeight = Math.max(100, Math.min(220, openUp ? above - 4 : below - 4))
 
             setDropdownLayout({
-                top: openUp ? Math.max(8, rect.top - maxHeight - 2) : (rect.bottom + 2),
+                openUp,
+                top: openUp ? undefined : (rect.bottom + 2),
+                bottom: openUp ? (viewportH - rect.top + 2) : undefined,
                 left: rect.left,
-                width: rect.width,
+                width: Math.max(220, rect.width),
                 maxHeight
             })
         }
@@ -306,7 +307,7 @@ function TableRow({
                         />
 
                         {isSearchOpen && (searchState.query || searchState.loading || searchState.results.length > 0) && inputEl && createPortal(
-                            <div style={{ ...dropdownStyle, top: dropdownLayout.top, left: dropdownLayout.left, width: dropdownLayout.width, maxHeight: dropdownLayout.maxHeight }}>
+                            <div style={{ ...dropdownStyle, ...(dropdownLayout.openUp ? { bottom: dropdownLayout.bottom } : { top: dropdownLayout.top }), left: dropdownLayout.left, width: dropdownLayout.width, maxHeight: dropdownLayout.maxHeight }}>
                                 {searchState.loading && (
                                     <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#9ca3af' }}>
                                         <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #e5e7eb', borderTopColor: '#4361ee', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />

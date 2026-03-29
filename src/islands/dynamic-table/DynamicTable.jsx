@@ -3,6 +3,7 @@
  * Reusable React island for dynamic line tables (treatments, invoicing, etc.)
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import useSchemas from './hooks/useSchemas'
 import useLines from './hooks/useLines'
 import useCatalog from './hooks/useCatalog'
@@ -768,12 +769,12 @@ export default function DynamicTable({
                         onOpenCatalog={() => openCatalogPicker(schema)}
                     />
 
-                    {catalogPicker.open && catalogPicker.schemaId === schema._id && (
+                    {catalogPicker.open && catalogPicker.schemaId === schema._id && createPortal(
                         <div style={{
                             position: 'fixed',
                             inset: 0,
                             background: 'rgba(17,24,39,0.35)',
-                            zIndex: 240,
+                            zIndex: 99999,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -884,7 +885,8 @@ export default function DynamicTable({
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     )}
 
                     <DataTable

@@ -229,6 +229,18 @@ export default function CellRenderer({ col, value, line, onChange }) {
         )
     }
 
+    // ── Formula (auto-computed, read-only) ──
+    if (col.type === 'formula') {
+        const displayVal = value !== null && value !== undefined && value !== ''
+            ? (typeof value === 'number' ? value.toFixed(2) : value)
+            : '—'
+        return (
+            <span style={{ fontWeight: 600, color: '#111827', fontSize: '12px', textAlign: 'right', padding: '1px 4px', display: 'block' }}>
+                {displayVal}
+            </span>
+        )
+    }
+
     // ── Select ──
     if (col.type === 'select') {
         const options = getOptions()

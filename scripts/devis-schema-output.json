@@ -1,0 +1,72 @@
+{
+  "entityForms": [],
+  "lineSchemas": [
+    {
+      "id": "69c8768c12662cd0b04a99d6",
+      "name": "Traitements Consultation",
+      "slug": "consultation_treatment_v1",
+      "columns": [
+        "treatment:Traitement:relation:visible=true",
+        "moment:Moment:multiselect:visible=true",
+        "frequency:Fréquence:multiselect:visible=true",
+        "duration:Durée:multiselect:visible=true",
+        "instructions:Instructions:textarea:visible=true"
+      ],
+      "totals": {}
+    },
+    {
+      "id": "69c8768c12662cd0b04a99d7",
+      "name": "Lignes Actes (Base)",
+      "slug": "consultation_billing_v1",
+      "columns": [
+        "prestation:Acte:relation:visible=true",
+        "description:Description:text:visible=true",
+        "code:Code:text:visible=true",
+        "qty:Qté:number:visible=true",
+        "unitPrice:P.U HT:number:visible=true",
+        "vatRate:TVA %:number:visible=true",
+        "lineTotal:Total HT:formula:visible=true",
+        "lineVat:TVA:formula:visible=true",
+        "lineTtc:Total TTC:formula:visible=true",
+        "note:Note:textarea:visible=true"
+      ],
+      "totals": {
+        "subtotalKey": "lineTotal",
+        "vatKey": "lineVat",
+        "totalFormula": "subtotal + vat"
+      }
+    },
+    {
+      "id": "69c8768c12662cd0b04a99d8",
+      "name": "Examens à réaliser",
+      "slug": "consultation_exams_v1",
+      "columns": [
+        "exam:Examen:relation:visible=true",
+        "comment:Commentaire:textarea:visible=true"
+      ],
+      "totals": {}
+    },
+    {
+      "id": "69c8768d12e751f72b2c02a7",
+      "name": "Devis",
+      "slug": "quote_v1",
+      "columns": [
+        "prestation:Acte:relation:visible=true",
+        "description:Description:text:visible=true",
+        "code:Code:text:visible=true",
+        "qty:Qté:number:visible=true",
+        "unitPrice:P.U HT:number:visible=true",
+        "vatRate:TVA %:number:visible=true",
+        "lineTotal:Total HT:formula:visible=true",
+        "lineVat:TVA:formula:visible=true",
+        "lineTtc:Total TTC:formula:visible=true",
+        "note:Note:textarea:visible=true"
+      ],
+      "totals": {
+        "subtotalKey": "lineTotal",
+        "vatKey": "lineVat",
+        "totalFormula": "subtotal + vat"
+      }
+    }
+  ]
+}

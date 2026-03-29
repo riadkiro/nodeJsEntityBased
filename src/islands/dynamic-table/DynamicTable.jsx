@@ -10,6 +10,7 @@ import useCatalog from './hooks/useCatalog'
 import SchemaTabBar from './components/SchemaTabBar'
 import DataTable from './components/DataTable'
 import Toolbar from './components/Toolbar'
+import TotalsBar from './components/TotalsBar'
 
 const styles = {
     panel: {
@@ -49,6 +50,56 @@ function isFilledLine(line) {
     return Object.values(line.values).some(v =>
         v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
     )
+}
+
+/**
+ * Evaluate formula columns for a given line.
+ * Returns an object { key: computedValue } for all formula columns.
+ * Formulas reference other column keys (e.g., "qty * unitPrice").
+ * Supports cascading: formulas that depend on other formula results.
+ */
+function computeFormulaColumns(schema, lineValues) {
+    if (!schema?.columns) return {}
+    const formulaCols = schema.columns.filter(c => c.type === 'formula' && c.config?.expression)
+    if (formulaCols.length === 0) return {}
+
+    // Build a values map with current line values
+    const vals = { ...lineValues }
+    const results = {}
+
+    // Resolve formulas with cascading (up to 3 passes for dependency chains)
+    for (let pass = 0; pass < 3; pass++) {
+        let changed = false
+        for (const col of formulaCols) {
+            try {
+                const expr = col.config.expression
+                // Replace variable names with their numeric values
+                const resolved = expr.replace(/[a-zA-Z_][a-zA-Z0-9_]*/g, (varName) => {
+                    const v = vals[varName]
+                    return (v !== null && v !== undefined && v !== '' && !isNaN(Number(v)))
+                        ? Number(v)
+                        : '0'
+                })
+                // Safe eval: only allow numbers and basic math operators
+                if (/^[\d\s+\-*/().]+$/.test(resolved)) {
+                    const result = Function('"use strict"; return (' + resolved + ')')()
+                    if (isFinite(result)) {
+                        const rounded = Math.round(result * 100) / 100
+                        if (vals[col.key] !== rounded) {
+                            vals[col.key] = rounded
+                            results[col.key] = rounded
+                            changed = true
+                        }
+                    }
+                }
+            } catch (e) {
+                // Skip invalid expressions
+            }
+        }
+        if (!changed) break
+    }
+
+    return results
 }
 
 function normalizeDefaultsForSchema(schema, rawDefaults) {
@@ -160,7 +211,7 @@ export default function DynamicTable({
 
     const {
         setLinesMap, linesMapRef, saving,
-        getSchemaLines, updateLineValue,
+        getSchemaLines, updateLineValue, updateLineValues,
         addLine, removeLine, reorderLines, debouncedSave,
         saveLinesForSchema, reload
     } = useLines({ accountNumber, recordId, schemas, activeSchemaId })
@@ -219,7 +270,7 @@ export default function DynamicTable({
         if (!schema) return []
         const excluded = line?._excludedColumns || []
         return (schema.columns || []).filter(c =>
-            !c.hidden && !excluded.includes(c.key) && c.type !== 'relation'
+            !c.hidden && c.visible !== false && !excluded.includes(c.key) && c.type !== 'relation'
         )
     }, [])
 
@@ -366,6 +417,15 @@ export default function DynamicTable({
             }
 
             const updatedLine = { ...lines[lineIdx], values: newValues }
+
+            // Compute formula columns (e.g., lineTotal, lineVat, lineTtc)
+            if (schema) {
+                const formulaResults = computeFormulaColumns(schema, newValues)
+                for (const [k, v] of Object.entries(formulaResults)) {
+                    updatedLine.values[k] = v
+                }
+            }
+
             if (resolved) {
                 if (resolved.availableOptions) updatedLine._availableOptions = resolved.availableOptions
                 if (resolved.excludedColumns) updatedLine._excludedColumns = resolved.excludedColumns
@@ -392,8 +452,24 @@ export default function DynamicTable({
 
     const handleCellChange = useCallback((schemaId, lineIdx, key, value) => {
         updateLineValue(schemaId, lineIdx, key, value)
+
+        // Recompute formula columns after value change
+        const schema = schemas.find(s => s._id === schemaId || (s._id && s._id.toString() === schemaId.toString()))
+        if (schema) {
+            // Use a microtask to read the updated values after updateLineValue
+            setTimeout(() => {
+                const currentLines = linesMapRef.current[schemaId] || []
+                const line = currentLines[lineIdx]
+                if (!line) return
+                const formulaResults = computeFormulaColumns(schema, line.values)
+                if (Object.keys(formulaResults).length > 0) {
+                    updateLineValues(schemaId, lineIdx, formulaResults)
+                }
+            }, 0)
+        }
+
         debouncedSave(schemaId)
-    }, [updateLineValue, debouncedSave])
+    }, [updateLineValue, updateLineValues, debouncedSave, schemas, linesMapRef])
 
     const handleAddLine = useCallback((schemaId) => {
         const schema = schemas.find(s => s._id === schemaId)
@@ -674,6 +750,13 @@ export default function DynamicTable({
                 }
 
                 const updatedLine = { ...lines[targetIdx], values: newValues }
+
+                // Compute formula columns (e.g., lineTotal, lineTtc)
+                const formulaResults = computeFormulaColumns(schema, newValues)
+                for (const [k, v] of Object.entries(formulaResults)) {
+                    updatedLine.values[k] = v
+                }
+
                 if (resolved) {
                     if (resolved.availableOptions) updatedLine._availableOptions = resolved.availableOptions
                     if (resolved.excludedColumns) updatedLine._excludedColumns = resolved.excludedColumns
@@ -909,6 +992,11 @@ export default function DynamicTable({
                         onCellChange={(lineIdx, key, value) => handleCellChange(schema._id, lineIdx, key, value)}
                         onRemoveLine={(lineIdx) => handleRemoveLine(schema._id, lineIdx)}
                         onAddLine={() => handleAddLine(schema._id)}
+                    />
+
+                    <TotalsBar
+                        schema={schema}
+                        lines={getSchemaLines(schema._id)}
                     />
 
                     {schema.snapshotConfig?.enabled && (

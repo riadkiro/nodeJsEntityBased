@@ -2,8 +2,9 @@
  * DataTable - The editable table (thead + tbody)
  * Renders schema columns with inline editing
  * Includes RelationSearch dropdown inline
+ * Supports column resize via drag handles
  */
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import CellRenderer from './CellRenderer'
 
@@ -18,7 +19,8 @@ const tableWrapStyle = {
 const tableStyle = {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '13px'
+    fontSize: '13px',
+    tableLayout: 'fixed'
 }
 
 const thStyle = {
@@ -32,7 +34,10 @@ const thStyle = {
     borderBottom: '1px solid #e5e7eb',
     textAlign: 'left',
     whiteSpace: 'nowrap',
-    userSelect: 'none'
+    userSelect: 'none',
+    position: 'relative',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
 }
 
 const tdStyle = {
@@ -40,7 +45,9 @@ const tdStyle = {
     borderBottom: '1px solid #e5e7eb',
     verticalAlign: 'middle',
     color: '#1f2937',
-    position: 'relative'
+    position: 'relative',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
 }
 
 const tdRelation = {
@@ -48,7 +55,8 @@ const tdRelation = {
     minWidth: '120px',
     borderBottom: '1px solid #e5e7eb',
     verticalAlign: 'middle',
-    position: 'relative'
+    position: 'relative',
+    overflow: 'hidden'
 }
 
 const dragHandleStyle = {
@@ -132,6 +140,26 @@ const dropdownItemStyle = {
     transition: 'background 0.1s'
 }
 
+// ── Resize handle styles ──
+const resizeHandleStyle = {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '5px',
+    cursor: 'col-resize',
+    zIndex: 10,
+    background: 'transparent',
+    transition: 'background 0.15s'
+}
+
+// ── Default column widths by schema size ──
+const DEFAULT_WIDTHS = { XS: 60, S: 90, M: 140, L: 200, XL: 280 }
+
+function getDefaultWidth(col) {
+    return DEFAULT_WIDTHS[col.width] || 140
+}
+
 export default function DataTable({
     schemaId,
     schema,
@@ -146,30 +174,99 @@ export default function DataTable({
     onSelectRelation,
     onCellChange,
     onRemoveLine,
-    onAddLine
+    onAddLine,
+    columnWidths,
+    onColumnResize
 }) {
     const relCol = getRelationCol()
     const sampleLine = lines[0] || null
     const visibleCols = getVisibleColumns(sampleLine)
 
+    // ── Resize state ──
+    const [resizing, setResizing] = useState(null) // { colKey, startX, startWidth }
+    const tableRef = useRef(null)
+
+    useEffect(() => {
+        if (!resizing) return
+
+        const handleMouseMove = (e) => {
+            const delta = e.clientX - resizing.startX
+            const newWidth = Math.max(40, resizing.startWidth + delta)
+            // Live update via DOM for performance
+            const th = tableRef.current?.querySelector(`[data-col-key="${resizing.colKey}"]`)
+            if (th) th.style.width = newWidth + 'px'
+        }
+
+        const handleMouseUp = (e) => {
+            const delta = e.clientX - resizing.startX
+            const newWidth = Math.max(40, resizing.startWidth + delta)
+            if (onColumnResize) onColumnResize(resizing.colKey, newWidth)
+            setResizing(null)
+            document.body.style.cursor = ''
+            document.body.style.userSelect = ''
+        }
+
+        document.body.style.cursor = 'col-resize'
+        document.body.style.userSelect = 'none'
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove)
+            document.removeEventListener('mouseup', handleMouseUp)
+        }
+    }, [resizing, onColumnResize])
+
+    const startResize = useCallback((colKey, e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const th = e.target.closest('th')
+        if (!th) return
+        setResizing({ colKey, startX: e.clientX, startWidth: th.offsetWidth })
+    }, [])
+
+    const getColWidth = useCallback((colKey, col) => {
+        if (columnWidths && columnWidths[colKey]) return columnWidths[colKey]
+        if (col) return getDefaultWidth(col)
+        return 180
+    }, [columnWidths])
+
     return (
         <div style={tableWrapStyle}>
-            <table style={tableStyle}>
+            <table style={tableStyle} ref={tableRef}>
                 <thead>
                     <tr>
-                        <th style={{ ...thStyle, width: '28px' }}></th>
-                        <th style={{ ...thStyle, width: '24px' }}>#</th>
+                        <th style={{ ...thStyle, width: '28px', minWidth: '28px', maxWidth: '28px' }}></th>
+                        <th style={{ ...thStyle, width: '24px', minWidth: '24px', maxWidth: '24px' }}>#</th>
                         {relCol && (
-                            <th style={{ ...thStyle, minWidth: '120px' }}>
+                            <th
+                                data-col-key="__relation"
+                                style={{ ...thStyle, width: getColWidth('__relation', relCol) + 'px' }}
+                            >
                                 {relCol.label || 'Article'}
+                                <div
+                                    style={resizeHandleStyle}
+                                    onMouseDown={(e) => startResize('__relation', e)}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#4361ee' }}
+                                    onMouseLeave={(e) => { if (!resizing) e.currentTarget.style.background = 'transparent' }}
+                                />
                             </th>
                         )}
                         {visibleCols.map(col => (
-                            <th key={col.key} style={thStyle}>
+                            <th
+                                key={col.key}
+                                data-col-key={col.key}
+                                style={{ ...thStyle, width: getColWidth(col.key, col) + 'px' }}
+                            >
                                 {col.label}
+                                <div
+                                    style={resizeHandleStyle}
+                                    onMouseDown={(e) => startResize(col.key, e)}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#4361ee' }}
+                                    onMouseLeave={(e) => { if (!resizing) e.currentTarget.style.background = 'transparent' }}
+                                />
                             </th>
                         ))}
-                        <th style={{ ...thStyle, width: '56px' }}></th>
+                        <th style={{ ...thStyle, width: '36px', minWidth: '36px', maxWidth: '36px' }}></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -285,11 +382,11 @@ function TableRow({
             onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb' }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
         >
-            <td style={{ ...tdStyle, padding: '2px 4px' }}>
+            <td style={{ ...tdStyle, padding: '2px 4px', width: '28px' }}>
                 <span style={dragHandleStyle}>::</span>
             </td>
 
-            <td style={rowNumStyle}>{lineIdx + 1}</td>
+            <td style={{ ...rowNumStyle, width: '24px' }}>{lineIdx + 1}</td>
 
             {relCol && (
                 <td style={tdRelation}>
@@ -352,7 +449,7 @@ function TableRow({
                 </td>
             ))}
 
-            <td style={{ ...tdStyle, padding: '2px 4px', textAlign: 'center' }}>
+            <td style={{ ...tdStyle, padding: '2px 4px', textAlign: 'center', width: '36px' }}>
                 <button
                     type="button"
                     style={removeBtn}

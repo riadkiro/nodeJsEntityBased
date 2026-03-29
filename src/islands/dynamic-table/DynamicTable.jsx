@@ -239,8 +239,52 @@ export default function DynamicTable({
     const [snapshotPendingDeleteId, setSnapshotPendingDeleteId] = useState('')
     const deleteTimerRef = useRef(null)
     const [visibleSchemaIds, setVisibleSchemaIds] = useState([])
+    const [columnWidthsMap, setColumnWidthsMap] = useState({}) // { [schemaId]: { [colKey]: width } }
+    const colWidthsSaveTimerRef = useRef(null)
 
     const storageKey = `dt_visible_tabs:${accountNumber || ''}:${entityId || ''}:${recordId || ''}:${schemaFilter || ''}`
+    const prefsViewId = `dynamic-table:${recordId || ''}`
+
+    // ── Load column widths from server ──
+    useEffect(() => {
+        if (!accountNumber || !recordId) return
+        fetch(`/account/${accountNumber}/api/user/view-preferences/${encodeURIComponent(prefsViewId)}`, { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+                const saved = data?.preferences?.gridColumnWidths
+                if (saved && typeof saved === 'object') {
+                    setColumnWidthsMap(saved)
+                }
+            })
+            .catch(() => {})
+    }, [accountNumber, recordId, prefsViewId])
+
+    // ── Save column widths to server (debounced) ──
+    const saveColumnWidths = useCallback((newMap) => {
+        if (colWidthsSaveTimerRef.current) clearTimeout(colWidthsSaveTimerRef.current)
+        colWidthsSaveTimerRef.current = setTimeout(() => {
+            fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    viewId: prefsViewId,
+                    preferences: { gridColumnWidths: newMap }
+                })
+            }).catch(() => {})
+        }, 600)
+    }, [accountNumber, prefsViewId])
+
+    const handleColumnResize = useCallback((schemaId, colKey, newWidth) => {
+        setColumnWidthsMap(prev => {
+            const updated = {
+                ...prev,
+                [schemaId]: { ...(prev[schemaId] || {}), [colKey]: newWidth }
+            }
+            saveColumnWidths(updated)
+            return updated
+        })
+    }, [saveColumnWidths])
 
     const getSnapshotTargetRecordId = useCallback((schema) => {
         const cfg = schema?.snapshotConfig
@@ -625,7 +669,8 @@ export default function DynamicTable({
                         recordId,
                         targetRecordId,
                         targetEntityId: schema.snapshotConfig?.targetEntityId || null,
-                        date
+                        date,
+                        columnWidths: columnWidthsMap[schemaId] || null
                     })
                 })
                 if (!res.ok) {
@@ -992,6 +1037,8 @@ export default function DynamicTable({
                         onCellChange={(lineIdx, key, value) => handleCellChange(schema._id, lineIdx, key, value)}
                         onRemoveLine={(lineIdx) => handleRemoveLine(schema._id, lineIdx)}
                         onAddLine={() => handleAddLine(schema._id)}
+                        columnWidths={columnWidthsMap[schema._id] || {}}
+                        onColumnResize={(colKey, width) => handleColumnResize(schema._id, colKey, width)}
                     />
 
                     <TotalsBar

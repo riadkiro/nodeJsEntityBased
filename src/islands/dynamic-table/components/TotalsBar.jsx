@@ -1,6 +1,9 @@
 /**
- * TotalsBar — Summary footer for billing schemas
- * Shows Total HT, TVA, and Total TTC calculated from filled lines
+ * TotalsBar — Flexible summary footer for billing schemas
+ * Supports: 
+ *   - Legacy format: { subtotalKey, vatKey, totalFormula }
+ *   - New format: { rows: [{ label, key, type, isFinal }] }
+ * Types: 'sum' (default), 'count', 'avg'
  */
 import React, { useMemo } from 'react'
 
@@ -34,7 +37,7 @@ const valueStyle = {
     whiteSpace: 'nowrap'
 }
 
-const totalLabelStyle = {
+const finalLabelStyle = {
     ...labelStyle,
     color: '#111827',
     fontWeight: 700,
@@ -43,7 +46,7 @@ const totalLabelStyle = {
     fontSize: '13px'
 }
 
-const totalValueStyle = {
+const finalValueStyle = {
     ...valueStyle,
     color: '#4361ee',
     fontWeight: 700,
@@ -60,54 +63,106 @@ function formatAmount(num) {
     })
 }
 
-export default function TotalsBar({ schema, lines }) {
-    const totalsConfig = schema?.totals
-    if (!totalsConfig || !totalsConfig.subtotalKey) return null
+function getFilledLines(lines) {
+    return (lines || []).filter(l => {
+        if (!l?.values) return false
+        return Object.values(l.values).some(v =>
+            v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
+        )
+    })
+}
 
-    const totals = useMemo(() => {
-        const filledLines = (lines || []).filter(l => {
-            if (!l?.values) return false
-            return Object.values(l.values).some(v =>
-                v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
-            )
-        })
+/**
+ * Convert legacy totals config to rows array
+ */
+function normalizeTotalsConfig(totals) {
+    if (!totals) return null
 
-        let subtotal = 0
-        let vat = 0
+    // New format: already has rows
+    if (Array.isArray(totals.rows) && totals.rows.length > 0) {
+        return totals.rows
+    }
 
-        for (const line of filledLines) {
-            const vals = line.values || {}
-            const st = Number(vals[totalsConfig.subtotalKey] || 0)
-            const v = totalsConfig.vatKey ? Number(vals[totalsConfig.vatKey] || 0) : 0
-            subtotal += isFinite(st) ? st : 0
-            vat += isFinite(v) ? v : 0
+    // Legacy format: subtotalKey + vatKey
+    if (totals.subtotalKey) {
+        const rows = [
+            { label: 'Total HT', key: totals.subtotalKey, type: 'sum' }
+        ]
+        if (totals.vatKey) {
+            rows.push({ label: 'TVA', key: totals.vatKey, type: 'sum' })
         }
+        // Final row: sum of subtotal + vat
+        rows.push({
+            label: 'Total TTC',
+            keys: [totals.subtotalKey, totals.vatKey].filter(Boolean),
+            type: 'sum',
+            isFinal: true
+        })
+        return rows
+    }
 
-        const total = subtotal + vat
+    return null
+}
 
-        return { subtotal, vat, total, lineCount: filledLines.length }
-    }, [lines, totalsConfig])
+export default function TotalsBar({ schema, lines }) {
+    const rowDefs = normalizeTotalsConfig(schema?.totals)
+    if (!rowDefs) return null
 
-    if (totals.lineCount === 0) return null
+    const filledLines = useMemo(() => getFilledLines(lines), [lines])
+
+    const computedRows = useMemo(() => {
+        if (filledLines.length === 0) return []
+
+        return rowDefs.map(def => {
+            const keys = def.keys || (def.key ? [def.key] : [])
+            let value = 0
+
+            if (def.type === 'count') {
+                value = filledLines.length
+            } else if (def.type === 'avg') {
+                let sum = 0
+                for (const line of filledLines) {
+                    for (const k of keys) {
+                        const v = Number(line.values?.[k] || 0)
+                        sum += isFinite(v) ? v : 0
+                    }
+                }
+                value = filledLines.length > 0 ? sum / filledLines.length : 0
+            } else {
+                // Default: sum
+                for (const line of filledLines) {
+                    for (const k of keys) {
+                        const v = Number(line.values?.[k] || 0)
+                        value += isFinite(v) ? v : 0
+                    }
+                }
+            }
+
+            return {
+                label: def.label,
+                value,
+                isFinal: def.isFinal || false,
+                format: def.format || 'amount'
+            }
+        })
+    }, [filledLines, rowDefs])
+
+    if (computedRows.length === 0) return null
 
     return (
         <div style={containerStyle}>
             <table style={tableStyle}>
                 <tbody>
-                    <tr>
-                        <td style={labelStyle}>Total HT</td>
-                        <td style={valueStyle}>{formatAmount(totals.subtotal)}</td>
-                    </tr>
-                    {totalsConfig.vatKey && (
-                        <tr>
-                            <td style={labelStyle}>TVA</td>
-                            <td style={valueStyle}>{formatAmount(totals.vat)}</td>
+                    {computedRows.map((row, i) => (
+                        <tr key={i}>
+                            <td style={row.isFinal ? finalLabelStyle : labelStyle}>
+                                {row.label}
+                            </td>
+                            <td style={row.isFinal ? finalValueStyle : valueStyle}>
+                                {row.format === 'count' ? row.value : formatAmount(row.value)}
+                            </td>
                         </tr>
-                    )}
-                    <tr>
-                        <td style={totalLabelStyle}>Total TTC</td>
-                        <td style={totalValueStyle}>{formatAmount(totals.total)}</td>
-                    </tr>
+                    ))}
                 </tbody>
             </table>
         </div>

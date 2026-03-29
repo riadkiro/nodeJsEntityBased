@@ -8,7 +8,7 @@ module.exports = {
             const DocumentLine = await tenantCollection(req, 'DocumentLine');
             if (!GridSnapshot || !DocumentLine) return res.status(500).json({ error: 'Model not available' });
 
-            const { schemaId, recordId, targetRecordId, targetEntityId, date, note } = req.body;
+            const { schemaId, recordId, targetRecordId, targetEntityId, date, note, columnWidths } = req.body;
 
             // Fetch current lines for this record + schema
             const allLines = await DocumentLine.find({
@@ -36,6 +36,7 @@ module.exports = {
                 targetEntityId: targetEntityId || null,
                 date: date || new Date(),
                 note: note || '',
+                columnWidths: columnWidths || null,
                 lines: lines.map(l => ({
                     lineType: l.lineType,
                     values: l.values,

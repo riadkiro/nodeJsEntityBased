@@ -55,6 +55,9 @@ const GridSnapshotSchema = new mongoose.Schema({
     // Optional note
     note: String,
 
+    // Column widths at the time of snapshot
+    columnWidths: { type: mongoose.Schema.Types.Mixed, default: null },
+
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

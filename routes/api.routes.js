@@ -738,7 +738,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Relation tabs (record edit)
             'relationTabs',
             // Sidebar panel visibility
-            'sidebar_panels'
+            'sidebar_panels',
+            // Dynamic table column widths
+            'gridColumnWidths'
         ]
 
         prefKeys.forEach(key => {

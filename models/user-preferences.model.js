@@ -85,6 +85,11 @@ const userPreferencesSchema = new mongoose.Schema({
         sidebar_panels: {
             type: mongoose.Schema.Types.Mixed,
             default: undefined
+        },
+        // Dynamic table column widths
+        gridColumnWidths: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
         }
     },
     updatedAt: {

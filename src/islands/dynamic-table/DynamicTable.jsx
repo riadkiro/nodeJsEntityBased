@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DynamicTable - Main orchestrator component
  * Reusable React island for dynamic line tables (treatments, invoicing, etc.)
  */
@@ -625,21 +625,85 @@ export default function DynamicTable({
         if (selected.length === 0) return
 
         const schemaId = schema._id
-        for (const item of selected) {
-            const currentLines = linesMapRef.current[schemaId] || []
-            let targetIdx = currentLines.findIndex(l => !isFilledLine(l))
-            if (targetIdx === -1) {
-                addLine(schemaId, schema)
-                const afterAdd = linesMapRef.current[schemaId] || []
-                targetIdx = Math.max(afterAdd.length - 1, 0)
+
+        // Process ALL selected items in a single setLinesMap call to avoid
+        // React 18 batching issue (linesMapRef not updated between iterations)
+        setLinesMap(prev => {
+            const newMap = { ...prev }
+            let lines = [...(newMap[schemaId] || [])]
+
+            for (const item of selected) {
+                // Find first empty line
+                let targetIdx = lines.findIndex(l => !isFilledLine(l))
+
+                // If no empty line, create one
+                if (targetIdx === -1) {
+                    lines.push({
+                        _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                        schemaId,
+                        lineType: schema?.defaultLineType || schema?.lineTypes?.[0] || 'default',
+                        values: {},
+                        computed: {},
+                        order: lines.length
+                    })
+                    targetIdx = lines.length - 1
+                }
+
+                // Apply relation + defaults to the target line
+                const selectedItem = pickBestCatalogItem(item, schemaId)
+                const hybridDefaults = resolveApplyDefaults(relCol, selectedItem)
+                const resolved = resolveLineDefaults(selectedItem, schemaId)
+                const normalizedDefaults = normalizeDefaultsForSchema(schema, resolved?.defaults || {})
+
+                const newValues = { ...lines[targetIdx].values }
+                newValues[relCol.key] = selectedItem._id
+                newValues[relCol.key + '_label'] = selectedItem.label || selectedItem.title
+
+                if (hybridDefaults) {
+                    for (const [k, v] of Object.entries(hybridDefaults)) {
+                        if (v !== null && v !== undefined && v !== '') newValues[k] = v
+                    }
+                }
+
+                if (Object.keys(normalizedDefaults).length > 0) {
+                    for (const [k, v] of Object.entries(normalizedDefaults)) {
+                        if (v === null || v === undefined || v === '') continue
+                        newValues[k] = v
+                    }
+                }
+
+                const updatedLine = { ...lines[targetIdx], values: newValues }
+                if (resolved) {
+                    if (resolved.availableOptions) updatedLine._availableOptions = resolved.availableOptions
+                    if (resolved.excludedColumns) updatedLine._excludedColumns = resolved.excludedColumns
+                }
+
+                lines[targetIdx] = updatedLine
             }
-            applyRelationSelection(schemaId, targetIdx, relCol, item, schema)
-        }
+
+            // Reorder: filled lines first, then empties, ensure ≥1 empty
+            const filledLines = lines.filter(l => isFilledLine(l))
+            const emptyLines = lines.filter(l => !isFilledLine(l))
+            if (emptyLines.length === 0) {
+                emptyLines.push({
+                    _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                    schemaId,
+                    lineType: schema?.defaultLineType || schema?.lineTypes?.[0] || 'default',
+                    values: {},
+                    computed: {},
+                    order: filledLines.length
+                })
+            }
+
+            newMap[schemaId] = [...filledLines, ...emptyLines]
+            linesMapRef.current = newMap
+            return newMap
+        })
 
         debouncedSave(schemaId)
         setTimeout(() => saveLinesForSchema(schemaId), 260)
         closeCatalogPicker()
-    }, [catalogPicker.results, catalogPicker.selectedIds, getRelationCol, linesMapRef, addLine, applyRelationSelection, debouncedSave, closeCatalogPicker, saveLinesForSchema])
+    }, [catalogPicker.results, catalogPicker.selectedIds, getRelationCol, linesMapRef, setLinesMap, pickBestCatalogItem, resolveApplyDefaults, resolveLineDefaults, debouncedSave, closeCatalogPicker, saveLinesForSchema])
 
     useEffect(() => {
         const active = schemas.find(s => s._id === activeSchemaId)

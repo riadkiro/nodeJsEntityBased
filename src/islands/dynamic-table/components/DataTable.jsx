@@ -236,7 +236,6 @@ export default function DataTable({
                 <thead>
                     <tr>
                         <th style={{ ...thStyle, width: '28px', minWidth: '28px', maxWidth: '28px' }}></th>
-                        <th style={{ ...thStyle, width: '24px', minWidth: '24px', maxWidth: '24px' }}>#</th>
                         {relCol && (
                             <th
                                 data-col-key="__relation"
@@ -385,8 +384,6 @@ function TableRow({
             <td style={{ ...tdStyle, padding: '2px 4px', width: '28px' }}>
                 <span style={dragHandleStyle}>::</span>
             </td>
-
-            <td style={{ ...rowNumStyle, width: '24px' }}>{lineIdx + 1}</td>
 
             {relCol && (
                 <td style={tdRelation}>

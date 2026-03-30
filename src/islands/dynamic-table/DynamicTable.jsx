@@ -548,6 +548,37 @@ export default function DynamicTable({
         }
     }, [accountNumber, getSnapshotTargetRecordId])
 
+    const restoreSnapshot = useCallback(async (schema, snap) => {
+        if (!snap || !schema) return
+        if (!window.confirm('Voulez-vous restaurer cet historique ? Cela écrasera les données actuelles.')) return
+
+        const schemaId = schema._id
+        
+        // 1. Restore lines
+        setLinesMap(prev => ({
+            ...prev,
+            [schemaId]: (snap.lines || []).map(l => ({
+                ...l,
+                _tempId: 'snap_' + Date.now() + '_' + Math.random()
+            }))
+        }))
+
+        // 2. Restore column widths if available
+        if (snap.columnWidths) {
+            setColumnWidthsMap(prev => {
+                const updated = {
+                    ...prev,
+                    [schemaId]: snap.columnWidths
+                }
+                saveColumnWidths(updated)
+                return updated
+            })
+        }
+
+        // 3. Save to server
+        setTimeout(() => saveLinesForSchema(schemaId), 100)
+    }, [setLinesMap, setColumnWidthsMap, saveColumnWidths, saveLinesForSchema])
+
     const deleteSnapshot = useCallback(async (schema, snapId) => {
         if (!snapId) return
         if (snapshotPendingDeleteId !== snapId) {
@@ -1060,75 +1091,179 @@ export default function DynamicTable({
                             {!snapshotLoadingMap[schema._id] && (() => {
                                 const all = snapshotHistoryMap[schema._id] || []
                                 const showAll = !!snapshotShowAllMap[schema._id]
-                                const visible = showAll ? all : all.slice(0, 5)
-                                return visible.map((snap) => {
-                                const open = !!snapshotExpanded[snap._id]
-                                const displayDate = new Date(snap.date || snap.createdAt).toLocaleDateString('fr-FR', {
-                                    day: '2-digit',
-                                    month: 'long',
-                                    year: 'numeric'
-                                })
-                                const displayTime = new Date(snap.createdAt || snap.date).toLocaleTimeString('fr-FR', {
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })
+                                const visibleItems = showAll ? all : all.slice(0, 5)
+                                if (visibleItems.length === 0) return null
+
                                 return (
-                                    <div key={snap._id} style={{ position: 'relative', paddingLeft: 22, marginBottom: 8 }}>
-                                        <div style={{ position: 'absolute', left: 7, top: 0, bottom: -8, width: 2, background: '#e5e7eb' }} />
-                                        <div style={{ position: 'absolute', left: 2, top: 12, width: 12, height: 12, borderRadius: '50%', background: '#4361ee', boxShadow: '0 0 0 3px #eef2ff' }} />
-                                        <div style={{ border: '1px solid #f3f4f6', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
-                                        <div
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 10px', background: '#fafafa', cursor: 'pointer' }}
-                                            onClick={() => setSnapshotExpanded(prev => ({ ...prev, [snap._id]: !open }))}
-                                        >
-                                            <div style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>
-                                                {(schema.label || schema.name || 'Traitement')} - {displayDate}
-                                                <span style={{ marginLeft: 8, fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>{displayTime}</span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    deleteSnapshot(schema, snap._id)
-                                                }}
-                                                disabled={snapshotDeletingId === snap._id}
-                                                style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                                            >
-                                                {snapshotDeletingId === snap._id ? (
-                                                    '...'
-                                                ) : snapshotPendingDeleteId === snap._id ? (
-                                                    'Supprimer'
-                                                ) : (
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-label="Supprimer">
-                                                        <path d="M4 7h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                                                        <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                                                        <path d="M7 7l1 12a1 1 0 0 0 1 .9h6a1 1 0 0 0 1-.9L17 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                                                    </svg>
-                                                )}
-                                            </button>
-                                        </div>
-                                        {open && (
-                                            <div style={{ padding: '6px 10px' }}>
-                                                {(snap.lines || []).slice(0, 8).map((line, idx) => (
-                                                    <div key={idx} style={{ fontSize: 12, color: '#6b7280', padding: '3px 0', borderBottom: '1px dashed #f3f4f6' }}>
-                                                        {formatSnapshotLine(schema, line, idx)}
+                                    <div style={{ position: 'relative', paddingLeft: 22, marginTop: 15 }}>
+                                        {/* Vertical Timeline Line */}
+                                        <div style={{ position: 'absolute', left: 7, top: 5, bottom: 5, width: 2, background: '#cbd5e1' }} />
+
+                                        {visibleItems.map((snap) => {
+                                            const expanded = !!snapshotExpanded[snap._id]
+                                            const d = new Date(snap.date || snap.createdAt)
+                                            const displayDate = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                                            const displayTime = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                                            
+                                            // Identify columns for preview (visible columns from schema)
+                                            // Include relation columns by keeping them in the list (we'll fetch label below)
+                                            const previewCols = (schema?.columns || []).filter(c => !c.hidden && c.visible !== false)
+                                            
+                                            return (
+                                                <div key={snap._id} style={{ position: 'relative', marginBottom: 12 }}>
+                                                    {/* Timeline Dot */}
+                                                    <div style={{ 
+                                                        position: 'absolute', left: -20, top: 6, width: 10, height: 10, borderRadius: '50%', 
+                                                        background: expanded ? '#4361ee' : '#cbd5e1', 
+                                                        boxShadow: expanded ? '0 0 0 4px #eef2ff' : 'none',
+                                                        zIndex: 2, transition: 'all 0.2s' 
+                                                    }} />
+
+                                                    <div style={{ 
+                                                        borderRadius: 10, border: expanded ? '1px solid #eef2ff' : '1px solid transparent', 
+                                                        background: expanded ? '#fff' : 'transparent', 
+                                                        overflow: 'hidden', transition: 'all 0.2s' 
+                                                    }}>
+                                                        {/* Header / Summary */}
+                                                        <div 
+                                                            style={{ 
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                                                                gap: 12, padding: '6px 8px', cursor: 'pointer', borderRadius: 8,
+                                                                background: expanded ? '#f8fafc' : 'rgba(255,255,255,0.4)' 
+                                                            }}
+                                                            onClick={() => setSnapshotExpanded(prev => ({ ...prev, [snap._id]: !expanded }))}
+                                                        >
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>{displayDate}</div>
+                                                                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{displayTime}</div>
+                                                                {!expanded && (
+                                                                    <div style={{ 
+                                                                        fontSize: 11, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', 
+                                                                        textOverflow: 'ellipsis', maxWidth: 400 
+                                                                    }}>
+                                                                        • {snap.lines?.length || 0} lignes - {formatSnapshotLine(schema, snap.lines?.[0], 0)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                {expanded && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => { e.stopPropagation(); restoreSnapshot(schema, snap); }}
+                                                                        style={{ border: 'none', background: '#4361ee', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 4px rgba(67, 97, 238, 0.2)' }}
+                                                                    >
+                                                                        Restaurer
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.stopPropagation(); deleteSnapshot(schema, snap._id); }}
+                                                                    style={{ border: 'none', background: 'none', color: snapshotPendingDeleteId === snap._id ? '#ef4444' : '#94a3b8', padding: '4px', cursor: 'pointer' }}
+                                                                >
+                                                                    {snapshotDeletingId === snap._id ? '...' : (
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                                            <path d="M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                                            <path d="M7 7l1 12a1 1 0 0 0 1 .9h6a1 1 0 0 0 1-.9L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Expanded Table Preview */}
+                                                        {expanded && (
+                                                            <div style={{ padding: '10px 8px 15px' }}>
+                                                                <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                                                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                                                                        <thead style={{ background: '#f8fafc' }}>
+                                                                            <tr>
+                                                                                {previewCols.map(col => (
+                                                                                    <th key={col.key} style={{ textAlign: 'left', padding: '8px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: 9 }}>
+                                                                                        {col.label}
+                                                                                    </th>
+                                                                                ))}
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {(snap.lines || []).filter(l => isFilledLine(l)).map((line, lidx) => (
+                                                                                <tr key={lidx} style={{ borderBottom: '1px solid #f8fafc' }}>
+                                                                                    {previewCols.map(col => {
+                                                                                        let val = line.values?.[col.key]
+                                                                                        if (col.type === 'relation') {
+                                                                                            val = line.values?.[col.key + '_label'] || val
+                                                                                        } else if (col.type === 'select') {
+                                                                                            const opt = (col.config?.options || []).find(o => String(o.value) === String(val))
+                                                                                            val = opt?.label || val
+                                                                                        }
+                                                                                        const isNumeric = ['number', 'formula', 'currency'].includes(col.type) || typeof val === 'number'
+                                                                                        return (
+                                                                                            <td key={col.key} style={{ padding: '8px', color: '#1e293b', fontWeight: 500, borderRight: '1px solid #f1f5f9' }}>
+                                                                                                {isNumeric && val !== null && val !== undefined && val !== ''
+                                                                                                    ? Number(val).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) 
+                                                                                                    : String(val || '')}
+                                                                                            </td>
+                                                                                        )
+                                                                                    })}
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+
+                                                                {/* Totals Summary */}
+                                                                {(() => {
+                                                                    const rowDefs = (schema?.totals?.rows) || []
+                                                                    const filledLines = (snap.lines || []).filter(isFilledLine)
+                                                                    if (rowDefs.length > 0 && filledLines.length > 0) {
+                                                                        return (
+                                                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                                                                                <table style={{ minWidth: 200, fontSize: 11, borderCollapse: 'collapse' }}>
+                                                                                    <tbody>
+                                                                                        {rowDefs.map((def, ridx) => {
+                                                                                            const keys = def.keys || (def.key ? [def.key] : [])
+                                                                                            let value = 0
+                                                                                            if (def.type === 'count') value = filledLines.length
+                                                                                            else {
+                                                                                                for (const l of filledLines) {
+                                                                                                    for (const k of keys) value += Number(l.values?.[k] || 0)
+                                                                                                }
+                                                                                            }
+                                                                                            return (
+                                                                                                <tr key={ridx}>
+                                                                                                    <td style={{ padding: '3px 8px', color: '#64748b', textAlign: 'right', fontWeight: 600 }}>{def.label}</td>
+                                                                                                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 700, color: def.isFinal ? '#4361ee' : '#1e293b', fontSize: def.isFinal ? 13 : 11 }}>
+                                                                                                        {def.format === 'count' ? value : value.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            )
+                                                                                        })}
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        )
+                                                                    }
+                                                                    return null
+                                                                })()}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )
-                                })
                             })()}
                             {!snapshotLoadingMap[schema._id] && (snapshotHistoryMap[schema._id] || []).length > 5 && (
-                                <button
-                                    type="button"
-                                    onClick={() => setSnapshotShowAllMap(prev => ({ ...prev, [schema._id]: !prev[schema._id] }))}
-                                    style={{ border: 'none', background: 'none', color: '#4361ee', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 4px' }}
-                                >
-                                    {snapshotShowAllMap[schema._id] ? 'Afficher moins' : `Afficher plus (${(snapshotHistoryMap[schema._id] || []).length})`}
-                                </button>
+                                <div style={{ marginTop: 15, textAlign: 'center' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSnapshotShowAllMap(prev => ({ ...prev, [schema._id]: !prev[schema._id] }))}
+                                        style={{ border: 'none', background: '#f8fafc', color: '#64748b', fontSize: 10, fontWeight: 800, cursor: 'pointer', padding: '8px 16px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                                    >
+                                        {snapshotShowAllMap[schema._id] ? 'Masquer l\'historique' : `Historique complet (${(snapshotHistoryMap[schema._id] || []).length})`}
+                                    </button>
+                                </div>
                             )}
                         </div>
                     )}

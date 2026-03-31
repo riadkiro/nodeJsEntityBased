@@ -1,4 +1,4 @@
-﻿<div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
+<div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
 
         <style>
     /* Fix sidebar panel z-index â€” NEVER exceed header z-20 */
@@ -20,6 +20,19 @@
         flex-shrink: 0 !important;
     }
 </style>
+<script type="application/json" id="linesPanel-relations">
+<%- JSON.stringify({
+    recordRelations: (locals.record && record._denorm && record._denorm.relations) || [],
+    entityRelations: ((locals.entity && entity.relations) || []).map(r => ({
+        key: r.key,
+        label: r.label,
+        icon: (r.targetEntity && r.targetEntity.icon) || 'solar:link-bold-duotone',
+        color: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+        targetEntity: r.targetEntity,
+        cardinality: r.cardinality
+    }))
+}).replace(/</g, '\\u003C') %>
+</script>
 <%# â”€â”€â”€ Panel Manager / Widget Catalog â”€â”€â”€ %>
         <!-- â•â•â• Panel Manager Header (hidden by default, shown in designMode or via "..." menu) â•â•â• -->
         <div class="flex items-center justify-between" style="padding: 0 2px;" x-show="designMode || sidebarConfigOpen" x-cloak>
@@ -62,12 +75,16 @@
                         <!-- Panel Toggles -->
                         <div style="padding: 6px; max-height: 320px; overflow-y: auto;">
                             <% 
-                            const panelDefinitions = [
+                            const _allPanelDefinitions = [
                                 { id: 'classifications', label: 'Classifications', icon: 'solar:tag-bold-duotone', color: '#f59e0b' },
                                 { id: 'attachments', label: 'Pièces jointes', icon: 'solar:paperclip-bold-duotone', color: '#6366f1' },
                                 { id: 'smartdoc', label: 'Documents modèles', icon: 'solar:document-text-bold-duotone', color: '#06b6d4' },
                                 { id: 'lines', label: 'Tableau Dynamique', icon: 'solar:list-check-bold-duotone', color: '#10b981' },
                             ];
+                            const panelDefinitions = _allPanelDefinitions.filter(pd => {
+                                if (pd.id === 'lines' && entity.slug === 'consultations') return false;
+                                return true;
+                            });
                             // Add relation panels  
                             (entity.relations || []).forEach(function(r) {
                                 panelDefinitions.push({
@@ -1581,7 +1598,7 @@
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>
                             <!-- ðŸ“Š Tableau Dynamique Panel -->
-                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms>
+                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')<%= entity.slug === 'consultations' ? ' && false' : '' %>" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -1776,9 +1793,7 @@
                                                 <span style="font-size: 9px; color: #9ca3af; font-weight: 600; flex-shrink: 0; min-width: 28px; text-align: right;" x-text="tasks.filter(t => t.done).length + '/' + tasks.length"></span>
                                             </div>
                                         </div>
-                                    <% } else if (sw.type === 'dynamic-table') { %>
-                                        <% const useReactSidebarDT = true; %>
-                                        <% if (useReactSidebarDT) { %>
+                                                                        <% } else if (sw.type === 'dynamic-table') { %>
                                         <%
                                             const dtSchemaIdsReact = (sw.config?.schemaIds || []).map(id => id?.toString()).filter(Boolean);
                                             const singleIdReact = sw.config?.schemaId?.toString();
@@ -1795,571 +1810,6 @@
                                                 data-compact="true"
                                             ></div>
                                         </div>
-                                        <% } else { %>
-                                        <%
-                                            // Build list of schemas to display (multi-tab or single)
-                                            const dtSchemaIds = (sw.config?.schemaIds || []).map(id => id?.toString()).filter(Boolean);
-                                            const singleId = sw.config?.schemaId?.toString();
-                                            // If schemaIds array is empty, fall back to single schemaId
-                                            const resolvedIds = dtSchemaIds.length > 0 ? dtSchemaIds : (singleId ? [singleId] : []);
-                                            // If still empty, show ALL schemas
-                                            const allDtSchemas = resolvedIds.length > 0
-                                                ? resolvedIds.map(id => (gridSchemas || []).find(s => s.schemaId?.toString() === id)).filter(Boolean)
-                                                : (gridSchemas || []).filter(s => s && s.schema);
-                                            const isMultiTab = allDtSchemas.length > 1;
-                                        %>
-                                        <!-- Wrapper for multi-tab management -->
-                                        <div x-data="{ swActiveTab: 0 }">
-
-                                            <!-- Schema content (one at a time) -->
-                                            <% allDtSchemas.forEach(function(dtGs, dtIdx) {
-                                                const dtSchemaId = dtGs.schemaId?.toString();
-                                                const dtSchema = dtGs.schema;
-                                                const dtColumns = dtSchema ? (dtSchema.columns || []).filter(c => c.visible !== false) : [];
-                                                const dtSnapshotEnabled = dtSchema && dtSchema.snapshotConfig && dtSchema.snapshotConfig.enabled;
-                                            %>
-                                            <div x-show="swActiveTab === <%= dtIdx %>"
-                                                 x-data="sidebarDynamicTable('<%= dtSchemaId %>', '<%= record._id %>', '<%= account_number %>', JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify({
-                                                columns: dtColumns,
-                                                defaultLineType: dtSchema ? (dtSchema.defaultLineType || 'treatment') : 'treatment',
-                                                snapshotEnabled: !!dtSnapshotEnabled,
-                                                snapshotConfig: dtSchema ? (dtSchema.snapshotConfig || {}) : {},
-                                                entityId: entity._id.toString()
-                                            })) %>')))" x-init="init()">
-
-                                            <!-- â•â•â• Combined Header: Tabs on Left, Actions on Right â•â•â• -->
-                                            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 0; border-bottom:1px solid #f3f4f6;" class="dark:border-gray-800">
-                                                <!-- Left Area: Schema Pills (Tabs) -->
-                                                <div style="display:flex; align-items:center; gap:4px; overflow-x:auto; scrollbar-width:none;">
-                                                    <% if (allDtSchemas.length > 1) { %>
-                                                        <% allDtSchemas.forEach(function(gs, gsi) { %>
-                                                            <button type="button"
-                                                                class="lp-schema-pill"
-                                                                style="font-size: 11px; padding: 4px 10px; height: 26px;"
-                                                                :class="{ 'active': swActiveTab === <%= gsi %> }"
-                                                                @click="swActiveTab = <%= gsi %>">
-                                                                <iconify-icon icon="solar:notebook-bold-duotone" width="12"></iconify-icon>
-                                                                <span><%= gs.schema.label || gs.schema.name %></span>
-                                                            </button>
-                                                        <% }) %>
-                                                    <% } else { %>
-                                                        <!-- Single Schema Label -->
-                                                        <div style="display:flex; align-items:center; gap:8px; padding-left:4px;">
-                                                            <div style="width:22px; height:22px; border-radius:6px; background:#4361ee15; display:flex; align-items:center; justify-content:center;">
-                                                                <iconify-icon icon="solar:notebook-bold-duotone" width="12" style="color:#4361ee;"></iconify-icon>
-                                                            </div>
-                                                            <span style="font-size: 11px; font-weight: 700; color: #4b5563;" class="dark:text-gray-300"><%= dtSchema.label || dtSchema.name %></span>
-                                                        </div>
-                                                    <% } %>
-                                                </div>
-
-                                                <!-- Right Area: Actions (Save & Presets) -->
-                                                <div class="lp-toolbar" style="margin:0; padding:0; border:none; box-shadow:none; background:transparent;">
-                                                    <!-- Presets button with dropdown -->
-                                                    <div style="position: relative;">
-                                                    <button type="button" class="lp-toolbar-btn"
-                                                            :class="{ 'active': presetOpen }"
-                                                            @click.stop="presetOpen = !presetOpen">
-                                                        <iconify-icon icon="solar:clipboard-check-bold-duotone" width="13"></iconify-icon>
-                                                        Presets
-                                                        <span x-show="presets.length > 0"
-                                                              class="lp-preset-item-badge" x-text="presets.length"></span>
-                                                    </button>
-                                                    <!-- Preset Dropdown -->
-                                                    <template x-if="presetOpen">
-                                                        <div>
-                                                            <div style="position: fixed; inset: 0; z-index: 99;"
-                                                                 @click.stop="presetOpen = false"></div>
-                                                            <div class="lp-preset-dropdown" style="right: 0; left: auto;" @click.stop>
-                                                                <!-- Record-specific presets -->
-                                                                <template x-if="presets.filter(p => !!p.recordId).length > 0">
-                                                                    <div>
-                                                                        <div class="lp-preset-section-label">
-                                                                            <iconify-icon icon="solar:user-bold-duotone" width="10"></iconify-icon>
-                                                                            Pour ce record
-                                                                        </div>
-                                                                        <template x-for="preset in presets.filter(p => !!p.recordId)" :key="preset._id">
-                                                                            <div class="lp-preset-item" @click="applyPreset(preset); presetOpen = false">
-                                                                                <div class="lp-preset-item-icon" :style="'background:' + (preset.color || '#4361ee') + '15; color:' + (preset.color || '#4361ee')">
-                                                                                    <iconify-icon :icon="preset.icon || 'solar:clipboard-check-bold-duotone'" width="14"></iconify-icon>
-                                                                                </div>
-                                                                                <div class="lp-preset-item-info">
-                                                                                    <div class="lp-preset-item-name" x-text="preset.name"></div>
-                                                                                    <div class="lp-preset-item-meta">
-                                                                                        <span class="lp-preset-item-badge" x-text="(preset.presetRows || []).length + ' lignes'"></span>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <button class="lp-preset-item-delete" @click.stop="deletePreset(preset._id)" title="Supprimer">
-                                                                                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="14"></iconify-icon>
-                                                                                </button>
-                                                                            </div>
-                                                                        </template>
-                                                                        <div class="lp-preset-divider"></div>
-                                                                    </div>
-                                                                </template>
-                                                                <!-- Global presets -->
-                                                                <div class="lp-preset-section-label">
-                                                                    <iconify-icon icon="solar:global-bold-duotone" width="10"></iconify-icon>
-                                                                    Presets globaux
-                                                                </div>
-                                                                <template x-if="presets.filter(p => !p.recordId).length === 0">
-                                                                    <div class="lp-preset-empty">
-                                                                        <iconify-icon icon="solar:clipboard-list-broken" width="20" style="opacity: 0.4; display: block; margin: 0 auto 4px;"></iconify-icon>
-                                                                        Aucun preset disponible
-                                                                    </div>
-                                                                </template>
-                                                                <template x-for="preset in presets.filter(p => !p.recordId)" :key="preset._id">
-                                                                    <div class="lp-preset-item" @click="applyPreset(preset); presetOpen = false">
-                                                                        <div class="lp-preset-item-icon" :style="'background:' + (preset.color || '#4361ee') + '15; color:' + (preset.color || '#4361ee')">
-                                                                            <iconify-icon :icon="preset.icon || 'solar:clipboard-list-bold-duotone'" width="14"></iconify-icon>
-                                                                        </div>
-                                                                        <div class="lp-preset-item-info">
-                                                                            <div class="lp-preset-item-name" x-text="preset.name"></div>
-                                                                            <div class="lp-preset-item-meta">
-                                                                                <span class="lp-preset-item-badge" x-text="(preset.presetRows || []).length + ' lignes'"></span>
-                                                                                <span x-show="preset.description" x-text="preset.description" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <button class="lp-preset-item-delete" @click.stop="deletePreset(preset._id)" title="Supprimer">
-                                                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="14"></iconify-icon>
-                                                                        </button>
-                                                                    </div>
-                                                                </template>
-                                                                <!-- Save current as preset -->
-                                                                <div class="lp-preset-add-btn"
-                                                                     @click="presetOpen = false; savePresetOpen = true">
-                                                                    <iconify-icon icon="solar:add-circle-bold-duotone" width="14"></iconify-icon>
-                                                                    Sauvegarder comme preset
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </template>
-                                                </div>
-
-                                                <div class="lp-toolbar-sep"></div>
-
-                                                <!-- Save preset shortcut -->
-                                                <button type="button" class="lp-toolbar-btn"
-                                                        x-show="lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).length > 0"
-                                                        @click.stop="savePresetOpen = true">
-                                                    <iconify-icon icon="solar:diskette-bold-duotone" width="13"></iconify-icon>
-                                                    Sauvegarder
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                            <!-- â•â•â• Editable Table â•â•â• -->
-                                            <div style="overflow:visible;">
-                                                <table class="lines-panel-table border border-gray-50 dark:border-gray-800" style="font-size:11px;">
-                                                    <thead>
-                                                        <tr>
-                                                            <% dtColumns.forEach(col => { %>
-                                                                <th style="padding:4px 6px !important; font-size:9px !important;"><%= col.label %></th>
-                                                            <% }) %>
-                                                            <th style="width:24px;"></th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <template x-for="(line, lineIdx) in lines" :key="line._tempId || lineIdx">
-                                                            <tr :style="(msDropdown.lineIdx === lineIdx || searchLineIdx === lineIdx) ? 'position: relative; z-index: 50;' : ''">
-                                                                <% dtColumns.forEach((col, ci) => { %>
-                                                                    <td style="padding:2px 4px !important;">
-                                                                        <% if (col.type === 'relation') { %>
-                                                                            <!-- Relation search -->
-                                                                            <div style="position:relative;">
-                                                                                <input type="text" class="lp-input" style="font-size:11px !important; height:22px !important; padding:0 4px !important;"
-                                                                                    :value="line.values['<%= col.key %>_label'] || ''"
-                                                                                    @focus="openSearch(lineIdx)"
-                                                                                    @input="doSearch($event.target.value, lineIdx)"
-                                                                                    @blur="setTimeout(() => searchOpen = false, 200)"
-                                                                                    @keydown.escape="searchOpen = false"
-                                                                                    placeholder="🔍 <%= col.label %>" />
-                                                                                <div x-show="searchOpen && searchLineIdx === lineIdx" x-cloak
-                                                                                    style="position:absolute; top:100%; left:0; right:0; z-index:9999; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:160px; overflow-y:auto; margin-top:2px;">
-                                                                                    <template x-if="searchLoading">
-                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">
-                                                                                            <iconify-icon icon="svg-spinners:ring-resize" width="14"></iconify-icon>
-                                                                                        </div>
-                                                                                    </template>
-                                                                                    <template x-if="!searchLoading && searchResults.length === 0">
-                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">Aucun résultat</div>
-                                                                                    </template>
-                                                                                    <template x-for="item in searchResults" :key="item._id">
-                                                                                        <div style="padding:6px 10px; font-size:11px; cursor:pointer; transition:background 0.1s; border-bottom:1px solid #f3f4f6;"
-                                                                                             @mousedown.prevent="selectItem(lineIdx, item)"
-                                                                                             onmouseover="this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.background=''">
-                                                                                            <span x-text="item.label || item.title" style="font-weight:500; color:#1f2937;"></span>
-                                                                                        </div>
-                                                                                    </template>
-                                                                                </div>
-                                                                            </div>
-                                                                        <% } else if (col.type === 'multiselect' || col.type === 'select') { %>
-                                                                            <!-- Multiselect / Select (tp-style high-fidelity) -->
-                                                                            <div class="tp-wrapper" style="position:relative;">
-                                                                                <div class="lp-ms-trigger"
-                                                                                     style="min-height:22px;padding:1px 4px;gap:2px;"
-                                                                                     @click.stop="openMultiselectDropdown(lineIdx, '<%= col.key %>')">
-                                                                                    <template x-if="!line.values['<%= col.key %>'] || (Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].length === 0)">
-                                                                                        <span class="lp-ms-placeholder" style="font-size:10px;">Sélectionner...</span>
-                                                                                    </template>
-                                                                                    <% if (col.type === 'multiselect') { %>
-                                                                                        <template x-for="selVal in (Array.isArray(line.values['<%= col.key %>']) ? line.values['<%= col.key %>'] : (line.values['<%= col.key %>'] ? [line.values['<%= col.key %>']] : []))" :key="selVal">
-                                                                                            <span class="tp-tag"
-                                                                                                  style="font-size:9px;"
-                                                                                                  :style="'background:' + getMultiselectOptStyle(columns[<%= ci %>], selVal).bg + '; color:' + getMultiselectOptStyle(columns[<%= ci %>], selVal).text"
-                                                                                                  x-text="getMultiselectOptLabel(columns[<%= ci %>], selVal)">
-                                                                                            </span>
-                                                                                        </template>
-                                                                                    <% } else { %>
-                                                                                        <template x-if="line.values['<%= col.key %>']">
-                                                                                            <span class="tp-tag"
-                                                                                                  style="font-size:9px;"
-                                                                                                  :style="'background:' + getMultiselectOptStyle(columns[<%= ci %>], line.values['<%= col.key %>']).bg + '; color:' + getMultiselectOptStyle(columns[<%= ci %>], line.values['<%= col.key %>']).text"
-                                                                                                  x-text="getMultiselectOptLabel(columns[<%= ci %>], line.values['<%= col.key %>'])">
-                                                                                            </span>
-                                                                                        </template>
-                                                                                    <% } %>
-                                                                                </div>
-                                                                                <!-- Dropdown -->
-                                                                                <template x-if="msDropdown.lineIdx === lineIdx && msDropdown.colKey === '<%= col.key %>' && msDropdown.open">
-                                                                                    <div>
-                                                                                        <div style="position: fixed; inset: 0; z-index: 9998;"
-                                                                                             @click.stop="closeMultiselectDropdown()"></div>
-                                                                                        <div class="tp-dropdown" style="z-index:9999; min-width:200px; position:absolute; right:0; top:100%; margin-top:4px;" @click.stop>
-                                                                                            <div class="tp-search-wrap">
-                                                                                                <input type="text" class="tp-search-input"
-                                                                                                       placeholder="Rechercher ou créer..."
-                                                                                                       :value="msDropdown.query"
-                                                                                                       @input="msDropdown.query = $event.target.value"
-                                                                                                       @keydown.enter.prevent="msCreateOption(columns[<%= ci %>])" />
-                                                                                            </div>
-                                                                                            <div class="tp-divider"></div>
-                                                                                            <div class="tp-options">
-                                                                <template x-for="opt in filterMsOptions(columns[<%= ci %>])" :key="opt.value">
-                                                                    <div class="tp-option group" style="display:flex; align-items:center; justify-content:space-between;"
-                                                                         @click.stop="<%= col.type === 'multiselect' ? "toggleMultiselectValue(line, '" + col.key + "', opt.value)" : "line.values['" + col.key + "'] = opt.value; closeMultiselectDropdown(); debouncedSave()" %>">
-                                                                        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
-                                                                            <div class="tp-option-icon"
-                                                                                 :style="isOptSelected(line, '<%= col.key %>', opt.value)
-                                                                                     ? 'background:' + getMultiselectOptStyle(columns[<%= ci %>], opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(columns[<%= ci %>], opt.value).bg
-                                                                                     : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                                <template x-if="isOptSelected(line, '<%= col.key %>', opt.value)"><iconify-icon 
-                                                                                              icon="tabler:check" width="12"
-                                                                                              :style="'color:' + getMultiselectOptStyle(columns[<%= ci %>], opt.value).text"></iconify-icon></template>
-                                                                            </div>
-                                                                            <span class="tp-option-label" x-text="opt.label" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;"></span>
-                                                                        </div>
-                                                                        <!-- Delete Option Icon -->
-                                                                        <button type="button" class="tp-option-delete"
-                                                                                :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
-                                                                                @click.stop.prevent="removeInlineOption(columns[<%= ci %>], opt.value)"
-                                                                                @mousedown.stop.prevent=""
-                                                                                :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
-                                                                            <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
-                                                                        </button>
-                                                                    </div>
-                                                                </template>
-                                                            
-                                                                    <!-- + CrÃ©er -->
-                                                                    <template x-if="(msDropdown.query || '').trim() && !(columns[<%= ci %>].config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
-                                                                        <div class="tp-create-option" @click.stop="msCreateOption(columns[<%= ci %>])">
-                                                                            <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
-                                                                            <span class="tp-create-label">Créer</span>
-                                                                            <span class="tp-create-tag" x-text="msDropdown.query"></span>
-                                                                        </div>
-                                                                    </template>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </template>
-                                                </div>
-<% } else if (col.type === 'textarea') { %>
-                                                                            <input type="text" class="lp-input" style="font-size:10px !important; height:20px !important; padding:0 3px !important;"
-                                                                                :value="line.values['<%= col.key %>'] || ''"
-                                                                                @input="line.values['<%= col.key %>'] = $event.target.value; debouncedSave()"
-                                                                                placeholder="<%= col.label %>" />
-                                                                        <% } else { %>
-                                                                            <input type="text" class="lp-input" style="font-size:11px !important; height:22px !important; padding:0 4px !important;"
-                                                                                :value="line.values['<%= col.key %>'] || ''"
-                                                                                @input="line.values['<%= col.key %>'] = $event.target.value; debouncedSave()"
-                                                                                placeholder="<%= col.label %>" />
-                                                                        <% } %>
-                                                                    </td>
-                                                                <% }) %>
-                                                                <!-- Delete button -->
-                                                                <td style="padding:0 !important; width:20px;">
-                                                                    <div style="opacity:0; transition:opacity 0.15s;" class="sw-row-actions">
-                                                                        <button type="button" @click="removeLine(lineIdx)" style="padding:2px; border:none; background:transparent; cursor:pointer; color:#ef4444; line-height:1; border-radius:3px;"
-                                                                                onmouseover="this.style.background='rgba(239,68,68,0.08)'" onmouseout="this.style.background=''">
-                                                                            <iconify-icon icon="tabler:trash" width="12"></iconify-icon>
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        </template>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <!-- â•â•â• Action bar: compact pills aligned right (pixel-perfect copy of main tab) â•â•â• -->
-                                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px;">
-                                                <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
-                                                     @click.stop="addLine()"
-                                                     onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
-                                                     onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
-                                                    <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
-                                                    <span>Ajouter</span>
-                                                </div>
-                                                <% if (dtSnapshotEnabled) { %>
-                                                <div :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;' + (saving ? ' opacity:0.5; pointer-events:none;' : '')"
-                                                     @click.stop="saveSnapshot()"
-                                                     onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
-                                                     onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
-                                                    <iconify-icon icon="solar:check-circle-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
-                                                    <span x-text="saving ? 'Validation...' : 'Valider'" style="pointer-events:none;"></span>
-                                                </div>
-                                                <% } %>
-                                            </div>
-
-
-                                            <!-- â•â•â• Save Preset Modal (pixel-perfect copy of main tab) â•â•â• -->
-                                            <template x-if="savePresetOpen">
-                                                <div class="lp-modal-overlay" @click.self="savePresetOpen = false" @keydown.escape.window="savePresetOpen = false">
-                                                    <div class="lp-modal" style="max-width: 520px;">
-                                                        <!-- Header -->
-                                                        <div class="lp-modal-header">
-                                                            <h3>
-                                                                <iconify-icon icon="solar:clipboard-check-bold-duotone" width="18" class="text-primary"></iconify-icon>
-                                                                Sauvegarder comme preset
-                                                            </h3>
-                                                            <button class="lp-modal-close" @click="savePresetOpen = false">
-                                                                <iconify-icon icon="tabler:x" width="16"></iconify-icon>
-                                                            </button>
-                                                        </div>
-
-                                                        <!-- Body -->
-                                                        <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; max-height: 65vh; overflow-y: auto;">
-                                                            <!-- Name -->
-                                                            <div>
-                                                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Nom du preset</label>
-                                                                <input type="text" class="lp-input" style="width: 100%; height: 38px; font-size: 13px; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 0 12px;"
-                                                                       placeholder="Ex: Protocole Grippe, Suivi ThyroÃ¯de..."
-                                                                       x-model="savePresetName"
-                                                                       x-ref="sidebarPresetName"
-                                                                       x-init="$nextTick(() => $refs.sidebarPresetName?.focus())"
-                                                                       @keydown.enter.prevent="confirmSavePreset()" />
-                                                            </div>
-
-                                                            <!-- Scope -->
-                                                            <div>
-                                                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PortÃ©e</label>
-                                                                <div style="display: flex; flex-direction: column; gap: 8px;">
-                                                                    <div class="lp-save-scope-option"
-                                                                         :class="{ 'active': savePresetScope === 'workspace' }"
-                                                                         @click="savePresetScope = 'workspace'">
-                                                                        <div class="lp-scope-radio"></div>
-                                                                        <iconify-icon icon="solar:global-bold-duotone" width="18" style="color: #4361ee;"></iconify-icon>
-                                                                        <div class="lp-save-scope-info">
-                                                                            <div class="lp-save-scope-title">Preset global</div>
-                                                                            <div class="lp-save-scope-desc">Disponible pour tous les records de ce type</div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="lp-save-scope-option"
-                                                                         :class="{ 'active': savePresetScope === 'record' }"
-                                                                         @click="savePresetScope = 'record'">
-                                                                        <div class="lp-scope-radio"></div>
-                                                                        <iconify-icon icon="solar:document-bold-duotone" width="18" style="color: #22c55e;"></iconify-icon>
-                                                                        <div class="lp-save-scope-info">
-                                                                            <div class="lp-save-scope-title">Ce record uniquement</div>
-                                                                            <div class="lp-save-scope-desc">LiÃ© Ã  ce record spÃ©cifique seulement</div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <!-- Preview -->
-                                                            <div class="lp-save-preview">
-                                                                <div class="lp-save-preview-header">
-                                                                    <iconify-icon icon="solar:eye-bold-duotone" width="12"></iconify-icon>
-                                                                    <span x-text="lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).length + ' lignes seront sauvegardÃ©es'"></span>
-                                                                </div>
-                                                                <template x-for="(line, idx) in lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).slice(0, 6)" :key="idx">
-                                                                    <div class="lp-save-preview-item">
-                                                                        <span style="color: #9ca3af; font-size: 10px; min-width: 14px;" x-text="idx + 1"></span>
-                                                                        <span x-text="Object.values(line.values || {}).filter(v => v && typeof v === 'string').join(' Â· ') || Object.values(line.values || {}).filter(v => Array.isArray(v) && v.length > 0).map(v => v.join(', ')).join(' Â· ') || 'Ligne ' + (idx + 1)"></span>
-                                                                    </div>
-                                                                </template>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Footer -->
-                                                        <div class="lp-modal-footer">
-                                                            <div></div>
-                                                            <div style="display: flex; gap: 8px;">
-                                                                <button class="lp-btn-cancel" @click="savePresetOpen = false">Annuler</button>
-                                                                <button class="lp-btn-add"
-                                                                        :disabled="!savePresetName.trim() || savingPreset"
-                                                                        @click="confirmSavePreset()">
-                                                                    <iconify-icon x-show="!savingPreset" icon="solar:diskette-bold" width="14"></iconify-icon>
-                                                                    <iconify-icon x-show="savingPreset" icon="svg-spinners:ring-resize" width="14"></iconify-icon>
-                                                                    <span x-text="savingPreset ? 'Sauvegarde...' : 'Sauvegarder'"></span>
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-
-                                            <!-- â•â•â• Snapshot History Timeline (pixel-perfect copy of main tab) â•â•â• -->
-                                            <template x-if="snapshots.length > 0">
-                                                <div class="lp-snapshot-area" style="padding:4px 0 8px;">
-                                                    <!-- Timeline -->
-                                                    <div class="lp-timeline">
-                                                        <!-- Vertical line -->
-                                                        <div class="lp-timeline-line"></div>
-
-                                                        <!-- Entries: sorted descending (newest first) -->
-                                                        <template x-for="(snap, si) in [...snapshots].sort((a,b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)).slice(0, showAllHistory ? 50 : 5)" :key="snap._id">
-                                                            <div class="lp-timeline-entry" :class="{ 'is-open': expandedSnap === snap._id }">
-                                                                <!-- Dot -->
-                                                                <div class="lp-timeline-dot"></div>
-                                                                <!-- Header -->
-                                                                <div class="lp-timeline-header" @click="expandedSnap = expandedSnap === snap._id ? null : snap._id">
-                                                                    <iconify-icon :icon="expandedSnap === snap._id ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" class="lp-timeline-chevron"></iconify-icon>
-                                                                    <span class="lp-timeline-title" x-text="'Traitement â€” ' + new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})"></span>
-                                                                    <div class="lp-timeline-meta">
-                                                                        <span class="lp-timeline-time" x-text="new Date(snap.createdAt || snap.date).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
-                                                                        <span class="lp-timeline-badge" x-text="snap.lines.length + ' lignes'"></span>
-                                                                        <!-- Delete button -->
-                                                                        <button type="button" @click.stop="confirmDeleteSnapshot(snap._id)"
-                                                                            style="padding: 2px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: #ef4444; opacity: 0; transition: opacity 0.2s;"
-                                                                            class="snapshot-delete-trigger hover:bg-red-50 dark:hover:bg-red-900/20">
-                                                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="12"></iconify-icon>
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                                <!-- Expanded body -->
-                                                                <div x-show="expandedSnap === snap._id" x-cloak
-                                                                     x-transition:enter="transition ease-out duration-150"
-                                                                     x-transition:enter-start="opacity-0 -translate-y-1"
-                                                                     x-transition:enter-end="opacity-100 translate-y-0"
-                                                                     class="lp-timeline-body">
-                                                                    <table class="lp-snapshot-table">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <% dtColumns.forEach(col => { %>
-                                                                                    <th style="font-size:10px;"><%= col.label %></th>
-                                                                                <% }) %>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            <template x-for="(sLine, sli) in snap.lines" :key="sli">
-                                                                                <tr>
-                                                                                    <% dtColumns.forEach(col => { %>
-                                                                                        <td>
-                                                                                            <% if (col.type === 'relation') { %>
-                                                                                                <span x-text="sLine.values?.['<%= col.key %>_label'] || sLine.values?.description || 'â€”'" style="color:#4361ee;"></span>
-                                                                                            <% } else if (col.type === 'multiselect' || col.type === 'select') { %>
-                                                                                                <span x-text="getSnapMultiLabel('<%= col.key %>', sLine.values?.['<%= col.key %>'])"></span>
-                                                                                            <% } else { %>
-                                                                                                <span x-text="sLine.values?.['<%= col.key %>'] || 'â€”'"></span>
-                                                                                            <% } %>
-                                                                                        </td>
-                                                                                    <% }) %>
-                                                                                </tr>
-                                                                            </template>
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        </template>
-
-                                                        <!-- Show more -->
-                                                        <template x-if="snapshots.length > 5">
-                                                            <div class="lp-timeline-showmore" style="padding-left:38px;">
-                                                                <span style="font-size:11px; color:#4361ee; cursor:pointer; user-select:none; font-weight:500;"
-                                                                      @click="showAllHistory = !showAllHistory"
-                                                                      x-text="showAllHistory ? 'â–² Voir moins' : ('â–¼ Voir tout (' + snapshots.length + ')')"></span>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                            <% }) /* end allDtSchemas.forEach */ %>
-                                        </div><!-- end swActiveTab wrapper -->
-                                        <style>
-                                            /* Show row actions on hover */
-                                            .lines-panel-table tbody tr:hover .sw-row-actions { opacity: 1 !important; }
-                                            /* Show snapshot delete on hover */
-                                            .lp-timeline-header:hover .snapshot-delete-trigger { opacity: 1 !important; }
-                                            /* Allow dropdowns to escape the card overflow-hidden */
-                                            .panel:has([x-data*="sidebarDynamicTable"]) { overflow: visible !important; }
-
-                                            /* Table border */
-                                            .lines-panel-table {
-                                                border: 1px solid #e5e7eb;
-                                                border-radius: 8px;
-                                                border-collapse: separate;
-                                                overflow: visible;
-                                            }
-                                            .dark .lines-panel-table {
-                                                border-color: #334155;
-                                            }
-
-                                            /* Multiselect / Select triggers (pixel-perfect from main grid) */
-                                            .lp-ms-trigger {
-                                                display: flex;
-                                                align-items: center;
-                                                flex-wrap: wrap;
-                                                gap: 4px;
-                                                min-height: 24px;
-                                                padding: 1px 6px;
-                                                border: 1px solid transparent;
-                                                border-radius: 4px;
-                                                cursor: pointer;
-                                                background: transparent;
-                                                transition: all 0.15s;
-                                            }
-                                            .lp-ms-trigger:hover {
-                                                border-color: #cbd5e1;
-                                                background: #f8fafc;
-                                            }
-                                            .dark .lp-ms-trigger:hover {
-                                                border-color: #334155;
-                                                background: #1b2e4b;
-                                            }
-                                            .lp-ms-placeholder {
-                                                font-size: 11px;
-                                                color: #9ca3af;
-                                            }
-                                            .tp-tag {
-                                                display: inline-flex;
-                                                align-items: center;
-                                                gap: 4px;
-                                                padding: 0 8px;
-                                                border-radius: 4px;
-                                                font-size: 10px;
-                                                font-weight: 500;
-                                                line-height: 18px;
-                                                height: 18px;
-                                                white-space: nowrap;
-                                                user-select: none;
-                                                transition: filter 0.15s ease;
-                                            }
-                                            .tp-dropdown {
-                                                background: #fff;
-                                                border: 1px solid #e5e7eb;
-                                                border-radius: 8px;
-                                                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
-                                            }
-                                            .dark .tp-dropdown {
-                                                background: #0e1726;
-                                                border-color: #334155;
-                                                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-                                            }
-                                        </style>
-                                        <% } %>
                                     <% } %>
                                 </div>
                             </div>
@@ -3527,4 +2977,5 @@
     <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.some(function(w) { return w.cardTemplate; })) { %>
         <script type="module" src="/dist/cardRendererWidget.js"></script>
     <% } %>
+
 

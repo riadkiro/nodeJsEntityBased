@@ -1,7 +1,7 @@
 ﻿/**
  * Toolbar - Mini toolbar above the table (presets, catalog, validate)
  */
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const toolbarStyle = {
     display: 'flex',
@@ -55,6 +55,15 @@ const presetMenu = {
     zIndex: 120
 }
 
+const iconChip = {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    display: 'grid',
+    placeItems: 'center',
+    flexShrink: 0
+}
+
 function isFilledLine(line) {
     if (!line?.values) return false
     return Object.values(line.values).some(v =>
@@ -62,12 +71,40 @@ function isFilledLine(line) {
     )
 }
 
+function hexToRgba(color, alpha, fallback) {
+    if (typeof color !== 'string') return fallback
+    const clean = color.trim()
+    const short = /^#([a-fA-F0-9]{3})$/
+    const full = /^#([a-fA-F0-9]{6})$/
+    let r = 0
+    let g = 0
+    let b = 0
+
+    if (short.test(clean)) {
+        const m = clean.slice(1)
+        r = parseInt(m[0] + m[0], 16)
+        g = parseInt(m[1] + m[1], 16)
+        b = parseInt(m[2] + m[2], 16)
+    } else if (full.test(clean)) {
+        const m = clean.slice(1)
+        r = parseInt(m.slice(0, 2), 16)
+        g = parseInt(m.slice(2, 4), 16)
+        b = parseInt(m.slice(4, 6), 16)
+    } else {
+        return fallback
+    }
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 export default function Toolbar({
     schema,
     saving,
     lineCount,
     presets = [],
+    linkedRecords = [],
+    currentRecordId = '',
     lines = [],
+    savingPreset = false,
     validating = false,
     catalogEnabled = false,
     onApplyPreset,
@@ -89,6 +126,103 @@ export default function Toolbar({
     }, [])
 
     const canSavePreset = lines.some(isFilledLine)
+    const recordPresets = presets.filter(p => !!p?.recordId)
+    const globalPresets = presets.filter(p => !p?.recordId)
+    const linkedByRecordId = useMemo(() => {
+        const map = new Map()
+        for (const rel of linkedRecords || []) {
+            if (!rel?.recordId) continue
+            map.set(String(rel.recordId), rel)
+        }
+        return map
+    }, [linkedRecords])
+
+    const renderPresetItem = (p) => {
+        const rawRecordId = p?.recordId?._id || p?.recordId
+        const presetRecordId = rawRecordId ? String(rawRecordId) : ''
+        const isRecordPreset = !!presetRecordId
+        const linkedMeta = presetRecordId ? linkedByRecordId.get(presetRecordId) : null
+        const isCurrentRecord = isRecordPreset && String(currentRecordId || '') === presetRecordId
+        const presetColor = isCurrentRecord
+            ? '#22c55e'
+            : (linkedMeta?.relationColor || (isRecordPreset ? '#d97706' : '#4361ee'))
+        const presetIcon = isCurrentRecord
+            ? 'solar:document-bold-duotone'
+            : (linkedMeta?.relationIcon || (isRecordPreset ? 'solar:user-id-bold-duotone' : 'solar:global-bold-duotone'))
+
+        const chipStyle = isRecordPreset
+            ? {
+                ...iconChip,
+                background: hexToRgba(presetColor, 0.14, 'rgba(245,158,11,0.14)'),
+                color: presetColor,
+                border: `1px solid ${hexToRgba(presetColor, 0.25, 'rgba(245,158,11,0.25)')}`
+            }
+            : {
+                ...iconChip,
+                background: 'rgba(67,97,238,0.13)',
+                color: '#4361ee',
+                border: '1px solid rgba(67,97,238,0.24)'
+            }
+
+        return (
+        <div
+            key={p._id}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 10px',
+                borderBottom: '1px solid #f9fafb',
+                background: isRecordPreset ? 'linear-gradient(90deg, rgba(245,158,11,0.05), rgba(255,255,255,0))' : '#fff'
+            }}
+        >
+            <div style={chipStyle}>
+                <iconify-icon
+                    icon={presetIcon}
+                    width="13"
+                />
+            </div>
+            <button
+                type="button"
+                style={{ background: 'none', border: 'none', padding: 0, margin: 0, textAlign: 'left', flex: 1, cursor: 'pointer', minWidth: 0 }}
+                onClick={() => {
+                    onApplyPreset?.(p)
+                    setPresetOpen(false)
+                }}
+            >
+                <div style={{ fontSize: 12, color: '#111827', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.name || 'Preset'}
+                </div>
+                <div style={{ fontSize: 10, color: '#9ca3af', display: 'flex', gap: 6 }}>
+                    <span>{(p.presetRows || []).length} lignes</span>
+                    {p.recordLabel && (
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            - {p.recordLabel}
+                        </span>
+                    )}
+                </div>
+            </button>
+            <button
+                type="button"
+                title="Supprimer"
+                onClick={() => onDeletePreset?.(p)}
+                style={{
+                    width: 22,
+                    height: 22,
+                    border: '1px solid #fee2e2',
+                    background: '#fff',
+                    color: '#ef4444',
+                    borderRadius: 7,
+                    cursor: 'pointer',
+                    display: 'grid',
+                    placeItems: 'center'
+                }}
+            >
+                <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="12" />
+            </button>
+        </div>
+    )
+    }
 
     return (
         <div style={toolbarStyle}>
@@ -103,6 +237,7 @@ export default function Toolbar({
 
                 <div style={{ position: 'relative' }}>
                     <button type="button" style={btn} onClick={() => setPresetOpen(v => !v)}>
+                        <iconify-icon icon="solar:clipboard-check-bold-duotone" width="13" />
                         Presets
                         {presets.length > 0 && (
                             <span style={{
@@ -130,40 +265,22 @@ export default function Toolbar({
                                     Aucun preset
                                 </div>
                             )}
-                            {presets.map(p => (
-                                <div
-                                    key={p._id}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 8,
-                                        padding: '8px 10px',
-                                        borderBottom: '1px solid #f9fafb'
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        style={{ background: 'none', border: 'none', padding: 0, margin: 0, textAlign: 'left', flex: 1, cursor: 'pointer' }}
-                                        onClick={() => {
-                                            onApplyPreset?.(p)
-                                            setPresetOpen(false)
-                                        }}
-                                    >
-                                        <div style={{ fontSize: 12, color: '#111827', fontWeight: 600 }}>{p.name || 'Preset'}</div>
-                                        <div style={{ fontSize: 10, color: '#9ca3af' }}>
-                                            {(p.presetRows || []).length} lignes
-                                        </div>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        title="Supprimer"
-                                        onClick={() => onDeletePreset?.(p)}
-                                        style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}
-                                    >
-                                        x
-                                    </button>
+                            {recordPresets.length > 0 && (
+                                <div style={{ padding: '8px 10px 6px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="12" />
+                                    Records / Relations
                                 </div>
-                            ))}
+                            )}
+                            {recordPresets.map(renderPresetItem)}
+
+                            {globalPresets.length > 0 && (
+                                <div style={{ padding: '8px 10px 6px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <iconify-icon icon="solar:global-bold-duotone" width="12" />
+                                    Global
+                                </div>
+                            )}
+                            {globalPresets.map(renderPresetItem)}
+
                             <button
                                 type="button"
                                 style={{
@@ -176,13 +293,17 @@ export default function Toolbar({
                                     fontSize: 12,
                                     color: '#4361ee',
                                     fontWeight: 600,
-                                    cursor: canSavePreset ? 'pointer' : 'not-allowed',
-                                    opacity: canSavePreset ? 1 : 0.5
+                                    cursor: (canSavePreset && !savingPreset) ? 'pointer' : 'not-allowed',
+                                    opacity: (canSavePreset && !savingPreset) ? 1 : 0.5
                                 }}
-                                disabled={!canSavePreset}
-                                onClick={() => onSavePreset?.()}
+                                disabled={!canSavePreset || savingPreset}
+                                onClick={() => {
+                                    setPresetOpen(false)
+                                    onSavePreset?.()
+                                }}
                             >
-                                Sauvegarder comme preset
+                                <iconify-icon icon={savingPreset ? 'svg-spinners:ring-resize' : 'solar:diskette-bold'} width="12" style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                                {savingPreset ? 'Sauvegarde...' : 'Sauvegarder comme preset'}
                             </button>
                         </div>
                     )}

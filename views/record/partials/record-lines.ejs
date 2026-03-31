@@ -1325,7 +1325,14 @@
 <script type="application/json" id="linesPanel-relations">
 <%- JSON.stringify({
     recordRelations: (locals.record && record._denorm && record._denorm.relations) || [],
-    entityRelations: (locals.entity && entity.relations || []).map(r => ({ key: r.key, label: r.label, targetEntity: r.targetEntity, cardinality: r.cardinality }))
+    entityRelations: (locals.entity && entity.relations || []).map(r => ({
+        key: r.key,
+        label: r.label,
+        icon: (r.targetEntity && r.targetEntity.icon) || 'solar:link-bold-duotone',
+        color: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+        targetEntity: r.targetEntity,
+        cardinality: r.cardinality
+    }))
 }) %>
 </script>
 <div data-id="lines"

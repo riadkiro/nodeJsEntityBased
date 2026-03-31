@@ -1,0 +1,28 @@
+﻿=== "dynamic-table" rendering ===
+  1902: <template x-if="block && block.type === 'dynamic-table'">
+  1904: data-island="dynamic-table"
+  3621: { type: 'dynamic-table', label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#10b981', bg: 'rgba(16,185,129,0.1)', desc: 'Tableau dynamique ├®ditable' },
+
+=== widget-picker partial ===
+  1: <%- include('partials/widget-picker') %>
+
+=== __self__ canvas rendering ===
+  693: Alpine.store('recordTabs', { activeTab: '__self__', fieldAssignments: {} });
+  705: @click="selectTab('__self__')"
+  707: :class="activeTab === '__self__'
+  711: :style="activeTab === '__self__' ? 'background:<%= entity.color || '#4361ee' %>15; color:<%= entity.color || '#4361ee' %>' : ''">
+  713: :style="activeTab === '__self__' ? 'color:<%= entity.color || '#4361ee' %>' : ''"
+  714: :class="activeTab !== '__self__' ? 'text-gray-400 dark:text-gray-500' : ''"></iconify-icon>
+  839: <div x-show="activeTab && activeTab !== '__self__'" x-transition:enter="transition ease-out duration-200"
+  877: <button type="button" @click="activeTab = '__self__'" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+  1374: <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__' && activeTab !== '__documents__' && !(activeTabMeta && activeTabMeta.isCustom)">
+  3584: activeTab: '__self__',  // Self tab is active by default (synced to $store.recordTabs)
+  3665: if (this.activeTab === '__self__') return null;
+  3748: this.activeTab = '__self__';
+  3749: Alpine.store('recordTabs').activeTab = '__self__';
+  3935: if (key === '__self__') {
+  3936: this.activeTab = '__self__';
+  3943: this.activeTab = '__self__';
+  4199: await this.selectTab('__self__'); // Reset first
+  4250: this.activeTab = '__self__';
+  5102: x-show="$store.recordTabs.activeTab === '__self__'"

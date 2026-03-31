@@ -86,9 +86,14 @@
                         Colonnes
                         <span class="text-[10px] font-bold text-gray-400" x-text="schema.columns.length + ' col.'"></span>
                     </h5>
-                    <button @click="addColumn()" class="btn btn-sm btn-primary" style="display:flex; align-items:center; gap:4px; padding:4px 10px; font-size:11px;">
-                        <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon> Colonne
-                    </button>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button @click="addFormulaColumn()" class="btn btn-sm btn-outline-primary" style="display:flex; align-items:center; gap:4px; padding:4px 10px; font-size:11px;">
+                            <iconify-icon icon="solar:sigma-bold-duotone" width="14"></iconify-icon> Calcul
+                        </button>
+                        <button @click="addColumn()" class="btn btn-sm btn-primary" style="display:flex; align-items:center; gap:4px; padding:4px 10px; font-size:11px;">
+                            <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon> Colonne
+                        </button>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -236,6 +241,83 @@
                             </div>
                         </template>
 
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Totals panel (Gestion des Totaux) ═══ -->
+            <div class="panel !p-0 overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid #e5e7eb;" @click="totalsOpen = !totalsOpen">
+                    <h5 class="text-sm font-bold dark:text-white-light flex items-center gap-2">
+                        <iconify-icon icon="solar:calculator-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                        Gestion des Totaux
+                    </h5>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] font-bold text-gray-400" x-text="(schema.totals.rows || []).length + ' lignes'"></span>
+                        <iconify-icon icon="solar:alt-arrow-down-bold" width="14" :class="totalsOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
+                    </div>
+                </div>
+                <div x-show="totalsOpen" x-collapse>
+                    <div class="px-4 py-4">
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                            <button @click="autoBuildTotals()" class="btn btn-sm btn-outline-primary" style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                                <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="14"></iconify-icon>
+                                Auto Totaux
+                            </button>
+                            <button @click="applyInvoiceCalcPack()" class="btn btn-sm btn-outline-success" style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                                <iconify-icon icon="solar:calculator-bold-duotone" width="14"></iconify-icon>
+                                Pack Facturation
+                            </button>
+                            <span style="font-size:10px; color:#9ca3af; display:flex; align-items:center;">
+                                Astuce: choisissez la colonne TTC en "Final" pour un footer premium
+                            </span>
+                        </div>
+                        <table class="lsb-col-table">
+                            <thead>
+                                <tr>
+                                    <th>Libellé</th>
+                                    <th>Colonne</th>
+                                    <th style="width:100px;">Type</th>
+                                    <th style="width:60px;">Final</th>
+                                    <th style="width:40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(row, ridx) in (schema.totals.rows || [])" :key="ridx">
+                                    <tr>
+                                        <td><input type="text" x-model="row.label" class="lsb-input" placeholder="ex: Total HT" /></td>
+                                        <td>
+                                            <select x-model="row.key" class="lsb-input" style="cursor:pointer;">
+                                                <option value="">— Choisir —</option>
+                                                <template x-for="col in schema.columns" :key="col.key">
+                                                    <option :value="col.key" x-text="col.label || col.key"></option>
+                                                </template>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select x-model="row.type" class="lsb-input" style="cursor:pointer;">
+                                                <option value="sum">Somme</option>
+                                                <option value="count">Compte</option>
+                                                <option value="avg">Moyenne</option>
+                                                <option value="min">Min</option>
+                                                <option value="max">Max</option>
+                                            </select>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" x-model="row.isFinal" class="form-checkbox" />
+                                        </td>
+                                        <td>
+                                            <button class="lsb-row-btn delete" @click="schema.totals.rows.splice(ridx, 1)">
+                                                <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <button @click="addTotalRow()" class="btn btn-sm btn-outline-primary mt-4" style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                            <iconify-icon icon="tabler:plus" width="14"></iconify-icon> Ajouter un Total
+                        </button>
                     </div>
                 </div>
             </div>
@@ -402,6 +484,32 @@
                             <label>Dépendances (csv)</label>
                             <input type="text" x-model="schema.columns[expandedCol].config._depsStr" @change="schema.columns[expandedCol].config.dependencies = (schema.columns[expandedCol].config._depsStr || '').split(',').map(s=>s.trim()).filter(Boolean)" placeholder="qty, unitPrice" />
                         </div>
+                        <div class="lsb-config-field" style="grid-column: span 2;">
+                            <label>Assistant Calcul</label>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                                <button type="button" class="btn btn-sm btn-outline-primary" style="font-size:10px; padding:3px 8px;" @click="applyFormulaPreset('ht')">
+                                    HT: qte * p.u
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning" style="font-size:10px; padding:3px 8px;" @click="applyFormulaPreset('vat')">
+                                    TVA: ht * taux
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success" style="font-size:10px; padding:3px 8px;" @click="applyFormulaPreset('ttc')">
+                                    TTC: ht + tva
+                                </button>
+                            </div>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                <template x-for="token in formulaColumnTokens()" :key="token.key">
+                                    <button type="button"
+                                            @click="insertFormulaToken(token.key)"
+                                            style="border:1px solid #dbe3f3; border-radius:999px; padding:2px 8px; font-size:10px; font-weight:600; color:#334155; background:#f8fafc;">
+                                        <span x-text="token.label"></span>
+                                    </button>
+                                </template>
+                            </div>
+                            <div style="margin-top:6px; font-size:10px; color:#94a3b8;">
+                                Cliquez un token pour l'insérer dans l'expression
+                            </div>
+                        </div>
                     </div>
                 </template>
 
@@ -489,7 +597,10 @@ function lineSchemaBuilder() {
                 _tempId: 'col_' + i + '_' + Date.now(),
                 _showWhenStr: (col.showWhen?.lineType?.[0]) || ''
             })),
-            totals: existingSchema.totals || {},
+            totals: {
+                ...existingSchema.totals || {},
+                rows: existingSchema.totals?.rows || []
+            },
             snapshotConfig: existingSchema.snapshotConfig || { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' }
         } : {
             name: '', slug: '', description: '',
@@ -498,13 +609,14 @@ function lineSchemaBuilder() {
             analyticsConfig: { enabled: false, views: [] },
             appliesTo: { entityIds: [], documentType: '' },
             lineTypes: ['default'], columns: [],
-            totals: {},
+            totals: { rows: [] },
             snapshotConfig: { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' },
             defaultLineType: 'default'
         },
 
         saving: false, expandedCol: null,
         parametersOpen: true,
+        totalsOpen: true,
         entitySearch: '',
         allEntities: allEntitiesData,
 
@@ -560,10 +672,186 @@ function lineSchemaBuilder() {
             this.expandedCol = this.schema.columns.length - 1;
         },
 
+        normalizeToken(v) {
+            return String(v || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        },
+
+        findFirstColByHints(hints, allowedTypes = ['number', 'money', 'formula']) {
+            const cols = this.schema.columns || [];
+            return cols.find(c => {
+                if (!c?.key) return false;
+                if (!allowedTypes.includes(c.type)) return false;
+                const token = this.normalizeToken(`${c.key} ${c.label}`);
+                return hints.some(h => token.includes(this.normalizeToken(h)));
+            }) || null;
+        },
+
+        formulaColumnTokens() {
+            if (this.expandedCol === null || !this.schema.columns[this.expandedCol]) return [];
+            return (this.schema.columns || [])
+                .filter((c, idx) => idx !== this.expandedCol && c?.key)
+                .filter(c => ['number', 'money', 'formula'].includes(c.type))
+                .map(c => ({ key: c.key, label: c.label || c.key }));
+        },
+
+        insertFormulaToken(token) {
+            if (this.expandedCol === null) return;
+            const col = this.schema.columns[this.expandedCol];
+            if (!col) return;
+            if (!col.config) col.config = {};
+            const expr = String(col.config.expression || '').trim();
+            col.config.expression = expr ? `${expr} ${token}` : token;
+        },
+
+        applyFormulaPreset(kind) {
+            if (this.expandedCol === null) return;
+            const col = this.schema.columns[this.expandedCol];
+            if (!col) return;
+            if (!col.config) col.config = {};
+
+            const qty = this.findFirstColByHints(['qty', 'qte', 'quantite', 'quantité', 'quantity'], ['number', 'money', 'formula'])?.key || 'qty';
+            const pu = this.findFirstColByHints(['pu', 'unit price', 'unitprice', 'unit_price', 'prix unitaire', 'prix_unitaire', 'p.u'], ['number', 'money', 'formula'])?.key || 'unitPrice';
+            const ht = this.findFirstColByHints(['line_total_ht', 'total_ht', 'subtotal', 'ht'], ['formula', 'money', 'number'])?.key || 'line_total_ht';
+            const tvaRate = this.findFirstColByHints(['tva', 'vat', 'tax', 'taux'], ['number', 'money', 'formula'])?.key || 'tva_percent';
+            const vat = this.findFirstColByHints(['line_vat', 'vat_amount', 'montant_tva', 'total_vat', 'tva_amount'], ['formula', 'money', 'number'])?.key || 'line_vat';
+
+            if (kind === 'ht') {
+                col.config.expression = `${qty} * ${pu}`;
+                col.config.dependencies = [qty, pu];
+            } else if (kind === 'vat') {
+                col.config.expression = `${ht} * ${tvaRate} / 100`;
+                col.config.dependencies = [ht, tvaRate];
+            } else if (kind === 'ttc') {
+                col.config.expression = `${ht} + ${vat}`;
+                col.config.dependencies = [ht, vat];
+            }
+            col.config._depsStr = (col.config.dependencies || []).join(', ');
+        },
+
+        addFormulaColumn() {
+            const used = new Set((this.schema.columns || []).map(c => c.key).filter(Boolean));
+            const makeUnique = (base) => {
+                if (!used.has(base)) return base;
+                let n = 2;
+                while (used.has(`${base}_${n}`)) n++;
+                return `${base}_${n}`;
+            };
+            const key = makeUnique('line_total_ttc');
+            const col = {
+                key,
+                label: 'Total TTC',
+                type: 'formula',
+                required: false,
+                visible: true,
+                width: 'M',
+                order: this.schema.columns.length,
+                showWhen: {},
+                config: {
+                    expression: '',
+                    dependencies: [],
+                    _depsStr: ''
+                },
+                _tempId: 'col_' + Date.now() + '_' + Math.random(),
+                _showWhenStr: ''
+            };
+            this.schema.columns.push(col);
+            this.expandedCol = this.schema.columns.length - 1;
+        },
+
+        upsertFormulaColumn(key, label, expression, deps = []) {
+            let col = (this.schema.columns || []).find(c => c.key === key);
+            if (!col) {
+                col = {
+                    key,
+                    label,
+                    type: 'formula',
+                    required: false,
+                    visible: true,
+                    width: 'M',
+                    order: this.schema.columns.length,
+                    showWhen: {},
+                    config: {},
+                    _tempId: 'col_' + Date.now() + '_' + Math.random(),
+                    _showWhenStr: ''
+                };
+                this.schema.columns.push(col);
+            }
+            col.type = 'formula';
+            col.label = col.label || label;
+            col.config = col.config || {};
+            col.config.expression = expression;
+            col.config.dependencies = deps;
+            col.config._depsStr = deps.join(', ');
+            return col;
+        },
+
+        autoBuildTotals() {
+            const ttc = this.findFirstColByHints(['line_total_ttc', 'total_ttc', 'ttc'], ['formula', 'money', 'number']);
+            const ht = this.findFirstColByHints(['line_total_ht', 'total_ht', 'subtotal', 'ht'], ['formula', 'money', 'number']);
+            const vat = this.findFirstColByHints(['line_vat', 'vat_amount', 'montant_tva', 'tva'], ['formula', 'money', 'number']);
+            const fallback = this.findFirstColByHints(['total', 'montant'], ['formula', 'money', 'number']) || (this.schema.columns || []).find(c => ['formula', 'money', 'number'].includes(c.type) && c.key);
+
+            const rows = [];
+            if (ht?.key) rows.push({ label: 'Total HT', key: ht.key, type: 'sum', isFinal: false });
+            if (vat?.key) rows.push({ label: 'TVA', key: vat.key, type: 'sum', isFinal: false });
+            if (ttc?.key) {
+                rows.push({ label: 'Total TTC', key: ttc.key, type: 'sum', isFinal: true });
+            } else if (ht?.key || vat?.key) {
+                rows.push({ label: 'Total TTC', keys: [ht?.key, vat?.key].filter(Boolean), type: 'sum', isFinal: true });
+            } else if (fallback?.key) {
+                rows.push({ label: fallback.label || 'Total', key: fallback.key, type: 'sum', isFinal: true });
+            }
+
+            if (!this.schema.totals) this.schema.totals = {};
+            this.schema.totals.rows = rows;
+        },
+
+        applyInvoiceCalcPack() {
+            const qty = this.findFirstColByHints(['qty', 'qte', 'quantite', 'quantité', 'quantity'], ['number', 'money', 'formula'])?.key || 'qty';
+            const pu = this.findFirstColByHints(['pu', 'unit price', 'unitprice', 'unit_price', 'prix unitaire', 'prix_unitaire', 'p.u'], ['number', 'money', 'formula'])?.key || 'pu_ht';
+            const tvaRate = this.findFirstColByHints(['tva', 'vat', 'tax', 'taux'], ['number', 'money', 'formula'])?.key || 'tva_percent';
+
+            if (!(this.schema.columns || []).find(c => c.key === qty)) {
+                this.schema.columns.push({
+                    key: qty, label: 'QTE', type: 'number', required: false, visible: true, width: 'S',
+                    order: this.schema.columns.length, showWhen: {}, config: { normalRange: { min: null, max: null } },
+                    _tempId: 'col_' + Date.now() + '_' + Math.random(), _showWhenStr: ''
+                });
+            }
+            if (!(this.schema.columns || []).find(c => c.key === pu)) {
+                this.schema.columns.push({
+                    key: pu, label: 'P.U HT', type: 'money', required: false, visible: true, width: 'M',
+                    order: this.schema.columns.length, showWhen: {}, config: { currency: 'EUR', decimals: 2 },
+                    _tempId: 'col_' + Date.now() + '_' + Math.random(), _showWhenStr: ''
+                });
+            }
+            if (!(this.schema.columns || []).find(c => c.key === tvaRate)) {
+                this.schema.columns.push({
+                    key: tvaRate, label: 'TVA %', type: 'number', required: false, visible: true, width: 'S',
+                    order: this.schema.columns.length, showWhen: {}, config: { normalRange: { min: null, max: null }, decimals: 2 },
+                    _tempId: 'col_' + Date.now() + '_' + Math.random(), _showWhenStr: ''
+                });
+            }
+
+            this.upsertFormulaColumn('line_total_ht', 'Total HT', `${qty} * ${pu}`, [qty, pu]);
+            this.upsertFormulaColumn('line_vat', 'Montant TVA', `line_total_ht * ${tvaRate} / 100`, ['line_total_ht', tvaRate]);
+            this.upsertFormulaColumn('line_total_ttc', 'Total TTC', `line_total_ht + line_vat`, ['line_total_ht', 'line_vat']);
+            this.autoBuildTotals();
+        },
+
         removeColumn(idx) {
             if (this.expandedCol === idx) this.expandedCol = null;
             else if (this.expandedCol !== null && this.expandedCol > idx) this.expandedCol--;
             this.schema.columns.splice(idx, 1);
+        },
+
+        addTotalRow() {
+            if (!this.schema.totals.rows) this.schema.totals.rows = [];
+            this.schema.totals.rows.push({ label: '', key: '', type: 'sum', isFinal: false });
         },
 
         toggleColConfig(idx) {

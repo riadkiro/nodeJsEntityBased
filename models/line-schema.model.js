@@ -116,11 +116,19 @@ const LineSchemaSchema = new mongoose.Schema({
     // Column definitions
     columns: [ColumnSchema],
 
-    // Totals configuration (V1: key-based SUM)
+    // Totals configuration (Flexible V2)
     totals: {
-        subtotalKey: String,                        // key of column to SUM for subtotal (e.g. "lineTotal")
-        vatKey: String,                             // key of column to SUM for VAT (e.g. "lineVat")
-        totalFormula: String                        // e.g. "subtotal + vat"
+        rows: [{
+            label: String,                          // e.g. "Total HT"
+            key: String,                            // e.g. "lineTotal"
+            keys: [String],                         // (Deprecated, fallback)
+            type: { type: String, enum: ['sum', 'count', 'avg', 'min', 'max'], default: 'sum' },
+            isFinal: { type: Boolean, default: false } // Special styling for TTC
+        }],
+        // Legacy compat
+        subtotalKey: String,
+        vatKey: String,
+        totalFormula: String
     },
 
     // ══ Snapshot / Enregistrement Config ══

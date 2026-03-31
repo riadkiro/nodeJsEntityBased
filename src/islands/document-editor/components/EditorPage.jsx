@@ -12,7 +12,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useImageResize } from '../hooks/useImageResize'
 import GridBuilder from '../../shared/GridBuilder'
 import TableToolbar, { useTableToolbar } from './TableToolbar'
-import DynamicTableModal, { useDynamicTableOverlay, DynamicTableOverlay } from './DynamicTableModal'
+import { useDynamicTableOverlay, DynamicTableOverlay } from './DynamicTableModal'
+import DynamicTableModal from './DynamicTableModalReact'
 
 export default function EditorPage({
     page,

@@ -107,6 +107,8 @@ export default function Toolbar({
     savingPreset = false,
     validating = false,
     catalogEnabled = false,
+    showValidateButton = true,
+    showSavePresetAction = true,
     onApplyPreset,
     onDeletePreset,
     onSavePreset,
@@ -281,42 +283,46 @@ export default function Toolbar({
                             )}
                             {globalPresets.map(renderPresetItem)}
 
-                            <button
-                                type="button"
-                                style={{
-                                    width: '100%',
-                                    textAlign: 'left',
-                                    border: 'none',
-                                    borderTop: '1px solid #f3f4f6',
-                                    background: '#fff',
-                                    padding: '9px 10px',
-                                    fontSize: 12,
-                                    color: '#4361ee',
-                                    fontWeight: 600,
-                                    cursor: (canSavePreset && !savingPreset) ? 'pointer' : 'not-allowed',
-                                    opacity: (canSavePreset && !savingPreset) ? 1 : 0.5
-                                }}
-                                disabled={!canSavePreset || savingPreset}
-                                onClick={() => {
-                                    setPresetOpen(false)
-                                    onSavePreset?.()
-                                }}
-                            >
-                                <iconify-icon icon={savingPreset ? 'svg-spinners:ring-resize' : 'solar:diskette-bold'} width="12" style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                                {savingPreset ? 'Sauvegarde...' : 'Sauvegarder comme preset'}
-                            </button>
+                            {showSavePresetAction && typeof onSavePreset === 'function' && (
+                                <button
+                                    type="button"
+                                    style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        border: 'none',
+                                        borderTop: '1px solid #f3f4f6',
+                                        background: '#fff',
+                                        padding: '9px 10px',
+                                        fontSize: 12,
+                                        color: '#4361ee',
+                                        fontWeight: 600,
+                                        cursor: (canSavePreset && !savingPreset) ? 'pointer' : 'not-allowed',
+                                        opacity: (canSavePreset && !savingPreset) ? 1 : 0.5
+                                    }}
+                                    disabled={!canSavePreset || savingPreset}
+                                    onClick={() => {
+                                        setPresetOpen(false)
+                                        onSavePreset?.()
+                                    }}
+                                >
+                                    <iconify-icon icon={savingPreset ? 'svg-spinners:ring-resize' : 'solar:diskette-bold'} width="12" style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                                    {savingPreset ? 'Sauvegarde...' : 'Sauvegarder comme preset'}
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
 
-                <button
-                    type="button"
-                    style={{ ...btn, color: validating ? '#9ca3af' : '#111827' }}
-                    onClick={onValidate}
-                    disabled={validating}
-                >
-                    {validating ? 'Validation...' : 'Valider'}
-                </button>
+                {showValidateButton && (
+                    <button
+                        type="button"
+                        style={{ ...btn, color: validating ? '#9ca3af' : '#111827' }}
+                        onClick={onValidate}
+                        disabled={validating}
+                    >
+                        {validating ? 'Validation...' : 'Valider'}
+                    </button>
+                )}
 
                 {lineCount > 0 && (
                     <span style={lineCountStyle}>

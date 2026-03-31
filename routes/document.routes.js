@@ -402,8 +402,16 @@ router.put('/api/:id', async (req, res) => {
                     linkedEntityIds.push(document.entityId.toString());
                 }
 
-                // Get existing SmartDocTemplate entries for this document
-                const existingTemplates = await SmartDocTemplate.find({ documentId: docId }).lean();
+                // Get existing entity-scoped SmartDocTemplate entries for this document
+                const existingTemplates = await SmartDocTemplate.find({
+                    documentId: docId,
+                    $or: [
+                        { scopeType: 'entity' },
+                        { scopeType: { $exists: false } },
+                        { scopeType: null },
+                        { scopeType: '' }
+                    ]
+                }).lean();
                 const existingEntityIds = existingTemplates.map(t => t.entityId.toString());
 
                 if (isTemplate && linkedEntityIds.length > 0) {
@@ -414,6 +422,7 @@ router.put('/api/:id', async (req, res) => {
                                 name: document.name || 'Template',
                                 documentId: docId,
                                 entityId: entityId,
+                                scopeType: 'entity',
                                 outputFormat: 'pdf',
                                 active: true,
                                 createdBy: req.user?._id

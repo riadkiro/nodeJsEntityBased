@@ -18,6 +18,7 @@ const { tenantCollection } = require('../../middleware/tenant');
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 
 // ============================================================================
 // TEMPLATE MANAGEMENT
@@ -30,10 +31,65 @@ const fs = require('fs');
 router.get('/smartdoc/templates/:entityId', async (req, res) => {
     try {
         const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
-        const templates = await SmartDocTemplate.find({
-            entityId: req.params.entityId,
-            active: true
-        })
+        const entityId = req.params.entityId;
+        const includeAll = String(req.query.all || '') === '1' || String(req.query.all || '').toLowerCase() === 'true';
+        const recordId = String(req.query.recordId || '').trim();
+
+        let linkedRecords = [];
+        if (req.query.linkedRecords) {
+            try {
+                const parsed = JSON.parse(req.query.linkedRecords);
+                if (Array.isArray(parsed)) linkedRecords = parsed;
+            } catch (e) {
+                // ignore malformed query payload
+            }
+        }
+
+        const linkedRecordIds = Array.from(new Set(
+            linkedRecords
+                .map(r => String(r?.recordId || '').trim())
+                .filter(v => mongoose.Types.ObjectId.isValid(v))
+        ));
+        const linkedRelationKeys = Array.from(new Set(
+            linkedRecords
+                .map(r => String(r?.relationKey || '').trim())
+                .filter(Boolean)
+        ));
+
+        const visibilityClauses = [
+            { scopeType: 'entity' },
+            { scopeType: { $exists: false } },
+            { scopeType: null },
+            { scopeType: '' }
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(recordId)) {
+            visibilityClauses.push({
+                scopeType: 'record',
+                scopeRecordId: recordId
+            });
+        }
+
+        if (linkedRecordIds.length > 0) {
+            const relationScopeClause = {
+                scopeType: 'relation',
+                scopeRecordId: { $in: linkedRecordIds }
+            };
+            if (linkedRelationKeys.length > 0) {
+                relationScopeClause.$or = [
+                    { scopeRelationKey: { $in: linkedRelationKeys } },
+                    { scopeRelationKey: { $exists: false } },
+                    { scopeRelationKey: '' }
+                ];
+            }
+            visibilityClauses.push(relationScopeClause);
+        }
+
+        const filter = includeAll
+            ? { entityId, active: true }
+            : { entityId, active: true, $or: visibilityClauses };
+
+        const templates = await SmartDocTemplate.find(filter)
             .sort({ order: 1, name: 1 })
             .lean();
 
@@ -51,8 +107,23 @@ router.get('/smartdoc/templates/:entityId', async (req, res) => {
 router.post('/smartdoc/templates', async (req, res) => {
     try {
         const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+        const payload = { ...req.body };
+
+        if (!['entity', 'record', 'relation'].includes(payload.scopeType)) {
+            payload.scopeType = 'entity';
+        }
+
+        if (payload.scopeType === 'entity') {
+            payload.scopeRecordId = null;
+            payload.scopeRelationKey = '';
+            payload.scopeRecordLabel = '';
+            payload.scopeRelationLabel = '';
+        } else if (!payload.scopeRecordId || !mongoose.Types.ObjectId.isValid(String(payload.scopeRecordId))) {
+            return res.status(400).json({ error: 'scopeRecordId requis pour cette portee' });
+        }
+
         const template = new SmartDocTemplate({
-            ...req.body,
+            ...payload,
             createdBy: req.user?._id
         });
         await template.save();
@@ -116,7 +187,9 @@ router.post('/smartdoc/templates/:id/unlink', async (req, res) => {
         await SmartDocTemplate.findByIdAndUpdate(req.params.id, { active: false });
 
         // Also remove entityId from the linked Document's entityIds array
-        if (template.documentId && entityId) {
+        // only for pure entity-scoped templates (legacy behavior).
+        const scopeType = template.scopeType || 'entity';
+        if (scopeType === 'entity' && template.documentId && entityId) {
             await Document.findByIdAndUpdate(template.documentId, {
                 $pull: { entityIds: entityId }
             });
@@ -187,7 +260,7 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
         // 1. System variables
         variables.system = [
             { path: 'today', label: "Date du jour", type: 'date', icon: 'solar:calendar-bold-duotone' },
-            { path: 'currentYear', label: "Année en cours", type: 'text', icon: 'solar:calendar-bold-duotone' },
+            { path: 'currentYear', label: "Annee en cours", type: 'text', icon: 'solar:calendar-bold-duotone' },
             { path: 'currentMonth', label: "Mois en cours", type: 'text', icon: 'solar:calendar-bold-duotone' },
             { path: 'currentTime', label: "Heure actuelle", type: 'text', icon: 'solar:clock-circle-bold-duotone' }
         ];
@@ -236,7 +309,7 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
                 entityVar.fields.push(
                     { path: `${entity.slug}.title`, label: 'Titre', type: 'text', fieldId: null },
                     { path: `${entity.slug}.description`, label: 'Description', type: 'text', fieldId: null },
-                    { path: `${entity.slug}.createdAt`, label: 'Date de création', type: 'date', fieldId: null },
+                    { path: `${entity.slug}.createdAt`, label: 'Date de creation', type: 'date', fieldId: null },
                     { path: `${entity.slug}.updatedAt`, label: 'Date de modification', type: 'date', fieldId: null }
                 );
 
@@ -385,6 +458,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         const Entity = await tenantCollection(req, 'Entity');
         const Classification = await tenantCollection(req, 'Classification');
         const DocumentLine = await tenantCollection(req, 'DocumentLine');
+        const GridSnapshot = await tenantCollection(req, 'GridSnapshot');
         const LineSchema = await tenantCollection(req, 'LineSchema');
 
         // 1. Load the SmartDoc template
@@ -463,25 +537,22 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         if (!docTemplate) {
             return res.status(404).json({ error: 'Document template introuvable' });
         }
+        const templateSchemaIds = extractDynamicTableSchemaIdsFromDocument(docTemplate);
 
         // 5b. Load DocumentLines for this record (for dynamic tables)
         let recordLines = [];
         let lineSchemas = {};
         if (DocumentLine && LineSchema) {
-            recordLines = await DocumentLine.find({ documentId: record._id }).sort({ order: 1 }).lean();
-            // Load all relevant line schemas
-            const schemaIds = [...new Set(recordLines.map(l => l.schemaId).filter(Boolean))];
-            if (schemaIds.length > 0) {
-                const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
-                for (const s of schemas) lineSchemas[s._id.toString()] = s;
-            }
-            // Also load schemas by entity
-            if (entity) {
-                const entitySchemas = await LineSchema.find({ 'appliesTo.entityIds': entity._id }).lean();
-                for (const s of entitySchemas) {
-                    if (!lineSchemas[s._id.toString()]) lineSchemas[s._id.toString()] = s;
-                }
-            }
+            const linesData = await loadRecordLinesWithSnapshotFallback({
+                DocumentLine,
+                LineSchema,
+                GridSnapshot,
+                record,
+                entityId: entity?._id,
+                extraSchemaIds: templateSchemaIds
+            });
+            recordLines = linesData.recordLines;
+            lineSchemas = linesData.lineSchemas;
             // Pre-resolve relation values (ObjectId → record title)
             recordLines = await resolveRelationValues(recordLines, lineSchemas, Record);
         }
@@ -570,7 +641,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         });
     } catch (error) {
         console.error('[SmartDoc] Generate error:', error);
-        res.status(500).json({ error: error.message || 'Erreur lors de la génération' });
+        res.status(500).json({ error: error.message || 'Erreur lors de la generation' });
     }
 });
 
@@ -598,6 +669,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         const Record = await tenantCollection(req, 'Record');
         const Entity = await tenantCollection(req, 'Entity');
         const DocumentLine = await tenantCollection(req, 'DocumentLine');
+        const GridSnapshot = await tenantCollection(req, 'GridSnapshot');
         const LineSchema = await tenantCollection(req, 'LineSchema');
 
         // 1. Load the SmartDoc template
@@ -669,23 +741,22 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         if (!docTemplate) {
             return res.status(404).json({ error: 'Document template introuvable' });
         }
+        const templateSchemaIds = extractDynamicTableSchemaIdsFromDocument(docTemplate);
 
         // 5b. Load DocumentLines for dynamic tables in draft
         let recordLines = [];
         let lineSchemas = {};
         if (DocumentLine && LineSchema) {
-            recordLines = await DocumentLine.find({ documentId: record._id }).sort({ order: 1 }).lean();
-            const schemaIds = [...new Set(recordLines.map(l => l.schemaId).filter(Boolean))];
-            if (schemaIds.length > 0) {
-                const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
-                for (const s of schemas) lineSchemas[s._id.toString()] = s;
-            }
-            if (entity) {
-                const entitySchemas = await LineSchema.find({ 'appliesTo.entityIds': entity._id }).lean();
-                for (const s of entitySchemas) {
-                    if (!lineSchemas[s._id.toString()]) lineSchemas[s._id.toString()] = s;
-                }
-            }
+            const linesData = await loadRecordLinesWithSnapshotFallback({
+                DocumentLine,
+                LineSchema,
+                GridSnapshot,
+                record,
+                entityId: entity?._id,
+                extraSchemaIds: templateSchemaIds
+            });
+            recordLines = linesData.recordLines;
+            lineSchemas = linesData.lineSchemas;
             // Pre-resolve relation values (ObjectId → record title)
             recordLines = await resolveRelationValues(recordLines, lineSchemas, Record);
         }
@@ -823,7 +894,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
 
     } catch (error) {
         console.error('[SmartDoc] Generate-draft error:', error);
-        res.status(500).json({ error: error.message || 'Erreur lors de la création du brouillon' });
+        res.status(500).json({ error: error.message || 'Erreur lors de la creation du brouillon' });
     }
 });
 
@@ -866,14 +937,14 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
                     const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
                     for (const s of schemas) lineSchemas[s._id.toString()] = s;
                 }
-                // Pre-resolve relation values (ObjectId → record title)
+                // Pre-resolve relation values (ObjectId -> record title)
                 draftLines = await resolveRelationValues(draftLines, lineSchemas, Record);
             }
         } catch (e) {
             console.warn('[SmartDoc] Finalize: Could not load draft lines:', e.message);
         }
 
-        // 3b. Build HTML from draft pages — resolve dynamic tables NOW for PDF
+        // 3b. Build HTML from draft pages - resolve dynamic tables NOW for PDF
         let html = '';
         if (draftDoc.pages && draftDoc.pages.length > 0) {
             for (const page of draftDoc.pages) {
@@ -953,7 +1024,7 @@ ${draftDoc.footerHtml || ''}
         }
 
         // 5. Save as record attachment
-        let generatedFromName = 'Document généré';
+        let generatedFromName = 'Document genere';
         try {
             if (draftDoc.draftSourceTemplateId) {
                 const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
@@ -1030,6 +1101,350 @@ router.delete('/smartdoc/draft/:draftDocId', async (req, res) => {
 // ============================================================================
 // Helpers
 // ============================================================================
+
+function hasMeaningfulGridValue(value, depth = 0) {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'number') return !Number.isNaN(value);
+    if (typeof value === 'boolean') return true;
+    if (typeof value === 'string') return value.trim() !== '';
+    if (value instanceof Date) return !Number.isNaN(value.getTime());
+    if (Array.isArray(value)) return value.some(v => hasMeaningfulGridValue(v, depth + 1));
+    if (typeof value === 'object') {
+        if (depth > 5) return false;
+        const keys = Object.keys(value);
+        if (keys.length === 0) return false;
+        return keys.some(k => hasMeaningfulGridValue(value[k], depth + 1));
+    }
+    return false;
+}
+
+function isFilledGridLine(line) {
+    if (!line || typeof line !== 'object') return false;
+    return hasMeaningfulGridValue(line.values) || hasMeaningfulGridValue(line.computed);
+}
+
+function resolveSnapshotTargetRecordId(schema, record) {
+    const fallback = record?._id ? String(record._id) : '';
+    const cfg = schema?.snapshotConfig || {};
+
+    if (cfg.targetType === 'relation' && cfg.targetRelationKey && Array.isArray(record?.relations)) {
+        const relation = record.relations.find(r => r && r.relationKey === cfg.targetRelationKey);
+        const related = Array.isArray(relation?.value) ? relation.value[0] : relation?.value;
+        if (related && mongoose.Types.ObjectId.isValid(String(related))) {
+            return String(related);
+        }
+    }
+
+    return fallback;
+}
+
+function decodeHtmlDataTableValue(rawValue) {
+    return String(rawValue || '')
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'");
+}
+
+function normalizeSchemaIdValue(value) {
+    if (!value) return '';
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'object') {
+        if (value.$oid) return String(value.$oid).trim();
+        if (value._id) return String(value._id).trim();
+        if (value.id) return String(value.id).trim();
+    }
+    return String(value).trim();
+}
+
+function extractDynamicTableSchemaIdsFromHtml(html, schemaSet) {
+    if (!html || !schemaSet) return;
+
+    const attrRegex = /data-table=(['"])([\s\S]*?)\1/gi;
+    let match;
+    while ((match = attrRegex.exec(html)) !== null) {
+        try {
+            const decoded = decodeHtmlDataTableValue(match[2]);
+            const config = JSON.parse(decoded);
+            const schemaId = normalizeSchemaIdValue(config?.schemaId);
+            if (schemaId && mongoose.Types.ObjectId.isValid(schemaId)) {
+                schemaSet.add(schemaId);
+            }
+            if (Array.isArray(config?.schemaIds)) {
+                for (const rawId of config.schemaIds) {
+                    const id = normalizeSchemaIdValue(rawId);
+                    if (id && mongoose.Types.ObjectId.isValid(id)) {
+                        schemaSet.add(id);
+                    }
+                }
+            }
+        } catch (e) {
+            // ignore malformed placeholder config
+        }
+    }
+}
+
+function extractDynamicTableSchemaIdsFromDocument(docTemplate) {
+    const schemaSet = new Set();
+    if (!docTemplate) return [];
+
+    if (docTemplate.headerHtml) extractDynamicTableSchemaIdsFromHtml(docTemplate.headerHtml, schemaSet);
+    if (docTemplate.footerHtml) extractDynamicTableSchemaIdsFromHtml(docTemplate.footerHtml, schemaSet);
+
+    for (const page of (docTemplate.pages || [])) {
+        if (page?.content) extractDynamicTableSchemaIdsFromHtml(page.content, schemaSet);
+        for (const row of (page?.rows || [])) {
+            for (const col of (row?.columns || [])) {
+                for (const block of (col?.blocks || [])) {
+                    if (block?.content) extractDynamicTableSchemaIdsFromHtml(block.content, schemaSet);
+                    if (block?.html) extractDynamicTableSchemaIdsFromHtml(block.html, schemaSet);
+                }
+            }
+        }
+    }
+
+    return [...schemaSet];
+}
+
+function resolveDynamicTableSchemaAndLines(config, lineSchemas, recordLines) {
+    const schemaMap = lineSchemas || {};
+    const lines = Array.isArray(recordLines) ? recordLines : [];
+
+    const allSchemaEntries = Object.entries(schemaMap);
+    const allSchemas = allSchemaEntries.map(([, schema]) => schema).filter(Boolean);
+
+    const requestedSchemaIds = [];
+    const primaryId = normalizeSchemaIdValue(config?.schemaId);
+    if (primaryId) requestedSchemaIds.push(primaryId);
+    if (Array.isArray(config?.schemaIds)) {
+        for (const rawId of config.schemaIds) {
+            const id = normalizeSchemaIdValue(rawId);
+            if (id) requestedSchemaIds.push(id);
+        }
+    }
+    const uniqueRequestedIds = [...new Set(requestedSchemaIds)];
+
+    const linesBySchemaId = {};
+    for (const line of lines) {
+        const sid = normalizeSchemaIdValue(line?.schemaId);
+        if (!sid) continue;
+        if (!linesBySchemaId[sid]) linesBySchemaId[sid] = [];
+        linesBySchemaId[sid].push(line);
+    }
+
+    let chosenSchema = null;
+    let chosenSchemaId = '';
+
+    for (const sid of uniqueRequestedIds) {
+        if (schemaMap[sid]) {
+            chosenSchema = schemaMap[sid];
+            chosenSchemaId = sid;
+            break;
+        }
+    }
+
+    const wantedName = config?.schemaName ? String(config.schemaName).trim().toLowerCase() : '';
+    if (!chosenSchema && wantedName) {
+        for (const [sid, schema] of allSchemaEntries) {
+            if (String(schema?.name || '').trim().toLowerCase() === wantedName) {
+                chosenSchema = schema;
+                chosenSchemaId = sid;
+                break;
+            }
+        }
+    }
+
+    if (!chosenSchema && allSchemas.length === 1) {
+        chosenSchema = allSchemas[0];
+        chosenSchemaId = normalizeSchemaIdValue(chosenSchema?._id);
+    }
+
+    if (!chosenSchema) return { schema: null, lines: [] };
+
+    let selectedLines = [];
+    const directId = chosenSchemaId || normalizeSchemaIdValue(chosenSchema?._id);
+    if (directId && linesBySchemaId[directId]) {
+        selectedLines = linesBySchemaId[directId];
+    }
+
+    if (selectedLines.length === 0 && wantedName) {
+        const matchingSchemaIdsByName = allSchemaEntries
+            .filter(([, schema]) => String(schema?.name || '').trim().toLowerCase() === wantedName)
+            .map(([sid]) => sid);
+
+        for (const sid of matchingSchemaIdsByName) {
+            if (linesBySchemaId[sid] && linesBySchemaId[sid].length > 0) {
+                selectedLines = linesBySchemaId[sid];
+                if (!chosenSchema || normalizeSchemaIdValue(chosenSchema?._id) !== sid) {
+                    chosenSchema = schemaMap[sid] || chosenSchema;
+                }
+                break;
+            }
+        }
+    }
+
+    if (selectedLines.length === 0 && uniqueRequestedIds.length > 0) {
+        for (const sid of uniqueRequestedIds) {
+            if (linesBySchemaId[sid] && linesBySchemaId[sid].length > 0) {
+                selectedLines = linesBySchemaId[sid];
+                break;
+            }
+        }
+    }
+
+    // Fallback: if requested schema has no lines, reuse lines from the closest schema
+    // by column-key similarity (useful when template points to legacy schemaId).
+    if (selectedLines.length === 0 && chosenSchema) {
+        const chosenKeys = new Set((chosenSchema.columns || []).map(c => c?.key).filter(Boolean));
+        let bestSid = '';
+        let bestScore = 0;
+        let bestLineCount = 0;
+
+        for (const sid of Object.keys(linesBySchemaId)) {
+            const candLines = linesBySchemaId[sid] || [];
+            if (candLines.length === 0) continue;
+
+            const candSchema = schemaMap[sid];
+            const candKeys = new Set((candSchema?.columns || []).map(c => c?.key).filter(Boolean));
+            let overlap = 0;
+            for (const key of candKeys) {
+                if (chosenKeys.has(key)) overlap++;
+            }
+
+            // Prefer stronger overlap, then more available lines
+            if (
+                overlap > bestScore ||
+                (overlap === bestScore && candLines.length > bestLineCount)
+            ) {
+                bestScore = overlap;
+                bestSid = sid;
+                bestLineCount = candLines.length;
+            }
+        }
+
+        if (bestSid && bestScore > 0) {
+            selectedLines = linesBySchemaId[bestSid];
+        }
+    }
+
+    if (selectedLines.length === 0) {
+        const schemaIdsWithLines = Object.keys(linesBySchemaId);
+        if (schemaIdsWithLines.length === 1) {
+            const sid = schemaIdsWithLines[0];
+            selectedLines = linesBySchemaId[sid];
+            if (schemaMap[sid]) chosenSchema = schemaMap[sid];
+        }
+    }
+
+    return { schema: chosenSchema, lines: selectedLines };
+}
+
+async function loadRecordLinesWithSnapshotFallback({ DocumentLine, LineSchema, GridSnapshot, record, entityId, extraSchemaIds = [] }) {
+    const empty = { recordLines: [], lineSchemas: {} };
+    if (!DocumentLine || !LineSchema || !record?._id) return empty;
+
+    const recordId = record._id;
+    const currentLines = await DocumentLine.find({ documentId: recordId }).sort({ order: 1 }).lean();
+
+    const schemaIdsFromCurrent = [...new Set(
+        currentLines
+            .map(l => (l?.schemaId ? String(l.schemaId) : ''))
+            .filter(Boolean)
+    )];
+    const schemaIdsFromTemplate = [...new Set(
+        (extraSchemaIds || [])
+            .map(id => String(id || '').trim())
+            .filter(id => mongoose.Types.ObjectId.isValid(id))
+    )];
+
+    let entitySchemas = [];
+    if (entityId) {
+        entitySchemas = await LineSchema.find({ 'appliesTo.entityIds': entityId }).lean();
+    }
+
+    const lineSchemas = {};
+    for (const s of entitySchemas) {
+        lineSchemas[String(s._id)] = s;
+    }
+
+    const entitySchemaIds = entitySchemas.map(s => String(s._id));
+    const wantedSchemaIds = [...new Set([...schemaIdsFromCurrent, ...schemaIdsFromTemplate])];
+    const missingSchemaIds = wantedSchemaIds.filter(id => !lineSchemas[id]);
+    if (missingSchemaIds.length > 0) {
+        const missingSchemas = await LineSchema.find({ _id: { $in: missingSchemaIds } }).lean();
+        for (const s of missingSchemas) {
+            lineSchemas[String(s._id)] = s;
+        }
+    }
+
+    const allSchemaIds = [...new Set([...entitySchemaIds, ...schemaIdsFromCurrent, ...schemaIdsFromTemplate])];
+    const linesBySchema = {};
+    for (const line of currentLines) {
+        const schemaId = line?.schemaId ? String(line.schemaId) : '';
+        if (!schemaId) continue;
+        if (!linesBySchema[schemaId]) linesBySchema[schemaId] = [];
+        linesBySchema[schemaId].push(line);
+    }
+
+    const finalLines = [];
+    const fallbackSchemaIds = [];
+
+    for (const schemaId of allSchemaIds) {
+        const schemaLines = linesBySchema[schemaId] || [];
+        if (schemaLines.some(isFilledGridLine)) {
+            finalLines.push(...schemaLines);
+        } else {
+            fallbackSchemaIds.push(schemaId);
+        }
+    }
+
+    if (GridSnapshot && fallbackSchemaIds.length > 0) {
+        const fallbackSnapshots = await Promise.all(
+            fallbackSchemaIds.map(async (schemaId) => {
+                const schema = lineSchemas[schemaId];
+                const targetRecordId = resolveSnapshotTargetRecordId(schema, record);
+                const query = { schemaId };
+                if (targetRecordId && mongoose.Types.ObjectId.isValid(targetRecordId)) {
+                    query.targetRecordId = targetRecordId;
+                } else {
+                    query.recordId = recordId;
+                }
+                const snapshot = await GridSnapshot.findOne(query)
+                    .sort({ date: -1, createdAt: -1 })
+                    .lean();
+                return { schemaId, snapshot };
+            })
+        );
+
+        for (const item of fallbackSnapshots) {
+            if (!item?.snapshot || !Array.isArray(item.snapshot.lines) || item.snapshot.lines.length === 0) continue;
+            if (!item.snapshot.lines.some(isFilledGridLine)) continue;
+
+            const mapped = item.snapshot.lines
+                .slice()
+                .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+                .map((line, index) => ({
+                    schemaId: item.schemaId,
+                    lineType: line?.lineType || 'product',
+                    values: { ...(line?.values || {}) },
+                    computed: { ...(line?.computed || {}) },
+                    order: line?.order != null ? line.order : index
+                }));
+
+            finalLines.push(...mapped);
+        }
+    }
+
+    finalLines.sort((a, b) => {
+        const aSchema = a?.schemaId ? String(a.schemaId) : '';
+        const bSchema = b?.schemaId ? String(b.schemaId) : '';
+        if (aSchema === bSchema) return (a?.order || 0) - (b?.order || 0);
+        return 0;
+    });
+
+    return { recordLines: finalLines, lineSchemas };
+}
 
 /**
  * Build token context from record + entity data (shared between generate and generate-draft)
@@ -1388,11 +1803,12 @@ function resolveTokensInString(str, context) {
                 const path = tokenData.path;
                 if (!path) return match;
 
-                // Resolve value from context using dot notation
-                return resolveNestedValue(context, path) ?? match;
+                // Resolve value from context using dot notation.
+                // If missing, return empty string to avoid leaking raw token syntax in generated docs.
+                return resolveNestedValue(context, path) ?? '';
             } catch (e) {
                 console.warn('[SmartDoc] Could not parse template-token:', e.message);
-                return match;
+                return '';
             }
         }
     );
@@ -1405,9 +1821,9 @@ function resolveTokensInString(str, context) {
                 const tokenData = JSON.parse(tokenDataStr);
                 const path = tokenData.path;
                 if (!path) return match;
-                return resolveNestedValue(context, path) ?? match;
+                return resolveNestedValue(context, path) ?? '';
             } catch (e) {
-                return match;
+                return '';
             }
         }
     );
@@ -1415,7 +1831,7 @@ function resolveTokensInString(str, context) {
     // 3. Then resolve standard {{token}} text patterns
     result = result.replace(/\{\{([^}]+)\}\}/g, (match, token) => {
         const key = token.trim();
-        return resolveNestedValue(context, key) ?? match;
+        return resolveNestedValue(context, key) ?? '';
     });
 
     return result;
@@ -1641,8 +2057,8 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
             group = 'Utilisateur';
             label = tokenPath === 'user.name' ? "Nom de l'utilisateur" : tokenPath === 'user.email' ? 'Email' : tokenPath;
         } else if (['today', 'currentYear', 'currentMonth', 'currentTime'].includes(tokenPath)) {
-            group = 'Système';
-            const labels = { today: 'Date du jour', currentYear: 'Année', currentMonth: 'Mois', currentTime: 'Heure' };
+            group = 'Systeme';
+            const labels = { today: 'Date du jour', currentYear: 'Annee', currentMonth: 'Mois', currentTime: 'Heure' };
             label = labels[tokenPath] || tokenPath;
         } else if (entity && entity.slug && tokenPath.startsWith(entity.slug + '.')) {
             const rest = tokenPath.slice(entity.slug.length + 1);
@@ -1653,7 +2069,7 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
                 group = 'Relation';
                 label = rest;
             } else {
-                group = entity.name || 'Entité';
+                group = entity.name || 'Entite';
                 label = rest;
             }
         } else if (inputs && inputs[tokenPath] !== undefined) {
@@ -1666,13 +2082,13 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
         variables.push({
             path: tokenPath,
             label,
-            value: value !== null && value !== undefined ? String(value) : '—',
+            value: value !== null && value !== undefined ? String(value) : '-',
             group
         });
     }
 
     // Sort by group
-    const groupOrder = ['Entité', 'Champ', 'Classification', 'Relation', 'Saisie', 'Utilisateur', 'Système', 'Autre'];
+    const groupOrder = ['Entite', 'Champ', 'Classification', 'Relation', 'Saisie', 'Utilisateur', 'Systeme', 'Autre'];
     variables.sort((a, b) => {
         const ai = groupOrder.indexOf(a.group) === -1 ? 99 : groupOrder.indexOf(a.group);
         const bi = groupOrder.indexOf(b.group) === -1 ? 99 : groupOrder.indexOf(b.group);
@@ -1742,19 +2158,30 @@ function previewDynamicTablesForDraft(html, recordLines, lineSchemas) {
                             .replace(/&gt;/g, '>')
                             .replace(/&#39;/g, "'");
                         const config = JSON.parse(decoded);
-                        const schemaId = config.schemaId;
                         const style = config.style || 'professional';
-
-                        if (schemaId && lineSchemas[schemaId]) {
-                            const schema = lineSchemas[schemaId];
-                            const lines = recordLines.filter(l => {
-                                if (l.schemaId) return l.schemaId.toString() === schemaId;
-                                return true;
-                            });
+                        const resolved = resolveDynamicTableSchemaAndLines(config, lineSchemas, recordLines);
+                        if (resolved.schema) {
+                            const schema = resolved.schema;
+                            const lines = resolved.lines || [];
+                            if (lines.length === 0) {
+                                console.warn('[SmartDoc] Dynamic table resolved but no lines in draft preview', {
+                                    schemaName: schema?.name,
+                                    schemaId: schema?._id,
+                                    requestedSchemaId: config?.schemaId,
+                                    requestedSchemaIds: config?.schemaIds,
+                                    recordLinesCount: Array.isArray(recordLines) ? recordLines.length : 0
+                                });
+                            }
                             const innerReplacement = renderDynamicTable(schema, lines, style, config);
                             result = result.substring(0, divOpenEnd + 1) + innerReplacement + result.substring(nextClose);
                             searchFrom = divOpenEnd + 1 + innerReplacement.length;
                         } else {
+                            console.warn('[SmartDoc] Dynamic table schema unresolved in draft preview', {
+                                schemaId: config?.schemaId,
+                                schemaIds: config?.schemaIds,
+                                schemaName: config?.schemaName,
+                                availableSchemaIds: Object.keys(lineSchemas || {})
+                            });
                             // If missing schema or lines, replace with clickable box
                             const innerReplacement = `
                                 <div style="padding: 16px; background: #f3f4f6; border: 1px dashed #d1d5db; color: #1f2937; border-radius: 8px; text-align: center;">
@@ -1845,19 +2272,30 @@ function resolveDynamicTables(html, recordLines, lineSchemas) {
                             .replace(/&gt;/g, '>')
                             .replace(/&#39;/g, "'");
                         const config = JSON.parse(decoded);
-                        const schemaId = config.schemaId;
                         const style = config.style || 'professional';
-
-                        if (schemaId && lineSchemas[schemaId]) {
-                            const schema = lineSchemas[schemaId];
-                            const lines = recordLines.filter(l => {
-                                if (l.schemaId) return l.schemaId.toString() === schemaId;
-                                return true;
-                            });
+                        const resolved = resolveDynamicTableSchemaAndLines(config, lineSchemas, recordLines);
+                        if (resolved.schema) {
+                            const schema = resolved.schema;
+                            const lines = resolved.lines || [];
+                            if (lines.length === 0) {
+                                console.warn('[SmartDoc] Dynamic table resolved but no lines in render', {
+                                    schemaName: schema?.name,
+                                    schemaId: schema?._id,
+                                    requestedSchemaId: config?.schemaId,
+                                    requestedSchemaIds: config?.schemaIds,
+                                    recordLinesCount: Array.isArray(recordLines) ? recordLines.length : 0
+                                });
+                            }
                             const replacement = renderDynamicTable(schema, lines, style, config);
                             result = result.substring(0, divOpenStart) + replacement + result.substring(consumeEnd);
                             searchFrom = divOpenStart + replacement.length;
                         } else {
+                            console.warn('[SmartDoc] Dynamic table schema unresolved in render', {
+                                schemaId: config?.schemaId,
+                                schemaIds: config?.schemaIds,
+                                schemaName: config?.schemaName,
+                                availableSchemaIds: Object.keys(lineSchemas || {})
+                            });
                             searchFrom = consumeEnd;
                         }
                     } catch (e) {
@@ -1876,7 +2314,7 @@ function resolveDynamicTables(html, recordLines, lineSchemas) {
 }
 
 /**
- * Pre-resolve relation column values (ObjectIds → record titles)
+ * Pre-resolve relation column values (ObjectIds -> record titles)
  * This mutates recordLines in-place, replacing ObjectIds with resolved titles
  */
 async function resolveRelationValues(recordLines, lineSchemas, Record) {
@@ -1947,7 +2385,7 @@ async function resolveRelationValues(recordLines, lineSchemas, Record) {
  */
 function renderDynamicTable(schema, lines, style = 'professional', config = {}) {
     const visibleColumns = (schema.columns || []).filter(c => c.visible !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
-    if (visibleColumns.length === 0) return '<p><em>Aucune colonne définie</em></p>';
+    if (visibleColumns.length === 0) return '<p><em>Aucune colonne definie</em></p>';
 
     const showTotals = config.showTotals !== false;
     const title = config.title || '';
@@ -2067,7 +2505,7 @@ function formatLineValue(value, column) {
             const decimals = column.config?.decimals ?? 2;
             const num = parseFloat(value);
             if (isNaN(num)) return value;
-            return num.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €';
+            return num.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' EUR';
         case 'number':
         case 'formula':
             const n = parseFloat(value);
@@ -2105,7 +2543,7 @@ function formatLineValue(value, column) {
             }
             return String(value);
         case 'duration':
-            // Format duration: "3w/j" → "3 fois/jour" etc.
+            // Format duration: "3w/j" -> "3 fois/jour" etc.
             if (typeof value === 'string') {
                 return value
                     .replace(/w\/j/g, ' fois/jour')
@@ -2162,3 +2600,4 @@ router.post('/smartdoc/render-table', async (req, res) => {
 });
 
 module.exports = router;
+

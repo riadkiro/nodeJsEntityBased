@@ -12,6 +12,94 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import TableDropdown from './TableDropdown'
 
+function hasMeaningfulValue(value, depth = 0) {
+    if (value === null || value === undefined) return false
+    if (typeof value === 'number') return !Number.isNaN(value)
+    if (typeof value === 'boolean') return true
+    if (typeof value === 'string') return value.trim() !== ''
+    if (Array.isArray(value)) return value.some(v => hasMeaningfulValue(v, depth + 1))
+    if (typeof value === 'object') {
+        if (depth > 5) return false
+        const keys = Object.keys(value)
+        if (keys.length === 0) return false
+        return keys.some(k => hasMeaningfulValue(value[k], depth + 1))
+    }
+    return false
+}
+
+function isMeaningfulLine(line) {
+    if (!line || typeof line !== 'object') return false
+    return hasMeaningfulValue(line.values) || hasMeaningfulValue(line.computed)
+}
+
+function filterMeaningfulLines(lines) {
+    if (!Array.isArray(lines)) return []
+    return lines.filter(isMeaningfulLine)
+}
+
+function normalizeSchemaId(value) {
+    if (!value) return ''
+    if (typeof value === 'string') return value.trim()
+    if (typeof value === 'object') {
+        if (value.$oid) return String(value.$oid).trim()
+        if (value._id) return String(value._id).trim()
+        if (value.id) return String(value.id).trim()
+    }
+    return String(value).trim()
+}
+
+function pickLinesForSchema(lines, schemaId, schemaDef) {
+    const cleaned = filterMeaningfulLines(lines)
+    if (cleaned.length === 0) return []
+
+    const targetId = normalizeSchemaId(schemaId)
+    const exact = cleaned
+        .filter(l => normalizeSchemaId(l?.schemaId) === targetId)
+        .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+    if (exact.length > 0) return exact
+
+    const targetKeys = new Set((schemaDef?.columns || []).map(c => c?.key).filter(Boolean))
+    if (targetKeys.size === 0) return []
+
+    const groups = {}
+    for (const line of cleaned) {
+        const sid = normalizeSchemaId(line?.schemaId)
+        if (!sid) continue
+        if (!groups[sid]) groups[sid] = []
+        groups[sid].push(line)
+    }
+
+    let bestSid = ''
+    let bestScore = 0
+    let bestCount = 0
+
+    for (const [sid, rows] of Object.entries(groups)) {
+        const rowKeys = new Set()
+        for (const row of rows) {
+            for (const key of Object.keys(row?.values || {})) {
+                if (!key.endsWith('_label')) rowKeys.add(key)
+            }
+            for (const key of Object.keys(row?.computed || {})) {
+                rowKeys.add(key)
+            }
+        }
+
+        let overlap = 0
+        for (const k of rowKeys) {
+            if (targetKeys.has(k)) overlap++
+        }
+
+        if (overlap > bestScore || (overlap === bestScore && rows.length > bestCount)) {
+            bestSid = sid
+            bestScore = overlap
+            bestCount = rows.length
+        }
+    }
+
+    if (!bestSid || bestScore <= 0) return []
+    return (groups[bestSid] || []).slice().sort((a, b) => (a?.order || 0) - (b?.order || 0))
+}
+
 // =========================================================================
 // useDynamicTableOverlay hook — detect clicks on dynamic-table placeholders
 // =========================================================================
@@ -252,11 +340,12 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                     .catch(() => ({ data: [] }))
                 : Promise.resolve({ data: [] })
         ]).then(([schemaRes, linesRes, presetsRes, snapshotsRes]) => {
-            if (schemaRes?.data || schemaRes?._id) {
-                setSchema(schemaRes.data || schemaRes)
+            const schemaData = schemaRes?.data || schemaRes || null
+            if (schemaData) {
+                setSchema(schemaData)
             }
             if (linesRes?.data) {
-                setLines(linesRes.data)
+                setLines(pickLinesForSchema(linesRes.data, schemaId, schemaData))
             }
             // Presets
             setPresets(presetsRes?.templates || [])
@@ -566,7 +655,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                     `/account/${accountNumber}/api/document-lines/${documentId}`,
                     { credentials: 'include' }
                 ).then(r => r.json())
-                if (linesRes?.data) setLines(linesRes.data)
+                if (linesRes?.data) setLines(pickLinesForSchema(linesRes.data, schemaId, schema))
             }
         } catch (err) {
             console.error('[DynamicTable] Apply preset error:', err)
@@ -574,16 +663,16 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
             setApplyingPreset(null)
             setPresetsOpen(false)
         }
-    }, [documentId, accountNumber])
+    }, [documentId, accountNumber, schemaId, schema])
 
     // Load snapshot lines into the table
     const applySnapshot = useCallback((snapshot) => {
         if (!snapshot?.lines?.length) return
-        const newLines = snapshot.lines.map((l, i) => ({
+        const newLines = filterMeaningfulLines(snapshot.lines.map((l, i) => ({
             lineType: l.lineType || schema?.defaultLineType || 'treatment',
             values: { ...(l.values || {}) },
             order: i
-        }))
+        })))
         setLines(newLines)
         setSnapshotsOpen(false)
     }, [schema])
@@ -610,6 +699,9 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         }
         setSaving(true)
         try {
+            const meaningfulLines = filterMeaningfulLines(
+                lines.map((l, i) => ({ ...l, order: i }))
+            )
             const res = await fetch(
                 `/account/${accountNumber}/api/document-lines/${documentId}/bulk`,
                 {
@@ -617,14 +709,15 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        lines: lines.map((l, i) => ({ ...l, order: i })),
+                        lines: meaningfulLines,
                         schemaId
                     })
                 }
             )
             const data = await res.json()
             if (data.data) {
-                setLines(data.data)
+                const cleanedLines = filterMeaningfulLines(data.data)
+                setLines(cleanedLines)
                 
                 // Render new table HTML visually into the editor
                 if (activePlaceholder) {
@@ -637,7 +730,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                                 schemaId,
                                 style: config?.style || 'professional',
                                 config: config,
-                                lines: data.data
+                                lines: cleanedLines
                             })
                         })
                         const renderData = await renderRes.json()

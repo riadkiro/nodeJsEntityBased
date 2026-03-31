@@ -1049,7 +1049,7 @@
 
                             </div>
                             </div><!-- end panel-sortable-item attachments -->
-                        <% } else if (sectionId==='smartdoc' && locals.entity && entity.enableAttachments) { %>
+                        <% } else if (sectionId==='smartdoc' && locals.entity) { %>
                             <!-- âœ¨ Documents modÃ¨les (Standalone Panel) -->
                             <div class="panel-sortable-item" data-panel-id="smartdoc" x-show="isPanelVisible('smartdoc')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
@@ -1062,7 +1062,8 @@
                                 x-data='smartDocPanel({
                                     recordId: "<%= locals.record && record._id ? record._id : '' %>",
                                     accountNumber: "<%= account_number %>",
-                                    entityName: "<%= locals.entity ? entity.name : '' %>"
+                                    entityName: "<%= locals.entity ? entity.name : '' %>",
+                                    entityId: "<%= locals.entity && entity._id ? entity._id : '' %>"
                                 })'>
                                 <!-- Header -->
                                 <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
@@ -1071,7 +1072,7 @@
                                         <iconify-icon icon="solar:document-medicine-bold-duotone" width="14" class="text-primary"></iconify-icon>
                                         <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Documents modÃ¨les</span>
                                         <span x-show="smartDocTemplates.length > 0" class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="smartDocTemplates.length"></span>
-                                        <button type="button" @click.stop="showNewDocModal = true" class="w-5 h-5 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all ml-0.5" title="Nouveau document">
+                                        <button type="button" @click.stop="openTemplateModal()" class="w-5 h-5 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all ml-0.5" title="Nouveau document">
                                             <iconify-icon icon="tabler:plus" width="11"></iconify-icon>
                                         </button>
                                     </div>
@@ -1128,7 +1129,7 @@
                                                 <div class="flex flex-col items-center py-3 gap-1.5">
                                                     <iconify-icon icon="solar:document-add-linear" width="20" class="text-gray-300 dark:text-gray-600"></iconify-icon>
                                                     <p class="text-[9px] text-gray-400">Aucun document modÃ¨le</p>
-                                                    <button type="button" @click.stop="showNewDocModal = true"
+                                                    <button type="button" @click.stop="openTemplateModal()"
                                                         class="text-[9px] font-semibold text-primary hover:underline transition-all">+ Créer</button>
                                                 </div>
                                             </template>
@@ -1140,51 +1141,110 @@
                                         </div>
                                     </template>
                                 </div>
-
-                                    <!-- New Document Choice Modal -->
+                                    <!-- New SmartDoc Template Modal -->
                                     <template x-teleport="body">
                                         <div x-show="showNewDocModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                                             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                                             class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display:none;"
                                             @click.self="showNewDocModal = false">
-                                            <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl w-[400px] max-w-[90vw] overflow-hidden animate__animated animate__fadeInUp animate__faster" @click.stop>
+                                            <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl w-[640px] max-w-[94vw] overflow-hidden animate__animated animate__fadeInUp animate__faster" @click.stop>
                                                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
                                                     <div class="flex items-center gap-3">
                                                         <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                                             <iconify-icon icon="solar:document-add-bold-duotone" width="20" class="text-primary"></iconify-icon>
                                                         </div>
                                                         <div>
-                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Nouveau document</h4>
-                                                            <p class="text-[10px] text-gray-400">Choisissez le type de document Ã  crÃ©er</p>
+                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Ajouter un template SmartDoc</h4>
+                                                            <p class="text-[10px] text-gray-400">Biblioth�que ou nouveau mod�le, puis choisissez la port�e</p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="p-4 space-y-3">
-                                                    <!-- Document Simple -->
-                                                    <button type="button" @click="createSimpleDoc()" 
-                                                        class="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary/30 hover:bg-primary/[0.02] transition-all text-left group/choice">
-                                                        <div class="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center shrink-0 group-hover/choice:scale-110 transition-transform">
-                                                            <iconify-icon icon="solar:document-text-bold-duotone" width="22" class="text-info"></iconify-icon>
+                                                <div class="p-5 space-y-4 max-h-[74vh] overflow-y-auto">
+                                                    <div>
+                                                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Source</p>
+                                                        <div class="grid grid-cols-2 gap-2 mb-3">
+                                                            <button type="button" @click="newTemplateMode = 'library'"
+                                                                class="px-3 py-2 rounded-lg border text-xs font-semibold transition-all"
+                                                                :class="newTemplateMode === 'library' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                                                                Biblioth�que
+                                                            </button>
+                                                            <button type="button" @click="newTemplateMode = 'blank'"
+                                                                class="px-3 py-2 rounded-lg border text-xs font-semibold transition-all"
+                                                                :class="newTemplateMode === 'blank' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                                                                Nouveau mod�le
+                                                            </button>
                                                         </div>
-                                                        <div>
-                                                            <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document simple</span>
-                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">Créer un document unique lié à cet enregistrement</span>
+
+                                                        <template x-if="newTemplateMode === 'library'">
+                                                            <div class="space-y-2">
+                                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                    <template x-for="preset in templateLibrary" :key="preset.key">
+                                                                        <button type="button" @click="selectedLibraryKey = preset.key"
+                                                                            class="text-left p-2.5 rounded-xl border transition-all"
+                                                                            :class="selectedLibraryKey === preset.key ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'">
+                                                                            <div class="flex items-start gap-2">
+                                                                                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                                                                    :style="'background:' + preset.color + '18; color:' + preset.color">
+                                                                                    <iconify-icon :icon="preset.icon" width="16"></iconify-icon>
+                                                                                </div>
+                                                                                <div class="min-w-0">
+                                                                                    <div class="text-[11px] font-semibold text-gray-700 dark:text-gray-200" x-text="preset.name"></div>
+                                                                                    <div class="text-[10px] text-gray-400 leading-snug mt-0.5" x-text="preset.description"></div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    </template>
+                                                                </div>
+                                                                <input type="text" x-model="newTemplateName"
+                                                                    class="form-input text-xs !h-9 w-full"
+                                                                    placeholder="Nom personnalis� (optionnel)">
+                                                            </div>
+                                                        </template>
+
+                                                        <template x-if="newTemplateMode === 'blank'">
+                                                            <div class="space-y-2">
+                                                                <input type="text" x-model="newTemplateName"
+                                                                    class="form-input text-xs !h-9 w-full"
+                                                                    placeholder="Nom du template (ex: Ordonnance de suivi)">
+                                                                <p class="text-[10px] text-gray-400">Un mod�le vide sera cr��, puis ouvert dans l'�diteur.</p>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+
+                                                    <div>
+                                                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Li� �</p>
+                                                        <div class="space-y-2">
+                                                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                                <input type="radio" class="form-radio text-primary" value="entity" x-model="newTemplateScope">
+                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Entit�: <%= locals.entity ? entity.name : 'Entity' %></span>
+                                                            </label>
+                                                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                                <input type="radio" class="form-radio text-primary" value="record" x-model="newTemplateScope">
+                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Ce record uniquement</span>
+                                                            </label>
+                                                            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 cursor-pointer"
+                                                                :class="linkedRecords.length === 0 ? 'opacity-50 cursor-not-allowed' : ''">
+                                                                <input type="radio" class="form-radio text-primary" value="relation" x-model="newTemplateScope" :disabled="linkedRecords.length === 0">
+                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Une liaison (patient, sympt�me, pathologie...)</span>
+                                                            </label>
+                                                            <template x-if="newTemplateScope === 'relation'">
+                                                                <select class="form-input text-xs !h-9 mt-1" x-model="selectedRelationTarget">
+                                                                    <option value="">Choisir une liaison</option>
+                                                                    <template x-for="lr in linkedRecords" :key="lr.relationKey + '::' + lr.recordId">
+                                                                        <option :value="lr.relationKey + '::' + lr.recordId" x-text="(lr.relationLabel || 'Relation') + ': ' + (lr.recordTitle || 'Record')"></option>
+                                                                    </template>
+                                                                </select>
+                                                            </template>
                                                         </div>
-                                                    </button>
-                                                    <!-- Document ModÃ¨le -->
-                                                    <button type="button" @click="openSmartDocEditor()"
-                                                        class="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-warning/30 hover:bg-warning/[0.02] transition-all text-left group/choice">
-                                                        <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0 group-hover/choice:scale-110 transition-transform">
-                                                            <iconify-icon icon="solar:copy-bold-duotone" width="22" class="text-warning"></iconify-icon>
-                                                        </div>
-                                                        <div>
-                                                            <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document modÃ¨le</span>
-                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">RÃ©utilisable pour d'autres <span class="lowercase"><%= locals.entity ? entity.name : 'enregistrements' %></span> â€” gÃ©nÃ¨re un PDF Ã  chaque utilisation</span>
-                                                        </div>
-                                                    </button>
+                                                    </div>
                                                 </div>
-                                                <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex justify-end">
+                                                <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-end gap-2">
                                                     <button type="button" @click="showNewDocModal = false" class="btn btn-sm btn-outline-secondary text-[10px] px-4 py-1.5">Annuler</button>
+                                                    <button type="button" @click="createTemplateFromWizard()" :disabled="creatingTemplate"
+                                                        class="btn btn-sm btn-primary text-[10px] px-4 py-1.5 flex items-center gap-1.5">
+                                                        <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="13"></iconify-icon>
+                                                        <span x-text="creatingTemplate ? 'Cr�ation...' : 'Cr�er le template'"></span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1355,7 +1415,7 @@
                                         </div>
                                     </template>
 
-                            </div>
+                                                        </div>
                             </div><!-- end panel-sortable-item smartdoc -->
 
                         <% } else if (sectionId==='relations') { %>
@@ -2584,8 +2644,10 @@
                 recordId: config.recordId,
                 accountNumber: config.accountNumber,
                 entityName: config.entityName || '',
+                entityId: config.entityId || '',
                 isOpen: true,
                 smartDocTemplates: [],
+                linkedRecords: [],
                 generatingDocId: null,
                 showSmartDocModal: false,
                 smartDocModalTemplate: null,
@@ -2602,28 +2664,127 @@
                 finalizingDraft: false,
                 // New doc modal & unlink
                 showNewDocModal: false,
+                newTemplateMode: 'library',
+                selectedLibraryKey: 'ordonnance',
+                newTemplateName: '',
+                newTemplateScope: 'entity',
+                selectedRelationTarget: '',
+                creatingTemplate: false,
+                templateLibrary: [
+                    {
+                        key: 'ordonnance',
+                        name: 'Ordonnance',
+                        description: 'Prescription medicale standard',
+                        icon: 'solar:document-medicine-bold-duotone',
+                        color: '#00ab55',
+                        html: '<h2>ORDONNANCE</h2><p><strong>Patient :</strong> {{record.title}}</p><p><strong>Date :</strong> {{today}}</p><p><br/></p><p>1) ........................................</p><p>2) ........................................</p><p><br/></p><p><strong>Signature et cachet</strong></p>'
+                    },
+                    {
+                        key: 'devis',
+                        name: 'Devis',
+                        description: 'Proposition tarifaire / commerciale',
+                        icon: 'solar:bill-list-bold-duotone',
+                        color: '#4361ee',
+                        html: '<h2>DEVIS</h2><p><strong>Reference :</strong> {{record.title}}</p><p><strong>Date :</strong> {{today}}</p><p><br/></p><p>Detail des prestations :</p><p>........................................</p><p><br/></p><p><strong>Total :</strong> ........................................</p>'
+                    },
+                    {
+                        key: 'offre-commerciale',
+                        name: 'Offre commerciale',
+                        description: 'Offre structuree a valider',
+                        icon: 'solar:document-text-bold-duotone',
+                        color: '#f59e0b',
+                        html: '<h2>OFFRE COMMERCIALE</h2><p><strong>Objet :</strong> {{record.title}}</p><p><strong>Date :</strong> {{today}}</p><p><br/></p><p>Contexte et besoins :</p><p>........................................</p><p><br/></p><p>Proposition :</p><p>........................................</p>'
+                    },
+                    {
+                        key: 'compte-rendu',
+                        name: 'Compte rendu',
+                        description: 'Synthese de consultation',
+                        icon: 'solar:notes-bold-duotone',
+                        color: '#10b981',
+                        html: '<h2>COMPTE RENDU</h2><p><strong>Consultation :</strong> {{record.title}}</p><p><strong>Date :</strong> {{today}}</p><p><br/></p><p>Motif :</p><p>........................................</p><p><br/></p><p>Conclusion :</p><p>........................................</p>'
+                    }
+                ],
                 showUnlinkConfirm: false,
                 unlinkTarget: null,
                 unlinking: false,
 
                 init() {
-                    if (this.recordId) {
-                        this.loadSmartDocTemplates();
-                    }
+                    this.linkedRecords = this.extractLinkedRecords();
+                    this.loadSmartDocTemplates();
                 },
 
                 async loadSmartDocTemplates() {
                     try {
-                        const entityId = '<%= locals.entity ? entity._id : "" %>';
-                        if (!entityId) return;
-                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates/${entityId}`, {
-                            credentials: 'include'
-                        });
+                        if (!this.entityId) return;
+                        this.linkedRecords = this.extractLinkedRecords();
+
+                        const params = new URLSearchParams();
+                        if (this.recordId) params.set('recordId', this.recordId);
+                        if (this.linkedRecords.length > 0) {
+                            params.set('linkedRecords', JSON.stringify(this.linkedRecords.map(r => ({
+                                relationKey: r.relationKey,
+                                recordId: r.recordId
+                            }))));
+                        }
+
+                        const query = params.toString();
+                        const url = `/account/${this.accountNumber}/api/smartdoc/templates/${this.entityId}${query ? `?${query}` : ''}`;
+                        const res = await fetch(url, { credentials: 'include' });
                         const data = await res.json();
                         if (data.success && data.templates) {
                             this.smartDocTemplates = data.templates;
                         }
                     } catch (e) { console.error('[SmartDoc] Load templates error:', e); }
+                },
+
+                extractLinkedRecords() {
+                    const out = [];
+                    try {
+                        const relJson = document.getElementById('linesPanel-relations');
+                        if (relJson) {
+                            const data = JSON.parse(relJson.textContent || '{}');
+                            const entityRels = Array.isArray(data.entityRelations) ? data.entityRelations : [];
+                            const recordRels = Array.isArray(data.recordRelations) ? data.recordRelations : [];
+                            for (const eRel of entityRels) {
+                                const relationKey = String(eRel?.key || '');
+                                if (!relationKey) continue;
+                                const rRel = recordRels.find(r => String(r?.relationKey || '') === relationKey);
+                                const records = Array.isArray(rRel?.records) ? rRel.records : [];
+                                for (const rec of records) {
+                                    const recId = String(rec?._id || rec?.id || '');
+                                    if (!recId) continue;
+                                    out.push({
+                                        relationKey,
+                                        relationLabel: eRel?.label || 'Relation',
+                                        recordId: recId,
+                                        recordTitle: rec?.title || rec?.computedTitle || 'Sans titre'
+                                    });
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // ignore parse errors
+                    }
+
+                    const dedup = [];
+                    const seen = new Set();
+                    for (const row of out) {
+                        const token = `${row.relationKey}::${row.recordId}`;
+                        if (seen.has(token)) continue;
+                        seen.add(token);
+                        dedup.push(row);
+                    }
+                    return dedup;
+                },
+
+                openTemplateModal() {
+                    this.linkedRecords = this.extractLinkedRecords();
+                    this.newTemplateMode = 'library';
+                    this.selectedLibraryKey = this.selectedLibraryKey || 'ordonnance';
+                    this.newTemplateName = '';
+                    this.newTemplateScope = 'entity';
+                    this.selectedRelationTarget = '';
+                    this.showNewDocModal = true;
                 },
 
                 generateSmartDoc(tpl) {
@@ -2760,12 +2921,121 @@
                     this.previewVariables = [];
                     this.previewOutputName = '';
                 },
+                getSelectedLibraryPreset() {
+                    return this.templateLibrary.find(p => p.key === this.selectedLibraryKey) || null;
+                },
 
-                async openSmartDocEditor() {
+                async createSmartDocTemplateLink(payload) {
+                    const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!data.success || !data.template) {
+                        throw new Error(data.error || 'Erreur lors de la liaison SmartDoc');
+                    }
+                    return data.template;
+                },
+
+                async createTemplateFromWizard() {
+                    if (this.creatingTemplate) return;
+                    if (!this.entityId) {
+                        alert('Entity introuvable pour ce record');
+                        return;
+                    }
+
+                    const isLibrary = this.newTemplateMode === 'library';
+                    const preset = isLibrary ? this.getSelectedLibraryPreset() : null;
+                    if (isLibrary && !preset) {
+                        alert('Choisissez un template de la biblioth�que');
+                        return;
+                    }
+
+                    let scopeType = this.newTemplateScope || 'entity';
+                    let scopeRecordId = null;
+                    let scopeRelationKey = '';
+                    let scopeRecordLabel = '';
+                    let scopeRelationLabel = '';
+
+                    if (scopeType === 'record') {
+                        if (!this.recordId) {
+                            alert('Aucun record actif');
+                            return;
+                        }
+                        scopeRecordId = this.recordId;
+                        scopeRecordLabel = document.title || '';
+                    }
+
+                    if (scopeType === 'relation') {
+                        const token = this.selectedRelationTarget || '';
+                        const rel = this.linkedRecords.find(r => `${r.relationKey}::${r.recordId}` === token);
+                        if (!rel) {
+                            alert('Choisissez une liaison valide');
+                            return;
+                        }
+                        scopeRecordId = rel.recordId;
+                        scopeRelationKey = rel.relationKey || '';
+                        scopeRecordLabel = rel.recordTitle || '';
+                        scopeRelationLabel = rel.relationLabel || '';
+                    }
+
+                    let docName = (this.newTemplateName || '').trim();
+                    if (!docName && preset) docName = preset.name;
+                    if (!docName) {
+                        alert('Veuillez saisir un nom de template');
+                        return;
+                    }
+
+                    this.creatingTemplate = true;
+                    try {
+                        await this.openSmartDocEditor({
+                            name: docName,
+                            initialContent: preset?.html || '',
+                            description: preset?.description || '',
+                            icon: preset?.icon || 'solar:document-text-bold-duotone',
+                            color: preset?.color || '#4361ee',
+                            scopeType,
+                            scopeRecordId,
+                            scopeRelationKey,
+                            scopeRecordLabel,
+                            scopeRelationLabel
+                        });
+                        this.showNewDocModal = false;
+                        this.newTemplateName = '';
+                        this.newTemplateScope = 'entity';
+                        this.selectedRelationTarget = '';
+                    } catch (e) {
+                        console.error('[SmartDoc] Wizard create error:', e);
+                        alert(e.message || 'Erreur lors de la cr�ation du template');
+                    } finally {
+                        this.creatingTemplate = false;
+                    }
+                },
+
+                async openSmartDocEditor(options = {}) {
                     this.showNewDocModal = false;
-                    const entityId = '<%= locals.entity ? entity._id : "" %>';
-                    if (!entityId) return;
+                    if (!this.entityId) return;
                     this.smartDocTitleError = '';
+
+                    const name = String(options.name || 'Nouveau SmartDoc').trim() || 'Nouveau SmartDoc';
+                    const initialContent = String(options.initialContent || '');
+                    const linkPayload = {
+                        name,
+                        description: options.description || '',
+                        icon: options.icon || 'solar:document-text-bold-duotone',
+                        color: options.color || '#4361ee',
+                        entityId: this.entityId,
+                        scopeType: options.scopeType || 'entity',
+                        scopeRecordId: options.scopeRecordId || null,
+                        scopeRelationKey: options.scopeRelationKey || '',
+                        scopeRecordLabel: options.scopeRecordLabel || '',
+                        scopeRelationLabel: options.scopeRelationLabel || '',
+                        inputFields: [],
+                        outputFormat: 'pdf',
+                        active: true
+                    };
 
                     try {
                         const res = await fetch(`/account/${this.accountNumber}/documents/api`, {
@@ -2773,30 +3043,35 @@
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
                             body: JSON.stringify({
-                                name: 'Nouveau SmartDoc',
+                                name,
                                 isTemplate: true,
-                                entityId: entityId,
-                                entityIds: [entityId],
+                                entityId: this.entityId,
+                                entityIds: [this.entityId],
                                 status: 'draft',
-                                pages: [{ content: '', elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
+                                pages: [{ content: initialContent, elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
                             })
                         });
                         const data = await res.json();
                         if (!data.success || !data.document) {
-                            alert('Erreur lors de la crÃ©ation du document');
-                            return;
+                            throw new Error('Erreur lors de la cr�ation du document');
                         }
 
-                        this.showSmartDocEditor = true;
+                        await this.createSmartDocTemplateLink({
+                            ...linkPayload,
+                            documentId: data.document._id
+                        });
 
+                        this.showSmartDocEditor = true;
                         this.$nextTick(() => {
                             const container = document.getElementById('smartdoc-editor-mount-sd');
                             if (!container) return;
                             container.innerHTML = `<iframe src="/account/${this.accountNumber}/documents/${data.document._id}/edit-react?minimal=true" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>`;
                         });
+
+                        await this.loadSmartDocTemplates();
                     } catch (e) {
                         console.error('[SmartDoc] Error creating document:', e);
-                        alert('Erreur lors de la crÃ©ation du SmartDoc');
+                        throw e;
                     }
                 },
 
@@ -2910,7 +3185,7 @@
                 // â•â•â• NEW DOC & UNLINK â•â•â•
                 async createSimpleDoc() {
                     this.showNewDocModal = false;
-                    const entityId = '<%= locals.entity ? entity._id : "" %>';
+                    const entityId = this.entityId;
                     try {
                         const res = await fetch(`/account/${this.accountNumber}/documents/api`, {
                             method: 'POST',
@@ -2944,7 +3219,7 @@
                 async executeUnlink() {
                     if (!this.unlinkTarget || this.unlinking) return;
                     this.unlinking = true;
-                    const entityId = '<%= locals.entity ? entity._id : "" %>';
+                    const entityId = this.entityId;
                     try {
                         const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates/${this.unlinkTarget._id}/unlink`, {
                             method: 'POST',
@@ -2977,5 +3252,10 @@
     <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.some(function(w) { return w.cardTemplate; })) { %>
         <script type="module" src="/dist/cardRendererWidget.js"></script>
     <% } %>
+
+
+
+
+
 
 

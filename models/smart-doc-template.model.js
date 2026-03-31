@@ -54,6 +54,33 @@ const SmartDocTemplateSchema = new mongoose.Schema({
         required: true
     },
 
+    // Scope / visibility of this SmartDoc link
+    // entity  : visible for all records of the entity
+    // record  : visible only on one specific record
+    // relation: visible when current record is linked to a target related record
+    scopeType: {
+        type: String,
+        enum: ['entity', 'record', 'relation'],
+        default: 'entity'
+    },
+    scopeRecordId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Record',
+        default: null
+    },
+    scopeRelationKey: {
+        type: String,
+        default: ''
+    },
+    scopeRecordLabel: {
+        type: String,
+        default: ''
+    },
+    scopeRelationLabel: {
+        type: String,
+        default: ''
+    },
+
     // Extra input fields the user must fill before generation
     // If empty → 1-click auto generation, no modal needed
     inputFields: [InputFieldSchema],
@@ -85,5 +112,6 @@ const SmartDocTemplateSchema = new mongoose.Schema({
 // Indexes
 SmartDocTemplateSchema.index({ entityId: 1, active: 1, order: 1 });
 SmartDocTemplateSchema.index({ documentId: 1 });
+SmartDocTemplateSchema.index({ entityId: 1, scopeType: 1, scopeRecordId: 1, active: 1 });
 
 module.exports = mongoose.model('SmartDocTemplate', SmartDocTemplateSchema);

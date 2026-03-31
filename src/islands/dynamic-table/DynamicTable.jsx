@@ -12,6 +12,7 @@ import DataTable from './components/DataTable'
 import Toolbar from './components/Toolbar'
 import TotalsBar from './components/TotalsBar'
 import { computeFormulaColumns } from './utils/formula'
+import { computeTotalsRows } from './utils/totals'
 
 const styles = {
     panel: {
@@ -1602,7 +1603,7 @@ export default function DynamicTable({
                     />
 
                     {schema.snapshotConfig?.enabled && (
-                        <div style={{ borderTop: '1px solid #f3f4f6', padding: '10px 12px', maxHeight: 260, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+                        <div style={{ borderTop: '2px solid #e5e7eb', padding: '10px 12px', maxHeight: 260, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                             <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 10 }}>
                                 Historique
                             </div>
@@ -1737,31 +1738,22 @@ export default function DynamicTable({
 
                                                                 {/* Totals Summary */}
                                                                 {(() => {
-                                                                    const rowDefs = (schema?.totals?.rows) || []
-                                                                    const filledLines = (snap.lines || []).filter(isFilledLine)
-                                                                    if (rowDefs.length > 0 && filledLines.length > 0) {
+                                                                    const rows = computeTotalsRows(schema, snap.lines || [])
+                                                                    if (rows.length > 0) {
                                                                         return (
                                                                             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
                                                                                 <table style={{ minWidth: 200, fontSize: 11, borderCollapse: 'collapse' }}>
                                                                                     <tbody>
-                                                                                        {rowDefs.map((def, ridx) => {
-                                                                                            const keys = def.keys || (def.key ? [def.key] : [])
-                                                                                            let value = 0
-                                                                                            if (def.type === 'count') value = filledLines.length
-                                                                                            else {
-                                                                                                for (const l of filledLines) {
-                                                                                                    for (const k of keys) value += Number(l.values?.[k] || 0)
-                                                                                                }
-                                                                                            }
-                                                                                            return (
-                                                                                                <tr key={ridx}>
-                                                                                                    <td style={{ padding: '3px 8px', color: '#64748b', textAlign: 'right', fontWeight: 600 }}>{def.label}</td>
-                                                                                                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 700, color: def.isFinal ? '#4361ee' : '#1e293b', fontSize: def.isFinal ? 13 : 11 }}>
-                                                                                                        {def.format === 'count' ? value : value.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                                                                                                    </td>
-                                                                                                </tr>
-                                                                                            )
-                                                                                        })}
+                                                                                        {rows.map((row, ridx) => (
+                                                                                            <tr key={ridx}>
+                                                                                                <td style={{ padding: '3px 8px', color: '#64748b', textAlign: 'right', fontWeight: 600 }}>{row.label}</td>
+                                                                                                <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 700, color: row.isFinal ? '#4361ee' : '#1e293b', fontSize: row.isFinal ? 13 : 11 }}>
+                                                                                                    {row.format === 'count'
+                                                                                                        ? row.value
+                                                                                                        : Number(row.value || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        ))}
                                                                                     </tbody>
                                                                                 </table>
                                                                             </div>

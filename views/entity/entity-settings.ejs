@@ -756,7 +756,7 @@ document.addEventListener('alpine:init', () => {
 
       async loadTemplates() {
         try {
-          const res = await fetch(`/account/${accountNumber}/api/smartdoc/templates/${entityId}`, { credentials: 'include' });
+          const res = await fetch(`/account/${accountNumber}/api/smartdoc/templates/${entityId}?all=1`, { credentials: 'include' });
           const data = await res.json();
           if (data.success) this.templates = data.templates || [];
         } catch (e) { console.error('[SmartDoc] Load error:', e); }
@@ -1331,8 +1331,8 @@ document.addEventListener('alpine:init', () => {
         </div>
       </div>
 
-      <!-- ✨ SmartDoc Templates (only when attachments enabled + edit mode) -->
-      <template x-if="isEdit && form.enableAttachments">
+      <!-- SmartDoc Templates (edit mode) -->
+      <template x-if="isEdit">
         <div class="section-card" x-data="smartDocManager()">
           <div class="p-5 space-y-4">
             <div class="flex items-center justify-between">
@@ -1460,3 +1460,5 @@ document.addEventListener('alpine:init', () => {
     </div>
   </div>
 </div>
+
+

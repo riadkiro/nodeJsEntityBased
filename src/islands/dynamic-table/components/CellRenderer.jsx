@@ -7,17 +7,17 @@ import React, { useState, useRef, useEffect } from 'react'
 // ── Shared styles ──────────────────────────
 const inputStyle = {
     width: '100%',
-    border: '1px solid transparent',
+    border: 'none',
     borderRadius: '4px',
-    padding: '0 4px',
-    fontSize: '12px',
-    height: '22px',
-    lineHeight: '20px',
+    padding: '0 3px',
+    fontSize: '12.5px',
+    height: '20px',
+    lineHeight: '18px',
     background: 'transparent',
     color: 'inherit',
     outline: 'none',
     boxShadow: 'none',
-    transition: 'border-color 0.15s, background 0.15s'
+    transition: 'background 0.15s'
 }
 
 const tagStyle = {
@@ -28,14 +28,14 @@ const tagStyle = {
     borderRadius: '4px',
     fontSize: '10px',
     fontWeight: 500,
-    lineHeight: '17px',
+    lineHeight: '16px',
     whiteSpace: 'nowrap'
 }
 
 const placeholderStyle = {
-    fontSize: '10px',
+    fontSize: '11px',
     color: '#c0c4cc',
-    padding: '1px 4px',
+    padding: '0 3px',
     cursor: 'pointer',
     userSelect: 'none'
 }
@@ -124,31 +124,16 @@ export default function CellRenderer({ col, value, line, onChange }) {
         return (
             <input
                 type="text"
+                className="dt-inline-input"
                 style={inputStyle}
                 value={value || ''}
                 onChange={(e) => onChange(col.key, e.target.value)}
                 placeholder={col.label}
                 onFocus={(e) => {
-                    e.target.style.borderColor = '#4361ee'
-                    e.target.style.background = '#fff'
-                    e.target.style.boxShadow = '0 0 0 2px rgba(67,97,238,0.1)'
+                    e.target.style.background = '#f8fafc'
                 }}
                 onBlur={(e) => {
-                    e.target.style.borderColor = 'transparent'
                     e.target.style.background = 'transparent'
-                    e.target.style.boxShadow = 'none'
-                }}
-                onMouseEnter={(e) => {
-                    if (document.activeElement !== e.target) {
-                        e.target.style.borderColor = '#e5e7eb'
-                        e.target.style.background = '#fafbfc'
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    if (document.activeElement !== e.target) {
-                        e.target.style.borderColor = 'transparent'
-                        e.target.style.background = 'transparent'
-                    }
                 }}
             />
         )
@@ -160,17 +145,16 @@ export default function CellRenderer({ col, value, line, onChange }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                 <input
                     type="number"
+                    className="dt-inline-input"
                     style={{ ...inputStyle, MozAppearance: 'textfield' }}
                     value={value ?? ''}
                     onChange={(e) => onChange(col.key, e.target.value ? parseFloat(e.target.value) : '')}
                     placeholder={col.label}
                     step={col.config?.step || 'any'}
                     onFocus={(e) => {
-                        e.target.style.borderColor = '#4361ee'
-                        e.target.style.background = '#fff'
+                        e.target.style.background = '#f8fafc'
                     }}
                     onBlur={(e) => {
-                        e.target.style.borderColor = 'transparent'
                         e.target.style.background = 'transparent'
                     }}
                 />
@@ -188,14 +172,16 @@ export default function CellRenderer({ col, value, line, onChange }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                 <input
                     type="number"
+                    className="dt-inline-input"
                     style={{ ...inputStyle, width: '50px', textAlign: 'center' }}
                     value={durVal.value || ''}
                     onChange={(e) => onChange(col.key, { ...durVal, value: e.target.value ? parseInt(e.target.value) : '' })}
                     min="0"
-                    onFocus={(e) => { e.target.style.borderColor = '#4361ee' }}
-                    onBlur={(e) => { e.target.style.borderColor = 'transparent' }}
+                    onFocus={(e) => { e.target.style.background = '#f8fafc' }}
+                    onBlur={(e) => { e.target.style.background = 'transparent' }}
                 />
                 <select
+                    className="dt-inline-select"
                     style={{ ...inputStyle, width: 'auto', padding: '0 16px 0 4px', cursor: 'pointer', fontSize: '11px' }}
                     value={durVal.unit || 'day'}
                     onChange={(e) => onChange(col.key, { ...durVal, unit: e.target.value })}
@@ -213,6 +199,7 @@ export default function CellRenderer({ col, value, line, onChange }) {
         return (
             <input
                 type="date"
+                className="dt-inline-input"
                 style={{ ...inputStyle, fontSize: '11px' }}
                 value={value || ''}
                 onChange={(e) => onChange(col.key, e.target.value)}
@@ -330,6 +317,7 @@ export default function CellRenderer({ col, value, line, onChange }) {
                         <div style={{ padding: '4px 8px', borderBottom: '1px solid #f3f4f6' }}>
                             <input
                                 type="text"
+                                className="dt-inline-input"
                                 style={{ ...inputStyle, fontSize: '11px' }}
                                 placeholder="Rechercher..."
                                 value={filterText}
@@ -384,6 +372,7 @@ export default function CellRenderer({ col, value, line, onChange }) {
     return (
         <input
             type="text"
+            className="dt-inline-input"
             style={inputStyle}
             value={value || ''}
             onChange={(e) => onChange(col.key, e.target.value)}

@@ -207,6 +207,69 @@ export default function useLines({ accountNumber, recordId, schemas, activeSchem
         })
     }, [])
 
+    // Reorder by drag and drop indices
+    const moveLine = useCallback((schemaId, oldIndex, newIndex) => {
+        setLinesMap(prev => {
+            const current = prev[schemaId] || []
+            if (oldIndex === newIndex) return prev
+            if (oldIndex < 0 || newIndex < 0) return prev
+            if (oldIndex >= current.length || newIndex >= current.length) return prev
+
+            const newMap = { ...prev }
+            const lines = [...current]
+            const [moved] = lines.splice(oldIndex, 1)
+            if (!moved) return prev
+            lines.splice(newIndex, 0, moved)
+
+            newMap[schemaId] = lines.map((line, idx) => ({
+                ...line,
+                order: idx
+            }))
+            linesMapRef.current = newMap
+            return newMap
+        })
+    }, [])
+
+    // Reorder from a full ordered list of line ids (most robust with drag/drop)
+    const reorderLinesByIds = useCallback((schemaId, orderedIds) => {
+        setLinesMap(prev => {
+            const current = prev[schemaId] || []
+            if (!Array.isArray(orderedIds) || orderedIds.length === 0 || current.length === 0) return prev
+
+            const getId = (line, idx) => String(line?._id || line?._tempId || idx)
+            const byId = new Map(current.map((line, idx) => [getId(line, idx), line]))
+            const next = []
+            const seen = new Set()
+
+            for (const rawId of orderedIds) {
+                const id = String(rawId || '')
+                const line = byId.get(id)
+                if (!line || seen.has(id)) continue
+                next.push(line)
+                seen.add(id)
+            }
+
+            // Keep any non-rendered residual lines at the end
+            for (let i = 0; i < current.length; i++) {
+                const line = current[i]
+                const id = getId(line, i)
+                if (seen.has(id)) continue
+                next.push(line)
+                seen.add(id)
+            }
+
+            if (next.length !== current.length) return prev
+
+            const newMap = { ...prev }
+            newMap[schemaId] = next.map((line, idx) => ({
+                ...line,
+                order: idx
+            }))
+            linesMapRef.current = newMap
+            return newMap
+        })
+    }, [])
+
     // Debounced save for a schema
     const debouncedSave = useCallback((schemaId) => {
         if (saveTimerRef.current[schemaId]) {
@@ -268,6 +331,8 @@ export default function useLines({ accountNumber, recordId, schemas, activeSchem
         addLine,
         removeLine,
         reorderLines,
+        moveLine,
+        reorderLinesByIds,
         debouncedSave,
         saveLinesForSchema,
         reload: loadLines

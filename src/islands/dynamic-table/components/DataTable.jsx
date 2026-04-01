@@ -203,6 +203,14 @@ export default function DataTable({
     const linesRef = useRef(lines)
     const dragUpdatedRef = useRef(false)
 
+    // ── Stable callback refs (avoid useEffect re-fires on every render) ──
+    const onReorderLinesRef = useRef(onReorderLines)
+    const onReorderByIdsRef = useRef(onReorderByIds)
+    const onCloseSearchRef = useRef(onCloseSearch)
+    useEffect(() => { onReorderLinesRef.current = onReorderLines }, [onReorderLines])
+    useEffect(() => { onReorderByIdsRef.current = onReorderByIds }, [onReorderByIds])
+    useEffect(() => { onCloseSearchRef.current = onCloseSearch }, [onCloseSearch])
+
     useEffect(() => {
         if (!resizing) return
 
@@ -292,8 +300,8 @@ export default function DataTable({
                     ? Array.from(tbodyRef.current.querySelectorAll('tr[data-line-id]')).map(el => String(el.dataset.lineId || ''))
                     : []
 
-                if (domIds.length > 0 && typeof onReorderByIds === 'function') {
-                    onReorderByIds?.(domIds)
+                if (domIds.length > 0 && typeof onReorderByIdsRef.current === 'function') {
+                    onReorderByIdsRef.current(domIds)
                     return
                 }
 
@@ -308,7 +316,7 @@ export default function DataTable({
 
                 if (oldIndex === undefined || newIndex === undefined) return
                 if (oldIndex === newIndex) return
-                onReorderLines?.(oldIndex, newIndex)
+                onReorderLinesRef.current?.(oldIndex, newIndex)
             }
 
             sortableRef.current = SortableLib.create(tbodyRef.current, {
@@ -317,13 +325,16 @@ export default function DataTable({
                 handle: '.dt-drag-handle',
                 draggable: 'tr[data-line-id]',
                 dataIdAttr: 'data-line-id',
+                // Use fallback mode — native HTML5 DnD is blocked by -webkit-user-drag:none
+                forceFallback: true,
+                fallbackClass: 'dt-row-drag',
+                fallbackOnBody: true,
+                fallbackTolerance: 3,
                 // Keep native click/focus on form controls (typing/searching in cells)
                 filter: 'input, textarea, select, button, a, [contenteditable="true"], .dt-inline-input, .dt-inline-select',
                 preventOnFilter: false,
-                // Sidebar-inspired thresholds, but keep native DnD path to avoid lingering fallback clones.
                 swapThreshold: 0.65,
                 invertSwap: true,
-                fallbackTolerance: 3,
                 ghostClass: 'dt-row-ghost',
                 chosenClass: 'dt-row-chosen',
                 onChoose: () => {
@@ -332,7 +343,7 @@ export default function DataTable({
                 },
                 onStart: () => {
                     dragUpdatedRef.current = false
-                    onCloseSearch?.()
+                    onCloseSearchRef.current?.()
                     clearDropTarget()
                 },
                 onMove: (evt) => {
@@ -381,7 +392,7 @@ export default function DataTable({
             clearDropTarget()
             clearDragClasses()
         }
-    }, [lineOrderSignature, onCloseSearch, onReorderLines, onReorderByIds, getLineId])
+    }, [lineOrderSignature, getLineId])
 
     return (
         <div style={tableWrapStyle} className="dt-compact-skin">
@@ -508,9 +519,9 @@ export default function DataTable({
                     background: #f1f5f9;
                 }
 
-                .dt-compact-skin .dt-drag-handle,
-                .dt-compact-skin .dt-drag-handle * {
-                    -webkit-user-drag: none;
+                .dt-compact-skin .dt-drag-handle svg,
+                .dt-compact-skin .dt-drag-handle svg * {
+                    pointer-events: none;
                 }
 
                 body.dt-dragging,

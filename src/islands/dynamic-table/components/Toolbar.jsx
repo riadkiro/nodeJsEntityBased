@@ -8,9 +8,9 @@ const toolbarStyle = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '6px',
-    padding: '4px 12px',
+    padding: '3px 10px',
     borderBottom: '1px solid #f3f4f6',
-    minHeight: '28px'
+    minHeight: '26px'
 }
 
 const savingDot = {

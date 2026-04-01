@@ -231,7 +231,8 @@ module.exports = {
             const records = await Record.find(query)
                 .sort({ title: 1 })
                 .limit(20)
-                .select('title slug customFields entityId lineDefaults')
+                .select('title slug description customFields entityId lineDefaults')
+                .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
                 .lean();
 
             console.log('[CatalogSearch] found', records.length, 'records, first:', records[0] ? { _id: records[0]._id, title: records[0].title, entityId: records[0].entityId } : 'none');
@@ -267,10 +268,47 @@ module.exports = {
 
             for (const r of records) {
                 const cfMap = {};
+                const templateVars = {
+                    title: r.title || '',
+                    slug: r.slug || '',
+                    description: r.description || ''
+                };
+                
                 (r.customFields || []).forEach(cf => {
-                    const fieldId = (cf.field_id?._id || cf.field_id)?.toString();
-                    if (fieldId) cfMap[fieldId] = cf.value;
+                    const field = cf.field_id || {};
+                    const fieldId = (field._id || field)?.toString();
+                    if (fieldId) {
+                        cfMap[fieldId] = cf.value;
+                        if (field.name) templateVars[field.name] = cf.value;
+                        // Also lowercase label as a fallback (e.g., {{code}})
+                        if (field.label) templateVars[field.label.toLowerCase()] = cf.value;
+                    }
                 });
+
+                // Function to deeply interpolate strings
+                const interpolate = (val) => {
+                    if (typeof val !== 'string') return val;
+                    return val.replace(/\{\{\s*([^}]+)\s*\}\}/g, (match, varName) => {
+                        const key = varName.trim();
+                        // If exact match found
+                        if (templateVars[key] !== undefined) return templateVars[key];
+                        // If lowercase match found
+                        if (templateVars[key.toLowerCase()] !== undefined) return templateVars[key.toLowerCase()];
+                        return match; // Keep unresolved variables
+                    });
+                };
+
+                let processedLineDefaults = r.lineDefaults || [];
+                if (processedLineDefaults.length > 0) {
+                    processedLineDefaults = processedLineDefaults.map(ld => {
+                        if (!ld.defaults) return ld;
+                        const newDefaults = {};
+                        for (const [k, v] of Object.entries(ld.defaults)) {
+                            newDefaults[k] = interpolate(v);
+                        }
+                        return { ...ld, defaults: newDefaults };
+                    });
+                }
 
                 // Build label from tokens
                 const parts = tokens.map(token => {
@@ -307,7 +345,7 @@ module.exports = {
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
                     customFields: cfMap,
-                    lineDefaults: r.lineDefaults || []
+                    lineDefaults: processedLineDefaults
                 });
             }
 
@@ -385,8 +423,8 @@ module.exports = {
                     _id: { $in: candidateIds },
                     entityId: entityOid
                 })
-                    .select('title slug customFields entityId relations lineDefaults')
-                    .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                    .select('title slug description customFields entityId relations lineDefaults')
+                    .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
                     .limit(15)
                     .lean();
 
@@ -401,8 +439,8 @@ module.exports = {
                 records = await Record.find({ entityId: entityOid })
                     .sort({ createdAt: -1 })
                     .limit(15)
-                    .select('title slug customFields entityId relations lineDefaults')
-                    .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                    .select('title slug description customFields entityId relations lineDefaults')
+                    .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
                     .lean();
             }
 
@@ -435,10 +473,43 @@ module.exports = {
             const results = [];
             for (const r of records) {
                 const cfMap = {};
+                const templateVars = {
+                    title: r.title || '',
+                    slug: r.slug || '',
+                    description: r.description || ''
+                };
+                
                 (r.customFields || []).forEach(cf => {
-                    const fieldId = (cf.field_id?._id || cf.field_id)?.toString();
-                    if (fieldId) cfMap[fieldId] = cf.value;
+                    const field = cf.field_id || {};
+                    const fieldId = (field._id || field)?.toString();
+                    if (fieldId) {
+                        cfMap[fieldId] = cf.value;
+                        if (field.name) templateVars[field.name] = cf.value;
+                        if (field.label) templateVars[field.label.toLowerCase()] = cf.value;
+                    }
                 });
+
+                const interpolate = (val) => {
+                    if (typeof val !== 'string') return val;
+                    return val.replace(/\{\{\s*([^}]+)\s*\}\}/g, (match, varName) => {
+                        const key = varName.trim();
+                        if (templateVars[key] !== undefined) return templateVars[key];
+                        if (templateVars[key.toLowerCase()] !== undefined) return templateVars[key.toLowerCase()];
+                        return match;
+                    });
+                };
+
+                let processedLineDefaults = r.lineDefaults || [];
+                if (processedLineDefaults.length > 0) {
+                    processedLineDefaults = processedLineDefaults.map(ld => {
+                        if (!ld.defaults) return ld;
+                        const newDefaults = {};
+                        for (const [k, v] of Object.entries(ld.defaults)) {
+                            newDefaults[k] = interpolate(v);
+                        }
+                        return { ...ld, defaults: newDefaults };
+                    });
+                }
 
                 const parts = tokens.map(token => {
                     if (token.t === 'text') return token.v || '';
@@ -473,7 +544,7 @@ module.exports = {
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
                     customFields: cfMap,
-                    lineDefaults: r.lineDefaults || []
+                    lineDefaults: processedLineDefaults
                 });
             }
 

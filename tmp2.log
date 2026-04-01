@@ -1,0 +1,86 @@
+[AppPresets] Connected to global DB
+  ✅ Preset registered: Cabinet Medical
+  ✅ Preset registered: Cabinet Dentiste
+  ✅ Preset registered: Etude Notariale
+[AppPresets] Presets seeded in global DB
+
+============================================================
+🚀 Installing preset: cabinet-dentiste on saas_app_rb_9194
+   Mode: factoryReset
+============================================================
+
+Connected to tenant DB: saas_app_rb_9194
+
+🧹 ═══ FACTORY RESET — Wiping all tenant data ═══
+   Found 18 collections in tenant DB
+   🗑️  DROPPED: entities (19 docs)
+   🗑️  DROPPED: smartdoctemplates (10 docs)
+   🗑️  DROPPED: documents (10 docs)
+   🔒 PRESERVED: userpreferences
+   🗑️  DROPPED: lineschemas (8 docs)
+   🔒 PRESERVED: accountpreferences
+   🗑️  DROPPED: views (19 docs)
+   🗑️  DROPPED: folders (0 docs)
+   🗑️  DROPPED: records (678 docs)
+   🗑️  DROPPED: cardtemplates (2 docs)
+   🗑️  DROPPED: gridsnapshots (1152 docs)
+   🗑️  DROPPED: environments (1 docs)
+   🗑️  DROPPED: entityforms (0 docs)
+   🗑️  DROPPED: documentlines (1068 docs)
+   🗑️  DROPPED: spaces (5 docs)
+   🗑️  DROPPED: fieldtemplates (74 docs)
+   🗑️  DROPPED: classifications (8 docs)
+   🔒 PRESERVED: accounts
+
+✅ Factory reset complete: 15 collections dropped
+   Preserved: 3 collections
+
+
+🧹 Cleaning up orphaned data...
+   ✅ Cleanup complete
+
+📋 Creating field templates...
+   ✅ 70 field templates
+
+🏷️  Creating classifications...
+   ✅ 7 classifications
+
+🗂️  Creating entities...
+   ✅ 18 entities
+   ✅ Resolved symptomes_rel refEntity → new ObjectId("69ccfabf738ff763a647e164")
+
+🔗 Adding relations...
+   ✅ 16 relations
+
+📐 Setting default layouts...
+   ✅ Consultation layout set: Motif(9), Patient(3), Diagnostic(12), Note(12), Symptômes(12)
+
+🏷️  Setting reference title tokens (relation-based)...
+   ✅ 8 relation-based title tokens set
+   ✅ 2 card templates created
+
+🧭 Creating navigation...
+   ✅ 5 spaces + 18 views (no redundant folders)
+
+📋 Creating line schemas...
+   ✅ LineSchema: Ordonnance Traitement (69ccfabf738ff763a647e181)
+   ✅ LineSchema: Traitements Consultation (69ccfabf738ff763a647e182)
+   ✅ LineSchema: Prestations Consultation (69ccfabf738ff763a647e183)
+   ✅ LineSchema: Examens Consultation (69ccfabf738ff763a647e184)
+   ✅ LineSchema: Traitements Patient (69ccfabf738ff763a647e185)
+   ✅ LineSchema: Examens Patient (69ccfabf738ff763a647e186)
+   ✅ LineSchema: Facture Standard (69ccfabf738ff763a647e187)
+   ✅ LineSchemas attached to entities (patients, consultations, prescriptions, factures)
+
+📊 Creating demo records...
+   ✅ Demo records created
+
+📄 Creating document templates...
+   ✅ Document templates created
+
+🎉 Cabinet Médical preset installed!
+
+============================================================
+🎉 Preset "Cabinet Dentiste" installed successfully!
+============================================================
+

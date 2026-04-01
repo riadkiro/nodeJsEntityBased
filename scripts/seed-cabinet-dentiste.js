@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const { install: installMedical } = require('./seed-cabinet-medical');
@@ -78,15 +78,78 @@ function registerModels(conn) {
     LineSchema: M('LineSchema', s({}), 'lineschemas'),
     View: M('View', s({}), 'views'),
     GridSchemaTemplate: M('GridSchemaTemplate', s({}), 'gridschematemplates'),
-    Space: M('Space', s({}), 'spaces')
+    Space: M('Space', s({}), 'spaces'),
+    Classification: M('Classification', s({}), 'classifications'),
+    FieldTemplate: M('FieldTemplate', s({ name: String, label: String, type: String, subtype: String, description: String, required: Boolean, type_config: Object, ui: Object, isSystem: Boolean, isCustom: Boolean, category: String, meta: Object }), 'fieldtemplates')
   };
 }
 
-async function upsertActesEntity(db) {
+async function upsertActesEntity(db, acts = []) {
   const existing = await db.Entity.findOne({ slug: 'actes' });
-  if (existing) return existing;
+  if (existing) {
+    const fts = await db.FieldTemplate.find({ 'meta.createdByPreset': PRESET, name: { $in: ['code', 'prix', 'tva', 'categorie'] } });
+    const fieldMap = {};
+    for (const ft of fts) fieldMap[ft.name] = ft._id;
+    return { entity: existing, fieldMap };
+  }
 
-  return db.Entity.create({
+  const categories = [...new Set(acts.map(a => a.category).filter(Boolean))];
+  const colorMap = {
+    'Consultation': '#0ea5e9',
+    'Orthodontie': '#10b981',
+    'Conservateurs': '#f59e0b',
+    'Chirurgie': '#ef4444',
+    'Prothèse': '#8b5cf6'
+  };
+
+  let classificationId = null;
+  if (categories.length > 0) {
+    const classification = await db.Classification.findOneAndUpdate(
+      { key: 'acte-categorie' },
+      {
+        $set: {
+          name: 'Catégorie Acte',
+          key: 'acte-categorie',
+          options: categories.map(c => ({
+            label: c,
+            value: c,
+            color: colorMap[c] || '#6b7280'
+          })),
+          meta: { isDemo: true, createdByPreset: PRESET }
+        }
+      },
+      { upsert: true, new: true }
+    );
+    classificationId = classification._id;
+  }
+
+  const fieldDefs = [
+    { name: 'code', label: 'Code', type: 'text', required: true, enableSearch: true, showInList: true },
+    { name: 'prix', label: 'Prix HT', type: 'number', required: true, showInList: true },
+    { name: 'tva', label: 'TVA (%)', type: 'number', required: true, showInList: true }
+  ];
+  if (classificationId) {
+    fieldDefs.push({ name: 'categorie', label: 'Catégorie', type: 'classification', required: false, showInList: true, config: { source: classificationId.toString() } });
+  }
+
+  const customFieldIds = [];
+  const fieldMap = {};
+  for (const f of fieldDefs) {
+    const ft = await db.FieldTemplate.findOneAndUpdate(
+      { name: f.name, 'meta.createdByPreset': PRESET },
+      { $set: { 
+          name: f.name, label: f.label, type: f.type, required: f.required,
+          enableSearch: f.enableSearch, showInList: f.showInList,
+          type_config: f.config, meta: { isDemo: true, createdByPreset: PRESET },
+          isSystem: false, isCustom: true
+      }},
+      { upsert: true, new: true, strict: false }
+    );
+    customFieldIds.push(ft._id);
+    fieldMap[f.name] = ft._id;
+  }
+
+  const entity = await db.Entity.create({
     name: 'Actes',
     slug: 'actes',
     description: 'Nomenclature des actes dentaires avec tarifs',
@@ -94,12 +157,16 @@ async function upsertActesEntity(db) {
     color: '#0ea5e9',
     order: 40,
     enabledStandardFields: ['title', 'description', 'status'],
-    customFields: [],
+    classifications: classificationId ? [classificationId] : [],
+    statusClassification: classificationId || null,
+    customFields: customFieldIds,
     meta: { createdByPreset: PRESET, isDemo: true }
   });
+
+  return { entity, fieldMap };
 }
 
-async function seedActesRecords(db, actesEntityId, acts, schemaIds = {}) {
+async function seedActesRecords(db, actesEntityId, acts, fieldMap, schemaIds = {}) {
   const schemaDefaults = [
     schemaIds.billingSchemaId,
     schemaIds.quoteSchemaId,
@@ -111,25 +178,24 @@ async function seedActesRecords(db, actesEntityId, acts, schemaIds = {}) {
       filter: { entityId: actesEntityId, 'meta.code': a.code },
       update: {
         $set: {
-          title: `${a.code} - ${a.title}`,
+          title: a.title,
           description: a.description,
           status: 'active',
           date: new Date(),
           customFields: [
-            { key: 'code', value: a.code },
-            { key: 'categorie', value: a.category },
-            { key: 'prix_ht', value: a.priceHt },
-            { key: 'tva', value: a.vatRate },
-            { key: 'cotation', value: a.cotation }
+            { field_id: fieldMap.code, value: a.code },
+            ...(fieldMap.categorie ? [{ field_id: fieldMap.categorie, value: a.category }] : []),
+            { field_id: fieldMap.prix, value: a.priceHt },
+            { field_id: fieldMap.tva, value: a.vatRate }
           ],
           lineDefaults: schemaDefaults.map(schemaId => ({
             schemaId,
             defaults: {
-              description: a.title,
-              code: a.code,
+              description: '{{description}}',
+              code: '{{code}}',
               qty: 1,
-              unitPrice: a.priceHt,
-              vatRate: a.vatRate
+              unitPrice: '{{prix}}',
+              vatRate: '{{tva}}'
             }
           })),
           meta: {
@@ -151,7 +217,7 @@ async function seedActesRecords(db, actesEntityId, acts, schemaIds = {}) {
   }
 }
 
-async function configureSingleConsultationTD(db, actesEntity, actsCount) {
+async function configureSingleConsultationTD(db, actesEntity, actsCount, fieldMap) {
   const consultations = await db.Entity.findOne({ slug: 'consultations' });
   if (!consultations) throw new Error('Entity consultations introuvable');
 
@@ -172,7 +238,13 @@ async function configureSingleConsultationTD(db, actesEntity, actsCount) {
         targetEntity: actesEntity._id,
         searchFields: ['title', 'description'],
         displayFields: ['title'],
-        displayField: 'title'
+        displayField: 'title',
+        applyDefaults: {
+          description: 'title',
+          code: 'cf.' + fieldMap.code,
+          unitPrice: 'cf.' + fieldMap.prix,
+          vatRate: 'cf.' + fieldMap.tva
+        }
       }
     };
   });
@@ -657,9 +729,9 @@ async function installDentiste(conn, userId) {
     throw new Error('Aucun acte extrait depuis Data source/Nomenclature.html');
   }
 
-  const actesEntity = await upsertActesEntity(db);
-  const schemaIds = await configureSingleConsultationTD(db, actesEntity, acts.length);
-  await seedActesRecords(db, actesEntity._id, acts, schemaIds);
+  const { entity: actesEntity, fieldMap } = await upsertActesEntity(db, acts);
+  const schemaIds = await configureSingleConsultationTD(db, actesEntity, acts.length, fieldMap);
+  await seedActesRecords(db, actesEntity._id, acts, fieldMap, schemaIds);
   await configureClinicalViews(db);
   await seedTreatmentPresets(db, schemaIds, userId);
   await seedExamPresets(db, schemaIds, userId);

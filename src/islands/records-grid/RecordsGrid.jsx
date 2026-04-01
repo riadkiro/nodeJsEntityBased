@@ -168,7 +168,7 @@ export default function RecordsGrid({
         density: 'normal',
         pageSize: 10,
         titleDisplay: 'avatar',
-        showSidebar: true,
+        showSidebar: false,
         sidebarWidth: 280,
         viewMode: null,
         enabledViews: ['table', 'kanban', 'notes', 'calendar']

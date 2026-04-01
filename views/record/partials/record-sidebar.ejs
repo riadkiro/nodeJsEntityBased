@@ -219,7 +219,7 @@
                                     <iconify-icon icon="solar:code-bold-duotone" width="20" style="color: white;"></iconify-icon>
                                 </div>
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">HTML</div>
-                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Contenu personnalisÃ©</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Contenu personnalisé</div>
                             </button>
                             <!-- Link Widget -->
                             <button type="button" @click="selectWidgetType('link')"
@@ -252,7 +252,7 @@
                                     <iconify-icon icon="solar:monitor-bold-duotone" width="20" style="color: white;"></iconify-icon>
                                 </div>
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">iFrame</div>
-                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Page web intÃ©grÃ©e</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Page web intégrée</div>
                             </button>
                             <!-- Image Widget -->
                             <button type="button" @click="selectWidgetType('image')"
@@ -285,7 +285,7 @@
                                     <iconify-icon icon="solar:list-check-bold-duotone" width="20" style="color: white;"></iconify-icon>
                                 </div>
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Tableau</div>
-                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">DonnÃ©es structurÃ©es</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Données structurées</div>
                             </button>
                             <!-- Tasks Widget -->
                             <button type="button" @click="selectWidgetType('tasks')"
@@ -309,8 +309,8 @@
                                     <iconify-icon icon="solar:minus-circle-bold-duotone" width="18" style="color: white;"></iconify-icon>
                                 </div>
                                 <div>
-                                    <div style="font-size: 12px; font-weight: 700; color: #374151;">SÃ©parateur</div>
-                                    <div style="font-size: 10px; color: #9ca3af; margin-top: 1px;">Ligne de sÃ©paration visuelle</div>
+                                    <div style="font-size: 12px; font-weight: 700; color: #374151;">Séparateur</div>
+                                    <div style="font-size: 10px; color: #9ca3af; margin-top: 1px;">Ligne de séparation visuelle</div>
                                 </div>
                             </button>
                         </div>
@@ -445,7 +445,7 @@
                                         <div class="flex items-center gap-2 group" :data-id="gs._id">
                                             <!-- Drag Handle (Always visible) -->
                                             <div class="schema-drag-handle flex items-center justify-center p-1.5 cursor-grab text-gray-400 hover:text-gray-600 bg-gray-50 rounded-lg border border-gray-100 transition-colors"
-                                                 title="RÃ©organiser">
+                                                 title="Réorganiser">
                                                 <iconify-icon icon="tabler:grip-vertical" width="16"></iconify-icon>
                                             </div>
 
@@ -463,7 +463,7 @@
                                         </div>
                                     </template>
                                 </div>
-                                <div x-show="!loadingSchemaCatalog && availableSchemas.length === 0" style="text-align: center; padding: 12px; color: #9ca3af; font-size: 11px;">Aucun tableau dynamique configurÃ©</div>
+                                <div x-show="!loadingSchemaCatalog && availableSchemas.length === 0" style="text-align: center; padding: 12px; color: #9ca3af; font-size: 11px;">Aucun tableau dynamique configuré</div>
                             </div>
                         </template>
 
@@ -887,9 +887,9 @@
                                         <% } else { %>
                                             <div class="panel !p-4 border-dashed border-gray-200 text-center py-4">
                                                 <p class="text-[10px] text-gray-400 uppercase font-bold">Aucune
-                                                    classification liÃ©e</p>
+                                                    classification liée</p>
                                                 <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
-                                                    class="btn btn-xs btn-outline-primary mt-2">Configurer l'entitÃ©</a>
+                                                    class="btn btn-xs btn-outline-primary mt-2">Configurer l'entité</a>
                                             </div>
                                             <% } %>
                         </div>
@@ -901,7 +901,7 @@
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
-                                        <span>PiÃ¨ces jointes</span>
+                                        <span>Pièces jointes</span>
                                     </div>
                                 </template>
                             <div class="panel !p-0 overflow-hidden" data-id="attachments"
@@ -916,7 +916,7 @@
                                     @click="isOpen = !isOpen; $dispatch('save-pref', { key: 'sidebar_section_attachments', value: isOpen })">
                                     <div class="flex items-center gap-2">
                                         <iconify-icon icon="solar:paperclip-2-bold" width="14" class="text-gray-400"></iconify-icon>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PiÃ¨ces jointes</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pièces jointes</span>
                                         <span x-show="attachments.length > 0" class="text-[9px] bg-primary/10 text-primary w-4 h-4 rounded-full flex items-center justify-center font-bold" x-text="attachments.length"></span>
                                     </div>
                                     <div class="flex items-center gap-1">
@@ -995,7 +995,7 @@
                                                         </div>
                                                         <div>
                                                             <h4 class="text-sm font-bold text-gray-800 dark:text-white">Ajouter des fichiers</h4>
-                                                            <p class="text-[10px] text-gray-400">Glissez-dÃ©posez ou sÃ©lectionnez des fichiers</p>
+                                                            <p class="text-[10px] text-gray-400">Glissez-déposez ou sélectionnez des fichiers</p>
                                                         </div>
                                                     </div>
                                                     <button type="button" @click="showUploadModal = false"
@@ -1014,7 +1014,7 @@
                                                         <iconify-icon :icon="isDragging ? 'solar:cloud-download-bold-duotone' : 'solar:cloud-upload-bold-duotone'"
                                                             width="40" :class="isDragging ? 'text-primary' : 'text-gray-300'"></iconify-icon>
                                                         <p class="text-sm font-medium mt-2" :class="isDragging ? 'text-primary' : 'text-gray-500 dark:text-gray-400'">
-                                                            <span x-text="isDragging ? 'DÃ©poser ici' : 'Glissez vos fichiers ici'"></span>
+                                                            <span x-text="isDragging ? 'Déposer ici' : 'Glissez vos fichiers ici'"></span>
                                                         </p>
                                                         <p class="text-[10px] text-gray-400 mt-1">ou cliquez pour parcourir</p>
                                                     </div>
@@ -1034,7 +1034,7 @@
                                                     <span class="text-[10px] text-gray-400" x-text="attachments.length + ' fichier(s) joint(s)'"></span>
                                                     <button type="button" @click="showUploadModal = false"
                                                         class="btn btn-sm btn-primary text-[11px] px-4 py-1.5">
-                                                        TerminÃ©
+                                                        Terminé
                                                     </button>
                                                 </div>
                                             </div>
@@ -1043,19 +1043,19 @@
 
                                     <!-- Empty state -->
                                     <div x-show="attachments.length === 0 && !uploading && !recordId" class="text-center px-3 py-2 border-t border-gray-50 dark:border-gray-700/20">
-                                        <span class="text-[9px] text-gray-400 italic">Aucune piÃ¨ce jointe</span>
+                                        <span class="text-[9px] text-gray-400 italic">Aucune pièce jointe</span>
                                     </div>
                                 </div>
 
                             </div>
                             </div><!-- end panel-sortable-item attachments -->
                         <% } else if (sectionId==='smartdoc' && locals.entity) { %>
-                            <!-- âœ¨ Documents modÃ¨les (Standalone Panel) -->
+                            <!-- ✨ Documents modèles (Standalone Panel) -->
                             <div class="panel-sortable-item" data-panel-id="smartdoc" x-show="isPanelVisible('smartdoc')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
-                                        <span>Documents modÃ¨les</span>
+                                        <span>Documents modèles</span>
                                     </div>
                                 </template>
                             <div class="panel !p-0 overflow-hidden" data-id="smartdoc"
@@ -1070,7 +1070,7 @@
                                     @click="isOpen = !isOpen">
                                     <div class="flex items-center gap-1.5">
                                         <iconify-icon icon="solar:document-medicine-bold-duotone" width="14" class="text-primary"></iconify-icon>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Documents modÃ¨les</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Documents modèles</span>
                                         <span x-show="smartDocTemplates.length > 0" class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="smartDocTemplates.length"></span>
                                         <button type="button" @click.stop="openTemplateModal()" class="w-5 h-5 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all ml-0.5" title="Nouveau document">
                                             <iconify-icon icon="tabler:plus" width="11"></iconify-icon>
@@ -1099,7 +1099,7 @@
                                                                 :style="generatingDocId === tpl._id ? 'color:#9ca3af' : 'color:#00ab55; background:rgba(0,171,85,0.08)'"
                                                                 @mouseenter="if(generatingDocId !== tpl._id) $el.style.background='rgba(0,171,85,0.16)'"
                                                                 @mouseleave="if(generatingDocId !== tpl._id) $el.style.background='rgba(0,171,85,0.08)'"
-                                                                title="GÃ©nÃ©rer">
+                                                                title="Générer">
                                                                 <iconify-icon :icon="generatingDocId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="11"></iconify-icon>
                                                             </button>
                                                             <!-- Edit button (always visible) -->
@@ -1108,7 +1108,7 @@
                                                                 style="color:#4361ee; background:rgba(67,97,238,0.08)"
                                                                 @mouseenter="$el.style.background='rgba(67,97,238,0.16)'"
                                                                 @mouseleave="$el.style.background='rgba(67,97,238,0.08)'"
-                                                                title="Modifier le modÃ¨le"
+                                                                title="Modifier le modèle"
                                                                 x-show="tpl.documentId" @click.stop>
                                                                 <iconify-icon icon="solar:pen-new-square-linear" width="11"></iconify-icon>
                                                             </a>
@@ -1118,7 +1118,7 @@
                                                                 style="color:#e7515a; background:rgba(231,81,90,0.08)"
                                                                 @mouseenter="$el.style.background='rgba(231,81,90,0.16)'"
                                                                 @mouseleave="$el.style.background='rgba(231,81,90,0.08)'"
-                                                                title="DÃ©lier ce document">
+                                                                title="Délier ce document">
                                                                 <iconify-icon icon="solar:link-broken-minimalistic-linear" width="11"></iconify-icon>
                                                             </button>
                                                         </div>
@@ -1128,7 +1128,7 @@
                                             <template x-if="smartDocTemplates.length === 0">
                                                 <div class="flex flex-col items-center py-3 gap-1.5">
                                                     <iconify-icon icon="solar:document-add-linear" width="20" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                                                    <p class="text-[9px] text-gray-400">Aucun document modÃ¨le</p>
+                                                    <p class="text-[9px] text-gray-400">Aucun document modèle</p>
                                                     <button type="button" @click.stop="openTemplateModal()"
                                                         class="text-[9px] font-semibold text-primary hover:underline transition-all">+ Créer</button>
                                                 </div>
@@ -1155,7 +1155,7 @@
                                                         </div>
                                                         <div>
                                                             <h4 class="text-sm font-bold text-gray-800 dark:text-white">Ajouter un template SmartDoc</h4>
-                                                            <p class="text-[10px] text-gray-400">Biblioth�que ou nouveau mod�le, puis choisissez la port�e</p>
+                                                            <p class="text-[10px] text-gray-400">Bibliothèque ou nouveau modèle, puis choisissez la portée</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1166,12 +1166,12 @@
                                                             <button type="button" @click="newTemplateMode = 'library'"
                                                                 class="px-3 py-2 rounded-lg border text-xs font-semibold transition-all"
                                                                 :class="newTemplateMode === 'library' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
-                                                                Biblioth�que
+                                                                Bibliothèque
                                                             </button>
                                                             <button type="button" @click="newTemplateMode = 'blank'"
                                                                 class="px-3 py-2 rounded-lg border text-xs font-semibold transition-all"
                                                                 :class="newTemplateMode === 'blank' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
-                                                                Nouveau mod�le
+                                                                Nouveau modèle
                                                             </button>
                                                         </div>
 
@@ -1197,7 +1197,7 @@
                                                                 </div>
                                                                 <input type="text" x-model="newTemplateName"
                                                                     class="form-input text-xs !h-9 w-full"
-                                                                    placeholder="Nom personnalis� (optionnel)">
+                                                                    placeholder="Nom personnalisé (optionnel)">
                                                             </div>
                                                         </template>
 
@@ -1206,17 +1206,17 @@
                                                                 <input type="text" x-model="newTemplateName"
                                                                     class="form-input text-xs !h-9 w-full"
                                                                     placeholder="Nom du template (ex: Ordonnance de suivi)">
-                                                                <p class="text-[10px] text-gray-400">Un mod�le vide sera cr��, puis ouvert dans l'�diteur.</p>
+                                                                <p class="text-[10px] text-gray-400">Un modèle vide sera créé, puis ouvert dans l'éditeur.</p>
                                                             </div>
                                                         </template>
                                                     </div>
 
                                                     <div>
-                                                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Li� �</p>
+                                                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Lié à</p>
                                                         <div class="space-y-2">
                                                             <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 cursor-pointer">
                                                                 <input type="radio" class="form-radio text-primary" value="entity" x-model="newTemplateScope">
-                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Entit�: <%= locals.entity ? entity.name : 'Entity' %></span>
+                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Entité: <%= locals.entity ? entity.name : 'Entity' %></span>
                                                             </label>
                                                             <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 cursor-pointer">
                                                                 <input type="radio" class="form-radio text-primary" value="record" x-model="newTemplateScope">
@@ -1225,7 +1225,7 @@
                                                             <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 cursor-pointer"
                                                                 :class="linkedRecords.length === 0 ? 'opacity-50 cursor-not-allowed' : ''">
                                                                 <input type="radio" class="form-radio text-primary" value="relation" x-model="newTemplateScope" :disabled="linkedRecords.length === 0">
-                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Une liaison (patient, sympt�me, pathologie...)</span>
+                                                                <span class="text-xs text-gray-700 dark:text-gray-200">Une liaison (patient, symptôme, pathologie...)</span>
                                                             </label>
                                                             <template x-if="newTemplateScope === 'relation'">
                                                                 <select class="form-input text-xs !h-9 mt-1" x-model="selectedRelationTarget">
@@ -1243,7 +1243,7 @@
                                                     <button type="button" @click="createTemplateFromWizard()" :disabled="creatingTemplate"
                                                         class="btn btn-sm btn-primary text-[10px] px-4 py-1.5 flex items-center gap-1.5">
                                                         <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="13"></iconify-icon>
-                                                        <span x-text="creatingTemplate ? 'Cr�ation...' : 'Cr�er le template'"></span>
+                                                        <span x-text="creatingTemplate ? 'Création...' : 'Créer le template'"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1263,15 +1263,15 @@
                                                             <iconify-icon icon="solar:link-broken-minimalistic-bold" width="20" class="text-danger"></iconify-icon>
                                                         </div>
                                                         <div>
-                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">DÃ©lier le document</h4>
-                                                            <p class="text-[10px] text-gray-400">Cette action est irrÃ©versible</p>
+                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Délier le document</h4>
+                                                            <p class="text-[10px] text-gray-400">Cette action est irréversible</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="px-5 py-4">
                                                     <p class="text-xs text-gray-600 dark:text-gray-300">
-                                                        Le document modÃ¨le Â«&nbsp;<strong class="text-gray-800 dark:text-white" x-text="unlinkTarget?.name"></strong>&nbsp;Â» ne sera plus liÃ© Ã  cette collection.
-                                                        Il restera disponible dans vos documents mais ne pourra plus gÃ©nÃ©rer de PDF pour cet enregistrement.
+                                                        Le document modèle Â«&nbsp;<strong class="text-gray-800 dark:text-white" x-text="unlinkTarget?.name"></strong>&nbsp;Â» ne sera plus lié Ã  cette collection.
+                                                        Il restera disponible dans vos documents mais ne pourra plus générer de PDF pour cet enregistrement.
                                                     </p>
                                                 </div>
                                                 <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-end gap-2">
@@ -1279,7 +1279,7 @@
                                                     <button type="button" @click="executeUnlink()" :disabled="unlinking"
                                                         class="btn btn-sm text-[10px] px-4 py-1.5 flex items-center gap-1.5 bg-danger text-white hover:bg-danger/90 transition-all">
                                                         <iconify-icon :icon="unlinking ? 'line-md:loading-twotone-loop' : 'solar:link-broken-minimalistic-bold'" width="13"></iconify-icon>
-                                                        <span x-text="unlinking ? 'Suppression...' : 'DÃ©lier'"></span>
+                                                        <span x-text="unlinking ? 'Suppression...' : 'Délier'"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1337,7 +1337,7 @@
                                                     <button type="button" @click="confirmSmartDocGeneration()" :disabled="generatingDocId"
                                                         class="btn btn-sm btn-primary text-[10px] px-4 py-1.5 flex items-center gap-1.5">
                                                         <iconify-icon :icon="generatingDocId ? 'line-md:loading-twotone-loop' : 'solar:magic-stick-3-bold'" width="14"></iconify-icon>
-                                                        <span x-text="generatingDocId ? 'GÃ©nÃ©ration...' : 'GÃ©nÃ©rer'"></span>
+                                                        <span x-text="generatingDocId ? 'Génération...' : 'Générer'"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1356,10 +1356,10 @@
                                                         <iconify-icon icon="solar:pen-new-square-bold-duotone" width="20" class="text-primary"></iconify-icon>
                                                     </div>
                                                     <div>
-                                                        <h3 class="text-[13px] font-bold text-gray-800" x-text="previewOutputName || 'Document en cours de gÃ©nÃ©ration'"></h3>
+                                                        <h3 class="text-[13px] font-bold text-gray-800" x-text="previewOutputName || 'Document en cours de génération'"></h3>
                                                         <p class="text-[10px] text-gray-400 flex items-center gap-1">
                                                             <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
-                                                            Modifiez le contenu si nÃ©cessaire, puis finalisez pour gÃ©nÃ©rer le PDF
+                                                            Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1374,7 +1374,7 @@
                                                         :disabled="finalizingDraft"
                                                         class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm disabled:opacity-50">
                                                         <iconify-icon :icon="finalizingDraft ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
-                                                        <span x-text="finalizingDraft ? 'GÃ©nÃ©ration en cours...' : 'Finaliser et gÃ©nÃ©rer le PDF'"></span>
+                                                        <span x-text="finalizingDraft ? 'Génération en cours...' : 'Finaliser et générer le PDF'"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1394,7 +1394,7 @@
                                                 <div class="flex items-center gap-3">
                                                     <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" class="text-warning"></iconify-icon>
                                                     <span class="text-sm font-bold text-gray-700">Nouveau SmartDoc</span>
-                                                    <span class="text-[10px] text-gray-400">â€” liÃ© Ã  <strong><%= locals.entity ? entity.name : '' %></strong></span>
+                                                    <span class="text-[10px] text-gray-400">â€” lié Ã  <strong><%= locals.entity ? entity.name : '' %></strong></span>
                                                 </div>
                                                 <div class="flex items-center gap-2">
                                                     <span x-show="smartDocTitleError" x-transition
@@ -1513,7 +1513,7 @@
                                                                 <div class="py-1.5">
                                                                     <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:4px">
                                                                         <% if (cfIcon) { %><iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon><% } %>
-                                                                        AntÃ©cÃ©dents
+                                                                        Antécédents
                                                                     </div>
                                                                     <div class="space-y-0.5 pl-1">
                                                                         <% String(cf.value).split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) { %>
@@ -2040,15 +2040,15 @@
                 loadingSchemaCatalog: false,
 
                 widgetTypeLabels: {
-                    'html': 'HTML â€” Contenu personnalisÃ©',
+                    'html': 'HTML â€” Contenu personnalisé',
                     'link': 'Lien â€” URL externe',
                     'note': 'Note â€” Memo / instruction',
-                    'iframe': 'iFrame â€” Page web intÃ©grÃ©e',
+                    'iframe': 'iFrame â€” Page web intégrée',
                     'image': 'Image â€” Visuel / logo',
                     'links-group': 'Liens Rapides â€” Groupe de liens',
-                    'separator': 'SÃ©parateur â€” Ligne visuelle',
+                    'separator': 'Séparateur â€” Ligne visuelle',
                     'tasks': 'Tasks â€” Checklist de tÃ¢ches',
-                    'dynamic-table': 'Tableau â€” DonnÃ©es structurÃ©es'
+                    'dynamic-table': 'Tableau â€” Données structurées'
                 },
 
                 async loadAvailableSchemas() {
@@ -2135,7 +2135,7 @@
                         'iframe': { label: 'iFrame', icon: 'solar:monitor-bold-duotone', color: '#06b6d4', config: { url: '', height: 200 } },
                         'image': { label: 'Image', icon: 'solar:gallery-bold-duotone', color: '#10b981', config: { url: '', alt: '' } },
                         'links-group': { label: 'Liens Rapides', icon: 'solar:bookmark-bold-duotone', color: '#8b5cf6', config: { links: [{ label: '', url: '', icon: '', target: '_blank' }] } },
-                        'separator': { label: 'SÃ©parateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
+                        'separator': { label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
                         'tasks': { label: 'Tasks', icon: 'solar:checklist-bold-duotone', color: '#ec4899', config: { tasks: [{ label: '', done: false }] } },
                         'dynamic-table': { label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#00ab55', config: { schemaId: '', schemaIds: [], enableAdd: true, enableDocPreview: false } }
                     };
@@ -2186,7 +2186,7 @@
                         }
                     } catch (e) {
                         console.error('Widget create error:', e);
-                        alert('Erreur lors de la crÃ©ation du widget');
+                        alert('Erreur lors de la création du widget');
                     } finally {
                         this.widgetSaving = false;
                     }
@@ -2547,7 +2547,7 @@
                 async handleFiles(files) {
                     if (!files || files.length === 0) return;
                     if (!this.recordId) {
-                        alert('Veuillez d\'abord enregistrer le record avant d\'ajouter des piÃ¨ces jointes.');
+                        alert('Veuillez d\'abord enregistrer le record avant d\'ajouter des pièces jointes.');
                         return;
                     }
                     this.uploading = true;
@@ -2584,7 +2584,7 @@
                 },
 
                 async deleteAttachment(attachmentId) {
-                    if (!confirm('Supprimer cette piÃ¨ce jointe ?')) return;
+                    if (!confirm('Supprimer cette pièce jointe ?')) return;
                     try {
                         const res = await fetch(`/account/${this.accountNumber}/api/records/${this.recordId}/attachments/${attachmentId}`, {
                             method: 'DELETE',
@@ -2853,11 +2853,11 @@
                                 }
                             });
                         } else {
-                            alert(data.error || 'Erreur lors de la gÃ©nÃ©ration');
+                            alert(data.error || 'Erreur lors de la génération');
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Generation error:', e);
-                        alert('Erreur lors de la gÃ©nÃ©ration du document');
+                        alert('Erreur lors de la génération du document');
                     } finally {
                         this.generatingDocId = null;
                     }
@@ -2883,7 +2883,7 @@
                                 detail: { attachment: data.attachment }
                             }));
                             if (window.showMessage) {
-                                window.showMessage('Document gÃ©nÃ©rÃ© avec succÃ¨s !', 'success');
+                                window.showMessage('Document généré avec succès !', 'success');
                             }
                         } else {
                             alert(data.error || 'Erreur lors de la finalisation');
@@ -2949,7 +2949,7 @@
                     const isLibrary = this.newTemplateMode === 'library';
                     const preset = isLibrary ? this.getSelectedLibraryPreset() : null;
                     if (isLibrary && !preset) {
-                        alert('Choisissez un template de la biblioth�que');
+                        alert('Choisissez un template de la bibliothèque');
                         return;
                     }
 
@@ -3008,7 +3008,7 @@
                         this.selectedRelationTarget = '';
                     } catch (e) {
                         console.error('[SmartDoc] Wizard create error:', e);
-                        alert(e.message || 'Erreur lors de la cr�ation du template');
+                        alert(e.message || 'Erreur lors de la création du template');
                     } finally {
                         this.creatingTemplate = false;
                     }
@@ -3053,7 +3053,7 @@
                         });
                         const data = await res.json();
                         if (!data.success || !data.document) {
-                            throw new Error('Erreur lors de la cr�ation du document');
+                            throw new Error('Erreur lors de la création du document');
                         }
 
                         await this.createSmartDocTemplateLink({
@@ -3122,7 +3122,7 @@
                             this.smartDocTitleError = '';
                             this.loadSmartDocTemplates();
                             if (window.showMessage) {
-                                window.showMessage('SmartDoc "' + docTitle + '" crÃ©Ã© avec succÃ¨s !', 'success');
+                                window.showMessage('SmartDoc "' + docTitle + '" créé avec succès !', 'success');
                             }
                         }, 1000);
                     } catch (e) {
@@ -3146,7 +3146,7 @@
                 getGroupIcon(group) {
                     const icons = {
                         'Utilisateur': 'solar:user-bold-duotone',
-                        'SystÃ¨me': 'solar:settings-bold-duotone',
+                        'Système': 'solar:settings-bold-duotone',
                         'Classification': 'solar:tag-bold-duotone',
                         'Relation': 'solar:link-round-bold-duotone',
                         'Saisie': 'solar:pen-bold-duotone',
@@ -3159,7 +3159,7 @@
                 getGroupColor(group) {
                     const colors = {
                         'Utilisateur': 'text-info',
-                        'SystÃ¨me': 'text-secondary',
+                        'Système': 'text-secondary',
                         'Classification': 'text-warning',
                         'Relation': 'text-success',
                         'Saisie': 'text-primary',
@@ -3172,7 +3172,7 @@
                 getGroupBg(group) {
                     const bgs = {
                         'Utilisateur': 'bg-info/10',
-                        'SystÃ¨me': 'bg-secondary/10',
+                        'Système': 'bg-secondary/10',
                         'Classification': 'bg-warning/10',
                         'Relation': 'bg-success/10',
                         'Saisie': 'bg-primary/10',
@@ -3203,11 +3203,11 @@
                         if (data.success && data.document) {
                             window.open(`/account/${this.accountNumber}/documents/${data.document._id}/edit-react`, '_blank');
                         } else {
-                            alert('Erreur lors de la crÃ©ation du document');
+                            alert('Erreur lors de la création du document');
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Create simple doc error:', e);
-                        alert('Erreur lors de la crÃ©ation du document');
+                        alert('Erreur lors de la création du document');
                     }
                 },
 
@@ -3231,7 +3231,7 @@
                         if (data.success) {
                             this.smartDocTemplates = this.smartDocTemplates.filter(t => t._id !== this.unlinkTarget._id);
                             if (window.showMessage) {
-                                window.showMessage('Document dÃ©liÃ© avec succÃ¨s', 'success');
+                                window.showMessage('Document délié avec succès', 'success');
                             }
                         } else {
                             alert(data.error || 'Erreur lors de la suppression du lien');

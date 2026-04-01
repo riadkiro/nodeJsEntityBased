@@ -419,9 +419,11 @@
         // Date-specific
         if (this.formData.type === 'date') {
           formBody.append('type_config.includeTime', this.formData.includeTime);
-          if (this.formData.defaultValue) {
-            formBody.append('type_config.defaultValue', this.formData.defaultValue);
-          }
+        }
+
+        // Default value for all types
+        if (this.formData.defaultValue !== '' && this.formData.defaultValue !== null && this.formData.defaultValue !== undefined) {
+          formBody.append('type_config.defaultValue', this.formData.defaultValue);
         }
 
         try {
@@ -689,14 +691,20 @@
 
           <!-- Options pour NUMBER -->
           <template x-if="formData.type === 'number'">
-            <div class="grid grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
-              <div>
-                <label class="block text-xs font-medium mb-1 text-gray-500">Minimum</label>
-                <input type="number" x-model="formData.min" placeholder="0" class="form-input text-sm">
+            <div class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium mb-1 text-gray-500">Minimum</label>
+                  <input type="number" x-model="formData.min" placeholder="0" class="form-input text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium mb-1 text-gray-500">Maximum</label>
+                  <input type="number" x-model="formData.max" placeholder="100" class="form-input text-sm">
+                </div>
               </div>
               <div>
-                <label class="block text-xs font-medium mb-1 text-gray-500">Maximum</label>
-                <input type="number" x-model="formData.max" placeholder="100" class="form-input text-sm">
+                <label class="block text-xs font-medium mb-1 text-gray-500">Valeur par défaut</label>
+                <input type="number" x-model="formData.defaultValue" placeholder="Ex: 0" class="form-input text-sm">
               </div>
             </div>
           </template>
@@ -805,6 +813,46 @@
                 <input type="checkbox" x-model="formData.multiple" class="form-checkbox text-primary">
                 <span class="text-sm">Fichiers multiples</span>
               </label>
+            </div>
+          </template>
+
+          <!-- ═══════════════════════════════════════════ -->
+          <!-- SECTION 3b: Valeur par défaut (string, text, boolean, select) -->
+          <!-- ═══════════════════════════════════════════ -->
+          <template x-if="formData.type === 'string'">
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <label class="block text-xs font-medium mb-1 text-gray-500">Valeur par défaut</label>
+              <input type="text" x-model="formData.defaultValue" placeholder="Ex: N/A" class="form-input text-sm">
+            </div>
+          </template>
+
+          <template x-if="formData.type === 'text'">
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <label class="block text-xs font-medium mb-1 text-gray-500">Valeur par défaut</label>
+              <textarea x-model="formData.defaultValue" rows="2" placeholder="Texte par défaut..." class="form-input text-sm resize-none"></textarea>
+            </div>
+          </template>
+
+          <template x-if="formData.type === 'boolean'">
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <label class="block text-xs font-medium mb-1.5 text-gray-500">Valeur par défaut</label>
+              <select x-model="formData.defaultValue" class="form-select text-sm w-full">
+                <option value="">Aucune</option>
+                <option value="true">Oui (coché)</option>
+                <option value="false">Non (décoché)</option>
+              </select>
+            </div>
+          </template>
+
+          <template x-if="formData.type === 'select' && formData.options.length > 0">
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <label class="block text-xs font-medium mb-1.5 text-gray-500">Valeur par défaut</label>
+              <select x-model="formData.defaultValue" class="form-select text-sm w-full">
+                <option value="">Aucune</option>
+                <template x-for="opt in formData.options" :key="opt.value || opt.label">
+                  <option :value="opt.value || opt.label" x-text="opt.label"></option>
+                </template>
+              </select>
             </div>
           </template>
 

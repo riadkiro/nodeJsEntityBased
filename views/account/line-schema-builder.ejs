@@ -247,6 +247,31 @@
                 </div>
             </div>
 
+            <!-- ═══ Catalogue panel (Grouping config) ═══ -->
+            <div class="panel !p-0 overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid #e5e7eb;" @click="catalogueOpen = !catalogueOpen">
+                    <h5 class="text-sm font-bold dark:text-white-light flex items-center gap-2">
+                        <iconify-icon icon="solar:shop-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                        Catalogue
+                    </h5>
+                    <iconify-icon icon="solar:alt-arrow-down-bold" width="14" :class="catalogueOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
+                </div>
+                <div x-show="catalogueOpen" x-collapse>
+                    <div class="px-4 py-4 space-y-4">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400">Lister par (classification)</label>
+                            <select x-model="schema.catalogGroupBy.classificationId" class="form-select form-select-sm">
+                                <option value="">— Aucun groupement —</option>
+                                <% (sourceClassifications || []).forEach(function(cls) { %>
+                                    <option value="<%= cls._id %>"><%= cls.name %></option>
+                                <% }) %>
+                            </select>
+                            <p style="font-size:10px; color:#9ca3af; margin-top:4px;">Affiche des onglets de filtrage dans le modal catalogue selon les options de la classification choisie.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ═══ Totals panel (Gestion des Totaux) ═══ -->
             <div class="panel !p-0 overflow-hidden">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid #e5e7eb;" @click="totalsOpen = !totalsOpen">
@@ -603,7 +628,8 @@ function lineSchemaBuilder() {
                 ...existingSchema.totals || {},
                 rows: existingSchema.totals?.rows || []
             },
-            snapshotConfig: existingSchema.snapshotConfig || { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' }
+            snapshotConfig: existingSchema.snapshotConfig || { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' },
+            catalogGroupBy: existingSchema.catalogGroupBy || { classificationId: '' }
         } : {
             name: '', slug: '', description: '',
             inputMode: 'table', dataMode: 'timeseries',
@@ -613,11 +639,13 @@ function lineSchemaBuilder() {
             lineTypes: ['default'], columns: [],
             totals: { rows: [] },
             snapshotConfig: { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' },
+            catalogGroupBy: { classificationId: '' },
             defaultLineType: 'default'
         },
 
         saving: false, expandedCol: null,
         parametersOpen: true,
+        catalogueOpen: true,
         totalsOpen: true,
         entitySearch: '',
         allEntities: allEntitiesData,
@@ -921,7 +949,8 @@ function lineSchemaBuilder() {
                 appliesTo: { entityIds: this.schema.appliesTo.entityIds || [], documentType: this.schema.appliesTo.documentType || undefined },
                 lineTypes: this.schema.lineTypes, columns: cleanColumns,
                 totals: this.schema.totals, defaultLineType: this.schema.defaultLineType,
-                snapshotConfig: this.schema.snapshotConfig
+                snapshotConfig: this.schema.snapshotConfig,
+                catalogGroupBy: this.schema.catalogGroupBy
             };
             try {
                 const isNew = !this.schema._id;

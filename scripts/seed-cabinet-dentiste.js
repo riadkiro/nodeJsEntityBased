@@ -90,7 +90,9 @@ async function upsertActesEntity(db, acts = []) {
     const fts = await db.FieldTemplate.find({ 'meta.createdByPreset': PRESET, name: { $in: ['code', 'prix', 'tva', 'categorie'] } });
     const fieldMap = {};
     for (const ft of fts) fieldMap[ft.name] = ft._id;
-    return { entity: existing, fieldMap };
+    // Also find the classification for linking records
+    const existingClassification = await db.Classification.findOne({ key: 'acte-categorie' });
+    return { entity: existing, fieldMap, classificationId: existingClassification?._id || null };
   }
 
   const categories = [...new Set(acts.map(a => a.category).filter(Boolean))];
@@ -163,17 +165,38 @@ async function upsertActesEntity(db, acts = []) {
     meta: { createdByPreset: PRESET, isDemo: true }
   });
 
-  return { entity, fieldMap };
+  return { entity, fieldMap, classificationId };
 }
 
-async function seedActesRecords(db, actesEntityId, acts, fieldMap, schemaIds = {}) {
+async function seedActesRecords(db, actesEntityId, acts, fieldMap, schemaIds = {}, classificationId = null) {
   const schemaDefaults = [
     schemaIds.billingSchemaId,
     schemaIds.quoteSchemaId,
     schemaIds.invoiceSchemaId
   ].filter(Boolean);
 
-  const ops = acts.map((a, i) => ({
+  // Build category → classification option _id mapping
+  let categoryToOptionId = {};
+  if (classificationId) {
+    const classification = await db.Classification.findById(classificationId).lean();
+    if (classification && classification.options) {
+      for (const opt of classification.options) {
+        categoryToOptionId[opt.value || opt.label] = opt._id;
+      }
+    }
+  }
+
+  const ops = acts.map((a, i) => {
+    // Build classificationValues for this record
+    const classificationValues = [];
+    if (classificationId && categoryToOptionId[a.category]) {
+      classificationValues.push({
+        classificationId: classificationId,
+        optionId: categoryToOptionId[a.category]
+      });
+    }
+
+    return {
     updateOne: {
       filter: { entityId: actesEntityId, 'meta.code': a.code },
       update: {
@@ -182,6 +205,7 @@ async function seedActesRecords(db, actesEntityId, acts, fieldMap, schemaIds = {
           description: a.description,
           status: 'active',
           date: new Date(),
+          classificationValues,
           customFields: [
             { field_id: fieldMap.code, value: a.code },
             ...(fieldMap.categorie ? [{ field_id: fieldMap.categorie, value: a.category }] : []),
@@ -210,7 +234,7 @@ async function seedActesRecords(db, actesEntityId, acts, fieldMap, schemaIds = {
       },
       upsert: true
     }
-  }));
+  }});
 
   if (ops.length > 0) {
     await db.Record.bulkWrite(ops, { ordered: false });
@@ -734,9 +758,9 @@ async function installDentiste(conn, userId) {
     throw new Error('Aucun acte extrait depuis Data source/Nomenclature.html');
   }
 
-  const { entity: actesEntity, fieldMap } = await upsertActesEntity(db, acts);
+  const { entity: actesEntity, fieldMap, classificationId } = await upsertActesEntity(db, acts);
   const schemaIds = await configureSingleConsultationTD(db, actesEntity, acts.length, fieldMap);
-  await seedActesRecords(db, actesEntity._id, acts, fieldMap, schemaIds);
+  await seedActesRecords(db, actesEntity._id, acts, fieldMap, schemaIds, classificationId);
   await configureClinicalViews(db);
   await seedTreatmentPresets(db, schemaIds, userId);
   await seedExamPresets(db, schemaIds, userId);

@@ -148,6 +148,11 @@ const LineSchemaSchema = new mongoose.Schema({
 
     defaultLineType: String,
 
+    // ══ Catalogue grouping (by classification) ══
+    catalogGroupBy: {
+        classificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Classification' }
+    },
+
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

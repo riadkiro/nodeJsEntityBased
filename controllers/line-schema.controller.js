@@ -95,7 +95,7 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig, catalogGroupBy } = req.body;
 
             // Sanitize snapshotConfig: empty strings → null for ObjectId fields
             const cleanSnapshot = snapshotConfig ? {
@@ -121,6 +121,9 @@ module.exports = {
                 })),
                 totals: totals || {},
                 snapshotConfig: cleanSnapshot,
+                catalogGroupBy: catalogGroupBy ? {
+                    classificationId: catalogGroupBy.classificationId || null
+                } : undefined,
                 defaultLineType: defaultLineType || (lineTypes && lineTypes[0]) || 'product',
                 createdBy: req.user?._id
             });
@@ -139,7 +142,7 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig, catalogGroupBy } = req.body;
 
             const updateData = {};
             if (name !== undefined) updateData.name = name;
@@ -167,6 +170,11 @@ module.exports = {
                 };
             }
             if (defaultLineType !== undefined) updateData.defaultLineType = defaultLineType;
+            if (catalogGroupBy !== undefined) {
+                updateData.catalogGroupBy = {
+                    classificationId: catalogGroupBy.classificationId || null
+                };
+            }
 
             const schema = await LineSchema.findByIdAndUpdate(
                 req.params.id,
@@ -232,9 +240,20 @@ module.exports = {
             const Entity = await tenantCollection(req, 'Entity');
             const entities = Entity ? await Entity.find({}).select('name slug icon').lean() : [];
 
+            // Load classifications from source entity for catalog grouping
+            let sourceClassifications = [];
+            if (schema && schema.sourceEntityId) {
+                const Classification = await tenantCollection(req, 'Classification');
+                const sourceEntity = Entity ? await Entity.findById(schema.sourceEntityId).select('classifications').lean() : null;
+                if (sourceEntity && Classification && sourceEntity.classifications && sourceEntity.classifications.length > 0) {
+                    sourceClassifications = await Classification.find({ _id: { $in: sourceEntity.classifications } }).lean();
+                }
+            }
+
             res.render('account/line-schema-builder', {
                 schema,
                 entities,
+                sourceClassifications,
                 account_number: req.account_number,
                 layout: 'layout-app'
             });

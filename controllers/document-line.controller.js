@@ -186,7 +186,7 @@ module.exports = {
             const Entity = await tenantCollection(req, 'Entity');
             if (!Record || !Entity) return res.status(500).json({ error: 'Model not available' });
 
-            const { entityId, q, searchFields } = req.query;
+            const { entityId, q, searchFields, classificationOptionId } = req.query;
             if (!entityId) return res.status(400).json({ error: 'entityId is required' });
 
             // Cast to ObjectId to ensure proper matching
@@ -204,9 +204,13 @@ module.exports = {
                 .select('referenceTitleTokens')
                 .lean();
 
-            console.log('[CatalogSearch] entityId:', entityId, 'q:', q, 'entity found:', !!entity);
+            console.log('[CatalogSearch] entityId:', entityId, 'q:', q, 'classificationOptionId:', classificationOptionId, 'entity found:', !!entity);
 
             let query = { entityId: entityOid };
+            // Filter by classification option if provided
+            if (classificationOptionId) {
+                query['classificationValues.optionId'] = new mongoose.Types.ObjectId(classificationOptionId);
+            }
             let useAggregation = false;
             let pipeline = [];
 
@@ -228,8 +232,12 @@ module.exports = {
                 const isNumericSearch = /^\d/.test(q.trim());
                 if (isNumericSearch) {
                     useAggregation = true;
+                    const matchStage = { entityId: entityOid };
+                    if (classificationOptionId) {
+                        matchStage['classificationValues.optionId'] = new mongoose.Types.ObjectId(classificationOptionId);
+                    }
                     pipeline = [
-                        { $match: { entityId: entityOid } },
+                        { $match: matchStage },
                         { $addFields: {
                             _cfStrings: {
                                 $map: {
@@ -265,7 +273,7 @@ module.exports = {
                 records = await Record.find(query)
                     .sort({ title: 1 })
                     .limit(20)
-                    .select('title slug description customFields entityId lineDefaults')
+                    .select('title slug description customFields entityId lineDefaults classificationValues relations')
                     .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
                     .lean();
             }
@@ -380,7 +388,8 @@ module.exports = {
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
                     customFields: cfMap,
-                    lineDefaults: processedLineDefaults
+                    lineDefaults: processedLineDefaults,
+                    classificationValues: r.classificationValues || []
                 });
             }
 
@@ -400,7 +409,7 @@ module.exports = {
             const DocumentLine = await tenantCollection(req, 'DocumentLine');
             if (!Record || !Entity || !DocumentLine) return res.status(500).json({ error: 'Model not available' });
 
-            const { entityId } = req.query;
+            const { entityId, classificationOptionId } = req.query;
             if (!entityId) return res.status(400).json({ error: 'entityId is required' });
 
             let entityOid;
@@ -454,11 +463,16 @@ module.exports = {
                     try { return new mongoose.Types.ObjectId(f._id); } catch(e) { return null; }
                 }).filter(Boolean);
 
-                records = await Record.find({ 
+                const findQuery = {
                     _id: { $in: candidateIds },
                     entityId: entityOid
-                })
-                    .select('title slug description customFields entityId relations lineDefaults')
+                };
+                if (classificationOptionId) {
+                    findQuery['classificationValues.optionId'] = new mongoose.Types.ObjectId(classificationOptionId);
+                }
+
+                records = await Record.find(findQuery)
+                    .select('title slug description customFields entityId relations lineDefaults classificationValues')
                     .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
                     .limit(15)
                     .lean();
@@ -471,10 +485,14 @@ module.exports = {
 
             // Fallback: if no frequent items found, return most recent records from entity
             if (records.length === 0) {
-                records = await Record.find({ entityId: entityOid })
-                    .sort({ createdAt: -1 })
-                    .limit(15)
-                    .select('title slug description customFields entityId relations lineDefaults')
+                const fallbackQuery = { entityId: entityOid };
+                if (classificationOptionId) {
+                    fallbackQuery['classificationValues.optionId'] = new mongoose.Types.ObjectId(classificationOptionId);
+                }
+                records = await Record.find(fallbackQuery)
+                    .sort({ title: 1 })
+                    .limit(100)
+                    .select('title slug description customFields entityId relations lineDefaults classificationValues')
                     .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
                     .lean();
             }
@@ -579,7 +597,8 @@ module.exports = {
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
                     customFields: cfMap,
-                    lineDefaults: processedLineDefaults
+                    lineDefaults: processedLineDefaults,
+                    classificationValues: r.classificationValues || []
                 });
             }
 

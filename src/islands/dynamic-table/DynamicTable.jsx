@@ -282,8 +282,10 @@ export default function DynamicTable({
         query: '',
         loading: false,
         results: [],
-        selectedIds: []
+        selectedIds: [],
+        classificationFilter: '' // optionId or '' for all
     })
+    const [catalogClassifications, setCatalogClassifications] = useState([]) // { _id, label, color }
     const [validatingMap, setValidatingMap] = useState({})
     const [snapshotHistoryMap, setSnapshotHistoryMap] = useState({})
     const [snapshotLoadingMap, setSnapshotLoadingMap] = useState({})
@@ -897,7 +899,7 @@ export default function DynamicTable({
         }
     }, [accountNumber, recordId, getSchemaLines, saveLinesForSchema, loadSnapshotHistory, getSnapshotTargetRecordId])
 
-    const searchCatalogInPicker = useCallback(async (schema, query) => {
+    const searchCatalogInPicker = useCallback(async (schema, query, classificationOptionId = '') => {
         const relCol = getRelationCol(schema)
         const targetEntity = schema?.sourceEntityId || relCol?.config?.targetEntity
         const searchFields = (relCol?.config?.searchFields || ['title']).join(',')
@@ -906,9 +908,10 @@ export default function DynamicTable({
         try {
             setCatalogPicker(prev => ({ ...prev, loading: true, query }))
             const trimmed = (query || '').trim()
+            const classParam = classificationOptionId ? `&classificationOptionId=${classificationOptionId}` : ''
             const url = trimmed
-                ? `/account/${accountNumber}/api/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(trimmed)}&searchFields=${searchFields}`
-                : `/account/${accountNumber}/api/catalog-frequent?entityId=${targetEntity}`
+                ? `/account/${accountNumber}/api/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(trimmed)}&searchFields=${searchFields}${classParam}`
+                : `/account/${accountNumber}/api/catalog-frequent?entityId=${targetEntity}${classParam}`
             const res = await fetch(url, { credentials: 'include' })
             const data = await res.json()
             setCatalogPicker(prev => ({ ...prev, loading: false, results: data.data || [] }))
@@ -918,7 +921,7 @@ export default function DynamicTable({
         }
     }, [accountNumber, getRelationCol])
 
-    const openCatalogPicker = useCallback((schema) => {
+    const openCatalogPicker = useCallback(async (schema) => {
         const relCol = getRelationCol(schema)
         if (!relCol) return
 
@@ -928,14 +931,40 @@ export default function DynamicTable({
             query: '',
             loading: false,
             results: [],
-            selectedIds: []
+            selectedIds: [],
+            classificationFilter: ''
         })
 
+        // Fetch classification options if schema has catalogGroupBy configured
+        const classificationId = schema.catalogGroupBy?.classificationId
+        if (classificationId) {
+            try {
+                const res = await fetch(`/account/${accountNumber}/classification/api/list`, { credentials: 'include' })
+                const data = await res.json()
+                const classifications = Array.isArray(data) ? data : (data.data || [])
+                const cls = classifications.find(c => String(c._id) === String(classificationId))
+                if (cls && cls.options) {
+                    setCatalogClassifications(cls.options.map(o => ({
+                        _id: String(o._id),
+                        label: o.label || o.value,
+                        color: o.color || '#6b7280'
+                    })))
+                } else {
+                    setCatalogClassifications([])
+                }
+            } catch (e) {
+                console.error('[DynamicTable] Failed to load classification options:', e)
+                setCatalogClassifications([])
+            }
+        } else {
+            setCatalogClassifications([])
+        }
+
         searchCatalogInPicker(schema, '')
-    }, [getRelationCol, searchCatalogInPicker])
+    }, [accountNumber, getRelationCol, searchCatalogInPicker])
 
     const closeCatalogPicker = useCallback(() => {
-        setCatalogPicker({ open: false, schemaId: '', query: '', loading: false, results: [], selectedIds: [] })
+        setCatalogPicker({ open: false, schemaId: '', query: '', loading: false, results: [], selectedIds: [], classificationFilter: '' })
     }, [])
 
     const toggleCatalogItem = useCallback((itemId) => {
@@ -1137,7 +1166,7 @@ export default function DynamicTable({
                                     <input
                                         type="text"
                                         value={catalogPicker.query}
-                                        onChange={(e) => searchCatalogInPicker(schema, e.target.value)}
+                                        onChange={(e) => searchCatalogInPicker(schema, e.target.value, catalogPicker.classificationFilter)}
                                         placeholder="Rechercher dans le catalogue"
                                         style={{
                                             flex: 1,
@@ -1156,6 +1185,67 @@ export default function DynamicTable({
                                         Fermer
                                     </button>
                                 </div>
+
+                                {/* Classification filter tabs */}
+                                {catalogClassifications.length > 0 && (
+                                    <div style={{
+                                        padding: '8px 12px',
+                                        borderBottom: '1px solid #f3f4f6',
+                                        display: 'flex',
+                                        gap: 6,
+                                        overflowX: 'auto',
+                                        flexShrink: 0
+                                    }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCatalogPicker(prev => ({ ...prev, classificationFilter: '' }))
+                                                searchCatalogInPicker(schema, catalogPicker.query, '')
+                                            }}
+                                            style={{
+                                                border: catalogPicker.classificationFilter === '' ? '1px solid #4361ee' : '1px solid #e5e7eb',
+                                                borderRadius: 20,
+                                                background: catalogPicker.classificationFilter === '' ? '#4361ee' : '#fff',
+                                                color: catalogPicker.classificationFilter === '' ? '#fff' : '#374151',
+                                                fontSize: 11,
+                                                fontWeight: 600,
+                                                padding: '5px 14px',
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap',
+                                                transition: 'all 0.15s ease'
+                                            }}
+                                        >
+                                            Tous
+                                        </button>
+                                        {catalogClassifications.map(opt => {
+                                            const isActive = catalogPicker.classificationFilter === opt._id
+                                            return (
+                                                <button
+                                                    key={opt._id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCatalogPicker(prev => ({ ...prev, classificationFilter: opt._id }))
+                                                        searchCatalogInPicker(schema, catalogPicker.query, opt._id)
+                                                    }}
+                                                    style={{
+                                                        border: isActive ? `1px solid ${opt.color}` : '1px solid #e5e7eb',
+                                                        borderRadius: 20,
+                                                        background: isActive ? opt.color : '#fff',
+                                                        color: isActive ? '#fff' : '#374151',
+                                                        fontSize: 11,
+                                                        fontWeight: 600,
+                                                        padding: '5px 14px',
+                                                        cursor: 'pointer',
+                                                        whiteSpace: 'nowrap',
+                                                        transition: 'all 0.15s ease'
+                                                    }}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )}
 
                                 <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
                                     {catalogPicker.loading && (

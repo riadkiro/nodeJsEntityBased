@@ -694,7 +694,7 @@ async function install(conn, userId, presetSlug) {
                 { entitySlug: 'consultations', name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
                 { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
                 { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
-                { entitySlug: 'examens', name: 'Catalogue examens', icon: 'solar:vial-bold-duotone', color: '#fb923c' },
+                { entitySlug: 'examens', name: 'Catalogue examens', icon: 'solar:test-tube-minimalistic-bold-duotone', color: '#fb923c' },
                 { entitySlug: 'symptomes', name: 'Symptômes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899' },
                 { entitySlug: 'pathologies', name: 'Pathologies', icon: 'solar:virus-bold-duotone', color: '#dc2626' },
                 { entitySlug: 'traitements', name: 'Traitements', icon: 'solar:pills-bold-duotone', color: '#0891b2' },
@@ -987,55 +987,15 @@ async function install(conn, userId, presetSlug) {
     // Attach schemas to entities via gridSchemas
     await db.Entity.findByIdAndUpdate(E['consultations'], {
         $set: {
+            enableDynamicTable: true,
             gridSchemas: [
                 { schemaId: consultationTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements' },
                 { schemaId: consultationPrestationSchema._id, position: 'main', order: 1, label: 'Prestations' },
                 { schemaId: consultationExamSchema._id, position: 'main', order: 2, label: 'Examens' }
             ],
+            // Only keep Observations note in sidebar — gridSchemas render the main TD with tabs below fields
             sidebarWidgets: [
-                { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } },
-                {
-                    type: 'dynamic-table',
-                    label: 'Actes',
-                    icon: 'solar:clipboard-list-bold-duotone',
-                    color: '#4361ee',
-                    order: 1,
-                    visible: true,
-                    config: {
-                        schemaId: consultationPrestationSchema._id.toString(),
-                        schemaIds: [consultationPrestationSchema._id.toString()],
-                        enableAdd: true,
-                        enableDocPreview: false
-                    }
-                },
-                {
-                    type: 'dynamic-table',
-                    label: 'Examens',
-                    icon: 'solar:test-tube-bold-duotone',
-                    color: '#f97316',
-                    order: 2,
-                    visible: true,
-                    config: {
-                        schemaId: consultationExamSchema._id.toString(),
-                        schemaIds: [consultationExamSchema._id.toString()],
-                        enableAdd: true,
-                        enableDocPreview: false
-                    }
-                },
-                {
-                    type: 'dynamic-table',
-                    label: 'Traitement',
-                    icon: 'solar:pills-bold-duotone',
-                    color: '#0891b2',
-                    order: 3,
-                    visible: true,
-                    config: {
-                        schemaId: consultationTreatmentSchema._id.toString(),
-                        schemaIds: [consultationTreatmentSchema._id.toString()],
-                        enableAdd: true,
-                        enableDocPreview: false
-                    }
-                }
+                { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } }
             ]
         }
     });

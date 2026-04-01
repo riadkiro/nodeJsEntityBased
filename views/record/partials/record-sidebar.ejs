@@ -1658,7 +1658,9 @@
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>
                             <!-- ðŸ“Š Tableau Dynamique Panel -->
-                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')<%= entity.slug === 'consultations' ? ' && false' : '' %>" x-collapse.duration.200ms>
+                            <% var _hasTopLevelLines = (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).length > 0; %>
+                            <% if (!_hasTopLevelLines) { %>
+                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -1674,6 +1676,7 @@
                                     data-compact="false"
                                 ></div>
                             </div><!-- end panel-sortable-item lines -->
+                            <% } %>
                         <% } %>
                     <% }); %>
 

@@ -153,7 +153,7 @@ async function upsertActesEntity(db, acts = []) {
     name: 'Actes',
     slug: 'actes',
     description: 'Nomenclature des actes dentaires avec tarifs',
-    icon: 'solar:tooth-bold-duotone',
+    icon: 'solar:clipboard-check-bold-duotone',
     color: '#0ea5e9',
     order: 40,
     enabledStandardFields: ['title', 'description', 'status'],
@@ -357,13 +357,18 @@ async function configureSingleConsultationTD(db, actesEntity, actsCount, fieldMa
   if (quoteSchema?._id) gridSchemas.push({ schemaId: quoteSchema._id, position: 'main', order: 2, label: 'Devis' });
   if (invoiceSchema?._id) gridSchemas.push({ schemaId: invoiceSchema._id, position: 'main', order: 3, label: 'Facture' });
 
+  // Only keep Observations note in sidebar - gridSchemas handle the main TD panel with tabs below fields
+  const sidebarWidgets = [
+    { label: 'Observations', type: 'note', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', position: 'sidebar', field: 'observations', order: 0, visible: true, config: { content: '' } }
+  ];
+
   await db.Entity.updateOne(
     { _id: consultations._id },
     {
       $set: {
         gridSchemas,
-        // Keep sidebar clean by default; main TD is rendered under consultation fields.
-        sidebarWidgets: [],
+        sidebarWidgets,
+        enableDynamicTable: true,
         classifications: [],
         statusClassification: null,
         enableAttachments: false
@@ -389,7 +394,7 @@ async function configureSingleConsultationTD(db, actesEntity, actsCount, fieldMa
         name: 'Catalogue Actes Dentaires',
         slug: actesViewSlug,
         entity: actesEntity._id,
-        icon: 'solar:tooth-bold-duotone',
+        icon: 'solar:clipboard-check-bold-duotone',
         color: '#0ea5e9',
         viewType: 'list',
         spaces: preferredSpaces,
@@ -447,7 +452,7 @@ async function configureClinicalViews(db) {
       {
         $set: {
           name: 'Examens',
-          icon: 'solar:vial-bold-duotone',
+          icon: 'solar:test-tube-minimalistic-bold-duotone',
           order: 4
         }
       }
@@ -461,7 +466,7 @@ async function configureClinicalViews(db) {
       {
         $set: {
           name: 'Actes',
-          icon: 'solar:tooth-bold-duotone',
+          icon: 'solar:clipboard-check-bold-duotone',
           color: '#0ea5e9',
           order: 8,
           spaces: [clinic._id]

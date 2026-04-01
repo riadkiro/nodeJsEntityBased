@@ -5826,6 +5826,26 @@ window.__syncClsInputs = function(clsId, ids) {
 
                 </div><!-- end panel-sortable-item attributs -->
 
+                <!-- ══ Dynamic Table Panel (lines) — rendered at top level so it can be dragged between zones ══ -->
+                <% if ((locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).length > 0) { %>
+                <div class="panel-sortable-item" data-panel-id="lines">
+                    <template x-if="designMode">
+                        <div class="panel-drag-handle">
+                            <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                            <span>Tableau Dynamique</span>
+                        </div>
+                    </template>
+                    <div
+                        data-island="dynamic-table"
+                        data-account-number="<%= account_number %>"
+                        data-record-id="<%= locals.record ? record._id : '' %>"
+                        data-entity-id="<%= entity._id %>"
+                        data-schema-filter=""
+                        data-compact="false"
+                    ></div>
+                </div>
+                <% } %>
+
                 <!-- â•â•â• RELATIONS Panel (Classification-style) â•â•â• -->
                 <template x-if="getRelationFields().length > 0">
                 <div class="panel-sortable-item" data-panel-id="relations-fields">

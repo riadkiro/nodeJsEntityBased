@@ -34,7 +34,7 @@ const PRESETS = [
         slug: 'cabinet-dentiste',
         name: 'Cabinet Dentiste',
         description: 'Configuration dentaire avec nomenclature des actes, catalogue tarife et TD unique Traitements lie aux consultations.',
-        icon: 'solar:tooth-bold-duotone',
+        icon: 'solar:clipboard-check-bold-duotone',
         color: '#0ea5e9',
         category: 'Sante',
         features: [

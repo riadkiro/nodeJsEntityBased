@@ -16,6 +16,7 @@ const ColumnSchema = new mongoose.Schema({
     },
     required: { type: Boolean, default: false },
     visible: { type: Boolean, default: true },
+    showOnCatalog: { type: Boolean, default: false },
     width: {
         type: String,
         enum: ['XS', 'S', 'M', 'L', 'XL'],

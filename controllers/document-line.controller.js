@@ -207,33 +207,68 @@ module.exports = {
             console.log('[CatalogSearch] entityId:', entityId, 'q:', q, 'entity found:', !!entity);
 
             let query = { entityId: entityOid };
+            let useAggregation = false;
+            let pipeline = [];
+
             if (q && q.trim()) {
                 const searchFieldList = searchFields ? searchFields.split(',') : ['title'];
                 const orConditions = [];
 
                 for (const field of searchFieldList) {
                     if (['title', 'slug', 'description'].includes(field)) {
-                        // Standard Record fields
                         orConditions.push({ [field]: { $regex: q, $options: 'i' } });
-                    } else {
-                        // Custom field search - match by field value in customFields array
-                        orConditions.push({ 'customFields.value': { $regex: q, $options: 'i' } });
                     }
                 }
 
-                if (orConditions.length > 0) {
+                // Search in custom field string values via regex
+                orConditions.push({ 'customFields.value': { $regex: q, $options: 'i' } });
+
+                // Also search in numeric custom field values (prices, etc.) by converting to string
+                // $expr with $regexMatch on $toString handles number fields
+                const isNumericSearch = /^\d/.test(q.trim());
+                if (isNumericSearch) {
+                    useAggregation = true;
+                    pipeline = [
+                        { $match: { entityId: entityOid } },
+                        { $addFields: {
+                            _cfStrings: {
+                                $map: {
+                                    input: { $ifNull: ['$customFields', []] },
+                                    as: 'cf',
+                                    in: { $toString: { $ifNull: ['$$cf.value', ''] } }
+                                }
+                            }
+                        }},
+                        { $match: {
+                            $or: [
+                                ...orConditions,
+                                { _cfStrings: { $regex: q, $options: 'i' } }
+                            ]
+                        }},
+                        { $project: { _cfStrings: 0 } },
+                        { $sort: { title: 1 } },
+                        { $limit: 20 }
+                    ];
+                } else {
                     query.$or = orConditions;
                 }
             }
 
-            console.log('[CatalogSearch] query:', JSON.stringify(query));
+            console.log('[CatalogSearch] query:', useAggregation ? 'aggregation' : JSON.stringify(query));
 
-            const records = await Record.find(query)
-                .sort({ title: 1 })
-                .limit(20)
-                .select('title slug description customFields entityId lineDefaults')
-                .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
-                .lean();
+            let records;
+            if (useAggregation) {
+                records = await Record.aggregate(pipeline);
+                // Populate customFields.field_id manually for aggregation results
+                records = await Record.populate(records, { path: 'customFields.field_id', select: 'name label fieldType' });
+            } else {
+                records = await Record.find(query)
+                    .sort({ title: 1 })
+                    .limit(20)
+                    .select('title slug description customFields entityId lineDefaults')
+                    .populate({ path: 'customFields.field_id', select: 'name label fieldType' })
+                    .lean();
+            }
 
             console.log('[CatalogSearch] found', records.length, 'records, first:', records[0] ? { _id: records[0]._id, title: records[0].title, entityId: records[0].entityId } : 'none');
 

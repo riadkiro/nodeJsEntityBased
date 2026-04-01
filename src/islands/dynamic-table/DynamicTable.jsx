@@ -265,7 +265,7 @@ export default function DynamicTable({
     const {
         setLinesMap, linesMapRef, saving,
         getSchemaLines, updateLineValue, updateLineValues,
-        addLine, removeLine, reorderLines, debouncedSave,
+        addLine, removeLine, reorderLines, moveLine, reorderLinesByIds, debouncedSave,
         saveLinesForSchema, reload
     } = useLines({ accountNumber, recordId, schemas, activeSchemaId })
 
@@ -598,6 +598,18 @@ export default function DynamicTable({
         removeLine(schemaId, lineIdx)
         debouncedSave(schemaId)
     }, [removeLine, debouncedSave])
+
+    const handleReorderLine = useCallback((schemaId, oldIndex, newIndex) => {
+        moveLine(schemaId, oldIndex, newIndex)
+        closeSearch()
+        debouncedSave(schemaId)
+    }, [moveLine, closeSearch, debouncedSave])
+
+    const handleReorderByIds = useCallback((schemaId, orderedIds) => {
+        reorderLinesByIds(schemaId, orderedIds)
+        closeSearch()
+        debouncedSave(schemaId)
+    }, [reorderLinesByIds, closeSearch, debouncedSave])
 
     const loadSnapshotHistory = useCallback(async (schema) => {
         const schemaId = schema?._id
@@ -1076,7 +1088,7 @@ export default function DynamicTable({
                 />
             )}
 
-            {displayedSchemas.map(schema => (
+            {displayedSchemas.filter(schema => String(schema._id) === String(activeSchemaId)).map(schema => (
                 <div
                     key={schema._id}
                     style={{ display: activeSchemaId === schema._id ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative' }}
@@ -1592,6 +1604,8 @@ export default function DynamicTable({
                         onSelectRelation={(lineIdx, col, item) => handleSelectRelation(schema._id, lineIdx, col, item)}
                         onCellChange={(lineIdx, key, value) => handleCellChange(schema._id, lineIdx, key, value)}
                         onRemoveLine={(lineIdx) => handleRemoveLine(schema._id, lineIdx)}
+                        onReorderLines={(oldIndex, newIndex) => handleReorderLine(schema._id, oldIndex, newIndex)}
+                        onReorderByIds={(orderedIds) => handleReorderByIds(schema._id, orderedIds)}
                         onAddLine={() => handleAddLine(schema._id)}
                         columnWidths={columnWidthsMap[schema._id] || {}}
                         onColumnResize={(colKey, width) => handleColumnResize(schema._id, colKey, width)}
@@ -1603,8 +1617,8 @@ export default function DynamicTable({
                     />
 
                     {schema.snapshotConfig?.enabled && (
-                        <div style={{ borderTop: '2px solid #e5e7eb', padding: '10px 12px', maxHeight: 260, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 10 }}>
+                        <div style={{ borderTop: '2px solid #e2e8f0', padding: '8px 10px', maxHeight: 240, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.04em' }}>
                                 Historique
                             </div>
                             {snapshotLoadingMap[schema._id] && (
@@ -1620,9 +1634,9 @@ export default function DynamicTable({
                                 if (visibleItems.length === 0) return null
 
                                 return (
-                                    <div style={{ position: 'relative', paddingLeft: 22, marginTop: 15 }}>
+                                    <div style={{ position: 'relative', paddingLeft: 18, marginTop: 8 }}>
                                         {/* Vertical Timeline Line */}
-                                        <div style={{ position: 'absolute', left: 7, top: 5, bottom: 5, width: 2, background: '#cbd5e1' }} />
+                                        <div style={{ position: 'absolute', left: 6, top: 4, bottom: 4, width: 1.5, background: '#cbd5e1' }} />
 
                                         {visibleItems.map((snap) => {
                                             const expanded = !!snapshotExpanded[snap._id]
@@ -1635,12 +1649,12 @@ export default function DynamicTable({
                                             const previewCols = (schema?.columns || []).filter(c => !c.hidden && c.visible !== false)
                                             
                                             return (
-                                                <div key={snap._id} style={{ position: 'relative', marginBottom: 12 }}>
+                                                <div key={snap._id} style={{ position: 'relative', marginBottom: 8 }}>
                                                     {/* Timeline Dot */}
                                                     <div style={{ 
-                                                        position: 'absolute', left: -20, top: 6, width: 10, height: 10, borderRadius: '50%', 
+                                                        position: 'absolute', left: -14, top: 5, width: 9, height: 9, borderRadius: '50%', 
                                                         background: expanded ? '#4361ee' : '#cbd5e1', 
-                                                        boxShadow: expanded ? '0 0 0 4px #eef2ff' : 'none',
+                                                        boxShadow: expanded ? '0 0 0 3px #eef2ff' : 'none',
                                                         zIndex: 2, transition: 'all 0.2s' 
                                                     }} />
 
@@ -1653,12 +1667,12 @@ export default function DynamicTable({
                                                         <div 
                                                             style={{ 
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                                                                gap: 12, padding: '6px 8px', cursor: 'pointer', borderRadius: 8,
+                                                                gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 8,
                                                                 background: expanded ? '#f8fafc' : 'rgba(255,255,255,0.4)' 
                                                             }}
                                                             onClick={() => setSnapshotExpanded(prev => ({ ...prev, [snap._id]: !expanded }))}
                                                         >
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                                 <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>{displayDate}</div>
                                                                 <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{displayTime}</div>
                                                                 {!expanded && (
@@ -1676,7 +1690,7 @@ export default function DynamicTable({
                                                                     <button
                                                                         type="button"
                                                                         onClick={(e) => { e.stopPropagation(); restoreSnapshot(schema, snap); }}
-                                                                        style={{ border: 'none', background: '#4361ee', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 4px rgba(67, 97, 238, 0.2)' }}
+                                                                        style={{ border: 'none', background: '#4361ee', color: '#fff', padding: '3px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(67, 97, 238, 0.2)' }}
                                                                     >
                                                                         Restaurer
                                                                     </button>
@@ -1684,7 +1698,7 @@ export default function DynamicTable({
                                                                 <button
                                                                     type="button"
                                                                     onClick={(e) => { e.stopPropagation(); deleteSnapshot(schema, snap._id); }}
-                                                                    style={{ border: 'none', background: 'none', color: snapshotPendingDeleteId === snap._id ? '#ef4444' : '#94a3b8', padding: '4px', cursor: 'pointer' }}
+                                                                    style={{ border: 'none', background: 'none', color: snapshotPendingDeleteId === snap._id ? '#ef4444' : '#94a3b8', padding: '2px', cursor: 'pointer' }}
                                                                 >
                                                                     {snapshotDeletingId === snap._id ? '...' : (
                                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -1698,13 +1712,13 @@ export default function DynamicTable({
 
                                                         {/* Expanded Table Preview */}
                                                         {expanded && (
-                                                            <div style={{ padding: '10px 8px 15px' }}>
+                                                            <div style={{ padding: '6px 6px 10px' }}>
                                                                 <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #f1f5f9' }}>
-                                                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                                                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                                                                         <thead style={{ background: '#f8fafc' }}>
                                                                             <tr>
                                                                                 {previewCols.map(col => (
-                                                                                    <th key={col.key} style={{ textAlign: 'left', padding: '8px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: 9 }}>
+                                                                                    <th key={col.key} style={{ textAlign: 'left', padding: '5px 6px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: 10 }}>
                                                                                         {col.label}
                                                                                     </th>
                                                                                 ))}
@@ -1723,7 +1737,7 @@ export default function DynamicTable({
                                                                                         }
                                                                                         const isNumeric = ['number', 'formula', 'currency'].includes(col.type) || typeof val === 'number'
                                                                                         return (
-                                                                                            <td key={col.key} style={{ padding: '8px', color: '#1e293b', fontWeight: 500, borderRight: '1px solid #f1f5f9' }}>
+                                                                                            <td key={col.key} style={{ padding: '5px 6px', color: '#1e293b', fontWeight: 500, borderRight: '1px solid #f1f5f9' }}>
                                                                                                 {isNumeric && val !== null && val !== undefined && val !== ''
                                                                                                     ? Number(val).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) 
                                                                                                     : String(val || '')}
@@ -1741,13 +1755,13 @@ export default function DynamicTable({
                                                                     const rows = computeTotalsRows(schema, snap.lines || [])
                                                                     if (rows.length > 0) {
                                                                         return (
-                                                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                                                                                <table style={{ minWidth: 200, fontSize: 11, borderCollapse: 'collapse' }}>
+                                                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                                                                                <table style={{ minWidth: 180, fontSize: 12, borderCollapse: 'collapse' }}>
                                                                                     <tbody>
                                                                                         {rows.map((row, ridx) => (
                                                                                             <tr key={ridx}>
-                                                                                                <td style={{ padding: '3px 8px', color: '#64748b', textAlign: 'right', fontWeight: 600 }}>{row.label}</td>
-                                                                                                <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 700, color: row.isFinal ? '#4361ee' : '#1e293b', fontSize: row.isFinal ? 13 : 11 }}>
+                                                                                                <td style={{ padding: '2px 6px', color: '#64748b', textAlign: 'right', fontWeight: 600 }}>{row.label}</td>
+                                                                                                <td style={{ padding: '2px 6px', textAlign: 'right', fontWeight: 700, color: row.isFinal ? '#4361ee' : '#1e293b', fontSize: row.isFinal ? 13 : 12 }}>
                                                                                                     {row.format === 'count'
                                                                                                         ? row.value
                                                                                                         : Number(row.value || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1771,11 +1785,11 @@ export default function DynamicTable({
                                 )
                             })()}
                             {!snapshotLoadingMap[schema._id] && (snapshotHistoryMap[schema._id] || []).length > 5 && (
-                                <div style={{ marginTop: 15, textAlign: 'center' }}>
+                                <div style={{ marginTop: 10, textAlign: 'center' }}>
                                     <button
                                         type="button"
                                         onClick={() => setSnapshotShowAllMap(prev => ({ ...prev, [schema._id]: !prev[schema._id] }))}
-                                        style={{ border: 'none', background: '#f8fafc', color: '#64748b', fontSize: 10, fontWeight: 800, cursor: 'pointer', padding: '8px 16px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                                        style={{ border: 'none', background: '#f8fafc', color: '#64748b', fontSize: 10, fontWeight: 800, cursor: 'pointer', padding: '6px 12px', borderRadius: 18, textTransform: 'uppercase', letterSpacing: '0.6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                                     >
                                         {snapshotShowAllMap[schema._id] ? 'Masquer l\'historique' : `Historique complet (${(snapshotHistoryMap[schema._id] || []).length})`}
                                     </button>

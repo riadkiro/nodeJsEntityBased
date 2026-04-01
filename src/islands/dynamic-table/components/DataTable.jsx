@@ -19,19 +19,19 @@ const tableWrapStyle = {
 const tableStyle = {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '13px',
+    fontSize: '12.5px',
     tableLayout: 'fixed'
 }
 
 const thStyle = {
-    padding: '6px 8px',
+    padding: '5px 8px',
     fontSize: '10px',
     fontWeight: 700,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     color: '#6b7280',
     background: '#f9fafb',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid #e9edf3',
     textAlign: 'left',
     whiteSpace: 'nowrap',
     userSelect: 'none',
@@ -41,8 +41,8 @@ const thStyle = {
 }
 
 const tdStyle = {
-    padding: '2px 8px',
-    borderBottom: '1px solid #e5e7eb',
+    padding: '1px 8px',
+    borderBottom: '1px solid #e9edf3',
     verticalAlign: 'middle',
     color: '#1f2937',
     position: 'relative',
@@ -51,9 +51,9 @@ const tdStyle = {
 }
 
 const tdRelation = {
-    padding: '1px 4px',
+    padding: '0 4px',
     minWidth: '120px',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid #e9edf3',
     verticalAlign: 'middle',
     position: 'relative',
     overflow: 'hidden'
@@ -65,14 +65,20 @@ const dragHandleStyle = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '14px'
+    width: '16px',
+    height: '16px',
+    borderRadius: '4px',
+    transition: 'all 0.15s',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    touchAction: 'none'
 }
 
 const rowNumStyle = {
-    padding: '1px 4px',
+    padding: '0 4px',
     fontSize: '11px',
     color: '#9ca3af',
-    borderBottom: '1px solid #e5e7eb'
+    borderBottom: '1px solid #e9edf3'
 }
 
 const removeBtn = {
@@ -93,31 +99,33 @@ const addBtnStyle = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    padding: '4px 10px',
-    margin: '4px 10px',
-    fontSize: '11px',
+    padding: '2px 8px',
+    margin: '2px 8px',
+    minHeight: '24px',
+    fontSize: '10.5px',
     fontWeight: 500,
     color: '#4361ee',
     background: 'transparent',
     border: '1px dashed #d1d5db',
-    borderRadius: '6px',
+    borderRadius: '5px',
     cursor: 'pointer',
-    transition: 'all 0.15s'
+    transition: 'all 0.15s',
+    lineHeight: 1
 }
 
 const relationInputStyle = {
     width: '100%',
-    height: '22px',
-    padding: '0 4px',
+    height: '20px',
+    padding: '0 3px',
     background: 'transparent',
-    border: '1px solid transparent',
-    fontSize: '13px',
-    lineHeight: '20px',
+    border: 'none',
+    fontSize: '12.5px',
+    lineHeight: '18px',
     outline: 'none',
     boxShadow: 'none',
     borderRadius: '4px',
     color: 'inherit',
-    transition: 'border-color 0.15s'
+    transition: 'background 0.15s'
 }
 
 const dropdownStyle = {
@@ -174,6 +182,8 @@ export default function DataTable({
     onSelectRelation,
     onCellChange,
     onRemoveLine,
+    onReorderLines,
+    onReorderByIds,
     onAddLine,
     columnWidths,
     onColumnResize
@@ -181,10 +191,17 @@ export default function DataTable({
     const relCol = getRelationCol()
     const sampleLine = lines[0] || null
     const visibleCols = getVisibleColumns(sampleLine)
+    const getLineId = useCallback((line, idx) => String(line?._id || line?._tempId || idx), [])
+    const lineOrderSignature = lines.map((line, idx) => getLineId(line, idx)).join('|')
 
     // ── Resize state ──
     const [resizing, setResizing] = useState(null) // { colKey, startX, startWidth }
     const tableRef = useRef(null)
+    const tbodyRef = useRef(null)
+    const sortableRef = useRef(null)
+    const dropTargetRef = useRef(null)
+    const linesRef = useRef(lines)
+    const dragUpdatedRef = useRef(false)
 
     useEffect(() => {
         if (!resizing) return
@@ -230,8 +247,144 @@ export default function DataTable({
         return 180
     }, [columnWidths])
 
+    useEffect(() => {
+        linesRef.current = lines
+    }, [lines])
+
+    useEffect(() => {
+        if (!tbodyRef.current) return
+
+        let cancelled = false
+        let retryTimer = null
+
+        const clearDropTarget = () => {
+            if (!dropTargetRef.current) return
+            dropTargetRef.current.classList.remove('dt-drop-target-before', 'dt-drop-target-after')
+            dropTargetRef.current = null
+        }
+
+        const clearDragClasses = () => {
+            if (!tbodyRef.current) return
+            tbodyRef.current.querySelectorAll('tr').forEach((tr) => {
+                tr.classList.remove('dt-row-ghost', 'dt-row-chosen', 'dt-row-drag', 'dt-drop-target-before', 'dt-drop-target-after')
+            })
+        }
+
+        const destroySortable = () => {
+            if (sortableRef.current) {
+                sortableRef.current.destroy()
+                sortableRef.current = null
+            }
+        }
+
+        const initSortable = () => {
+            if (cancelled) return
+            const SortableLib = typeof window !== 'undefined' ? window.Sortable : null
+            if (!SortableLib || typeof SortableLib.create !== 'function') {
+                retryTimer = setTimeout(initSortable, 120)
+                return
+            }
+
+            destroySortable()
+
+            const commitReorder = (evt) => {
+                const domIds = tbodyRef.current
+                    ? Array.from(tbodyRef.current.querySelectorAll('tr[data-line-id]')).map(el => String(el.dataset.lineId || ''))
+                    : []
+
+                if (domIds.length > 0 && typeof onReorderByIds === 'function') {
+                    onReorderByIds?.(domIds)
+                    return
+                }
+
+                let oldIndex = evt?.oldIndex
+                let newIndex = evt?.newIndex
+                const draggedId = String(evt?.item?.dataset?.lineId || '')
+                if ((oldIndex === undefined || newIndex === undefined) && draggedId && domIds.length > 0) {
+                    const currentIds = (linesRef.current || []).map((line, idx) => getLineId(line, idx))
+                    oldIndex = currentIds.indexOf(draggedId)
+                    newIndex = domIds.indexOf(draggedId)
+                }
+
+                if (oldIndex === undefined || newIndex === undefined) return
+                if (oldIndex === newIndex) return
+                onReorderLines?.(oldIndex, newIndex)
+            }
+
+            sortableRef.current = SortableLib.create(tbodyRef.current, {
+                animation: 180,
+                direction: 'vertical',
+                handle: '.dt-drag-handle',
+                draggable: 'tr[data-line-id]',
+                dataIdAttr: 'data-line-id',
+                // Keep native click/focus on form controls (typing/searching in cells)
+                filter: 'input, textarea, select, button, a, [contenteditable="true"], .dt-inline-input, .dt-inline-select',
+                preventOnFilter: false,
+                // Sidebar-inspired thresholds, but keep native DnD path to avoid lingering fallback clones.
+                swapThreshold: 0.65,
+                invertSwap: true,
+                fallbackTolerance: 3,
+                ghostClass: 'dt-row-ghost',
+                chosenClass: 'dt-row-chosen',
+                onChoose: () => {
+                    document.body.classList.add('dt-dragging')
+                    document.body.style.userSelect = 'none'
+                },
+                onStart: () => {
+                    dragUpdatedRef.current = false
+                    onCloseSearch?.()
+                    clearDropTarget()
+                },
+                onMove: (evt) => {
+                    const related = evt?.related
+                    if (!related || related.tagName !== 'TR') {
+                        clearDropTarget()
+                        return true
+                    }
+
+                    if (dropTargetRef.current && dropTargetRef.current !== related) {
+                        dropTargetRef.current.classList.remove('dt-drop-target-before', 'dt-drop-target-after')
+                    }
+                    dropTargetRef.current = related
+                    related.classList.remove('dt-drop-target-before', 'dt-drop-target-after')
+                    if (evt?.willInsertAfter) related.classList.add('dt-drop-target-after')
+                    else related.classList.add('dt-drop-target-before')
+                    return true
+                },
+                onEnd: (evt) => {
+                    commitReorder(evt)
+                    dragUpdatedRef.current = false
+                    clearDropTarget()
+                    if (evt?.item?.classList) {
+                        evt.item.classList.remove('dt-row-ghost', 'dt-row-chosen', 'dt-row-drag')
+                    }
+                    clearDragClasses()
+                    document.body.classList.remove('dt-dragging')
+                    document.body.style.userSelect = ''
+                },
+                onUnchoose: () => {
+                    dragUpdatedRef.current = false
+                    clearDragClasses()
+                    document.body.classList.remove('dt-dragging')
+                    document.body.style.userSelect = ''
+                }
+            })
+        }
+
+        clearDragClasses()
+        initSortable()
+
+        return () => {
+            cancelled = true
+            if (retryTimer) clearTimeout(retryTimer)
+            destroySortable()
+            clearDropTarget()
+            clearDragClasses()
+        }
+    }, [lineOrderSignature, onCloseSearch, onReorderLines, onReorderByIds, getLineId])
+
     return (
-        <div style={tableWrapStyle}>
+        <div style={tableWrapStyle} className="dt-compact-skin">
             <table style={tableStyle} ref={tableRef}>
                 <thead>
                     <tr>
@@ -268,10 +421,11 @@ export default function DataTable({
                         <th style={{ ...thStyle, width: '36px', minWidth: '36px', maxWidth: '36px' }}></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody ref={tbodyRef}>
                     {lines.map((line, lineIdx) => (
                         <TableRow
-                            key={line._tempId || line._id || lineIdx}
+                            key={getLineId(line, lineIdx)}
+                            lineId={getLineId(line, lineIdx)}
                             schemaId={schemaId}
                             line={line}
                             lineIdx={lineIdx}
@@ -303,14 +457,96 @@ export default function DataTable({
                     e.currentTarget.style.background = 'transparent'
                 }}
             >
-                <span style={{ fontSize: '14px' }}>+</span>
+                <span style={{ fontSize: '12px' }}>+</span>
                 Ajouter
             </button>
+
+            <style>{`
+                .dt-compact-skin .dt-row-ghost td {
+                    background: #eff4ff !important;
+                    opacity: 0.8;
+                }
+
+                .dt-compact-skin .dt-row-chosen td {
+                    background: #f8fbff !important;
+                }
+
+                .dt-compact-skin .dt-row-drag td {
+                    opacity: 0.4;
+                }
+
+                .dt-compact-skin tr.dt-drop-target-before td {
+                    box-shadow: inset 0 2px 0 #4361ee;
+                }
+
+                .dt-compact-skin tr.dt-drop-target-after td {
+                    box-shadow: inset 0 -2px 0 #4361ee;
+                }
+
+                .dt-compact-skin .dt-drag-handle {
+                    cursor: grab;
+                    color: #b8c2d1;
+                }
+
+                .dt-compact-skin .dt-drag-cell {
+                    cursor: default;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    touch-action: none;
+                }
+
+                .dt-compact-skin .dt-drag-cell:active {
+                    cursor: grabbing;
+                }
+
+                .dt-compact-skin .dt-drag-handle:active {
+                    cursor: grabbing;
+                }
+
+                .dt-compact-skin .dt-drag-handle:hover {
+                    color: #64748b;
+                    background: #f1f5f9;
+                }
+
+                .dt-compact-skin .dt-drag-handle,
+                .dt-compact-skin .dt-drag-handle * {
+                    -webkit-user-drag: none;
+                }
+
+                body.dt-dragging,
+                body.dt-dragging * {
+                    user-select: none !important;
+                    -webkit-user-select: none !important;
+                }
+
+                .dt-compact-skin .dt-inline-input,
+                .dt-compact-skin .dt-inline-select {
+                    height: 20px !important;
+                    min-height: 20px !important;
+                    padding: 0 3px !important;
+                    border: none !important;
+                    border-radius: 4px !important;
+                    background: transparent !important;
+                    font-size: 12.5px !important;
+                    line-height: 18px !important;
+                    box-shadow: none !important;
+                    outline: none !important;
+                }
+
+                .dt-compact-skin .dt-inline-input:focus,
+                .dt-compact-skin .dt-inline-select:focus {
+                    border: none !important;
+                    background: #f8fafc !important;
+                    box-shadow: none !important;
+                    outline: none !important;
+                }
+            `}</style>
         </div>
     )
 }
 
 function TableRow({
+    lineId,
     schemaId,
     line, lineIdx, relCol, visibleCols, relationLabel,
     searchState, onOpenSearch, onSearch, onCloseSearch, onSelectRelation,
@@ -376,13 +612,36 @@ function TableRow({
     }, [schemaId, lineIdx, relCol, onSearch])
 
     return (
-        <tr
-            style={{ transition: 'background 0.1s' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb' }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-        >
-            <td style={{ ...tdStyle, padding: '2px 4px', width: '28px' }}>
-                <span style={dragHandleStyle}>::</span>
+                        <tr
+                            data-line-id={lineId}
+                            style={{ transition: 'background 0.1s' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fbfcfe' }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                        >
+            <td
+                className="dt-drag-cell"
+                style={{ ...tdStyle, padding: '1px 4px', width: '28px' }}
+            >
+                <span
+                    className="dt-drag-handle"
+                    style={dragHandleStyle}
+                    title="Glisser pour réordonner"
+                >
+                    <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        aria-hidden="true"
+                    >
+                        <circle cx="4" cy="2.25" r="1" fill="currentColor" />
+                        <circle cx="8" cy="2.25" r="1" fill="currentColor" />
+                        <circle cx="4" cy="6" r="1" fill="currentColor" />
+                        <circle cx="8" cy="6" r="1" fill="currentColor" />
+                        <circle cx="4" cy="9.75" r="1" fill="currentColor" />
+                        <circle cx="8" cy="9.75" r="1" fill="currentColor" />
+                    </svg>
+                </span>
             </td>
 
             {relCol && (
@@ -390,6 +649,7 @@ function TableRow({
                     <div style={{ position: 'relative' }}>
                         <input
                             type="text"
+                            className="dt-inline-input"
                             style={relationInputStyle}
                             ref={setInputEl}
                             value={relationInputValue}
@@ -436,7 +696,7 @@ function TableRow({
             )}
 
             {visibleCols.map(col => (
-                <td key={col.key} style={{ ...tdStyle, padding: '2px 6px' }}>
+                <td key={col.key} style={{ ...tdStyle, padding: '1px 6px' }}>
                     <CellRenderer
                         col={col}
                         value={line.values?.[col.key]}
@@ -446,7 +706,7 @@ function TableRow({
                 </td>
             ))}
 
-            <td style={{ ...tdStyle, padding: '2px 4px', textAlign: 'center', width: '36px' }}>
+            <td style={{ ...tdStyle, padding: '1px 4px', textAlign: 'center', width: '36px' }}>
                 <button
                     type="button"
                     style={removeBtn}

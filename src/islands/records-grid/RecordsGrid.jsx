@@ -167,7 +167,7 @@ export default function RecordsGrid({
         sort: { field: 'createdAt', direction: 'desc' },
         density: 'normal',
         pageSize: 10,
-        titleDisplay: 'avatar',
+        titleDisplay: 'icon',
         showSidebar: false,
         sidebarWidth: 280,
         viewMode: null,
@@ -227,6 +227,8 @@ export default function RecordsGrid({
             if (data.preferences) {
                 setPreferences(prev => ({
                     ...prev,
+                    // Apply viewTitleDisplay as fallback if user has no titleDisplay preference
+                    ...(data.viewTitleDisplay && !data.preferences.titleDisplay ? { titleDisplay: data.viewTitleDisplay } : {}),
                     ...data.preferences,
                     columns: data.preferences.columns?.length
                         ? data.preferences.columns
@@ -263,6 +265,8 @@ export default function RecordsGrid({
                 setColumns(data.columns || [])
                 setPreferences(prev => ({
                     ...prev,
+                    // Apply viewTitleDisplay as fallback when no user preferences exist
+                    ...(data.viewTitleDisplay ? { titleDisplay: data.viewTitleDisplay } : {}),
                     columns: data.columns.map(c => ({ id: c.id, visible: true }))
                 }))
             }

@@ -1668,7 +1668,7 @@
                                 <div
                                     data-island="dynamic-table"
                                     data-account-number="<%= account_number %>"
-                                    data-record-id="<%= record._id %>"
+                                    data-record-id="<%= locals.record ? record._id : '' %>"
                                     data-entity-id="<%= entity._id %>"
                                     data-schema-filter=""
                                     data-compact="false"
@@ -1864,7 +1864,7 @@
                                             <div
                                                 data-island="dynamic-table"
                                                 data-account-number="<%= account_number %>"
-                                                data-record-id="<%= record._id %>"
+                                                data-record-id="<%= locals.record ? record._id : '' %>"
                                                 data-entity-id="<%= entity._id %>"
                                                 data-schema-filter="<%= schemaFilterReact %>"
                                                 data-compact="true"

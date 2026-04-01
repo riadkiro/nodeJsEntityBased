@@ -495,7 +495,7 @@ async function install(conn, userId, presetSlug) {
         { src: 'documents-medicaux', target: 'patients', label: 'Patient', inverse: 'Documents', card: 'many-to-one' },
         { src: 'plans-traitement', target: 'patients', label: 'Patient', inverse: 'Plans de traitement', card: 'many-to-one' },
         { src: 'consultations', target: 'symptomes', label: 'Symptômes', inverse: 'Consultations', card: 'many-to-many', mode: 'autocomplete' },
-        { src: 'consultations', target: 'examens', label: 'Examens', inverse: 'Consultations', card: 'many-to-many', mode: 'autocomplete' },
+        // Examens relation removed — handled exclusively via Dynamic Tables (TD)
         { src: 'pathologies', target: 'patients', label: 'Patient', inverse: 'Pathologies', card: 'many-to-one' },
         { src: 'traitements', target: 'patients', label: 'Patient', inverse: 'Traitements', card: 'many-to-one' },
     ];
@@ -996,10 +996,38 @@ async function install(conn, userId, presetSlug) {
                 { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } },
                 {
                     type: 'dynamic-table',
+                    label: 'Actes',
+                    icon: 'solar:clipboard-list-bold-duotone',
+                    color: '#4361ee',
+                    order: 1,
+                    visible: true,
+                    config: {
+                        schemaId: consultationPrestationSchema._id.toString(),
+                        schemaIds: [consultationPrestationSchema._id.toString()],
+                        enableAdd: true,
+                        enableDocPreview: false
+                    }
+                },
+                {
+                    type: 'dynamic-table',
+                    label: 'Examens',
+                    icon: 'solar:test-tube-bold-duotone',
+                    color: '#f97316',
+                    order: 2,
+                    visible: true,
+                    config: {
+                        schemaId: consultationExamSchema._id.toString(),
+                        schemaIds: [consultationExamSchema._id.toString()],
+                        enableAdd: true,
+                        enableDocPreview: false
+                    }
+                },
+                {
+                    type: 'dynamic-table',
                     label: 'Traitement',
                     icon: 'solar:pills-bold-duotone',
                     color: '#0891b2',
-                    order: 1,
+                    order: 3,
                     visible: true,
                     config: {
                         schemaId: consultationTreatmentSchema._id.toString(),

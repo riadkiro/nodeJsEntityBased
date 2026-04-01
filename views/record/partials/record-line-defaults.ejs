@@ -445,7 +445,7 @@ function lineDefaultsPanel() {
         expanded: false,
         saveStatus: {},
         accountNumber: '<%= account_number %>',
-        recordId: '<%= record._id.toString() %>',
+        recordId: '<%= locals.record ? record._id.toString() : "" %>',
         entityId: '<%= entity._id.toString() %>',
 
         get configuredCount() {

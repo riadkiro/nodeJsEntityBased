@@ -5995,6 +5995,14 @@ window.__syncClsInputs = function(clsId, ids) {
                         </div>
                     </template>
                     <%- include('partials/record-sidebar') %>
+                </div>
+                <div class="panel-sortable-item" data-panel-id="line-defaults">
+                    <template x-if="designMode">
+                        <div class="panel-drag-handle">
+                            <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                            <span>Défauts Ligne</span>
+                        </div>
+                    </template>
                     <%- include('partials/record-line-defaults') %>
                 </div>
                 <!-- Empty state for sidebar column (shown in design mode when all panels dragged out) -->

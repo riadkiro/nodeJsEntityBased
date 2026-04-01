@@ -19,6 +19,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         const Record = await tenantCollection(req, "Record")
         const Entity = await tenantCollection(req, "Entity")
         const UserPreferences = await tenantCollection(req, "UserPreferences")
+        const View = await tenantCollection(req, "View")
 
         const { entityId, viewId } = req.params
         const {
@@ -276,12 +277,22 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             }
         })
 
+        // Load view settings for titleDisplay fallback
+        let viewTitleDisplay = null
+        try {
+            const viewDoc = await View.findById(viewId).lean()
+            if (viewDoc?.settings?.titleDisplay) {
+                viewTitleDisplay = viewDoc.settings.titleDisplay
+            }
+        } catch (e) { /* view not found, no fallback */ }
+
         res.json({
             records,
             columns,
             preferences,
             entity, // Include entity for Kanban (statusClassification, classifications)
             filters: filterGroups,
+            viewTitleDisplay, // View-level default for titleDisplay (icon vs avatar)
             pagination: {
                 page: pageNum,
                 limit: limitNum,

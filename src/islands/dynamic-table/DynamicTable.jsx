@@ -1164,34 +1164,110 @@ export default function DynamicTable({
                                     {!catalogPicker.loading && catalogPicker.results.length === 0 && (
                                         <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>Aucun resultat</div>
                                     )}
-                                    {!catalogPicker.loading && catalogPicker.results.map(item => {
-                                        const checked = catalogPicker.selectedIds.includes(item._id)
+                                    {(() => {
+                                        // Build display columns from relation applyDefaults
+                                        const relCol = getRelationCol(schema)
+                                        const applyDefaults = relCol?.config?.applyDefaults || {}
+                                        const catalogExtraCols = []
+                                        for (const [colKey, src] of Object.entries(applyDefaults)) {
+                                            if (typeof src === 'string' && src.startsWith('cf.')) {
+                                                const fieldId = src.substring(3)
+                                                const schemaCol = (schema.columns || []).find(c => c.key === colKey)
+                                                if (schemaCol && schemaCol.type !== 'relation') {
+                                                    catalogExtraCols.push({ key: colKey, label: schemaCol.label, fieldId })
+                                                }
+                                            }
+                                        }
+                                        const hasExtraCols = catalogExtraCols.length > 0
+
                                         return (
-                                            <button
-                                                key={item._id}
-                                                type="button"
-                                                onClick={() => toggleCatalogItem(item._id)}
-                                                style={{
-                                                    width: '100%',
-                                                    textAlign: 'left',
-                                                    border: 'none',
-                                                    borderBottom: '1px solid #f9fafb',
-                                                    background: checked ? 'rgba(67,97,238,0.06)' : '#fff',
-                                                    padding: '10px 12px',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 10
-                                                }}
-                                            >
-                                                <input type="checkbox" readOnly checked={checked} />
-                                                <div style={{ minWidth: 0 }}>
-                                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{item.label || item.title}</div>
-                                                    {item.description && <div style={{ fontSize: 11, color: '#9ca3af' }}>{item.description}</div>}
-                                                </div>
-                                            </button>
+                                            <>
+                                                {/* Table header — only show if there are extra columns */}
+                                                {hasExtraCols && !catalogPicker.loading && catalogPicker.results.length > 0 && (
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 10,
+                                                        padding: '6px 12px',
+                                                        borderBottom: '1px solid #e5e7eb',
+                                                        background: '#f9fafb',
+                                                        position: 'sticky',
+                                                        top: 0,
+                                                        zIndex: 1
+                                                    }}>
+                                                        <div style={{ width: 20, flexShrink: 0 }}></div>
+                                                        <div style={{ flex: 1, minWidth: 0, fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                                                            {relCol?.label || 'Désignation'}
+                                                        </div>
+                                                        {catalogExtraCols.map(ec => (
+                                                            <div key={ec.key} style={{
+                                                                width: ec.key === 'code' ? 100 : 80,
+                                                                flexShrink: 0,
+                                                                fontSize: 10,
+                                                                fontWeight: 700,
+                                                                color: '#6b7280',
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '.05em',
+                                                                textAlign: ec.key === 'code' ? 'left' : 'right'
+                                                            }}>
+                                                                {ec.label}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Items */}
+                                                {!catalogPicker.loading && catalogPicker.results.map(item => {
+                                                    const checked = catalogPicker.selectedIds.includes(item._id)
+                                                    return (
+                                                        <button
+                                                            key={item._id}
+                                                            type="button"
+                                                            onClick={() => toggleCatalogItem(item._id)}
+                                                            style={{
+                                                                width: '100%',
+                                                                textAlign: 'left',
+                                                                border: 'none',
+                                                                borderBottom: '1px solid #f9fafb',
+                                                                background: checked ? 'rgba(67,97,238,0.06)' : '#fff',
+                                                                padding: '10px 12px',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 10
+                                                            }}
+                                                        >
+                                                            <input type="checkbox" readOnly checked={checked} style={{ flexShrink: 0 }} />
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label || item.title}</div>
+                                                                {item.description && <div style={{ fontSize: 11, color: '#9ca3af' }}>{item.description}</div>}
+                                                            </div>
+                                                            {catalogExtraCols.map(ec => {
+                                                                const val = item.customFields?.[ec.fieldId]
+                                                                const isNum = ['unitPrice', 'vatRate', 'puHt', 'prixHt'].includes(ec.key) || (typeof val === 'number')
+                                                                return (
+                                                                    <div key={ec.key} style={{
+                                                                        width: ec.key === 'code' ? 100 : 80,
+                                                                        flexShrink: 0,
+                                                                        fontSize: 12,
+                                                                        color: val ? '#374151' : '#d1d5db',
+                                                                        fontWeight: val ? 500 : 400,
+                                                                        textAlign: ec.key === 'code' ? 'left' : 'right',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                        fontVariantNumeric: isNum ? 'tabular-nums' : 'normal'
+                                                                    }}>
+                                                                        {val != null && val !== '' ? val : '—'}
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </>
                                         )
-                                    })}
+                                    })()}
                                 </div>
 
                                 <div style={{ borderTop: '1px solid #f3f4f6', padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -1165,16 +1165,29 @@ export default function DynamicTable({
                                         <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>Aucun resultat</div>
                                     )}
                                     {(() => {
-                                        // Build display columns from relation applyDefaults
+                                        // Build display columns from showOnCatalog flag on schema columns
                                         const relCol = getRelationCol(schema)
                                         const applyDefaults = relCol?.config?.applyDefaults || {}
                                         const catalogExtraCols = []
-                                        for (const [colKey, src] of Object.entries(applyDefaults)) {
-                                            if (typeof src === 'string' && src.startsWith('cf.')) {
-                                                const fieldId = src.substring(3)
-                                                const schemaCol = (schema.columns || []).find(c => c.key === colKey)
-                                                if (schemaCol && schemaCol.type !== 'relation') {
-                                                    catalogExtraCols.push({ key: colKey, label: schemaCol.label, fieldId })
+
+                                        // Primary: columns explicitly marked with showOnCatalog
+                                        const markedCols = (schema.columns || []).filter(c => c.showOnCatalog && c.type !== 'relation')
+                                        if (markedCols.length > 0) {
+                                            for (const col of markedCols) {
+                                                // Find the corresponding custom field ID from applyDefaults
+                                                const src = applyDefaults[col.key]
+                                                const fieldId = (typeof src === 'string' && src.startsWith('cf.')) ? src.substring(3) : null
+                                                catalogExtraCols.push({ key: col.key, label: col.label, fieldId })
+                                            }
+                                        } else {
+                                            // Fallback: derive from applyDefaults (backward compat)
+                                            for (const [colKey, src] of Object.entries(applyDefaults)) {
+                                                if (typeof src === 'string' && src.startsWith('cf.')) {
+                                                    const fieldId = src.substring(3)
+                                                    const schemaCol = (schema.columns || []).find(c => c.key === colKey)
+                                                    if (schemaCol && schemaCol.type !== 'relation') {
+                                                        catalogExtraCols.push({ key: colKey, label: schemaCol.label, fieldId })
+                                                    }
                                                 }
                                             }
                                         }

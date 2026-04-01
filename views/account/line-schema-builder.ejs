@@ -107,6 +107,7 @@
                                 <th style="width:60px;">Largeur</th>
                                 <th style="width:50px;">Requis</th>
                                 <th style="width:50px;">Visible</th>
+                                <th style="width:50px;" title="Afficher dans le catalogue"><iconify-icon icon="solar:shop-bold-duotone" width="13" style="color:#6b7280;"></iconify-icon></th>
                                 <th style="width:80px;"></th>
                             </tr>
                         </thead>
@@ -138,6 +139,7 @@
                                     </td>
                                     <td class="text-center"><input type="checkbox" x-model="col.required" class="form-checkbox" /></td>
                                     <td class="text-center"><input type="checkbox" x-model="col.visible" class="form-checkbox" /></td>
+                                    <td class="text-center"><input type="checkbox" x-model="col.showOnCatalog" class="form-checkbox" title="Afficher dans le catalogue" /></td>
                                     <td>
                                         <div class="lsb-row-actions" style="opacity:1;">
                                             <button class="lsb-row-btn" @click="toggleColConfig(idx)" :style="expandedCol === idx ? 'color:#4361ee' : ''" title="Config">

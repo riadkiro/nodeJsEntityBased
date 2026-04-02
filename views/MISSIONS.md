@@ -1,6 +1,4 @@
-~~![alt text](image-67.png) un petit refactor ici : garder juste catalogue et validéer, et mettre preset dans catalogue...~~ ✅ DONE
+![alt text](image-68.png)ici en cliquant sur catalogue ca doit ouvrir directement le modal, et les preset doivent etre dans le modal sous forme d'onglet, on aura 2 onglets, Traitement et preset...
 
-~~L'historique ca afiche le slug pas les vrai nom de ligne~~ ✅ DONE
-
-~~http://localhost:3000/account/7846/documents : ici afficher les modèles dabors et un onglet Documents , Modèle et l'onglet active par defaut~~ ✅ DONE
+![alt text](image-69.png) ici http://localhost:3000/account/7846/documents j'aimerais avoir la possibilité d'un listing sous forme de tableau, avec Nom du doc, relations, date créations etc etc donc deux views...
 

@@ -1,0 +1,5 @@
+ea2ea93 refactor(dynamic-table,documents): merge presets into catalogue, fix history slugs, add templates tab
+1a2caa2 feat(dynamic-table): catalogue classification grouping and context-free presets
+3f9107d feat(catalogue): add classification grouping tabs to catalogue modal picker
+1bd8f03 feat(catalog): search across all columns including numeric custom fields (code, price)
+bf625be fix(line-schema): add showOnCatalog to Mongoose ColumnSchema so it persists on save

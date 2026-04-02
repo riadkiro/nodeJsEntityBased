@@ -336,10 +336,17 @@ export default function DynamicTableModalReact({ open, onClose, config, accountN
                                     catalogEnabled={canOpenCatalog}
                                     showValidateButton={false}
                                     showSavePresetAction={true}
-                                    onApplyPreset={async (preset) => {
-                                        await fetch(`/account/${accountNumber}/api/grid-templates/${preset._id}/apply/${documentId}`, { method: 'POST', credentials: 'include' })
-                                        const lineRes = await fetch(`/account/${accountNumber}/api/document-lines/${documentId}`, { credentials: 'include' }).then(r => r.json())
-                                        setLines(normalizeRows(lineRes?.data || [], schema))
+                                    onApplyPreset={(preset) => {
+                                        if (!preset?.presetRows?.length) return
+                                        const newLines = preset.presetRows.map((row, idx) => ({
+                                            _tempId: `tmp_${Date.now()}_${idx}`,
+                                            schemaId,
+                                            lineType: row.lineType || schema?.defaultLineType || 'default',
+                                            values: { ...(row.values || {}) },
+                                            computed: computeFormulaColumns(schema, row.values || {}),
+                                            order: idx
+                                        }))
+                                        setLines(newLines)
                                     }}
                                     onDeletePreset={async (preset) => {
                                         if (!window.confirm('Supprimer ce preset ?')) return

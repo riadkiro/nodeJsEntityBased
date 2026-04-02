@@ -278,11 +278,22 @@ router.get('/:id/edit-react', async (req, res) => {
         // Support minimal mode for iframe embedding (no app layout)
         const isMinimal = req.query.minimal === 'true';
 
+        // Context-free bindings (from /generate redirect)
+        let contextFreeBindings = null;
+        if (req.query.contextFree === '1' && req.query.bindings) {
+            try {
+                contextFreeBindings = JSON.parse(req.query.bindings);
+            } catch (e) {
+                console.warn('[Documents] Failed to parse context-free bindings:', e.message);
+            }
+        }
+
         res.render('document/document-editor-react', {
             title: `Éditer - ${document.name}`,
             document,
             isNew: false,
             isMinimal: isMinimal,
+            contextFreeBindings: contextFreeBindings,
             account_number: req.account_number,
             layout: isMinimal ? false : 'layout-app'
         });
@@ -799,6 +810,409 @@ router.post('/api/upload-files', uploadDocFiles.array('files', 20), async (req, 
     } catch (error) {
         console.error('[Documents] Error uploading files:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// CONTEXT-FREE DOCUMENT GENERATION
+// ============================================
+
+/**
+ * GET /:id/generate
+ * Context-free generation: opens the document template directly in the editor.
+ * - System tokens ({{today}}, {{user.name}}) are resolved immediately
+ * - Relational tokens ({{consultations.patients.nom}}) become interactive
+ *   placeholders the user can click to bind data
+ * - No wizard: the document opens directly like Word
+ */
+router.get('/:id/generate', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        const Entity = await tenantCollection(req, 'Entity');
+        const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+
+        const doc = await Document.findById(req.params.id).lean();
+        if (!doc || !doc.isTemplate) {
+            return res.status(404).send('Template non trouvé');
+        }
+
+        // Get linked entities with relations populated
+        const entityIds = [...(doc.entityIds || [])];
+        if (doc.entityId && !entityIds.map(String).includes(doc.entityId.toString())) {
+            entityIds.push(doc.entityId);
+        }
+
+        let entities = [];
+        if (entityIds.length > 0) {
+            entities = await Entity.find({ _id: { $in: entityIds } })
+                .populate({
+                    path: 'relations.targetEntity',
+                    select: 'name icon slug color'
+                })
+                .lean();
+        }
+
+        // Build system-only context (no record needed)
+        const systemContext = {
+            today: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }),
+            currentYear: new Date().getFullYear().toString(),
+            currentMonth: new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+            currentTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            user: {
+                name: req.user ? (req.user.name || req.user.fullName || req.user.email || '') : '',
+                email: req.user ? (req.user.email || '') : ''
+            }
+        };
+
+        // Analyze tokens in the template to find which ones need bindings
+        const allContent = JSON.stringify(doc.pages || []);
+        const tokenRegex = /\{\{([^}]+)\}\}/g;
+        const allTokens = new Set();
+        let match;
+        while ((match = tokenRegex.exec(allContent)) !== null) {
+            allTokens.add(match[1]);
+        }
+
+        // Classify tokens: system vs relational
+        const systemTokenKeys = ['today', 'currentYear', 'currentMonth', 'currentTime', 'user.name', 'user.email'];
+        const unresolvedBindings = [];
+        const bindingEntities = new Map(); // entitySlug -> entityInfo
+
+        for (const token of allTokens) {
+            const isSystem = systemTokenKeys.some(sk => token === sk || token.startsWith('user.'));
+            if (!isSystem) {
+                // This is a relational token like "consultations.patients.nom"
+                // Parse: primaryEntity.relatedEntity.field
+                const parts = token.split('.');
+                if (parts.length >= 2) {
+                    const primarySlug = parts[0];
+                    const relatedSlug = parts.length >= 3 ? parts[1] : null;
+
+                    // Find the entity needing binding
+                    const primaryEntity = entities.find(e => e.slug === primarySlug);
+                    if (primaryEntity && relatedSlug) {
+                        const relation = (primaryEntity.relations || []).find(r => {
+                            const target = r.targetEntity;
+                            return target && (target.slug === relatedSlug || target.name?.toLowerCase() === relatedSlug);
+                        });
+                        if (relation && relation.targetEntity) {
+                            const target = relation.targetEntity;
+                            const key = target.slug || target._id?.toString();
+                            if (!bindingEntities.has(key)) {
+                                bindingEntities.set(key, {
+                                    entityId: target._id?.toString() || target.toString(),
+                                    entityName: target.name || relatedSlug,
+                                    entityIcon: target.icon || 'solar:user-bold-duotone',
+                                    entitySlug: target.slug || relatedSlug,
+                                    entityColor: target.color || '#4f46e5',
+                                    relationKey: relation.key,
+                                    relationLabel: relation.label,
+                                    primaryEntityId: primaryEntity._id?.toString(),
+                                    primaryEntitySlug: primaryEntity.slug,
+                                    primaryEntityName: primaryEntity.name,
+                                    tokens: []
+                                });
+                            }
+                            bindingEntities.get(key).tokens.push(token);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Resolve system tokens in content
+        const resolveSystemTokens = (str) => {
+            if (!str) return str;
+            return str.replace(/\{\{([^}]+)\}\}/g, (fullMatch, key) => {
+                const trimmed = key.trim();
+                // System tokens
+                if (trimmed === 'today') return systemContext.today;
+                if (trimmed === 'currentYear') return systemContext.currentYear;
+                if (trimmed === 'currentMonth') return systemContext.currentMonth;
+                if (trimmed === 'currentTime') return systemContext.currentTime;
+                if (trimmed === 'user.name') return systemContext.user.name;
+                if (trimmed === 'user.email') return systemContext.user.email;
+
+                // Relational token → convert to interactive placeholder
+                const parts = trimmed.split('.');
+                const fieldName = parts[parts.length - 1];
+                // Find which entity this token belongs to
+                let entityLabel = '';
+                for (const [slug, info] of bindingEntities) {
+                    if (info.tokens.includes(trimmed)) {
+                        entityLabel = info.entityName;
+                        break;
+                    }
+                }
+
+                // Return a styled inline placeholder
+                return `<span class="binding-placeholder" data-token="${trimmed}" contenteditable="false" style="display:inline-block;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;padding:2px 10px;border-radius:6px;font-size:0.85em;font-weight:500;border:1px dashed #f59e0b;cursor:pointer;user-select:none;vertical-align:baseline;white-space:nowrap;"><span style="opacity:0.6;font-size:0.9em;">⚡</span> ${fieldName}</span>`;
+            });
+        };
+
+        // Create draft pages with system tokens resolved
+        const draftPages = (doc.pages || []).map(page => {
+            const resolved = { ...page };
+            if (resolved.content) {
+                resolved.content = resolveSystemTokens(resolved.content);
+            }
+            return resolved;
+        });
+
+        // Create the draft document
+        const draftDoc = new Document({
+            name: `${doc.name} - ${systemContext.today}`,
+            pages: draftPages,
+            headerHtml: resolveSystemTokens(doc.headerHtml || ''),
+            footerHtml: resolveSystemTokens(doc.footerHtml || ''),
+            format: doc.format || 'A4',
+            orientation: doc.orientation || 'portrait',
+            dimensions: doc.dimensions,
+            margins: doc.margins,
+            isTemplate: false,
+            isDraft: true,
+            draftSourceTemplateId: doc._id,
+            status: 'draft',
+            // Store unresolved bindings metadata for the editor
+            _contextFreeBindings: Array.from(bindingEntities.values()),
+            createdBy: req.user?._id,
+            createdAt: new Date()
+        });
+
+        await draftDoc.save();
+
+        console.log(`[Documents] Context-free draft created: ${draftDoc._id} from template "${doc.name}" with ${bindingEntities.size} unresolved binding(s)`);
+
+        // Redirect to the editor with context-free flag
+        res.redirect(`/account/${req.account_number}/documents/${draftDoc._id}/edit-react?contextFree=1&templateId=${doc._id}&bindings=${encodeURIComponent(JSON.stringify(Array.from(bindingEntities.values())))}`);
+
+    } catch (error) {
+        console.error('[Documents] Error generating context-free document:', error);
+        res.status(500).send('Erreur lors de la génération');
+    }
+});
+
+/**
+ * GET /api/:documentId/search-records
+ * Search records of a given entity for the autocomplete picker.
+ */
+router.get('/api/:documentId/search-records', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const Entity = await tenantCollection(req, 'Entity');
+
+        const { entityId, q = '', limit: limitStr = '10' } = req.query;
+        const limitNum = Math.min(parseInt(limitStr) || 10, 50);
+
+        if (!entityId) {
+            return res.status(400).json({ error: 'entityId required' });
+        }
+
+        const entity = await Entity.findById(entityId).select('name icon slug').lean();
+        if (!entity) return res.status(404).json({ error: 'Entity not found' });
+
+        let query = { entityId };
+        if (q && q.trim()) {
+            query = {
+                $and: [
+                    { entityId },
+                    {
+                        $or: [
+                            { title: { $regex: q, $options: 'i' } },
+                            { computedTitle: { $regex: q, $options: 'i' } },
+                            { 'customFields.value': { $regex: q, $options: 'i' } }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        const records = await Record.find(query)
+            .select('_id title computedTitle image createdAt')
+            .sort({ updatedAt: -1 })
+            .limit(limitNum)
+            .lean();
+
+        res.json({
+            success: true,
+            entity: { _id: entity._id, name: entity.name, icon: entity.icon, slug: entity.slug },
+            records: records.map(r => ({
+                _id: r._id,
+                title: r.computedTitle || r.title || 'Sans titre',
+                image: r.image,
+                createdAt: r.createdAt
+            }))
+        });
+    } catch (error) {
+        console.error('[Documents] Error searching records:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/:documentId/resolve-bindings
+ * Resolve binding placeholders in a context-free document.
+ * Called when the user picks a record (e.g. Patient) from the inline picker.
+ * Replaces all matching {{...}} placeholder spans with actual data.
+ * 
+ * Body:
+ *   - bindingEntitySlug: slug of the entity being bound (e.g. "patients")
+ *   - recordId: the selected record ID 
+ *   - primaryEntitySlug: slug of the template's primary entity (e.g. "consultations")
+ */
+router.post('/api/:documentId/resolve-bindings', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, 'Entity');
+        const Record = await tenantCollection(req, 'Record');
+        const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+        const mongoose = require('mongoose');
+
+        const { bindingEntitySlug, recordId, primaryEntitySlug } = req.body;
+        if (!bindingEntitySlug || !recordId) {
+            return res.status(400).json({ error: 'bindingEntitySlug and recordId required' });
+        }
+
+        // Load the record 
+        const record = await Record.findById(recordId).lean();
+        if (!record) return res.status(404).json({ error: 'Record not found' });
+
+        // Load entity WITH populated customFields (FieldTemplate refs)
+        const entity = await Entity.findById(record.entityId)
+            .populate('customFields')
+            .lean();
+        if (!entity) return res.status(404).json({ error: 'Entity not found' });
+
+        // If populate didn't resolve (multi-tenant), load FieldTemplates manually
+        let fieldDefs = entity.customFields || [];
+        const needsManualLoad = fieldDefs.length > 0 && typeof fieldDefs[0] !== 'object';
+        if (needsManualLoad) {
+            fieldDefs = await FieldTemplate.find({ 
+                _id: { $in: entity.customFields } 
+            }).lean();
+        }
+
+        // Build field values map using the SAME logic as extractCustomFields
+        const fieldValues = {};
+
+        // Standard record fields
+        fieldValues.titre = record.computedTitle || record.title || '';
+        fieldValues.title = fieldValues.titre;
+        fieldValues.description = record.description || '';
+        fieldValues.date = record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '';
+
+        // Custom fields (match by FieldTemplate name — same pattern as SmartDoc)
+        if (record.customFields && Array.isArray(record.customFields)) {
+            for (const cf of record.customFields) {
+                if (!cf.field_id) continue;
+                const fieldId = cf.field_id.toString();
+                const fieldDef = fieldDefs.find(fd => 
+                    fd._id && fd._id.toString() === fieldId
+                );
+                const value = cf.value !== undefined && cf.value !== null ? cf.value : '';
+
+                // Format dates
+                let formattedValue = value;
+                if (fieldDef && fieldDef.type === 'date' && value) {
+                    try {
+                        formattedValue = new Date(value).toLocaleDateString('fr-FR');
+                    } catch (e) {
+                        formattedValue = String(value);
+                    }
+                } else {
+                    formattedValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                }
+
+                if (fieldDef) {
+                    // Key by name (token pattern: {{entity.relEntity.fieldName}})
+                    const fieldName = fieldDef.name || fieldDef.label;
+                    if (fieldName) fieldValues[fieldName] = formattedValue;
+                    // Also by lowercased label for flexibility
+                    if (fieldDef.label) {
+                        fieldValues[fieldDef.label.toLowerCase()] = formattedValue;
+                    }
+                }
+            }
+        }
+
+        // Build the token prefix to match (e.g. "consultations.patients.")
+        const tokenPrefix = primaryEntitySlug
+            ? `${primaryEntitySlug}.${bindingEntitySlug}.`
+            : `${bindingEntitySlug}.`;
+
+        // Build replacement map: token -> resolved value
+        const replacements = {};
+        for (const [fieldKey, fieldValue] of Object.entries(fieldValues)) {
+            replacements[`${tokenPrefix}${fieldKey}`] = fieldValue;
+            // Also add without primary entity prefix
+            replacements[`${bindingEntitySlug}.${fieldKey}`] = fieldValue;
+        }
+
+        console.log('[Documents] Resolved bindings:', Object.keys(replacements).join(', '));
+
+        // ─── Auto-discover primary entity record (e.g. latest Consultation for this Patient) ───
+        let contextRecord = null;
+        if (primaryEntitySlug && primaryEntitySlug !== bindingEntitySlug) {
+            try {
+                const primaryEntity = await Entity.findOne({ slug: primaryEntitySlug })
+                    .populate({ path: 'relations.targetEntity', select: 'name slug' })
+                    .lean();
+
+                if (primaryEntity) {
+                    // Find the relation key from primary → bound entity
+                    const relation = (primaryEntity.relations || []).find(r => {
+                        const target = r.targetEntity;
+                        return target && (target.slug === bindingEntitySlug || target.slug === entity.slug);
+                    });
+
+                    if (relation) {
+                        // Find the latest primary entity record where relation points to our record
+                        const latestPrimary = await Record.findOne({
+                            entityId: primaryEntity._id,
+                            'relations': {
+                                $elemMatch: {
+                                    relationKey: relation.key,
+                                    $or: [
+                                        { value: new mongoose.Types.ObjectId(recordId) },
+                                        { value: recordId },
+                                        { value: { $in: [new mongoose.Types.ObjectId(recordId), recordId] } }
+                                    ]
+                                }
+                            }
+                        })
+                            .sort({ createdAt: -1 })
+                            .select('_id title computedTitle createdAt')
+                            .lean();
+
+                        if (latestPrimary) {
+                            contextRecord = {
+                                _id: latestPrimary._id.toString(),
+                                title: latestPrimary.computedTitle || latestPrimary.title || 'Sans titre',
+                                entityId: primaryEntity._id.toString(),
+                                entitySlug: primaryEntity.slug,
+                                entityName: primaryEntity.name
+                            };
+                            console.log(`[Documents] Auto-discovered ${primaryEntity.name}: "${contextRecord.title}" for binding`);
+                        }
+                    }
+                }
+            } catch (ctxErr) {
+                console.warn('[Documents] Context auto-discovery failed:', ctxErr.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            replacements,
+            record: {
+                _id: record._id,
+                title: record.computedTitle || record.title || 'Sans titre'
+            },
+            contextRecord // latest consultation (or null)
+        });
+
+    } catch (error) {
+        console.error('[Documents] Error resolving bindings:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 

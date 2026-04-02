@@ -1,23 +1,33 @@
 const mongoose = require('mongoose');
-async function run() {
-    const admin = mongoose.createConnection('mongodb://127.0.0.1:27017/admin');
-    await new Promise(r => admin.once('open', r));
-    const adminDb = admin.db.admin();
-    const dbs = await adminDb.listDatabases();
-    const tenantDbs = dbs.databases.filter(d => d.name.includes('9194') || d.name.includes('saas'));
-    await admin.close();
 
-    for (const db of tenantDbs) {
-        const conn = mongoose.createConnection(`mongodb://127.0.0.1:27017/${db.name}`);
-        await new Promise(r => conn.once('open', r));
-        const count = await conn.db.collection('gridschematemplates').countDocuments().catch(() => 0);
-        if (count > 0) {
-            console.log(`DB: ${db.name} => ${count} template(s)`);
-            const docs = await conn.db.collection('gridschematemplates').find({}).toArray();
-            docs.forEach(t => console.log(`  name="${t.name}" scope="${t.scope}" rows=${(t.presetRows||[]).length}`));
-        }
-        await conn.close();
+async function checkPresets() {
+    const conn = mongoose.createConnection('mongodb://127.0.0.1:27017/saas_app_rb_5001');
+    await new Promise(r => conn.once('open', r));
+
+    // Check GridSchemaTemplate collection
+    const templates = await conn.db.collection('gridschematemplate').find({}).toArray();
+    console.log(`Total GridSchemaTemplates: ${templates.length}`);
+
+    if (templates.length === 0) {
+        // Try plural
+        const templates2 = await conn.db.collection('gridschematemplates').find({}).toArray();
+        console.log(`Total GridSchemaTemplates (plural collection): ${templates2.length}`);
+        templates2.forEach(t => {
+            console.log(`  - ${t.name} | scope: ${t.scope} | schemaId: ${t.schemaId} | recordId: ${t.recordId || 'GLOBAL'}`);
+        });
+    } else {
+        templates.forEach(t => {
+            console.log(`  - ${t.name} | scope: ${t.scope} | schemaId: ${t.schemaId} | recordId: ${t.recordId || 'GLOBAL'}`);
+        });
     }
-    process.exit(0);
+
+    // List all collections to find the right one
+    const colls = await conn.db.listCollections().toArray();
+    const gridColls = colls.filter(c => c.name.toLowerCase().includes('grid') || c.name.toLowerCase().includes('template'));
+    console.log('\nGrid/Template related collections:');
+    gridColls.forEach(c => console.log(`  - ${c.name}`));
+
+    await conn.close();
 }
-run().catch(e => { console.error(e); process.exit(1); });
+
+checkPresets().catch(console.error);

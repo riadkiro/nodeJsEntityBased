@@ -750,14 +750,14 @@ async function install(conn, userId, presetSlug) {
     }
     console.log(`   ✅ ${spaceViewDefs.length} spaces + ${viewCount} views (no redundant folders)`);
 
-    // =========== 5b. LINE SCHEMAS (Prescription + Facture) ===========
+    // =========== 5b. LINE SCHEMAS ===========
     console.log('\n📋 Creating line schemas...');
 
-    // Prescription Traitement schema
-    const prescriptionLineSchema = await upsertDoc(db.LineSchema, { slug: 'prescription_v1', 'meta.createdByPreset': PRESET }, {
-        name: 'Ordonnance Traitement', slug: 'prescription_v1',
-        description: 'Lignes de traitement pour ordonnances médicales',
-        appliesTo: { entityIds: [E['prescriptions']], documentType: 'prescription' },
+    // Single shared Traitement schema — used by consultations, prescriptions, patients, and documents
+    const traitementSchema = await upsertDoc(db.LineSchema, { slug: 'traitement', 'meta.createdByPreset': PRESET }, {
+        name: 'Traitement', slug: 'traitement',
+        description: 'Lignes de traitement (partagé entre ordonnances, consultations et suivi patient)',
+        appliesTo: { entityIds: [E['prescriptions'], E['consultations'], E['patients']], documentType: 'treatment' },
         sourceEntityId: E['traitements'],
         lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
         columns: [
@@ -814,25 +814,7 @@ async function install(conn, userId, presetSlug) {
             targetEntityId: E['patients']
         }
     });
-    console.log(`   ✅ LineSchema: Ordonnance Traitement (${prescriptionLineSchema._id})`);
-
-    // Consultation treatment schema (same columns, patient-oriented history)
-    const consultationTreatmentSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_treatment_v1', 'meta.createdByPreset': PRESET }, {
-        name: 'Traitements Consultation', slug: 'consultation_treatment_v1',
-        description: 'Traitements prescrits pendant une consultation',
-        appliesTo: { entityIds: [E['consultations']], documentType: 'consultation' },
-        sourceEntityId: E['traitements'],
-        lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
-        columns: JSON.parse(JSON.stringify(prescriptionLineSchema.columns || [])),
-        totals: {},
-        snapshotConfig: {
-            enabled: true,
-            targetType: 'relation',
-            targetRelationKey: rk['consultations__patients'],
-            targetEntityId: E['patients']
-        }
-    });
-    console.log(`   ✅ LineSchema: Traitements Consultation (${consultationTreatmentSchema._id})`);
+    console.log(`   ✅ LineSchema: Traitement (${traitementSchema._id})`);
 
     // Consultation Prestations schema (catalog + auto pricing)
     const consultationPrestationSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_billing_v1', 'meta.createdByPreset': PRESET }, {
@@ -916,18 +898,7 @@ async function install(conn, userId, presetSlug) {
     });
     console.log(`   ✅ LineSchema: Examens Consultation (${consultationExamSchema._id})`);
 
-    // Patient follow-up tables (same UX as treatments)
-    const patientTreatmentSchema = await upsertDoc(db.LineSchema, { slug: 'patient_treatment_followup_v1', 'meta.createdByPreset': PRESET }, {
-        name: 'Traitements Patient', slug: 'patient_treatment_followup_v1',
-        description: 'Suivi longitudinal des traitements du patient',
-        appliesTo: { entityIds: [E['patients']], documentType: 'medical-followup' },
-        sourceEntityId: E['traitements'],
-        lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
-        columns: JSON.parse(JSON.stringify(prescriptionLineSchema.columns || [])),
-        totals: {},
-        snapshotConfig: { enabled: true, targetType: 'record' }
-    });
-    console.log(`   ✅ LineSchema: Traitements Patient (${patientTreatmentSchema._id})`);
+    // (Patient treatment follow-up now uses the shared 'traitement' schema above)
 
     const patientExamSchema = await upsertDoc(db.LineSchema, { slug: 'patient_exam_followup_v1', 'meta.createdByPreset': PRESET }, {
         name: 'Examens Patient', slug: 'patient_exam_followup_v1',
@@ -984,23 +955,22 @@ async function install(conn, userId, presetSlug) {
     });
     console.log(`   ✅ LineSchema: Facture Standard (${invoiceLineSchema._id})`);
 
-    // Attach schemas to entities via gridSchemas
+    // Attach schemas to entities via gridSchemas — shared traitement schema everywhere
     await db.Entity.findByIdAndUpdate(E['consultations'], {
         $set: {
             enableDynamicTable: true,
             gridSchemas: [
-                { schemaId: consultationTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements' },
+                { schemaId: traitementSchema._id, position: 'main', order: 0, label: 'Traitements' },
                 { schemaId: consultationPrestationSchema._id, position: 'main', order: 1, label: 'Prestations' },
                 { schemaId: consultationExamSchema._id, position: 'main', order: 2, label: 'Examens' }
             ],
-            // Only keep Observations note in sidebar — gridSchemas render the main TD with tabs below fields
             sidebarWidgets: [
                 { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } }
             ]
         }
     });
     await db.Entity.findByIdAndUpdate(E['prescriptions'], {
-        $set: { gridSchemas: [{ schemaId: prescriptionLineSchema._id, position: 'main', order: 0, label: 'Traitements' }] }
+        $set: { gridSchemas: [{ schemaId: traitementSchema._id, position: 'main', order: 0, label: 'Traitements' }] }
     });
     await db.Entity.findByIdAndUpdate(E['factures'], {
         $set: { gridSchemas: [{ schemaId: invoiceLineSchema._id, position: 'main', order: 0, label: 'Lignes de facturation' }] }
@@ -1008,7 +978,7 @@ async function install(conn, userId, presetSlug) {
     await db.Entity.findByIdAndUpdate(E['patients'], {
         $set: {
             gridSchemas: [
-                { schemaId: patientTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements patient' },
+                { schemaId: traitementSchema._id, position: 'main', order: 0, label: 'Traitements' },
                 { schemaId: patientExamSchema._id, position: 'main', order: 1, label: 'Examens patient' }
             ]
         }
@@ -1037,14 +1007,11 @@ async function createDemoRecords(db, ids, userId) {
     const uid = new mongoose.Types.ObjectId(userId);
     const cls = ids.classifications;
     const rk = ids.relationKeys; // relation UUID keys
-    const prescriptionLineSchema = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET }).lean();
-    const consultationTreatmentSchema = await db.LineSchema.findOne({ slug: 'consultation_treatment_v1', 'meta.createdByPreset': PRESET }).lean();
-    const patientTreatmentSchema = await db.LineSchema.findOne({ slug: 'patient_treatment_followup_v1', 'meta.createdByPreset': PRESET }).lean();
+    const traitementSchema = await db.LineSchema.findOne({ slug: 'traitement', 'meta.createdByPreset': PRESET }).lean();
     const consultationPrestationSchema = await db.LineSchema.findOne({ slug: 'consultation_billing_v1', 'meta.createdByPreset': PRESET }).lean();
     const consultationExamSchema = await db.LineSchema.findOne({ slug: 'consultation_exams_v1', 'meta.createdByPreset': PRESET }).lean();
     const patientExamSchema = await db.LineSchema.findOne({ slug: 'patient_exam_followup_v1', 'meta.createdByPreset': PRESET }).lean();
     const invoiceSchema = await db.LineSchema.findOne({ slug: 'invoice_v1', 'meta.createdByPreset': PRESET }).lean();
-    const treatmentSchemaIds = [prescriptionLineSchema?._id, consultationTreatmentSchema?._id, patientTreatmentSchema?._id].filter(Boolean);
 
     // Helper
     const rec = async (entitySlug, title, customs = {}, extras = {}) => {
@@ -1237,10 +1204,10 @@ async function createDemoRecords(db, ids, userId) {
             baseDefaults.instructions = 'Planifier les séances avec le patient';
         }
 
-        const lineDefaults = treatmentSchemaIds.map(schemaId => ({
-            schemaId,
+        const lineDefaults = [{
+            schemaId: traitementSchema?._id,
             defaults: baseDefaults
-        }));
+        }].filter(d => d.schemaId);
 
         const doc = await rec('traitements', traitementNames[i], {}, {
             relations: [{ relationKey: rk['traitements__patients'], value: p._id }],
@@ -1490,10 +1457,9 @@ async function createDemoRecords(db, ids, userId) {
     const DocumentLine = db.DocumentLine;
     const GridSnapshot = db.GridSnapshot;
     const schemasToClear = [
-        consultationTreatmentSchema?._id,
+        traitementSchema?._id,
         consultationPrestationSchema?._id,
         consultationExamSchema?._id,
-        patientTreatmentSchema?._id,
         patientExamSchema?._id,
         invoiceSchema?._id
     ].filter(Boolean);
@@ -1509,12 +1475,12 @@ async function createDemoRecords(db, ids, userId) {
         const patientId = pRel?.value;
         if (!patientId) continue;
 
-        if (consultationTreatmentSchema?._id) {
+        if (traitementSchema?._id) {
             const t1 = traitements[i % traitements.length];
             const t2 = traitements[(i + 3) % traitements.length];
             const tLines = [t1, t2].map((t, idx) => ({
                 documentId: c._id,
-                schemaId: consultationTreatmentSchema._id,
+                schemaId: traitementSchema._id,
                 lineType: 'treatment',
                 order: idx,
                 values: {
@@ -1533,7 +1499,7 @@ async function createDemoRecords(db, ids, userId) {
             // snapshot history (2 per consultation -> patient timeline)
             for (let s = 0; s < 2; s++) {
                 await GridSnapshot.create({
-                    schemaId: consultationTreatmentSchema._id,
+                    schemaId: traitementSchema._id,
                     recordId: c._id,
                     targetRecordId: patientId,
                     targetEntityId: E['patients'],
@@ -1626,11 +1592,11 @@ async function createDemoRecords(db, ids, userId) {
     // patient tables follow-up
     for (let i = 0; i < patients.length; i++) {
         const p = patients[i];
-        if (patientTreatmentSchema?._id) {
+        if (traitementSchema?._id) {
             const t = traitements[i % traitements.length];
             lineDocs.push({
                 documentId: p._id,
-                schemaId: patientTreatmentSchema._id,
+                schemaId: traitementSchema._id,
                 lineType: 'treatment',
                 order: 0,
                 values: {
@@ -1704,9 +1670,9 @@ async function createDocumentTemplates(db, ids, userId) {
     const uid = new mongoose.Types.ObjectId(userId);
     const E = ids.entities;
 
-    // Get the prescription LineSchema ID for dynamic tables
-    const prescriptionSchemaDoc = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET });
-    const prescriptionSchemaId = prescriptionSchemaDoc ? prescriptionSchemaDoc._id.toString() : '';
+    // Get the Traitement LineSchema ID for dynamic tables
+    const traitementSchemaDoc = await db.LineSchema.findOne({ slug: 'traitement', 'meta.createdByPreset': PRESET });
+    const traitementSchemaId = traitementSchemaDoc ? traitementSchemaDoc._id.toString() : '';
     const invoiceSchemaDoc = await db.LineSchema.findOne({ slug: 'invoice_v1', 'meta.createdByPreset': PRESET });
     const invoiceSchemaId = invoiceSchemaDoc ? invoiceSchemaDoc._id.toString() : '';
 
@@ -1738,7 +1704,7 @@ async function createDocumentTemplates(db, ids, userId) {
     <p style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;">Motif de consultation</p>
     <p style="margin:0;font-size:13px;color:#374151;">{{consultations.motif}}</p>
   </div>
-  <div class="dynamic-table" data-table='{"schemaId":"${prescriptionSchemaId}","style":"professional","title":"Prescription","showTotals":false}'>
+  <div class="dynamic-table" data-table='{"schemaId":"${traitementSchemaId}","style":"professional","title":"Prescription","showTotals":false}'>
     <p style="color:#999;font-style:italic;">Chargement des traitements...</p>
   </div>
   <div style="margin-top:48px;text-align:right;">

@@ -1,0 +1,53 @@
+=== DOCUMENT ===
+Name: Ordonnance
+isTemplate: true
+entityId: 69cda85e738ff763a6480237
+entityIds: ["69cda85e738ff763a6480237"]
+Collections: []
+
+=== LINKED ENTITIES ===
+- Consultation (consultations) [69cda85e738ff763a6480237]
+
+=== RELATIONS OF Consultation ===
+  Patient -> Patient (key: 3cd7b9be-1782-4aa9-86b6-4c24f19b8a38, cardinality: many-to-one)
+  Rendez-vous -> Rendez-vous (key: 4cfc035e-83dc-495f-a88f-0501e594b60b, cardinality: one-to-one)
+  Symptômes -> Symptôme (key: 88ae30d0-68a9-4641-af48-60cc6770a0c5, cardinality: many-to-many)
+
+=== SMART DOC TEMPLATES ===
+- Ordonnance [entity: 69cda85e738ff763a6480237] [scope: undefined] [active: true]
+
+=== ALL ENTITIES ===
+- Patient (patients) [69cda85e738ff763a6480235]
+- Rendez-vous (rendez-vous) [69cda85e738ff763a6480236]
+    Patient -> Patient (key: 788c5a68-52f8-473a-8824-874e9f21e7a7, cardinality: many-to-one)
+- Consultation (consultations) [69cda85e738ff763a6480237]
+    Patient -> Patient (key: 3cd7b9be-1782-4aa9-86b6-4c24f19b8a38, cardinality: many-to-one)
+    Rendez-vous -> Rendez-vous (key: 4cfc035e-83dc-495f-a88f-0501e594b60b, cardinality: one-to-one)
+    Symptômes -> Symptôme (key: 88ae30d0-68a9-4641-af48-60cc6770a0c5, cardinality: many-to-many)
+- Prescription (prescriptions) [69cda85e738ff763a6480238]
+    Patient -> Patient (key: 6720e69e-8830-4c32-9622-1328b873ed5e, cardinality: many-to-one)
+    Consultation -> Consultation (key: 13f62fec-af01-405d-a9fd-d7c6057a6d07, cardinality: many-to-one)
+    Médicament -> Médicament (key: 170e2d54-fa95-4cd3-a050-95fddbca5a10, cardinality: one-to-many)
+- Médicament (medicaments) [69cda85e738ff763a6480239]
+- Prestation (prestations) [69cda85e738ff763a648023a]
+- Examen (examens) [69cda85e738ff763a648023b]
+- Facture (factures) [69cda85e738ff763a648023c]
+    Consultation -> Consultation (key: c8007d69-aeec-400f-bc98-3fdcd9f7010a, cardinality: one-to-one)
+    Patient -> Patient (key: a37bd887-74b6-4a7d-8053-f7a97438bb2c, cardinality: many-to-one)
+- Paiement (paiements) [69cda85e738ff763a648023d]
+    Facture -> Facture (key: 864709ae-3216-4c3d-b292-d89d34837542, cardinality: many-to-one)
+- Assurance (assurances) [69cda85e738ff763a648023e]
+- Résultat Labo (resultats-labo) [69cda85e738ff763a648023f]
+    Patient -> Patient (key: b8b41ea6-52d2-4749-ad99-b3ec2dc0e8ac, cardinality: many-to-one)
+- Document Médical (documents-medicaux) [69cda85e738ff763a6480240]
+    Patient -> Patient (key: 48f50fea-4097-4bee-b7d0-b2b72d0505c0, cardinality: many-to-one)
+- Plan de Traitement (plans-traitement) [69cda85e738ff763a6480241]
+    Patient -> Patient (key: ac9b3328-006f-42bb-9b45-c7799dba94d9, cardinality: many-to-one)
+- Personnel (personnel) [69cda85e738ff763a6480242]
+- Stock (stock) [69cda85e738ff763a6480243]
+- Symptôme (symptomes) [69cda85e738ff763a6480244]
+- Pathologie (pathologies) [69cda85e738ff763a6480245]
+    Patient -> Patient (key: b878462a-68a2-40f5-8f6b-2a88b53245f0, cardinality: many-to-one)
+- Traitement (traitements) [69cda85e738ff763a6480246]
+    Patient -> Patient (key: d47b030d-99e2-4c76-807b-1443941b9089, cardinality: many-to-one)
+- Actes (actes) [69cda860f38aa20918b5f352]

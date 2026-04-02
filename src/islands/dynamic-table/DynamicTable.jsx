@@ -131,6 +131,70 @@ function parseLinkedRecordsFromDom() {
         console.warn('[DynamicTable] relation parse from DOM failed:', e)
     }
 
+    /* ── Source 3: Alpine relationField components in the form ── */
+    try {
+        if (typeof window !== 'undefined' && window.Alpine) {
+            // Build a map of relation keys → metadata from entity-relations JSON
+            const relMetaMap = {}
+            const entityRelJsonEl = document.getElementById('entity-relations')
+            if (entityRelJsonEl) {
+                const entityRelDefs = JSON.parse(entityRelJsonEl.textContent || '[]')
+                for (const def of entityRelDefs) {
+                    if (def.type === 'relation' && def.relationKey) {
+                        relMetaMap[def.relationKey] = {
+                            label: def.label || def.name || 'Relation',
+                            icon: def.ui?.icon || 'solar:link-round-bold-duotone',
+                            color: def.ui?.color || '#4361ee'
+                        }
+                    }
+                }
+            }
+            // Also pull from linesPanel-relations entityRelations if available
+            const linesPanelEl = document.getElementById('linesPanel-relations')
+            if (linesPanelEl) {
+                const lpData = JSON.parse(linesPanelEl.textContent || '{}')
+                for (const eRel of (lpData.entityRelations || [])) {
+                    if (eRel.key && !relMetaMap[eRel.key]) {
+                        relMetaMap[eRel.key] = {
+                            label: eRel.label || 'Relation',
+                            icon: eRel.targetEntity?.icon || eRel.icon || 'solar:link-bold-duotone',
+                            color: eRel.targetEntity?.color || eRel.color || '#4361ee'
+                        }
+                    }
+                }
+            }
+
+            // Scan all Alpine relationField components
+            document.querySelectorAll('.tp-wrapper[x-data]').forEach(el => {
+                try {
+                    const alpineData = window.Alpine.$data(el)
+                    if (!alpineData || !alpineData.fieldId || !alpineData.isEntityRelation) return
+                    const items = alpineData.selectedItems || []
+                    if (items.length === 0) return
+
+                    const relationKey = alpineData.persistKey || alpineData.fieldId
+                    const meta = relMetaMap[relationKey] || relMetaMap[alpineData.fieldId] || {}
+
+                    for (const item of items) {
+                        const recordId = String(item.id || item._id || '')
+                        if (!recordId) continue
+                        linked.push({
+                            relationKey,
+                            relationLabel: meta.label || 'Relation',
+                            recordId,
+                            recordTitle: item.label || item.title || 'Sans titre',
+                            entitySlug: '',
+                            relationIcon: meta.icon || 'solar:link-bold-duotone',
+                            relationColor: meta.color || '#4361ee'
+                        })
+                    }
+                } catch (_) { /* skip element */ }
+            })
+        }
+    } catch (e) {
+        console.warn('[DynamicTable] relation parse from Alpine fields failed:', e)
+    }
+
     const deduped = []
     const seen = new Set()
     for (const row of linked) {
@@ -389,8 +453,18 @@ export default function DynamicTable({
 
     useEffect(() => {
         refreshLinkedRecords()
-        const timer = setTimeout(refreshLinkedRecords, 550)
-        return () => clearTimeout(timer)
+        const timer1 = setTimeout(refreshLinkedRecords, 550)
+        // Alpine relation fields load selectedItems asynchronously via fetch;
+        // retry after they have likely resolved
+        const timer2 = setTimeout(refreshLinkedRecords, 2000)
+        // Also listen for the Alpine relation-field-sync event
+        const onRelationSync = () => { setTimeout(refreshLinkedRecords, 100) }
+        window.addEventListener('relation-field-sync', onRelationSync)
+        return () => {
+            clearTimeout(timer1)
+            clearTimeout(timer2)
+            window.removeEventListener('relation-field-sync', onRelationSync)
+        }
     }, [recordId, refreshLinkedRecords])
 
     const loadTemplates = useCallback(async () => {

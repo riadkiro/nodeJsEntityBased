@@ -319,6 +319,17 @@ export default function EditorHeader({
                     <span>{doc.isTemplate ? 'Template ✓' : 'Template'}</span>
                 </button>
 
+                {/* Generate Button - only for templates */}
+                {doc.isTemplate && doc._id && (
+                    <a
+                        href={`/account/${accountNumber}/documents/${doc._id}/generate`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700 ml-1.5"
+                    >
+                        <iconify-icon icon="solar:play-bold-duotone" width="15"></iconify-icon>
+                        <span>Générer</span>
+                    </a>
+                )}
+
                 {/* PDF Button */}
                 <button
                     onClick={handlePdfExport}

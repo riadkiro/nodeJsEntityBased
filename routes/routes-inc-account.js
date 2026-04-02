@@ -158,10 +158,10 @@ const mongoose = require('mongoose');
 router.get("/ordonnance", async (req, res) => {
     try {
         const LineSchema = await tenantCollection(req, 'LineSchema');
-        const schema = LineSchema ? await LineSchema.findOne({ slug: 'prescription_v1' }).lean() : null;
+        const schema = LineSchema ? await LineSchema.findOne({ slug: 'traitement' }).lean() : null;
 
         if (!schema) {
-            return res.status(404).send('Schema prescription_v1 introuvable. Lancez: node scripts/seed-line-schemas.js 5001');
+            return res.status(404).send('Schema traitement introuvable. Lancez: node scripts/seed-cabinet-medical.js 5001');
         }
 
         // Generate a temporary document ID for this new ordonnance

@@ -302,6 +302,14 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
     const [snapshots, setSnapshots] = useState([])
     const [loadingSnapshot, setLoadingSnapshot] = useState(false)
 
+    // Catalogue tab
+    const [catalogTab, setCatalogTab] = useState(null) // null | 'catalogue' | 'presets'
+    const [catalogItems, setCatalogItems] = useState([])
+    const [catalogLoading, setCatalogLoading] = useState(false)
+    const [catalogLoaded, setCatalogLoaded] = useState(false)
+    const [catalogPage, setCatalogPage] = useState(0)
+    const CATALOG_PAGE_SIZE = 20
+
     const searchInputRef = useRef(null)
     const searchTimerRef = useRef(null)
 
@@ -317,6 +325,10 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         setSelected(new Set())
         setPresetsOpen(false)
         setSnapshotsOpen(false)
+        setCatalogTab(null)
+        setCatalogItems([])
+        setCatalogLoaded(false)
+        setCatalogPage(0)
 
         Promise.all([
             // Load schema
@@ -639,31 +651,18 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         })
     }, [])
 
-    // Apply a preset (grid template)
-    const applyPreset = useCallback(async (preset) => {
-        if (!documentId || !accountNumber) return
-        setApplyingPreset(preset._id)
-        try {
-            const res = await fetch(
-                `/account/${accountNumber}/api/grid-templates/${preset._id}/apply/${documentId}`,
-                { method: 'POST', credentials: 'include' }
-            )
-            const data = await res.json()
-            if (data.success && data.lines) {
-                // Reload lines after applying
-                const linesRes = await fetch(
-                    `/account/${accountNumber}/api/document-lines/${documentId}`,
-                    { credentials: 'include' }
-                ).then(r => r.json())
-                if (linesRes?.data) setLines(pickLinesForSchema(linesRes.data, schemaId, schema))
-            }
-        } catch (err) {
-            console.error('[DynamicTable] Apply preset error:', err)
-        } finally {
-            setApplyingPreset(null)
-            setPresetsOpen(false)
-        }
-    }, [documentId, accountNumber, schemaId, schema])
+    // Apply a preset (grid template) — CLIENT-SIDE only, replaces current lines
+    const applyPreset = useCallback((preset) => {
+        if (!preset?.presetRows?.length) return
+        const newLines = preset.presetRows.map((row, i) => ({
+            lineType: row.lineType || schema?.defaultLineType || 'treatment',
+            values: { ...(row.values || {}) },
+            order: i
+        }))
+        setLines(newLines)
+        setPresetsOpen(false)
+        setCatalogTab(null)
+    }, [schema])
 
     // Load snapshot lines into the table
     const applySnapshot = useCallback((snapshot) => {
@@ -675,7 +674,53 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         })))
         setLines(newLines)
         setSnapshotsOpen(false)
+        setCatalogTab(null)
     }, [schema])
+
+    // Load catalog items (initial browse, not search)
+    const loadCatalogItems = useCallback(async () => {
+        if (!schema?.sourceEntityId || !accountNumber || catalogLoaded) return
+        setCatalogLoading(true)
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/catalog-frequent?entityId=${schema.sourceEntityId}`,
+                { credentials: 'include' }
+            )
+            const data = await res.json()
+            setCatalogItems(data.data || [])
+            setCatalogLoaded(true)
+            setCatalogPage(0)
+        } catch (err) {
+            console.error('[DynamicTable] Catalog load error:', err)
+        } finally {
+            setCatalogLoading(false)
+        }
+    }, [schema, accountNumber, catalogLoaded])
+
+    // Paginated catalog items
+    const paginatedCatalogItems = useMemo(() => {
+        const end = (catalogPage + 1) * CATALOG_PAGE_SIZE
+        return catalogItems.slice(0, end)
+    }, [catalogItems, catalogPage, CATALOG_PAGE_SIZE])
+
+    const hasMoreCatalog = useMemo(() => {
+        return (catalogPage + 1) * CATALOG_PAGE_SIZE < catalogItems.length
+    }, [catalogPage, catalogItems.length, CATALOG_PAGE_SIZE])
+
+    // Open catalogue tab
+    const openCatalogTab = useCallback(() => {
+        setCatalogTab('catalogue')
+        setPresetsOpen(false)
+        setSnapshotsOpen(false)
+        if (!catalogLoaded) loadCatalogItems()
+    }, [catalogLoaded, loadCatalogItems])
+
+    // Open presets tab
+    const openPresetsTab = useCallback(() => {
+        setCatalogTab(prev => prev === 'presets' ? null : 'presets')
+        setPresetsOpen(false)
+        setSnapshotsOpen(false)
+    }, [])
 
     // Format multiselect display values using schema column options
     const formatMultiselect = useCallback((values, col) => {
@@ -827,154 +872,268 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                     </div>
                 ) : (
                     <>
-                        {/* ═══ Quick Actions: Presets + Snapshot ═══ */}
-                        {(presets.length > 0 || latestSnapshot) && (
+                        {/* ═══ Toolbar: Catalogue + Presets + Snapshot ═══ */}
+                        <div style={{
+                            padding: '8px 20px',
+                            borderBottom: '1px solid #f3f4f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: '6px'
+                        }}>
+                            {/* Catalogue button */}
+                            {schema?.sourceEntityId && (
+                                <button
+                                    onClick={openCatalogTab}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '5px',
+                                        padding: '5px 10px', border: '1px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        background: catalogTab === 'catalogue' ? '#f0f9ff' : '#fff',
+                                        cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                        color: '#0284c7', transition: 'all 0.15s'
+                                    }}
+                                    onMouseOver={e => e.currentTarget.style.background = '#f0f9ff'}
+                                    onMouseOut={e => e.currentTarget.style.background = catalogTab === 'catalogue' ? '#f0f9ff' : '#fff'}
+                                >
+                                    <iconify-icon icon="solar:box-bold-duotone" width="13"></iconify-icon>
+                                    Catalogue
+                                </button>
+                            )}
+
+                            {/* Presets button */}
+                            {presets.length > 0 && (
+                                <button
+                                    onClick={openPresetsTab}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '5px',
+                                        padding: '5px 10px', border: '1px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        background: catalogTab === 'presets' ? '#eef2ff' : '#fff',
+                                        cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                        color: '#4f46e5', transition: 'all 0.15s'
+                                    }}
+                                    onMouseOver={e => e.currentTarget.style.background = '#eef2ff'}
+                                    onMouseOut={e => e.currentTarget.style.background = catalogTab === 'presets' ? '#eef2ff' : '#fff'}
+                                >
+                                    <iconify-icon icon="solar:bookmark-bold-duotone" width="13"></iconify-icon>
+                                    Presets
+                                    <span style={{
+                                        background: '#4f46e5', color: '#fff', borderRadius: '6px',
+                                        padding: '0 5px', fontSize: '10px', fontWeight: 700,
+                                        minWidth: '16px', textAlign: 'center', lineHeight: '16px'
+                                    }}>{presets.length}</span>
+                                </button>
+                            )}
+
+                            {/* Snapshot button */}
+                            {latestSnapshot && (
+                                <button
+                                    onClick={() => { setSnapshotsOpen(!snapshotsOpen); setCatalogTab(null) }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '5px',
+                                        padding: '5px 10px', border: '1px solid #e5e7eb',
+                                        borderRadius: '8px',
+                                        background: snapshotsOpen ? '#f0fdf4' : '#fff',
+                                        cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                        color: '#059669', transition: 'all 0.15s'
+                                    }}
+                                    onMouseOver={e => e.currentTarget.style.background = '#f0fdf4'}
+                                    onMouseOut={e => e.currentTarget.style.background = snapshotsOpen ? '#f0fdf4' : '#fff'}
+                                >
+                                    <iconify-icon icon="solar:history-bold-duotone" width="13"></iconify-icon>
+                                    Historique
+                                </button>
+                            )}
+                        </div>
+
+                        {/* ═══ Catalogue Panel ═══ */}
+                        {catalogTab === 'catalogue' && (
                             <div style={{
-                                padding: '8px 20px',
-                                borderBottom: '1px solid #f3f4f6',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                flexWrap: 'wrap'
+                                borderBottom: '1px solid #e5e7eb',
+                                maxHeight: '220px',
+                                overflow: 'auto',
+                                background: '#fafbfc'
                             }}>
-                                {/* Presets dropdown */}
-                                {presets.length > 0 && (
-                                    <div style={{ position: 'relative' }}>
-                                        <button
-                                            onClick={() => { setPresetsOpen(!presetsOpen); setSnapshotsOpen(false) }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '5px',
-                                                padding: '5px 10px', border: '1px solid #e5e7eb',
-                                                borderRadius: '8px', background: presetsOpen ? '#eef2ff' : '#fff',
-                                                cursor: 'pointer', fontSize: '11px', fontWeight: 600,
-                                                color: '#4f46e5', transition: 'all 0.15s'
-                                            }}
-                                            onMouseOver={e => e.currentTarget.style.background = '#eef2ff'}
-                                            onMouseOut={e => e.currentTarget.style.background = presetsOpen ? '#eef2ff' : '#fff'}
-                                        >
-                                            <iconify-icon icon="solar:bookmark-bold-duotone" width="13"></iconify-icon>
-                                            Presets
-                                            <span style={{
-                                                background: '#4f46e5', color: '#fff', borderRadius: '6px',
-                                                padding: '0 5px', fontSize: '10px', fontWeight: 700,
-                                                minWidth: '16px', textAlign: 'center', lineHeight: '16px'
-                                            }}>{presets.length}</span>
-                                        </button>
+                                <div style={{
+                                    padding: '6px 20px', fontSize: '10px', fontWeight: 700,
+                                    color: '#6b7280', textTransform: 'uppercase',
+                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6',
+                                    background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1
+                                }}>
+                                    Catalogue ({catalogItems.length} éléments)
+                                </div>
 
-                                        {presetsOpen && (
-                                            <div style={{
-                                                position: 'absolute', top: '100%', left: 0, marginTop: '4px',
-                                                background: '#fff', border: '1px solid #e5e7eb',
-                                                borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                                minWidth: '220px', maxHeight: '240px', overflow: 'auto', zIndex: 30
-                                            }}>
-                                                <div style={{
-                                                    padding: '6px 12px', fontSize: '10px', fontWeight: 700,
-                                                    color: '#6b7280', textTransform: 'uppercase',
-                                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6'
-                                                }}>Appliquer un preset</div>
-                                                {presets.map(preset => (
-                                                    <div
-                                                        key={preset._id}
-                                                        onClick={() => applyPreset(preset)}
-                                                        style={{
-                                                            padding: '8px 12px', display: 'flex',
-                                                            alignItems: 'center', gap: '8px',
-                                                            cursor: 'pointer', fontSize: '12px',
-                                                            borderBottom: '1px solid #f9fafb',
-                                                            transition: 'background 0.1s',
-                                                            opacity: applyingPreset === preset._id ? 0.5 : 1
-                                                        }}
-                                                        onMouseOver={e => e.currentTarget.style.background = '#f3f4f6'}
-                                                        onMouseOut={e => e.currentTarget.style.background = '#fff'}
-                                                    >
-                                                        {applyingPreset === preset._id ? (
-                                                            <iconify-icon icon="svg-spinners:ring-resize" width="14" style={{ color: '#4f46e5' }}></iconify-icon>
-                                                        ) : (
-                                                            <iconify-icon icon="solar:bookmark-linear" width="14" style={{ color: '#9ca3af' }}></iconify-icon>
-                                                        )}
-                                                        <div>
-                                                            <div style={{ fontWeight: 500, color: '#374151' }}>{preset.name}</div>
-                                                            {preset.recordLabel && (
-                                                                <div style={{ fontSize: '10px', color: '#9ca3af' }}>{preset.recordLabel}</div>
-                                                            )}
-                                                        </div>
-                                                        <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#9ca3af' }}>
-                                                            {preset.lines?.length || '?'} lignes
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                {catalogLoading ? (
+                                    <div style={{ padding: '24px', textAlign: 'center' }}>
+                                        <iconify-icon icon="svg-spinners:ring-resize" width="20" style={{ color: '#4f46e5' }}></iconify-icon>
+                                        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>Chargement...</p>
                                     </div>
-                                )}
+                                ) : catalogItems.length === 0 ? (
+                                    <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af', fontSize: '12px' }}>
+                                        Aucun élément dans le catalogue
+                                    </div>
+                                ) : (
+                                    <>
+                                        {paginatedCatalogItems.map(item => (
+                                            <div
+                                                key={item._id}
+                                                onClick={() => {
+                                                    // Add item directly as a new line
+                                                    const values = {}
+                                                    const firstTextCol = visibleCols.find(c => ['text', 'relation'].includes(c.type))
+                                                    if (firstTextCol) {
+                                                        if (firstTextCol.type === 'relation') {
+                                                            values[firstTextCol.key] = item._id
+                                                            values[firstTextCol.key + '_label'] = item.label || item.title
+                                                        } else {
+                                                            values[firstTextCol.key] = item.label || item.title
+                                                        }
+                                                    }
+                                                    // Apply lineDefaults
+                                                    const ld = resolveItemLineDefaults(item)
+                                                    if (ld?.defaults && schema?.columns) {
+                                                        for (const [key, rawVal] of Object.entries(ld.defaults)) {
+                                                            const targetCol = schema.columns.find(c => c.key === key)
+                                                            const normalized = normalizeDefaultForColumn(targetCol, rawVal)
+                                                            if (normalized !== undefined) values[key] = normalized
+                                                        }
+                                                    }
+                                                    setLines(prev => [...prev, {
+                                                        lineType: schema?.defaultLineType || 'product',
+                                                        values,
+                                                        order: prev.length
+                                                    }])
+                                                }}
+                                                style={{
+                                                    padding: '8px 20px', display: 'flex',
+                                                    alignItems: 'center', gap: '10px',
+                                                    cursor: 'pointer', fontSize: '12px',
+                                                    borderBottom: '1px solid #f3f4f6',
+                                                    background: '#fff',
+                                                    transition: 'background 0.1s'
+                                                }}
+                                                onMouseOver={e => e.currentTarget.style.background = '#f0f9ff'}
+                                                onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                            >
+                                                <iconify-icon icon="tabler:plus" width="13" style={{ color: '#0284c7', flexShrink: 0 }}></iconify-icon>
+                                                <span style={{ color: '#1f2937', fontWeight: 500 }}>{item.label || item.title}</span>
+                                            </div>
+                                        ))}
 
-                                {/* Snapshot dropdown */}
-                                {latestSnapshot && (
-                                    <div style={{ position: 'relative' }}>
-                                        <button
-                                            onClick={() => { setSnapshotsOpen(!snapshotsOpen); setPresetsOpen(false) }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '5px',
-                                                padding: '5px 10px', border: '1px solid #e5e7eb',
-                                                borderRadius: '8px', background: snapshotsOpen ? '#f0fdf4' : '#fff',
-                                                cursor: 'pointer', fontSize: '11px', fontWeight: 600,
-                                                color: '#059669', transition: 'all 0.15s'
-                                            }}
-                                            onMouseOver={e => e.currentTarget.style.background = '#f0fdf4'}
-                                            onMouseOut={e => e.currentTarget.style.background = snapshotsOpen ? '#f0fdf4' : '#fff'}
-                                        >
-                                            <iconify-icon icon="solar:history-bold-duotone" width="13"></iconify-icon>
-                                            Dernier enregistrement
-                                        </button>
-
-                                        {snapshotsOpen && (
-                                            <div style={{
-                                                position: 'absolute', top: '100%', left: 0, marginTop: '4px',
-                                                background: '#fff', border: '1px solid #e5e7eb',
-                                                borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                                minWidth: '260px', maxHeight: '300px', overflow: 'auto', zIndex: 30
-                                            }}>
-                                                <div style={{
-                                                    padding: '6px 12px', fontSize: '10px', fontWeight: 700,
-                                                    color: '#6b7280', textTransform: 'uppercase',
-                                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6'
-                                                }}>Charger depuis un enregistrement</div>
-                                                {snapshots.map(snap => (
-                                                    <div
-                                                        key={snap._id}
-                                                        onClick={() => applySnapshot(snap)}
-                                                        style={{
-                                                            padding: '8px 12px', display: 'flex',
-                                                            alignItems: 'center', gap: '8px',
-                                                            cursor: 'pointer', fontSize: '12px',
-                                                            borderBottom: '1px solid #f9fafb',
-                                                            transition: 'background 0.1s'
-                                                        }}
-                                                        onMouseOver={e => e.currentTarget.style.background = '#f0fdf4'}
-                                                        onMouseOut={e => e.currentTarget.style.background = '#fff'}
-                                                    >
-                                                        <iconify-icon icon="solar:calendar-linear" width="14" style={{ color: '#059669' }}></iconify-icon>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontWeight: 500, color: '#374151' }}>
-                                                                {new Date(snap.date || snap.createdAt).toLocaleDateString('fr-FR', {
-                                                                    day: '2-digit', month: 'short', year: 'numeric'
-                                                                })}
-                                                            </div>
-                                                            <div style={{ fontSize: '10px', color: '#9ca3af' }}>
-                                                                {snap.lines?.length || 0} lignes
-                                                            </div>
-                                                        </div>
-                                                        <iconify-icon icon="tabler:arrow-right" width="14" style={{ color: '#d1d5db' }}></iconify-icon>
-                                                    </div>
-                                                ))}
-                                                {snapshots.length === 0 && (
-                                                    <div style={{ padding: '16px 12px', textAlign: 'center', color: '#9ca3af', fontSize: '12px' }}>
-                                                        Aucun enregistrement
-                                                    </div>
-                                                )}
+                                        {/* Load more */}
+                                        {hasMoreCatalog && (
+                                            <div style={{ padding: '8px 20px', textAlign: 'center' }}>
+                                                <button
+                                                    onClick={() => setCatalogPage(p => p + 1)}
+                                                    style={{
+                                                        padding: '6px 16px', border: '1px solid #e5e7eb',
+                                                        borderRadius: '8px', background: '#fff',
+                                                        cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                                        color: '#0284c7', transition: 'all 0.15s'
+                                                    }}
+                                                    onMouseOver={e => e.currentTarget.style.background = '#f0f9ff'}
+                                                    onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                                >
+                                                    Charger plus ({catalogItems.length - paginatedCatalogItems.length} restants)
+                                                </button>
                                             </div>
                                         )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ═══ Presets Panel ═══ */}
+                        {catalogTab === 'presets' && (
+                            <div style={{
+                                borderBottom: '1px solid #e5e7eb',
+                                maxHeight: '220px',
+                                overflow: 'auto',
+                                background: '#fafbfc'
+                            }}>
+                                <div style={{
+                                    padding: '6px 20px', fontSize: '10px', fontWeight: 700,
+                                    color: '#6b7280', textTransform: 'uppercase',
+                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6',
+                                    background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1
+                                }}>Appliquer un preset</div>
+                                {presets.map(preset => (
+                                    <div
+                                        key={preset._id}
+                                        onClick={() => applyPreset(preset)}
+                                        style={{
+                                            padding: '10px 20px', display: 'flex',
+                                            alignItems: 'center', gap: '10px',
+                                            cursor: 'pointer', fontSize: '12px',
+                                            borderBottom: '1px solid #f3f4f6',
+                                            background: '#fff',
+                                            transition: 'background 0.1s'
+                                        }}
+                                        onMouseOver={e => e.currentTarget.style.background = '#eef2ff'}
+                                        onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                    >
+                                        <iconify-icon icon="solar:bookmark-linear" width="14" style={{ color: preset.color || '#4f46e5' }}></iconify-icon>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 500, color: '#374151' }}>{preset.name}</div>
+                                            {preset.description && (
+                                                <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '1px' }}>{preset.description}</div>
+                                            )}
+                                        </div>
+                                        <span style={{ fontSize: '10px', color: '#9ca3af', flexShrink: 0 }}>
+                                            {preset.presetRows?.length || '?'} lignes
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ═══ Snapshot Panel ═══ */}
+                        {snapshotsOpen && (
+                            <div style={{
+                                borderBottom: '1px solid #e5e7eb',
+                                maxHeight: '220px',
+                                overflow: 'auto',
+                                background: '#fafbfc'
+                            }}>
+                                <div style={{
+                                    padding: '6px 20px', fontSize: '10px', fontWeight: 700,
+                                    color: '#6b7280', textTransform: 'uppercase',
+                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6',
+                                    background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1
+                                }}>Charger depuis un enregistrement</div>
+                                {snapshots.map(snap => (
+                                    <div
+                                        key={snap._id}
+                                        onClick={() => applySnapshot(snap)}
+                                        style={{
+                                            padding: '10px 20px', display: 'flex',
+                                            alignItems: 'center', gap: '10px',
+                                            cursor: 'pointer', fontSize: '12px',
+                                            borderBottom: '1px solid #f3f4f6',
+                                            background: '#fff',
+                                            transition: 'background 0.1s'
+                                        }}
+                                        onMouseOver={e => e.currentTarget.style.background = '#f0fdf4'}
+                                        onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                    >
+                                        <iconify-icon icon="solar:calendar-linear" width="14" style={{ color: '#059669' }}></iconify-icon>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 500, color: '#374151' }}>
+                                                {new Date(snap.date || snap.createdAt).toLocaleDateString('fr-FR', {
+                                                    day: '2-digit', month: 'short', year: 'numeric'
+                                                })}
+                                            </div>
+                                            <div style={{ fontSize: '10px', color: '#9ca3af' }}>
+                                                {snap.lines?.length || 0} lignes
+                                            </div>
+                                        </div>
+                                        <iconify-icon icon="tabler:arrow-right" width="14" style={{ color: '#d1d5db' }}></iconify-icon>
+                                    </div>
+                                ))}
+                                {snapshots.length === 0 && (
+                                    <div style={{ padding: '16px 20px', textAlign: 'center', color: '#9ca3af', fontSize: '12px' }}>
+                                        Aucun enregistrement
                                     </div>
                                 )}
                             </div>

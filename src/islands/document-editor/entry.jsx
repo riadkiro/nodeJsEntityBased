@@ -72,10 +72,22 @@ function mountIslands() {
             isNew: container.dataset.isNew === 'true'
         }
 
+        // Parse context-free bindings if present
+        if (container.dataset.bindings) {
+            try {
+                const bin = atob(container.dataset.bindings)
+                const bytes = Uint8Array.from(bin, c => c.charCodeAt(0))
+                props.contextFreeBindings = JSON.parse(new TextDecoder('utf-8').decode(bytes))
+            } catch (e) {
+                console.warn('[DocumentEditor Island] Failed to parse bindings:', e)
+            }
+        }
+
         console.log('[DocumentEditor Island] Mounting:', {
             accountNumber: props.accountNumber,
             isNew: props.isNew,
-            docId: props.initialDocument?._id
+            docId: props.initialDocument?._id,
+            hasBindings: !!props.contextFreeBindings
         })
 
         createRoot(container).render(

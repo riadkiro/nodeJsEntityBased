@@ -1,5 +1,6 @@
-![alt text](image-64.png) quand le modal du catalogue est ouvert , et que je scroll, jai un panel qui n'est pas en backgroud, donc un ouci de z-index...
+![alt text](image-67.png) un petit refactor ici : garder juste catalogue et validéer, et mettre preset dans catalogue...
 
-![alt text](image-65.png) je ne peux pas supprimer le panel que jai ajouté en dessous du premier panel, 
+L'historique ca afiche le slug pas les vrai nom de ligne
 
-![alt text](image-66.png) je narrive pas a configurer le tableau dynamique pour affcher uniquement taitement ou facture comme on a fait pour le premier panel.r
+http://localhost:3000/account/7846/documents : ici afficher les modèles dabors et un onglet Documents , Modèle et l'onglet active par defaut
+

@@ -245,7 +245,8 @@ async function configureSingleConsultationTD(db, actesEntity, actsCount, fieldMa
   const consultations = await db.Entity.findOne({ slug: 'consultations' });
   if (!consultations) throw new Error('Entity consultations introuvable');
 
-  const treatmentSchema = await db.LineSchema.findOne({ slug: 'consultation_treatment_v1' });
+  const treatmentSchema = await db.LineSchema.findOne({ slug: 'consultation_treatment_v1' })
+    || await db.LineSchema.findOne({ slug: 'traitement' });
   const billingSchema = await db.LineSchema.findOne({ slug: 'consultation_billing_v1' });
   if (!billingSchema) throw new Error('LineSchema consultation_billing_v1 introuvable');
   let examSchema = await db.LineSchema.findOne({ slug: 'consultation_exams_v1' });

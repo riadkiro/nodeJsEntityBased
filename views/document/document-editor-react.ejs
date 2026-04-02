@@ -79,6 +79,29 @@
             page-break-after: always;
         }
     }
+
+    /* Binding placeholder tokens (context-free generation) */
+    .binding-placeholder {
+        display: inline-block;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #92400e;
+        padding: 2px 10px;
+        border-radius: 6px;
+        font-size: 0.85em;
+        font-weight: 500;
+        border: 1px dashed #f59e0b;
+        cursor: pointer;
+        user-select: none;
+        vertical-align: baseline;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+    .binding-placeholder:hover {
+        background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+        border-color: #d97706;
+        transform: scale(1.03);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+    }
 </style>
 
 <!-- Document Editor React Island Mount Point -->
@@ -90,6 +113,11 @@
     %>"
     data-account-number="<%= account_number %>"
     data-is-new="<%= isNew ? 'true' : 'false' %>"
+    <% if (locals.contextFreeBindings) { %>
+    data-bindings="<%-
+        Buffer.from(JSON.stringify(contextFreeBindings)).toString('base64')
+    %>"
+    <% } %>
     class="<%= locals.isMinimal ? 'h-screen' : '' %>"
     style="<%= locals.isMinimal ? '' : 'height:100%;overflow:hidden;' %>"
 ></div>

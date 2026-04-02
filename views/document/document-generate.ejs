@@ -1,0 +1,40 @@
+<!-- 
+    Context-Free Document Generation Wizard
+    Allows generating a document template without being inside a record context.
+    Uses a React island wizard to pick records and resolve data context.
+-->
+
+<style>
+    /* Full-height wizard: make main-content a flex column */
+    .main-content {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+    .animate__animated.p-6 {
+        padding: 0 !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+        min-height: 0 !important;
+    }
+</style>
+
+<!-- Doc Generate Wizard React Island Mount Point -->
+<div 
+    data-island="doc-generate-wizard"
+    data-template="<%-
+        Buffer.from(JSON.stringify(template || {})).toString('base64')
+    %>"
+    data-entities="<%-
+        Buffer.from(JSON.stringify(entities || [])).toString('base64')
+    %>"
+    data-smart-doc-template="<%-
+        Buffer.from(JSON.stringify(smartDocTemplate || {})).toString('base64')
+    %>"
+    data-account-number="<%= account_number %>"
+    style="height:100%;overflow:hidden;"
+></div>
+
+<!-- React Island Script -->
+<script type="module" src="/dist/docGenerateWizard.js"></script>

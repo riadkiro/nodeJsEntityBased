@@ -1,0 +1,27 @@
+﻿757: const prescriptionLineSchema = await upsertDoc(db.LineSchema, { slug: 'prescription_v1', 'meta.createdByPreset': PRESET 
+758: name: 'Ordonnance Traitement', slug: 'prescription_v1',
+817: console.log(`   Ô£à LineSchema: Ordonnance Traitement (${prescriptionLineSchema._id})`);
+820: const consultationTreatmentSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_treatment_v1', 'meta.createdByP
+821: name: 'Traitements Consultation', slug: 'consultation_treatment_v1',
+826: columns: JSON.parse(JSON.stringify(prescriptionLineSchema.columns || [])),
+835: console.log(`   Ô£à LineSchema: Traitements Consultation (${consultationTreatmentSchema._id})`);
+920: const patientTreatmentSchema = await upsertDoc(db.LineSchema, { slug: 'patient_treatment_followup_v1', 'meta.createdByPr
+921: name: 'Traitements Patient', slug: 'patient_treatment_followup_v1',
+926: columns: JSON.parse(JSON.stringify(prescriptionLineSchema.columns || [])),
+930: console.log(`   Ô£à LineSchema: Traitements Patient (${patientTreatmentSchema._id})`);
+992: { schemaId: consultationTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements' },
+1003: $set: { gridSchemas: [{ schemaId: prescriptionLineSchema._id, position: 'main', order: 0, label: 'Traitements' }] }
+1011: { schemaId: patientTreatmentSchema._id, position: 'main', order: 0, label: 'Traitements patient' },
+1040: const prescriptionLineSchema = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET }).
+1041: const consultationTreatmentSchema = await db.LineSchema.findOne({ slug: 'consultation_treatment_v1', 'meta.createdByPres
+1042: const patientTreatmentSchema = await db.LineSchema.findOne({ slug: 'patient_treatment_followup_v1', 'meta.createdByPrese
+1047: const treatmentSchemaIds = [prescriptionLineSchema?._id, consultationTreatmentSchema?._id, patientTreatmentSchema?._id].
+1240: const lineDefaults = treatmentSchemaIds.map(schemaId => ({
+1493: consultationTreatmentSchema?._id,
+1496: patientTreatmentSchema?._id,
+1512: if (consultationTreatmentSchema?._id) {
+1517: schemaId: consultationTreatmentSchema._id,
+1536: schemaId: consultationTreatmentSchema._id,
+1629: if (patientTreatmentSchema?._id) {
+1633: schemaId: patientTreatmentSchema._id,
+1708: const prescriptionSchemaDoc = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET });

@@ -1,0 +1,17 @@
+﻿=== ALL Line Schemas ===
+  69c7baba12662cd0b04a6d93 - Ordonnance Traitement (slug: prescription_v1)
+    columns: treatment, moment, frequency, duration, instructions
+  69c7baba12662cd0b04a6d94 - Facture Standard (slug: invoice_v1)
+    columns: description, qty, unitPrice, discount, vatRate, lineTotal, lineVat, note
+
+=== ALL GridSchemaTemplates ===
+  69ce10279c4cd410ec847869 - Traitement Standard | schemaId: 69c7baba12662cd0b04a6d93 | scope: workspace
+
+=== Ordonnance Template ===
+  Page 0 data-table: {"schemaId":"69c7baba12662cd0b04a6d93","style":"professional","title":"Prescription","showTotals":false}
+
+=== Widget Schema (69c7baba12662cd0b04a6d93) ===
+Found: Ordonnance Traitement (prescription_v1)
+
+=== Preset Schema (69c7baba12662cd0b04a6d93) ===
+Found: Ordonnance Traitement (prescription_v1)

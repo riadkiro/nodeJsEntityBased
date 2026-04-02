@@ -76,6 +76,7 @@ import LeftSidebar from './components/LeftSidebar'
 import CanvasContainer from './components/CanvasContainer'
 import AIChatSidebar from './components/AIChatSidebar'
 import SettingsPanel from './components/SettingsPanel'
+import BindingBar from './components/BindingBar'
 
 // Default document structure
 const createDefaultDoc = () => ({
@@ -130,7 +131,7 @@ const mergeWithDefaults = (initialDoc) => {
     }
 }
 
-export default function DocumentEditorIsland({ accountNumber, initialDocument, isNew }) {
+export default function DocumentEditorIsland({ accountNumber, initialDocument, isNew, contextFreeBindings }) {
     // ========== STATE (UI only, NOT contenteditable content) ==========
     const [doc, setDoc] = useState(() => mergeWithDefaults(initialDocument))
     const [selectedPageIndex, setSelectedPageIndex] = useState(0)
@@ -2076,6 +2077,24 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 FONT_FAMILIES={FONT_FAMILIES}
                 FONT_SIZES={FONT_SIZES}
             />
+
+            {/* Context-free binding resolution bar */}
+            {contextFreeBindings && contextFreeBindings.length > 0 && (
+                <BindingBar
+                    bindings={contextFreeBindings}
+                    accountNumber={accountNumber}
+                    documentId={doc._id}
+                    pageRefs={pageRefs}
+                    setDoc={setDoc}
+                    onBindingResolved={(binding, record, contextRecord) => {
+                        console.log('[DocumentEditor] Binding resolved:', binding.entityName, '->', record.title)
+                        if (contextRecord) {
+                            console.log('[DocumentEditor] Context record found:', contextRecord.entityName, '->', contextRecord.title)
+                        }
+                        triggerSave()
+                    }}
+                />
+            )}
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">

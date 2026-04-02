@@ -8733,6 +8733,7 @@ window.__syncClsInputs = function(clsId, ids) {
                             const res = await response.json();
                             if (res.data) {
                                 this.selectedItems = res.data;
+                                this.sync();
                             }
                         } catch (e) {
                             console.error("Error loading relation values:", e);

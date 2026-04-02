@@ -6,13 +6,6 @@
       <%- include("../nav/nav-breadcrumb") %>
     </div>
     <div class="flex items-center gap-2">
-      <a href="/account/<%= account_number %>/documents/templates" 
-         class="btn btn-outline-dark btn-sm rounded-lg gap-1.5 dark:border-[#253b5c] dark:text-gray-300 dark:hover:bg-dark/60">
-        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="15" class="text-amber-500"></iconify-icon>
-        Templates
-        <span class="text-[10px] px-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold" 
-              x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
-      </a>
       <button @click="openTemplateModal()" class="btn btn-primary btn-sm rounded-lg gap-1.5">
         <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
         Nouveau
@@ -24,6 +17,17 @@
   <div class="panel p-3 mb-5">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <div class="flex items-center gap-1">
+        <button @click="activeSection = 'templates'" 
+                class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
+                :class="activeSection === 'templates' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
+          <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="15"></iconify-icon>
+          Modèles
+          <span class="text-[11px] px-1.5 rounded-full ml-0.5"
+                :class="activeSection === 'templates' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+                x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
+        </button>
         <button @click="activeSection = 'recent'" 
                 class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
                 :class="activeSection === 'recent' 
@@ -33,7 +37,7 @@
           Documents
           <span class="text-[11px] px-1.5 rounded-full ml-0.5"
                 :class="activeSection === 'recent' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
-                x-text="allDocs().length"></span>
+                x-text="documents.length"></span>
         </button>
         <button @click="activeSection = 'generated'" 
                 class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
@@ -66,6 +70,84 @@
       </div>
     </div>
   </div>
+
+  <!-- ================================ -->
+  <!-- SECTION: Documents Grid          -->
+  <!-- ================================ -->
+  <!-- ================================ -->
+  <!-- SECTION: Templates Grid           -->
+  <!-- ================================ -->
+  <template x-if="activeSection === 'templates'">
+    <div>
+      <template x-if="filteredTemplateDocs().length > 0">
+        <div class="doc-grid">
+          <template x-for="doc in filteredTemplateDocs()" :key="doc._id">
+            <div class="doc-card group">
+              <!-- A4 Paper Preview -->
+              <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
+                <div class="doc-card__paper" :style="getPaperStyle(doc)">
+                  <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
+                    <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
+                  </template>
+                  <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
+                    <div class="doc-card__paper-empty">
+                      <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                    </div>
+                  </template>
+                </div>
+                <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
+                <span class="doc-card__badge doc-card__badge--tpl">TPL</span>
+              </a>
+
+              <!-- Info -->
+              <div class="doc-card__body">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                   class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
+                <div class="doc-card__meta">
+                  <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
+                  <span x-text="formatRelativeDate(doc.updatedAt)"></span>
+                </div>
+              </div>
+
+              <!-- Hover actions -->
+              <div class="doc-card__hover-actions">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                   class="doc-card__action" title="Modifier">
+                  <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                </a>
+                <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
+                  <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- Empty State -->
+      <template x-if="filteredTemplateDocs().length === 0 && !searchQuery">
+        <div class="panel">
+          <div class="flex flex-col items-center justify-center py-14 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-white-light dark:bg-dark/60 flex items-center justify-center mb-4">
+              <iconify-icon icon="solar:magic-stick-3-broken" width="32" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+            </div>
+            <h3 class="text-sm font-semibold dark:text-white mb-1">Aucun modèle</h3>
+            <p class="text-xs text-gray-400 max-w-xs mb-4">Créez un document et activez le mode template depuis l'éditeur</p>
+            <button @click="openTemplateModal()" class="btn btn-primary btn-sm rounded-lg gap-1.5">
+              <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+              Créer
+            </button>
+          </div>
+        </div>
+      </template>
+      <template x-if="filteredTemplateDocs().length === 0 && searchQuery">
+        <div class="panel py-10 text-center">
+          <iconify-icon icon="solar:magnifer-broken" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
+          <p class="text-xs text-gray-400">Aucun résultat pour "<span x-text="searchQuery" class="font-medium"></span>"</p>
+        </div>
+      </template>
+    </div>
+  </template>
 
   <!-- ================================ -->
   <!-- SECTION: Documents Grid          -->
@@ -634,7 +716,7 @@ document.addEventListener('alpine:init', () => {
     generatedDocs: <%- JSON.stringify(generatedDocs || []) %>,
     uploadedDocs: <%- JSON.stringify(uploadedDocs || []) %>,
     searchQuery: '',
-    activeSection: 'recent',
+    activeSection: 'templates',
     showTemplateModal: false,
     templates: [],
     templatesLoading: false,
@@ -653,12 +735,21 @@ document.addEventListener('alpine:init', () => {
     deleting: false,
 
     allDocs() {
-      return [...this.documents, ...this.templateDocs]
+      return [...this.documents]
         .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     },
 
     filteredDocs() {
       let docs = this.allDocs();
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        docs = docs.filter(d => (d.name || '').toLowerCase().includes(q));
+      }
+      return docs;
+    },
+
+    filteredTemplateDocs() {
+      let docs = [...this.templateDocs].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase();
         docs = docs.filter(d => (d.name || '').toLowerCase().includes(q));

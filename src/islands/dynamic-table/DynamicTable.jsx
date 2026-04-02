@@ -1987,8 +1987,18 @@ export default function DynamicTable({
                                                                                         } else if (col.type === 'select') {
                                                                                             const opt = (col.config?.options || []).find(o => String(o.value) === String(val))
                                                                                             val = opt?.label || val
+                                                                                        } else if (col.type === 'multiselect') {
+                                                                                            const arr = Array.isArray(val) ? val : (val ? [val] : [])
+                                                                                            const labels = arr.map(one => {
+                                                                                                const opt = (col.config?.options || []).find(o => String(o.value) === String(one))
+                                                                                                return opt?.label || one
+                                                                                            }).filter(Boolean)
+                                                                                            val = labels.join(', ')
+                                                                                        } else if (col.type === 'duration' && typeof val === 'object' && val !== null) {
+                                                                                            const map = { day: 'jour(s)', week: 'sem.', month: 'mois', year: 'an(s)' }
+                                                                                            val = `${val.value || ''} ${map[val.unit] || val.unit || ''}`.trim()
                                                                                         }
-                                                                                        const isNumeric = ['number', 'formula', 'currency'].includes(col.type) || typeof val === 'number'
+                                                                                        const isNumeric = ['number', 'formula', 'currency'].includes(col.type) || (typeof val === 'number')
                                                                                         return (
                                                                                             <td key={col.key} style={{ padding: '5px 6px', color: '#1e293b', fontWeight: 500, borderRight: '1px solid #f1f5f9' }}>
                                                                                                 {isNumeric && val !== null && val !== undefined && val !== ''

@@ -1,5 +1,5 @@
-﻿/**
- * Toolbar - Mini toolbar above the table (presets, catalog, validate)
+/**
+ * Toolbar - Mini toolbar above the table (catalog with presets, validate)
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -46,7 +46,7 @@ const presetMenu = {
     right: 0,
     minWidth: '220px',
     maxWidth: '320px',
-    maxHeight: '240px',
+    maxHeight: '280px',
     overflowY: 'auto',
     background: '#fff',
     border: '1px solid #e5e7eb',
@@ -115,13 +115,14 @@ export default function Toolbar({
     onValidate,
     onOpenCatalog
 }) {
-    const [presetOpen, setPresetOpen] = useState(false)
+    const [catalogDropdown, setCatalogDropdown] = useState(false)
+    const [activeTab, setActiveTab] = useState('catalogue') // 'catalogue' or 'presets'
     const wrapRef = useRef(null)
 
     useEffect(() => {
         const handler = (e) => {
             if (!wrapRef.current) return
-            if (!wrapRef.current.contains(e.target)) setPresetOpen(false)
+            if (!wrapRef.current.contains(e.target)) setCatalogDropdown(false)
         }
         document.addEventListener('mousedown', handler)
         return () => document.removeEventListener('mousedown', handler)
@@ -189,7 +190,7 @@ export default function Toolbar({
                 style={{ background: 'none', border: 'none', padding: 0, margin: 0, textAlign: 'left', flex: 1, cursor: 'pointer', minWidth: 0 }}
                 onClick={() => {
                     onApplyPreset?.(p)
-                    setPresetOpen(false)
+                    setCatalogDropdown(false)
                 }}
             >
                 <div style={{ fontSize: 12, color: '#111827', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -231,16 +232,10 @@ export default function Toolbar({
             <div />
 
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} ref={wrapRef}>
-                {catalogEnabled && (
-                    <button type="button" style={btn} onClick={onOpenCatalog}>
-                        Catalogue
-                    </button>
-                )}
-
+                {/* Combined Catalogue button (includes presets) */}
                 <div style={{ position: 'relative' }}>
-                    <button type="button" style={btn} onClick={() => setPresetOpen(v => !v)}>
-                        <iconify-icon icon="solar:clipboard-check-bold-duotone" width="13" />
-                        Presets
+                    <button type="button" style={btn} onClick={() => setCatalogDropdown(v => !v)}>
+                        Catalogue
                         {presets.length > 0 && (
                             <span style={{
                                 display: 'inline-flex',
@@ -260,54 +255,162 @@ export default function Toolbar({
                         )}
                     </button>
 
-                    {presetOpen && (
+                    {catalogDropdown && (
                         <div style={presetMenu}>
-                            {presets.length === 0 && (
-                                <div style={{ padding: '10px 12px', fontSize: 12, color: '#9ca3af' }}>
-                                    Aucun preset
-                                </div>
-                            )}
-                            {recordPresets.length > 0 && (
-                                <div style={{ padding: '8px 10px 6px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="12" />
-                                    Records / Relations
-                                </div>
-                            )}
-                            {recordPresets.map(renderPresetItem)}
-
-                            {globalPresets.length > 0 && (
-                                <div style={{ padding: '8px 10px 6px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <iconify-icon icon="solar:global-bold-duotone" width="12" />
-                                    Global
-                                </div>
-                            )}
-                            {globalPresets.map(renderPresetItem)}
-
-                            {showSavePresetAction && typeof onSavePreset === 'function' && (
+                            {/* Tab switcher inside dropdown */}
+                            <div style={{
+                                display: 'flex',
+                                borderBottom: '1px solid #f3f4f6',
+                                background: '#fafbfc'
+                            }}>
+                                {catalogEnabled && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('catalogue')}
+                                        style={{
+                                            flex: 1,
+                                            border: 'none',
+                                            background: 'transparent',
+                                            padding: '8px 10px',
+                                            fontSize: 11,
+                                            fontWeight: activeTab === 'catalogue' ? 700 : 500,
+                                            color: activeTab === 'catalogue' ? '#4361ee' : '#9ca3af',
+                                            borderBottom: activeTab === 'catalogue' ? '2px solid #4361ee' : '2px solid transparent',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 4,
+                                            transition: 'all 0.15s'
+                                        }}
+                                    >
+                                        <iconify-icon icon="solar:notebook-bookmark-bold-duotone" width="12" />
+                                        Catalogue
+                                    </button>
+                                )}
                                 <button
                                     type="button"
+                                    onClick={() => setActiveTab('presets')}
                                     style={{
-                                        width: '100%',
-                                        textAlign: 'left',
+                                        flex: 1,
                                         border: 'none',
-                                        borderTop: '1px solid #f3f4f6',
-                                        background: '#fff',
-                                        padding: '9px 10px',
-                                        fontSize: 12,
-                                        color: '#4361ee',
-                                        fontWeight: 600,
-                                        cursor: (canSavePreset && !savingPreset) ? 'pointer' : 'not-allowed',
-                                        opacity: (canSavePreset && !savingPreset) ? 1 : 0.5
-                                    }}
-                                    disabled={!canSavePreset || savingPreset}
-                                    onClick={() => {
-                                        setPresetOpen(false)
-                                        onSavePreset?.()
+                                        background: 'transparent',
+                                        padding: '8px 10px',
+                                        fontSize: 11,
+                                        fontWeight: activeTab === 'presets' ? 700 : 500,
+                                        color: activeTab === 'presets' ? '#4361ee' : '#9ca3af',
+                                        borderBottom: activeTab === 'presets' ? '2px solid #4361ee' : '2px solid transparent',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 4,
+                                        transition: 'all 0.15s'
                                     }}
                                 >
-                                    <iconify-icon icon={savingPreset ? 'svg-spinners:ring-resize' : 'solar:diskette-bold'} width="12" style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                                    {savingPreset ? 'Sauvegarde...' : 'Sauvegarder comme preset'}
+                                    <iconify-icon icon="solar:clipboard-check-bold-duotone" width="12" />
+                                    Presets
+                                    {presets.length > 0 && (
+                                        <span style={{
+                                            fontSize: 9,
+                                            fontWeight: 700,
+                                            background: 'rgba(67,97,238,0.12)',
+                                            color: '#4361ee',
+                                            borderRadius: 999,
+                                            padding: '0 4px',
+                                            minWidth: 14,
+                                            height: 14,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}>
+                                            {presets.length}
+                                        </span>
+                                    )}
                                 </button>
+                            </div>
+
+                            {/* Catalogue tab content */}
+                            {activeTab === 'catalogue' && catalogEnabled && (
+                                <div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCatalogDropdown(false)
+                                            onOpenCatalog?.()
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            textAlign: 'left',
+                                            border: 'none',
+                                            background: '#fff',
+                                            padding: '12px 12px',
+                                            fontSize: 12,
+                                            color: '#4361ee',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8
+                                        }}
+                                    >
+                                        <iconify-icon icon="solar:magnifer-bold-duotone" width="14" />
+                                        Rechercher dans le catalogue
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Presets tab content */}
+                            {activeTab === 'presets' && (
+                                <>
+                                    {presets.length === 0 && (
+                                        <div style={{ padding: '10px 12px', fontSize: 12, color: '#9ca3af' }}>
+                                            Aucun preset
+                                        </div>
+                                    )}
+                                    {recordPresets.length > 0 && (
+                                        <div style={{ padding: '8px 10px 6px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="12" />
+                                            Records / Relations
+                                        </div>
+                                    )}
+                                    {recordPresets.map(renderPresetItem)}
+
+                                    {globalPresets.length > 0 && (
+                                        <div style={{ padding: '8px 10px 6px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <iconify-icon icon="solar:global-bold-duotone" width="12" />
+                                            Global
+                                        </div>
+                                    )}
+                                    {globalPresets.map(renderPresetItem)}
+
+                                    {showSavePresetAction && typeof onSavePreset === 'function' && (
+                                        <button
+                                            type="button"
+                                            style={{
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                border: 'none',
+                                                borderTop: '1px solid #f3f4f6',
+                                                background: '#fff',
+                                                padding: '9px 10px',
+                                                fontSize: 12,
+                                                color: '#4361ee',
+                                                fontWeight: 600,
+                                                cursor: (canSavePreset && !savingPreset) ? 'pointer' : 'not-allowed',
+                                                opacity: (canSavePreset && !savingPreset) ? 1 : 0.5
+                                            }}
+                                            disabled={!canSavePreset || savingPreset}
+                                            onClick={() => {
+                                                setCatalogDropdown(false)
+                                                onSavePreset?.()
+                                            }}
+                                        >
+                                            <iconify-icon icon={savingPreset ? 'svg-spinners:ring-resize' : 'solar:diskette-bold'} width="12" style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                                            {savingPreset ? 'Sauvegarde...' : 'Sauvegarder comme preset'}
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}

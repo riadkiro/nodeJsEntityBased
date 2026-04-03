@@ -306,10 +306,10 @@
                     <td class="py-2.5 px-4">
                       <div class="flex flex-wrap gap-1">
                         <template x-if="doc._relations && doc._relations.length > 0">
-                          <template x-for="rel in doc._relations" :key="rel.slug">
+                          <template x-for="rel in doc._relations" :key="rel.slug + (rel.recordTitle || '')">
                             <span class="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-dark rounded px-1.5 py-0.5">
                               <iconify-icon :icon="rel.icon || 'solar:folder-bold-duotone'" width="11" class="opacity-60"></iconify-icon>
-                              <span x-text="rel.name"></span>
+                              <span x-text="rel.recordTitle || rel.name"></span>
                             </span>
                           </template>
                         </template>
@@ -319,7 +319,7 @@
                       </div>
                     </td>
                     <td class="py-2.5 px-4">
-                      <template x-if="doc._source && doc._source.type === 'template'">
+                      <template x-if="doc._source && doc._source.type === 'generated'">
                         <span class="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
                           <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12"></iconify-icon>
                           <span x-text="doc._source.name" class="truncate max-w-[120px]"></span>

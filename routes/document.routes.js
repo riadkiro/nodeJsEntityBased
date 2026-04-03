@@ -50,40 +50,43 @@ router.get('/', async (req, res) => {
             .sort({ createdAt: -1 })
             .lean();
 
-        // ── Enrich all docs with entity names for relation display ──
+        // ── Enrich all docs with relation/source display data ──
         try {
             const Entity = await tenantCollection(req, 'Entity');
             if (Entity) {
-                // Collect all entity IDs from docs + templates
+                // Collect entity IDs from templates (entityId/entityIds/collections)
                 const allEntityIds = new Set();
-                const allTemplateSourceIds = new Set();
                 [...documents, ...templateDocs].forEach(d => {
                     if (d.entityId) allEntityIds.add(d.entityId.toString());
                     if (d.entityIds) d.entityIds.forEach(eid => allEntityIds.add(eid.toString()));
                     if (d.collections) d.collections.forEach(c => { if (c.entityId) allEntityIds.add(c.entityId.toString()); });
-                    if (d.templateId) allTemplateSourceIds.add(d.templateId.toString());
                 });
-                // Fetch entity names
+
+                // Fetch entity names for template relation display
+                let entityMap = {};
                 if (allEntityIds.size > 0) {
                     const entities = await Entity.find({ _id: { $in: [...allEntityIds] } }).select('name icon slug').lean();
-                    const entityMap = {};
                     entities.forEach(e => { entityMap[e._id.toString()] = e; });
+                }
 
-                    // Fetch template names for documents generated from templates
-                    let templateSourceMap = {};
-                    if (allTemplateSourceIds.size > 0) {
-                        const tplSources = await Document.find({ _id: { $in: [...allTemplateSourceIds] } }).select('name').lean();
-                        tplSources.forEach(t => { templateSourceMap[t._id.toString()] = t; });
-                    }
-
-                    const enrichDoc = (d) => {
+                const enrichDoc = (d) => {
+                    // ── Relations ──
+                    // Priority 1: Use v2 linkedRecords (generated docs with structured metadata)
+                    if (d.linkedRecords && d.linkedRecords.length > 0) {
+                        d._relations = d.linkedRecords.map(lr => ({
+                            name: lr.recordTitle || lr.entityName || '',
+                            icon: lr.entityIcon || 'solar:folder-bold-duotone',
+                            slug: lr.entitySlug || '',
+                            recordTitle: lr.recordTitle || '',
+                            entityName: lr.entityName || ''
+                        }));
+                    } else {
+                        // Priority 2: Legacy entityId/entityIds/collections (for templates)
                         const relations = [];
-                        // From entityId
                         if (d.entityId && entityMap[d.entityId.toString()]) {
                             const e = entityMap[d.entityId.toString()];
                             relations.push({ name: e.name, icon: e.icon, slug: e.slug });
                         }
-                        // From entityIds
                         if (d.entityIds) {
                             d.entityIds.forEach(eid => {
                                 const key = eid.toString();
@@ -93,7 +96,6 @@ router.get('/', async (req, res) => {
                                 }
                             });
                         }
-                        // From collections
                         if (d.collections) {
                             d.collections.forEach(c => {
                                 if (c.entityId && entityMap[c.entityId.toString()]) {
@@ -105,18 +107,27 @@ router.get('/', async (req, res) => {
                             });
                         }
                         d._relations = relations;
-                        // Source type
-                        if (d.templateId && templateSourceMap[d.templateId.toString()]) {
-                            d._source = { type: 'template', name: templateSourceMap[d.templateId.toString()].name };
-                        } else if (d.uploadedFile?.path) {
-                            d._source = { type: 'upload' };
-                        }
-                    };
-                    documents.forEach(enrichDoc);
-                    templateDocs.forEach(enrichDoc);
-                }
+                    }
+
+                    // ── Source type ──
+                    // Priority 1: v2 generatedFrom
+                    if (d.generatedFrom?.templateName) {
+                        d._source = { type: 'generated', name: d.generatedFrom.templateName };
+                    }
+                    // Priority 2: Legacy draftSourceTemplateId (for unmigrated docs)
+                    else if (d.isDraft && d.draftSourceTemplateId) {
+                        d._source = { type: 'generated', name: 'Modèle' };
+                    }
+                    // Priority 3: Uploaded file
+                    else if (d.uploadedFile?.path) {
+                        d._source = { type: 'upload' };
+                    }
+                    // Default: manually created
+                };
+                documents.forEach(enrichDoc);
+                templateDocs.forEach(enrichDoc);
             }
-        } catch (e) { /* entity enrichment is optional */ };
+        } catch (e) { /* entity enrichment is optional */ }
 
         // Fetch auto-generated document instances
         let generatedDocs = [];

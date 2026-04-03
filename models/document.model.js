@@ -226,12 +226,41 @@ const DocumentSchema = new mongoose.Schema({
         default: null
     },
 
-    // Draft generation fields (Mission 9 - editable SmartDoc drafts)
+    // Draft generation fields (DEPRECATED — use generatedFrom/linkedRecords instead)
     isDraft: { type: Boolean, default: false },
     draftSourceTemplateId: { type: mongoose.Schema.Types.ObjectId, default: null },
     draftRecordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record', default: null },
     draftOutputName: { type: String, default: '' },
     draftOutputFormat: { type: String, default: 'pdf' },
+
+    // ============================================
+    // Structured Generation Metadata (v2)
+    // ============================================
+
+    // Source tracking: which template generated this doc
+    generatedFrom: {
+        templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
+        smartDocId: { type: mongoose.Schema.Types.ObjectId, ref: 'SmartDocTemplate' },
+        templateName: { type: String, default: '' },
+        generatedAt: { type: Date }
+    },
+
+    // Linked records: which records this doc is associated with
+    linkedRecords: [{
+        recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record' },
+        recordTitle: String,
+        entityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity' },
+        entityName: String,
+        entityIcon: String,
+        entitySlug: String,
+        alias: String
+    }],
+
+    // Searchable extracted data from generation context
+    extractedData: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
 
     // Uploaded file info (for uploaded documents, not editor-created)
     uploadedFile: {
@@ -251,6 +280,9 @@ DocumentSchema.index({ isTemplate: 1 });
 DocumentSchema.index({ entityId: 1 });
 DocumentSchema.index({ entityIds: 1 });
 DocumentSchema.index({ folderId: 1 });
+DocumentSchema.index({ 'linkedRecords.recordId': 1 });
+DocumentSchema.index({ 'generatedFrom.templateId': 1 });
+DocumentSchema.index({ 'linkedRecords.entitySlug': 1 });
 
 // Virtual pour compter les pages
 DocumentSchema.virtual('pageCount').get(function () {

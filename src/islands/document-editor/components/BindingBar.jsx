@@ -90,13 +90,29 @@ export default function BindingBar({ bindings, accountNumber, documentId, pageRe
         setFloatingPickerPos(null)
         setFloatingPickerBinding(null)
 
-        // Set draftRecordId for the dynamic table
+        // Set draftRecordId + linkedRecords for the dynamic table and metadata
         if (contextRecord && setDoc) {
-            setDoc(prev => ({
-                ...prev,
-                draftRecordId: contextRecord._id
-            }))
-            console.log(`[BindingBar] Set draftRecordId to ${contextRecord.entityName}: ${contextRecord.title}`)
+            setDoc(prev => {
+                const newLinkedRecords = [...(prev.linkedRecords || [])];
+                // Add the selected record if not already linked
+                if (!newLinkedRecords.find(lr => lr.recordId === contextRecord._id)) {
+                    newLinkedRecords.push({
+                        recordId: contextRecord._id,
+                        recordTitle: contextRecord.title || '',
+                        entityId: binding.entityId || '',
+                        entityName: binding.entityName || '',
+                        entityIcon: binding.entityIcon || '',
+                        entitySlug: binding.entitySlug || '',
+                        alias: binding.entitySlug || ''
+                    });
+                }
+                return {
+                    ...prev,
+                    draftRecordId: contextRecord._id,
+                    linkedRecords: newLinkedRecords
+                };
+            })
+            console.log(`[BindingBar] Set draftRecordId + linkedRecord: ${contextRecord.entityName}: ${contextRecord.title}`)
         }
 
         if (onBindingResolved) onBindingResolved(binding, record, contextRecord)

@@ -836,6 +836,34 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         );
 
         // 9. Save as a draft document (temporary, flagged for cleanup)
+        // Build linkedRecords from the record + its relations
+        const draftLinkedRecords = [];
+        if (record && entity) {
+            draftLinkedRecords.push({
+                recordId: record._id,
+                recordTitle: record.computedTitle || record.title || '',
+                entityId: entity._id,
+                entityName: entity.name || '',
+                entityIcon: entity.icon || '',
+                entitySlug: entity.slug || '',
+                alias: entity.slug || ''
+            });
+            // Add parent records from relations
+            for (const [relKey, relData] of Object.entries(relatedRecordsMap)) {
+                if (relData.record && relData.entity) {
+                    draftLinkedRecords.push({
+                        recordId: relData.record._id,
+                        recordTitle: relData.record.computedTitle || relData.record.title || '',
+                        entityId: relData.entity._id,
+                        entityName: relData.entity.name || '',
+                        entityIcon: relData.entity.icon || '',
+                        entitySlug: relData.entity.slug || '',
+                        alias: relKey
+                    });
+                }
+            }
+        }
+
         const draftDoc = new Document({
             name: outputName,
             pages: draftPages,
@@ -844,11 +872,19 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             format: docTemplate.format || 'A4',
             orientation: docTemplate.orientation || 'portrait',
             isTemplate: false,
-            isDraft: true,               // Flag as draft for cleanup
+            isDraft: true,               // Legacy flag
             draftSourceTemplateId: smartDocTemplate._id,
             draftRecordId: req.body.recordId,
             draftOutputName: outputName,
             draftOutputFormat: smartDocTemplate.outputFormat || 'pdf',
+            // New structured metadata (v2)
+            generatedFrom: {
+                templateId: docTemplate._id,
+                smartDocId: smartDocTemplate._id,
+                templateName: smartDocTemplate.name || docTemplate.name || '',
+                generatedAt: new Date()
+            },
+            linkedRecords: draftLinkedRecords,
             status: 'draft',
             createdBy: req.user?._id,
             createdAt: new Date()

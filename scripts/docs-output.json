@@ -1,21 +1,29 @@
-{
-  "records": [
-    {
-      "_id": "69ce60dc52c96f71dd936a3b",
-      "title": "Consult. Lina Mansouri 59 - Toux persistante #149",
-      "entityId": "69ce60db52c96f71dd936862"
-    },
-    {
-      "_id": "69ce60dc52c96f71dd936a5a",
-      "title": "Consult. Lea Leclerc 15 - Céphalées #180",
-      "entityId": "69ce60db52c96f71dd936862"
-    }
-  ],
-  "template": {
-    "name": "Ordonnance",
-    "entityId": "69ce60db52c96f71dd936862",
-    "entityIds": [
-      "69ce60db52c96f71dd936862"
+[
+  {
+    "name": "Ordonnance - 02 avril 2026",
+    "linkedRecords": [
+      {
+        "title": "Consult. Lina Mansouri 59 - Toux persistante #149",
+        "entity": "Consultation"
+      }
+    ]
+  },
+  {
+    "name": "Ordonnance - 02 avril 2026",
+    "linkedRecords": [
+      {
+        "title": "Consult. Lea Leclerc 15 - Céphalées #180",
+        "entity": "Consultation"
+      }
+    ]
+  },
+  {
+    "name": "Ordonnance - 02 avril 2026",
+    "linkedRecords": [
+      {
+        "title": "Consult. Lea Leclerc 15 - Céphalées #180",
+        "entity": "Consultation"
+      }
     ]
   }
-}
+]

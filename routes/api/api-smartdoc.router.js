@@ -836,7 +836,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         );
 
         // 9. Save as a draft document (temporary, flagged for cleanup)
-        // Build linkedRecords from the record + its relations
+        // Build linkedRecords: source record + only relations used by the template
         const draftLinkedRecords = [];
         if (record && entity) {
             draftLinkedRecords.push({
@@ -848,9 +848,35 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                 entitySlug: entity.slug || '',
                 alias: entity.slug || ''
             });
-            // Add parent records from relations
+            // Only add related records that are referenced by the template's collections
+            const templateCollectionEntityIds = new Set();
+            if (docTemplate.entityId) templateCollectionEntityIds.add(docTemplate.entityId.toString());
+            (docTemplate.entityIds || []).forEach(eid => templateCollectionEntityIds.add(eid.toString()));
+            (docTemplate.collections || []).forEach(c => {
+                if (c.entityId) templateCollectionEntityIds.add(c.entityId.toString());
+            });
+
             for (const [relKey, relData] of Object.entries(relatedRecordsMap)) {
-                if (relData.record && relData.entity) {
+                if (!relData.record || !relData.entity) continue;
+                const targetEntityId = relData.entity._id?.toString();
+                // Only include if this relation's entity is referenced by the template
+                if (targetEntityId && templateCollectionEntityIds.has(targetEntityId)) {
+                    draftLinkedRecords.push({
+                        recordId: relData.record._id,
+                        recordTitle: relData.record.computedTitle || relData.record.title || '',
+                        entityId: relData.entity._id,
+                        entityName: relData.entity.name || '',
+                        entityIcon: relData.entity.icon || '',
+                        entitySlug: relData.entity.slug || '',
+                        alias: relKey
+                    });
+                }
+            }
+            // Fallback: if no template-referenced relations found, add the first parent
+            if (draftLinkedRecords.length === 1 && Object.keys(relatedRecordsMap).length > 0) {
+                const firstRel = Object.entries(relatedRecordsMap)[0];
+                if (firstRel) {
+                    const [relKey, relData] = firstRel;
                     draftLinkedRecords.push({
                         recordId: relData.record._id,
                         recordTitle: relData.record.computedTitle || relData.record.title || '',

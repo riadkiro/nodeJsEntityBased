@@ -163,13 +163,14 @@
                       </div>
                     </td>
                     <td class="py-2.5 px-4">
-                      <div class="flex flex-wrap gap-1">
+                      <div class="flex flex-col gap-0.5">
                         <template x-if="doc._relations && doc._relations.length > 0">
                           <template x-for="rel in doc._relations" :key="rel.slug">
-                            <span class="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-dark rounded px-1.5 py-0.5">
-                              <iconify-icon :icon="rel.icon || 'solar:folder-bold-duotone'" width="11" class="opacity-60"></iconify-icon>
-                              <span x-text="rel.name"></span>
-                            </span>
+                            <div class="flex items-center gap-1.5">
+                              <iconify-icon :icon="rel.icon || 'solar:folder-bold-duotone'" width="13"
+                                            :style="'color:' + (rel.color || '#94a3b8')"></iconify-icon>
+                              <span class="text-[11px] text-gray-600 dark:text-gray-400" x-text="rel.name"></span>
+                            </div>
                           </template>
                         </template>
                         <template x-if="!doc._relations || doc._relations.length === 0">
@@ -292,9 +293,9 @@
                     <td class="py-2.5 px-4">
                       <div class="flex items-center gap-2.5">
                         <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                             :class="doc.isTemplate ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-blue-50 dark:bg-blue-900/20'">
+                             :class="doc.isTemplate ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-cyan-50 dark:bg-cyan-900/20'">
                           <iconify-icon :icon="doc.isTemplate ? 'solar:document-medicine-bold-duotone' : 'solar:document-text-bold-duotone'" width="15"
-                                        :class="doc.isTemplate ? 'text-amber-500' : 'text-blue-500'"></iconify-icon>
+                                        :class="doc.isTemplate ? 'text-amber-500' : 'text-cyan-500'"></iconify-icon>
                         </div>
                         <div class="min-w-0">
                           <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
@@ -304,13 +305,14 @@
                       </div>
                     </td>
                     <td class="py-2.5 px-4">
-                      <div class="flex flex-wrap gap-1">
+                      <div class="flex flex-col gap-0.5">
                         <template x-if="doc._relations && doc._relations.length > 0">
                           <template x-for="rel in doc._relations" :key="rel.slug + (rel.recordTitle || '')">
-                            <span class="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-dark rounded px-1.5 py-0.5">
-                              <iconify-icon :icon="rel.icon || 'solar:folder-bold-duotone'" width="11" class="opacity-60"></iconify-icon>
-                              <span x-text="rel.recordTitle || rel.name"></span>
-                            </span>
+                            <div class="flex items-center gap-1.5">
+                              <iconify-icon :icon="rel.icon || 'solar:folder-bold-duotone'" width="13"
+                                            :style="'color:' + (rel.color || '#94a3b8')"></iconify-icon>
+                              <span class="text-[11px] text-gray-600 dark:text-gray-400" x-text="rel.recordTitle || rel.name"></span>
+                            </div>
                           </template>
                         </template>
                         <template x-if="!doc._relations || doc._relations.length === 0">

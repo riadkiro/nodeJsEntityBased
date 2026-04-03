@@ -252,6 +252,7 @@ const DocumentSchema = new mongoose.Schema({
         entityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity' },
         entityName: String,
         entityIcon: String,
+        entityColor: String,
         entitySlug: String,
         alias: String
     }],

@@ -845,6 +845,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                 entityId: entity._id,
                 entityName: entity.name || '',
                 entityIcon: entity.icon || '',
+                entityColor: entity.color || '',
                 entitySlug: entity.slug || '',
                 alias: entity.slug || ''
             });
@@ -867,6 +868,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                         entityId: relData.entity._id,
                         entityName: relData.entity.name || '',
                         entityIcon: relData.entity.icon || '',
+                        entityColor: relData.entity.color || '',
                         entitySlug: relData.entity.slug || '',
                         alias: relKey
                     });
@@ -883,6 +885,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                         entityId: relData.entity._id,
                         entityName: relData.entity.name || '',
                         entityIcon: relData.entity.icon || '',
+                        entityColor: relData.entity.color || '',
                         entitySlug: relData.entity.slug || '',
                         alias: relKey
                     });

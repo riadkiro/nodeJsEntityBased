@@ -65,7 +65,7 @@ router.get('/', async (req, res) => {
                 // Fetch entity names for template relation display
                 let entityMap = {};
                 if (allEntityIds.size > 0) {
-                    const entities = await Entity.find({ _id: { $in: [...allEntityIds] } }).select('name icon slug').lean();
+                    const entities = await Entity.find({ _id: { $in: [...allEntityIds] } }).select('name icon slug color').lean();
                     entities.forEach(e => { entityMap[e._id.toString()] = e; });
                 }
 
@@ -77,6 +77,7 @@ router.get('/', async (req, res) => {
                             name: lr.recordTitle || lr.entityName || '',
                             icon: lr.entityIcon || 'solar:folder-bold-duotone',
                             slug: lr.entitySlug || '',
+                            color: lr.entityColor || '',
                             recordTitle: lr.recordTitle || '',
                             entityName: lr.entityName || ''
                         }));
@@ -85,14 +86,14 @@ router.get('/', async (req, res) => {
                         const relations = [];
                         if (d.entityId && entityMap[d.entityId.toString()]) {
                             const e = entityMap[d.entityId.toString()];
-                            relations.push({ name: e.name, icon: e.icon, slug: e.slug });
+                            relations.push({ name: e.name, icon: e.icon, slug: e.slug, color: e.color || '' });
                         }
                         if (d.entityIds) {
                             d.entityIds.forEach(eid => {
                                 const key = eid.toString();
                                 if (entityMap[key] && !relations.find(r => r.slug === entityMap[key].slug)) {
                                     const e = entityMap[key];
-                                    relations.push({ name: e.name, icon: e.icon, slug: e.slug });
+                                    relations.push({ name: e.name, icon: e.icon, slug: e.slug, color: e.color || '' });
                                 }
                             });
                         }
@@ -101,7 +102,7 @@ router.get('/', async (req, res) => {
                                 if (c.entityId && entityMap[c.entityId.toString()]) {
                                     const e = entityMap[c.entityId.toString()];
                                     if (!relations.find(r => r.slug === e.slug)) {
-                                        relations.push({ name: e.name, icon: e.icon, slug: e.slug });
+                                        relations.push({ name: e.name, icon: e.icon, slug: e.slug, color: e.color || '' });
                                     }
                                 }
                             });

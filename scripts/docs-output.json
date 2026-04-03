@@ -1,29 +1,116 @@
 [
   {
-    "name": "Ordonnance - 02 avril 2026",
-    "linkedRecords": [
-      {
-        "title": "Consult. Lina Mansouri 59 - Toux persistante #149",
-        "entity": "Consultation"
-      }
-    ]
+    "name": "Patient",
+    "slug": "patients",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#3b82f6"
   },
   {
-    "name": "Ordonnance - 02 avril 2026",
-    "linkedRecords": [
-      {
-        "title": "Consult. Lea Leclerc 15 - Céphalées #180",
-        "entity": "Consultation"
-      }
-    ]
+    "name": "Rendez-vous",
+    "slug": "rendez-vous",
+    "icon": "solar:calendar-mark-bold-duotone",
+    "color": "#8b5cf6"
   },
   {
-    "name": "Ordonnance - 02 avril 2026",
-    "linkedRecords": [
-      {
-        "title": "Consult. Lea Leclerc 15 - Céphalées #180",
-        "entity": "Consultation"
-      }
-    ]
+    "name": "Consultation",
+    "slug": "consultations",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#00ab55"
+  },
+  {
+    "name": "Prescription",
+    "slug": "prescriptions",
+    "icon": "solar:document-medicine-bold-duotone",
+    "color": "#e2a03f"
+  },
+  {
+    "name": "Médicament",
+    "slug": "medicaments",
+    "icon": "solar:pills-3-bold-duotone",
+    "color": "#ef4444"
+  },
+  {
+    "name": "Prestation",
+    "slug": "prestations",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#0ea5e9"
+  },
+  {
+    "name": "Examen",
+    "slug": "examens",
+    "icon": "solar:test-tube-bold-duotone",
+    "color": "#f97316"
+  },
+  {
+    "name": "Facture",
+    "slug": "factures",
+    "icon": "solar:bill-list-bold-duotone",
+    "color": "#e2a03f"
+  },
+  {
+    "name": "Paiement",
+    "slug": "paiements",
+    "icon": "solar:wallet-bold-duotone",
+    "color": "#22c55e"
+  },
+  {
+    "name": "Assurance",
+    "slug": "assurances",
+    "icon": "solar:shield-bold-duotone",
+    "color": "#3b82f6"
+  },
+  {
+    "name": "Résultat Labo",
+    "slug": "resultats-labo",
+    "icon": "solar:test-tube-bold-duotone",
+    "color": "#f97316"
+  },
+  {
+    "name": "Document Médical",
+    "slug": "documents-medicaux",
+    "icon": "solar:file-text-bold-duotone",
+    "color": "#6366f1"
+  },
+  {
+    "name": "Plan de Traitement",
+    "slug": "plans-traitement",
+    "icon": "solar:clipboard-list-bold-duotone",
+    "color": "#0ea5e9"
+  },
+  {
+    "name": "Personnel",
+    "slug": "personnel",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#4361ee"
+  },
+  {
+    "name": "Stock",
+    "slug": "stock",
+    "icon": "solar:box-bold-duotone",
+    "color": "#94a3b8"
+  },
+  {
+    "name": "Symptôme",
+    "slug": "symptomes",
+    "icon": "solar:heart-pulse-bold-duotone",
+    "color": "#ec4899"
+  },
+  {
+    "name": "Pathologie",
+    "slug": "pathologies",
+    "icon": "solar:virus-bold-duotone",
+    "color": "#dc2626"
+  },
+  {
+    "name": "Traitement",
+    "slug": "traitements",
+    "icon": "solar:pills-bold-duotone",
+    "color": "#0891b2"
+  },
+  {
+    "name": "Actes",
+    "slug": "actes",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#0ea5e9"
   }
 ]

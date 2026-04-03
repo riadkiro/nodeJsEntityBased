@@ -582,9 +582,10 @@ export default function DynamicTable({
         if (!item || !col) return
 
         const selectedItem = pickBestCatalogItem(item, schemaId)
-        const hybridDefaults = resolveApplyDefaults(col, selectedItem)
-        const resolved = resolveLineDefaults(selectedItem, schemaId)
         const schema = forcedSchema || schemas.find(s => s._id === schemaId || (s._id && s._id.toString() === schemaId.toString()))
+        const rawHybrid = resolveApplyDefaults(col, selectedItem)
+        const hybridDefaults = normalizeDefaultsForSchema(schema, rawHybrid || {})
+        const resolved = resolveLineDefaults(selectedItem, schemaId)
         const normalizedDefaults = normalizeDefaultsForSchema(schema, resolved?.defaults || {})
 
         setLinesMap(prev => {
@@ -1007,7 +1008,8 @@ export default function DynamicTable({
             loading: false,
             results: [],
             selectedIds: [],
-            classificationFilter: ''
+            classificationFilter: '',
+            modalTab: 'catalogue'
         })
 
         // Fetch classification options if schema has catalogGroupBy configured
@@ -1039,7 +1041,7 @@ export default function DynamicTable({
     }, [accountNumber, getRelationCol, searchCatalogInPicker])
 
     const closeCatalogPicker = useCallback(() => {
-        setCatalogPicker({ open: false, schemaId: '', query: '', loading: false, results: [], selectedIds: [], classificationFilter: '' })
+        setCatalogPicker({ open: false, schemaId: '', query: '', loading: false, results: [], selectedIds: [], classificationFilter: '', modalTab: 'catalogue' })
     }, [])
 
     const toggleCatalogItem = useCallback((itemId) => {
@@ -1088,7 +1090,8 @@ export default function DynamicTable({
 
                 // Apply relation + defaults to the target line
                 const selectedItem = pickBestCatalogItem(item, schemaId)
-                const hybridDefaults = resolveApplyDefaults(relCol, selectedItem)
+                const rawHybrid = resolveApplyDefaults(relCol, selectedItem)
+                const hybridDefaults = normalizeDefaultsForSchema(schema, rawHybrid || {})
                 const resolved = resolveLineDefaults(selectedItem, schemaId)
                 const normalizedDefaults = normalizeDefaultsForSchema(schema, resolved?.defaults || {})
 
@@ -1233,8 +1236,8 @@ export default function DynamicTable({
                                 <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #e5e7eb' }}>
                                     <div style={{ display: 'flex', flex: 1 }}>
                                         {[
-                                            { key: 'catalogue', label: schema.label || 'Catalogue' },
-                                            { key: 'presets', label: 'Presets', count: getTemplatesForSchema(schema._id).length }
+                                            { key: 'catalogue', label: schema.label || 'Catalogue', icon: 'solar:book-2-bold-duotone' },
+                                            { key: 'presets', label: 'Presets', icon: 'solar:layers-bold-duotone', count: getTemplatesForSchema(schema._id).length }
                                         ].map(tab => {
                                             const active = catalogPicker.modalTab === tab.key
                                             return (
@@ -1257,6 +1260,7 @@ export default function DynamicTable({
                                                         transition: 'all 0.15s ease'
                                                     }}
                                                 >
+                                                    <iconify-icon icon={tab.icon} width="15" style={{ opacity: active ? 1 : 0.6 }}></iconify-icon>
                                                     {tab.label}
                                                     {tab.count > 0 && (
                                                         <span style={{
@@ -1423,13 +1427,13 @@ export default function DynamicTable({
                                                                         width: '100%', textAlign: 'left', border: 'none',
                                                                         borderBottom: '1px solid #f9fafb',
                                                                         background: checked ? 'rgba(67,97,238,0.06)' : '#fff',
-                                                                        padding: '10px 12px', cursor: 'pointer',
-                                                                        display: 'flex', alignItems: 'center', gap: 10
+                                                                        padding: '7px 12px', cursor: 'pointer',
+                                                                        display: 'flex', alignItems: 'center', gap: 8
                                                                     }}
                                                                 >
                                                                     <input type="checkbox" readOnly checked={checked} style={{ flexShrink: 0 }} />
                                                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label || item.title}</div>
+                                                                        <div style={{ fontSize: 12, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label || item.title}</div>
                                                                         {item.description && <div style={{ fontSize: 11, color: '#9ca3af' }}>{item.description}</div>}
                                                                     </div>
                                                                     {catalogExtraCols.map(ec => {
@@ -1494,8 +1498,8 @@ export default function DynamicTable({
                                                 )}
                                                 {schemaPresets.map(preset => (
                                                     <div key={preset._id} style={{
-                                                        display: 'flex', alignItems: 'center', gap: 10,
-                                                        padding: '12px 16px', borderBottom: '1px solid #f3f4f6',
+                                                        display: 'flex', alignItems: 'center', gap: 8,
+                                                        padding: '8px 14px', borderBottom: '1px solid #f3f4f6',
                                                         transition: 'background 0.1s'
                                                     }}
                                                     onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}

@@ -1,0 +1,15 @@
+30: const templateDocs = await Document.find({
+148: res.render('document/document-list', {
+151: templateDocs,
+195: res.render('document/template-list', {
+228: res.render('document/document-editor-react', {
+251: res.render('document/document-editor', {
+291: res.render('document/document-editor-react', {
+595: // We inject Tailwind via CDN to ensure styles are present in the PDF renderer
+809: res.json({ success: true, documents: created });
+839: // Get linked entities with relations populated
+849: path: 'relations.targetEntity',
+894: const relation = (primaryEntity.relations || []).find(r => {
+1157: .populate({ path: 'relations.targetEntity', select: 'name slug' })
+1162: const relation = (primaryEntity.relations || []).find(r => {
+1171: 'relations': {

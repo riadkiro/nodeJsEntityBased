@@ -1,8 +1,11 @@
 const fs = require('fs');
-const content = fs.readFileSync('views/document/document-list.ejs', 'utf8');
+const content = fs.readFileSync('routes/document.routes.js', 'utf8');
 const lines = content.split(/\r?\n/);
+const results = [];
 lines.forEach((l, i) => {
-    if (l.includes('activeSection') && l.includes('recent')) {
-        console.log(`${i + 1}: ${l.trim().substring(0, 120)}`);
+    if (l.includes('document-list') || l.includes('templateDocs') || l.includes('documents:') || l.includes('render') || l.includes('_denorm') || l.includes('relations') || l.includes('generatedFrom')) {
+        results.push(`${i + 1}: ${l.trim().substring(0, 180)}`);
     }
 });
+fs.writeFileSync('scripts/catalog-refs.txt', results.join('\n'));
+console.log('Found: ' + results.length);

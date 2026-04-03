@@ -50,6 +50,74 @@ router.get('/', async (req, res) => {
             .sort({ createdAt: -1 })
             .lean();
 
+        // ── Enrich all docs with entity names for relation display ──
+        try {
+            const Entity = await tenantCollection(req, 'Entity');
+            if (Entity) {
+                // Collect all entity IDs from docs + templates
+                const allEntityIds = new Set();
+                const allTemplateSourceIds = new Set();
+                [...documents, ...templateDocs].forEach(d => {
+                    if (d.entityId) allEntityIds.add(d.entityId.toString());
+                    if (d.entityIds) d.entityIds.forEach(eid => allEntityIds.add(eid.toString()));
+                    if (d.collections) d.collections.forEach(c => { if (c.entityId) allEntityIds.add(c.entityId.toString()); });
+                    if (d.templateId) allTemplateSourceIds.add(d.templateId.toString());
+                });
+                // Fetch entity names
+                if (allEntityIds.size > 0) {
+                    const entities = await Entity.find({ _id: { $in: [...allEntityIds] } }).select('name icon slug').lean();
+                    const entityMap = {};
+                    entities.forEach(e => { entityMap[e._id.toString()] = e; });
+
+                    // Fetch template names for documents generated from templates
+                    let templateSourceMap = {};
+                    if (allTemplateSourceIds.size > 0) {
+                        const tplSources = await Document.find({ _id: { $in: [...allTemplateSourceIds] } }).select('name').lean();
+                        tplSources.forEach(t => { templateSourceMap[t._id.toString()] = t; });
+                    }
+
+                    const enrichDoc = (d) => {
+                        const relations = [];
+                        // From entityId
+                        if (d.entityId && entityMap[d.entityId.toString()]) {
+                            const e = entityMap[d.entityId.toString()];
+                            relations.push({ name: e.name, icon: e.icon, slug: e.slug });
+                        }
+                        // From entityIds
+                        if (d.entityIds) {
+                            d.entityIds.forEach(eid => {
+                                const key = eid.toString();
+                                if (entityMap[key] && !relations.find(r => r.slug === entityMap[key].slug)) {
+                                    const e = entityMap[key];
+                                    relations.push({ name: e.name, icon: e.icon, slug: e.slug });
+                                }
+                            });
+                        }
+                        // From collections
+                        if (d.collections) {
+                            d.collections.forEach(c => {
+                                if (c.entityId && entityMap[c.entityId.toString()]) {
+                                    const e = entityMap[c.entityId.toString()];
+                                    if (!relations.find(r => r.slug === e.slug)) {
+                                        relations.push({ name: e.name, icon: e.icon, slug: e.slug });
+                                    }
+                                }
+                            });
+                        }
+                        d._relations = relations;
+                        // Source type
+                        if (d.templateId && templateSourceMap[d.templateId.toString()]) {
+                            d._source = { type: 'template', name: templateSourceMap[d.templateId.toString()].name };
+                        } else if (d.uploadedFile?.path) {
+                            d._source = { type: 'upload' };
+                        }
+                    };
+                    documents.forEach(enrichDoc);
+                    templateDocs.forEach(enrichDoc);
+                }
+            }
+        } catch (e) { /* entity enrichment is optional */ };
+
         // Fetch auto-generated document instances
         let generatedDocs = [];
         try {

@@ -347,7 +347,8 @@ export default function DynamicTable({
         loading: false,
         results: [],
         selectedIds: [],
-        classificationFilter: '' // optionId or '' for all
+        classificationFilter: '', // optionId or '' for all
+        modalTab: 'catalogue' // 'catalogue' or 'presets'
     })
     const [catalogClassifications, setCatalogClassifications] = useState([]) // { _id, label, color }
     const [validatingMap, setValidatingMap] = useState({})
@@ -1199,17 +1200,9 @@ export default function DynamicTable({
                     <Toolbar
                         schema={schema}
                         saving={saving[schema._id]}
-                        savingPreset={savePresetModal.open && savePresetModal.schemaId === String(schema._id) && savePresetModal.saving}
                         validating={!!validatingMap[schema._id]}
                         presets={getTemplatesForSchema(schema._id)}
-                        linkedRecords={linkedRecords}
-                        currentRecordId={recordId}
-                        lines={getSchemaLines(schema._id)}
                         lineCount={getSchemaLines(schema._id).filter(isFilledLine).length}
-                        catalogEnabled={!!getRelationCol(schema)}
-                        onApplyPreset={handleApplyPreset}
-                        onDeletePreset={handleDeletePreset}
-                        onSavePreset={() => openSavePresetModal(schema)}
                         onValidate={() => handleValidate(schema)}
                         onOpenCatalog={() => openCatalogPicker(schema)}
                     />
@@ -1224,7 +1217,7 @@ export default function DynamicTable({
                             alignItems: 'center',
                             justifyContent: 'center',
                             padding: 16
-                        }}>
+                        }} onClick={(e) => { if (e.target === e.currentTarget) closeCatalogPicker() }}>
                             <div style={{
                                 width: 'min(820px, 100%)',
                                 maxHeight: '80vh',
@@ -1235,77 +1228,99 @@ export default function DynamicTable({
                                 overflow: 'hidden',
                                 display: 'flex',
                                 flexDirection: 'column'
-                            }}>
-                                <div style={{ padding: 12, borderBottom: '1px solid #f3f4f6', display: 'flex', gap: 8 }}>
-                                    <input
-                                        type="text"
-                                        value={catalogPicker.query}
-                                        onChange={(e) => searchCatalogInPicker(schema, e.target.value, catalogPicker.classificationFilter)}
-                                        placeholder="Rechercher dans le catalogue"
-                                        style={{
-                                            flex: 1,
-                                            border: '1px solid #e5e7eb',
-                                            borderRadius: 8,
-                                            fontSize: 13,
-                                            padding: '8px 10px',
-                                            outline: 'none'
-                                        }}
-                                    />
+                            }} onClick={(e) => e.stopPropagation()}>
+                                {/* ── Tab header ── */}
+                                <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #e5e7eb' }}>
+                                    <div style={{ display: 'flex', flex: 1 }}>
+                                        {[
+                                            { key: 'catalogue', label: schema.label || 'Catalogue' },
+                                            { key: 'presets', label: 'Presets', count: getTemplatesForSchema(schema._id).length }
+                                        ].map(tab => {
+                                            const active = catalogPicker.modalTab === tab.key
+                                            return (
+                                                <button
+                                                    key={tab.key}
+                                                    type="button"
+                                                    onClick={() => setCatalogPicker(prev => ({ ...prev, modalTab: tab.key }))}
+                                                    style={{
+                                                        padding: '10px 18px',
+                                                        fontSize: 13,
+                                                        fontWeight: active ? 600 : 500,
+                                                        color: active ? '#4361ee' : '#6b7280',
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        borderBottom: active ? '2px solid #4361ee' : '2px solid transparent',
+                                                        cursor: 'pointer',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        transition: 'all 0.15s ease'
+                                                    }}
+                                                >
+                                                    {tab.label}
+                                                    {tab.count > 0 && (
+                                                        <span style={{
+                                                            display: 'inline-flex', minWidth: 18, height: 18, borderRadius: 999,
+                                                            background: active ? 'rgba(67,97,238,0.12)' : '#f3f4f6',
+                                                            color: active ? '#4361ee' : '#6b7280',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                            fontSize: 10, fontWeight: 700, padding: '0 5px'
+                                                        }}>{tab.count}</span>
+                                                    )}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={closeCatalogPicker}
-                                        style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', fontSize: 12, padding: '8px 10px', cursor: 'pointer' }}
-                                    >
-                                        Fermer
-                                    </button>
+                                        style={{ marginRight: 8, border: 'none', background: 'transparent', fontSize: 18, color: '#9ca3af', cursor: 'pointer', padding: '6px 8px', lineHeight: 1 }}
+                                        title="Fermer"
+                                    >✕</button>
                                 </div>
 
-                                {/* Classification filter tabs */}
-                                {catalogClassifications.length > 0 && (
-                                    <div style={{
-                                        padding: '8px 12px',
-                                        borderBottom: '1px solid #f3f4f6',
-                                        display: 'flex',
-                                        gap: 6,
-                                        overflowX: 'auto',
-                                        flexShrink: 0
-                                    }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setCatalogPicker(prev => ({ ...prev, classificationFilter: '' }))
-                                                searchCatalogInPicker(schema, catalogPicker.query, '')
-                                            }}
-                                            style={{
-                                                border: catalogPicker.classificationFilter === '' ? '1px solid #4361ee' : '1px solid #e5e7eb',
-                                                borderRadius: 20,
-                                                background: catalogPicker.classificationFilter === '' ? '#4361ee' : '#fff',
-                                                color: catalogPicker.classificationFilter === '' ? '#fff' : '#374151',
-                                                fontSize: 11,
-                                                fontWeight: 600,
-                                                padding: '5px 14px',
-                                                cursor: 'pointer',
-                                                whiteSpace: 'nowrap',
-                                                transition: 'all 0.15s ease'
-                                            }}
-                                        >
-                                            Tous
-                                        </button>
-                                        {catalogClassifications.map(opt => {
-                                            const isActive = catalogPicker.classificationFilter === opt._id
-                                            return (
+                                {/* ── TAB: Catalogue ── */}
+                                {catalogPicker.modalTab === 'catalogue' && (
+                                    <>
+                                        <div style={{ padding: 12, borderBottom: '1px solid #f3f4f6', display: 'flex', gap: 8 }}>
+                                            <input
+                                                type="text"
+                                                value={catalogPicker.query}
+                                                onChange={(e) => searchCatalogInPicker(schema, e.target.value, catalogPicker.classificationFilter)}
+                                                placeholder="Rechercher dans le catalogue"
+                                                autoFocus
+                                                style={{
+                                                    flex: 1,
+                                                    border: '1px solid #e5e7eb',
+                                                    borderRadius: 8,
+                                                    fontSize: 13,
+                                                    padding: '8px 10px',
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Classification filter tabs */}
+                                        {catalogClassifications.length > 0 && (
+                                            <div style={{
+                                                padding: '8px 12px',
+                                                borderBottom: '1px solid #f3f4f6',
+                                                display: 'flex',
+                                                gap: 6,
+                                                overflowX: 'auto',
+                                                flexShrink: 0
+                                            }}>
                                                 <button
-                                                    key={opt._id}
                                                     type="button"
                                                     onClick={() => {
-                                                        setCatalogPicker(prev => ({ ...prev, classificationFilter: opt._id }))
-                                                        searchCatalogInPicker(schema, catalogPicker.query, opt._id)
+                                                        setCatalogPicker(prev => ({ ...prev, classificationFilter: '' }))
+                                                        searchCatalogInPicker(schema, catalogPicker.query, '')
                                                     }}
                                                     style={{
-                                                        border: isActive ? `1px solid ${opt.color}` : '1px solid #e5e7eb',
+                                                        border: catalogPicker.classificationFilter === '' ? '1px solid #4361ee' : '1px solid #e5e7eb',
                                                         borderRadius: 20,
-                                                        background: isActive ? opt.color : '#fff',
-                                                        color: isActive ? '#fff' : '#374151',
+                                                        background: catalogPicker.classificationFilter === '' ? '#4361ee' : '#fff',
+                                                        color: catalogPicker.classificationFilter === '' ? '#fff' : '#374151',
                                                         fontSize: 11,
                                                         fontWeight: 600,
                                                         padding: '5px 14px',
@@ -1314,171 +1329,231 @@ export default function DynamicTable({
                                                         transition: 'all 0.15s ease'
                                                     }}
                                                 >
-                                                    {opt.label}
+                                                    Tous
                                                 </button>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-
-                                <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
-                                    {catalogPicker.loading && (
-                                        <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>Chargement...</div>
-                                    )}
-                                    {!catalogPicker.loading && catalogPicker.results.length === 0 && (
-                                        <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>Aucun resultat</div>
-                                    )}
-                                    {(() => {
-                                        // Build display columns from showOnCatalog flag on schema columns
-                                        const relCol = getRelationCol(schema)
-                                        const applyDefaults = relCol?.config?.applyDefaults || {}
-                                        const catalogExtraCols = []
-
-                                        // Primary: columns explicitly marked with showOnCatalog
-                                        const markedCols = (schema.columns || []).filter(c => c.showOnCatalog && c.type !== 'relation')
-                                        if (markedCols.length > 0) {
-                                            for (const col of markedCols) {
-                                                // Find the corresponding custom field ID from applyDefaults
-                                                const src = applyDefaults[col.key]
-                                                const fieldId = (typeof src === 'string' && src.startsWith('cf.')) ? src.substring(3) : null
-                                                catalogExtraCols.push({ key: col.key, label: col.label, fieldId })
-                                            }
-                                        } else {
-                                            // Fallback: derive from applyDefaults (backward compat)
-                                            for (const [colKey, src] of Object.entries(applyDefaults)) {
-                                                if (typeof src === 'string' && src.startsWith('cf.')) {
-                                                    const fieldId = src.substring(3)
-                                                    const schemaCol = (schema.columns || []).find(c => c.key === colKey)
-                                                    if (schemaCol && schemaCol.type !== 'relation') {
-                                                        catalogExtraCols.push({ key: colKey, label: schemaCol.label, fieldId })
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        const hasExtraCols = catalogExtraCols.length > 0
-
-                                        return (
-                                            <>
-                                                {/* Table header — only show if there are extra columns */}
-                                                {hasExtraCols && !catalogPicker.loading && catalogPicker.results.length > 0 && (
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 10,
-                                                        padding: '6px 12px',
-                                                        borderBottom: '1px solid #e5e7eb',
-                                                        background: '#f9fafb',
-                                                        position: 'sticky',
-                                                        top: 0,
-                                                        zIndex: 1
-                                                    }}>
-                                                        <div style={{ width: 20, flexShrink: 0 }}></div>
-                                                        <div style={{ flex: 1, minWidth: 0, fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                                                            {relCol?.label || 'Désignation'}
-                                                        </div>
-                                                        {catalogExtraCols.map(ec => (
-                                                            <div key={ec.key} style={{
-                                                                width: ec.key === 'code' ? 100 : 80,
-                                                                flexShrink: 0,
-                                                                fontSize: 10,
-                                                                fontWeight: 700,
-                                                                color: '#6b7280',
-                                                                textTransform: 'uppercase',
-                                                                letterSpacing: '.05em',
-                                                                textAlign: ec.key === 'code' ? 'left' : 'right'
-                                                            }}>
-                                                                {ec.label}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {/* Items */}
-                                                {!catalogPicker.loading && catalogPicker.results.map(item => {
-                                                    const checked = catalogPicker.selectedIds.includes(item._id)
+                                                {catalogClassifications.map(opt => {
+                                                    const isActive = catalogPicker.classificationFilter === opt._id
                                                     return (
                                                         <button
-                                                            key={item._id}
+                                                            key={opt._id}
                                                             type="button"
-                                                            onClick={() => toggleCatalogItem(item._id)}
+                                                            onClick={() => {
+                                                                setCatalogPicker(prev => ({ ...prev, classificationFilter: opt._id }))
+                                                                searchCatalogInPicker(schema, catalogPicker.query, opt._id)
+                                                            }}
                                                             style={{
-                                                                width: '100%',
-                                                                textAlign: 'left',
-                                                                border: 'none',
-                                                                borderBottom: '1px solid #f9fafb',
-                                                                background: checked ? 'rgba(67,97,238,0.06)' : '#fff',
-                                                                padding: '10px 12px',
+                                                                border: isActive ? `1px solid ${opt.color}` : '1px solid #e5e7eb',
+                                                                borderRadius: 20,
+                                                                background: isActive ? opt.color : '#fff',
+                                                                color: isActive ? '#fff' : '#374151',
+                                                                fontSize: 11,
+                                                                fontWeight: 600,
+                                                                padding: '5px 14px',
                                                                 cursor: 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 10
+                                                                whiteSpace: 'nowrap',
+                                                                transition: 'all 0.15s ease'
                                                             }}
                                                         >
-                                                            <input type="checkbox" readOnly checked={checked} style={{ flexShrink: 0 }} />
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label || item.title}</div>
-                                                                {item.description && <div style={{ fontSize: 11, color: '#9ca3af' }}>{item.description}</div>}
-                                                            </div>
-                                                            {catalogExtraCols.map(ec => {
-                                                                const val = item.customFields?.[ec.fieldId]
-                                                                const isNum = ['unitPrice', 'vatRate', 'puHt', 'prixHt'].includes(ec.key) || (typeof val === 'number')
-                                                                return (
-                                                                    <div key={ec.key} style={{
-                                                                        width: ec.key === 'code' ? 100 : 80,
-                                                                        flexShrink: 0,
-                                                                        fontSize: 12,
-                                                                        color: val ? '#374151' : '#d1d5db',
-                                                                        fontWeight: val ? 500 : 400,
-                                                                        textAlign: ec.key === 'code' ? 'left' : 'right',
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                        fontVariantNumeric: isNum ? 'tabular-nums' : 'normal'
-                                                                    }}>
-                                                                        {val != null && val !== '' ? val : '—'}
-                                                                    </div>
-                                                                )
-                                                            })}
+                                                            {opt.label}
                                                         </button>
                                                     )
                                                 })}
-                                            </>
-                                        )
-                                    })()}
-                                </div>
+                                            </div>
+                                        )}
 
-                                <div style={{ borderTop: '1px solid #f3f4f6', padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ fontSize: 12, color: '#6b7280' }}>
-                                        {catalogPicker.selectedIds.length} selection{catalogPicker.selectedIds.length > 1 ? 's' : ''}
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setCatalogPicker(prev => ({ ...prev, selectedIds: [] }))
-                                            }}
-                                            style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', fontSize: 12, padding: '8px 10px', cursor: 'pointer' }}
-                                        >
-                                            Vider
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => applyCatalogBulkSelection(schema)}
-                                            disabled={catalogPicker.selectedIds.length === 0}
-                                            style={{
-                                                border: '1px solid #4361ee',
-                                                borderRadius: 8,
-                                                background: catalogPicker.selectedIds.length === 0 ? '#dbe3ff' : '#4361ee',
-                                                color: '#fff',
-                                                fontSize: 12,
-                                                padding: '8px 12px',
-                                                cursor: catalogPicker.selectedIds.length === 0 ? 'not-allowed' : 'pointer'
-                                            }}
-                                        >
-                                            Ajouter la selection
-                                        </button>
-                                    </div>
-                                </div>
+                                        <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+                                            {catalogPicker.loading && (
+                                                <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>Chargement...</div>
+                                            )}
+                                            {!catalogPicker.loading && catalogPicker.results.length === 0 && (
+                                                <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>Aucun resultat</div>
+                                            )}
+                                            {(() => {
+                                                const relCol = getRelationCol(schema)
+                                                const applyDefaults = relCol?.config?.applyDefaults || {}
+                                                const catalogExtraCols = []
+                                                const markedCols = (schema.columns || []).filter(c => c.showOnCatalog && c.type !== 'relation')
+                                                if (markedCols.length > 0) {
+                                                    for (const col of markedCols) {
+                                                        const src = applyDefaults[col.key]
+                                                        const fieldId = (typeof src === 'string' && src.startsWith('cf.')) ? src.substring(3) : null
+                                                        catalogExtraCols.push({ key: col.key, label: col.label, fieldId })
+                                                    }
+                                                } else {
+                                                    for (const [colKey, src] of Object.entries(applyDefaults)) {
+                                                        if (typeof src === 'string' && src.startsWith('cf.')) {
+                                                            const fieldId = src.substring(3)
+                                                            const schemaCol = (schema.columns || []).find(c => c.key === colKey)
+                                                            if (schemaCol && schemaCol.type !== 'relation') {
+                                                                catalogExtraCols.push({ key: colKey, label: schemaCol.label, fieldId })
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                const hasExtraCols = catalogExtraCols.length > 0
+
+                                                return (
+                                                    <>
+                                                        {hasExtraCols && !catalogPicker.loading && catalogPicker.results.length > 0 && (
+                                                            <div style={{
+                                                                display: 'flex', alignItems: 'center', gap: 10,
+                                                                padding: '6px 12px', borderBottom: '1px solid #e5e7eb',
+                                                                background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1
+                                                            }}>
+                                                                <div style={{ width: 20, flexShrink: 0 }}></div>
+                                                                <div style={{ flex: 1, minWidth: 0, fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                                                                    {relCol?.label || 'Désignation'}
+                                                                </div>
+                                                                {catalogExtraCols.map(ec => (
+                                                                    <div key={ec.key} style={{
+                                                                        width: ec.key === 'code' ? 100 : 80, flexShrink: 0,
+                                                                        fontSize: 10, fontWeight: 700, color: '#6b7280',
+                                                                        textTransform: 'uppercase', letterSpacing: '.05em',
+                                                                        textAlign: ec.key === 'code' ? 'left' : 'right'
+                                                                    }}>{ec.label}</div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {!catalogPicker.loading && catalogPicker.results.map(item => {
+                                                            const checked = catalogPicker.selectedIds.includes(item._id)
+                                                            return (
+                                                                <button key={item._id} type="button"
+                                                                    onClick={() => toggleCatalogItem(item._id)}
+                                                                    style={{
+                                                                        width: '100%', textAlign: 'left', border: 'none',
+                                                                        borderBottom: '1px solid #f9fafb',
+                                                                        background: checked ? 'rgba(67,97,238,0.06)' : '#fff',
+                                                                        padding: '10px 12px', cursor: 'pointer',
+                                                                        display: 'flex', alignItems: 'center', gap: 10
+                                                                    }}
+                                                                >
+                                                                    <input type="checkbox" readOnly checked={checked} style={{ flexShrink: 0 }} />
+                                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label || item.title}</div>
+                                                                        {item.description && <div style={{ fontSize: 11, color: '#9ca3af' }}>{item.description}</div>}
+                                                                    </div>
+                                                                    {catalogExtraCols.map(ec => {
+                                                                        const val = item.customFields?.[ec.fieldId]
+                                                                        const isNum = ['unitPrice', 'vatRate', 'puHt', 'prixHt'].includes(ec.key) || (typeof val === 'number')
+                                                                        return (
+                                                                            <div key={ec.key} style={{
+                                                                                width: ec.key === 'code' ? 100 : 80, flexShrink: 0,
+                                                                                fontSize: 12, color: val ? '#374151' : '#d1d5db',
+                                                                                fontWeight: val ? 500 : 400,
+                                                                                textAlign: ec.key === 'code' ? 'left' : 'right',
+                                                                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                                                                fontVariantNumeric: isNum ? 'tabular-nums' : 'normal'
+                                                                            }}>{val != null && val !== '' ? val : '—'}</div>
+                                                                        )
+                                                                    })}
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </>
+                                                )
+                                            })()}
+                                        </div>
+
+                                        <div style={{ borderTop: '1px solid #f3f4f6', padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                                {catalogPicker.selectedIds.length} selection{catalogPicker.selectedIds.length > 1 ? 's' : ''}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <button type="button"
+                                                    onClick={() => setCatalogPicker(prev => ({ ...prev, selectedIds: [] }))}
+                                                    style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', fontSize: 12, padding: '8px 10px', cursor: 'pointer' }}
+                                                >Vider</button>
+                                                <button type="button"
+                                                    onClick={() => applyCatalogBulkSelection(schema)}
+                                                    disabled={catalogPicker.selectedIds.length === 0}
+                                                    style={{
+                                                        border: '1px solid #4361ee', borderRadius: 8,
+                                                        background: catalogPicker.selectedIds.length === 0 ? '#dbe3ff' : '#4361ee',
+                                                        color: '#fff', fontSize: 12, padding: '8px 12px',
+                                                        cursor: catalogPicker.selectedIds.length === 0 ? 'not-allowed' : 'pointer'
+                                                    }}
+                                                >Ajouter la selection</button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ── TAB: Presets ── */}
+                                {catalogPicker.modalTab === 'presets' && (() => {
+                                    const schemaPresets = getTemplatesForSchema(schema._id)
+                                    const lineCount = getSchemaLines(schema._id).filter(isFilledLine).length
+                                    return (
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 200 }}>
+                                            <div style={{ flex: 1, overflowY: 'auto', maxHeight: '55vh' }}>
+                                                {schemaPresets.length === 0 && (
+                                                    <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                                                        <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>📋</div>
+                                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Aucun preset</div>
+                                                        <div style={{ fontSize: 12, color: '#9ca3af' }}>Sauvegardez les lignes actuelles comme preset pour les réutiliser</div>
+                                                    </div>
+                                                )}
+                                                {schemaPresets.map(preset => (
+                                                    <div key={preset._id} style={{
+                                                        display: 'flex', alignItems: 'center', gap: 10,
+                                                        padding: '12px 16px', borderBottom: '1px solid #f3f4f6',
+                                                        transition: 'background 0.1s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    >
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                {preset.name}
+                                                            </div>
+                                                            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+                                                                {preset.rows?.length || 0} ligne{(preset.rows?.length || 0) > 1 ? 's' : ''}
+                                                                {preset.scope === 'record' && preset.scopeLabel && (
+                                                                    <span style={{ marginLeft: 8, color: '#6b7280' }}>• {preset.scopeLabel}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <button type="button"
+                                                            onClick={() => { handleApplyPreset(preset); closeCatalogPicker() }}
+                                                            style={{
+                                                                border: '1px solid #4361ee', borderRadius: 8,
+                                                                background: '#4361ee', color: '#fff',
+                                                                fontSize: 11, fontWeight: 600,
+                                                                padding: '5px 12px', cursor: 'pointer',
+                                                                whiteSpace: 'nowrap'
+                                                            }}
+                                                        >Appliquer</button>
+                                                        <button type="button"
+                                                            onClick={() => handleDeletePreset(preset)}
+                                                            style={{
+                                                                border: '1px solid #fecaca', borderRadius: 8,
+                                                                background: '#fff', color: '#ef4444',
+                                                                fontSize: 11, fontWeight: 600,
+                                                                padding: '5px 10px', cursor: 'pointer'
+                                                            }}
+                                                        >✕</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {/* Footer: Save current lines as preset */}
+                                            <div style={{ borderTop: '1px solid #f3f4f6', padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button type="button"
+                                                    onClick={() => { closeCatalogPicker(); openSavePresetModal(schema) }}
+                                                    disabled={lineCount <= 0}
+                                                    style={{
+                                                        border: '1px solid #e5e7eb', borderRadius: 8,
+                                                        background: lineCount <= 0 ? '#f9fafb' : '#fff',
+                                                        color: lineCount <= 0 ? '#d1d5db' : '#374151',
+                                                        fontSize: 12, fontWeight: 500,
+                                                        padding: '8px 14px', cursor: lineCount <= 0 ? 'not-allowed' : 'pointer',
+                                                        display: 'inline-flex', alignItems: 'center', gap: 6
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: 14 }}>+</span> Sauvegarder les lignes actuelles
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </div>
                         </div>,
                         document.body

@@ -63,10 +63,25 @@
                 x-text="uploadedDocs.length" x-show="uploadedDocs.length > 0"></span>
         </button>
       </div>
-      <div class="relative w-full sm:w-56">
-        <iconify-icon icon="solar:magnifer-line-duotone" width="15" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
-        <input type="text" x-model="searchQuery" placeholder="Rechercher..." 
-               class="form-input w-full pl-8 py-1.5 text-[13px] rounded-lg dark:bg-[#121e32] dark:border-[#253b5c]" />
+      <div class="flex items-center gap-2">
+        <!-- View mode toggle -->
+        <div class="flex items-center border border-gray-200 dark:border-[#253b5c] rounded-lg overflow-hidden">
+          <button @click="viewMode = 'grid'" 
+                  class="p-1.5 transition-colors"
+                  :class="viewMode === 'grid' ? 'bg-primary text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-dark/40'">
+            <iconify-icon icon="solar:widget-5-bold-duotone" width="16"></iconify-icon>
+          </button>
+          <button @click="viewMode = 'table'" 
+                  class="p-1.5 transition-colors"
+                  :class="viewMode === 'table' ? 'bg-primary text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-dark/40'">
+            <iconify-icon icon="solar:list-bold-duotone" width="16"></iconify-icon>
+          </button>
+        </div>
+        <div class="relative w-full sm:w-56">
+          <iconify-icon icon="solar:magnifer-line-duotone" width="15" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+          <input type="text" x-model="searchQuery" placeholder="Rechercher..." 
+                 class="form-input w-full pl-8 py-1.5 text-[13px] rounded-lg dark:bg-[#121e32] dark:border-[#253b5c]" />
+        </div>
       </div>
     </div>
   </div>
@@ -80,47 +95,90 @@
   <template x-if="activeSection === 'templates'">
     <div>
       <template x-if="filteredTemplateDocs().length > 0">
-        <div class="doc-grid">
-          <template x-for="doc in filteredTemplateDocs()" :key="doc._id">
-            <div class="doc-card group">
-              <!-- A4 Paper Preview -->
-              <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
-                <div class="doc-card__paper" :style="getPaperStyle(doc)">
-                  <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
-                    <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
-                  </template>
-                  <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
-                    <div class="doc-card__paper-empty">
-                      <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                    </div>
-                  </template>
-                </div>
-                <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
-                <span class="doc-card__badge doc-card__badge--tpl">TPL</span>
-              </a>
-
-              <!-- Info -->
-              <div class="doc-card__body">
-                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                   class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
-                <div class="doc-card__meta">
-                  <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
-                  <span x-text="formatRelativeDate(doc.updatedAt)"></span>
-                </div>
-              </div>
-
-              <!-- Hover actions -->
-              <div class="doc-card__hover-actions">
-                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                   class="doc-card__action" title="Modifier">
-                  <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+        <div>
+          <!-- Grid View -->
+          <div x-show="viewMode === 'grid'" class="doc-grid">
+            <template x-for="doc in filteredTemplateDocs()" :key="doc._id">
+              <div class="doc-card group">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
+                  <div class="doc-card__paper" :style="getPaperStyle(doc)">
+                    <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
+                      <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
+                    </template>
+                    <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
+                      <div class="doc-card__paper-empty">
+                        <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                      </div>
+                    </template>
+                  </div>
+                  <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
+                  <span class="doc-card__badge doc-card__badge--tpl">TPL</span>
                 </a>
-                <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
-                  <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
-                </button>
+                <div class="doc-card__body">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                     class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
+                  <div class="doc-card__meta">
+                    <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
+                    <span x-text="formatRelativeDate(doc.updatedAt)"></span>
+                  </div>
+                </div>
+                <div class="doc-card__hover-actions">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                     class="doc-card__action" title="Modifier">
+                    <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                  </a>
+                  <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
+                    <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
+                  </button>
+                </div>
               </div>
-            </div>
-          </template>
+            </template>
+          </div>
+
+          <!-- Table View -->
+          <div x-show="viewMode === 'table'" class="panel p-0 overflow-hidden">
+            <table class="w-full text-[13px]">
+              <thead>
+                <tr class="border-b border-gray-100 dark:border-gray-800">
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Nom</th>
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Format</th>
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Type</th>
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Modifié</th>
+                  <th class="text-right py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider w-24">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="doc in filteredTemplateDocs()" :key="doc._id">
+                  <tr class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-dark/30 transition-colors">
+                    <td class="py-2.5 px-4">
+                      <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                         class="font-medium text-gray-800 dark:text-gray-200 hover:text-primary transition-colors"
+                         x-text="doc.name || 'Sans titre'"></a>
+                    </td>
+                    <td class="py-2.5 px-4">
+                      <span class="text-[11px] font-medium text-gray-400 bg-gray-100 dark:bg-dark dark:text-gray-500 rounded px-1.5 py-0.5" x-text="doc.format || 'A4'"></span>
+                    </td>
+                    <td class="py-2.5 px-4">
+                      <span class="text-[10px] font-bold tracking-wider rounded px-1.5 py-0.5 bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">TPL</span>
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-400 text-[12px]" x-text="formatRelativeDate(doc.updatedAt)"></td>
+                    <td class="py-2.5 px-4 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                           class="p-1 rounded hover:bg-gray-100 dark:hover:bg-dark text-gray-400 hover:text-primary transition-colors" title="Modifier">
+                          <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                        </a>
+                        <button @click.prevent="confirmDelete(doc)" 
+                                class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer">
+                          <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
       </template>
 
@@ -155,50 +213,94 @@
   <template x-if="activeSection === 'recent'">
     <div>
       <template x-if="filteredDocs().length > 0">
-        <div class="doc-grid">
-          <template x-for="doc in filteredDocs()" :key="doc._id">
-            <div class="doc-card group">
-              <!-- A4 Paper Preview -->
-              <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
-                <div class="doc-card__paper" :style="getPaperStyle(doc)">
-                  <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
-                    <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
-                  </template>
-                  <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
-                    <div class="doc-card__paper-empty">
-                      <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                    </div>
-                  </template>
-                </div>
-                <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
-                <!-- Type badge -->
-                <span class="doc-card__badge" 
-                      :class="doc.isTemplate ? 'doc-card__badge--tpl' : 'doc-card__badge--doc'"
-                      x-text="doc.isTemplate ? 'TPL' : 'DOC'"></span>
-              </a>
-
-              <!-- Info -->
-              <div class="doc-card__body">
-                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                   class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
-                <div class="doc-card__meta">
-                  <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
-                  <span x-text="formatRelativeDate(doc.updatedAt)"></span>
-                </div>
-              </div>
-
-              <!-- Hover actions -->
-              <div class="doc-card__hover-actions">
-                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                   class="doc-card__action" title="Modifier">
-                  <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+        <div>
+          <!-- Grid View -->
+          <div x-show="viewMode === 'grid'" class="doc-grid">
+            <template x-for="doc in filteredDocs()" :key="doc._id">
+              <div class="doc-card group">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
+                  <div class="doc-card__paper" :style="getPaperStyle(doc)">
+                    <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
+                      <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
+                    </template>
+                    <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
+                      <div class="doc-card__paper-empty">
+                        <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                      </div>
+                    </template>
+                  </div>
+                  <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
+                  <span class="doc-card__badge" 
+                        :class="doc.isTemplate ? 'doc-card__badge--tpl' : 'doc-card__badge--doc'"
+                        x-text="doc.isTemplate ? 'TPL' : 'DOC'"></span>
                 </a>
-                <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
-                  <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
-                </button>
+                <div class="doc-card__body">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                     class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
+                  <div class="doc-card__meta">
+                    <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
+                    <span x-text="formatRelativeDate(doc.updatedAt)"></span>
+                  </div>
+                </div>
+                <div class="doc-card__hover-actions">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                     class="doc-card__action" title="Modifier">
+                    <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                  </a>
+                  <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
+                    <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
+                  </button>
+                </div>
               </div>
-            </div>
-          </template>
+            </template>
+          </div>
+
+          <!-- Table View -->
+          <div x-show="viewMode === 'table'" class="panel p-0 overflow-hidden">
+            <table class="w-full text-[13px]">
+              <thead>
+                <tr class="border-b border-gray-100 dark:border-gray-800">
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Nom</th>
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Format</th>
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Type</th>
+                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Modifié</th>
+                  <th class="text-right py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider w-24">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="doc in filteredDocs()" :key="doc._id">
+                  <tr class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-dark/30 transition-colors">
+                    <td class="py-2.5 px-4">
+                      <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                         class="font-medium text-gray-800 dark:text-gray-200 hover:text-primary transition-colors"
+                         x-text="doc.name || 'Sans titre'"></a>
+                    </td>
+                    <td class="py-2.5 px-4">
+                      <span class="text-[11px] font-medium text-gray-400 bg-gray-100 dark:bg-dark dark:text-gray-500 rounded px-1.5 py-0.5" x-text="doc.format || 'A4'"></span>
+                    </td>
+                    <td class="py-2.5 px-4">
+                      <span class="text-[10px] font-bold tracking-wider rounded px-1.5 py-0.5"
+                            :class="doc.isTemplate ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'"
+                            x-text="doc.isTemplate ? 'TPL' : 'DOC'"></span>
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-400 text-[12px]" x-text="formatRelativeDate(doc.updatedAt)"></td>
+                    <td class="py-2.5 px-4 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                           class="p-1 rounded hover:bg-gray-100 dark:hover:bg-dark text-gray-400 hover:text-primary transition-colors" title="Modifier">
+                          <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                        </a>
+                        <button @click.prevent="confirmDelete(doc)" 
+                                class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer">
+                          <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
       </template>
 
@@ -717,6 +819,7 @@ document.addEventListener('alpine:init', () => {
     uploadedDocs: <%- JSON.stringify(uploadedDocs || []) %>,
     searchQuery: '',
     activeSection: 'templates',
+    viewMode: 'grid',
     showTemplateModal: false,
     templates: [],
     templatesLoading: false,

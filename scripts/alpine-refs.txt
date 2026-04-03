@@ -1,0 +1,30 @@
+20: <button @click="activeSection = 'templates'"
+22: :class="activeSection === 'templates'
+28: :class="activeSection === 'templates' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+31: <button @click="activeSection = 'recent'"
+33: :class="activeSection === 'recent'
+39: :class="activeSection === 'recent' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+42: <button @click="activeSection = 'generated'"
+44: :class="activeSection === 'generated'
+51: :class="activeSection === 'generated' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+54: <button @click="activeSection = 'uploads'"
+56: :class="activeSection === 'uploads'
+62: :class="activeSection === 'uploads' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+68: <input type="text" x-model="searchQuery" placeholder="Rechercher..."
+80: <template x-if="activeSection === 'templates'">
+128: <template x-if="filteredTemplateDocs().length === 0 && !searchQuery">
+143: <template x-if="filteredTemplateDocs().length === 0 && searchQuery">
+146: <p class="text-xs text-gray-400">Aucun résultat pour "<span x-text="searchQuery" class="font-medium"></span>"</p>
+155: <template x-if="activeSection === 'recent'">
+206: <template x-if="filteredDocs().length === 0 && !searchQuery">
+221: <template x-if="filteredDocs().length === 0 && searchQuery">
+224: <p class="text-xs text-gray-400">Aucun résultat pour "<span x-text="searchQuery" class="font-medium"></span>"</p>
+233: <template x-if="activeSection === 'generated'">
+281: <template x-if="activeSection === 'uploads'">
+713: Alpine.data('documentList', () => ({
+718: searchQuery: '',
+719: activeSection: 'templates',
+744: if (this.searchQuery) {
+745: const q = this.searchQuery.toLowerCase();
+753: if (this.searchQuery) {
+754: const q = this.searchQuery.toLowerCase();

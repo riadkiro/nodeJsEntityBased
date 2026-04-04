@@ -1,31 +1,133 @@
-=== Record: Consult. Lea Leclerc 15 - Céphalées #180
-relations: [
-  {
-    "relationKey": "e0bb4789-2fe4-4d86-8137-3d64fa0de49a",
-    "value": "69ce60dc52c96f71dd936979",
-    "_id": "69ce60dc723c9804a24456b0"
-  },
-  {
-    "value": "69ce60db52c96f71dd9368c7",
-    "_id": "69ce60dc723c9804a24456b1"
-  },
-  {
-    "value": "69ce60db52c96f71dd9368bf",
-    "_id": "69ce60dc723c9804a24456b2"
-  }
-]
-_denorm: undefined
+﻿Found 10 template documents
 
-=== 9194 Record: Consult. Lea Leclerc 15 - Céphalées #180
-relations: [
-  {
-    "relationKey": "e078472f-202f-4cd5-80a4-1c8c4add9afd",
-    "value": "69ccfac0738ff763a647e270",
-    "_id": "69ce1be5a6e71229c908a6b3"
-  },
-  {
-    "value": "69ccfabf738ff763a647e1be",
-    "_id": "69ce1be5a6e71229c908a6b4"
-  }
+=== Ordonnance (69ce302452c96f71dd936177) ===
+  Page 1 text tokens: [
+  '{{user.name}}',
+  '{{today}}',
+  '{{consultations.patients.prenom}}',
+  '{{consultations.patients.nom}}',
+  '{{consultations.patients.date_naissance}}',
+  '{{consultations.patients.numero_secu}}',
+  '{{consultations.motif}}',
+  '{{user.name}}'
 ]
-_denorm.relations: []
+
+=== Certificat m├®dical (69ce302452c96f71dd936179) ===
+  Page 1 text tokens: [
+  '{{user.name}}',
+  '{{consultations.patients.prenom}}',
+  '{{consultations.patients.nom}}',
+  '{{consultations.patients.date_naissance}}',
+  '{{today}}',
+  '{{consultations.motif}}',
+  '{{user.name}}',
+  '{{today}}'
+]
+
+=== Compte rendu consultation (69ce302452c96f71dd93617b) ===
+  Page 1 text tokens: [
+  '{{consultations.patients.prenom}}',
+  '{{consultations.patients.nom}}',
+  '{{today}}',
+  '{{consultations.title}}',
+  '{{consultations.motif}}',
+  '{{consultations.note_medecin}}',
+  '{{consultations.notes_generales}}'
+]
+
+=== Lettre orientation sp├®cialiste (69ce302452c96f71dd93617d) ===
+  Page 1 text tokens: [
+  '{{today}}',
+  '{{consultations.patients.prenom}}',
+  '{{consultations.patients.nom}}'
+]
+
+=== Demande d'examen labo (69ce302452c96f71dd93617f) ===
+  Page 1 text tokens: [
+  '{{today}}',
+  '{{patients.patients.prenom}}',
+  '{{patients.patients.nom}}'
+]
+
+=== Arr├¬t de travail (69ce302452c96f71dd936181) ===
+  Page 1 text tokens: [
+  '{{today}}',
+  '{{patients.patients.prenom}}',
+  '{{patients.patients.nom}}'
+]
+
+=== Attestation de pr├®sence (69ce302452c96f71dd936183) ===
+  Page 1 text tokens: [
+  '{{today}}',
+  '{{patients.patients.prenom}}',
+  '{{patients.patients.nom}}'
+]
+
+=== Fiche patient r├®sum├® (69ce302452c96f71dd936185) ===
+  Page 1 text tokens: [
+  '{{today}}',
+  '{{patients.patients.prenom}}',
+  '{{patients.patients.nom}}'
+]
+
+=== Facture PDF (69ce302452c96f71dd936187) ===
+  Page 1 text tokens: [
+  '{{factures.title}}',
+  '{{today}}',
+  '{{factures.patients.prenom}}',
+  '{{factures.patients.nom}}',
+  '{{factures.date_echeance}}',
+  '{{factures.montant_total}}',
+  '{{factures.montant_paye}}',
+  '{{factures.reste_a_payer}}'
+]
+
+=== Consentement ├®clair├® (69ce302452c96f71dd936189) ===
+  Page 1 text tokens: [
+  '{{t</span><span style="color: rgb(0, 0, 0); font-size: 0.875rem;">oday}}',
+  '{{patients.patients.prenom}}',
+  '{{patients.patients.nom}}'
+]
+
+
+Found 10 SmartDoc templates
+  SmartDoc: Ordonnance, entityId: 69ce302352c96f71dd935ef2, documentId: 69ce302452c96f71dd936177
+    inputFields: []
+  SmartDoc: Certificat m├®dical, entityId: 69ce302352c96f71dd935ef2, documentId: 69ce302452c96f71dd936179
+    inputFields: []
+  SmartDoc: Compte rendu consultation, entityId: 69ce302352c96f71dd935ef2, documentId: 69ce302452c96f71dd93617b
+    inputFields: []
+  SmartDoc: Lettre orientation sp├®cialiste, entityId: 69ce302352c96f71dd935ef2, documentId: 69ce302452c96f71dd93617d
+    inputFields: []
+  SmartDoc: Demande d'examen labo, entityId: 69ce302352c96f71dd935ef0, documentId: 69ce302452c96f71dd93617f
+    inputFields: [{"key":"date","label":"Date","type":"date","required":true}]
+  SmartDoc: Arr├¬t de travail, entityId: 69ce302352c96f71dd935ef0, documentId: 69ce302452c96f71dd936181
+    inputFields: [{"key":"date","label":"Date","type":"date","required":true}]
+  SmartDoc: Attestation de pr├®sence, entityId: 69ce302352c96f71dd935ef0, documentId: 69ce302452c96f71dd936183
+    inputFields: [{"key":"date","label":"Date","type":"date","required":true}]
+  SmartDoc: Fiche patient r├®sum├®, entityId: 69ce302352c96f71dd935ef0, documentId: 69ce302452c96f71dd936185
+    inputFields: [{"key":"date","label":"Date","type":"date","required":true}]
+  SmartDoc: Facture PDF, entityId: 69ce302352c96f71dd935ef7, documentId: 69ce302452c96f71dd936187
+    inputFields: []
+  SmartDoc: Consentement ├®clair├®, entityId: 69ce302352c96f71dd935ef0, documentId: 69ce302452c96f71dd936189
+    inputFields: [{"key":"date","label":"Date","type":"date","required":true}]
+
+Entities:
+  Patient -> slug: "patients"
+  Rendez-vous -> slug: "rendez-vous"
+  Consultation -> slug: "consultations"
+  Prescription -> slug: "prescriptions"
+  M├®dicament -> slug: "medicaments"
+  Prestation -> slug: "prestations"
+  Examen -> slug: "examens"
+  Facture -> slug: "factures"
+  Paiement -> slug: "paiements"
+  Assurance -> slug: "assurances"
+  R├®sultat Labo -> slug: "resultats-labo"
+  Document M├®dical -> slug: "documents-medicaux"
+  Plan de Traitement -> slug: "plans-traitement"
+  Personnel -> slug: "personnel"
+  Stock -> slug: "stock"
+  Sympt├┤me -> slug: "symptomes"
+  Pathologie -> slug: "pathologies"
+  Traitement -> slug: "traitements"

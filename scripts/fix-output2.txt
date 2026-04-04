@@ -1,0 +1,14 @@
+﻿
+Fixed 0 documents
+
+--- Verification ---
+Ordonnance: {{user.name}}, {{today}}, {{consultations.patients.prenom}}, {{consultations.patients.nom}}, {{consultations.patients.date_naissance}}, {{consultations.patients.numero_secu}}, {{consultations.motif}}, {{user.name}}
+Certificat m├®dical: {{user.name}}, {{consultations.patients.prenom}}, {{consultations.patients.nom}}, {{consultations.patients.date_naissance}}, {{today}}, {{consultations.motif}}, {{user.name}}, {{today}}
+Compte rendu consultation: {{consultations.patients.prenom}}, {{consultations.patients.nom}}, {{today}}, {{consultations.title}}, {{consultations.motif}}, {{consultations.note_medecin}}, {{consultations.notes_generales}}
+Lettre orientation sp├®cialiste: {{today}}, {{consultations.patients.prenom}}, {{consultations.patients.nom}}
+Demande d'examen labo: {{today}}, {{patients.prenom}}, {{patients.nom}}
+Arr├¬t de travail: {{today}}, {{patients.prenom}}, {{patients.nom}}
+Attestation de pr├®sence: {{today}}, {{patients.prenom}}, {{patients.nom}}
+Fiche patient r├®sum├®: {{today}}, {{patients.prenom}}, {{patients.nom}}
+Facture PDF: {{factures.title}}, {{today}}, {{factures.patients.prenom}}, {{factures.patients.nom}}, {{factures.date_echeance}}, {{factures.montant_total}}, {{factures.montant_paye}}, {{factures.reste_a_payer}}
+Consentement ├®clair├®: {{t</span><span style="color: rgb(0, 0, 0); font-size: 0.875rem;">oday}}, {{patients.prenom}}, {{patients.nom}}

@@ -1777,8 +1777,8 @@ async function createDocumentTemplates(db, ids, userId) {
   <div style="width:60px;height:3px;background:#22c55e;margin-bottom:20px;border-radius:2px;"></div>
   <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
     <div>
-      <p style="margin:0;font-size:13px;color:#64748b;">Patient : <strong style="color:#1e293b;">{{patients.patients.prenom}} {{patients.patients.nom}}</strong></p>
-      <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Date de naissance : <strong style="color:#1e293b;">{{patients.patients.dateNaissance}}</strong></p>
+      <p style="margin:0;font-size:13px;color:#64748b;">Patient : <strong style="color:#1e293b;">{{patients.prenom}} {{patients.nom}}</strong></p>
+      <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Date de naissance : <strong style="color:#1e293b;">{{patients.date_naissance}}</strong></p>
     </div>
     <div style="text-align:right;">
       <p style="margin:0;font-size:13px;color:#64748b;">Date : <strong style="color:#1e293b;">{{today}}</strong></p>
@@ -1788,7 +1788,7 @@ async function createDocumentTemplates(db, ids, userId) {
     <p style="margin:0;font-size:13px;color:#166534;font-weight:600;">Nature de l'acte proposé :</p>
     <p style="margin:8px 0 0;font-size:13px;color:#1e293b;line-height:1.6;">_______________________________________________</p>
   </div>
-  <p style="font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;">Je soussigné(e), <strong>{{patients.patients.prenom}} {{patients.patients.nom}}</strong>, déclare avoir été informé(e) de manière claire et complète par le Dr. {{user.name}} sur :</p>
+  <p style="font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;">Je soussigné(e), <strong>{{patients.prenom}} {{patients.nom}}</strong>, déclare avoir été informé(e) de manière claire et complète par le Dr. {{user.name}} sur :</p>
   <ul style="font-size:13px;line-height:1.8;color:#334155;padding-left:20px;margin:0 0 16px;">
     <li>La nature et le déroulement de l'acte envisagé</li>
     <li>Les bénéfices attendus et les alternatives thérapeutiques</li>
@@ -1811,21 +1811,21 @@ async function createDocumentTemplates(db, ids, userId) {
   </div>
   <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:16px;">
     <div style="display:flex;gap:40px;">
-      <div><p style="margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Identité</p><p style="margin:0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.patients.prenom}} {{patients.patients.nom}}</p></div>
-      <div><p style="margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Date de naissance</p><p style="margin:0;font-size:14px;color:#1e293b;">{{patients.patients.dateNaissance}}</p></div>
-      <div><p style="margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Téléphone</p><p style="margin:0;font-size:14px;color:#1e293b;">{{patients.patients.telephone}}</p></div>
+      <div><p style="margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Identité</p><p style="margin:0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.prenom}} {{patients.nom}}</p></div>
+      <div><p style="margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Date de naissance</p><p style="margin:0;font-size:14px;color:#1e293b;">{{patients.date_naissance}}</p></div>
+      <div><p style="margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;">Téléphone</p><p style="margin:0;font-size:14px;color:#1e293b;">{{patients.telephone}}</p></div>
     </div>
   </div>
   <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
-    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#64748b;font-weight:600;width:35%;border-bottom:1px solid #e2e8f0;">Email</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.patients.email}}</td></tr>
-    <tr><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Adresse</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.patients.adresse}}</td></tr>
-    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Groupe sanguin</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.patients.groupeSanguin}}</td></tr>
-    <tr><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Allergies</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.patients.allergies}}</td></tr>
-    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Antécédents</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.patients.antecedents}}</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#64748b;font-weight:600;width:35%;border-bottom:1px solid #e2e8f0;">Email</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.email}}</td></tr>
+    <tr><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Adresse</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.adresse}}</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Groupe sanguin</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.groupe_sanguin}}</td></tr>
+    <tr><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Allergies</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.allergies}}</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Antécédents</td><td style="padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;">{{patients.antecedents}}</td></tr>
   </table>
   <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:12px;">
     <p style="margin:0;font-size:12px;color:#92400e;font-weight:600;">Notes du praticien :</p>
-    <p style="margin:6px 0 0;font-size:13px;color:#78350f;line-height:1.6;">{{patients.patients.notes}}</p>
+    <p style="margin:6px 0 0;font-size:13px;color:#78350f;line-height:1.6;">{{patients.notes}}</p>
   </div>
   <p style="font-size:11px;color:#94a3b8;margin:20px 0 0;text-align:center;">Document confidentiel — Dr. {{user.name}}</p>
 </div>`;
@@ -1835,8 +1835,8 @@ async function createDocumentTemplates(db, ids, userId) {
   <div style="width:60px;height:3px;background:#6366f1;margin-bottom:24px;border-radius:2px;"></div>
   <p style="font-size:14px;line-height:1.8;color:#334155;margin:0 0 16px;">Je soussigné(e), <strong>Dr. {{user.name}}</strong>, certifie que :</p>
   <div style="background:#eef2ff;border-left:4px solid #6366f1;padding:16px 20px;border-radius:0 8px 8px 0;margin:0 0 20px;">
-    <p style="margin:0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.patients.prenom}} {{patients.patients.nom}}</p>
-    <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Né(e) le : {{patients.patients.dateNaissance}}</p>
+    <p style="margin:0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.prenom}} {{patients.nom}}</p>
+    <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Né(e) le : {{patients.date_naissance}}</p>
   </div>
   <p style="font-size:14px;line-height:1.8;color:#334155;margin:0 0 8px;">s'est présenté(e) à mon cabinet le <strong>{{today}}</strong> pour une consultation médicale.</p>
   <p style="font-size:14px;line-height:1.8;color:#334155;margin:0 0 8px;">La consultation a eu lieu de ____h____ à ____h____ .</p>
@@ -1857,8 +1857,8 @@ async function createDocumentTemplates(db, ids, userId) {
   </div>
   <p style="font-size:14px;line-height:1.8;color:#334155;margin:0 0 8px;">Je soussigné(e), <strong>Dr. {{user.name}}</strong>, certifie avoir examiné ce jour :</p>
   <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:0 0 20px;">
-    <p style="margin:0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.patients.prenom}} {{patients.patients.nom}}</p>
-    <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Né(e) le : {{patients.patients.dateNaissance}}</p>
+    <p style="margin:0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.prenom}} {{patients.nom}}</p>
+    <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Né(e) le : {{patients.date_naissance}}</p>
   </div>
   <p style="font-size:14px;line-height:1.8;color:#334155;margin:0 0 6px;">et certifie que son état de santé nécessite un arrêt de travail :</p>
   <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;margin:0 0 20px;">
@@ -1882,8 +1882,8 @@ async function createDocumentTemplates(db, ids, userId) {
   </div>
   <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;margin-bottom:18px;">
     <p style="margin:0;font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase;">Patient</p>
-    <p style="margin:4px 0 0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.patients.prenom}} {{patients.patients.nom}}</p>
-    <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Né(e) le : {{patients.patients.dateNaissance}}</p>
+    <p style="margin:4px 0 0;font-size:15px;color:#1e293b;font-weight:600;">{{patients.prenom}} {{patients.nom}}</p>
+    <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Né(e) le : {{patients.date_naissance}}</p>
   </div>
   <p style="font-size:13px;color:#334155;font-weight:600;margin:0 0 10px;">Examens demandés :</p>
   <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px;">
@@ -1921,7 +1921,7 @@ async function createDocumentTemplates(db, ids, userId) {
     <p style="margin:2px 0 0;font-size:13px;color:#64748b;">Spécialité : ____________________________________</p>
   </div>
   <p style="font-size:14px;line-height:1.6;color:#334155;margin:0 0 6px;">Cher(e) confrère,</p>
-  <p style="font-size:14px;line-height:1.7;color:#334155;margin:0 0 12px;">Je vous adresse <strong>{{consultations.consultations.patients.prenom}} {{consultations.consultations.patients.nom}}</strong>, né(e) le {{consultations.consultations.patients.dateNaissance}}, pour prise en charge spécialisée.</p>
+  <p style="font-size:14px;line-height:1.7;color:#334155;margin:0 0 12px;">Je vous adresse <strong>{{consultations.consultations.patients.prenom}} {{consultations.consultations.patients.nom}}</strong>, né(e) le {{consultations.consultations.patients.date_naissance}}, pour prise en charge spécialisée.</p>
   <div style="margin-bottom:16px;"><p style="font-size:13px;color:#1e293b;font-weight:600;margin:0 0 6px;">Motif de la consultation :</p><p style="font-size:13px;line-height:1.7;color:#334155;margin:0;">{{consultations.consultations.motif}}</p></div>
   <div style="margin-bottom:16px;"><p style="font-size:13px;color:#1e293b;font-weight:600;margin:0 0 6px;">Antécédents notables :</p><p style="font-size:13px;line-height:1.7;color:#334155;margin:0;">{{consultations.consultations.patients.antecedents}}</p></div>
   <p style="font-size:14px;line-height:1.7;color:#334155;margin:0 0 6px;">Je vous remercie pour votre avis et reste à votre disposition pour tout renseignement complémentaire.</p>

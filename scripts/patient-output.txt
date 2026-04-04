@@ -1,0 +1,44 @@
+﻿Patients entity: new ObjectId("69ce302352c96f71dd935ef0") Patient
+customField IDs: [
+  new ObjectId("69ce302352c96f71dd935ea3"),
+  new ObjectId("69ce302352c96f71dd935ea4"),
+  new ObjectId("69ce302352c96f71dd935ea5"),
+  new ObjectId("69ce302352c96f71dd935ea6"),
+  new ObjectId("69ce302352c96f71dd935ea7"),
+  new ObjectId("69ce302352c96f71dd935ea8"),
+  new ObjectId("69ce302352c96f71dd935ea9"),
+  new ObjectId("69ce302352c96f71dd935eaa"),
+  new ObjectId("69ce302352c96f71dd935eab"),
+  new ObjectId("69ce302352c96f71dd935eac"),
+  new ObjectId("69ce302352c96f71dd935ead"),
+  new ObjectId("69ce302352c96f71dd935eae"),
+  new ObjectId("69ce302352c96f71dd935eaf"),
+  new ObjectId("69ce302352c96f71dd935ee5")
+]
+
+Patient fields (14):
+  nom (Nom) -> type: string
+  prenom (Pr├®nom) -> type: string
+  date_naissance (Date de naissance) -> type: date
+  sexe (Sexe) -> type: select
+  telephone (T├®l├®phone) -> type: string
+  email (Email) -> type: string
+  adresse (Adresse) -> type: text
+  numero_secu (N┬░ S├®curit├® Sociale) -> type: string
+  groupe_sanguin (Groupe sanguin) -> type: select
+  allergies (Allergies) -> type: text
+  antecedents (Ant├®c├®dents m├®dicaux) -> type: text
+  medecin_traitant (M├®decin traitant) -> type: string
+  mutuelle (Mutuelle) -> type: string
+  age_patient (├ége) -> type: number
+
+Sample record: Rayan Chevalier 60
+customFields type: array
+  nom: "Chevalier"
+  prenom: "Rayan"
+  date_naissance: "Mon Dec 15 1969 00:00:00 GMT+0000 (UTC)"
+  sexe: "F"
+  telephone: "0610000059"
+  email: "rayan.chevalier60@mail.com"
+  medecin_traitant: "Dr. Cohen"
+  mutuelle: "Harmonie Mutuelle"

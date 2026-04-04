@@ -4,58 +4,45 @@ async function main() {
     const conn = mongoose.createConnection('mongodb://127.0.0.1:27017/saas_app_rb_5001');
     await new Promise(r => conn.once('open', r));
 
-    // Get document templates
-    const docs = await conn.db.collection('documents').find({ isTemplate: true }).toArray();
-    console.log(`Found ${docs.length} template documents\n`);
-    
+    // Find ALL attestation documents (templates AND drafts)
+    const docs = await conn.db.collection('documents').find({ 
+        name: { $regex: /attestation/i }
+    }).toArray();
+
+    console.log(`Found ${docs.length} attestation documents\n`);
+
     for (const doc of docs) {
         console.log(`=== ${doc.name} (${doc._id}) ===`);
+        console.log(`  isTemplate: ${doc.isTemplate}, isDraft: ${doc.isDraft}, status: ${doc.status}`);
+        console.log(`  createdAt: ${doc.createdAt}`);
         
-        // Extract tokens from pages content
-        if (doc.pages && doc.pages.length > 0) {
-            for (let i = 0; i < doc.pages.length; i++) {
-                const page = doc.pages[i];
-                if (page.content) {
-                    // Find {{...}} tokens
-                    const textTokens = page.content.match(/\{\{([^}]+)\}\}/g);
-                    if (textTokens) {
-                        console.log(`  Page ${i+1} text tokens:`, textTokens);
-                    }
-                    // Find template-token spans
-                    const spanTokens = page.content.match(/data-token="([^"]*)"/g);
-                    if (spanTokens) {
-                        for (const st of spanTokens) {
-                            const decoded = st.replace('data-token="', '').replace('"', '')
-                                .replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-                            try {
-                                const parsed = JSON.parse(decoded);
-                                console.log(`  Page ${i+1} span token: path=${parsed.path}, label=${parsed.label}`);
-                            } catch(e) {
-                                console.log(`  Page ${i+1} span token raw:`, decoded);
-                            }
-                        }
-                    }
+        if (doc.pages && doc.pages[0] && doc.pages[0].content) {
+            const tokens = doc.pages[0].content.match(/\{\{([^}]+)\}\}/g);
+            console.log(`  tokens: ${tokens || 'none (all resolved)'}`);
+            
+            // Check if it has the styled content
+            const hasStyled = doc.pages[0].content.includes('soussigné');
+            console.log(`  styled template: ${hasStyled}`);
+            
+            // Check for patient name in content
+            const hasPatientName = doc.pages[0].content.includes('Rayan') || doc.pages[0].content.includes('Chevalier');
+            console.log(`  has patient data: ${hasPatientName}`);
+            
+            // Show snippet around patient
+            if (doc.pages[0].content.includes('Né(e)') || doc.pages[0].content.includes('certifie')) {
+                // Find the patient name area
+                const content = doc.pages[0].content;
+                const idx = content.indexOf('certifie');
+                if (idx > -1) {
+                    console.log(`  Content after 'certifie': ${content.substring(idx, idx + 300)}`);
+                }
+                const idx2 = content.indexOf('Né(e)');
+                if (idx2 > -1) {
+                    console.log(`  Content around 'Né(e)': ${content.substring(idx2 - 50, idx2 + 200)}`);
                 }
             }
         }
         console.log('');
-    }
-
-    // Also check SmartDocTemplates
-    const smartDocs = await conn.db.collection('smartdoctemplates').find({}).toArray();
-    console.log(`\nFound ${smartDocs.length} SmartDoc templates`);
-    for (const sd of smartDocs) {
-        console.log(`  SmartDoc: ${sd.name}, entityId: ${sd.entityId}, documentId: ${sd.documentId}`);
-        if (sd.inputFields) {
-            console.log(`    inputFields:`, JSON.stringify(sd.inputFields));
-        }
-    }
-
-    // Check entity slug 
-    const entities = await conn.db.collection('entities').find({}).project({name:1, slug:1}).toArray();
-    console.log('\nEntities:');
-    for (const e of entities) {
-        console.log(`  ${e.name} -> slug: "${e.slug}"`);
     }
 
     await conn.close();

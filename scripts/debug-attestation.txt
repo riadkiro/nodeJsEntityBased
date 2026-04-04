@@ -1,0 +1,18 @@
+﻿Document: Attestation de pr├®sence (69ce302452c96f71dd936183)
+Pages: 1
+
+=== Page 1 ===
+Text tokens: [ '{{today}}', '{{patients.prenom}}', '{{patients.nom}}' ]
+
+Content around "patient":
+les variables disponibles.</p><p><strong>Date:</strong> {{today}}</p><p><strong>Patient:</strong> {{patients.prenom}} {{patients.nom}}</p></div>
+
+Field pattern checks:
+  patients.prenom: true
+  patients.nom: true
+  patients.date_naissance: false
+  patients.dateNaissance: false
+  patients.patients: false
+
+--- Content preview ---
+<div style="font-family:Arial,sans-serif;padding:40px;"><h1 style="color:#6366f1;border-bottom:2px solid #6366f1;padding-bottom:8px;">Attestation de pr├®sence</h1><p style="color:#666;margin-top:24px;">Ce document est un mod├¿le. Personnalisez-le avec les variables disponibles.</p><p><strong>Date:</strong> {{today}}</p><p><strong>Patient:</strong> {{patients.prenom}} {{patients.nom}}</p></div>

@@ -393,6 +393,31 @@ export default function EditorPage({
         }
     }, [page.mode, pageIndex, handlePageInput])
 
+    // ========== CHECKBOX TOGGLE: Click ☐ ↔ ☑ ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const handleCheckboxClick = (e) => {
+            const target = e.target
+            if (!target.classList?.contains('doc-checkbox')) return
+            e.preventDefault()
+            e.stopPropagation()
+
+            const isChecked = target.getAttribute('data-checked') === 'true'
+            target.setAttribute('data-checked', isChecked ? 'false' : 'true')
+            target.textContent = isChecked ? '\u2610' : '\u2611'
+
+            // Trigger save
+            if (handlePageInput) {
+                handlePageInput({ target: el }, pageIndex)
+            }
+        }
+
+        el.addEventListener('click', handleCheckboxClick)
+        return () => el.removeEventListener('click', handleCheckboxClick)
+    }, [page.mode, pageIndex, handlePageInput])
+
 
     // ========== DROP INDICATOR (ghost line) ==========
     const dropIndicatorRef = useRef(null)

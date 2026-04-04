@@ -83,51 +83,169 @@ function ColorPicker({ colors, currentColor, onSelect, icon, title, cols = 10 })
     )
 }
 
-function TableInsertGrid({ onInsert }) {
+function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInsertBlockquote, onInsertHR }) {
     const [open, setOpen] = useState(false)
+    const [showTableGrid, setShowTableGrid] = useState(false)
     const [hover, setHover] = useState({ rows: 0, cols: 0 })
     const ref = useRef(null)
+    const fileInputRef = useRef(null)
 
     useEffect(() => {
         const handleClick = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+            if (ref.current && !ref.current.contains(e.target)) {
+                setOpen(false)
+                setShowTableGrid(false)
+            }
         }
         if (open) document.addEventListener('mousedown', handleClick)
         return () => document.removeEventListener('mousedown', handleClick)
     }, [open])
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = () => {
+            const img = `<img src="${reader.result}" style="max-width:100%;height:auto;border-radius:4px;margin:8px 0;" /><p><br></p>`
+            document.execCommand('insertHTML', false, img)
+            onInsertImage?.()
+        }
+        reader.readAsDataURL(file)
+        setOpen(false)
+        setShowTableGrid(false)
+        e.target.value = ''
+    }
+
+    const menuItems = [
+        {
+            icon: 'tabler:table',
+            label: 'Tableau',
+            description: 'Insérer un tableau',
+            hasSubmenu: true,
+            onClick: () => setShowTableGrid(!showTableGrid)
+        },
+        {
+            icon: 'tabler:photo',
+            label: 'Image',
+            description: 'Insérer une image',
+            onClick: () => fileInputRef.current?.click()
+        },
+        {
+            icon: 'tabler:checkbox',
+            label: 'Case à cocher',
+            description: 'Insérer une checkbox interactive',
+            onClick: () => {
+                onInsertCheckbox?.()
+                setOpen(false)
+            }
+        },
+        { divider: true },
+        {
+            icon: 'tabler:quote',
+            label: 'Citation',
+            description: 'Bloc de citation',
+            onClick: () => {
+                onInsertBlockquote?.()
+                setOpen(false)
+            }
+        },
+        {
+            icon: 'tabler:separator',
+            label: 'Séparateur',
+            description: 'Ligne horizontale',
+            onClick: () => {
+                onInsertHR?.()
+                setOpen(false)
+            }
+        }
+    ]
+
     return (
         <div className="relative" ref={ref}>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+            />
             <button
-                onClick={() => setOpen(!open)}
-                className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-                title="Insérer un tableau"
+                onClick={() => { setOpen(!open); setShowTableGrid(false) }}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${open
+                    ? 'bg-primary/10 text-primary'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'
+                }`}
+                title="Insérer un élément"
             >
-                <iconify-icon icon="tabler:table" width="18"></iconify-icon>
+                <iconify-icon icon="tabler:plus" width="16"></iconify-icon>
+                <span>Insérer</span>
+                <iconify-icon icon="tabler:chevron-down" width="10"></iconify-icon>
             </button>
             {open && (
-                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-xl p-3 z-50">
-                    <p className="text-xs text-gray-500 mb-2">
-                        {hover.rows > 0 ? `${hover.rows} × ${hover.cols}` : 'Sélectionnez la taille'}
-                    </p>
-                    <div className="grid gap-[2px]" style={{ gridTemplateColumns: 'repeat(8, 1fr)' }}>
-                        {Array.from({ length: 8 * 6 }).map((_, i) => {
-                            const row = Math.floor(i / 8) + 1
-                            const col = (i % 8) + 1
-                            const isActive = row <= hover.rows && col <= hover.cols
+                <div
+                    className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-2xl z-50"
+                    style={{ minWidth: '220px', overflow: 'visible' }}
+                >
+                    <div className="p-1.5">
+                        {menuItems.map((item, idx) => {
+                            if (item.divider) {
+                                return <div key={idx} className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+                            }
                             return (
-                                <div
-                                    key={i}
-                                    className={`w-4 h-4 border rounded-sm cursor-pointer transition-colors ${isActive
-                                        ? 'bg-primary/30 border-primary'
-                                        : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-primary/10'
-                                        }`}
-                                    onMouseEnter={() => setHover({ rows: row, cols: col })}
-                                    onClick={() => { onInsert(row, col); setOpen(false); setHover({ rows: 0, cols: 0 }) }}
-                                />
+                                <button
+                                    key={idx}
+                                    onClick={item.onClick}
+                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors flex-shrink-0">
+                                        <iconify-icon icon={item.icon} width="18"></iconify-icon>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</div>
+                                        <div className="text-[10px] text-gray-400 dark:text-gray-500">{item.description}</div>
+                                    </div>
+                                    {item.hasSubmenu && (
+                                        <iconify-icon icon="tabler:chevron-right" width="14" className="text-gray-300"></iconify-icon>
+                                    )}
+                                </button>
                             )
                         })}
                     </div>
+
+                    {/* Table Grid Submenu */}
+                    {showTableGrid && (
+                        <div
+                            className="absolute top-0 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-2xl p-3"
+                            style={{ left: '100%', marginLeft: '4px', minWidth: '200px' }}
+                        >
+                            <p className="text-xs text-gray-500 mb-2 font-medium">
+                                {hover.rows > 0 ? `${hover.rows} × ${hover.cols}` : 'Sélectionnez la taille'}
+                            </p>
+                            <div className="grid gap-[2px]" style={{ gridTemplateColumns: 'repeat(8, 1fr)' }}>
+                                {Array.from({ length: 8 * 6 }).map((_, i) => {
+                                    const row = Math.floor(i / 8) + 1
+                                    const col = (i % 8) + 1
+                                    const isActive = row <= hover.rows && col <= hover.cols
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`w-4 h-4 border rounded-sm cursor-pointer transition-colors ${isActive
+                                                ? 'bg-primary/30 border-primary'
+                                                : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-primary/10'
+                                            }`}
+                                            onMouseEnter={() => setHover({ rows: row, cols: col })}
+                                            onClick={() => {
+                                                onInsertTable(row, col)
+                                                setOpen(false)
+                                                setShowTableGrid(false)
+                                                setHover({ rows: 0, cols: 0 })
+                                            }}
+                                        />
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -236,6 +354,12 @@ export default function EditorHeader({
 
     const handleInsertBlockquote = useCallback(() => {
         document.execCommand('formatBlock', false, 'blockquote')
+        triggerSave()
+    }, [triggerSave])
+
+    const handleInsertCheckbox = useCallback(() => {
+        const checkboxHtml = '<span class="doc-checkbox" style="cursor:pointer;font-size:1.2em;user-select:none;vertical-align:middle;margin-right:4px;" data-checked="false" contenteditable="false">☐</span>&nbsp;'
+        document.execCommand('insertHTML', false, checkboxHtml)
         triggerSave()
     }, [triggerSave])
 
@@ -589,26 +713,14 @@ export default function EditorHeader({
                 {/* Separator */}
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
-                {/* Table Insert */}
-                <TableInsertGrid onInsert={handleTableInsert} />
-
-                {/* Blockquote */}
-                <button
-                    onMouseDown={(e) => { e.preventDefault(); handleInsertBlockquote() }}
-                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-                    title="Citation"
-                >
-                    <iconify-icon icon="tabler:blockquote" width="18"></iconify-icon>
-                </button>
-
-                {/* Horizontal Rule */}
-                <button
-                    onMouseDown={(e) => { e.preventDefault(); handleInsertHR() }}
-                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-                    title="Séparateur horizontal"
-                >
-                    <iconify-icon icon="tabler:separator" width="18"></iconify-icon>
-                </button>
+                {/* Insert Dropdown (Table, Image, Checkbox, Blockquote, HR) */}
+                <InsertDropdown
+                    onInsertTable={handleTableInsert}
+                    onInsertImage={() => triggerSave()}
+                    onInsertCheckbox={handleInsertCheckbox}
+                    onInsertBlockquote={handleInsertBlockquote}
+                    onInsertHR={handleInsertHR}
+                />
 
                 {/* Separator */}
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>

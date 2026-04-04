@@ -1958,7 +1958,7 @@ async function createDocumentTemplates(db, ids, userId) {
         await upsertDoc(db.SmartDocTemplate, { name: t.name, entityId, 'meta.createdByPreset': PRESET }, {
             name: t.name, description: `Modèle ${t.name}`, icon: t.icon, color: t.color,
             documentId: doc._id, entityId, outputFormat: 'pdf', order: i, active: true, createdBy: uid,
-            inputFields: t.entitySlug === 'patients' ? [{ key: 'date', label: 'Date', type: 'date', required: true }] : []
+            inputFields: []
         });
     }
 }

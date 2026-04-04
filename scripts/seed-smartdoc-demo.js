@@ -140,24 +140,7 @@ async function seed() {
             color: '#4361ee',
             documentId: docId,
             entityId: new mongoose.Types.ObjectId(CONSULTATIONS_ENTITY_ID),
-            inputFields: [
-                {
-                    _id: new mongoose.Types.ObjectId(),
-                    key: 'medecin',
-                    label: 'Nom du médecin',
-                    type: 'text',
-                    required: true,
-                    placeholder: 'Dr. Dupont'
-                },
-                {
-                    _id: new mongoose.Types.ObjectId(),
-                    key: 'observations',
-                    label: 'Observations complémentaires',
-                    type: 'textarea',
-                    required: false,
-                    placeholder: 'Observations supplémentaires du médecin...'
-                }
-            ],
+            inputFields: [],
             outputFormat: 'pdf',
             outputNameTemplate: 'Compte-rendu - {{recordTitle}} - {{today}}',
             order: 0,

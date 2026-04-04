@@ -2791,20 +2791,8 @@
                 },
 
                 generateSmartDoc(tpl) {
-                    if (tpl.inputFields && tpl.inputFields.length > 0) {
-                        this.smartDocModalTemplate = tpl;
-                        this.smartDocModalInputs = {};
-                        for (const field of tpl.inputFields) {
-                            if (field.defaultValue !== undefined && field.defaultValue !== null) {
-                                this.smartDocModalInputs[field.key] = field.defaultValue;
-                            } else {
-                                this.smartDocModalInputs[field.key] = '';
-                            }
-                        }
-                        this.showSmartDocModal = true;
-                    } else {
-                        this._executeGeneration(tpl._id, {});
-                    }
+                    // Direct generation — no input modal, document opens in editor immediately
+                    this._executeGeneration(tpl._id, {});
                 },
 
                 confirmSmartDocGeneration() {

@@ -163,6 +163,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [editingHtmlContent, setEditingHtmlContent] = useState('')
     const [editingElementIndex, setEditingElementIndex] = useState(null)
 
+    // Date Picker Popup
+    const [datePickerState, setDatePickerState] = useState(null) // { textNode, offset, length, rect }
+
     // ========== REFS (Critical for stability) ==========
     const saveTimeoutRef = useRef(null)
     const savedRangeRef = useRef(null)
@@ -211,6 +214,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         window.addEventListener('toggle-template-panel', handler)
         return () => window.removeEventListener('toggle-template-panel', handler)
     }, [])
+
 
     // ========== AUTOSAVE ==========
     const triggerSave = useCallback(() => {
@@ -271,6 +275,79 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // Cleanup timeout on unmount
     useEffect(() => {
         return () => clearTimeout(saveTimeoutRef.current)
+    }, [])
+
+    // ========== INTERACTIVE CHECKBOXES (☐ ↔ ☑) ==========
+    useEffect(() => {
+        const handleCheckboxClick = (e) => {
+            const pageEl = e.target.closest('[contenteditable="true"]')
+            if (!pageEl) return
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+            const node = sel.anchorNode
+            if (!node || node.nodeType !== 3) return
+            const text = node.textContent
+            const offset = sel.anchorOffset
+            const checkboxChars = ['☐', '☑', '☒', '□', '■', '▢', '▣']
+            const uncheckedChars = ['☐', '□', '▢']
+            for (let i = Math.max(0, offset - 1); i <= Math.min(text.length - 1, offset); i++) {
+                const ch = text[i]
+                if (checkboxChars.includes(ch)) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    const newChar = uncheckedChars.includes(ch) ? '☑' : '☐'
+                    node.textContent = text.substring(0, i) + newChar + text.substring(i + 1)
+                    const range = document.createRange()
+                    range.setStart(node, i + 1)
+                    range.collapse(true)
+                    sel.removeAllRanges()
+                    sel.addRange(range)
+                    triggerSave()
+                    return
+                }
+            }
+        }
+        document.addEventListener('click', handleCheckboxClick, true)
+        return () => document.removeEventListener('click', handleCheckboxClick, true)
+    }, [triggerSave])
+
+    // ========== INTERACTIVE DATE PLACEHOLDERS (____/____/________) ==========
+    useEffect(() => {
+        const datePattern = /_{2,}\s*\/\s*_{2,}\s*\/\s*_{2,}/
+        const handleDateClick = (e) => {
+            const pageEl = e.target.closest('[contenteditable="true"]')
+            if (!pageEl) return
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+            const node = sel.anchorNode
+            if (!node || node.nodeType !== 3) return
+            const text = node.textContent
+            const match = datePattern.exec(text)
+            if (!match) return
+            const start = match.index
+            const end = start + match[0].length
+            const offset = sel.anchorOffset
+            if (offset >= start && offset <= end) {
+                e.preventDefault()
+                e.stopPropagation()
+                const range = document.createRange()
+                range.setStart(node, start)
+                range.setEnd(node, end)
+                const rect = range.getBoundingClientRect()
+                setDatePickerState({
+                    textNode: node,
+                    start,
+                    end,
+                    matchText: match[0],
+                    rect: {
+                        top: rect.bottom + window.scrollY + 4,
+                        left: rect.left + window.scrollX
+                    }
+                })
+            }
+        }
+        document.addEventListener('click', handleDateClick)
+        return () => document.removeEventListener('click', handleDateClick)
     }, [])
 
     // ========== SELECTION HANDLING ==========
@@ -2271,6 +2348,86 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                         color: inherit !important;
                     }
                 ` }} />
+            )}
+
+            {/* Floating Date Picker */}
+            {datePickerState && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: Math.min(datePickerState.rect.top, window.innerHeight - 80),
+                        left: Math.min(datePickerState.rect.left, window.innerWidth - 280),
+                        zIndex: 10000,
+                        background: '#fff',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                        border: '1px solid #e2e8f0',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        fontFamily: "'Inter', sans-serif",
+                        animation: 'bindingPickerIn 0.15s ease-out'
+                    }}
+                >
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="18" style={{ color: '#6366f1', flexShrink: 0 }}></iconify-icon>
+                    <input
+                        type="date"
+                        autoFocus
+                        style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '6px 10px',
+                            fontSize: '13px',
+                            color: '#1e293b',
+                            outline: 'none',
+                            fontFamily: "'Inter', sans-serif",
+                            minWidth: '140px'
+                        }}
+                        onFocus={(e) => e.target.showPicker?.()}
+                        onChange={(e) => {
+                            const val = e.target.value
+                            if (!val) return
+                            // Format as DD/MM/YYYY
+                            const [y, m, d] = val.split('-')
+                            const formatted = `${d}/${m}/${y}`
+
+                            const { textNode, start, end } = datePickerState
+                            if (textNode && textNode.parentNode) {
+                                const text = textNode.textContent
+                                textNode.textContent = text.substring(0, start) + formatted + text.substring(end)
+                                triggerSave()
+                            }
+                            setDatePickerState(null)
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') setDatePickerState(null)
+                        }}
+                        onBlur={() => {
+                            // Delay to allow onChange to fire first
+                            setTimeout(() => setDatePickerState(null), 150)
+                        }}
+                    />
+                    <button
+                        onClick={() => setDatePickerState(null)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: '#f1f5f9',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            flexShrink: 0
+                        }}
+                    >
+                        ✕
+                    </button>
+                </div>
             )}
         </div>
     )

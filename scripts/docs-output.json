@@ -1,62 +1,20 @@
-[
-  {
-    "name": "Ordonnance",
-    "_id": "69ce60dd52c96f71dd936ae7",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;\">\n    <div>"
-  },
-  {
-    "name": "Certificat médical",
-    "_id": "69ce60dd52c96f71dd936ae9",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <h1 style=\"margin:0 0 18px;font-size:22px;color:#1e40af;\">CERTIFICAT MÉDICAL</h1>\n  <p style=\"font-size:14px;line-height:1.7;col"
-  },
-  {
-    "name": "Compte rendu consultation",
-    "_id": "69ce60dd52c96f71dd936aeb",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <h1 style=\"margin:0 0 18px;font-size:22px;color:#00ab55;\">COMPTE RENDU DE CONSULTATION</h1>\n  <div style=\"background:#f8fafc;bor"
-  },
-  {
-    "name": "Lettre orientation spécialiste",
-    "_id": "69ce60dd52c96f71dd936aed",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:Arial,sans-serif;padding:40px;\"><h1 style=\"color:#8b5cf6;border-bottom:2px solid #8b5cf6;padding-bottom:8px;\">Lettre orientation spécialiste</h1><p style=\"color:#666;margin-top"
-  },
-  {
-    "name": "Demande d'examen labo",
-    "_id": "69ce60dd52c96f71dd936aef",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:Arial,sans-serif;padding:40px;\"><h1 style=\"color:#f97316;border-bottom:2px solid #f97316;padding-bottom:8px;\">Demande d'examen labo</h1><p style=\"color:#666;margin-top:24px;\">C"
-  },
-  {
-    "name": "Arrêt de travail",
-    "_id": "69ce60dd52c96f71dd936af1",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:Arial,sans-serif;padding:40px;\"><h1 style=\"color:#ef4444;border-bottom:2px solid #ef4444;padding-bottom:8px;\">Arrêt de travail</h1><p style=\"color:#666;margin-top:24px;\">Ce doc"
-  },
-  {
-    "name": "Attestation de présence",
-    "_id": "69ce60dd52c96f71dd936af3",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:Arial,sans-serif;padding:40px;\"><h1 style=\"color:#6366f1;border-bottom:2px solid #6366f1;padding-bottom:8px;\">Attestation de présence</h1><p style=\"color:#666;margin-top:24px;\""
-  },
-  {
-    "name": "Fiche patient résumé",
-    "_id": "69ce60dd52c96f71dd936af5",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:Arial,sans-serif;padding:40px;\"><h1 style=\"color:#3b82f6;border-bottom:2px solid #3b82f6;padding-bottom:8px;\">Fiche patient résumé</h1><p style=\"color:#666;margin-top:24px;\">Ce"
-  },
-  {
-    "name": "Facture PDF",
-    "_id": "69ce60dd52c96f71dd936af7",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;\">\n    <div>\n      <h1 style=\"m"
-  },
-  {
-    "name": "Consentement éclairé",
-    "_id": "69ce60dd52c96f71dd936af9",
-    "pageCount": 1,
-    "firstPageContent": "<div style=\"font-family:Arial,sans-serif;padding:40px;\"><h1 style=\"color:#22c55e;border-bottom:2px solid #22c55e;padding-bottom:8px;\">Consentement éclairé</h1><p style=\"color:#666;margin-top:24px;\">Ce"
-  }
-]
+{
+  "name": "Attestation de présence",
+  "entityId": "69ce60db52c96f71dd936860",
+  "entityIds": [
+    "69ce60db52c96f71dd936860"
+  ],
+  "tokens": [
+    "user.name",
+    "patients.patients.prenom",
+    "patients.patients.nom",
+    "patients.patients.dateNaissance",
+    "today",
+    "today"
+  ],
+  "entityName": "Patient",
+  "entitySlug": "patients",
+  "entityIcon": "solar:user-heart-bold-duotone",
+  "entityColor": "#3b82f6",
+  "relations": []
+}

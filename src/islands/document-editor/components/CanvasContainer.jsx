@@ -223,7 +223,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                     className="flex flex-col items-center gap-8"
                     style={{
                         backgroundColor: isDark ? '#1f2937' : 'transparent',
-                        marginTop: '47px',
+                        marginTop: '16px',
                         transform: `scale(${zoomLevel})`,
                         transformOrigin: 'top center',
                         // Reserve space for the scaled content so scrollbars work correctly

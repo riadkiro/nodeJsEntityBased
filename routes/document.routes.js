@@ -961,32 +961,30 @@ router.get('/:id/generate', async (req, res) => {
         for (const token of allTokens) {
             const isSystem = systemTokenKeys.some(sk => token === sk || token.startsWith('user.'));
             if (!isSystem) {
-                // This is a relational token like "consultations.patients.nom"
-                // Parse: primaryEntity.relatedEntity.field
+                // Parse token patterns:
+                //   "patients.patients.nom"  → self-referencing (entity.entity.field)
+                //   "consultations.patients.nom" → relational (primary.related.field)
+                //   "patients.nom" → direct entity field (entity.field)
                 const parts = token.split('.');
                 if (parts.length >= 2) {
                     const primarySlug = parts[0];
-                    const relatedSlug = parts.length >= 3 ? parts[1] : null;
-
-                    // Find the entity needing binding
                     const primaryEntity = entities.find(e => e.slug === primarySlug);
-                    if (primaryEntity && relatedSlug) {
-                        const relation = (primaryEntity.relations || []).find(r => {
-                            const target = r.targetEntity;
-                            return target && (target.slug === relatedSlug || target.name?.toLowerCase() === relatedSlug);
-                        });
-                        if (relation && relation.targetEntity) {
-                            const target = relation.targetEntity;
-                            const key = target.slug || target._id?.toString();
+
+                    if (primaryEntity) {
+                        const relatedSlug = parts.length >= 3 ? parts[1] : null;
+
+                        // Case 1: Self-referencing (patients.patients.field) or direct (patients.field)
+                        if (!relatedSlug || relatedSlug === primarySlug) {
+                            const key = primaryEntity.slug;
                             if (!bindingEntities.has(key)) {
                                 bindingEntities.set(key, {
-                                    entityId: target._id?.toString() || target.toString(),
-                                    entityName: target.name || relatedSlug,
-                                    entityIcon: target.icon || 'solar:user-bold-duotone',
-                                    entitySlug: target.slug || relatedSlug,
-                                    entityColor: target.color || '#4f46e5',
-                                    relationKey: relation.key,
-                                    relationLabel: relation.label,
+                                    entityId: primaryEntity._id?.toString(),
+                                    entityName: primaryEntity.name || primarySlug,
+                                    entityIcon: primaryEntity.icon || 'solar:user-bold-duotone',
+                                    entitySlug: primaryEntity.slug,
+                                    entityColor: primaryEntity.color || '#4f46e5',
+                                    relationKey: null,
+                                    relationLabel: null,
                                     primaryEntityId: primaryEntity._id?.toString(),
                                     primaryEntitySlug: primaryEntity.slug,
                                     primaryEntityName: primaryEntity.name,
@@ -994,6 +992,33 @@ router.get('/:id/generate', async (req, res) => {
                                 });
                             }
                             bindingEntities.get(key).tokens.push(token);
+                        }
+                        // Case 2: Relational token (consultations.patients.nom)
+                        else {
+                            const relation = (primaryEntity.relations || []).find(r => {
+                                const target = r.targetEntity;
+                                return target && (target.slug === relatedSlug || target.name?.toLowerCase() === relatedSlug);
+                            });
+                            if (relation && relation.targetEntity) {
+                                const target = relation.targetEntity;
+                                const key = target.slug || target._id?.toString();
+                                if (!bindingEntities.has(key)) {
+                                    bindingEntities.set(key, {
+                                        entityId: target._id?.toString() || target.toString(),
+                                        entityName: target.name || relatedSlug,
+                                        entityIcon: target.icon || 'solar:user-bold-duotone',
+                                        entitySlug: target.slug || relatedSlug,
+                                        entityColor: target.color || '#4f46e5',
+                                        relationKey: relation.key,
+                                        relationLabel: relation.label,
+                                        primaryEntityId: primaryEntity._id?.toString(),
+                                        primaryEntitySlug: primaryEntity.slug,
+                                        primaryEntityName: primaryEntity.name,
+                                        tokens: []
+                                    });
+                                }
+                                bindingEntities.get(key).tokens.push(token);
+                            }
                         }
                     }
                 }
@@ -1229,9 +1254,19 @@ router.post('/api/:documentId/resolve-bindings', async (req, res) => {
 
         console.log('[Documents] Resolved bindings:', Object.keys(replacements).join(', '));
 
-        // ─── Auto-discover primary entity record (e.g. latest Consultation for this Patient) ───
+        // ─── Auto-discover primary entity record ───
         let contextRecord = null;
-        if (primaryEntitySlug && primaryEntitySlug !== bindingEntitySlug) {
+        if (primaryEntitySlug && primaryEntitySlug === bindingEntitySlug) {
+            // Self-referencing case: the selected record IS the context record
+            contextRecord = {
+                _id: record._id.toString(),
+                title: record.computedTitle || record.title || 'Sans titre',
+                entityId: entity._id.toString(),
+                entitySlug: entity.slug,
+                entityName: entity.name
+            };
+            console.log(`[Documents] Self-referencing binding: ${entity.name} "${contextRecord.title}"`);
+        } else if (primaryEntitySlug && primaryEntitySlug !== bindingEntitySlug) {
             try {
                 const primaryEntity = await Entity.findOne({ slug: primaryEntitySlug })
                     .populate({ path: 'relations.targetEntity', select: 'name slug' })

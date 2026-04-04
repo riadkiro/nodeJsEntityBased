@@ -1,7 +1,5 @@
-~~![alt text](image-77.png) met de vrai contenu pour les template du seed pas juste des veuillez personnaliser votre design~~ ✅ DONE
+![alt text](image-84.png) dansla top barre avec les app, il y a une bande blanche qui coupe les icons du haut,il faut enlever ce bug css
 
-~~http://localhost:3000/account/7846/documents ici :~~ 
-~~mettre vue listing par defaut~~ ✅ DONE
+![alt text](image-85.png)dans le doc editor : ajouter une icon (Inserer) qui permetd'insererun tableau, une image, une check boxe, travail bien la checkboxe elle doi etre clicable , toggle cheacked, avec au hover un pointer...
 
-~~![alt text](image-78.png) ![alt text](image-79.png)~~
-~~ici l'icon qui preceden le nom du model ou doc : mettre modele avec une couleur et mettre doc avec une autre couleur~~ ✅ DONE
+![alt text](image-86.png), ![alt text](image-87.png) ici il ne faut plus demanderdes infos au départ ca doit ouvrir directement le doc, et a  linterieur on ajoute date etc etc... plsu aucun doc ne demande desmodal au depart, applqiue ca a tout les seed

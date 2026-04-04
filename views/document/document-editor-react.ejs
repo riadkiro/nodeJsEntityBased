@@ -56,6 +56,15 @@
         height: 100vh !important;
         overflow: hidden !important;
     }
+    /* Neutralize the global -20px header margin within the doc editor full-height layout */
+    .main-content > header > .shadow-sm {
+        margin-top: 0 !important;
+    }
+    /* Ensure the header toolbar renders ABOVE the canvas scrollable area */
+    .main-content > header {
+        position: relative;
+        z-index: 30;
+    }
     /* Override padding for full-height editor */
     .animate__animated.p-6 {
         padding: 0 !important;

@@ -466,7 +466,7 @@ export default function EditorHeader({
             </div>
 
             {/* Toolbar Row */}
-            <div className="flex items-center px-3 py-1 gap-0.5 flex-nowrap overflow-x-auto">
+            <div className="flex items-center px-3 py-1 gap-0.5 flex-nowrap" style={{ overflow: 'visible' }}>
                 {/* Undo / Redo */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); document.execCommand('undo') }}

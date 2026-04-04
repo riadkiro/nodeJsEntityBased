@@ -721,19 +721,20 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             }
         }
 
-        // 4. Validate required inputs
+        // 4. Auto-fill required inputs with defaults for draft generation
+        //    (drafts are editable, so we fill sensible defaults instead of rejecting)
         const inputs = req.body.inputs || {};
-        const missingInputs = [];
         for (const field of smartDocTemplate.inputFields || []) {
             if (field.required && !inputs[field.key] && inputs[field.key] !== 0) {
-                missingInputs.push(field.label || field.key);
+                // Auto-fill with sensible defaults based on field type
+                if (field.type === 'date') {
+                    inputs[field.key] = new Date().toISOString().split('T')[0]; // today
+                } else if (field.type === 'number') {
+                    inputs[field.key] = 0;
+                } else {
+                    inputs[field.key] = ''; // empty string for text/textarea
+                }
             }
-        }
-        if (missingInputs.length > 0) {
-            return res.status(400).json({
-                error: 'Champs obligatoires manquants',
-                missingFields: missingInputs
-            });
         }
 
         // 5. Load the document template

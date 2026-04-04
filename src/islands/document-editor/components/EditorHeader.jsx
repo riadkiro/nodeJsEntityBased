@@ -89,6 +89,26 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
     const [hover, setHover] = useState({ rows: 0, cols: 0 })
     const ref = useRef(null)
     const fileInputRef = useRef(null)
+    const savedSelectionRef = useRef(null)
+
+    // Save the current selection when opening the dropdown
+    const saveCurrentSelection = () => {
+        const sel = window.getSelection()
+        if (sel && sel.rangeCount > 0) {
+            savedSelectionRef.current = sel.getRangeAt(0).cloneRange()
+        }
+    }
+
+    // Restore selection before performing an action
+    const restoreAndExec = (callback) => {
+        const range = savedSelectionRef.current
+        if (range) {
+            const sel = window.getSelection()
+            sel.removeAllRanges()
+            sel.addRange(range)
+        }
+        callback()
+    }
 
     useEffect(() => {
         const handleClick = (e) => {
@@ -106,9 +126,11 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
         if (!file) return
         const reader = new FileReader()
         reader.onload = () => {
-            const img = `<img src="${reader.result}" style="max-width:100%;height:auto;border-radius:4px;margin:8px 0;" /><p><br></p>`
-            document.execCommand('insertHTML', false, img)
-            onInsertImage?.()
+            restoreAndExec(() => {
+                const img = `<img src="${reader.result}" style="max-width:100%;height:auto;border-radius:4px;margin:8px 0;" /><p><br></p>`
+                document.execCommand('insertHTML', false, img)
+                onInsertImage?.()
+            })
         }
         reader.readAsDataURL(file)
         setOpen(false)
@@ -122,20 +144,20 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
             label: 'Tableau',
             description: 'Insérer un tableau',
             hasSubmenu: true,
-            onClick: () => setShowTableGrid(!showTableGrid)
+            action: () => setShowTableGrid(!showTableGrid)
         },
         {
             icon: 'tabler:photo',
             label: 'Image',
             description: 'Insérer une image',
-            onClick: () => fileInputRef.current?.click()
+            action: () => fileInputRef.current?.click()
         },
         {
             icon: 'tabler:checkbox',
             label: 'Case à cocher',
             description: 'Insérer une checkbox interactive',
-            onClick: () => {
-                onInsertCheckbox?.()
+            action: () => {
+                restoreAndExec(() => onInsertCheckbox?.())
                 setOpen(false)
             }
         },
@@ -144,8 +166,8 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
             icon: 'tabler:quote',
             label: 'Citation',
             description: 'Bloc de citation',
-            onClick: () => {
-                onInsertBlockquote?.()
+            action: () => {
+                restoreAndExec(() => onInsertBlockquote?.())
                 setOpen(false)
             }
         },
@@ -153,8 +175,8 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
             icon: 'tabler:separator',
             label: 'Séparateur',
             description: 'Ligne horizontale',
-            onClick: () => {
-                onInsertHR?.()
+            action: () => {
+                restoreAndExec(() => onInsertHR?.())
                 setOpen(false)
             }
         }
@@ -170,7 +192,12 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
                 onChange={handleImageUpload}
             />
             <button
-                onClick={() => { setOpen(!open); setShowTableGrid(false) }}
+                onMouseDown={(e) => {
+                    e.preventDefault()
+                    saveCurrentSelection()
+                    setOpen(!open)
+                    setShowTableGrid(false)
+                }}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${open
                     ? 'bg-primary/10 text-primary'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'
@@ -194,7 +221,11 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
                             return (
                                 <button
                                     key={idx}
-                                    onClick={item.onClick}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        item.action()
+                                    }}
                                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
                                 >
                                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors flex-shrink-0">
@@ -202,10 +233,10 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</div>
-                                        <div className="text-[10px] text-gray-400 dark:text-gray-500">{item.description}</div>
+                                        <div className="text-[10px] text-gray-400">{item.description}</div>
                                     </div>
                                     {item.hasSubmenu && (
-                                        <iconify-icon icon="tabler:chevron-right" width="14" className="text-gray-300"></iconify-icon>
+                                        <iconify-icon icon="tabler:chevron-right" width="14" className="text-gray-400"></iconify-icon>
                                     )}
                                 </button>
                             )
@@ -214,28 +245,26 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
 
                     {/* Table Grid Submenu */}
                     {showTableGrid && (
-                        <div
-                            className="absolute top-0 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-2xl p-3"
-                            style={{ left: '100%', marginLeft: '4px', minWidth: '200px' }}
-                        >
-                            <p className="text-xs text-gray-500 mb-2 font-medium">
-                                {hover.rows > 0 ? `${hover.rows} × ${hover.cols}` : 'Sélectionnez la taille'}
-                            </p>
-                            <div className="grid gap-[2px]" style={{ gridTemplateColumns: 'repeat(8, 1fr)' }}>
-                                {Array.from({ length: 8 * 6 }).map((_, i) => {
-                                    const row = Math.floor(i / 8) + 1
-                                    const col = (i % 8) + 1
-                                    const isActive = row <= hover.rows && col <= hover.cols
+                        <div className="border-t dark:border-gray-700 p-3">
+                            <div className="text-[10px] text-gray-400 font-medium mb-2 uppercase tracking-wider">
+                                Taille du tableau
+                            </div>
+                            <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+                                {Array.from({ length: 36 }, (_, i) => {
+                                    const row = Math.floor(i / 6) + 1
+                                    const col = (i % 6) + 1
                                     return (
                                         <div
                                             key={i}
-                                            className={`w-4 h-4 border rounded-sm cursor-pointer transition-colors ${isActive
-                                                ? 'bg-primary/30 border-primary'
-                                                : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-primary/10'
+                                            className={`w-5 h-5 border rounded-sm cursor-pointer transition-all ${
+                                                row <= hover.rows && col <= hover.cols
+                                                    ? 'bg-primary/20 border-primary'
+                                                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
                                             }`}
                                             onMouseEnter={() => setHover({ rows: row, cols: col })}
-                                            onClick={() => {
-                                                onInsertTable(row, col)
+                                            onMouseDown={(e) => {
+                                                e.preventDefault()
+                                                restoreAndExec(() => onInsertTable(row, col))
                                                 setOpen(false)
                                                 setShowTableGrid(false)
                                                 setHover({ rows: 0, cols: 0 })
@@ -244,6 +273,11 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
                                     )
                                 })}
                             </div>
+                            {hover.rows > 0 && (
+                                <div className="text-center text-[10px] text-gray-400 mt-1.5">
+                                    {hover.rows} × {hover.cols}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -358,8 +392,76 @@ export default function EditorHeader({
     }, [triggerSave])
 
     const handleInsertCheckbox = useCallback(() => {
-        const checkboxHtml = '<span class="doc-checkbox" style="cursor:pointer;font-size:1.2em;user-select:none;vertical-align:middle;margin-right:4px;" data-checked="false" contenteditable="false">☐</span>&nbsp;'
-        document.execCommand('insertHTML', false, checkboxHtml)
+        const sel = window.getSelection()
+        if (!sel || sel.rangeCount === 0) return
+
+        const range = sel.getRangeAt(0)
+
+        // Delete any selected content first
+        if (!range.collapsed) {
+            range.deleteContents()
+        }
+
+        // Create checkbox span
+        const checkbox = document.createElement('span')
+        checkbox.className = 'doc-checkbox'
+        checkbox.style.cssText = 'display:inline;cursor:pointer;font-size:1.2em;user-select:none;vertical-align:middle;margin-right:4px;'
+        checkbox.setAttribute('data-checked', 'false')
+        checkbox.contentEditable = 'false'
+        checkbox.textContent = '☐'
+
+        // Create the trailing space
+        const space = document.createTextNode('\u00A0')
+
+        // Ensure we insert INSIDE the current block element, not as a sibling
+        // When the range is at the end of a <p>, the startContainer can be the
+        // contenteditable div itself, which makes insertNode place the checkbox
+        // as a sibling of <p> instead of inside it.
+        const container = range.startContainer
+        const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'DIV']
+
+        // Find the closest block element
+        let blockParent = container.nodeType === Node.TEXT_NODE ? container.parentElement : container
+        while (blockParent && !blockTags.includes(blockParent.tagName) && blockParent.contentEditable !== 'true') {
+            blockParent = blockParent.parentElement
+        }
+
+        // If the container IS the contenteditable root (not inside a block),
+        // find the block at the current offset and append inside it
+        if (blockParent && blockParent.contentEditable === 'true') {
+            // We're at the contenteditable root level - find which child block we're near
+            const offset = range.startOffset
+            const childBlock = blockParent.children[offset - 1] || blockParent.lastElementChild
+            if (childBlock && blockTags.includes(childBlock.tagName)) {
+                // Append inside this block element
+                childBlock.appendChild(checkbox)
+                childBlock.appendChild(space)
+            } else {
+                // Fallback: just insert at range
+                range.insertNode(checkbox)
+                if (checkbox.nextSibling) {
+                    checkbox.parentNode.insertBefore(space, checkbox.nextSibling)
+                } else {
+                    checkbox.parentNode.appendChild(space)
+                }
+            }
+        } else {
+            // We're inside a block element - safe to use insertNode
+            range.insertNode(checkbox)
+            if (checkbox.nextSibling) {
+                checkbox.parentNode.insertBefore(space, checkbox.nextSibling)
+            } else {
+                checkbox.parentNode.appendChild(space)
+            }
+        }
+
+        // Move cursor after the space
+        const newRange = document.createRange()
+        newRange.setStartAfter(space)
+        newRange.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(newRange)
+
         triggerSave()
     }, [triggerSave])
 

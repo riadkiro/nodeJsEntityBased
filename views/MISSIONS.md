@@ -1,1 +1,5 @@
-![alt text](image-90.png) ici la logique est la suivante : quand je cree un nouveau record a partir d une entité de lié, la liasion se cree auto c bien, mais je dois avoir une case a coché activer par defaut , redirect, si le user ne la desactive pas ca redirige vers le nouveau record edit page, genre ici dans l image si je clique sur creer ca doit creer la consult et ouvrir la page edit de la consult
+✅ DONE — Seed scripts updated to use separate environments instead of spaces within one environment.
+- seed-cabinet-medical.js: 1 env → 5 envs (Activité Clinique, Documents, Facturation, Organisation, Stock & Pharmacie)
+- seed-notaire.js: 1 env → 3 envs (Clientèle, Dossiers & Actes, Facturation Notaire)
+- seed-cabinet-dentiste.js: inherits from seed-cabinet-medical.js (automatic)
+- seed-demo-9194.js: already uses separate environments (no change needed)

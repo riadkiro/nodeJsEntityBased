@@ -680,75 +680,104 @@ async function install(conn, userId, presetSlug) {
     }
     console.log(`   ✅ ${cardTemplates.length} card templates created`);
 
-    // =========== 5. NAVIGATION (views directly in spaces, no redundant folders) ===========
+    // =========== 5. NAVIGATION (each group = separate environment) ===========
     console.log('\n🧭 Creating navigation...');
-    const env = await upsertDoc(db.Environment, { slug: 'cabinet-medical', 'meta.createdByPreset': PRESET }, {
-        name: 'Cabinet Médical', slug: 'cabinet-medical', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', order: 10
-    });
 
-    const spaceViewDefs = [
+    const envDefs = [
         {
-            name: 'Activité Clinique', icon: 'solar:heart-pulse-bold-duotone', color: '#00ab55', views: [
-                { entitySlug: 'patients', name: 'Patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6' },
-                { entitySlug: 'rendez-vous', name: 'Rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6' },
-                { entitySlug: 'consultations', name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
-                { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
-                { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
-                { entitySlug: 'examens', name: 'Catalogue examens', icon: 'solar:test-tube-minimalistic-bold-duotone', color: '#fb923c' },
-                { entitySlug: 'symptomes', name: 'Symptômes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899' },
-                { entitySlug: 'pathologies', name: 'Pathologies', icon: 'solar:virus-bold-duotone', color: '#dc2626' },
-                { entitySlug: 'traitements', name: 'Traitements', icon: 'solar:pills-bold-duotone', color: '#0891b2' },
-            ]
+            env: { name: 'Activité Clinique', slug: 'activite-clinique', icon: 'solar:heart-pulse-bold-duotone', color: '#00ab55' },
+            spaces: [{
+                name: 'Activité Clinique', icon: 'solar:heart-pulse-bold-duotone', color: '#00ab55', views: [
+                    { entitySlug: 'patients', name: 'Patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6' },
+                    { entitySlug: 'rendez-vous', name: 'Rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6' },
+                    { entitySlug: 'consultations', name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
+                    { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
+                    { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
+                    { entitySlug: 'examens', name: 'Catalogue examens', icon: 'solar:test-tube-minimalistic-bold-duotone', color: '#fb923c' },
+                    { entitySlug: 'symptomes', name: 'Symptômes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899' },
+                    { entitySlug: 'pathologies', name: 'Pathologies', icon: 'solar:virus-bold-duotone', color: '#dc2626' },
+                    { entitySlug: 'traitements', name: 'Traitements', icon: 'solar:pills-bold-duotone', color: '#0891b2' },
+                ]
+            }]
         },
         {
-            name: 'Documents', icon: 'solar:document-bold-duotone', color: '#6366f1', views: [
-                { entitySlug: 'documents-medicaux', name: 'Documents patients', icon: 'solar:folder-open-bold-duotone', color: '#6366f1' },
-                { entitySlug: 'plans-traitement', name: 'Plans de traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9' },
-            ]
+            env: { name: 'Documents', slug: 'documents', icon: 'solar:document-bold-duotone', color: '#6366f1' },
+            spaces: [{
+                name: 'Documents', icon: 'solar:document-bold-duotone', color: '#6366f1', views: [
+                    { entitySlug: 'documents-medicaux', name: 'Documents patients', icon: 'solar:folder-open-bold-duotone', color: '#6366f1' },
+                    { entitySlug: 'plans-traitement', name: 'Plans de traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9' },
+                ]
+            }]
         },
         {
-            name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', views: [
-                { entitySlug: 'prestations', name: 'Prestations', icon: 'solar:clipboard-check-bold-duotone', color: '#0ea5e9' },
-                { entitySlug: 'factures', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
-                { entitySlug: 'paiements', name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e' },
-                { entitySlug: 'assurances', name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
-            ]
+            env: { name: 'Facturation', slug: 'facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
+            spaces: [{
+                name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', views: [
+                    { entitySlug: 'prestations', name: 'Prestations', icon: 'solar:clipboard-check-bold-duotone', color: '#0ea5e9' },
+                    { entitySlug: 'factures', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
+                    { entitySlug: 'paiements', name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e' },
+                    { entitySlug: 'assurances', name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
+                ]
+            }]
         },
         {
-            name: 'Organisation', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', views: [
-                { entitySlug: 'personnel', name: 'Personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee' },
-            ]
+            env: { name: 'Organisation', slug: 'organisation', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee' },
+            spaces: [{
+                name: 'Organisation', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', views: [
+                    { entitySlug: 'personnel', name: 'Personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee' },
+                ]
+            }]
         },
         {
-            name: 'Stock & Pharmacie', icon: 'solar:box-bold-duotone', color: '#94a3b8', views: [
-                { entitySlug: 'medicaments', name: 'Médicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444' },
-                { entitySlug: 'stock', name: 'Consommables', icon: 'solar:box-bold-duotone', color: '#94a3b8' },
-            ]
+            env: { name: 'Stock & Pharmacie', slug: 'stock-pharmacie', icon: 'solar:box-bold-duotone', color: '#94a3b8' },
+            spaces: [{
+                name: 'Stock & Pharmacie', icon: 'solar:box-bold-duotone', color: '#94a3b8', views: [
+                    { entitySlug: 'medicaments', name: 'Médicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444' },
+                    { entitySlug: 'stock', name: 'Consommables', icon: 'solar:box-bold-duotone', color: '#94a3b8' },
+                ]
+            }]
         },
     ];
 
     let viewCount = 0;
-    for (let si = 0; si < spaceViewDefs.length; si++) {
-        const sd = spaceViewDefs[si];
-        const space = await upsertDoc(db.Space, { slug: slug(sd.name), 'meta.createdByPreset': PRESET }, {
-            name: sd.name, slug: slug(sd.name), icon: sd.icon, color: sd.color, order: si,
-            environmentId: env._id, owner: new mongoose.Types.ObjectId(userId)
+    for (let ei = 0; ei < envDefs.length; ei++) {
+        const ed = envDefs[ei];
+        const env = await upsertDoc(db.Environment, { slug: ed.env.slug, 'meta.createdByPreset': PRESET }, {
+            ...ed.env, order: ei, isDefault: ei === 0
         });
-        for (let vi = 0; vi < sd.views.length; vi++) {
-            const vd = sd.views[vi];
-            const entityId = E[vd.entitySlug];
-            if (!entityId) continue;
-            const viewSlug = `view-${vd.entitySlug}-${space._id.toString().slice(-6)}-${vi}`;
-            await upsertDoc(db.View, { slug: viewSlug, 'meta.createdByPreset': PRESET }, {
-                name: vd.name, slug: viewSlug, entity: entityId,
-                icon: vd.icon, color: vd.color, viewType: 'list', order: vi,
-                spaces: [space._id], folders: [],
-                createdBy: new mongoose.Types.ObjectId(userId)
+        for (let si = 0; si < ed.spaces.length; si++) {
+            const sd = ed.spaces[si];
+            const space = await upsertDoc(db.Space, { slug: slug(sd.name), 'meta.createdByPreset': PRESET }, {
+                name: sd.name, slug: slug(sd.name), icon: sd.icon, color: sd.color, order: si,
+                environmentId: env._id, owner: new mongoose.Types.ObjectId(userId)
             });
-            viewCount++;
+            for (let vi = 0; vi < sd.views.length; vi++) {
+                const vd = sd.views[vi];
+                const entityId = E[vd.entitySlug];
+                if (!entityId) continue;
+                const viewSlug = `view-${vd.entitySlug}-${space._id.toString().slice(-6)}-${vi}`;
+                await upsertDoc(db.View, { slug: viewSlug, 'meta.createdByPreset': PRESET }, {
+                    name: vd.name, slug: viewSlug, entity: entityId,
+                    icon: vd.icon, color: vd.color, viewType: 'list', order: vi,
+                    spaces: [space._id], folders: [],
+                    createdBy: new mongoose.Types.ObjectId(userId)
+                });
+                viewCount++;
+            }
         }
     }
-    console.log(`   ✅ ${spaceViewDefs.length} spaces + ${viewCount} views (no redundant folders)`);
+    // Clean up the old single "cabinet-medical" environment if it still exists
+    const oldEnv = await db.Environment.findOne({ slug: 'cabinet-medical', 'meta.createdByPreset': PRESET });
+    if (oldEnv) {
+        // Reassign any spaces still pointing to the old env
+        await db.Space.updateMany(
+            { environmentId: oldEnv._id, 'meta.createdByPreset': PRESET },
+            { $unset: { environmentId: '' } }
+        );
+        await db.Environment.deleteOne({ _id: oldEnv._id });
+        console.log('   🗑️  Removed old single "Cabinet Médical" environment');
+    }
+    console.log(`   ✅ ${envDefs.length} environments + ${viewCount} views`);
 
     // =========== 5b. LINE SCHEMAS ===========
     console.log('\n📋 Creating line schemas...');

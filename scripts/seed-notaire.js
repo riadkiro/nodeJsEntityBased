@@ -116,31 +116,54 @@ async function install(conn, userId, presetSlug) {
     }
     console.log(`   ✅ ${entityDefs.length} entities`);
 
-    // 4. NAVIGATION
+    // 4. NAVIGATION (each group = separate environment)
     console.log('\n🧭 [Notaire] Creating navigation...');
-    const env = await upsertDoc(db.Environment, { slug: 'etude-notariale', 'meta.createdByPreset': PRESET }, {
-        name: 'Étude Notariale', slug: 'etude-notariale', icon: 'solar:diploma-verified-bold-duotone', color: '#805dca', order: 11
-    });
-    const spaceDefs = [
-        { name: 'Clientèle', icon: 'solar:user-bold-duotone', color: '#3b82f6', folders: ['Clients', 'Rendez-vous'] },
-        { name: 'Dossiers & Actes', icon: 'solar:folder-open-bold-duotone', color: '#805dca', folders: ['Dossiers', 'Actes', 'Documents'] },
-        { name: 'Facturation Notaire', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', folders: ['Factures Notaire', 'Paiements Notaire'] },
+    const envDefs = [
+        {
+            env: { name: 'Clientèle', slug: 'n-clientele', icon: 'solar:user-bold-duotone', color: '#3b82f6' },
+            spaces: [{ name: 'Clientèle', icon: 'solar:user-bold-duotone', color: '#3b82f6', folders: ['Clients', 'Rendez-vous'] }]
+        },
+        {
+            env: { name: 'Dossiers & Actes', slug: 'n-dossiers-actes', icon: 'solar:folder-open-bold-duotone', color: '#805dca' },
+            spaces: [{ name: 'Dossiers & Actes', icon: 'solar:folder-open-bold-duotone', color: '#805dca', folders: ['Dossiers', 'Actes', 'Documents'] }]
+        },
+        {
+            env: { name: 'Facturation Notaire', slug: 'n-facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
+            spaces: [{ name: 'Facturation Notaire', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', folders: ['Factures Notaire', 'Paiements Notaire'] }]
+        },
     ];
-    for (let si = 0; si < spaceDefs.length; si++) {
-        const sd = spaceDefs[si];
-        const spaceSlug = 'n-' + slug(sd.name);
-        const space = await upsertDoc(db.Space, { slug: spaceSlug, 'meta.createdByPreset': PRESET }, {
-            name: sd.name, slug: spaceSlug, icon: sd.icon, color: sd.color, order: si,
-            environmentId: env._id, owner: uid
+    for (let ei = 0; ei < envDefs.length; ei++) {
+        const ed = envDefs[ei];
+        const env = await upsertDoc(db.Environment, { slug: ed.env.slug, 'meta.createdByPreset': PRESET }, {
+            ...ed.env, order: ei, isDefault: ei === 0
         });
-        for (let fi = 0; fi < sd.folders.length; fi++) {
-            const folderSlug = 'n-' + slug(sd.folders[fi]);
-            await upsertDoc(db.Folder, { slug: folderSlug, spaces: [space._id], 'meta.createdByPreset': PRESET }, {
-                name: sd.folders[fi], slug: folderSlug, icon: sd.icon, color: sd.color, order: fi,
-                spaces: [space._id], parentFolders: []
+        for (let si = 0; si < ed.spaces.length; si++) {
+            const sd = ed.spaces[si];
+            const spaceSlug = 'n-' + slug(sd.name);
+            const space = await upsertDoc(db.Space, { slug: spaceSlug, 'meta.createdByPreset': PRESET }, {
+                name: sd.name, slug: spaceSlug, icon: sd.icon, color: sd.color, order: si,
+                environmentId: env._id, owner: uid
             });
+            for (let fi = 0; fi < sd.folders.length; fi++) {
+                const folderSlug = 'n-' + slug(sd.folders[fi]);
+                await upsertDoc(db.Folder, { slug: folderSlug, spaces: [space._id], 'meta.createdByPreset': PRESET }, {
+                    name: sd.folders[fi], slug: folderSlug, icon: sd.icon, color: sd.color, order: fi,
+                    spaces: [space._id], parentFolders: []
+                });
+            }
         }
     }
+    // Clean up old single "etude-notariale" environment if it still exists
+    const oldEnv = await db.Environment.findOne({ slug: 'etude-notariale', 'meta.createdByPreset': PRESET });
+    if (oldEnv) {
+        await db.Space.updateMany(
+            { environmentId: oldEnv._id, 'meta.createdByPreset': PRESET },
+            { $unset: { environmentId: '' } }
+        );
+        await db.Environment.deleteOne({ _id: oldEnv._id });
+        console.log('   🗑️  Removed old single "Étude Notariale" environment');
+    }
+    console.log(`   ✅ ${envDefs.length} environments created`);
 
     // 5. DEMO RECORDS
     console.log('\n📊 [Notaire] Creating demo records...');

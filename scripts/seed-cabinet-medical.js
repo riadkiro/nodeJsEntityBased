@@ -1705,7 +1705,10 @@ async function createDocumentTemplates(db, ids, userId) {
     <p style="margin:0;font-size:13px;color:#374151;">{{consultations.motif}}</p>
   </div>
   <div class="dynamic-table" data-table='{"schemaId":"${traitementSchemaId}","style":"professional","title":"Prescription","showTotals":false}'>
-    <p style="color:#999;font-style:italic;">Chargement des traitements...</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-family:inherit;font-size:11pt;border:1px solid #d1d5db;">
+      <thead style="background:#f3f4f6;"><tr><th style="padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;width:40px;text-align:center;">#</th><th style="padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;">Traitement</th><th style="padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;">Moment</th><th style="padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;">Fréquence</th><th style="padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;">Durée</th><th style="padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;">Instructions</th></tr></thead>
+      <tbody><tr><td colspan="7" style="padding:20px 12px;border:1px solid #d1d5db;text-align:center;color:#9ca3af;font-style:italic;">Aucune ligne</td></tr></tbody>
+    </table>
   </div>
   <div style="margin-top:48px;text-align:right;">
     <p style="margin:0;font-size:12px;color:#64748b;">Signature et cachet</p>

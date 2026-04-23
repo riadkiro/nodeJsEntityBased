@@ -1510,7 +1510,7 @@ export default function DynamicTable({
                                                                 {preset.name}
                                                             </div>
                                                             <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-                                                                {preset.rows?.length || 0} ligne{(preset.rows?.length || 0) > 1 ? 's' : ''}
+                                                                {preset.presetRows?.length || 0} ligne{(preset.presetRows?.length || 0) > 1 ? 's' : ''}
                                                                 {preset.scope === 'record' && preset.scopeLabel && (
                                                                     <span style={{ marginLeft: 8, color: '#6b7280' }}>• {preset.scopeLabel}</span>
                                                                 )}

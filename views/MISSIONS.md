@@ -1,3 +1,1 @@
-~~![alt text](image-88.png) ici on a toujours zero lignes, c faux il faut verifier le count~~ ✅ DONE — `preset.rows` → `preset.presetRows`
-
-~~![alt text](image-89.png) ici on a chargement des traitements, enlever ca et mettre plutot un tableau avec header et une ligne vide sil est vide.~~ ✅ DONE — seed template updated with proper empty table
+![alt text](image-90.png) ici la logique est la suivante : quand je cree un nouveau record a partir d une entité de lié, la liasion se cree auto c bien, mais je dois avoir une case a coché activer par defaut , redirect, si le user ne la desactive pas ca redirige vers le nouveau record edit page, genre ici dans l image si je clique sur creer ca doit creer la consult et ouvrir la page edit de la consult

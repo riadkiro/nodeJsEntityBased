@@ -490,10 +490,29 @@ window.__syncClsInputs = function(clsId, ids) {
                 const _hasAnyRel = _allRelIcons.length > 0;
             %>
 
+            <% const _recBase = '/account/' + account_number + '/record/' + entity.slug + '/' + record._id; %>
             <div class="hb-quick-icons">
+                <!-- Overview — Slate -->
+                <div class="hb-icon-item">
+                    <a href="<%= _recBase %>/overview" class="hb-icon-btn" title="Vue d'ensemble" style="--hb-c:#6366f1">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #6366f118, #6366f108)">
+                            <iconify-icon icon="solar:widget-5-bold-duotone" width="15" style="color:#6366f1;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#6366f1">Overview</span>
+                    </a>
+                </div>
+                <!-- Fiche — Primary Blue -->
+                <div class="hb-icon-item">
+                    <a href="<%= _recBase %>/fiche" class="hb-icon-btn" title="Fiche" style="--hb-c:#4361ee">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #4361ee18, #4361ee08)">
+                            <iconify-icon icon="solar:card-bold-duotone" width="15" style="color:#4361ee;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#4361ee">Fiche</span>
+                    </a>
+                </div>
                 <!-- Docs — Amber -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/documents" class="hb-icon-btn" title="Documents" style="--hb-c:#f59e0b">
+                    <a href="<%= _recBase %>/docs" class="hb-icon-btn" title="Documents" style="--hb-c:#f59e0b">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #f59e0b18, #f59e0b08)">
                             <iconify-icon icon="solar:document-text-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
                         </div>
@@ -502,7 +521,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 </div>
                 <!-- Drive — Pink -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/media" class="hb-icon-btn" title="Drive" style="--hb-c:#ec4899">
+                    <a href="<%= _recBase %>/drive" class="hb-icon-btn" title="Drive" style="--hb-c:#ec4899">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #ec489918, #ec489908)">
                             <iconify-icon icon="solar:cloud-storage-bold-duotone" width="15" style="color:#ec4899;flex-shrink:0"></iconify-icon>
                         </div>
@@ -511,7 +530,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 </div>
                 <!-- Tasks — Emerald -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/tasks" class="hb-icon-btn" title="Tâches" style="--hb-c:#10b981">
+                    <a href="<%= _recBase %>/tasks" class="hb-icon-btn" title="Tâches" style="--hb-c:#10b981">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #10b98118, #10b98108)">
                             <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="15" style="color:#10b981;flex-shrink:0"></iconify-icon>
                         </div>
@@ -520,7 +539,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 </div>
                 <!-- Agenda — Teal -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/calendar" class="hb-icon-btn" title="Agenda" style="--hb-c:#14b8a6">
+                    <a href="<%= _recBase %>/agenda" class="hb-icon-btn" title="Agenda" style="--hb-c:#14b8a6">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #14b8a618, #14b8a608)">
                             <iconify-icon icon="solar:calendar-bold-duotone" width="15" style="color:#14b8a6;flex-shrink:0"></iconify-icon>
                         </div>
@@ -529,7 +548,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 </div>
                 <!-- Chat — Orange -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/chat" class="hb-icon-btn" title="Chat" style="--hb-c:#f97316">
+                    <a href="<%= _recBase %>/chat" class="hb-icon-btn" title="Chat" style="--hb-c:#f97316">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #f9731618, #f9731608)">
                             <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="15" style="color:#f97316;flex-shrink:0"></iconify-icon>
                         </div>
@@ -538,7 +557,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 </div>
                 <!-- Emails — Sky -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/mailbox/inbox" class="hb-icon-btn" title="Emails" style="--hb-c:#0ea5e9">
+                    <a href="<%= _recBase %>/emails" class="hb-icon-btn" title="Emails" style="--hb-c:#0ea5e9">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #0ea5e918, #0ea5e908)">
                             <iconify-icon icon="solar:letter-bold-duotone" width="15" style="color:#0ea5e9;flex-shrink:0"></iconify-icon>
                         </div>
@@ -547,7 +566,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 </div>
                 <!-- Notes — Purple -->
                 <div class="hb-icon-item">
-                    <a href="/account/<%= account_number %>/notes" class="hb-icon-btn" title="Notes" style="--hb-c:#8b5cf6">
+                    <a href="<%= _recBase %>/notes" class="hb-icon-btn" title="Notes" style="--hb-c:#8b5cf6">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #8b5cf618, #8b5cf608)">
                             <iconify-icon icon="solar:notebook-bold-duotone" width="15" style="color:#8b5cf6;flex-shrink:0"></iconify-icon>
                         </div>

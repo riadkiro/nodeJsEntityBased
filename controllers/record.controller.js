@@ -2299,5 +2299,111 @@ module.exports = {
             console.error('Error updating relation:', err);
             return res.status(500).json({ success: false, message: err.message });
         }
+    },
+
+    // ═══ Contextual Module Pages (overview, fiche, docs, drive, tasks, notes, chat, emails, agenda) ═══
+    modulePage: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+            const moduleName = req.params.moduleName;
+            const validModules = ['overview', 'fiche', 'docs', 'drive', 'tasks', 'notes', 'chat', 'emails', 'agenda'];
+            if (!validModules.includes(moduleName)) {
+                return res.status(404).render("errors/404", {
+                    message: "Module not found",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            // For 'fiche' module, load full entity + record data
+            let entity, record;
+            if (moduleName === 'fiche' || moduleName === 'overview') {
+                await tenantCollection(req, "FieldTemplate");
+                entity = await EntityModel.findOne({ slug: req.params.entityName })
+                    .populate('customFields')
+                    .populate('classifications')
+                    .populate('statusClassification');
+            } else {
+                entity = await EntityModel.findOne({ slug: req.params.entityName })
+                    .select('name slug icon color');
+            }
+            if (!entity) return res.status(404).render("errors/404", {
+                message: "Entity not found",
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+
+            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+                return res.status(400).send("Invalid Record ID");
+            }
+
+            if (moduleName === 'fiche' || moduleName === 'overview') {
+                record = await RecordModel.findById(req.params.id);
+            } else {
+                record = await RecordModel.findById(req.params.id)
+                    .select('title image _id entityId attachments');
+            }
+            if (!record) return res.status(404).render("errors/404", {
+                message: "Record not found",
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+
+            // Build field values map for fiche
+            let ficheFields = [];
+            if (moduleName === 'fiche' || moduleName === 'overview') {
+                const recordValues = {};
+                (record.customFields || []).forEach(cv => {
+                    const fid = (cv.field_id?._id || cv.field_id || '').toString();
+                    if (fid) recordValues[fid] = cv.value;
+                });
+
+                // Standard fields
+                const standardFields = [
+                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '' },
+                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '' },
+                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '' },
+                ];
+                ficheFields = standardFields.filter(f => f.value);
+
+                // Custom fields
+                (entity.customFields || []).forEach(cf => {
+                    const val = recordValues[cf._id.toString()];
+                    if (val !== undefined && val !== null && val !== '') {
+                        let displayVal = val;
+                        if (cf.type === 'date' && val) {
+                            try { displayVal = new Date(val).toLocaleDateString('fr-FR'); } catch(e) {}
+                        }
+                        if (typeof val === 'object' && !Array.isArray(val)) {
+                            displayVal = JSON.stringify(val);
+                        }
+                        if (Array.isArray(val)) {
+                            displayVal = val.join(', ');
+                        }
+                        ficheFields.push({
+                            key: cf._id.toString(),
+                            label: cf.label || cf.name || '',
+                            icon: (cf.ui && cf.ui.icon) || 'solar:document-text-linear',
+                            value: displayVal,
+                            type: cf.type || 'text',
+                            color: cf.color || (cf.ui && cf.ui.couleur) || ''
+                        });
+                    }
+                });
+            }
+
+            res.render("record/record-module", {
+                entity,
+                record,
+                moduleName,
+                ficheFields,
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+        } catch (error) {
+            console.error('[ModulePage]', error);
+            res.status(500).send("Server Error");
+        }
     }
 };

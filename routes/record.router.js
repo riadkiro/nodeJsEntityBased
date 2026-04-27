@@ -26,6 +26,9 @@ router.get("/:entityName/delete/:id", recordController.delete);
 // Relation update (add/remove related record — used by quick-create for many-to-many)
 router.post("/:entityName/:id/update-relation", recordController.updateRelation);
 
+// Contextual module pages (overview, fiche, docs, drive, tasks, notes, chat, emails, agenda)
+router.get("/:entityName/:id/:moduleName(overview|fiche|docs|drive|tasks|notes|chat|emails|agenda)", recordController.modulePage);
+
 // Record detail page (fiche) — must be AFTER all specific routes
 router.get("/:entityName/:id", recordController.detailPage);
 

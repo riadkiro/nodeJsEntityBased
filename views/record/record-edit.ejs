@@ -490,93 +490,71 @@ window.__syncClsInputs = function(clsId, ids) {
                 const _hasAnyRel = _allRelIcons.length > 0;
             %>
 
-            <% if (_hasAttachments || _hasAnyRel) { %>
-            <div class="hb-quick-icons" x-data="{ openDropdown: null }">
-                <!-- Attachments icon -->
-                <% if (_hasAttachments) { %>
-                <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
-                    <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
-                         title="Pièces jointes (<%= _attachmentCount %>)" style="--hb-c:#f59e0b">
+            <div class="hb-quick-icons">
+                <!-- Docs — Amber -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/documents" class="hb-icon-btn" title="Documents" style="--hb-c:#f59e0b">
                         <div class="hb-icon-circle" style="background:linear-gradient(135deg, #f59e0b18, #f59e0b08)">
-                            <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
+                            <iconify-icon icon="solar:document-text-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
                         </div>
-                        <span class="hb-expand-label" style="color:#f59e0b">Documents</span>
-                        <span class="hb-badge" style="background:#f59e0b"><%= _attachmentCount %></span>
-                    </div>
-                    <div class="hb-dropdown" x-show="openDropdown === 'attach'" x-transition x-cloak>
-                        <div class="hb-dropdown-header">
-                            <iconify-icon icon="solar:paperclip-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
-                            <span>Pièces jointes · <%= _attachmentTitle %></span>
-                        </div>
-                        <div class="hb-dropdown-list">
-                            <% [..._attachmentList].sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0)).forEach(att => { 
-                                let dateStr = '';
-                                if (att.uploadedAt) {
-                                    let d = new Date(att.uploadedAt);
-                                    dateStr = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' • ';
-                                }
-                            %>
-                            <a href="/account/<%= account_number %>/uploads/attachments/<%= att.filename %>" target="_blank" class="hb-dropdown-item">
-                                <iconify-icon icon="<%= att.category === 'pdf' ? 'solar:file-text-bold-duotone' : att.category === 'image' ? 'solar:gallery-bold-duotone' : att.category === 'word' ? 'solar:document-text-bold-duotone' : 'solar:file-bold-duotone' %>" width="16"
-                                    style="color:<%= att.category === 'pdf' ? '#ef4444' : att.category === 'image' ? '#3b82f6' : att.category === 'word' ? '#2563eb' : '#6b7280' %>"></iconify-icon>
-                                <span class="hb-dropdown-item-text"><%= att.originalName %></span>
-                                <span class="hb-dropdown-item-meta"><%= dateStr %><%= (att.category && att.category !== 'other' ? att.category.toUpperCase() : 'DOC') %></span>
-                            </a>
-                            <% }); %>
-                        </div>
-                    </div>
+                        <span class="hb-expand-label" style="color:#f59e0b">Docs</span>
+                    </a>
                 </div>
-                <% } %>
-
-                <!-- Separator between attachments and relations -->
-                <% if (_hasAttachments && _hasAnyRel) { %>
-                <span class="hb-separator"></span>
-                <% } %>
-
-                <!-- All relation icons (deduplicated) -->
-                <% _allRelIcons.forEach(rel => { %>
-                <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= rel.key %>' ? null : openDropdown">
-                    <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= rel.key %>' ? null : '<%= rel.key %>'"
-                         title="<%= rel.label %> (<%= rel.count %>)" style="--hb-c:<%= rel.color %>">
-                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, <%= rel.color %>18, <%= rel.color %>08)">
-                            <iconify-icon icon="<%= rel.icon %>" width="15" style="color:<%= rel.color %>;flex-shrink:0"></iconify-icon>
+                <!-- Drive — Pink -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/media" class="hb-icon-btn" title="Drive" style="--hb-c:#ec4899">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #ec489918, #ec489908)">
+                            <iconify-icon icon="solar:cloud-storage-bold-duotone" width="15" style="color:#ec4899;flex-shrink:0"></iconify-icon>
                         </div>
-                        <span class="hb-expand-label" style="color:<%= rel.color %>"><%= rel.label %></span>
-                        <% if (rel.count > 0) { %>
-                        <span class="hb-badge" style="background:<%= rel.color %>"><%= rel.count %></span>
-                        <% } %>
-                    </div>
-                    <div class="hb-dropdown" x-show="openDropdown === '<%= rel.key %>'" x-transition x-cloak>
-                        <div class="hb-dropdown-header">
-                            <iconify-icon icon="<%= rel.icon %>" width="14" style="color:<%= rel.color %>"></iconify-icon>
-                            <span><%= rel.label %></span>
-                            <span class="hb-dropdown-count"><%= rel.count %></span>
-                        </div>
-                        <% if (rel.records.length > 0) { %>
-                        <div class="hb-dropdown-list">
-                            <% rel.records.slice(0, 5).forEach(rec => { %>
-                            <a href="/account/<%= account_number %>/record/<%= rel.slug %>/<%= rec._id %>/edit" class="hb-dropdown-item">
-                                <iconify-icon icon="<%= rel.icon %>" width="14" style="color:<%= rel.color %>"></iconify-icon>
-                                <span class="hb-dropdown-item-text"><%= rec.title || 'Sans titre' %></span>
-                            </a>
-                            <% }); %>
-                        </div>
-                        <% } else { %>
-                        <div class="hb-dropdown-empty">
-                            <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#9ca3af"></iconify-icon>
-                            <span>Aucun enregistrement</span>
-                        </div>
-                        <% } %>
-                        <% if (rel.slug) { %>
-                        <a href="/account/<%= account_number %>/record/<%= rel.slug %>" class="hb-dropdown-footer">
-                            Voir tout →
-                        </a>
-                        <% } %>
-                    </div>
+                        <span class="hb-expand-label" style="color:#ec4899">Drive</span>
+                    </a>
                 </div>
-                <% }); %>
+                <!-- Tasks — Emerald -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/tasks" class="hb-icon-btn" title="Tâches" style="--hb-c:#10b981">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #10b98118, #10b98108)">
+                            <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="15" style="color:#10b981;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#10b981">Tasks</span>
+                    </a>
+                </div>
+                <!-- Agenda — Teal -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/calendar" class="hb-icon-btn" title="Agenda" style="--hb-c:#14b8a6">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #14b8a618, #14b8a608)">
+                            <iconify-icon icon="solar:calendar-bold-duotone" width="15" style="color:#14b8a6;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#14b8a6">Agenda</span>
+                    </a>
+                </div>
+                <!-- Chat — Orange -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/chat" class="hb-icon-btn" title="Chat" style="--hb-c:#f97316">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #f9731618, #f9731608)">
+                            <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="15" style="color:#f97316;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#f97316">Chat</span>
+                    </a>
+                </div>
+                <!-- Emails — Sky -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/mailbox/inbox" class="hb-icon-btn" title="Emails" style="--hb-c:#0ea5e9">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #0ea5e918, #0ea5e908)">
+                            <iconify-icon icon="solar:letter-bold-duotone" width="15" style="color:#0ea5e9;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#0ea5e9">Emails</span>
+                    </a>
+                </div>
+                <!-- Notes — Purple -->
+                <div class="hb-icon-item">
+                    <a href="/account/<%= account_number %>/notes" class="hb-icon-btn" title="Notes" style="--hb-c:#8b5cf6">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #8b5cf618, #8b5cf608)">
+                            <iconify-icon icon="solar:notebook-bold-duotone" width="15" style="color:#8b5cf6;flex-shrink:0"></iconify-icon>
+                        </div>
+                        <span class="hb-expand-label" style="color:#8b5cf6">Notes</span>
+                    </a>
+                </div>
             </div>
-            <% } %>
 
 
 

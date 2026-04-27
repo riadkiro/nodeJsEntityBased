@@ -1363,7 +1363,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
         // Get canvas HTML and clean it
-        const canvas = canvasRef.current
+        const canvas = editorRootRef.current
         if (!canvas) return
 
         // Clone and clean for print

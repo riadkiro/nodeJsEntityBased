@@ -491,12 +491,23 @@ export default function EditorHeader({
             {/* Top Row: Title and Actions */}
             <div className="flex items-center px-4 py-2 border-b dark:border-gray-800">
                 {/* Back Button */}
-                <a
-                    href={`/account/${accountNumber}/documents`}
-                    className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-                >
-                    <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
-                </a>
+                {window.self !== window.top ? (
+                    /* Inside iframe (SmartDoc preview) → notify parent to cancel */
+                    <button
+                        onClick={() => window.parent.postMessage({ type: 'smartdoc-cancel' }, '*')}
+                        className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                        title="Annuler"
+                    >
+                        <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
+                    </button>
+                ) : (
+                    <a
+                        href={`/account/${accountNumber}/documents`}
+                        className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    >
+                        <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
+                    </a>
+                )}
 
                 {/* Document Name + Entity Tags */}
                 <div className="flex-1 min-w-0">

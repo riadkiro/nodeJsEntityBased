@@ -2714,6 +2714,14 @@
                 init() {
                     this.linkedRecords = this.extractLinkedRecords();
                     this.loadSmartDocTemplates();
+
+                    // Listen for cancel message from the iframe editor back button
+                    const self = this;
+                    window.addEventListener('message', function(e) {
+                        if (e.data && e.data.type === 'smartdoc-cancel') {
+                            self.cancelSmartDocPreview();
+                        }
+                    });
                 },
 
                 async loadSmartDocTemplates() {

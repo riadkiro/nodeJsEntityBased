@@ -10,6 +10,7 @@ router.get("/api/search", recordController.searchAjax);
 // Bulk actions — MUST be before dynamic /:entityName routes
 router.post("/api/bulk-delete", recordController.bulkDelete);
 router.post("/api/bulk-update-classification", recordController.bulkUpdateClassification);
+router.post("/api/quick-create", recordController.quickCreate);
 
 // Dynamic Record management based on Entity slug
 router.get("/:entityName/list", recordController.list);
@@ -25,6 +26,9 @@ router.get("/:entityName/delete/:id", recordController.delete);
 
 // Relation update (add/remove related record — used by quick-create for many-to-many)
 router.post("/:entityName/:id/update-relation", recordController.updateRelation);
+
+// Inline field update from overview
+router.post("/:entityName/:id/update-field", recordController.updateField);
 
 // Contextual module pages (overview, fiche, docs, drive, tasks, notes, chat, emails, agenda)
 router.get("/:entityName/:id/:moduleName(overview|fiche|docs|drive|tasks|notes|chat|emails|agenda)", recordController.modulePage);

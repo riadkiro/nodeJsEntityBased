@@ -201,8 +201,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <!-- ═══ OVERVIEW MODULE ═══ -->
     <% if (moduleName === 'overview') { %>
-    <div class="ov-grid">
-        <!-- Left: Key Fields Card -->
+    <%
+        var _ovFields = (typeof overviewFields !== 'undefined' && overviewFields.length > 0) ? overviewFields : _ficheFields.map(function(f){ return Object.assign({}, f, { layoutWidth: 12 }); });
+    %>
+    <div class="ov-grid" x-data="ovInlineEdit()">
+        <!-- Left: Key Fields (8/12) -->
         <div class="ov-card ov-card-fields">
             <div class="ov-card-header">
                 <iconify-icon icon="solar:card-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
@@ -210,13 +213,102 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 <a href="<%= _recBase %>/fiche" class="ov-card-link">Voir tout →</a>
             </div>
             <div class="ov-fields-list">
-                <% _ficheFields.slice(0,6).forEach(function(f,i){ %>
-                <div class="ov-field" style="animation-delay:<%= i*50 %>ms">
-                    <div class="ov-field-icon" style="background:linear-gradient(135deg,<%= f.color||'#4361ee' %>12,<%= f.color||'#4361ee' %>06)">
-                        <iconify-icon icon="<%= f.icon %>" width="16" style="color:<%= f.color||'#4361ee' %>"></iconify-icon>
+                <% _ovFields.forEach(function(f,i){ %>
+                <div class="ov-ef" data-key="<%= f.key %>"
+                     @click="startEdit('<%= f.key %>',$event)"
+                     <% if (f.type !== 'relation') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>>
+                    <div class="ov-ef-head">
+                        <div class="ov-ef-icon" style="background:linear-gradient(135deg,<%= f.color||'#4361ee' %>12,<%= f.color||'#4361ee' %>06)">
+                            <iconify-icon icon="<%= f.icon %>" width="13" style="color:<%= f.color||'#4361ee' %>"></iconify-icon>
+                        </div>
+                        <span class="ov-ef-label"><%= f.label %></span>
                     </div>
-                    <div class="ov-field-label"><%= f.label %></div>
-                    <div class="ov-field-value"><%= f.value %></div>
+                    <div class="ov-ef-body">
+                        <!-- View state -->
+                        <div class="ov-ef-view" x-show="editingKey!=='<%= f.key %>'">
+                            <% if (f.type === 'relation') { %>
+                                <% if (f.rawValue && Array.isArray(f.rawValue) && f.rawValue.length > 0) { %>
+                                    <div class="ov-tags"><% f.rawValue.forEach(function(rv){ %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= rv.title %></span><% }); %></div>
+                                <% } else { %>
+                                    <span class="ov-placeholder">Sélectionner...</span>
+                                <% } %>
+                            <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
+                                <% var selArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
+                                <% if (selArr.length > 0) { %>
+                                    <div class="ov-tags"><% selArr.forEach(function(sv){ var optMatch = (f.options||[]).find(function(o){ return (o.value||o.label)===sv; }); %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= optMatch ? (optMatch.label||optMatch.value) : sv %></span><% }); %></div>
+                                <% } else { %>
+                                    <span class="ov-placeholder">Sélectionner...</span>
+                                <% } %>
+                            <% } else if (f.inputType === 'textarea') { %>
+                                <% if (f.value) { %><div class="ov-ef-text"><%= f.value %></div><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else { %>
+                                <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } %>
+                        </div>
+                        <!-- Edit state -->
+                        <div class="ov-ef-edit" x-show="editingKey==='<%= f.key %>'" x-cloak @click.stop>
+                            <% if (f.inputType === 'textarea') { %>
+                            <textarea class="ov-input ov-textarea" name="<%= f.key %>" rows="<%= f.uiRows||3 %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" x-ref="input_<%= f.key %>"><%= f.rawValue||'' %></textarea>
+                            <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
+                            <% var mSelArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
+                            <div class="ov-ms-pills" x-data='{ selected: <%- JSON.stringify(mSelArr) %>, toggle(v){ const i=this.selected.indexOf(v); if(i===-1) this.selected.push(v); else this.selected.splice(i,1); }, isSelected(v){ return this.selected.includes(v); } }' x-ref="input_<%= f.key %>">
+                                <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %><label class="ov-ms-pill" :class="isSelected('<%= ov %>') ? 'active' : ''"><input type="checkbox" value="<%= ov %>" :checked="isSelected('<%= ov %>')" @change="toggle('<%= ov %>')" class="hidden"><svg x-show="isSelected('<%= ov %>')" class="ov-ms-check" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span><%= opt.label||opt.value %></span></label><% }); %>
+                            </div>
+                            <% } else if (f.type === 'relation') { %>
+                            <!-- Relation inline editor with search dropdown -->
+                            <div class="ov-rel-editor" x-data='ovRelEditor({
+                                key: "<%= f.key %>",
+                                targetEntityId: "<%= f.targetEntityId %>",
+                                targetEntitySlug: "<%= f.targetEntitySlug || '' %>",
+                                isMulti: <%= f.isMulti ? 'true' : 'false' %>,
+                                color: "<%= (f.color||'#4361ee').replace(/'/g, '') %>",
+                                initial: <%- JSON.stringify(f.rawValue || []) %>
+                            })' @click.outside="closeAndSave()">
+                                <div class="ov-rel-tags">
+                                    <template x-for="tag in tags" :key="tag._id">
+                                        <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
+                                            <span x-text="tag.title"></span>
+                                            <button type="button" class="ov-tag-x" @click.stop="removeTag(tag._id)">&times;</button>
+                                        </span>
+                                    </template>
+                                    <input type="text" class="ov-rel-search" placeholder="Rechercher..."
+                                           x-model="searchQ" @input.debounce.300ms="search()" @focus="search()"
+                                           @keydown.escape="closeAndSave()" x-ref="relSearchInput">
+                                </div>
+                                <div class="ov-rel-dropdown" x-show="showDropdown" x-cloak>
+                                    <template x-if="results.length === 0 && searchQ.trim().length > 0">
+                                        <div class="ov-rel-empty">Aucun résultat pour "<span x-text="searchQ"></span>"</div>
+                                    </template>
+                                    <template x-for="r in results" :key="r._id">
+                                        <div class="ov-rel-option" @click.stop="addTag(r)">
+                                            <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>
+                                            <span x-text="r.title"></span>
+                                        </div>
+                                    </template>
+                                    <div class="ov-rel-create" @click.stop="createNew()" x-show="searchQ.trim().length > 0">
+                                        <iconify-icon icon="solar:add-square-bold" width="15"></iconify-icon>
+                                        <span>Créer "<span x-text="searchQ.trim()"></span>"</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <% } else if (f.inputType === 'select') { %>
+                            <select class="ov-input" name="<%= f.key %>" @change="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
+                                <option value="">Sélectionner...</option>
+                                <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %>
+                                <option value="<%= ov %>" <%= f.rawValue===ov?'selected':'' %>><%= opt.label %></option>
+                                <% }); %>
+                            </select>
+                            <% } else { %>
+                            <input type="<%= f.inputType==='date'?'date':f.inputType==='number'?'number':'text' %>" class="ov-input" name="<%= f.key %>" value="<%= f.rawValue||'' %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" @keydown.enter="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
+                            <% } %>
+                            <% if (f.type !== 'relation') { %>
+                            <div class="ov-ef-btns">
+                                <button type="button" class="ov-ef-ok" @click="saveCurrentField()"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
+                                <button type="button" class="ov-ef-cancel" @click="cancelEdit()"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
                 </div>
                 <% }); %>
             </div>
@@ -336,21 +428,66 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     </div>
 
     <style>
-    .ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .ov-grid{display:grid;grid-template-columns:8fr 4fr;gap:16px;}
     .ov-full{grid-column:1/-1;}
-    .ov-card{background:#fff;border-radius:14px;border:1px solid #e8ecf1;padding:20px;transition:box-shadow .3s;animation:rmFadeIn .4s ease both;}
+    .ov-card{background:#fff;border-radius:14px;border:1px solid #e8ecf1;padding:18px;transition:box-shadow .3s;animation:rmFadeIn .4s ease both;overflow:visible;position:relative;}
+    .ov-card-fields{z-index:10;}
     .ov-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.04);}
-    .ov-card-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:14px;font-weight:700;color:#0e1726;}
+    .ov-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px;font-weight:700;color:#0e1726;}
     .ov-card-link{margin-left:auto;font-size:12px;font-weight:500;color:#888da8;text-decoration:none;transition:color .2s;}
     .ov-card-link:hover{color:#4361ee;}
     .ov-right-col{display:flex;flex-direction:column;gap:16px;}
-    /* Fields */
-    .ov-fields-list{display:flex;flex-direction:column;gap:2px;}
-    .ov-field{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;transition:background .2s;animation:rmFadeIn .35s ease both;}
-    .ov-field:hover{background:#f8fafc;}
-    .ov-field-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .ov-field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888da8;min-width:100px;}
-    .ov-field-value{flex:1;font-size:13.5px;font-weight:500;color:#0e1726;}
+    /* ── Fields list (compact, one per line) ── */
+    .ov-fields-list{display:flex;flex-direction:column;gap:0;}
+    .ov-ef{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent;position:relative;}
+    .ov-ef:hover{background:#f8fafc;border-color:#e8ecf1;}
+    .ov-ef + .ov-ef{border-top:1px solid #f1f3f5;}
+    .ov-ef:hover + .ov-ef{border-top-color:transparent;}
+    .ov-ef-head{display:flex;align-items:center;gap:7px;width:180px;min-width:180px;flex-shrink:0;padding-top:2px;}
+    .ov-ef-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .ov-ef-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888da8;white-space:nowrap;}
+    .ov-ef-body{flex:1;min-width:0;}
+    .ov-ef-view{min-height:24px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
+    .ov-ef-val{font-size:13px;font-weight:500;color:#0e1726;}
+    .ov-ef-text{font-size:13px;font-weight:500;color:#0e1726;white-space:pre-wrap;line-height:1.45;}
+    .ov-placeholder{font-size:12.5px;color:#bfc9d4;font-weight:400;font-style:italic;}
+    /* Tags */
+    .ov-tags{display:flex;flex-wrap:wrap;gap:4px;}
+    .ov-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid;line-height:1.4;}
+    .ov-tag-x{background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px;color:inherit;opacity:.6;transition:opacity .15s;}
+    .ov-tag-x:hover{opacity:1;}
+    /* Multiselect pills */
+    .ov-ms-pills{display:flex;flex-wrap:wrap;gap:5px;}
+    .ov-ms-pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid #e2e8f0;background:#fff;color:#888da8;transition:all .2s;user-select:none;}
+    .ov-ms-pill.active{background:rgba(67,97,238,.1);border-color:#4361ee;color:#4361ee;}
+    .ov-ms-pill:hover{border-color:rgba(67,97,238,.3);background:rgba(67,97,238,.05);color:rgba(67,97,238,.7);}
+    .ov-ms-check{width:13px;height:13px;flex-shrink:0;}
+    /* Relation editor */
+    .ov-rel-editor{position:relative;}
+    .ov-rel-tags{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;min-height:32px;background:#fff;transition:border-color .2s;cursor:text;align-items:center;}
+    .ov-rel-tags:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+    .ov-rel-search{border:none;outline:none;font-size:12.5px;min-width:60px;flex:1;background:transparent;color:#0e1726;font-family:inherit;padding:1px 0;}
+    .ov-rel-search::placeholder{color:#bfc9d4;}
+    .ov-rel-dropdown{position:absolute;left:0;right:0;top:100%;margin-top:3px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 10px 32px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:9999;}
+    .ov-rel-option{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:12.5px;font-weight:500;color:#0e1726;cursor:pointer;transition:background .12s;}
+    .ov-rel-option:hover{background:#f0f3ff;}
+    .ov-rel-option:first-child{border-radius:8px 8px 0 0;}
+    .ov-rel-option:last-child{border-radius:0 0 8px 8px;}
+    .ov-rel-create{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12px;font-weight:600;color:#4361ee;cursor:pointer;transition:background .12s;border-top:1px solid #e8ecf1;border-radius:0 0 8px 8px;}
+    .ov-rel-create:hover{background:#f0f3ff;}
+    .ov-rel-empty{padding:10px 12px;font-size:12px;color:#888da8;text-align:center;}
+    /* Edit state */
+    .ov-ef-edit{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+    .ov-input{width:100%;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-family:inherit;color:#0e1726;background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;}
+    .ov-input:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+    .ov-textarea{resize:vertical;min-height:50px;line-height:1.45;}
+    .ov-tags-wrap{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;min-height:32px;background:#fff;transition:border-color .2s;}
+    .ov-tags-wrap:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+    .ov-tag-input{border:none;outline:none;font-size:12.5px;min-width:80px;flex:1;background:transparent;color:#888da8;font-family:inherit;cursor:pointer;}
+    .ov-ef-btns{display:flex;gap:3px;justify-content:flex-end;}
+    .ov-ef-ok,.ov-ef-cancel{background:none;border:none;cursor:pointer;padding:1px;border-radius:4px;transition:transform .15s;line-height:0;}
+    .ov-ef-ok{color:#10b981;}.ov-ef-ok:hover{transform:scale(1.15);}
+    .ov-ef-cancel{color:#ef4444;}.ov-ef-cancel:hover{transform:scale(1.15);}
     /* Tasks chart */
     .ov-tasks-chart{padding:8px 0;}
     .ov-chart-bars{display:flex;align-items:flex-end;gap:12px;height:80px;padding:0 8px;}
@@ -381,12 +518,218 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-agenda-month{font-size:10px;font-weight:700;text-transform:uppercase;color:#888da8;letter-spacing:.5px;}
     .ov-agenda-title{font-size:13px;font-weight:600;color:#0e1726;}
     .ov-agenda-time{font-size:11.5px;color:#888da8;margin-top:2px;}
+    /* Dark mode */
     [data-theme="dark"] .ov-card{background:#0e1726;border-color:#253b5c;}
-    [data-theme="dark"] .ov-card-header,[data-theme="dark"] .ov-field-value,[data-theme="dark"] .ov-doc-item,[data-theme="dark"] .ov-drive-name,[data-theme="dark"] .ov-agenda-title{color:#e0e6ed;}
-    [data-theme="dark"] .ov-field:hover,[data-theme="dark"] .ov-doc-item:hover{background:#1b2e4b;}
+    [data-theme="dark"] .ov-card-header,[data-theme="dark"] .ov-ef-val,[data-theme="dark"] .ov-ef-text,[data-theme="dark"] .ov-doc-item,[data-theme="dark"] .ov-drive-name,[data-theme="dark"] .ov-agenda-title{color:#e0e6ed;}
+    [data-theme="dark"] .ov-ef:hover{background:#1b2e4b;border-color:#253b5c;}
+    [data-theme="dark"] .ov-ef + .ov-ef{border-top-color:#1b2e4b;}
+    [data-theme="dark"] .ov-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+    [data-theme="dark"] .ov-tags-wrap{background:#0e1726;border-color:#253b5c;}
+    [data-theme="dark"] .ov-ms-pill{background:#0e1726;border-color:#253b5c;color:#888da8;}
+    [data-theme="dark"] .ov-ms-pill.active{background:rgba(67,97,238,.15);border-color:#4361ee;color:#4361ee;}
+    [data-theme="dark"] .ov-doc-item:hover{background:#1b2e4b;}
     [data-theme="dark"] .ov-agenda-item{border-color:#253b5c;}
+    [data-theme="dark"] .ov-placeholder{color:#506690;}
+    [data-theme="dark"] .ov-rel-tags{background:#0e1726;border-color:#253b5c;}
+    [data-theme="dark"] .ov-rel-search{color:#e0e6ed;}
+    [data-theme="dark"] .ov-rel-dropdown{background:#0e1726;border-color:#253b5c;}
+    [data-theme="dark"] .ov-rel-option{color:#e0e6ed;}
+    [data-theme="dark"] .ov-rel-option:hover{background:#1b2e4b;}
     @media(max-width:768px){.ov-grid{grid-template-columns:1fr;}.ov-drive-grid{grid-template-columns:repeat(2,1fr);}.ov-agenda-row{flex-direction:column;}}
     </style>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+        const _baseUrl = window.location.pathname.replace(/\/overview$/, '');
+        const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
+
+        Alpine.data('ovInlineEdit', () => ({
+            editingKey: '',
+            saving: false,
+            startEdit(key, e) {
+                if (this.editingKey === key) return;
+                // If another field was being edited, auto-save it first
+                if (this.editingKey) this._doSave(this.editingKey);
+                this.editingKey = key;
+                this.$nextTick(() => {
+                    const ref = this.$refs['input_' + key];
+                    if (ref) ref.focus();
+                });
+            },
+            cancelEdit() { this.editingKey = ''; },
+            // Called by @click.outside on each ov-ef
+            autoSave(key) {
+                if (this.editingKey !== key) return;
+                this._doSave(key);
+            },
+            saveCurrentField() {
+                if (!this.editingKey) return;
+                this._doSave(this.editingKey);
+            },
+            _doSave(key) {
+                const ref = this.$refs['input_' + key];
+                if (!ref) { this.editingKey = ''; return; }
+                // For multiselect pills, get the selected array from the inner x-data
+                if (ref.hasAttribute && ref.hasAttribute('x-data') && ref._x_dataStack) {
+                    const inner = ref._x_dataStack[0];
+                    if (inner && inner.selected) {
+                        this.saveField(key, inner.selected);
+                        return;
+                    }
+                }
+                this.saveField(key, ref.value);
+            },
+            async saveField(key, value) {
+                if (this.saving) return;
+                this.saving = true;
+                const editingK = key;
+                try {
+                    const res = await fetch(_recUrl + '/update-field', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ fieldKey: key, value })
+                    });
+                    if (res.ok) {
+                        // Update DOM in place
+                        const fieldEl = document.querySelector('.ov-ef[data-key="' + editingK + '"]');
+                        if (fieldEl) {
+                            const viewEl = fieldEl.querySelector('.ov-ef-view');
+                            if (viewEl) {
+                                const displayVal = Array.isArray(value) ? value.join(', ') : (value || '');
+                                if (displayVal) {
+                                    viewEl.innerHTML = '<span class="ov-ef-val">' + displayVal.replace(/</g,'&lt;') + '</span>';
+                                } else {
+                                    viewEl.innerHTML = '<span class="ov-placeholder">' + (fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur') + '</span>';
+                                }
+                            }
+                        }
+                        this.editingKey = '';
+                    }
+                } catch (e) { console.error('[OV save]', e); }
+                this.saving = false;
+            }
+        }));
+
+        // Relation editor sub-component
+        Alpine.data('ovRelEditor', (cfg) => ({
+            key: cfg.key,
+            targetEntityId: cfg.targetEntityId,
+            targetEntitySlug: cfg.targetEntitySlug || '',
+            isMulti: cfg.isMulti,
+            color: cfg.color || '#4361ee',
+            tags: [...(cfg.initial || [])],
+            searchQ: '',
+            results: [],
+            showDropdown: false,
+            dirty: false,
+            init() {
+                this.$nextTick(() => {
+                    const inp = this.$refs.relSearchInput;
+                    if (inp) inp.focus();
+                });
+            },
+            async search() {
+                if (!this.targetEntityId) return;
+                const q = this.searchQ.trim();
+                try {
+                    const url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&q=' + encodeURIComponent(q) + '&limit=8';
+                    const res = await fetch(url, { credentials: 'include' });
+                    const data = await res.json();
+                    // Exclude already-selected tags
+                    const tagIds = this.tags.map(t => t._id);
+                    this.results = (data.data || []).filter(r => !tagIds.includes(r.id)).map(r => ({
+                        _id: r.id,
+                        title: r.label || 'Sans titre'
+                    }));
+                    this.showDropdown = true;
+                } catch (e) { console.error('[RelSearch]', e); }
+            },
+            async addTag(record) {
+                if (!this.isMulti) this.tags = [];
+                this.tags.push({ _id: record._id, title: record.title });
+                this.searchQ = '';
+                this.results = [];
+                this.showDropdown = false;
+                this.dirty = true;
+                // Persist immediately - use 'set' for single-value, 'add' for multi
+                if (this.isMulti) {
+                    await this._persist('add', record._id);
+                } else {
+                    await this._persistSet([record._id]);
+                    this.closeAndSave();
+                }
+            },
+            async removeTag(id) {
+                this.tags = this.tags.filter(t => t._id !== id);
+                this.dirty = true;
+                await this._persist('remove', id);
+            },
+            async _persist(action, targetId) {
+                try {
+                    await fetch(_recUrl + '/update-relation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ relationKey: this.key, action, targetId })
+                    });
+                } catch (e) { console.error('[RelPersist]', e); }
+            },
+            async _persistSet(ids) {
+                try {
+                    await fetch(_recUrl + '/update-relation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ relationKey: this.key, action: 'set', targetIds: ids })
+                    });
+                } catch (e) { console.error('[RelPersist]', e); }
+            },
+            async createNew() {
+                const title = this.searchQ.trim();
+                if (!title || !this.targetEntityId) return;
+                try {
+                    const res = await fetch('/account/<%= account_number %>/record/api/quick-create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ entityId: this.targetEntityId, title })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.record) {
+                        // Add the newly created record as a tag
+                        await this.addTag({ _id: data.record._id, title: data.record.title });
+                    }
+                } catch (e) { console.error('[QuickCreate]', e); }
+            },
+            closeAndSave() {
+                this.results = [];
+                this.searchQ = '';
+                this.showDropdown = false;
+                // Update the view-state DOM
+                const parent = this.$el.closest('.ov-ef');
+                if (parent) {
+                    const viewEl = parent.querySelector('.ov-ef-view');
+                    if (viewEl) {
+                        if (this.tags.length > 0) {
+                            viewEl.innerHTML = '<div class="ov-tags">' + this.tags.map(t =>
+                                '<span class="ov-tag" style="background:' + this.color + '10;border-color:' + this.color + '30;color:' + this.color + '">' + t.title.replace(/</g,'&lt;') + '</span>'
+                            ).join('') + '</div>';
+                        } else {
+                            viewEl.innerHTML = '<span class="ov-placeholder">Sélectionner...</span>';
+                        }
+                    }
+                }
+                // Close by setting parent editingKey
+                const grid = this.$el.closest('[x-data]');
+                if (grid && grid._x_dataStack) {
+                    const root = grid._x_dataStack.find(d => d.editingKey !== undefined);
+                    if (root) root.editingKey = '';
+                }
+            }
+        }));
+    });
+    </script>
     <% } %>
 
     <!-- ═══ FICHE MODULE ═══ -->

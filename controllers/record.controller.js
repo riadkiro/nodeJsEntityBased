@@ -2301,6 +2301,133 @@ module.exports = {
         }
     },
 
+    // ═══ Inline Field Update (from overview click-to-edit) ═══
+    updateField: async (req, res) => {
+        try {
+            const RecordModel = await tenantCollection(req, "Record");
+            const { fieldKey, value } = req.body;
+            if (!fieldKey) return res.status(400).json({ success: false, error: 'Missing fieldKey' });
+
+            const record = await RecordModel.findById(req.params.id);
+            if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
+
+            // Standard fields
+            if (['title', 'description', 'date'].includes(fieldKey)) {
+                record[fieldKey] = value;
+            } else {
+                // Custom field — update by field_id
+                const cfIdx = (record.customFields || []).findIndex(c => {
+                    const fid = (c.field_id?._id || c.field_id || '').toString();
+                    return fid === fieldKey;
+                });
+                if (cfIdx >= 0) {
+                    record.customFields[cfIdx].value = value;
+                } else {
+                    // New custom field entry
+                    record.customFields = record.customFields || [];
+                    record.customFields.push({ field_id: fieldKey, value });
+                }
+                record.markModified('customFields');
+            }
+
+            await record.save();
+            res.json({ success: true });
+        } catch (err) {
+            console.error('[UpdateField]', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
+    // ═══ Quick Create (inline from relation editor) ═══
+    quickCreate: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+            const { entityId, title } = req.body;
+
+            if (!entityId || !title) {
+                return res.status(400).json({ success: false, error: 'Missing entityId or title' });
+            }
+
+            const entity = await EntityModel.findById(entityId);
+            if (!entity) return res.status(404).json({ success: false, error: 'Target entity not found' });
+
+            const newRecord = new RecordModel({
+                entityId: entity._id,
+                title: title.trim(),
+                published: true,
+                customFields: [],
+                relations: [],
+                classificationValues: [],
+                createdBy: req.user?._id
+            });
+            await newRecord.save();
+
+            res.json({
+                success: true,
+                record: { _id: newRecord._id.toString(), title: newRecord.title }
+            });
+        } catch (err) {
+            console.error('[QuickCreate]', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
+    // ═══ Inline Relation Update (from overview) ═══
+    updateRelation: async (req, res) => {
+        try {
+            const RecordModel = await tenantCollection(req, "Record");
+            const { relationKey, action, targetId, targetIds } = req.body;
+            // action: 'add', 'remove', 'set'
+            if (!relationKey) return res.status(400).json({ success: false, error: 'Missing relationKey' });
+
+            const record = await RecordModel.findById(req.params.id);
+            if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
+
+            record.relations = record.relations || [];
+            // Clean up any orphan entries missing relationKey (from old seed data)
+            record.relations = record.relations.filter(r => r.relationKey);
+            let relEntry = record.relations.find(r => r.relationKey === relationKey);
+            if (!relEntry) {
+                relEntry = { relationKey, value: [] };
+                record.relations.push(relEntry);
+            }
+            // Normalize value to array of strings
+            if (!Array.isArray(relEntry.value)) {
+                relEntry.value = relEntry.value ? [relEntry.value.toString()] : [];
+            } else {
+                relEntry.value = relEntry.value.map(v => v.toString());
+            }
+
+            if (action === 'add' && targetId) {
+                const tid = targetId.toString();
+                if (!relEntry.value.includes(tid)) {
+                    relEntry.value.push(tid);
+                }
+            } else if (action === 'remove' && targetId) {
+                const tid = targetId.toString();
+                relEntry.value = relEntry.value.filter(id => id.toString() !== tid);
+            } else if (action === 'set' && targetIds) {
+                relEntry.value = targetIds.map(id => id.toString());
+            }
+
+            record.markModified('relations');
+            await record.save();
+
+            // Return updated titles
+            const validIds = relEntry.value.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+            let relRecords = [];
+            if (validIds.length > 0) {
+                const recs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
+                relRecords = recs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
+            }
+            res.json({ success: true, records: relRecords });
+        } catch (err) {
+            console.error('[UpdateRelation]', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
     // ═══ Contextual Module Pages (overview, fiche, docs, drive, tasks, notes, chat, emails, agenda) ═══
     modulePage: async (req, res) => {
         try {
@@ -2352,6 +2479,7 @@ module.exports = {
 
             // Build field values map for fiche
             let ficheFields = [];
+            let overviewFields = []; // ordered layout fields for overview edit mode
             if (moduleName === 'fiche' || moduleName === 'overview') {
                 const recordValues = {};
                 (record.customFields || []).forEach(cv => {
@@ -2361,36 +2489,107 @@ module.exports = {
 
                 // Standard fields
                 const standardFields = [
-                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '' },
-                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '' },
-                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '' },
+                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '', rawValue: record.title || '', fieldType: 'standard', inputType: 'text', uiRows: 1, uiWidth: 'full' },
+                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '', rawValue: record.description || '', fieldType: 'standard', inputType: 'textarea', uiRows: 3, uiWidth: 'full' },
+                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '', rawValue: record.date ? new Date(record.date).toISOString().split('T')[0] : '', fieldType: 'standard', inputType: 'date', uiRows: 1, uiWidth: 'half' },
                 ];
                 ficheFields = standardFields.filter(f => f.value);
 
                 // Custom fields
                 (entity.customFields || []).forEach(cf => {
                     const val = recordValues[cf._id.toString()];
-                    if (val !== undefined && val !== null && val !== '') {
-                        let displayVal = val;
-                        if (cf.type === 'date' && val) {
-                            try { displayVal = new Date(val).toLocaleDateString('fr-FR'); } catch(e) {}
+                    let displayVal = val || '';
+                    let rawVal = val || '';
+                    if (cf.type === 'date' && val) {
+                        try { displayVal = new Date(val).toLocaleDateString('fr-FR'); rawVal = new Date(val).toISOString().split('T')[0]; } catch(e) {}
+                    }
+                    if (typeof val === 'object' && !Array.isArray(val)) {
+                        displayVal = JSON.stringify(val);
+                    }
+                    if (Array.isArray(val)) {
+                        displayVal = val.join(', ');
+                    }
+                    const uiRows = (cf.ui && cf.ui.rows) ? parseInt(cf.ui.rows) : 1;
+                    const uiWidth = (cf.ui && cf.ui.width) || 'full';
+                    let inputType = 'text';
+                    if (cf.type === 'text' && uiRows > 1) inputType = 'textarea';
+                    else if (cf.type === 'number') inputType = 'number';
+                    else if (cf.type === 'date') inputType = 'date';
+                    else if (cf.type === 'select') inputType = 'select';
+                    else if (cf.type === 'multiselect') inputType = 'multiselect';
+                    else if (cf.type === 'boolean' || cf.type === 'checkbox') inputType = 'checkbox';
+
+                    ficheFields.push({
+                        key: cf._id.toString(),
+                        label: cf.label || cf.name || '',
+                        icon: (cf.ui && cf.ui.icon) || 'solar:document-text-linear',
+                        value: displayVal,
+                        rawValue: rawVal,
+                        type: cf.type || 'text',
+                        inputType,
+                        color: cf.color || (cf.ui && cf.ui.couleur) || '',
+                        uiRows,
+                        uiWidth,
+                        fieldType: 'custom',
+                        options: (cf.type_config && cf.type_config.options) || []
+                    });
+                });
+
+                // For overview: also include relation fields with resolved titles
+                if (moduleName === 'overview') {
+                    const relations = entity.relations || [];
+                    for (const rel of relations) {
+                        if (rel.showInForm === false) continue;
+                        const relVal = (record.relations || []).find(r => r.relationKey === rel.key);
+                        const targetEntity = rel.targetEntity || {};
+                        let displayVal = '';
+                        let relRecords = [];
+                        if (relVal && relVal.value) {
+                            const ids = Array.isArray(relVal.value) ? relVal.value : [relVal.value];
+                            const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+                            if (validIds.length > 0) {
+                                const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
+                                relRecords = relRecs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
+                                displayVal = relRecords.map(r => r.title).join(', ');
+                            }
                         }
-                        if (typeof val === 'object' && !Array.isArray(val)) {
-                            displayVal = JSON.stringify(val);
-                        }
-                        if (Array.isArray(val)) {
-                            displayVal = val.join(', ');
-                        }
+                        const card = rel.cardinality || 'many-to-one';
+                        const isMulti = card.includes('many-to-many') || card.includes('one-to-many');
                         ficheFields.push({
-                            key: cf._id.toString(),
-                            label: cf.label || cf.name || '',
-                            icon: (cf.ui && cf.ui.icon) || 'solar:document-text-linear',
+                            key: rel.key,
+                            label: rel.label || targetEntity.name || 'Relation',
+                            icon: targetEntity.icon || 'solar:link-round-bold-duotone',
                             value: displayVal,
-                            type: cf.type || 'text',
-                            color: cf.color || (cf.ui && cf.ui.couleur) || ''
+                            rawValue: relRecords,
+                            type: 'relation',
+                            inputType: 'relation',
+                            color: targetEntity.color || '#4361ee',
+                            uiRows: 1,
+                            uiWidth: isMulti ? 'full' : 'third',
+                            fieldType: 'relation',
+                            targetEntityId: (targetEntity._id || '').toString(),
+                            targetEntitySlug: targetEntity.slug || '',
+                            isMulti
                         });
                     }
-                });
+
+                    // Build ordered overviewFields from entity formLayout
+                    const layout = entity.formLayout || entity.layout;
+                    if (layout && layout.fields && layout.fields.length > 0) {
+                        overviewFields = layout.fields.map(lf => {
+                            const matched = ficheFields.find(f => f.key === lf.fieldId || f.key === (lf.fieldId || '').toString());
+                            if (matched) {
+                                return { ...matched, layoutWidth: lf.width || 12 };
+                            }
+                            return null;
+                        }).filter(Boolean);
+                    }
+
+                    // If no layout or some fields missing, fallback to ficheFields order
+                    if (overviewFields.length === 0) {
+                        overviewFields = ficheFields.map(f => ({ ...f, layoutWidth: f.uiWidth === 'half' ? 6 : f.uiWidth === 'third' ? 4 : 12 }));
+                    }
+                }
             }
 
             res.render("record/record-module", {
@@ -2398,6 +2597,7 @@ module.exports = {
                 record,
                 moduleName,
                 ficheFields,
+                overviewFields,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

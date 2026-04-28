@@ -326,7 +326,7 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'note_medecin'], statusClassification: null, classifications: ['consult_type'], stdFields: ['title', 'date'],
+            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'diagnostic', 'note_medecin'], statusClassification: null, classifications: ['consult_type'], stdFields: ['title', 'date'],
             referenceTitleTokens: null,
             sidebarWidgets: [
                 { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } }

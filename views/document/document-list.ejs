@@ -15,132 +15,112 @@
 
   <!-- Main container (boxed like record module) -->
   <div class="gdoc-container">
-    <!-- Tabs (underline style matching rm-docs-tab) -->
-    <div class="gdoc-tabs-bar">
-      <div class="gdoc-tabs">
-        <button @click="activeSection = 'templates'"
-                class="gdoc-tab"
-                :class="activeSection === 'templates' ? 'gdoc-tab--active' : ''">
-          <iconify-icon icon="solar:file-text-bold-duotone" width="15"></iconify-icon>
-          Templates
-          <span class="gdoc-tab-count" x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
-        </button>
-        <button @click="activeSection = 'generated'"
-                class="gdoc-tab"
-                :class="activeSection === 'generated' ? 'gdoc-tab--active' : ''">
-          <iconify-icon icon="solar:file-check-bold-duotone" width="15"></iconify-icon>
-          Générées
-          <span class="gdoc-tab-count" x-text="generatedDocs.length" x-show="generatedDocs.length > 0"></span>
-        </button>
-      </div>
-      <div class="gdoc-search">
-        <iconify-icon icon="solar:magnifer-linear" width="15" style="color:#bfc9d4"></iconify-icon>
-        <input type="text" x-model="searchQuery" placeholder="Rechercher..." class="gdoc-search-input" />
+    <!-- Tabs (pixel-perfect from record module) -->
+    <div class="rm-toolbar" style="flex-direction:column; gap:0; padding-bottom:0;">
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:0 6px;">
+        <div style="display:flex; align-items:center; gap:0; border-bottom:2px solid #f1f3f5; flex:1;">
+          <button @click="activeSection = 'templates'"
+                  :class="activeSection === 'templates' ? 'rm-docs-tab--active' : ''"
+                  class="rm-docs-tab">
+            <iconify-icon icon="solar:file-text-bold-duotone" width="15"></iconify-icon>
+            Templates
+            <span class="rm-docs-tab-count" x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
+          </button>
+          <button @click="activeSection = 'generated'"
+                  :class="activeSection === 'generated' ? 'rm-docs-tab--active' : ''"
+                  class="rm-docs-tab">
+            <iconify-icon icon="solar:file-check-bold-duotone" width="15"></iconify-icon>
+            Générés
+            <span class="rm-docs-tab-count" x-text="generatedDocs.length" x-show="generatedDocs.length > 0"></span>
+          </button>
+        </div>
+        <div class="gdoc-search" style="margin-bottom:6px;">
+          <iconify-icon icon="solar:magnifer-linear" width="15" style="color:#bfc9d4"></iconify-icon>
+          <input type="text" x-model="searchQuery" placeholder="Rechercher..." class="gdoc-search-input" />
+        </div>
       </div>
     </div>
 
 
-  <!-- ================================ -->
+
     <!-- Templates list -->
     <template x-if="activeSection === 'templates'">
-      <div class="gdoc-content">
-        <template x-if="filteredTemplateDocs().length > 0">
-          <div class="gdoc-items-list">
-            <template x-for="(doc, idx) in filteredTemplateDocs()" :key="doc._id">
-              <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="gdoc-item" :style="'animation-delay:' + (idx * 30) + 'ms'">
-                <div class="gdoc-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                  <iconify-icon icon="solar:document-medicine-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
-                </div>
-                <div class="gdoc-item-body">
-                  <div class="gdoc-item-title" x-text="doc.name || 'Sans titre'"></div>
-                  <div class="gdoc-item-meta">
-                    <template x-if="doc._relations && doc._relations.length > 0">
-                      <span class="gdoc-item-relation">
-                        <iconify-icon :icon="doc._relations[0].icon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (doc._relations[0].color || '#94a3b8')"></iconify-icon>
-                        <span x-text="doc._relations[0].name"></span>
-                      </span>
-                    </template>
-                    <span class="gdoc-item-date">
-                      <iconify-icon icon="solar:clock-circle-linear" width="11"></iconify-icon>
-                      <span x-text="formatRelativeDate(doc.updatedAt)"></span>
-                    </span>
-                  </div>
-                </div>
-                <span class="gdoc-item-badge" style="background:#f59e0b10;color:#f59e0b" x-text="doc.format || 'A4'"></span>
-                <div class="gdoc-item-actions">
-                  <button @click.prevent="confirmDelete(doc)" class="gdoc-item-action gdoc-item-action--danger" title="Supprimer">
-                    <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="15"></iconify-icon>
-                  </button>
-                </div>
-              </a>
-            </template>
-          </div>
-        </template>
-        <template x-if="filteredTemplateDocs().length === 0 && !searchQuery">
-          <div class="gdoc-empty">
-            <div class="gdoc-empty-icon">
-              <iconify-icon icon="solar:file-text-broken" width="32" style="color:#bfc9d4"></iconify-icon>
+      <div class="rm-items-list" style="padding:12px 16px;">
+        <!-- Empty state -->
+        <div x-show="filteredTemplateDocs().length === 0 && !searchQuery" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+          <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
+          <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle</p>
+          <p style="font-size:11px; margin-top:4px;">Créez des templates dans le module Documents</p>
+          <button @click="openTemplateModal()" class="rm-docs-generate-btn" style="margin:12px auto 0;">
+            <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+            Créer
+          </button>
+        </div>
+        <div x-show="filteredTemplateDocs().length === 0 && searchQuery" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+          <iconify-icon icon="solar:magnifer-broken" width="28" style="opacity:0.4"></iconify-icon>
+          <p style="font-size:12px; margin-top:8px;">Aucun résultat pour "<span x-text="searchQuery" style="font-weight:600"></span>"</p>
+        </div>
+        <!-- Template items -->
+        <template x-for="(doc, idx) in filteredTemplateDocs()" :key="doc._id">
+          <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'" style="text-decoration:none;color:inherit;">
+            <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+              <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
             </div>
-            <div class="gdoc-empty-title">Aucun modèle</div>
-            <div class="gdoc-empty-text">Créez un document et activez le mode template depuis l'éditeur</div>
-            <button @click="openTemplateModal()" class="gdoc-btn-primary" style="margin-top:12px">
-              <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
-              Créer
+            <div class="rm-item-body">
+              <div class="rm-item-title" x-text="doc.name || 'Sans titre'"></div>
+              <div class="rm-item-date">
+                <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                <span x-text="formatRelativeDate(doc.updatedAt)"></span>
+                <template x-if="doc._relations && doc._relations.length > 0">
+                  <span style="display:inline-flex;align-items:center;gap:4px;">
+                    <span style="margin-left:6px; color:#94a3b8;">·</span>
+                    <iconify-icon :icon="doc._relations[0].icon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (doc._relations[0].color || '#94a3b8')"></iconify-icon>
+                    <span x-text="doc._relations[0].name" :style="'color:' + (doc._relations[0].color || '#f59e0b') + '; font-weight:500;'"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+            <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Template</span>
+            <button @click.prevent="confirmDelete(doc)" class="rm-item-action" title="Supprimer" style="color:#e74c3c;">
+              <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16"></iconify-icon>
             </button>
-          </div>
-        </template>
-        <template x-if="filteredTemplateDocs().length === 0 && searchQuery">
-          <div class="gdoc-empty">
-            <iconify-icon icon="solar:magnifer-broken" width="28" style="color:#bfc9d4"></iconify-icon>
-            <div class="gdoc-empty-text" style="margin-top:8px">Aucun résultat pour "<span x-text="searchQuery" style="font-weight:600"></span>"</div>
-          </div>
+          </a>
         </template>
       </div>
     </template>
 
     <!-- Generated documents list -->
     <template x-if="activeSection === 'generated'">
-      <div class="gdoc-content">
-        <template x-if="generatedDocs.length > 0">
-          <div class="gdoc-items-list">
-            <template x-for="(gdoc, idx) in generatedDocs" :key="gdoc._id">
-              <div class="gdoc-item" :style="'animation-delay:' + (idx * 30) + 'ms'">
-                <div class="gdoc-item-icon" :style="gdoc.status === 'finalized' ? 'background:linear-gradient(135deg,#10b98115,#10b98108)' : 'background:linear-gradient(135deg,#f59e0b15,#f59e0b08)'">
-                  <iconify-icon icon="solar:document-add-bold-duotone" width="20" :style="gdoc.status === 'finalized' ? 'color:#10b981' : 'color:#f59e0b'"></iconify-icon>
-                </div>
-                <div class="gdoc-item-body">
-                  <div class="gdoc-item-title" x-text="gdoc.name || 'Document généré'"></div>
-                  <div class="gdoc-item-meta">
-                    <template x-if="gdoc.templateName">
-                      <span class="gdoc-item-relation">
-                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
-                        <span x-text="gdoc.templateName"></span>
-                      </span>
-                    </template>
-                    <template x-if="gdoc.entityName || gdoc.recordTitle">
-                      <span class="gdoc-item-relation">
-                        <iconify-icon :icon="gdoc.entityIcon || 'solar:layers-bold-duotone'" width="12" style="color:#4361ee"></iconify-icon>
-                        <span x-text="gdoc.recordTitle || gdoc.entityName"></span>
-                      </span>
-                    </template>
-                    <span class="gdoc-item-date">
-                      <iconify-icon icon="solar:clock-circle-linear" width="11"></iconify-icon>
-                      <span x-text="formatRelativeDate(gdoc.createdAt)"></span>
-                    </span>
-                  </div>
-                </div>
-                <span class="gdoc-item-badge" :style="gdoc.status === 'finalized' ? 'background:#10b98110;color:#10b981' : 'background:#f59e0b10;color:#f59e0b'" x-text="gdoc.status === 'finalized' ? 'Finalisé' : 'Brouillon'"></span>
-              </div>
-            </template>
-          </div>
-        </template>
-        <template x-if="generatedDocs.length === 0">
-          <div class="gdoc-empty">
-            <div class="gdoc-empty-icon">
-              <iconify-icon icon="solar:document-add-broken" width="32" style="color:#bfc9d4"></iconify-icon>
+      <div class="rm-items-list" style="padding:12px 16px;">
+        <!-- Empty state -->
+        <div x-show="generatedDocs.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+          <iconify-icon icon="solar:file-check-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
+          <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun document généré</p>
+          <p style="font-size:11px; margin-top:4px;">Les documents générés depuis les templates apparaîtront ici</p>
+        </div>
+        <!-- Generated items -->
+        <template x-for="(gdoc, idx) in generatedDocs" :key="gdoc._id">
+          <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'">
+            <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
+              <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#10b981"></iconify-icon>
             </div>
-            <div class="gdoc-empty-title">Aucun document généré</div>
-            <div class="gdoc-empty-text">Les documents générés depuis les templates apparaîtront ici</div>
+            <div class="rm-item-body">
+              <div class="rm-item-title" x-text="gdoc.name || 'Document généré'"></div>
+              <div class="rm-item-date">
+                <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                <span x-text="formatRelativeDate(gdoc.createdAt)"></span>
+                <template x-if="gdoc.templateName">
+                  <span style="display:inline-flex;align-items:center;gap:4px;">
+                    <span style="margin-left:6px; color:#94a3b8;">·</span>
+                    <span x-text="gdoc.templateName" style="color:#f59e0b; font-weight:500;"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+            <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Généré</span>
+            <a x-show="gdoc.downloadUrl" :href="gdoc.downloadUrl" download class="rm-item-action" title="Télécharger" style="color:#4361ee;">
+              <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
+            </a>
           </div>
         </template>
       </div>
@@ -524,8 +504,10 @@
 }
 
 /* ============================================ */
-/* Global Docs - Harmonized with Record Module  */
+/* Pixel-perfect from Record Module             */
 /* ============================================ */
+
+/* Container (only for global docs page) */
 .gdoc-container {
   background: white;
   border: 1px solid #e0e6ed;
@@ -537,28 +519,20 @@
   border-color: #1b2e4b;
 }
 
-/* Tabs bar */
-.gdoc-tabs-bar {
+/* rm-toolbar (from record module) */
+.rm-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  border-bottom: 2px solid #e0e6ed;
-  gap: 12px;
+  gap: 10px;
+  padding: 12px 16px;
 }
-[data-theme="dark"] .gdoc-tabs-bar {
-  border-bottom-color: #1b2e4b;
-}
-.gdoc-tabs {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-.gdoc-tab {
+
+/* rm-docs-tab (pixel-perfect from record module) */
+.rm-docs-tab {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 18px;
+  padding: 10px 18px;
   font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
@@ -569,9 +543,9 @@
   margin-bottom: -2px;
   transition: all 0.2s ease;
 }
-.gdoc-tab:hover { color: #64748b; }
-.gdoc-tab--active { color: #4361ee; border-bottom-color: #4361ee; }
-.gdoc-tab-count {
+.rm-docs-tab:hover { color: #64748b; }
+.rm-docs-tab--active { color: #4361ee; border-bottom-color: #4361ee; }
+.rm-docs-tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -585,7 +559,49 @@
   color: #4361ee;
 }
 
-/* Search */
+/* rm-items-list (pixel-perfect from record module) */
+.rm-items-list { display: flex; flex-direction: column; gap: 2px; }
+.rm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+.rm-item:hover { border-color: #e0e6ed; box-shadow: 0 2px 8px rgba(0,0,0,.04); transform: translateX(2px); }
+.rm-item-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rm-item-body { flex: 1; min-width: 0; }
+.rm-item-title { font-size: 13.5px; font-weight: 600; color: #0e1726; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-item-date { font-size: 11.5px; color: #888da8; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.rm-item-badge { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.rm-item-action { width: 28px; height: 28px; border: none; background: none; border-radius: 6px; color: #bfc9d4; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; text-decoration: none; }
+.rm-item-action:hover { background: #f1f5f9; color: #0e1726; }
+
+/* Dark mode for rm-item */
+[data-theme="dark"] .rm-item { background: #0e1726; }
+[data-theme="dark"] .rm-item:hover { border-color: #253b5c; background: #1b2e4b; }
+[data-theme="dark"] .rm-item-title { color: #e0e6ed; }
+
+/* rm-docs-generate-btn (from record module) */
+.rm-docs-generate-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f59e0b12;
+  color: #f59e0b;
+  border: 1px solid #f59e0b30;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rm-docs-generate-btn:hover { background: #f59e0b20; border-color: #f59e0b50; }
+
+/* Search (unique to global docs) */
 .gdoc-search {
   display: flex;
   align-items: center;
@@ -608,164 +624,8 @@
   color: #0e1726;
   width: 100%;
 }
-[data-theme="dark"] .gdoc-search-input {
-  color: #e0e6ed;
-}
-.gdoc-search-input::placeholder {
-  color: #bfc9d4;
-}
-
-/* Content area */
-.gdoc-content {
-  padding: 16px;
-}
-
-/* Items list (like rm-items-list) */
-.gdoc-items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Item (like rm-item) */
-.gdoc-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-  animation: gdocFadeIn 0.3s ease forwards;
-  opacity: 0;
-}
-.gdoc-item:hover {
-  border-color: #e0e6ed;
-  box-shadow: 0 2px 8px rgba(0,0,0,.04);
-  transform: translateX(2px);
-}
-[data-theme="dark"] .gdoc-item { background: #0e1726; }
-[data-theme="dark"] .gdoc-item:hover {
-  border-color: #253b5c;
-  background: #1b2e4b;
-}
-
-/* Item icon */
-.gdoc-item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Item body */
-.gdoc-item-body {
-  flex: 1;
-  min-width: 0;
-}
-.gdoc-item-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #0e1726;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-[data-theme="dark"] .gdoc-item-title { color: #e0e6ed; }
-
-.gdoc-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 2px;
-}
-.gdoc-item-relation {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  color: #888da8;
-}
-.gdoc-item-date {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  color: #bfc9d4;
-}
-
-/* Item badge */
-.gdoc-item-badge {
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Item actions */
-.gdoc-item-actions {
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.gdoc-item:hover .gdoc-item-actions { opacity: 1; }
-
-.gdoc-item-action {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  color: #bfc9d4;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all .2s;
-}
-.gdoc-item-action:hover { background: #f1f5f9; color: #0e1726; }
-.gdoc-item-action--danger:hover { background: #fef2f2; color: #ef4444; }
-
-/* Empty state */
-.gdoc-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 20px;
-  text-align: center;
-}
-.gdoc-empty-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-[data-theme="dark"] .gdoc-empty-icon { background: #1b2e4b; }
-.gdoc-empty-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0e1726;
-  margin-bottom: 4px;
-}
-[data-theme="dark"] .gdoc-empty-title { color: #e0e6ed; }
-.gdoc-empty-text {
-  font-size: 12px;
-  color: #94a3b8;
-  max-width: 280px;
-}
+[data-theme="dark"] .gdoc-search-input { color: #e0e6ed; }
+.gdoc-search-input::placeholder { color: #bfc9d4; }
 
 /* Primary button */
 .gdoc-btn-primary {
@@ -785,11 +645,6 @@
 .gdoc-btn-primary:hover {
   background: #3b54d4;
   box-shadow: 0 2px 8px rgba(67,97,238,.25);
-}
-
-@keyframes gdocFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 </style>
 

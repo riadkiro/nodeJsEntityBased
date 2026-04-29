@@ -1068,34 +1068,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             range.deleteContents()
         }
 
-        // Create token span
-        const token = document.createElement('span')
-        token.className = 'template-token'
-        token.contentEditable = 'false'
-        token.dataset.token = JSON.stringify({
-            path: variablePath,
-            fieldId: fieldMetadata.fieldId || null,
-            type: fieldMetadata.type || 'text',
-            label: fieldMetadata.label || variablePath
-        })
-        token.textContent = fieldMetadata.label || `{{${variablePath}}}`
-
-        // Insert token
-        range.insertNode(token)
-
-        // Add space after token
-        const space = document.createTextNode('\u00A0')
-        if (token.nextSibling) {
-            token.parentNode.insertBefore(space, token.nextSibling)
-        } else {
-            token.parentNode.appendChild(space)
-        }
-
-        // Move cursor after space
-        range.setStartAfter(space)
-        range.collapse(true)
-        sel.removeAllRanges()
-        sel.addRange(range)
+        // Insert {{variable}} as plain text
+        const tokenText = `{{${variablePath}}} `
+        document.execCommand('insertText', false, tokenText)
 
         triggerSave()
     }, [triggerSave])

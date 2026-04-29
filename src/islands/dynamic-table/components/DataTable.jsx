@@ -24,14 +24,14 @@ const tableStyle = {
 }
 
 const thStyle = {
-    padding: '5px 8px',
+    padding: '10px 12px',
     fontSize: '10px',
     fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    color: '#6b7280',
-    background: '#f9fafb',
-    borderBottom: '1px solid #e9edf3',
+    letterSpacing: '0.04em',
+    color: '#888da8',
+    background: 'transparent',
+    borderBottom: '1px solid #f1f3f5',
     textAlign: 'left',
     whiteSpace: 'nowrap',
     userSelect: 'none',
@@ -41,19 +41,19 @@ const thStyle = {
 }
 
 const tdStyle = {
-    padding: '1px 8px',
-    borderBottom: '1px solid #e9edf3',
+    padding: '8px 12px',
+    borderBottom: '1px solid #f1f3f5',
     verticalAlign: 'middle',
-    color: '#1f2937',
+    color: '#0e1726',
     position: 'relative',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
 }
 
 const tdRelation = {
-    padding: '0 4px',
+    padding: '4px 8px',
     minWidth: '120px',
-    borderBottom: '1px solid #e9edf3',
+    borderBottom: '1px solid #f1f3f5',
     verticalAlign: 'middle',
     position: 'relative',
     overflow: 'hidden'
@@ -78,7 +78,7 @@ const rowNumStyle = {
     padding: '0 4px',
     fontSize: '11px',
     color: '#9ca3af',
-    borderBottom: '1px solid #e9edf3'
+    borderBottom: '1px solid #f1f3f5'
 }
 
 const removeBtn = {
@@ -98,16 +98,16 @@ const removeBtn = {
 const addBtnStyle = {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    padding: '2px 8px',
-    margin: '2px 8px',
+    gap: '6px',
+    padding: '10px 12px',
+    margin: '0',
     minHeight: '24px',
-    fontSize: '10.5px',
+    fontSize: '12px',
     fontWeight: 500,
-    color: '#4361ee',
+    color: '#888da8',
     background: 'transparent',
-    border: '1px dashed #d1d5db',
-    borderRadius: '5px',
+    border: 'none',
+    borderRadius: '0',
     cursor: 'pointer',
     transition: 'all 0.15s',
     lineHeight: 1
@@ -460,12 +460,10 @@ export default function DataTable({
                 style={addBtnStyle}
                 onClick={onAddLine}
                 onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#4361ee'
-                    e.currentTarget.style.background = 'rgba(67,97,238,0.03)'
+                    e.currentTarget.style.color = '#4361ee'
                 }}
                 onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#d1d5db'
-                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#888da8'
                 }}
             >
                 <span style={{ fontSize: '12px' }}>+</span>
@@ -625,13 +623,13 @@ function TableRow({
     return (
                         <tr
                             data-line-id={lineId}
-                            style={{ transition: 'background 0.1s' }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fbfcfe' }}
+                            style={{ transition: 'background 0.15s ease' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc' }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                         >
             <td
                 className="dt-drag-cell"
-                style={{ ...tdStyle, padding: '1px 4px', width: '28px' }}
+                style={{ ...tdStyle, padding: '4px 4px', width: '28px' }}
             >
                 <span
                     className="dt-drag-handle"
@@ -707,7 +705,7 @@ function TableRow({
             )}
 
             {visibleCols.map(col => (
-                <td key={col.key} style={{ ...tdStyle, padding: '1px 6px' }}>
+                <td key={col.key} style={{ ...tdStyle, padding: '4px 8px' }}>
                     <CellRenderer
                         col={col}
                         value={line.values?.[col.key]}

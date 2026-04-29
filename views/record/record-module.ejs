@@ -394,6 +394,71 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             </div>
         </div>
 
+        <!-- ═══ Dynamic Tables (Lignes) ═══ -->
+        <div class="ov-card ov-card-lines ov-full">
+            <div class="ov-card-header">
+                <iconify-icon icon="solar:bill-list-bold-duotone" width="18" style="color:#6366f1"></iconify-icon>
+                <span>Tableaux dynamiques</span>
+                <a href="<%= _recBase %>/edit" class="ov-card-link">Modifier →</a>
+            </div>
+
+            <!-- Tab bar -->
+            <div class="ov-lines-tabs">
+                <button type="button" class="ov-lines-tab active">
+                    <span class="ov-lines-dot" style="background:#4361ee"></span>
+                    Traitement
+                    <span class="ov-lines-count">2</span>
+                </button>
+                <button type="button" class="ov-lines-tab">
+                    <span class="ov-lines-dot"></span>
+                    Prestations Consultation
+                    <span class="ov-lines-count">1</span>
+                </button>
+                <button type="button" class="ov-lines-tab">
+                    <span class="ov-lines-dot"></span>
+                    Examens à réaliser
+                    <span class="ov-lines-count">1</span>
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="ov-lines-table-wrap">
+                <table class="ov-lines-table">
+                    <thead>
+                        <tr>
+                            <th>Traitement</th>
+                            <th>Moment</th>
+                            <th>Fréquence</th>
+                            <th>Durée</th>
+                            <th>Instructions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ov-lines-primary">Bisoprolol 5mg</td>
+                            <td><span class="ov-lines-pill" style="background:rgba(16,185,129,.1);color:#10b981">Matin</span></td>
+                            <td><span class="ov-lines-pill" style="background:rgba(99,102,241,.1);color:#6366f1">2x / jour</span></td>
+                            <td><span class="ov-lines-pill" style="background:rgba(14,165,233,.1);color:#0ea5e9">7 jours</span></td>
+                            <td class="ov-lines-muted">Après le repas</td>
+                        </tr>
+                        <tr>
+                            <td class="ov-lines-primary">Alprazolam 0.25mg</td>
+                            <td><span class="ov-lines-pill" style="background:rgba(249,115,22,.1);color:#f97316">Soir</span></td>
+                            <td><span class="ov-lines-pill" style="background:rgba(99,102,241,.1);color:#6366f1">2x / jour</span></td>
+                            <td><span class="ov-lines-pill" style="background:rgba(14,165,233,.1);color:#0ea5e9">7 jours</span></td>
+                            <td class="ov-lines-muted">Le soir au coucher</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="ov-lines-footer">
+                <span class="ov-lines-add">+ Ajouter</span>
+                <span class="ov-lines-meta">2 lignes</span>
+            </div>
+        </div>
+
         <!-- Upcoming events -->
         <div class="ov-card ov-card-agenda ov-full">
             <div class="ov-card-header">
@@ -509,6 +574,46 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-drive-thumb{height:80px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
     .ov-drive-name{font-size:12px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ov-drive-meta{font-size:11px;color:#888da8;margin-top:2px;}
+    /* ── Dynamic Tables (Lignes) ── */
+    .ov-card-lines{padding:0;overflow:hidden;}
+    .ov-card-lines .ov-card-header{padding:16px 20px 0;margin-bottom:0;}
+    .ov-lines-tabs{display:flex;align-items:center;gap:0;padding:0 20px;border-bottom:1px solid #f1f3f5;margin-top:8px;}
+    .ov-lines-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 16px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:#888da8;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:inherit;}
+    .ov-lines-tab:hover{color:#0e1726;}
+    .ov-lines-tab.active{color:#0e1726;border-bottom-color:#4361ee;}
+    .ov-lines-dot{width:7px;height:7px;border-radius:50%;background:#c8cdd6;flex-shrink:0;transition:background .2s;}
+    .ov-lines-tab.active .ov-lines-dot{background:#4361ee;}
+    .ov-lines-count{font-size:9px;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;padding:0 4px;background:rgba(0,171,85,.08);color:#00ab55;}
+    .ov-lines-table-wrap{padding:0;overflow-x:auto;}
+    .ov-lines-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .ov-lines-table thead th{padding:10px 20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#888da8;background:transparent;border-bottom:1px solid #f1f3f5;text-align:left;white-space:nowrap;}
+    .ov-lines-table tbody td{padding:12px 20px;border-bottom:1px solid #f8f9fa;color:#0e1726;vertical-align:middle;}
+    .ov-lines-table tbody tr:last-child td{border-bottom:none;}
+    .ov-lines-table tbody tr{transition:background .15s;}
+    .ov-lines-table tbody tr:hover{background:#f8fafc;}
+    .ov-lines-primary{font-weight:600;color:#0e1726;}
+    .ov-lines-muted{color:#888da8;font-size:12.5px;}
+    .ov-lines-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+    .ov-lines-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid #f1f3f5;}
+    .ov-lines-add{font-size:12.5px;font-weight:500;color:#888da8;cursor:pointer;transition:color .2s;}
+    .ov-lines-add:hover{color:#4361ee;}
+    .ov-lines-meta{font-size:11px;color:#bfc9d4;font-weight:500;}
+    /* Dark: Lines */
+    [data-theme="dark"] .ov-lines-tabs{border-bottom-color:#1b2e4b;}
+    [data-theme="dark"] .ov-lines-tab{color:#506690;}
+    [data-theme="dark"] .ov-lines-tab:hover,[data-theme="dark"] .ov-lines-tab.active{color:#e0e6ed;}
+    [data-theme="dark"] .ov-lines-tab.active{border-bottom-color:#818cf8;}
+    [data-theme="dark"] .ov-lines-dot{background:#506690;}
+    [data-theme="dark"] .ov-lines-tab.active .ov-lines-dot{background:#818cf8;}
+    [data-theme="dark"] .ov-lines-table thead th{border-bottom-color:#1b2e4b;color:#506690;}
+    [data-theme="dark"] .ov-lines-table tbody td{border-bottom-color:#1b2e4b;color:#e0e6ed;}
+    [data-theme="dark"] .ov-lines-table tbody tr:hover{background:#1b2e4b;}
+    [data-theme="dark"] .ov-lines-primary{color:#e0e6ed;}
+    [data-theme="dark"] .ov-lines-muted{color:#506690;}
+    [data-theme="dark"] .ov-lines-footer{border-top-color:#1b2e4b;}
+    [data-theme="dark"] .ov-lines-add{color:#506690;}
+    [data-theme="dark"] .ov-lines-add:hover{color:#818cf8;}
+    [data-theme="dark"] .ov-lines-meta{color:#3b4f6f;}
     /* Agenda */
     .ov-agenda-row{display:flex;gap:12px;}
     .ov-agenda-item{flex:1;display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e8ecf1;transition:all .2s;}

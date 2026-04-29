@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SchemaTabBar - Tab pills for switching between schemas
  * with inline visibility toggles.
  */
@@ -9,15 +9,15 @@ const tabBarStyle = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '8px',
-    padding: '6px 12px',
-    borderBottom: '1px solid #f3f4f6',
+    padding: '0 10px',
+    borderBottom: '1px solid #f1f3f5',
     minHeight: '36px'
 }
 
 const tabsRailStyle = {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '0',
     overflowX: 'auto',
     scrollbarWidth: 'none',
     flex: 1,
@@ -28,45 +28,41 @@ const pillBase = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '4px 10px',
-    borderRadius: '8px',
-    fontSize: '11px',
+    padding: '8px 14px 10px',
+    borderRadius: '0',
+    fontSize: '12.5px',
     fontWeight: 600,
     cursor: 'pointer',
     border: 'none',
+    borderBottom: '2px solid transparent',
     background: 'transparent',
-    color: '#6b7280',
-    transition: 'all 0.15s',
+    color: '#888da8',
+    transition: 'all 0.2s ease',
     whiteSpace: 'nowrap',
-    userSelect: 'none'
+    userSelect: 'none',
+    position: 'relative'
 }
 
 const pillActive = {
     ...pillBase,
-    background: 'rgba(67, 97, 238, 0.1)',
-    color: '#4361ee'
+    background: 'transparent',
+    color: '#0e1726',
+    borderBottomColor: '#4361ee'
 }
 
-const iconBoxBase = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '18px',
-    height: '18px',
-    borderRadius: '5px',
-    fontSize: '12px'
+// Small colored dot instead of icon box
+const dotBase = {
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+    flexShrink: 0,
+    opacity: 0.4
 }
 
-const iconBoxActive = {
-    ...iconBoxBase,
-    background: 'rgba(67, 97, 238, 0.15)',
-    color: '#4361ee'
-}
-
-const iconBoxInactive = {
-    ...iconBoxBase,
-    background: 'rgba(107, 114, 128, 0.1)',
-    color: '#9ca3af'
+const dotActive = {
+    ...dotBase,
+    opacity: 1,
+    background: '#4361ee'
 }
 
 const countBadge = {
@@ -89,17 +85,18 @@ const menuWrap = {
 }
 
 const menuButton = {
-    border: '1px solid #e5e7eb',
-    borderRadius: '999px',
-    background: '#fff',
-    color: '#6b7280',
+    border: 'none',
+    borderRadius: '6px',
+    background: 'transparent',
+    color: '#888da8',
     fontSize: 11,
-    fontWeight: 600,
+    fontWeight: 500,
     padding: '4px 9px',
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'all 0.15s'
 }
 
 const menuPanel = {
@@ -171,15 +168,13 @@ export default function SchemaTabBar({
                             style={isActive ? pillActive : pillBase}
                             onClick={() => onSelectSchema(schema._id)}
                             onMouseEnter={(e) => {
-                                if (!isActive) e.currentTarget.style.background = 'rgba(107, 114, 128, 0.08)'
+                                if (!isActive) e.currentTarget.style.color = '#0e1726'
                             }}
                             onMouseLeave={(e) => {
-                                if (!isActive) e.currentTarget.style.background = 'transparent'
+                                if (!isActive) e.currentTarget.style.color = '#888da8'
                             }}
                         >
-                            <span style={isActive ? iconBoxActive : iconBoxInactive}>
-                                <iconify-icon icon={icon} width="12"></iconify-icon>
-                            </span>
+                            <span style={isActive ? dotActive : { ...dotBase, background: '#888da8' }}></span>
                             <span>{schema.label || schema.name}</span>
                             {lineCount > 0 && <span style={countBadge}>{lineCount}</span>}
                         </button>

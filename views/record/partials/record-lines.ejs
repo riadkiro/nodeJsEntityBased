@@ -4,42 +4,58 @@
     ═══════════════════════════════════════════════════════════════════ %>
 
 <style>
-    /* ── Lines Panel Styles ───────────────────────────────── */
+    /* ── Lines Panel Styles (Premium Overview Design) ───── */
+    
+    /* Card container — matches .ov-card from overview */
+    [data-id="lines"] .panel {
+        border-radius: 14px !important;
+        border: 1px solid #e8ecf1 !important;
+        box-shadow: none !important;
+        overflow: hidden;
+    }
+    .dark [data-id="lines"] .panel {
+        border-color: #253b5c !important;
+        background: #0e1726 !important;
+    }
+    
     .lines-panel-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
     }
     .lines-panel-table th {
-        padding: 8px 10px !important;
+        padding: 10px 12px !important;
         font-size: 10px !important;
         font-weight: 700 !important;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #6b7280;
-        background: #f9fafb;
-        border-bottom: 1px solid #e5e7eb;
+        letter-spacing: 0.04em;
+        color: #888da8;
+        background: transparent;
+        border-bottom: 1px solid #f1f3f5;
         text-align: left;
         white-space: nowrap;
         user-select: none;
     }
     .dark .lines-panel-table th {
         color: #888ea8;
-        background: #1b2e4b;
-        border-bottom-color: #253b5c;
+        background: transparent;
+        border-bottom-color: #1e293b;
     }
     .lines-panel-table td {
-        padding: 4px 10px !important;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 8px 12px !important;
+        border-bottom: 1px solid #f1f3f5;
         vertical-align: middle;
-        color: #1f2937;
+        color: #0e1726;
     }
     .dark .lines-panel-table td {
-        border-bottom-color: #253b5c;
-        color: #bfc9d4;
+        border-bottom-color: #1e293b;
+        color: #e0e6ed;
+    }
+    .lines-panel-table tbody tr {
+        transition: background 0.15s ease;
     }
     .lines-panel-table tbody tr:hover {
-        background: #f9fafb;
+        background: #f8fafc;
     }
     .dark .lines-panel-table tbody tr:hover {
         background: rgba(255,255,255,0.02);
@@ -158,20 +174,15 @@
         justify-content: flex-end;
         gap: 24px;
         padding: 12px 14px;
-        background: #f9fafb;
-        border-top: 1px solid #e5e7eb;
+        background: transparent;
+        border-top: 1px solid #f1f3f5;
         font-weight: 700;
-    }
-    .dark .lp-totals-bar {
-        background: #1b2e4b;
-        border-top-color: #253b5c;
-    }
         border-radius: 0 0 8px 8px;
         font-size: 12px;
     }
     .dark .lp-totals-bar {
-        background: #1b2e4b;
-        border-color: #253b5c;
+        background: transparent;
+        border-top-color: #1e293b;
     }
     .lp-totals-bar .lp-total-item {
         display: flex;
@@ -198,58 +209,60 @@
     .lp-w-m  { min-width: 120px; }
     .lp-w-l  { min-width: 180px; }
     .lp-w-xl { min-width: 240px; }
-    /* Schema selector */
+    /* Schema selector — clean underline tab style */
     .lp-schema-pill {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 14px;
-        border-radius: 8px;
-        font-size: 13px;
+        padding: 8px 14px 10px;
+        border-radius: 0;
+        font-size: 12.5px;
         font-weight: 600;
         cursor: grab;
-        border: 1px solid transparent;
-        color: #6b7280;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #888da8;
         background: transparent;
         transition: all 0.2s ease;
         user-select: none;
         white-space: nowrap;
+        position: relative;
     }
     .lp-schema-pill:active {
         cursor: grabbing;
     }
     .dark .lp-schema-pill {
-        color: #888ea8;
+        color: #64748b;
     }
     .lp-schema-pill:hover {
-        background: #f3f4f6;
-        color: #374151;
+        background: transparent;
+        color: #0e1726;
     }
     .dark .lp-schema-pill:hover {
-        background: #1b2e4b;
+        background: transparent;
         color: #e0e6ed;
     }
     .lp-schema-pill.active {
-        background: #f0fdf9;
-        color: #00bcd4;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-        border: 1px solid rgba(0, 188, 212, 0.1);
+        background: transparent;
+        color: #0e1726;
+        border-bottom-color: #4361ee;
+        box-shadow: none;
     }
     .dark .lp-schema-pill.active {
-        background: rgba(59, 149, 177, 0.15);
-        color: #3b95b1;
-        border-color: rgba(59, 149, 177, 0.3);
+        background: transparent;
+        color: #e0e6ed;
+        border-bottom-color: #818cf8;
     }
     .lp-tab-ghost {
         opacity: 0.4;
         background: #f1f5f9 !important;
     }
     .lp-tab-grip {
-        opacity: 0.5;
+        opacity: 0;
         transition: opacity 0.2s;
     }
     .lp-schema-pill:hover .lp-tab-grip {
-        opacity: 1;
+        opacity: 0.6;
     }
     /* Multiselect / Select triggers */
     .lp-ms-trigger {
@@ -295,23 +308,44 @@
     .lp-add-row-area {
         display: flex;
         align-items: center;
-        justify-content: center;
-        padding: 8px;
-        border-top: 1px dashed #e5e7eb;
+        justify-content: flex-start;
+        padding: 10px 12px;
+        border-top: none;
         cursor: pointer;
-        color: #9ca3af;
+        color: #888da8;
         font-size: 12px;
+        font-weight: 500;
         transition: all 0.15s;
         gap: 6px;
     }
-    .dark .lp-add-row-area { border-color: #1b2e4b; color: #4a5568; }
+    .dark .lp-add-row-area { color: #64748b; }
     .lp-add-row-area:hover {
-        background: rgba(67, 97, 238, 0.04);
+        background: transparent;
         color: #4361ee;
     }
     /* Sortable ghost */
     .lines-panel-table .sortable-ghost { opacity: 0.3; }
     .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.05); }
+
+    /* Tab icon box — small colored dot instead of square icon */
+    .lp-tab-icon-box {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+        opacity: 0.5;
+    }
+    .lp-tab-icon-box iconify-icon {
+        display: none;
+    }
+    .lp-schema-pill.active .lp-tab-icon-box {
+        opacity: 1;
+        background: #4361ee;
+    }
+    .dark .lp-schema-pill.active .lp-tab-icon-box {
+        background: #818cf8;
+    }
 
     /* ── Add Lines Modal ─────────────────────────────── */
     .lp-modal-overlay {
@@ -1179,26 +1213,26 @@
        ═══════════════════════════════════════════════════════════ */
     .lp-toolbar {
         display: flex; align-items: center; gap: 2px;
-        padding: 3px 8px;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 4px 10px;
+        border-bottom: 1px solid #f1f3f5;
         background: transparent;
     }
-    .dark .lp-toolbar { border-color: #1b2e4b; }
+    .dark .lp-toolbar { border-color: #1e293b; }
     .lp-toolbar-btn {
         display: inline-flex; align-items: center; gap: 4px;
-        padding: 3px 8px; border-radius: 6px;
-        font-size: 10px; font-weight: 500; color: #6b7280;
+        padding: 4px 10px; border-radius: 6px;
+        font-size: 10px; font-weight: 500; color: #888da8;
         cursor: pointer; border: none; background: transparent;
         transition: all 0.15s; white-space: nowrap;
         position: relative;
     }
-    .dark .lp-toolbar-btn { color: #888ea8; }
-    .lp-toolbar-btn:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
-    .lp-toolbar-btn.active { background: rgba(67,97,238,0.1); color: #4361ee; font-weight: 600; }
+    .dark .lp-toolbar-btn { color: #64748b; }
+    .lp-toolbar-btn:hover { background: rgba(67,97,238,0.05); color: #4361ee; }
+    .lp-toolbar-btn.active { background: rgba(67,97,238,0.08); color: #4361ee; font-weight: 600; }
     .lp-toolbar-sep {
-        width: 1px; height: 16px; background: #e5e7eb; margin: 0 2px;
+        width: 1px; height: 14px; background: #f1f3f5; margin: 0 4px;
     }
-    .dark .lp-toolbar-sep { background: #253b5c; }
+    .dark .lp-toolbar-sep { background: #1e293b; }
 
     /* Preset dropdown panel */
     .lp-preset-dropdown {
@@ -1371,7 +1405,7 @@
             <div x-show="schemas.length > 1"
                  x-ref="tabsContainer"
                  x-init="$nextTick(() => initTabsSortable())"
-                 class="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 overflow-x-auto" style="scrollbar-width: none;">
+                 class="flex items-center gap-0 px-2 py-0 border-b border-[#f1f3f5] dark:border-[#1e293b] overflow-x-auto" style="scrollbar-width: none;">
                 <template x-for="(schema, schemaIdx) in schemas" :key="schema._id">
                     <button type="button"
                         class="lp-schema-pill group"

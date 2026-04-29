@@ -4,8 +4,8 @@ import { computeTotalsRows } from '../utils/totals'
 const containerStyle = {
     display: 'flex',
     justifyContent: 'flex-end',
-    padding: '8px 12px',
-    borderTop: '1px solid #eef2f7'
+    padding: '12px 14px',
+    borderTop: '1px solid #f1f3f5'
 }
 
 const tableStyle = {

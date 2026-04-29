@@ -8,8 +8,8 @@ const toolbarStyle = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '6px',
-    padding: '3px 10px',
-    borderBottom: '1px solid #f3f4f6',
+    padding: '4px 10px',
+    borderBottom: '1px solid #f1f3f5',
     minHeight: '26px'
 }
 
@@ -32,12 +32,13 @@ const btn = {
     gap: '5px',
     fontSize: '11px',
     fontWeight: 500,
-    color: '#6b7280',
-    background: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '999px',
+    color: '#888da8',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
     padding: '4px 10px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'all 0.15s'
 }
 
 export default function Toolbar({

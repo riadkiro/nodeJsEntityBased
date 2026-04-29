@@ -486,9 +486,12 @@ export default function EditorHeader({
         return ids.includes(e.id)
     })
 
+    const isInIframe = window.self !== window.top
+
     return (
         <header className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 flex flex-col">
-            {/* Top Row: Title and Actions */}
+            {/* Top Row: Title and Actions — hidden when embedded in iframe (overview provides its own header) */}
+            {!isInIframe && (
             <div className="flex items-center px-4 py-2 border-b dark:border-gray-800">
                 {/* Back Button */}
                 {window.self !== window.top ? (
@@ -577,6 +580,7 @@ export default function EditorHeader({
                     <span>PDF</span>
                 </button>
             </div>
+            )}
 
             {/* Toolbar Row */}
             <div className="flex items-center px-3 py-1 gap-0.5 flex-nowrap" style={{ overflow: 'visible' }}>

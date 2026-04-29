@@ -379,9 +379,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         <!-- Header -->
                         <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white" style="min-height: 52px;">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-warning/20 to-info/20 flex items-center justify-center">
-                                    <iconify-icon icon="solar:pen-new-square-bold-duotone" width="20" class="text-warning"></iconify-icon>
-                                </div>
+                                <button type="button" @click="cancelPreview()" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Retour">
+                                    <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
+                                </button>
                                 <div>
                                     <h3 class="text-[13px] font-bold text-gray-800" x-text="previewName || 'Document'"></h3>
                                     <p class="text-[10px] text-gray-400 flex items-center gap-1">
@@ -946,7 +946,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         this.$nextTick(() => {
                             const iframe = document.getElementById('ov-smartdoc-preview-iframe');
                             if (iframe) {
-                                iframe.src = `/account/${this._accountNumber}/documents/${data.draftDocumentId}/edit-react?mode=embedded`;
+                                iframe.src = `/account/${this._accountNumber}/documents/${data.draftDocumentId}/edit-react?minimal=true`;
                             }
                         });
                     } else {

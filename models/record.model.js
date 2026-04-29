@@ -78,6 +78,7 @@ const RecordSchema = new mongoose.Schema({
       enum: ['image', 'pdf', 'word', 'excel', 'video', 'audio', 'other'],
       default: 'other'
     },
+    folder: { type: String, default: '' },             // Dossier parent ('' = racine)
     isGenerated: { type: Boolean, default: false },   // Généré par SmartDoc
     generatedFrom: String,                             // ID du template de document
     generatedFromName: String,                         // Nom du template

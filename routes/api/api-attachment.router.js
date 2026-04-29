@@ -121,12 +121,15 @@ router.post('/records/:recordId/attachments', upload.array('files', 10), async (
             return res.status(400).json({ error: 'Aucun fichier fourni' });
         }
 
+        const folder = req.body.folder || '';
+
         const newAttachments = req.files.map(file => ({
             filename: file.filename,
             originalName: file.originalname,
             mimeType: file.mimetype,
             size: file.size,
             category: detectCategory(file.mimetype),
+            folder: folder,
             uploadedAt: new Date(),
             uploadedBy: req.user?._id
         }));
@@ -216,6 +219,7 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             size: att.size,
             sizeFormatted: formatSize(att.size),
             category: att.category,
+            folder: att.folder || '',
             isGenerated: att.isGenerated,
             generatedFrom: att.generatedFrom,
             generatedFromName: att.generatedFromName,

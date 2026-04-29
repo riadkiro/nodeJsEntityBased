@@ -384,13 +384,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                 </button>
                                 <div>
                                     <h3 class="text-[13px] font-bold text-gray-800" x-text="previewName || 'Document'"></h3>
-                                    <p class="text-[10px] text-gray-400 flex items-center gap-1">
+                                    <p class="text-[10px] text-gray-400 flex items-center gap-1" x-show="!finalized">
                                         <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
                                         Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
                                     </p>
+                                    <p class="text-[10px] text-success flex items-center gap-1 font-medium" x-show="finalized">
+                                        <iconify-icon icon="solar:check-circle-bold" width="10"></iconify-icon>
+                                        PDF généré avec succès !
+                                    </p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <!-- Before finalization: Annuler + Finaliser -->
+                            <div class="flex items-center gap-2" x-show="!finalized">
                                 <button type="button" @click="cancelPreview()" :disabled="finalizing"
                                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-danger hover:bg-danger/5 border border-gray-200 transition-all">
                                     <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
@@ -400,6 +405,19 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                     class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm disabled:opacity-50">
                                     <iconify-icon :icon="finalizing ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
                                     <span x-text="finalizing ? 'Génération en cours...' : 'Finaliser et générer le PDF'"></span>
+                                </button>
+                            </div>
+                            <!-- After finalization: Télécharger + Fermer -->
+                            <div class="flex items-center gap-2" x-show="finalized" x-cloak>
+                                <a :href="downloadUrl" download
+                                    class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-primary text-white hover:bg-primary/90 transition-all shadow-sm">
+                                    <iconify-icon icon="solar:download-bold" width="14"></iconify-icon>
+                                    Télécharger
+                                </a>
+                                <button type="button" @click="closePreview()"
+                                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-all">
+                                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                    Fermer
                                 </button>
                             </div>
                         </div>
@@ -900,6 +918,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             previewName: '',
             draftDocId: null,
             finalizing: false,
+            finalized: false,
+            downloadUrl: '',
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
             _recordId: '<%= record._id %>',
@@ -971,14 +991,13 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     });
                     const data = await res.json();
                     if (data.success) {
-                        this.showPreview = false;
+                        // Switch to finalized state — show Télécharger + Fermer
+                        this.downloadUrl = data.attachment?.url || '';
+                        this.finalized = true;
                         this.draftDocId = null;
-                        // Show success notification
                         if (window.showMessage) {
                             window.showMessage('Document généré avec succès !', 'success');
                         }
-                        // Reload page to show newly attached PDF
-                        setTimeout(() => window.location.reload(), 800);
                     } else {
                         alert(data.error || 'Erreur de finalisation');
                     }
@@ -987,6 +1006,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     alert('Erreur de connexion');
                 }
                 this.finalizing = false;
+            },
+
+            closePreview() {
+                this.showPreview = false;
+                this.finalized = false;
+                this.downloadUrl = '';
+                this.draftDocId = null;
+                this.previewName = '';
+                const iframe = document.getElementById('ov-smartdoc-preview-iframe');
+                if (iframe) iframe.src = '';
+                // Reload to show the newly attached file
+                window.location.reload();
             },
 
             async cancelPreview() {
@@ -1002,6 +1033,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 this.showPreview = false;
                 this.draftDocId = null;
                 this.previewName = '';
+                this.finalized = false;
+                this.downloadUrl = '';
                 // Clear iframe
                 const iframe = document.getElementById('ov-smartdoc-preview-iframe');
                 if (iframe) iframe.src = 'about:blank';

@@ -1253,10 +1253,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         .drive-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px #4361ee35; }
         .drive-btn-secondary { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:10px; font-size:12px; font-weight:600; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; cursor:pointer; transition:all 0.15s; }
         .drive-btn-secondary:hover { background:#f1f5f9; border-color:#cbd5e1; color:#334155; }
-        .drive-dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:20px; border:2px dashed #e2e8f0; border-radius:12px; margin-bottom:16px; transition:all 0.2s; background:#fafbff; }
-        .drive-dropzone p { font-size:11px; color:#94a3b8; margin:0; }
-        .drive-dropzone--active { border-color:#4361ee; background:#4361ee08; }
-        .drive-dropzone--active p { color:#4361ee; }
+        .drive-dropzone-overlay { position:absolute; inset:0; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:rgba(255,255,255,0.95); border:3px dashed #4361ee; border-radius:16px; backdrop-filter:blur(4px); animation:drive-drop-in 0.2s ease; }
+        .drive-dropzone-overlay p { font-size:14px; font-weight:600; color:#4361ee; margin:0; }
+        .drive-dropzone-overlay span { font-size:11px; color:#94a3b8; }
+        @keyframes drive-drop-in { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
         .drive-new-folder { display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; }
         .drive-new-folder-input { flex:1; border:none; background:transparent; font-size:13px; outline:none; color:#1e293b; }
         .drive-new-folder-input::placeholder { color:#cbd5e1; }
@@ -1358,7 +1358,26 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 e.target.value = '';
             },
 
+            _dragCounter: 0,
+
+            onDragEnter(e) {
+                if (this.viewingGenerated) return;
+                this._dragCounter++;
+                if (e.dataTransfer?.types?.includes('Files')) {
+                    this.isDragging = true;
+                }
+            },
+
+            onDragLeave(e) {
+                this._dragCounter--;
+                if (this._dragCounter <= 0) {
+                    this._dragCounter = 0;
+                    this.isDragging = false;
+                }
+            },
+
             handleDrop(e) {
+                this._dragCounter = 0;
                 this.isDragging = false;
                 const files = e.dataTransfer.files;
                 if (files.length > 0) this.uploadFiles(files);
@@ -1647,7 +1666,13 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         <% } %>
 
         <% if (moduleName === 'drive') { %>
-        <div x-data="driveModule" x-cloak>
+        <div x-data="driveModule" x-cloak style="position:relative;" @dragenter.prevent="onDragEnter($event)" @dragover.prevent @dragleave.prevent="onDragLeave($event)" @drop.prevent="handleDrop($event)">
+            <!-- Drag overlay (WhatsApp-style) -->
+            <div x-show="isDragging" class="drive-dropzone-overlay" style="display:none;" x-transition.opacity>
+                <iconify-icon icon="solar:cloud-upload-bold-duotone" width="48" style="color:#4361ee;"></iconify-icon>
+                <p>Déposez vos fichiers ici</p>
+                <span x-text="currentFolder ? 'dans ' + currentFolder : 'dans le Drive'"></span>
+            </div>
             <!-- Breadcrumb -->
             <div class="drive-breadcrumb">
                 <button @click="navigateTo('')" class="drive-breadcrumb-item" :class="!currentFolder && !viewingGenerated ? 'drive-breadcrumb-item--active' : ''">
@@ -1697,13 +1722,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 </button>
             </div>
 
-            <!-- Drop zone -->
-            <div class="drive-dropzone" :class="isDragging ? 'drive-dropzone--active' : ''"
-                 @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false"
-                 @drop.prevent="handleDrop($event)" x-show="!viewingGenerated">
-                <iconify-icon icon="solar:cloud-upload-bold-duotone" width="32" style="color:#4361ee; opacity:0.6"></iconify-icon>
-                <p>Glissez vos fichiers ici</p>
-            </div>
+
 
             <!-- Upload progress -->
             <div x-show="uploading" class="drive-upload-progress">
@@ -1774,9 +1793,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
                 <!-- Empty states -->
                 <div x-show="displayFiles.length === 0 && displayFolders.length === 0 && generatedCount === 0 && !currentFolder && !viewingGenerated" class="drive-empty">
-                    <iconify-icon icon="solar:cloud-upload-bold-duotone" width="48" style="opacity:0.2"></iconify-icon>
+                    <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.15"></iconify-icon>
                     <p style="font-size:13px; font-weight:600; margin-top:12px;">Aucun fichier</p>
-                    <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Glissez des fichiers ou utilisez le bouton "Ajouter"</p>
+                    <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Utilisez le bouton "Ajouter" pour importer des fichiers</p>
                 </div>
                 <div x-show="displayFiles.length === 0 && (currentFolder || viewingGenerated)" class="drive-empty">
                     <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.2"></iconify-icon>

@@ -130,96 +130,60 @@ router.get('/', async (req, res) => {
             }
         } catch (e) { /* entity enrichment is optional */ }
 
-        // Fetch auto-generated document instances
+        // Fetch generated documents from record attachments (isGenerated: true)
         let generatedDocs = [];
         try {
-            const DocumentInstance = await tenantCollection(req, 'DocumentInstance');
-            if (DocumentInstance) {
-                generatedDocs = await DocumentInstance.find({
-                    createdBy: req.user._id
-                })
-                    .sort({ createdAt: -1 })
-                    .limit(20)
-                    .lean();
+            const Record = await tenantCollection(req, 'Record');
+            const Entity = await tenantCollection(req, 'Entity');
+            if (Record) {
+                // Aggregate across all records to find generated attachments
+                const results = await Record.aggregate([
+                    { $match: { 'attachments.isGenerated': true } },
+                    { $unwind: '$attachments' },
+                    { $match: { 'attachments.isGenerated': true } },
+                    { $sort: { 'attachments.uploadedAt': -1 } },
+                    { $limit: 50 },
+                    { $project: {
+                        _id: '$attachments._id',
+                        filename: '$attachments.filename',
+                        originalName: '$attachments.originalName',
+                        mimeType: '$attachments.mimeType',
+                        size: '$attachments.size',
+                        generatedFromName: '$attachments.generatedFromName',
+                        uploadedAt: '$attachments.uploadedAt',
+                        uploadedBy: '$attachments.uploadedBy',
+                        recordId: '$_id',
+                        recordTitle: '$title',
+                        entityId: '$entityId'
+                    }}
+                ]);
 
-                // Populate template names
-                if (generatedDocs.length > 0) {
-                    const templateIds = [...new Set(generatedDocs.map(d => d.templateId?.toString()).filter(Boolean))];
-                    const templates = await Document.find({ _id: { $in: templateIds } }).select('name entityId entityIds').lean();
-                    const templateMap = {};
-                    templates.forEach(t => { templateMap[t._id.toString()] = t; });
-
-                    // Try to fetch entity names for context
-                    let entityMap = {};
-                    try {
-                        const Entity = await tenantCollection(req, 'Entity');
-                        if (Entity) {
-                            const allEntityIds = [];
-                            templates.forEach(t => {
-                                if (t.entityId) allEntityIds.push(t.entityId);
-                                if (t.entityIds) allEntityIds.push(...t.entityIds);
-                            });
-                            if (allEntityIds.length > 0) {
-                                const entities = await Entity.find({ _id: { $in: allEntityIds } }).select('name icon slug').lean();
-                                entities.forEach(e => { entityMap[e._id.toString()] = e; });
-                            }
-                        }
-                    } catch (e) { /* ignore */ }
-
-                    // Try to get record titles from bindings
-                    let recordMap = {};
-                    try {
-                        const Record = await tenantCollection(req, 'Record');
-                        if (Record) {
-                            const allRecordIds = [];
-                            generatedDocs.forEach(d => {
-                                if (d.bindingsSelected && typeof d.bindingsSelected === 'object') {
-                                    Object.values(d.bindingsSelected).forEach(v => {
-                                        if (v && typeof v === 'string' && v.match(/^[a-f0-9]{24}$/i)) allRecordIds.push(v);
-                                        else if (v && v._id) allRecordIds.push(v._id);
-                                    });
-                                }
-                            });
-                            if (allRecordIds.length > 0) {
-                                const records = await Record.find({ _id: { $in: allRecordIds } }).select('title').lean();
-                                records.forEach(r => { recordMap[r._id.toString()] = r; });
-                            }
-                        }
-                    } catch (e) { /* ignore */ }
-
-                    // Enrich generated docs
-                    generatedDocs = generatedDocs.map(d => {
-                        const tpl = templateMap[d.templateId?.toString()];
-                        const enriched = { ...d, templateName: tpl?.name || 'Template supprimé' };
-
-                        // Get entity info
-                        if (tpl) {
-                            const eId = tpl.entityId || (tpl.entityIds && tpl.entityIds[0]);
-                            if (eId) {
-                                const entity = entityMap[eId.toString()];
-                                if (entity) {
-                                    enriched.entityName = entity.name;
-                                    enriched.entityIcon = entity.icon;
-                                    enriched.entitySlug = entity.slug;
-                                }
-                            }
-                        }
-
-                        // Get first record title from bindings
-                        if (d.bindingsSelected && typeof d.bindingsSelected === 'object') {
-                            for (const [alias, val] of Object.entries(d.bindingsSelected)) {
-                                const recId = (typeof val === 'string') ? val : val?._id?.toString();
-                                if (recId && recordMap[recId]) {
-                                    enriched.recordTitle = recordMap[recId].title;
-                                    enriched.recordAlias = alias;
-                                    break;
-                                }
-                            }
-                        }
-
-                        return enriched;
-                    });
+                // Enrich with entity names
+                let entityMap = {};
+                if (Entity) {
+                    const entityIds = [...new Set(results.map(r => r.entityId?.toString()).filter(Boolean))];
+                    if (entityIds.length > 0) {
+                        const entities = await Entity.find({ _id: { $in: entityIds } }).select('name icon slug color').lean();
+                        entities.forEach(e => { entityMap[e._id.toString()] = e; });
+                    }
                 }
+
+                generatedDocs = results.map(doc => {
+                    const entity = doc.entityId ? entityMap[doc.entityId.toString()] : null;
+                    return {
+                        _id: doc._id,
+                        name: doc.originalName || 'Document généré',
+                        templateName: doc.generatedFromName || '',
+                        createdAt: doc.uploadedAt,
+                        downloadUrl: `/account/${req.account_number}/uploads/attachments/${doc.filename}`,
+                        recordTitle: doc.recordTitle || '',
+                        entityName: entity?.name || '',
+                        entityIcon: entity?.icon || '',
+                        entitySlug: entity?.slug || '',
+                        entityColor: entity?.color || '',
+                        status: 'finalized'
+                    };
+                });
             }
         } catch (e) {
             console.warn('[Documents] Could not fetch generated docs:', e.message);

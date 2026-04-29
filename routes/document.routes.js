@@ -254,6 +254,7 @@ router.get('/templates', async (req, res) => {
 router.get('/new', async (req, res) => {
     const templateId = req.query.template;
     let documentData = null;
+    let isTemplateMode = false;
 
     if (templateId) {
         try {
@@ -262,6 +263,7 @@ router.get('/new', async (req, res) => {
                 const template = await Document.findById(templateId);
                 if (template && template.isTemplate && template.duplicate) {
                     documentData = template.duplicate(req.user._id);
+                    isTemplateMode = true;
                 }
             }
         } catch (error) {
@@ -273,8 +275,9 @@ router.get('/new', async (req, res) => {
         title: 'Nouveau Document',
         document: documentData,
         isNew: true,
+        isTemplateMode: isTemplateMode,
         account_number: req.account_number,
-        layout: 'layout-app'
+        layout: isTemplateMode ? false : 'layout-app'
     });
 });
 
@@ -321,6 +324,8 @@ router.get('/:id/edit-react', async (req, res) => {
 
         // Support minimal mode for iframe embedding (no app layout)
         const isMinimal = req.query.minimal === 'true';
+        // Template mode: full-screen layout without app sidebar
+        const isTemplateMode = !!document.isTemplate && !isMinimal;
 
         // Context-free bindings (from /generate redirect)
         let contextFreeBindings = null;
@@ -337,9 +342,10 @@ router.get('/:id/edit-react', async (req, res) => {
             document,
             isNew: false,
             isMinimal: isMinimal,
+            isTemplateMode: isTemplateMode,
             contextFreeBindings: contextFreeBindings,
             account_number: req.account_number,
-            layout: isMinimal ? false : 'layout-app'
+            layout: (isMinimal || isTemplateMode) ? false : 'layout-app'
         });
     } catch (error) {
         console.error('[Documents] Error loading document (React):', error);

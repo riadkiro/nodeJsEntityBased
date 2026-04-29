@@ -4,14 +4,15 @@
     Supports minimal mode (isMinimal: true) for iframe embedding
 -->
 
-<% if (locals.isMinimal) { %>
+<% if (locals.isMinimal || locals.isTemplateMode) { %>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/themes/default/assets/css/style.css">
+    <link rel="stylesheet" href="/css/app/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,12 +21,14 @@
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 </head>
 <body style="margin:0; padding:0; overflow:hidden;">
+<% if (locals.isMinimal) { %>
 <script>
     // Document editor in minimal/iframe mode is always light — 
     // it's A4 paper content for PDF generation, dark mode makes no sense here
     // We explicitly do NOT sync the parent page's dark theme
     document.body.classList.remove('dark');
 </script>
+<% } %>
 <% } %>
 
 <style>
@@ -127,14 +130,17 @@
         Buffer.from(JSON.stringify(contextFreeBindings)).toString('base64')
     %>"
     <% } %>
-    class="<%= locals.isMinimal ? 'h-screen' : '' %>"
-    style="<%= locals.isMinimal ? '' : 'height:100%;overflow:hidden;' %>"
+    <% if (locals.isTemplateMode) { %>
+    data-is-template-mode="true"
+    <% } %>
+    class="<%= (locals.isMinimal || locals.isTemplateMode) ? 'h-screen' : '' %>"
+    style="<%= (locals.isMinimal || locals.isTemplateMode) ? '' : 'height:100%;overflow:hidden;' %>"
 ></div>
 
 <!-- React Island Script -->
 <script type="module" src="/dist/documentEditor.js"></script>
 
-<% if (locals.isMinimal) { %>
+<% if (locals.isMinimal || locals.isTemplateMode) { %>
 </body>
 </html>
 <% } %>

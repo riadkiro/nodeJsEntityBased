@@ -69,7 +69,8 @@ function mountIslands() {
         const props = {
             accountNumber: container.dataset.accountNumber,
             initialDocument: initialDocument,
-            isNew: container.dataset.isNew === 'true'
+            isNew: container.dataset.isNew === 'true',
+            isTemplateMode: container.dataset.isTemplateMode === 'true'
         }
 
         // Parse context-free bindings if present
@@ -87,7 +88,8 @@ function mountIslands() {
             accountNumber: props.accountNumber,
             isNew: props.isNew,
             docId: props.initialDocument?._id,
-            hasBindings: !!props.contextFreeBindings
+            hasBindings: !!props.contextFreeBindings,
+            isTemplateMode: props.isTemplateMode
         })
 
         createRoot(container).render(

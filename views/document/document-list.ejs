@@ -23,44 +23,21 @@
                   ? 'bg-primary text-white shadow-sm' 
                   : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
           <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="15"></iconify-icon>
-          Modèles
+          Templates
           <span class="text-[11px] px-1.5 rounded-full ml-0.5"
                 :class="activeSection === 'templates' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
                 x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
-        </button>
-        <button @click="activeSection = 'recent'" 
-                class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
-                :class="activeSection === 'recent' 
-                  ? 'bg-primary text-white shadow-sm' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
-          <iconify-icon icon="solar:document-text-bold-duotone" width="15"></iconify-icon>
-          Documents
-          <span class="text-[11px] px-1.5 rounded-full ml-0.5"
-                :class="activeSection === 'recent' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
-                x-text="documents.length"></span>
         </button>
         <button @click="activeSection = 'generated'" 
                 class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
                 :class="activeSection === 'generated' 
                   ? 'bg-primary text-white shadow-sm' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'"
-                x-show="generatedDocs.length > 0">
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
           <iconify-icon icon="solar:document-add-bold-duotone" width="15"></iconify-icon>
-          Générés
+          Générées
           <span class="text-[11px] px-1.5 rounded-full ml-0.5"
                 :class="activeSection === 'generated' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
-                x-text="generatedDocs.length"></span>
-        </button>
-        <button @click="activeSection = 'uploads'" 
-                class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
-                :class="activeSection === 'uploads' 
-                  ? 'bg-primary text-white shadow-sm' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
-          <iconify-icon icon="solar:cloud-upload-bold-duotone" width="15"></iconify-icon>
-          Fichiers
-          <span class="text-[11px] px-1.5 rounded-full ml-0.5"
-                :class="activeSection === 'uploads' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
-                x-text="uploadedDocs.length" x-show="uploadedDocs.length > 0"></span>
+                x-text="generatedDocs.length" x-show="generatedDocs.length > 0"></span>
         </button>
       </div>
       <div class="flex items-center gap-2">
@@ -227,167 +204,6 @@
     </div>
   </template>
 
-  <!-- ================================ -->
-  <!-- SECTION: Documents Grid          -->
-  <!-- ================================ -->
-  <template x-if="activeSection === 'recent'">
-    <div>
-      <template x-if="filteredDocs().length > 0">
-        <div>
-          <!-- Grid View -->
-          <div x-show="viewMode === 'grid'" class="doc-grid">
-            <template x-for="doc in filteredDocs()" :key="doc._id">
-              <div class="doc-card group">
-                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
-                  <div class="doc-card__paper" :style="getPaperStyle(doc)">
-                    <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
-                      <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
-                    </template>
-                    <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
-                      <div class="doc-card__paper-empty">
-                        <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                      </div>
-                    </template>
-                  </div>
-                  <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
-                  <span class="doc-card__badge" 
-                        :class="doc.isTemplate ? 'doc-card__badge--tpl' : 'doc-card__badge--doc'"
-                        x-text="doc.isTemplate ? 'TPL' : 'DOC'"></span>
-                </a>
-                <div class="doc-card__body">
-                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                     class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
-                  <div class="doc-card__meta">
-                    <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
-                    <span x-text="formatRelativeDate(doc.updatedAt)"></span>
-                  </div>
-                </div>
-                <div class="doc-card__hover-actions">
-                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                     class="doc-card__action" title="Modifier">
-                    <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
-                  </a>
-                  <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
-                    <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
-                  </button>
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <div x-show="viewMode === 'table'" class="panel p-0 overflow-hidden">
-            <table class="w-full text-[13px]">
-              <thead>
-                <tr class="border-b border-gray-100 dark:border-gray-800">
-                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Nom</th>
-                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Relations</th>
-                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Source</th>
-                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Format</th>
-                  <th class="text-left py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider">Modifié</th>
-                  <th class="text-right py-2.5 px-4 font-semibold text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider w-24">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="doc in filteredDocs()" :key="doc._id">
-                  <tr class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-dark/30 transition-colors">
-                    <td class="py-2.5 px-4">
-                      <div class="flex items-center gap-2.5">
-                        <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                             :class="doc.isTemplate ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-cyan-50 dark:bg-cyan-900/20'">
-                          <iconify-icon :icon="doc.isTemplate ? 'solar:document-medicine-bold-duotone' : 'solar:document-text-bold-duotone'" width="15"
-                                        :class="doc.isTemplate ? 'text-amber-500' : 'text-cyan-500'"></iconify-icon>
-                        </div>
-                        <div class="min-w-0">
-                          <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                             class="font-medium text-gray-800 dark:text-gray-200 hover:text-primary transition-colors block truncate"
-                             x-text="doc.name || 'Sans titre'"></a>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-2.5 px-4">
-                      <div class="flex flex-col gap-0.5">
-                        <template x-if="doc._relations && doc._relations.length > 0">
-                          <template x-for="rel in doc._relations" :key="rel.slug + (rel.recordTitle || '')">
-                            <div class="flex items-center gap-1.5">
-                              <iconify-icon :icon="rel.icon || 'solar:folder-bold-duotone'" width="13"
-                                            :style="'color:' + (rel.color || '#94a3b8')"></iconify-icon>
-                              <span class="text-[11px] text-gray-600 dark:text-gray-400" x-text="rel.recordTitle || rel.name"></span>
-                            </div>
-                          </template>
-                        </template>
-                        <template x-if="!doc._relations || doc._relations.length === 0">
-                          <span class="text-[11px] text-gray-300 dark:text-gray-600">—</span>
-                        </template>
-                      </div>
-                    </td>
-                    <td class="py-2.5 px-4">
-                      <template x-if="doc._source && doc._source.type === 'generated'">
-                        <span class="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                          <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12"></iconify-icon>
-                          <span x-text="doc._source.name" class="truncate max-w-[120px]"></span>
-                        </span>
-                      </template>
-                      <template x-if="doc._source && doc._source.type === 'upload'">
-                        <span class="inline-flex items-center gap-1 text-[11px] text-purple-600 dark:text-purple-400">
-                          <iconify-icon icon="solar:upload-minimalistic-bold-duotone" width="12"></iconify-icon>
-                          Uploadé
-                        </span>
-                      </template>
-                      <template x-if="!doc._source">
-                        <span class="inline-flex items-center gap-1 text-[11px] text-gray-400">
-                          <iconify-icon icon="solar:pen-new-square-bold-duotone" width="12"></iconify-icon>
-                          Manuel
-                        </span>
-                      </template>
-                    </td>
-                    <td class="py-2.5 px-4">
-                      <span class="text-[11px] font-medium text-gray-400 bg-gray-100 dark:bg-dark dark:text-gray-500 rounded px-1.5 py-0.5" x-text="doc.format || 'A4'"></span>
-                    </td>
-                    <td class="py-2.5 px-4 text-gray-400 text-[12px]" x-text="formatRelativeDate(doc.updatedAt)"></td>
-                    <td class="py-2.5 px-4 text-right">
-                      <div class="flex items-center justify-end gap-1">
-                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
-                           class="p-1 rounded hover:bg-gray-100 dark:hover:bg-dark text-gray-400 hover:text-primary transition-colors" title="Modifier">
-                          <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
-                        </a>
-                        <button @click.prevent="confirmDelete(doc)" 
-                                class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer">
-                          <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </template>
-
-      <!-- Empty State -->
-      <template x-if="filteredDocs().length === 0 && !searchQuery">
-        <div class="panel">
-          <div class="flex flex-col items-center justify-center py-14 text-center">
-            <div class="w-16 h-16 rounded-2xl bg-white-light dark:bg-dark/60 flex items-center justify-center mb-4">
-              <iconify-icon icon="solar:document-text-broken" width="32" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-            </div>
-            <h3 class="text-sm font-semibold dark:text-white mb-1">Aucun document</h3>
-            <p class="text-xs text-gray-400 max-w-xs mb-4">Créez votre premier document ou choisissez un template</p>
-            <button @click="openTemplateModal()" class="btn btn-primary btn-sm rounded-lg gap-1.5">
-              <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
-              Créer
-            </button>
-          </div>
-        </div>
-      </template>
-      <template x-if="filteredDocs().length === 0 && searchQuery">
-        <div class="panel py-10 text-center">
-          <iconify-icon icon="solar:magnifer-broken" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
-          <p class="text-xs text-gray-400">Aucun résultat pour "<span x-text="searchQuery" class="font-medium"></span>"</p>
-        </div>
-      </template>
-    </div>
-  </template>
 
   <!-- ================================ -->
   <!-- SECTION: Generated Documents     -->
@@ -434,65 +250,18 @@
           </div>
         </div>
       </template>
-    </div>
-  </template>
-
-  <!-- ================================ -->
-  <!-- SECTION: Upload Zone             -->
-  <!-- ================================ -->
-  <template x-if="activeSection === 'uploads'">
-    <div class="space-y-4">
-      <!-- Upload dropzone -->
-      <div class="doc-upload-zone"
-           :class="isDraggingFile ? 'doc-upload-zone--active' : ''"
-           @dragover.prevent="isDraggingFile = true"
-           @dragleave.prevent="isDraggingFile = false"
-           @drop.prevent="handleFileDrop($event); isDraggingFile = false">
-        <div class="flex flex-col items-center py-8">
-          <iconify-icon icon="solar:cloud-upload-bold-duotone" width="36" class="text-gray-300 dark:text-gray-600 mb-3"></iconify-icon>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Glissez-déposez vos fichiers ici</p>
-          <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-3">PDF, Word, Images, Excel...</p>
-          <label class="btn btn-outline-primary btn-sm rounded-lg gap-1.5 cursor-pointer">
-            <iconify-icon icon="solar:upload-line-duotone" width="14"></iconify-icon>
-            Parcourir
-            <input type="file" multiple class="hidden" @change="handleFileSelect($event)">
-          </label>
-        </div>
-        <template x-if="isUploading">
-          <div class="pb-4 flex items-center justify-center gap-2 text-xs text-primary">
-            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-            Upload en cours...
+      <template x-if="generatedDocs.length === 0">
+        <div class="flex flex-col items-center justify-center py-14 text-center">
+          <div class="w-16 h-16 rounded-2xl bg-white-light dark:bg-dark/60 flex items-center justify-center mb-4">
+            <iconify-icon icon="solar:document-add-broken" width="32" class="text-gray-300 dark:text-gray-600"></iconify-icon>
           </div>
-        </template>
-      </div>
-
-      <!-- Uploaded files grid -->
-      <template x-if="uploadedDocs.length > 0">
-        <div class="doc-grid">
-          <template x-for="udoc in uploadedDocs" :key="udoc._id">
-            <a :href="udoc.uploadedFile?.path" target="_blank" 
-               class="doc-card group">
-              <div class="doc-card__preview" style="min-height: 90px;">
-                <div class="w-10 h-12 rounded-md flex items-center justify-center" :class="getFileIconClass(udoc.uploadedFile?.mimeType)">
-                  <span class="text-[10px] font-bold uppercase" x-text="getFileExt(udoc.uploadedFile?.originalName)"></span>
-                </div>
-              </div>
-              <div class="doc-card__body">
-                <span class="doc-card__name" x-text="udoc.name || 'Fichier'"></span>
-              </div>
-            </a>
-          </template>
-        </div>
-      </template>
-
-      <template x-if="uploadedDocs.length === 0 && !isUploading">
-        <div class="panel py-10 text-center">
-          <iconify-icon icon="solar:cloud-upload-broken" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
-          <p class="text-xs text-gray-400">Aucun fichier uploadé</p>
+          <h3 class="text-sm font-semibold dark:text-white mb-1">Aucun document généré</h3>
+          <p class="text-xs text-gray-400 max-w-xs">Les documents générés depuis les templates apparaîtront ici</p>
         </div>
       </template>
     </div>
   </template>
+
 
   <!-- ============================================ -->
   <!-- DELETE MODAL                                 -->

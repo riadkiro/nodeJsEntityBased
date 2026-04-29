@@ -1044,6 +1044,202 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     </script>
     <% } %>
 
+    <% if (moduleName === 'docs') { %>
+    <style>
+        .rm-docs-tab {
+            display:flex; align-items:center; gap:6px;
+            padding:10px 18px; font-size:12px; font-weight:600;
+            color:#94a3b8; background:none; border:none; cursor:pointer;
+            border-bottom:2px solid transparent; margin-bottom:-2px;
+            transition:all 0.2s ease;
+        }
+        .rm-docs-tab:hover { color:#64748b; }
+        .rm-docs-tab--active { color:#4361ee; border-bottom-color:#4361ee; }
+        .rm-docs-tab-count {
+            display:inline-flex; align-items:center; justify-content:center;
+            min-width:18px; height:18px; padding:0 5px;
+            border-radius:9px; font-size:10px; font-weight:700;
+            background:#4361ee15; color:#4361ee;
+        }
+        .rm-docs-generate-btn {
+            display:flex; align-items:center; gap:5px;
+            padding:5px 12px; border-radius:8px;
+            font-size:11px; font-weight:600;
+            background:#f59e0b12; color:#f59e0b;
+            border:1px solid #f59e0b30; cursor:pointer;
+            transition:all 0.2s ease;
+        }
+        .rm-docs-generate-btn:hover { background:#f59e0b20; border-color:#f59e0b50; }
+        .rm-docs-generate-btn:disabled { opacity:0.5; cursor:wait; }
+    </style>
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('docsModule', () => ({
+            activeTab: 'generated',
+            loading: true,
+            loadingTemplates: true,
+            generatedDocs: [],
+            templates: [],
+            generatingId: null,
+            showPreview: false,
+            previewName: '',
+            draftDocId: null,
+            finalizing: false,
+            finalized: false,
+            downloadUrl: '',
+            _accountNumber: '<%= account_number %>',
+            _entityId: '<%= entity._id %>',
+            _recordId: '<%= record._id %>',
+
+            init() {
+                this.loadGeneratedDocs();
+                this.loadTemplates();
+                // Listen for cancel from iframe
+                window.addEventListener('message', (e) => {
+                    if (e.data && e.data.type === 'smartdoc-cancel') {
+                        this.cancelPreview();
+                    }
+                });
+            },
+
+            async loadGeneratedDocs() {
+                this.loading = true;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments`, {
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success && data.attachments) {
+                        this.generatedDocs = data.attachments
+                            .filter(a => a.isGenerated)
+                            .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+                    }
+                } catch (e) {
+                    console.error('[DocsModule] Load generated docs error:', e);
+                    // Fallback: try to read from server-rendered record data
+                    try {
+                        const record = JSON.parse('<%-  JSON.stringify(record.attachments || []).replace(/\'/g, "\\'") %>');
+                        this.generatedDocs = record.filter(a => a.isGenerated)
+                            .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+                    } catch (e2) { /* ignore */ }
+                }
+                this.loading = false;
+            },
+
+            async loadTemplates() {
+                this.loadingTemplates = true;
+                try {
+                    const url = `/account/${this._accountNumber}/api/smartdoc/templates/${this._entityId}?recordId=${this._recordId}`;
+                    const res = await fetch(url, { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success && data.templates) {
+                        this.templates = data.templates;
+                    }
+                } catch (e) {
+                    console.error('[DocsModule] Load templates error:', e);
+                }
+                this.loadingTemplates = false;
+            },
+
+            formatDate(dateStr) {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            },
+
+            async generateDoc(tpl) {
+                this.generatingId = tpl._id;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/generate-draft/${tpl._id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ recordId: this._recordId })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.draftDocumentId) {
+                        this.draftDocId = data.draftDocumentId;
+                        this.previewName = data.outputName || tpl.name;
+                        this.showPreview = true;
+                        this.finalized = false;
+                        this.downloadUrl = '';
+                        this.$nextTick(() => {
+                            const iframe = document.getElementById('docs-smartdoc-preview-iframe');
+                            if (iframe) {
+                                iframe.src = `/account/${this._accountNumber}/documents/${data.draftDocumentId}/edit-react?minimal=true`;
+                            }
+                        });
+                    } else {
+                        alert(data.error || 'Erreur de génération');
+                    }
+                } catch (e) {
+                    console.error('[DocsModule] Generate error:', e);
+                    alert('Erreur de connexion');
+                }
+                this.generatingId = null;
+            },
+
+            async finalizePreview() {
+                if (!this.draftDocId || this.finalizing) return;
+                this.finalizing = true;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/finalize-draft/${this.draftDocId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ recordId: this._recordId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.downloadUrl = data.attachment?.url || '';
+                        this.finalized = true;
+                        this.draftDocId = null;
+                        if (window.showMessage) {
+                            window.showMessage('Document généré avec succès !', 'success');
+                        }
+                    } else {
+                        alert(data.error || 'Erreur de finalisation');
+                    }
+                } catch (e) {
+                    console.error('[DocsModule] Finalize error:', e);
+                    alert('Erreur de connexion');
+                }
+                this.finalizing = false;
+            },
+
+            closePreview() {
+                this.showPreview = false;
+                this.finalized = false;
+                this.downloadUrl = '';
+                this.draftDocId = null;
+                this.previewName = '';
+                const iframe = document.getElementById('docs-smartdoc-preview-iframe');
+                if (iframe) iframe.src = '';
+                window.location.reload();
+            },
+
+            async cancelPreview() {
+                if (this.draftDocId) {
+                    try {
+                        await fetch(`/account/${this._accountNumber}/api/smartdoc/draft/${this.draftDocId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                    } catch (e) { /* ignore */ }
+                }
+                this.showPreview = false;
+                this.draftDocId = null;
+                this.previewName = '';
+                this.finalized = false;
+                this.downloadUrl = '';
+                const iframe = document.getElementById('docs-smartdoc-preview-iframe');
+                if (iframe) iframe.src = 'about:blank';
+            }
+        }));
+    });
+    </script>
+    <% } %>
+
     <!-- ═══ FICHE MODULE ═══ -->
     <% if (moduleName === 'fiche') { %>
     <div class="fiche-grid">
@@ -1075,8 +1271,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     </div>
     <% } %>
 
-    <!-- ═══ OTHER MODULES ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview') { %>
+    <!-- ═══ OTHER MODULES (non-docs) ═══ -->
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -1091,67 +1287,155 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     
         <% if (moduleName === 'docs') { %>
-        <div class="rm-items-list">
-            
-            <div class="rm-item" style="animation-delay:0ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                    <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+        <div x-data="docsModule" x-cloak>
+            <!-- Tabs -->
+            <div class="rm-toolbar" style="flex-direction:column; gap:0; padding-bottom:0;">
+                <div style="display:flex; align-items:center; gap:0; border-bottom:2px solid #f1f3f5; width:100%;">
+                    <button @click="activeTab = 'generated'"
+                        :class="activeTab === 'generated' ? 'rm-docs-tab--active' : ''"
+                        class="rm-docs-tab">
+                        <iconify-icon icon="solar:file-check-bold-duotone" width="15"></iconify-icon>
+                        Générés
+                        <span class="rm-docs-tab-count" x-text="generatedDocs.length" x-show="generatedDocs.length > 0"></span>
+                    </button>
+                    <button @click="activeTab = 'templates'"
+                        :class="activeTab === 'templates' ? 'rm-docs-tab--active' : ''"
+                        class="rm-docs-tab">
+                        <iconify-icon icon="solar:file-text-bold-duotone" width="15"></iconify-icon>
+                        Templates
+                        <span class="rm-docs-tab-count" x-text="templates.length" x-show="templates.length > 0"></span>
+                    </button>
                 </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Demande d'examen labo</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Généré</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
             </div>
 
-            <div class="rm-item" style="animation-delay:60ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                    <iconify-icon icon="solar:file-check-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+            <!-- Tab: Générés -->
+            <div x-show="activeTab === 'generated'" class="rm-items-list">
+                <!-- Loading state -->
+                <div x-show="loading" style="text-align:center; padding:32px 0; color:#94a3b8;">
+                    <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+                    <p style="font-size:12px; margin-top:8px;">Chargement...</p>
                 </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Arrêt de travail</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 12/04/2026</div>
+                <!-- Empty state -->
+                <div x-show="!loading && generatedDocs.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <iconify-icon icon="solar:file-check-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
+                    <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun document généré</p>
+                    <p style="font-size:11px; margin-top:4px;">Les documents apparaîtront ici après génération</p>
                 </div>
-                <span class="rm-item-badge" style="background:#0ea5e915;color:#0ea5e9">Signé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
+                <!-- Generated docs list -->
+                <template x-for="(doc, idx) in generatedDocs" :key="doc._id || idx">
+                    <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'">
+                        <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
+                            <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" width="20" style="color:#10b981"></iconify-icon>
+                        </div>
+                        <div class="rm-item-body">
+                            <div class="rm-item-title" x-text="doc.originalName || doc.generatedFromName || 'Document'"></div>
+                            <div class="rm-item-date">
+                                <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                                <span x-text="formatDate(doc.uploadedAt)"></span>
+                                <span x-show="doc.generatedFromName" style="margin-left:6px; color:#94a3b8;">·</span>
+                                <span x-show="doc.generatedFromName" x-text="doc.generatedFromName" style="color:#f59e0b; font-weight:500;"></span>
+                            </div>
+                        </div>
+                        <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Généré</span>
+                        <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename" 
+                           download class="rm-item-action" title="Télécharger" style="color:#4361ee;">
+                            <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
+                        </a>
+                    </div>
+                </template>
             </div>
 
-            <div class="rm-item" style="animation-delay:120ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                    <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+            <!-- Tab: Templates -->
+            <div x-show="activeTab === 'templates'" class="rm-items-list">
+                <!-- Loading state -->
+                <div x-show="loadingTemplates" style="text-align:center; padding:32px 0; color:#94a3b8;">
+                    <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+                    <p style="font-size:12px; margin-top:8px;">Chargement...</p>
                 </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Attestation de présence</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 08/04/2026</div>
+                <!-- Empty state -->
+                <div x-show="!loadingTemplates && templates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                    <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
+                    <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle disponible</p>
+                    <p style="font-size:11px; margin-top:4px;">Créez des templates dans le module Documents</p>
                 </div>
-                <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Brouillon</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
+                <!-- Templates list -->
+                <template x-for="(tpl, idx) in templates" :key="tpl._id">
+                    <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'">
+                        <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                            <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                        </div>
+                        <div class="rm-item-body">
+                            <div class="rm-item-title" x-text="tpl.name"></div>
+                            <div class="rm-item-date" style="color:#94a3b8;">
+                                <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
+                                Modèle de document
+                            </div>
+                        </div>
+                        <button @click="generateDoc(tpl)" :disabled="generatingId === tpl._id"
+                            class="rm-docs-generate-btn">
+                            <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
+                            <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
+                        </button>
+                    </div>
+                </template>
             </div>
 
-            <div class="rm-item" style="animation-delay:180ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                    <iconify-icon icon="solar:file-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+            <!-- Full-screen editor overlay (teleported to body) -->
+            <template x-teleport="body">
+                <div x-show="showPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                    class="fixed inset-0 flex flex-col bg-white" style="display:none; z-index: 99998;">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white" style="min-height: 52px;">
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="cancelPreview()" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Retour">
+                                <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
+                            </button>
+                            <div>
+                                <h3 class="text-[13px] font-bold text-gray-800" x-text="previewName || 'Document'"></h3>
+                                <p class="text-[10px] text-gray-400 flex items-center gap-1" x-show="!finalized">
+                                    <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
+                                    Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
+                                </p>
+                                <p class="text-[10px] text-success flex items-center gap-1 font-medium" x-show="finalized">
+                                    <iconify-icon icon="solar:check-circle-bold" width="10"></iconify-icon>
+                                    PDF généré avec succès !
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Before finalization -->
+                        <div class="flex items-center gap-2" x-show="!finalized">
+                            <button type="button" @click="cancelPreview()" :disabled="finalizing"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-danger hover:bg-danger/5 border border-gray-200 transition-all">
+                                <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                Annuler
+                            </button>
+                            <button type="button" @click="finalizePreview()" :disabled="finalizing"
+                                class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm disabled:opacity-50">
+                                <iconify-icon :icon="finalizing ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
+                                <span x-text="finalizing ? 'Génération en cours...' : 'Finaliser et générer le PDF'"></span>
+                            </button>
+                        </div>
+                        <!-- After finalization -->
+                        <div class="flex items-center gap-2" x-show="finalized" x-cloak>
+                            <a :href="downloadUrl" download
+                                class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-primary text-white hover:bg-primary/90 transition-all shadow-sm">
+                                <iconify-icon icon="solar:download-bold" width="14"></iconify-icon>
+                                Télécharger
+                            </a>
+                            <button type="button" @click="closePreview()"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-all">
+                                <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Editor iframe -->
+                    <div class="flex-1 overflow-hidden">
+                        <iframe id="docs-smartdoc-preview-iframe" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>
+                    </div>
                 </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Fiche patient résumé</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 01/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Généré</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:240ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                    <iconify-icon icon="solar:file-security-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Consentement éclairé</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 28/03/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#0ea5e915;color:#0ea5e9">Signé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
+            </template>
         </div>
         <% } %>
 

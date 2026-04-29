@@ -218,12 +218,13 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             category: att.category,
             isGenerated: att.isGenerated,
             generatedFrom: att.generatedFrom,
+            generatedFromName: att.generatedFromName,
             url: `/account/${req.account_number}/uploads/attachments/${att.filename}`,
             uploadedAt: att.uploadedAt,
             uploadedBy: att.uploadedBy
         }));
 
-        res.json({ attachments });
+        res.json({ success: true, attachments });
     } catch (error) {
         console.error('[Attachment] List error:', error);
         res.status(500).json({ error: error.message });

@@ -1269,7 +1269,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         .drive-progress-fill { height:100%; background:linear-gradient(90deg,#4361ee,#3b82f6); border-radius:4px; transition:width 0.3s; }
         .drive-file-actions { display:flex; gap:2px; }
         .drive-folder-item:hover { background:#f8fafc; }
+        .drive-folder-item--drop-target { background:#4361ee0a !important; box-shadow:inset 0 0 0 2px #4361ee40; border-radius:12px; }
         .drive-empty { text-align:center; padding:40px 20px; color:#94a3b8; }
+        .rm-item[draggable='true'] { cursor:grab; }
+        .rm-item[draggable='true']:active { cursor:grabbing; opacity:0.6; }
     </style>
     <script>
     document.addEventListener('alpine:init', () => {
@@ -1280,6 +1283,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             uploadProgress: 0,
             uploadCount: 0,
             isDragging: false,
+            draggedFileId: null,
+            dropTargetFolder: null,
             currentFolder: '',
             viewingGenerated: false,
             showNewFolderInput: false,
@@ -1360,8 +1365,75 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             _dragCounter: 0,
 
+            // --- Internal file drag (file → folder) ---
+            startDragFile(e, fileId) {
+                this.draggedFileId = fileId;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', fileId);
+            },
+
+            onFolderDragEnter(e, folderName) {
+                e.preventDefault();
+                if (this.draggedFileId) {
+                    this.dropTargetFolder = folderName;
+                }
+            },
+
+            onFolderDragLeave(e, folderName) {
+                // Only clear if leaving this specific folder
+                if (this.dropTargetFolder === folderName) {
+                    this.dropTargetFolder = null;
+                }
+            },
+
+            onFolderDrop(e, folderName) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (this.draggedFileId) {
+                    this.moveFileToFolder(this.draggedFileId, folderName);
+                    this.draggedFileId = null;
+                    this.dropTargetFolder = null;
+                    return;
+                }
+                // External file drop on folder → upload to that folder
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const prevFolder = this.currentFolder;
+                    this.currentFolder = folderName;
+                    this.uploadFiles(files);
+                    this.currentFolder = prevFolder;
+                }
+            },
+
+            onDragEnd() {
+                this.draggedFileId = null;
+                this.dropTargetFolder = null;
+            },
+
+            async moveFileToFolder(fileId, folderName) {
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${fileId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ folder: folderName })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        // Update local state
+                        const file = this.allFiles.find(f => f._id === fileId);
+                        if (file) file.folder = folderName;
+                        if (window.showMessage) window.showMessage('Fichier déplacé', 'success');
+                    }
+                } catch (e) {
+                    console.error('[Drive] Move error:', e);
+                }
+            },
+
+            // --- External file drag (OS → browser) ---
             onDragEnter(e) {
                 if (this.viewingGenerated) return;
+                if (this.draggedFileId) return; // internal drag, don't show overlay
                 this._dragCounter++;
                 if (e.dataTransfer?.types?.includes('Files')) {
                     this.isDragging = true;
@@ -1369,6 +1441,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             },
 
             onDragLeave(e) {
+                if (this.draggedFileId) return;
                 this._dragCounter--;
                 if (this._dragCounter <= 0) {
                     this._dragCounter = 0;
@@ -1379,6 +1452,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             handleDrop(e) {
                 this._dragCounter = 0;
                 this.isDragging = false;
+                if (this.draggedFileId) {
+                    this.draggedFileId = null;
+                    this.dropTargetFolder = null;
+                    return;
+                }
                 const files = e.dataTransfer.files;
                 if (files.length > 0) this.uploadFiles(files);
             },
@@ -1754,7 +1832,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
                 <!-- Custom folders (root only) -->
                 <template x-for="(folder, idx) in displayFolders" :key="folder.name">
-                    <div class="rm-item drive-folder-item" @click="navigateTo(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'">
+                    <div class="rm-item drive-folder-item" @click="navigateTo(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
+                         :class="dropTargetFolder === folder.name ? 'drive-folder-item--drop-target' : ''"
+                         @dragover.prevent @dragenter.prevent="onFolderDragEnter($event, folder.name)"
+                         @dragleave="onFolderDragLeave($event, folder.name)" @drop="onFolderDrop($event, folder.name)">
                         <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
                             <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                         </div>
@@ -1769,7 +1850,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
                 <!-- Files -->
                 <template x-for="(file, idx) in displayFiles" :key="file._id">
-                    <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'">
+                    <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'"
+                         :draggable="!file.isGenerated" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()">
                         <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + getCategoryColor(file.category) + '15,' + getCategoryColor(file.category) + '08)'">
                             <iconify-icon :icon="getCategoryIcon(file.category)" width="20" :style="'color:' + getCategoryColor(file.category)"></iconify-icon>
                         </div>

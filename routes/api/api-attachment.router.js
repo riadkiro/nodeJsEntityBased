@@ -199,6 +199,32 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
 });
 
 /**
+ * PATCH /api/records/:recordId/attachments/:attachmentId
+ * Update attachment metadata (e.g. move to folder)
+ */
+router.patch('/records/:recordId/attachments/:attachmentId', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const { folder } = req.body;
+
+        if (folder === undefined) {
+            return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
+        }
+
+        const mongoose = require('mongoose');
+        await Record.updateOne(
+            { _id: req.params.recordId, 'attachments._id': new mongoose.Types.ObjectId(req.params.attachmentId) },
+            { $set: { 'attachments.$.folder': folder || '' } }
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Attachment] Patch error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/records/:recordId/attachments
  * List all attachments for a record
  */

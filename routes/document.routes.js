@@ -510,6 +510,10 @@ router.put('/api/:id', async (req, res) => {
                     // Template mode was disabled → remove all SmartDocTemplate entries
                     await SmartDocTemplate.deleteMany({ documentId: docId });
                     console.log(`[SmartDoc] Template mode disabled → removed ${existingTemplates.length} SmartDocTemplate entries`);
+                } else if (isTemplate && linkedEntityIds.length === 0 && existingTemplates.length > 0) {
+                    // Template has no linked entities → remove orphan SmartDocTemplate entries
+                    await SmartDocTemplate.deleteMany({ documentId: docId });
+                    console.log(`[SmartDoc] Template unlinked from all entities → removed ${existingTemplates.length} SmartDocTemplate entries`);
                 }
             }
         } catch (syncErr) {

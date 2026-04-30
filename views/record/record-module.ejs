@@ -1334,6 +1334,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     if (data.success && data.attachments) {
                         this.allFiles = data.attachments;
                     }
+                    // Load persisted custom folders
+                    if (data.driveFolders && Array.isArray(data.driveFolders)) {
+                        this.customFolders = data.driveFolders;
+                    }
                 } catch (e) {
                     console.error('[Drive] Load error:', e);
                 }
@@ -1345,14 +1349,32 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 this.viewingGenerated = false;
             },
 
-            createFolder() {
+            async createFolder() {
                 const name = this.newFolderName.trim();
                 if (!name) return;
                 if (this.customFolders.includes(name) || this.allFiles.some(f => f.folder === name)) {
                     alert('Ce dossier existe déjà');
                     return;
                 }
-                this.customFolders.push(name);
+                // Persist via API
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/drive-folders`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ name })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.customFolders.push(name);
+                        if (window.showMessage) window.showMessage('Dossier créé', 'success');
+                    } else {
+                        alert(data.error || 'Erreur');
+                    }
+                } catch (e) {
+                    console.error('[Drive] Create folder error:', e);
+                    alert('Erreur lors de la création');
+                }
                 this.newFolderName = '';
                 this.showNewFolderInput = false;
             },

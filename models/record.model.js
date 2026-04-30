@@ -86,6 +86,9 @@ const RecordSchema = new mongoose.Schema({
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],
 
+  // 📁 Custom Drive folders (persisted empty folder names)
+  driveFolders: [{ type: String }],
+
   // 🔧 Line Defaults (pre-encoded values for Dynamic Table columns)
   // When this record is selected as a catalog item in a TD,
   // these defaults auto-populate the line values

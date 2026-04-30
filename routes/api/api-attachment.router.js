@@ -231,7 +231,7 @@ router.patch('/records/:recordId/attachments/:attachmentId', async (req, res) =>
 router.get('/records/:recordId/attachments', async (req, res) => {
     try {
         const Record = await tenantCollection(req, 'Record');
-        const record = await Record.findById(req.params.recordId).select('attachments');
+        const record = await Record.findById(req.params.recordId).select('attachments driveFolders');
 
         if (!record) {
             return res.status(404).json({ error: 'Record introuvable' });
@@ -254,9 +254,73 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             uploadedBy: att.uploadedBy
         }));
 
-        res.json({ success: true, attachments });
+        res.json({ success: true, attachments, driveFolders: record.driveFolders || [] });
     } catch (error) {
         console.error('[Attachment] List error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/records/:recordId/drive-folders
+ * Create a custom Drive folder
+ */
+router.post('/records/:recordId/drive-folders', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Nom de dossier requis' });
+        }
+        const folderName = name.trim();
+        const record = await Record.findById(req.params.recordId).select('driveFolders attachments');
+        if (!record) return res.status(404).json({ error: 'Record introuvable' });
+
+        // Check for duplicates (in custom folders AND in attachment folders)
+        const existingFolders = record.driveFolders || [];
+        const attachmentFolders = [...new Set((record.attachments || []).filter(a => a.folder).map(a => a.folder))];
+        if (existingFolders.includes(folderName) || attachmentFolders.includes(folderName)) {
+            return res.status(409).json({ error: 'Ce dossier existe déjà' });
+        }
+
+        record.driveFolders = record.driveFolders || [];
+        record.driveFolders.push(folderName);
+        await record.save();
+        res.json({ success: true, folder: folderName });
+    } catch (error) {
+        console.error('[Drive] Create folder error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * DELETE /api/records/:recordId/drive-folders/:folderName
+ * Delete a custom Drive folder (files stay in root)
+ */
+router.delete('/records/:recordId/drive-folders/:folderName', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const folderName = decodeURIComponent(req.params.folderName);
+        const record = await Record.findById(req.params.recordId).select('driveFolders attachments');
+        if (!record) return res.status(404).json({ error: 'Record introuvable' });
+
+        // Remove from driveFolders
+        record.driveFolders = (record.driveFolders || []).filter(f => f !== folderName);
+
+        // Move files in this folder back to root
+        let movedCount = 0;
+        (record.attachments || []).forEach(att => {
+            if (att.folder === folderName) {
+                att.folder = '';
+                movedCount++;
+            }
+        });
+        if (movedCount > 0) record.markModified('attachments');
+
+        await record.save();
+        res.json({ success: true, movedCount });
+    } catch (error) {
+        console.error('[Drive] Delete folder error:', error);
         res.status(500).json({ error: error.message });
     }
 });

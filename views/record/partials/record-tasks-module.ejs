@@ -59,9 +59,28 @@
         color: #d1d5db; opacity: 0; transition: opacity 0.15s;
         display: flex; align-items: center; justify-content: center;
     }
-    .tl-preview-item:hover .tl-preview-drag { opacity: 1; }
-    .tl-preview-item.dragging { opacity: 0.4; }
-    .tl-preview-item.drag-over { border-top: 2px solid #4361ee; margin-top: -2px; }
+    .tl-preview-item:hover .tl-preview-drag { opacity: 0.6; }
+    .tl-preview-drag:hover { color: #4361ee !important; opacity: 1 !important; }
+    .tl-preview-item.dragging {
+        opacity: 0.35; background: #eef2ff; border-radius: 6px;
+        transform: scale(0.97); transition: all 0.15s;
+    }
+    .tl-preview-item.drag-over {
+        position: relative;
+    }
+    .tl-preview-item.drag-over::before {
+        content: '';
+        position: absolute; left: 0; right: 0; top: -2px;
+        height: 2px; background: #4361ee;
+        border-radius: 2px;
+    }
+    .tl-preview-item.drag-over::after {
+        content: '';
+        position: absolute; left: -3px; top: -5px;
+        width: 8px; height: 8px;
+        background: #4361ee; border-radius: 50%;
+        border: 2px solid #fff; box-shadow: 0 0 0 1px #4361ee;
+    }
     /* Task context menu */
     .tl-task-ctx {
         position: fixed; z-index: 100;
@@ -125,12 +144,14 @@
     /* Preview status menu (reuse tl-status-menu styles) */
     .tl-preview-status-wrap { position: relative; }
     .tl-preview-smenu {
-        position: absolute; top: 100%; right: 0; z-index: 80;
+        position: absolute; right: 0; z-index: 80;
         min-width: 120px; padding: 3px;
         background: #fff; border: 1px solid #e8ecf1;
         border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         margin-top: 2px;
     }
+    .tl-preview-status-wrap.flip-up .tl-preview-smenu { bottom: 100%; top: auto; margin-top: 0; margin-bottom: 2px; }
+    .tl-preview-status-wrap:not(.flip-up) .tl-preview-smenu { top: 100%; }
     .tl-preview-smenu button {
         display: flex; align-items: center; gap: 6px;
         padding: 5px 8px; border-radius: 6px; font-size: 11px;
@@ -394,11 +415,11 @@
                                            @keydown.enter="previewSaveTitle(pt)"
                                            @keydown.escape="previewEditId = null"
                                            @blur="previewSaveTitle(pt)">
-                                    <div class="tl-preview-status-wrap">
+                                    <div class="tl-preview-status-wrap" :class="{'flip-up': previewStatusMenu === pt._id && previewStatusFlip}">
                                         <span class="tl-preview-status"
                                               :style="'background:' + (pt.statusColor||'#9ca3af') + '12;color:' + (pt.statusColor||'#9ca3af')"
                                               x-text="pt.status || 'À faire'"
-                                              @click="previewStatusMenu = previewStatusMenu === pt._id ? null : pt._id; previewStatusListId = previewStatusMenu ? list._id : null"></span>
+                                              @click="previewStatusMenu = previewStatusMenu === pt._id ? null : pt._id; previewStatusListId = previewStatusMenu ? list._id : null; previewStatusFlip = $event.clientY + 160 > window.innerHeight"></span>
                                         <div class="tl-preview-smenu" x-show="previewStatusMenu === pt._id" x-cloak @click.stop>
                                             <template x-for="s in statuses" :key="s.label">
                                                 <button @click="previewSetStatus(list, pt, s.label); previewStatusMenu = null">
@@ -632,6 +653,7 @@ document.addEventListener('alpine:init', () => {
         previewNewTask: '',
         previewStatusMenu: null,
         previewStatusListId: null,
+        previewStatusFlip: false,
         previewEditId: null,
         previewEditTitle: '',
         taskCtx: null,
@@ -787,7 +809,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         openTaskCtx(e, list, pt) {
-            this.taskCtx = { x: e.clientX, y: e.clientY, list, task: pt };
+            const menuH = 80;
+            const y = (e.clientY + menuH > window.innerHeight) ? e.clientY - menuH : e.clientY;
+            this.taskCtx = { x: e.clientX, y, list, task: pt };
             this.ctxMenu = null;
         },
 
@@ -968,7 +992,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         openCtx(e, type, target) {
-            this.ctxMenu = { x: e.clientX, y: e.clientY, type, target };
+            const menuH = type === 'list' ? 220 : 80;
+            const y = (e.clientY + menuH > window.innerHeight) ? e.clientY - menuH : e.clientY;
+            this.ctxMenu = { x: e.clientX, y, type, target };
         },
 
         ctxRename() {

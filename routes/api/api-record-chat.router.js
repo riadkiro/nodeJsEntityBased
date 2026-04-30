@@ -44,7 +44,6 @@ module.exports = (router) => {
             const Conversation = await tenantCollection(req, 'Conversation');
             const RecordModel = await tenantCollection(req, 'Record');
             const EntityModel = await tenantCollection(req, 'Entity');
-            const User = require('../../models/user.model');
 
             const { name } = req.body;
             const userId = String(req.user._id);
@@ -55,22 +54,17 @@ module.exports = (router) => {
 
             const entity = await EntityModel.findById(record.entityId).select('name slug icon color').lean();
 
-            // Auto-add all account users as participants
-            const accountNumber = req.account_number;
-            const allUsers = await User.find({ 'accounts.account_number': accountNumber })
-                .select('_id name email avatar')
-                .lean();
-
-            const participants = allUsers.map(u => ({
-                userId: String(u._id),
-                name: u.name || u.email || 'Unknown',
-                email: u.email || '',
-                avatar: u.avatar || '',
-                role: String(u._id) === userId ? 'admin' : 'member',
+            // Use current user as creator/participant
+            const participants = [{
+                userId: userId,
+                name: req.user.name || req.user.email || 'Unknown',
+                email: req.user.email || '',
+                avatar: req.user.avatar || '',
+                role: 'admin',
                 joinedAt: new Date(),
-                lastReadAt: String(u._id) === userId ? new Date() : null,
+                lastReadAt: new Date(),
                 unreadCount: 0
-            }));
+            }];
 
             const conversation = await Conversation.create({
                 type: 'group',
@@ -165,17 +159,23 @@ module.exports = (router) => {
                 }
             });
 
-            await Conversation.findByIdAndUpdate(req.params.convId, {
-                lastMessage: {
-                    text: text.trim(),
-                    senderId: userId,
-                    senderName: sender?.name || req.user.name || 'Unknown',
-                    sentAt: message.createdAt,
-                    type
-                },
-                updatedAt: new Date(),
-                ...(Object.keys(incFields).length > 0 ? { $inc: incFields } : {})
-            });
+            const updateOp = {
+                $set: {
+                    lastMessage: {
+                        text: text.trim(),
+                        senderId: userId,
+                        senderName: sender?.name || req.user.name || 'Unknown',
+                        sentAt: message.createdAt,
+                        type
+                    },
+                    updatedAt: new Date()
+                }
+            };
+            if (Object.keys(incFields).length > 0) {
+                updateOp.$inc = incFields;
+            }
+
+            await Conversation.findByIdAndUpdate(req.params.convId, updateOp);
 
             res.json({ success: true, message });
         } catch (err) {

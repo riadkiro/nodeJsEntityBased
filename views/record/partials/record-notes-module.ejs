@@ -63,6 +63,15 @@
 .note-editor-content:empty::before { content:attr(data-placeholder); color:#cbd5e1; pointer-events:none; }
 .note-editor-content ul, .note-editor-content ol { padding-left:24px; }
 .note-editor-content blockquote { border-left:3px solid #8b5cf6; padding-left:14px; margin:8px 0; color:#64748b; font-style:italic; }
+/* Checklist items */
+.note-checklist-item { display:flex; align-items:flex-start; gap:8px; margin:4px 0; line-height:1.6; position:relative; }
+.note-checklist-item input[type="checkbox"] { width:16px; height:16px; accent-color:#8b5cf6; margin-top:3px; flex-shrink:0; cursor:pointer; }
+.note-checklist-item .note-checklist-text { flex:1; min-width:0; outline:none; }
+.note-checklist-item .note-checklist-delete { width:18px; height:18px; border:none; background:transparent; color:#cbd5e1; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:4px; font-size:14px; line-height:1; flex-shrink:0; margin-top:2px; transition:all .15s; padding:0; }
+.note-checklist-item .note-checklist-delete:hover { background:#fef2f2; color:#ef4444; }
+/* Editor delete button */
+.note-editor-delete-btn { display:flex; align-items:center; gap:4px; font-size:11px; color:#94a3b8; border:none; background:none; cursor:pointer; padding:5px 8px; border-radius:6px; font-family:inherit; font-weight:500; transition:all .15s; margin-left:auto; }
+.note-editor-delete-btn:hover { background:#fef2f2; color:#ef4444; }
 /* Animations */
 @keyframes nmFadeIn { from{opacity:0} to{opacity:1} }
 @keyframes nmSlide { from{opacity:0;transform:translateY(-20px)scale(.95)} to{opacity:1;transform:none} }
@@ -101,113 +110,117 @@
     </div>
 
     <!-- ═══ GRID VIEW ═══ -->
-    <template x-if="!loading && !activeNote">
-        <div>
-            <div x-show="notes.length === 0 && !loading" class="notes-empty">
-                <iconify-icon icon="solar:notebook-bold-duotone" width="48" style="opacity:.3"></iconify-icon>
-                <h3>Aucune note</h3>
-                <p>Créez votre première note pour cet enregistrement</p>
-            </div>
+    <div x-show="!loading && !activeNote">
+        <div x-show="notes.length === 0 && !loading" class="notes-empty">
+            <iconify-icon icon="solar:notebook-bold-duotone" width="48" style="opacity:.3"></iconify-icon>
+            <h3>Aucune note</h3>
+            <p>Créez votre première note pour cet enregistrement</p>
+        </div>
 
-            <div class="notes-grid">
-                <!-- Add card -->
-                <div class="note-add-card" @click="showCreateModal = true">
-                    <iconify-icon icon="solar:add-circle-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
-                    <span>Nouvelle note</span>
-                </div>
-                <!-- Note cards -->
-                <template x-for="note in notes" :key="note._id">
-                    <div class="note-card" @click="openNote(note)">
-                        <div class="note-card-stripe" :style="'background:' + note.color"></div>
-                        <div x-show="note.pinned" class="note-card-pin">
-                            <iconify-icon icon="solar:pin-bold" width="14"></iconify-icon>
-                        </div>
-                        <div class="note-card-body">
-                            <div class="note-card-title" x-text="note.title || 'Sans titre'"></div>
-                            <div class="note-card-preview" x-html="getPreview(note.content)"></div>
-                        </div>
-                        <div class="note-card-footer">
-                            <span class="note-card-date">
-                                <iconify-icon icon="solar:calendar-linear" width="11"></iconify-icon>
-                                <span x-text="formatDate(note.updatedAt)"></span>
-                            </span>
-                            <div class="note-card-actions" @click.stop>
-                                <button @click.stop="togglePin(note)" :title="note.pinned ? 'Désépingler' : 'Épingler'">
-                                    <iconify-icon :icon="note.pinned ? 'solar:pin-bold' : 'solar:pin-linear'" width="14"></iconify-icon>
-                                </button>
-                                <button class="delete-btn" @click.stop="deleteNote(note)" title="Supprimer">
-                                    <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
-                                </button>
-                            </div>
+        <div class="notes-grid">
+            <!-- Add card -->
+            <div class="note-add-card" @click="showCreateModal = true">
+                <iconify-icon icon="solar:add-circle-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
+                <span>Nouvelle note</span>
+            </div>
+            <!-- Note cards -->
+            <template x-for="note in notes" :key="note._id">
+                <div class="note-card" @click="openNote(note)">
+                    <div class="note-card-stripe" :style="'background:' + note.color"></div>
+                    <div x-show="note.pinned" class="note-card-pin">
+                        <iconify-icon icon="solar:pin-bold" width="14"></iconify-icon>
+                    </div>
+                    <div class="note-card-body">
+                        <div class="note-card-title" x-text="note.title || 'Sans titre'"></div>
+                        <div class="note-card-preview" x-html="getPreview(note.content)"></div>
+                    </div>
+                    <div class="note-card-footer">
+                        <span class="note-card-date">
+                            <iconify-icon icon="solar:calendar-linear" width="11"></iconify-icon>
+                            <span x-text="formatDate(note.updatedAt)"></span>
+                        </span>
+                        <div class="note-card-actions" @click.stop>
+                            <button @click.stop="togglePin(note)" :title="note.pinned ? 'Désépingler' : 'Épingler'">
+                                <iconify-icon :icon="note.pinned ? 'solar:pin-bold' : 'solar:pin-linear'" width="14"></iconify-icon>
+                            </button>
+                            <button class="delete-btn" @click.stop="deleteNote(note)" title="Supprimer">
+                                <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+                            </button>
                         </div>
                     </div>
-                </template>
-            </div>
+                </div>
+            </template>
         </div>
-    </template>
+    </div>
 
     <!-- ═══ EDITOR VIEW ═══ -->
-    <template x-if="activeNote">
-        <div class="note-editor-wrap">
-            <div class="note-editor-topbar">
-                <button class="note-editor-back" @click="closeEditor()">
-                    <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
-                    Retour
-                </button>
-                <div class="sep" style="width:1px;height:20px;background:#e0e6ed;margin:0 4px"></div>
-                <input type="text" class="note-editor-title-input" x-model="activeNote.title"
-                       placeholder="Titre de la note..." @input="scheduleAutosave()">
-                <div class="note-editor-save-status" :class="saveStatus">
-                    <template x-if="saveStatus === 'saving'">
-                        <span><iconify-icon icon="line-md:loading-twotone-loop" width="12"></iconify-icon> Sauvegarde...</span>
-                    </template>
-                    <template x-if="saveStatus === 'saved'">
-                        <span><iconify-icon icon="solar:check-circle-bold" width="12"></iconify-icon> Sauvegardé</span>
-                    </template>
-                </div>
+    <div x-show="activeNote" class="note-editor-wrap" style="display:none;">
+        <div class="note-editor-topbar">
+            <button class="note-editor-back" @click="closeEditor()">
+                <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+                Retour
+            </button>
+            <div class="sep" style="width:1px;height:20px;background:#e0e6ed;margin:0 4px"></div>
+            <input type="text" class="note-editor-title-input"
+                   :value="activeNote ? activeNote.title : ''"
+                   @input="if(activeNote) { activeNote.title = $event.target.value; scheduleAutosave(); }"
+                   placeholder="Titre de la note...">
+            <div class="note-editor-save-status" :class="saveStatus">
+                <template x-if="saveStatus === 'saving'">
+                    <span><iconify-icon icon="line-md:loading-twotone-loop" width="12"></iconify-icon> Sauvegarde...</span>
+                </template>
+                <template x-if="saveStatus === 'saved'">
+                    <span><iconify-icon icon="solar:check-circle-bold" width="12"></iconify-icon> Sauvegardé</span>
+                </template>
             </div>
-
-            <!-- Toolbar -->
-            <div class="note-toolbar">
-                <button @click="exec('bold')" title="Gras"><b>B</b></button>
-                <button @click="exec('italic')" title="Italique"><i>I</i></button>
-                <button @click="exec('underline')" title="Souligné"><u>U</u></button>
-                <button @click="exec('strikeThrough')" title="Barré"><s>S</s></button>
-                <div class="sep"></div>
-                <button @click="exec('insertUnorderedList')" title="Liste à puces">
-                    <iconify-icon icon="solar:list-bold" width="16"></iconify-icon>
-                </button>
-                <button @click="exec('insertOrderedList')" title="Liste numérotée">
-                    <iconify-icon icon="solar:list-1-bold" width="16"></iconify-icon>
-                </button>
-                <div class="sep"></div>
-                <button @click="exec('formatBlock','BLOCKQUOTE')" title="Citation">
-                    <iconify-icon icon="solar:quote-up-square-bold" width="16"></iconify-icon>
-                </button>
-                <button @click="insertCheckbox()" title="Checkbox">
-                    <iconify-icon icon="solar:check-square-bold" width="16"></iconify-icon>
-                </button>
-                <div class="sep"></div>
-                <button @click="exec('removeFormat')" title="Effacer formatage">
-                    <iconify-icon icon="solar:eraser-bold" width="16"></iconify-icon>
-                </button>
-                <div class="sep"></div>
-                <div class="note-toolbar-colors">
-                    <span style="background:#fef08a" @click="highlight('#fef08a')" title="Jaune"></span>
-                    <span style="background:#bbf7d0" @click="highlight('#bbf7d0')" title="Vert"></span>
-                    <span style="background:#bfdbfe" @click="highlight('#bfdbfe')" title="Bleu"></span>
-                    <span style="background:#fecaca" @click="highlight('#fecaca')" title="Rouge"></span>
-                    <span style="background:#e9d5ff" @click="highlight('#e9d5ff')" title="Violet"></span>
-                    <span style="background:transparent;border:1px solid #ccc" @click="highlight('transparent')" title="Effacer"></span>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="note-editor-content" contenteditable="true" x-ref="editorContent"
-                 data-placeholder="Commencez à écrire..."
-                 @input="scheduleAutosave()"></div>
+            <button class="note-editor-delete-btn" @click="deleteActiveNote()" title="Supprimer cette note">
+                <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+                Supprimer
+            </button>
         </div>
-    </template>
+
+        <!-- Toolbar — use @mousedown.prevent to keep focus in contenteditable -->
+        <div class="note-toolbar">
+            <button @mousedown.prevent="exec('bold')" title="Gras"><b>B</b></button>
+            <button @mousedown.prevent="exec('italic')" title="Italique"><i>I</i></button>
+            <button @mousedown.prevent="exec('underline')" title="Souligné"><u>U</u></button>
+            <button @mousedown.prevent="exec('strikeThrough')" title="Barré"><s>S</s></button>
+            <div class="sep"></div>
+            <button @mousedown.prevent="exec('insertUnorderedList')" title="Liste à puces">
+                <iconify-icon icon="solar:list-down-bold-duotone" width="16"></iconify-icon>
+            </button>
+            <button @mousedown.prevent="exec('insertOrderedList')" title="Liste numérotée">
+                <iconify-icon icon="solar:list-down-minimalistic-bold-duotone" width="16"></iconify-icon>
+            </button>
+            <div class="sep"></div>
+            <button @mousedown.prevent="exec('formatBlock','<blockquote>')" title="Citation">
+                <iconify-icon icon="solar:chat-square-like-bold-duotone" width="16"></iconify-icon>
+            </button>
+            <button @mousedown.prevent="insertCheckbox()" title="Checklist">
+                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="16"></iconify-icon>
+            </button>
+            <div class="sep"></div>
+            <button @mousedown.prevent="exec('removeFormat')" title="Effacer formatage">
+                <iconify-icon icon="solar:eraser-bold-duotone" width="16"></iconify-icon>
+            </button>
+            <div class="sep"></div>
+            <div class="note-toolbar-colors">
+                <span style="background:#fef08a" @mousedown.prevent="highlight('#fef08a')" title="Jaune"></span>
+                <span style="background:#bbf7d0" @mousedown.prevent="highlight('#bbf7d0')" title="Vert"></span>
+                <span style="background:#bfdbfe" @mousedown.prevent="highlight('#bfdbfe')" title="Bleu"></span>
+                <span style="background:#fecaca" @mousedown.prevent="highlight('#fecaca')" title="Rouge"></span>
+                <span style="background:#e9d5ff" @mousedown.prevent="highlight('#e9d5ff')" title="Violet"></span>
+                <span style="background:transparent;border:1px solid #ccc" @mousedown.prevent="highlight('transparent')" title="Effacer"></span>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="note-editor-content" contenteditable="true" x-ref="editorContent"
+             data-placeholder="Commencez à écrire..."
+             @input="scheduleAutosave()"
+             @keydown.enter="handleEditorEnter($event)"
+             @keydown.backspace="handleEditorBackspace($event)"></div>
+    </div>
 
     <!-- ═══ CREATE MODAL ═══ -->
     <template x-if="showCreateModal">
@@ -292,24 +305,46 @@ document.addEventListener('alpine:init', () => {
         },
 
         openNote(note) {
-            this.activeNote = { ...note };
+            this.activeNote = JSON.parse(JSON.stringify(note));
             this.$nextTick(() => {
                 const el = this.$refs.editorContent;
-                if (el) el.innerHTML = note.content || '';
+                if (el) {
+                    el.innerHTML = note.content || '';
+                    el.focus();
+                }
             });
         },
 
-        closeEditor() {
-            this.doAutosave();
-            clearTimeout(this.autosaveTimer);
-            const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
+        async closeEditor() {
+            if (!this.activeNote) return;
+
+            // Read content from DOM BEFORE we clear anything
+            const el = this.$refs.editorContent;
+            const content = el ? el.innerHTML : '';
+            const noteId = this.activeNote._id;
+            const title = this.activeNote.title;
+
+            // Update the notes array locally
+            const idx = this.notes.findIndex(n => n._id === noteId);
             if (idx !== -1) {
-                this.notes[idx] = { ...this.activeNote };
-                const el = this.$refs.editorContent;
-                if (el) this.notes[idx].content = el.innerHTML;
+                this.notes[idx].title = title;
+                this.notes[idx].content = content;
+                this.notes[idx].updatedAt = new Date().toISOString();
             }
+
+            // Clear editor state
+            clearTimeout(this.autosaveTimer);
             this.activeNote = null;
             this.saveStatus = '';
+
+            // Save to server in background (no dependency on activeNote or refs)
+            try {
+                await fetch(_apiBase + '/' + noteId, {
+                    method: 'PUT', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+            } catch (e) { console.error('[Notes] Save on close error:', e); }
         },
 
         scheduleAutosave() {
@@ -319,38 +354,59 @@ document.addEventListener('alpine:init', () => {
         },
 
         async doAutosave() {
-            if (!this.activeNote) return;
+            if (!this.activeNote || !this.activeNote._id) return;
             this.saveStatus = 'saving';
             const el = this.$refs.editorContent;
             const content = el ? el.innerHTML : '';
+            const noteId = this.activeNote._id;
+            const title = this.activeNote.title;
             try {
-                await fetch(_apiBase + '/' + this.activeNote._id, {
+                await fetch(_apiBase + '/' + noteId, {
                     method: 'PUT', credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title: this.activeNote.title,
-                        content: content
-                    })
+                    body: JSON.stringify({ title, content })
                 });
-                this.saveStatus = 'saved';
-                const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
-                if (idx !== -1) {
-                    this.notes[idx].title = this.activeNote.title;
-                    this.notes[idx].content = content;
-                    this.notes[idx].updatedAt = new Date().toISOString();
+                // Guard: activeNote may have been cleared during fetch
+                if (this.activeNote && this.activeNote._id === noteId) {
+                    this.saveStatus = 'saved';
+                    const idx = this.notes.findIndex(n => n._id === noteId);
+                    if (idx !== -1) {
+                        this.notes[idx].title = title;
+                        this.notes[idx].content = content;
+                        this.notes[idx].updatedAt = new Date().toISOString();
+                    }
+                    setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
                 }
-                setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
             } catch (e) {
                 console.error('[Notes] Autosave error:', e);
-                this.saveStatus = '';
+                if (this.activeNote) this.saveStatus = '';
             }
         },
 
         async deleteNote(note) {
             if (!confirm('Supprimer cette note ?')) return;
             try {
-                await fetch(_apiBase + '/' + note._id, { method: 'DELETE', credentials: 'include' });
-                this.notes = this.notes.filter(n => n._id !== note._id);
+                const res = await fetch(_apiBase + '/' + note._id, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) {
+                    this.notes = this.notes.filter(n => n._id !== note._id);
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    console.error('[Notes] Delete failed:', res.status, data);
+                }
+            } catch (e) { console.error('[Notes] Delete error:', e); }
+        },
+
+        async deleteActiveNote() {
+            if (!this.activeNote) return;
+            const noteId = this.activeNote._id;
+            const noteTitle = this.activeNote.title || 'Sans titre';
+            if (!confirm('Supprimer la note "' + noteTitle + '" ?')) return;
+            clearTimeout(this.autosaveTimer);
+            this.activeNote = null;
+            this.saveStatus = '';
+            this.notes = this.notes.filter(n => n._id !== noteId);
+            try {
+                await fetch(_apiBase + '/' + noteId, { method: 'DELETE', credentials: 'include' });
             } catch (e) { console.error('[Notes] Delete error:', e); }
         },
 
@@ -369,7 +425,6 @@ document.addEventListener('alpine:init', () => {
 
         exec(cmd, val) {
             document.execCommand(cmd, false, val || null);
-            this.$refs.editorContent?.focus();
             this.scheduleAutosave();
         },
 
@@ -379,15 +434,100 @@ document.addEventListener('alpine:init', () => {
             } else {
                 document.execCommand('hiliteColor', false, color);
             }
-            this.$refs.editorContent?.focus();
             this.scheduleAutosave();
         },
 
         insertCheckbox() {
-            document.execCommand('insertHTML', false,
-                '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:4px 0"><input type="checkbox" style="width:16px;height:16px;accent-color:#8b5cf6"> <span>Tâche</span></label>');
-            this.$refs.editorContent?.focus();
+            const html = '<div class="note-checklist-item" contenteditable="false">' +
+                '<input type="checkbox" onclick="event.stopPropagation()">' +
+                '<span class="note-checklist-text" contenteditable="true">Tâche</span>' +
+                '<button class="note-checklist-delete" contenteditable="false" onclick="this.parentElement.remove()" title="Supprimer">×</button>' +
+                '</div><div><br></div>';
+            document.execCommand('insertHTML', false, html);
             this.scheduleAutosave();
+        },
+
+        handleEditorEnter(e) {
+            const sel = window.getSelection();
+            if (!sel || !sel.anchorNode) return;
+            const node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+            const checkItem = node?.closest('.note-checklist-item');
+            if (checkItem) {
+                e.preventDefault();
+                // If text is empty (just zero-width space or blank), remove item and exit checklist
+                const textSpan = checkItem.querySelector('.note-checklist-text');
+                const text = textSpan ? textSpan.textContent.replace(/\u200B/g, '').trim() : '';
+                if (!text) {
+                    // Remove the empty checklist item and insert a normal paragraph
+                    const newP = document.createElement('div');
+                    newP.innerHTML = '<br>';
+                    checkItem.parentNode.insertBefore(newP, checkItem.nextSibling);
+                    checkItem.remove();
+                    const range = document.createRange();
+                    range.setStart(newP, 0);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    this.scheduleAutosave();
+                    return;
+                }
+                const newItem = '<div class="note-checklist-item" contenteditable="false">' +
+                    '<input type="checkbox" onclick="event.stopPropagation()">' +
+                    '<span class="note-checklist-text" contenteditable="true">\u200B</span>' +
+                    '<button class="note-checklist-delete" contenteditable="false" onclick="this.parentElement.remove()" title="Supprimer">×</button>' +
+                    '</div>';
+                checkItem.insertAdjacentHTML('afterend', newItem);
+                const nextItem = checkItem.nextElementSibling;
+                if (nextItem) {
+                    const span = nextItem.querySelector('.note-checklist-text');
+                    if (span) {
+                        const range = document.createRange();
+                        range.selectNodeContents(span);
+                        range.collapse(false);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                }
+                this.scheduleAutosave();
+            }
+        },
+
+        handleEditorBackspace(e) {
+            const sel = window.getSelection();
+            if (!sel || !sel.anchorNode) return;
+            const node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+            const checkItem = node?.closest('.note-checklist-item');
+            if (checkItem) {
+                const textSpan = checkItem.querySelector('.note-checklist-text');
+                const text = textSpan ? textSpan.textContent.replace(/\u200B/g, '').trim() : '';
+                if (!text) {
+                    e.preventDefault();
+                    // Focus previous checklist item or create a normal line
+                    const prev = checkItem.previousElementSibling;
+                    if (prev && prev.classList.contains('note-checklist-item')) {
+                        const prevSpan = prev.querySelector('.note-checklist-text');
+                        if (prevSpan) {
+                            const range = document.createRange();
+                            range.selectNodeContents(prevSpan);
+                            range.collapse(false);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        }
+                    } else {
+                        // Insert a normal div before and focus it
+                        const newP = document.createElement('div');
+                        newP.innerHTML = '<br>';
+                        checkItem.parentNode.insertBefore(newP, checkItem);
+                        const range = document.createRange();
+                        range.setStart(newP, 0);
+                        range.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                    checkItem.remove();
+                    this.scheduleAutosave();
+                }
+            }
         },
 
         getPreview(html) {

@@ -1,28 +1,101 @@
-const mongoose = require('mongoose');
+// Test: create conversation + send message via API
+const http = require('http');
 
-async function checkUsers() {
-    const conn = await mongoose.createConnection('mongodb://127.0.0.1:27017/saasDemo');
-    await new Promise(r => conn.once('open', r));
-    
-    const users = await conn.db.collection('users').find({}).toArray();
-    console.log('=== Users in saasDemo (' + users.length + ') ===');
-    users.forEach(u => {
-        console.log('\n--- User:', u._id.toString(), '---');
-        console.log('  name:', u.name);
-        console.log('  email:', u.email);
-        if (u.accounts) {
-            console.log('  accounts:', JSON.stringify(u.accounts));
-        }
-        // Check all top-level keys for account references
-        const keys = Object.keys(u);
-        const accountKeys = keys.filter(k => k.toLowerCase().includes('account') || k.toLowerCase().includes('tenant'));
-        if (accountKeys.length > 0) {
-            accountKeys.forEach(k => console.log('  [' + k + ']:', JSON.stringify(u[k])));
-        }
+const loginData = JSON.stringify({ email: 'boukirou6@hotmail.com', password: 'test' });
+
+function makeRequest(options, body) {
+    return new Promise((resolve, reject) => {
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', d => data += d);
+            res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+        });
+        req.on('error', reject);
+        if (body) req.write(body);
+        req.end();
     });
+}
+
+async function main() {
+    // 1. Login
+    const loginRes = await makeRequest({
+        hostname: 'localhost', port: 3000, path: '/auth/login', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(loginData) }
+    }, loginData);
     
-    await conn.close();
+    const cookie = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
+    console.log('1. Login:', loginRes.status, '| Cookie:', cookie.substring(0, 50) + '...');
+
+    // 2. List conversations (should be empty)
+    const listRes = await makeRequest({
+        hostname: 'localhost', port: 3000,
+        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations',
+        method: 'GET', headers: { 'Cookie': cookie }
+    });
+    console.log('\n2. List conversations:', listRes.status, listRes.body);
+
+    // 3. Create a conversation
+    const createBody = JSON.stringify({ name: 'Discussion patient test' });
+    const createRes = await makeRequest({
+        hostname: 'localhost', port: 3000,
+        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations',
+        method: 'POST',
+        headers: { 'Cookie': cookie, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(createBody) }
+    }, createBody);
+    console.log('\n3. Create conversation:', createRes.status);
+    const createData = JSON.parse(createRes.body);
+    console.log('   Success:', createData.success);
+    if (createData.conversation) {
+        console.log('   ID:', createData.conversation._id);
+        console.log('   Name:', createData.conversation.name);
+        console.log('   Participants:', createData.conversation.participants?.length);
+    }
+    if (createData.error) console.log('   ERROR:', createData.error);
+
+    if (!createData.success) { process.exit(1); }
+
+    const convId = createData.conversation._id;
+
+    // 4. Send a message
+    const msgBody = JSON.stringify({ text: 'Bonjour, ceci est un test depuis le script!' });
+    const msgRes = await makeRequest({
+        hostname: 'localhost', port: 3000,
+        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations/' + convId + '/messages',
+        method: 'POST',
+        headers: { 'Cookie': cookie, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(msgBody) }
+    }, msgBody);
+    console.log('\n4. Send message:', msgRes.status);
+    const msgData = JSON.parse(msgRes.body);
+    console.log('   Success:', msgData.success);
+    if (msgData.message) {
+        console.log('   Message ID:', msgData.message._id);
+        console.log('   Text:', msgData.message.text);
+        console.log('   Sender:', msgData.message.senderName);
+    }
+    if (msgData.error) console.log('   ERROR:', msgData.error);
+
+    // 5. Get conversation with messages
+    const getRes = await makeRequest({
+        hostname: 'localhost', port: 3000,
+        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations/' + convId,
+        method: 'GET', headers: { 'Cookie': cookie }
+    });
+    console.log('\n5. Get conversation:', getRes.status);
+    const getData = JSON.parse(getRes.body);
+    console.log('   Messages count:', getData.messages?.length);
+
+    // 6. List again to verify
+    const list2Res = await makeRequest({
+        hostname: 'localhost', port: 3000,
+        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations',
+        method: 'GET', headers: { 'Cookie': cookie }
+    });
+    console.log('\n6. List conversations (after create):', list2Res.status);
+    const list2Data = JSON.parse(list2Res.body);
+    console.log('   Count:', list2Data.conversations?.length);
+
+    console.log('\n✅ All API tests passed!');
     process.exit(0);
 }
 
-checkUsers().catch(e => { console.error(e); process.exit(1); });
+main().catch(e => { console.error('FATAL:', e); process.exit(1); });

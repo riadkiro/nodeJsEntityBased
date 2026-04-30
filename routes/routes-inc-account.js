@@ -41,6 +41,9 @@ router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
 
+// Record Chat API (conversations + messages per record)
+require('./api/api-record-chat.router')(router);
+
 // React Islands API (JSON endpoints)
 router.use("/", require("./api.routes.js"));
 

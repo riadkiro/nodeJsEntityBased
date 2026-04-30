@@ -1992,47 +1992,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         </div>
         <% } %>
 
-        <% if (moduleName === 'chat') { %>
-        <div class="rm-items-list">
-            
-            <div class="rm-item" style="animation-delay:0ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f9731615,#f9731608)">
-                    <iconify-icon icon="solar:chat-round-bold-duotone" width="20" style="color:#f97316"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Résultats d'analyses à discuter</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> Il y a 2h</div>
-                </div>
-                <span class="rm-item-badge" style="background:#f9731615;color:#f97316">3 messages</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:60ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f9731615,#f9731608)">
-                    <iconify-icon icon="solar:chat-round-bold-duotone" width="20" style="color:#f97316"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Question posologie traitement</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> Hier</div>
-                </div>
-                <span class="rm-item-badge" style="background:#f9731615;color:#f97316">5 messages</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:120ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f9731615,#f9731608)">
-                    <iconify-icon icon="solar:chat-round-bold-duotone" width="20" style="color:#f97316"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Suivi post-consultation</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 22/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280">2 messages</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-        </div>
-        <% } %>
-
         <% if (moduleName === 'tasks') { %>
         <%- include('../record/partials/record-tasks-module') %>
         <% } %>

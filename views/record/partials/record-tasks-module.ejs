@@ -13,6 +13,7 @@
     /* ─── List cards ─── */
     .tl-grid { display: flex; flex-direction: column; gap: 4px; position: relative; }
     .tl-card.tl-card-expanded { z-index: 10; overflow: visible; }
+    .tl-card.tl-card-menu-open { z-index: 50; }
     .tl-card {
         display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
         padding: 14px 18px; border-radius: 12px;
@@ -48,10 +49,36 @@
         display: flex; align-items: center; gap: 8px;
         padding: 5px 0; font-size: 12.5px; color: #475569;
         border-radius: 6px; transition: background 0.15s;
+        position: relative;
     }
     .tl-preview-item:hover { background: #f8fafc; margin: 0 -6px; padding: 5px 6px; }
     .tl-preview-item.done { color: #94a3b8; }
     .tl-preview-item.done .tl-preview-title { text-decoration: line-through; }
+    .tl-preview-drag {
+        width: 14px; height: 14px; flex-shrink: 0; cursor: grab;
+        color: #d1d5db; opacity: 0; transition: opacity 0.15s;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .tl-preview-item:hover .tl-preview-drag { opacity: 1; }
+    .tl-preview-item.dragging { opacity: 0.4; }
+    .tl-preview-item.drag-over { border-top: 2px solid #4361ee; margin-top: -2px; }
+    /* Task context menu */
+    .tl-task-ctx {
+        position: fixed; z-index: 100;
+        min-width: 140px; padding: 4px;
+        background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .tl-task-ctx button {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 12px; border-radius: 7px; font-size: 12px;
+        font-weight: 500; cursor: pointer; transition: background 0.15s;
+        border: none; background: none; width: 100%; text-align: left;
+        font-family: inherit; color: #0e1726;
+    }
+    .tl-task-ctx button:hover { background: #f1f5f9; }
+    .tl-task-ctx .tl-ctx-delete { color: #ef4444; }
+    .tl-task-ctx .tl-ctx-delete:hover { background: #fef2f2; }
     .tl-preview-check {
         width: 15px; height: 15px; border-radius: 4px;
         border: 1.5px solid #d1d5db; flex-shrink: 0;
@@ -290,9 +317,12 @@
     [data-theme="dark"] .tl-preview-add input { color: #e0e6ed; }
     [data-theme="dark"] .tl-preview-item:hover { background: #1b2e4b; }
     [data-theme="dark"] .tl-preview-edit { background: #1b2e4b; border-color: #4361ee; color: #e0e6ed; }
+    [data-theme="dark"] .tl-task-ctx { background: #1b2e4b; border-color: #253b5c; }
+    [data-theme="dark"] .tl-task-ctx button { color: #e0e6ed; }
+    [data-theme="dark"] .tl-task-ctx button:hover { background: #253b5c; }
 </style>
 
-<div class="tl-wrap" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null" @contextmenu.prevent>
+<div class="tl-wrap" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null" @contextmenu.prevent>
 
     <!-- ════════ VIEW 1: LISTS ════════ -->
     <template x-if="!activeList">
@@ -315,7 +345,7 @@
             <!-- List cards -->
             <div class="tl-grid" x-show="!loading">
                 <template x-for="(list, idx) in lists" :key="list._id">
-                    <div class="tl-card" :class="{'tl-card-expanded': expandedListIds.includes(list._id)}" :style="'animation-delay:' + idx * 50 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
+                    <div class="tl-card" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === list._id}" :style="'animation-delay:' + idx * 50 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
                         <div style="display:flex;align-items:center;gap:14px;width:100%" @click="if(editingListId !== list._id) toggleExpand(list._id)">
                             <div class="tl-card-icon" :style="'background:' + list.color + '12'">
                                 <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" :style="'color:' + list.color"></iconify-icon>
@@ -343,8 +373,17 @@
 
                         <!-- Expandable task preview -->
                         <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
-                            <template x-for="pt in (list.tasks || [])" :key="pt._id">
-                                <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé'}">
+                            <template x-for="(pt, ptIdx) in (list.tasks || [])" :key="pt._id">
+                                <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé', 'dragging': dragTaskId === pt._id, 'drag-over': dragOverTaskId === pt._id}"
+                                     draggable="true"
+                                     @dragstart="dragTaskId = pt._id; dragTaskListId = list._id; $event.dataTransfer.effectAllowed = 'move'"
+                                     @dragend="dragTaskId = null; dragOverTaskId = null"
+                                     @dragover.prevent="$event.dataTransfer.dropEffect = 'move'"
+                                     @dragenter.prevent="if(dragTaskId && dragTaskId !== pt._id) dragOverTaskId = pt._id"
+                                     @dragleave="if(dragOverTaskId === pt._id) dragOverTaskId = null"
+                                     @drop.prevent="previewReorder(list, pt._id)"
+                                     @contextmenu.prevent.stop="openTaskCtx($event, list, pt)">
+                                    <iconify-icon icon="solar:hamburger-menu-linear" width="12" class="tl-preview-drag"></iconify-icon>
                                     <div class="tl-preview-check" :class="{'checked': pt.status === 'Terminé'}" @click="previewToggle(list, pt)">
                                         <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                     </div>
@@ -359,7 +398,7 @@
                                         <span class="tl-preview-status"
                                               :style="'background:' + (pt.statusColor||'#9ca3af') + '12;color:' + (pt.statusColor||'#9ca3af')"
                                               x-text="pt.status || 'À faire'"
-                                              @click="previewStatusMenu = previewStatusMenu === pt._id ? null : pt._id"></span>
+                                              @click="previewStatusMenu = previewStatusMenu === pt._id ? null : pt._id; previewStatusListId = previewStatusMenu ? list._id : null"></span>
                                         <div class="tl-preview-smenu" x-show="previewStatusMenu === pt._id" x-cloak @click.stop>
                                             <template x-for="s in statuses" :key="s.label">
                                                 <button @click="previewSetStatus(list, pt, s.label); previewStatusMenu = null">
@@ -556,6 +595,20 @@
             Supprimer
         </button>
     </div>
+
+    <!-- ════════ TASK CONTEXT MENU ════════ -->
+    <div class="tl-task-ctx" x-show="taskCtx" x-cloak
+         :style="taskCtx ? 'left:' + taskCtx.x + 'px;top:' + taskCtx.y + 'px' : ''"
+         @click.stop>
+        <button @click="taskCtxRename()">
+            <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
+            Renommer
+        </button>
+        <button class="tl-ctx-delete" @click="taskCtxDelete()">
+            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+            Supprimer
+        </button>
+    </div>
 </div>
 
 <script>
@@ -578,8 +631,13 @@ document.addEventListener('alpine:init', () => {
         expandedListIds: [],
         previewNewTask: '',
         previewStatusMenu: null,
+        previewStatusListId: null,
         previewEditId: null,
         previewEditTitle: '',
+        taskCtx: null,
+        dragTaskId: null,
+        dragTaskListId: null,
+        dragOverTaskId: null,
         ctxColors: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6b7280'],
         statuses: [
             { label: 'À faire',  color: '#9ca3af' },
@@ -726,6 +784,58 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (!data.success) pt.title = oldTitle;
             } catch (e) { pt.title = oldTitle; console.error('[TaskLists] Preview rename error:', e); }
+        },
+
+        openTaskCtx(e, list, pt) {
+            this.taskCtx = { x: e.clientX, y: e.clientY, list, task: pt };
+            this.ctxMenu = null;
+        },
+
+        taskCtxRename() {
+            if (!this.taskCtx) return;
+            const pt = this.taskCtx.task;
+            this.taskCtx = null;
+            this.previewStartEdit(pt);
+        },
+
+        async taskCtxDelete() {
+            if (!this.taskCtx) return;
+            const { list, task } = this.taskCtx;
+            this.taskCtx = null;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${task._id}`, {
+                    method: 'DELETE', credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    list.tasks = (list.tasks || []).filter(t => t._id !== task._id);
+                    list.count = Math.max(0, (list.count || 1) - 1);
+                    if (task.status === 'Terminé') list.doneCount = Math.max(0, (list.doneCount || 1) - 1);
+                }
+            } catch (e) { console.error('[TaskLists] Delete task error:', e); }
+        },
+
+        async previewReorder(list, targetId) {
+            if (!this.dragTaskId || this.dragTaskId === targetId || this.dragTaskListId !== list._id) return;
+            const tasks = list.tasks || [];
+            const fromIdx = tasks.findIndex(t => t._id === this.dragTaskId);
+            const toIdx = tasks.findIndex(t => t._id === targetId);
+            if (fromIdx < 0 || toIdx < 0) return;
+
+            const [moved] = tasks.splice(fromIdx, 1);
+            tasks.splice(toIdx, 0, moved);
+            this.dragTaskId = null;
+            this.dragOverTaskId = null;
+
+            // Persist order
+            try {
+                await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ taskIds: tasks.map(t => t._id) })
+                });
+            } catch (e) { console.error('[TaskLists] Reorder error:', e); }
         },
 
         async openList(list) {

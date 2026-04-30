@@ -896,6 +896,8 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
             const listTasks = tasks.filter(t => t.taskListId.toString() === l._id.toString())
             // Sort: active first (by createdAt desc), then done
             const sorted = listTasks.sort((a, b) => {
+                // Sort by explicit order if set, otherwise by status then date
+                if (a.order != null && b.order != null) return a.order - b.order
                 const aD = a.status === 'Terminé' ? 1 : 0
                 const bD = b.status === 'Terminé' ? 1 : 0
                 if (aD !== bD) return aD - bD
@@ -1111,6 +1113,27 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
         res.json({ success: true })
     } catch (error) {
         console.error('[API] Delete task error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/task-lists/:listId/reorder
+ * Reorder tasks in a list
+ */
+router.post('/api/task-lists/:listId/reorder', async (req, res) => {
+    try {
+        const { taskIds } = req.body
+        if (!Array.isArray(taskIds)) return res.status(400).json({ error: 'taskIds array required' })
+
+        const bulkOps = taskIds.map((id, index) => ({
+            updateOne: { filter: { _id: id }, update: { $set: { order: index } } }
+        }))
+        if (bulkOps.length > 0) await RecordTask.bulkWrite(bulkOps)
+
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Reorder tasks error:', error)
         res.status(500).json({ error: error.message })
     }
 })

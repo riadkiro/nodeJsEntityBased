@@ -1,0 +1,926 @@
+<%# ═══ TASKS MODULE — Two-level: Lists → Tasks ═══ %>
+<style>
+    .tl-wrap { max-width: 720px; }
+    /* ─── Back button ─── */
+    .tl-back {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 12px; font-weight: 600; color: #94a3b8;
+        cursor: pointer; padding: 6px 12px; border-radius: 8px;
+        border: none; background: none; margin-bottom: 12px;
+        transition: all 0.2s;
+    }
+    .tl-back:hover { color: #4361ee; background: #4361ee08; }
+    /* ─── List cards ─── */
+    .tl-grid { display: flex; flex-direction: column; gap: 4px; position: relative; }
+    .tl-card.tl-card-expanded { z-index: 10; overflow: visible; }
+    .tl-card {
+        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        padding: 14px 18px; border-radius: 12px;
+        background: #fff; border: 1px solid #f1f3f5;
+        cursor: pointer; transition: all 0.25s;
+        animation: rmFadeIn 0.4s ease both;
+        position: relative; z-index: 1;
+    }
+    .tl-card:hover { border-color: #e0e6ed; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transform: translateX(2px); }
+    .tl-card-icon {
+        width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .tl-card-body { flex: 1; min-width: 0; }
+    .tl-card-name { font-size: 14px; font-weight: 600; color: #0e1726; }
+    .tl-card-count {
+        font-size: 11px; color: #94a3b8; margin-top: 1px;
+    }
+    .tl-card-arrow { color: #d1d5db; transition: color 0.2s; flex-shrink: 0; }
+    .tl-card:hover .tl-card-arrow { color: #4361ee; }
+    .tl-card-progress {
+        width: 60px; height: 4px; border-radius: 2px;
+        background: #f1f3f5; overflow: hidden; flex-shrink: 0;
+    }
+    .tl-card-progress-bar { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    /* ─── Preview tasks inside cards ─── */
+    .tl-card-preview {
+        padding: 6px 0 4px 46px;
+        border-top: 1px solid #f1f3f5; margin-top: 10px;
+        width: 100%;
+    }
+    .tl-preview-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 5px 0; font-size: 12.5px; color: #475569;
+        border-radius: 6px; transition: background 0.15s;
+    }
+    .tl-preview-item:hover { background: #f8fafc; margin: 0 -6px; padding: 5px 6px; }
+    .tl-preview-item.done { color: #94a3b8; }
+    .tl-preview-item.done .tl-preview-title { text-decoration: line-through; }
+    .tl-preview-check {
+        width: 15px; height: 15px; border-radius: 4px;
+        border: 1.5px solid #d1d5db; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .tl-preview-check:hover { border-color: #10b981; transform: scale(1.1); }
+    .tl-preview-item.done .tl-preview-check {
+        background: #10b981; border-color: #10b981;
+    }
+    .tl-preview-check svg { width: 9px; height: 9px; color: #fff; opacity: 0; transition: opacity 0.15s; }
+    .tl-preview-check.checked svg { opacity: 1; }
+    .tl-preview-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; cursor: default; }
+    .tl-preview-edit {
+        flex: 1; min-width: 0; border: 1px solid #4361ee; outline: none;
+        border-radius: 4px; padding: 1px 5px; font-size: 12px;
+        font-family: inherit; font-weight: 500; background: #fff;
+    }
+    .tl-preview-status {
+        font-size: 9px; font-weight: 700; padding: 2px 7px;
+        border-radius: 5px; flex-shrink: 0; letter-spacing: 0.2px;
+        cursor: pointer; position: relative; transition: opacity 0.2s;
+    }
+    .tl-preview-status:hover { opacity: 0.75; }
+    .tl-card-toggle {
+        color: #d1d5db; transition: all 0.25s; flex-shrink: 0; cursor: pointer;
+    }
+    .tl-card:hover .tl-card-toggle { color: #4361ee; }
+    .tl-card-toggle.expanded { transform: rotate(90deg); }
+    .tl-preview-add {
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 0 2px;
+    }
+    .tl-preview-add input {
+        flex: 1; border: none; outline: none; background: none;
+        font-size: 11.5px; font-family: inherit; color: #0e1726;
+        padding: 2px 0;
+    }
+    .tl-preview-add input::placeholder { color: #bfc9d4; }
+    .tl-preview-empty {
+        font-size: 11.5px; color: #bfc9d4; padding: 4px 0;
+        font-style: italic;
+    }
+    /* Preview status menu (reuse tl-status-menu styles) */
+    .tl-preview-status-wrap { position: relative; }
+    .tl-preview-smenu {
+        position: absolute; top: 100%; right: 0; z-index: 80;
+        min-width: 120px; padding: 3px;
+        background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        margin-top: 2px;
+    }
+    .tl-preview-smenu button {
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 8px; border-radius: 6px; font-size: 11px;
+        font-weight: 500; cursor: pointer; transition: background 0.15s;
+        border: none; background: none; width: 100%; text-align: left;
+        font-family: inherit; color: #0e1726;
+    }
+    .tl-preview-smenu button:hover { background: #f1f5f9; }
+    .tl-preview-sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    /* ─── Add list input ─── */
+    .tl-add {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 18px; border-radius: 12px;
+        border: 1.5px dashed #e0e6ed; background: #fff;
+        transition: all 0.25s; margin-top: 4px;
+    }
+    .tl-add:focus-within { border-color: #4361ee; border-style: solid; box-shadow: 0 0 0 3px #4361ee10; }
+    .tl-add input {
+        flex: 1; border: none; outline: none; background: none;
+        font-size: 13px; font-family: inherit; color: #0e1726;
+    }
+    .tl-add input::placeholder { color: #bfc9d4; }
+    .tl-add-btn {
+        padding: 5px 14px; border-radius: 8px; border: none;
+        background: linear-gradient(135deg, #4361ee, #4361eedd);
+        color: #fff; font-size: 12px; font-weight: 600;
+        cursor: pointer; transition: all 0.2s; font-family: inherit;
+        opacity: 0; pointer-events: none;
+    }
+    .tl-add:focus-within .tl-add-btn { opacity: 1; pointer-events: auto; }
+    .tl-add-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px #4361ee40; }
+    /* ─── Task items inside a list ─── */
+    .tl-task {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 16px; border-radius: 10px;
+        background: #fff; border: 1px solid transparent;
+        transition: all 0.2s; animation: rmFadeIn 0.3s ease both;
+        position: relative;
+    }
+    .tl-task.has-menu-open { z-index: 60; }
+    .tl-task:hover { background: #f8fafc; border-color: #f1f3f5; }
+    .tl-task.done .tl-task-title { text-decoration: line-through; color: #94a3b8; }
+    .tl-task-check {
+        width: 20px; height: 20px; border-radius: 6px;
+        border: 2px solid #d1d5db; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .tl-task-check:hover { border-color: #10b981; }
+    .tl-task-check.checked { background: #10b981; border-color: #10b981; }
+    .tl-task-check svg { width: 12px; height: 12px; color: #fff; opacity: 0; transition: opacity 0.15s; }
+    .tl-task-check.checked svg { opacity: 1; }
+    .tl-task-body { flex: 1; min-width: 0; }
+    .tl-task-title { font-size: 13.5px; font-weight: 500; color: #0e1726; transition: all 0.3s; }
+    .tl-task-status {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 10px; border-radius: 6px;
+        font-size: 10px; font-weight: 700; flex-shrink: 0;
+        cursor: pointer; position: relative;
+    }
+    .tl-task-delete {
+        width: 24px; height: 24px; border: none; background: none;
+        border-radius: 6px; color: #d1d5db; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s; opacity: 0; flex-shrink: 0;
+    }
+    .tl-task:hover .tl-task-delete { opacity: 1; }
+    .tl-task-delete:hover { background: #fef2f2; color: #ef4444; }
+    /* ─── Status dropdown ─── */
+    .tl-status-menu {
+        position: absolute; top: 100%; right: 0; z-index: 50;
+        min-width: 140px; padding: 4px;
+        background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        margin-top: 4px;
+    }
+    .tl-status-opt {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 10px; border-radius: 7px; font-size: 12px;
+        font-weight: 500; cursor: pointer; transition: background 0.15s;
+        border: none; background: none; width: 100%; text-align: left;
+        font-family: inherit; color: #0e1726;
+    }
+    .tl-status-opt:hover { background: #f1f5f9; }
+    .tl-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    /* ─── Empty ─── */
+    .tl-empty {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 48px 20px; text-align: center;
+    }
+    /* ─── Section header ─── */
+    .tl-section {
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.6px; color: #94a3b8; padding: 10px 16px 4px;
+    }
+    .tl-section-count {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 18px; height: 18px; padding: 0 5px;
+        border-radius: 9px; font-size: 10px; font-weight: 700; margin-left: 4px;
+    }
+    /* ─── Task add (inside list) ─── */
+    .tl-task-add {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 16px; border-radius: 10px;
+        border: 1.5px dashed #e8ecf1; margin-bottom: 8px;
+        transition: all 0.25s;
+    }
+    .tl-task-add:focus-within { border-color: #10b981; border-style: solid; box-shadow: 0 0 0 3px #10b98110; }
+    .tl-task-add input {
+        flex: 1; border: none; outline: none; background: none;
+        font-size: 13px; font-family: inherit; color: #0e1726;
+    }
+    .tl-task-add input::placeholder { color: #bfc9d4; }
+    .tl-task-add-btn {
+        padding: 4px 12px; border-radius: 7px; border: none;
+        background: #10b981; color: #fff; font-size: 11px; font-weight: 600;
+        cursor: pointer; transition: all 0.2s; font-family: inherit;
+        opacity: 0; pointer-events: none;
+    }
+    .tl-task-add:focus-within .tl-task-add-btn { opacity: 1; pointer-events: auto; }
+    /* ─── Inline edit ─── */
+    .tl-inline-edit {
+        border: none; outline: none; background: #f8fafc;
+        font-size: inherit; font-weight: inherit; font-family: inherit;
+        color: inherit; padding: 2px 6px; border-radius: 6px;
+        width: 100%; box-sizing: border-box;
+        border: 1.5px solid #4361ee; background: #fff;
+    }
+    .tl-inline-edit:focus { box-shadow: 0 0 0 3px #4361ee15; }
+    /* ─── Context menu ─── */
+    .tl-ctx {
+        position: fixed; z-index: 999;
+        min-width: 180px; padding: 5px;
+        background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+        animation: tlCtxIn 0.15s ease;
+    }
+    @keyframes tlCtxIn { from { opacity: 0; transform: scale(0.95) translateY(-4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .tl-ctx-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 12px; border-radius: 8px; font-size: 12.5px;
+        font-weight: 500; cursor: pointer; transition: background 0.15s;
+        border: none; background: none; width: 100%; text-align: left;
+        font-family: inherit; color: #0e1726;
+    }
+    .tl-ctx-item:hover { background: #f1f5f9; }
+    .tl-ctx-item.danger { color: #ef4444; }
+    .tl-ctx-item.danger:hover { background: #fef2f2; }
+    .tl-ctx-sep { height: 1px; background: #f1f3f5; margin: 4px 8px; }
+    .tl-ctx-colors {
+        display: flex; gap: 6px; padding: 6px 12px; flex-wrap: wrap;
+    }
+    .tl-ctx-color {
+        width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent;
+        cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+    }
+    .tl-ctx-color:hover { transform: scale(1.2); }
+    .tl-ctx-color.active { border-color: #0e1726; box-shadow: 0 0 0 2px #fff inset; }
+    /* ─── Dark mode ─── */
+    [data-theme="dark"] .tl-card { background: #0e1726; border-color: #253b5c; }
+    [data-theme="dark"] .tl-card:hover { border-color: #3b82f6; }
+    [data-theme="dark"] .tl-card-name { color: #e0e6ed; }
+    [data-theme="dark"] .tl-add { background: #0e1726; border-color: #253b5c; }
+    [data-theme="dark"] .tl-add input { color: #e0e6ed; }
+    [data-theme="dark"] .tl-task { background: #0e1726; }
+    [data-theme="dark"] .tl-task:hover { background: #1b2e4b; }
+    [data-theme="dark"] .tl-task-title { color: #e0e6ed; }
+    [data-theme="dark"] .tl-task.done .tl-task-title { color: #506690; }
+    [data-theme="dark"] .tl-status-menu { background: #1b2e4b; border-color: #253b5c; }
+    [data-theme="dark"] .tl-status-opt { color: #e0e6ed; }
+    [data-theme="dark"] .tl-status-opt:hover { background: #253b5c; }
+    [data-theme="dark"] .tl-inline-edit { background: #1b2e4b; border-color: #4361ee; color: #e0e6ed; }
+    [data-theme="dark"] .tl-ctx { background: #1b2e4b; border-color: #253b5c; }
+    [data-theme="dark"] .tl-ctx-item { color: #e0e6ed; }
+    [data-theme="dark"] .tl-ctx-item:hover { background: #253b5c; }
+    [data-theme="dark"] .tl-ctx-sep { background: #253b5c; }
+    [data-theme="dark"] .tl-card-preview { border-color: #253b5c; }
+    [data-theme="dark"] .tl-preview-item { color: #94a3b8; }
+    [data-theme="dark"] .tl-preview-title { color: #e0e6ed; }
+    [data-theme="dark"] .tl-preview-item.done .tl-preview-title { color: #506690; }
+    [data-theme="dark"] .tl-preview-smenu { background: #1b2e4b; border-color: #253b5c; }
+    [data-theme="dark"] .tl-preview-smenu button { color: #e0e6ed; }
+    [data-theme="dark"] .tl-preview-smenu button:hover { background: #253b5c; }
+    [data-theme="dark"] .tl-preview-add input { color: #e0e6ed; }
+    [data-theme="dark"] .tl-preview-item:hover { background: #1b2e4b; }
+    [data-theme="dark"] .tl-preview-edit { background: #1b2e4b; border-color: #4361ee; color: #e0e6ed; }
+</style>
+
+<div class="tl-wrap" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null" @contextmenu.prevent>
+
+    <!-- ════════ VIEW 1: LISTS ════════ -->
+    <template x-if="!activeList">
+        <div>
+            <!-- Add list -->
+            <div class="tl-add">
+                <iconify-icon icon="solar:add-circle-linear" width="18" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                <input type="text" placeholder="Nouvelle liste de tâches..."
+                       x-model="newListName"
+                       @keydown.enter="addList()"
+                       @keydown.escape="newListName = ''">
+                <button type="button" class="tl-add-btn" @click="addList()">Créer</button>
+            </div>
+
+            <!-- Loading -->
+            <div x-show="loading" style="text-align:center; padding:32px;">
+                <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
+            </div>
+
+            <!-- List cards -->
+            <div class="tl-grid" x-show="!loading">
+                <template x-for="(list, idx) in lists" :key="list._id">
+                    <div class="tl-card" :class="{'tl-card-expanded': expandedListIds.includes(list._id)}" :style="'animation-delay:' + idx * 50 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
+                        <div style="display:flex;align-items:center;gap:14px;width:100%" @click="if(editingListId !== list._id) toggleExpand(list._id)">
+                            <div class="tl-card-icon" :style="'background:' + list.color + '12'">
+                                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" :style="'color:' + list.color"></iconify-icon>
+                            </div>
+                            <div class="tl-card-body">
+                                <div class="tl-card-name" x-show="editingListId !== list._id" x-text="list.label"></div>
+                                <input x-show="editingListId === list._id" class="tl-inline-edit" style="font-size:14px;font-weight:600"
+                                       x-model="editListLabel"
+                                       @click.stop
+                                       @keydown.enter="saveListName(list)"
+                                       @keydown.escape="editingListId = null"
+                                       @blur="saveListName(list)">
+                                <div class="tl-card-count">
+                                    <span x-text="list.count"></span> tâche<span x-show="list.count !== 1">s</span>
+                                    <template x-if="list.doneCount > 0">
+                                        <span style="margin-left:4px;color:#10b981">· <span x-text="list.doneCount"></span> terminée<span x-show="list.doneCount !== 1">s</span></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="tl-card-progress" x-show="list.count > 0">
+                                <div class="tl-card-progress-bar" :style="'width:' + (list.count ? Math.round(list.doneCount/list.count*100) : 0) + '%;background:' + list.color"></div>
+                            </div>
+                            <iconify-icon icon="solar:alt-arrow-right-linear" width="16" class="tl-card-toggle" :class="{'expanded': expandedListIds.includes(list._id)}"></iconify-icon>
+                        </div>
+
+                        <!-- Expandable task preview -->
+                        <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
+                            <template x-for="pt in (list.tasks || [])" :key="pt._id">
+                                <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé'}">
+                                    <div class="tl-preview-check" :class="{'checked': pt.status === 'Terminé'}" @click="previewToggle(list, pt)">
+                                        <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </div>
+                                    <div class="tl-preview-title" x-show="previewEditId !== pt._id" x-text="pt.title" @dblclick.stop="previewStartEdit(pt)"></div>
+                                    <input x-show="previewEditId === pt._id" class="tl-preview-edit"
+                                           x-model="previewEditTitle"
+                                           @click.stop
+                                           @keydown.enter="previewSaveTitle(pt)"
+                                           @keydown.escape="previewEditId = null"
+                                           @blur="previewSaveTitle(pt)">
+                                    <div class="tl-preview-status-wrap">
+                                        <span class="tl-preview-status"
+                                              :style="'background:' + (pt.statusColor||'#9ca3af') + '12;color:' + (pt.statusColor||'#9ca3af')"
+                                              x-text="pt.status || 'À faire'"
+                                              @click="previewStatusMenu = previewStatusMenu === pt._id ? null : pt._id"></span>
+                                        <div class="tl-preview-smenu" x-show="previewStatusMenu === pt._id" x-cloak @click.stop>
+                                            <template x-for="s in statuses" :key="s.label">
+                                                <button @click="previewSetStatus(list, pt, s.label); previewStatusMenu = null">
+                                                    <span class="tl-preview-sdot" :style="'background:' + s.color"></span>
+                                                    <span x-text="s.label"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="list.count > 10">
+                                <div style="font-size:10.5px;color:#94a3b8;padding:4px 0 0;font-weight:500">+ <span x-text="list.count - 10"></span> autres tâches</div>
+                            </template>
+                            <template x-if="!list.tasks || list.tasks.length === 0">
+                                <div class="tl-preview-empty">Aucune tâche pour l'instant</div>
+                            </template>
+                            <!-- Quick add -->
+                            <div class="tl-preview-add">
+                                <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                                <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask"
+                                       @keydown.enter="previewAddTask(list)"
+                                       @keydown.escape="previewNewTask = ''">
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Empty -->
+            <div class="tl-empty" x-show="!loading && lists.length === 0">
+                <iconify-icon icon="solar:clipboard-list-bold-duotone" width="40" style="color:#d1d5db;margin-bottom:10px"></iconify-icon>
+                <span style="font-size:14px;font-weight:600;color:#94a3b8">Aucune liste</span>
+                <span style="font-size:12px;color:#bfc9d4;margin-top:2px">Créez une liste ci-dessus pour organiser vos tâches</span>
+            </div>
+        </div>
+    </template>
+
+    <!-- ════════ VIEW 2: TASKS INSIDE A LIST ════════ -->
+    <template x-if="activeList">
+        <div>
+            <!-- Back -->
+            <button class="tl-back" @click="activeList = null; tasks = [];">
+                <iconify-icon icon="solar:alt-arrow-left-linear" width="14"></iconify-icon>
+                Retour aux listes
+            </button>
+
+            <!-- List header -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                <div class="tl-card-icon" :style="'background:' + activeList.color + '12;width:28px;height:28px'">
+                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="16" :style="'color:' + activeList.color"></iconify-icon>
+                </div>
+                <span style="font-size:16px;font-weight:700;color:#0e1726" x-text="activeList.label"></span>
+                <span class="tl-section-count" :style="'background:' + activeList.color + '15;color:' + activeList.color" x-text="tasks.length"></span>
+            </div>
+
+            <!-- Add task -->
+            <div class="tl-task-add">
+                <div style="width:20px;height:20px;border-radius:6px;border:2px solid #d1d5db;flex-shrink:0"></div>
+                <input type="text" placeholder="Ajouter une tâche..."
+                       x-model="newTaskTitle"
+                       @keydown.enter="addTask()"
+                       @keydown.escape="newTaskTitle = ''">
+                <button type="button" class="tl-task-add-btn" @click="addTask()">
+                    <iconify-icon icon="solar:add-circle-bold" width="12" style="margin-right:2px"></iconify-icon>
+                    Ajouter
+                </button>
+            </div>
+
+            <!-- Loading -->
+            <div x-show="loadingTasks" style="text-align:center; padding:24px;">
+                <iconify-icon icon="line-md:loading-twotone-loop" width="22" style="color:#10b981"></iconify-icon>
+            </div>
+
+            <!-- Active tasks -->
+            <template x-if="!loadingTasks">
+                <div>
+                    <div class="tl-section" x-show="activeTasks.length > 0">
+                        À faire
+                        <span class="tl-section-count" style="background:#3b82f612;color:#3b82f6" x-text="activeTasks.length"></span>
+                    </div>
+                    <div class="tl-grid">
+                        <template x-for="task in activeTasks" :key="task._id">
+                            <div class="tl-task" :class="{'has-menu-open': statusMenuId === task._id}" @contextmenu.prevent.stop="openCtx($event, 'task', task)" :style="'animation-delay:' + activeTasks.indexOf(task)*30 + 'ms'">
+                                <div class="tl-task-check" @click.stop="toggleDone(task)">
+                                    <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <div class="tl-task-body">
+                                    <div class="tl-task-title" x-show="editingTaskId !== task._id" x-text="task.title"></div>
+                                    <input x-show="editingTaskId === task._id" class="tl-inline-edit" style="font-size:13.5px;font-weight:500"
+                                           x-model="editTaskTitle"
+                                           @click.stop
+                                           @keydown.enter="saveTaskName(task)"
+                                           @keydown.escape="editingTaskId = null"
+                                           @blur="saveTaskName(task)">
+                                </div>
+                                <div style="position:relative;z-index:1">
+                                    <span class="tl-task-status"
+                                          :style="'background:' + (task.statusColor||'#9ca3af') + '15;color:' + (task.statusColor||'#9ca3af')"
+                                          x-text="task.status || 'À faire'"
+                                          @click.stop="statusMenuId = statusMenuId === task._id ? null : task._id"></span>
+                                    <!-- Status dropdown -->
+                                    <div class="tl-status-menu" x-show="statusMenuId === task._id" x-cloak @click.stop>
+                                        <template x-for="s in statuses" :key="s.label">
+                                            <button class="tl-status-opt" @click="setStatus(task, s.label); statusMenuId = null">
+                                                <span class="tl-status-dot" :style="'background:' + s.color"></span>
+                                                <span x-text="s.label"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                                <button class="tl-task-delete" @click.stop="deleteTask(task._id)" title="Supprimer">
+                                    <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13"></iconify-icon>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Done tasks -->
+                    <div x-show="doneTasks.length > 0" style="margin-top:8px;">
+                        <div class="tl-section" style="cursor:pointer" @click="showDone = !showDone">
+                            Terminées
+                            <span class="tl-section-count" style="background:#10b98112;color:#10b981" x-text="doneTasks.length"></span>
+                            <iconify-icon :icon="showDone ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="12" style="margin-left:4px;vertical-align:middle"></iconify-icon>
+                        </div>
+                        <div class="tl-grid" x-show="showDone" x-collapse>
+                            <template x-for="task in doneTasks" :key="task._id">
+                                <div class="tl-task done">
+                                    <div class="tl-task-check checked" @click.stop="toggleDone(task)">
+                                        <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </div>
+                                    <div class="tl-task-body">
+                                        <div class="tl-task-title" x-text="task.title"></div>
+                                    </div>
+                                    <span class="tl-task-status" style="background:#10b98115;color:#10b981"
+                                          @click.stop="statusMenuId = statusMenuId === task._id ? null : task._id">Terminé</span>
+                                    <div style="position:relative">
+                                        <div class="tl-status-menu" x-show="statusMenuId === task._id" x-cloak @click.stop>
+                                            <template x-for="s in statuses" :key="s.label">
+                                                <button class="tl-status-opt" @click="setStatus(task, s.label); statusMenuId = null">
+                                                    <span class="tl-status-dot" :style="'background:' + s.color"></span>
+                                                    <span x-text="s.label"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <button class="tl-task-delete" @click.stop="deleteTask(task._id)" title="Supprimer">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13"></iconify-icon>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Empty -->
+                    <div class="tl-empty" x-show="tasks.length === 0">
+                        <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="36" style="color:#d1d5db;margin-bottom:8px"></iconify-icon>
+                        <span style="font-size:13px;font-weight:600;color:#94a3b8">Liste vide</span>
+                        <span style="font-size:12px;color:#bfc9d4;margin-top:2px">Ajoutez une tâche ci-dessus</span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- ════════ CONTEXT MENU ════════ -->
+    <div class="tl-ctx" x-show="ctxMenu" x-cloak
+         :style="ctxMenu ? 'left:' + ctxMenu.x + 'px;top:' + ctxMenu.y + 'px' : ''"
+         @click.stop>
+
+        <!-- Rename -->
+        <button class="tl-ctx-item" @click="ctxRename()">
+            <iconify-icon icon="solar:pen-2-linear" width="15"></iconify-icon>
+            Renommer
+        </button>
+
+        <!-- Color picker (lists only) -->
+        <template x-if="ctxMenu?.type === 'list'">
+            <div>
+                <div class="tl-ctx-sep"></div>
+                <div style="padding:4px 12px 2px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px">Couleur</div>
+                <div class="tl-ctx-colors">
+                    <template x-for="c in ctxColors" :key="c">
+                        <div class="tl-ctx-color" :class="{'active': ctxMenu?.target?.color === c}" :style="'background:' + c" @click="ctxChangeColor(c)"></div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Delete -->
+        <div class="tl-ctx-sep"></div>
+        <button class="tl-ctx-item danger" @click="ctxDelete()">
+            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="15"></iconify-icon>
+            Supprimer
+        </button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('recordTaskLists', () => ({
+        lists: [],
+        tasks: [],
+        activeList: null,
+        loading: true,
+        loadingTasks: false,
+        showDone: false,
+        newListName: '',
+        newTaskTitle: '',
+        statusMenuId: null,
+        editingListId: null,
+        editListLabel: '',
+        editingTaskId: null,
+        editTaskTitle: '',
+        ctxMenu: null,
+        expandedListIds: [],
+        previewNewTask: '',
+        previewStatusMenu: null,
+        previewEditId: null,
+        previewEditTitle: '',
+        ctxColors: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6b7280'],
+        statuses: [
+            { label: 'À faire',  color: '#9ca3af' },
+            { label: 'En cours', color: '#3b82f6' },
+            { label: 'En revue', color: '#f59e0b' },
+            { label: 'Terminé',  color: '#22c55e' },
+            { label: 'Bloqué',   color: '#ef4444' },
+        ],
+        _accountNumber: '<%= account_number %>',
+        _recordId: '<%= record._id %>',
+
+        get activeTasks() {
+            return this.tasks.filter(t => t.status !== 'Terminé');
+        },
+        get doneTasks() {
+            return this.tasks.filter(t => t.status === 'Terminé');
+        },
+
+        async init() {
+            await this.loadLists();
+        },
+
+        async loadLists() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    this.lists = data.lists || [];
+                    // Auto-create "Général" if no lists exist
+                    if (this.lists.length === 0) {
+                        const cr = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ label: 'Général', color: '#6366f1' })
+                        });
+                        const crData = await cr.json();
+                        if (crData.success && crData.list) {
+                            crData.list.tasks = [];
+                            this.lists.push(crData.list);
+                        }
+                    }
+                    if (this.lists.length > 0) this.expandedListIds = [this.lists[0]._id];
+                }
+            } catch (e) { console.error('[TaskLists] Load error:', e); }
+            this.loading = false;
+        },
+
+        async addList() {
+            if (!this.newListName.trim()) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ label: this.newListName.trim() })
+                });
+                const data = await res.json();
+                if (data.success && data.list) {
+                    this.lists.push(data.list);
+                    this.newListName = '';
+                }
+            } catch (e) { console.error('[TaskLists] Create error:', e); }
+        },
+
+        toggleExpand(listId) {
+            const idx = this.expandedListIds.indexOf(listId);
+            if (idx >= 0) { this.expandedListIds.splice(idx, 1); }
+            else { this.expandedListIds.push(listId); }
+            this.previewStatusMenu = null;
+        },
+
+        async previewToggle(list, pt) {
+            const isDone = pt.status === 'Terminé';
+            const newStatus = isDone ? 'À faire' : 'Terminé';
+            await this.previewSetStatus(list, pt, newStatus);
+        },
+
+        async previewSetStatus(list, pt, statusLabel) {
+            const statusColors = {
+                'À faire': '#9ca3af', 'En cours': '#3b82f6',
+                'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
+            };
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${pt._id}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: statusLabel })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    pt.status = data.status;
+                    pt.statusColor = data.statusColor;
+                    // Update counts
+                    list.doneCount = (list.tasks || []).filter(t => t.status === 'Terminé').length;
+                }
+            } catch (e) { console.error('[TaskLists] Preview status error:', e); }
+        },
+
+        async previewAddTask(list) {
+            if (!this.previewNewTask.trim()) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: this.previewNewTask.trim() })
+                });
+                const data = await res.json();
+                if (data.success && data.task) {
+                    if (!list.tasks) list.tasks = [];
+                    list.tasks.unshift(data.task);
+                    list.count = (list.count || 0) + 1;
+                    this.previewNewTask = '';
+                }
+            } catch (e) { console.error('[TaskLists] Preview add error:', e); }
+        },
+
+        previewStartEdit(pt) {
+            this.previewEditId = pt._id;
+            this.previewEditTitle = pt.title;
+            this.$nextTick(() => {
+                const inp = this.$el.querySelector('.tl-preview-edit');
+                if (inp) { inp.focus(); inp.select(); }
+            });
+        },
+
+        async previewSaveTitle(pt) {
+            if (!this.previewEditId) return;
+            const newTitle = this.previewEditTitle.trim();
+            this.previewEditId = null;
+            if (!newTitle || newTitle === pt.title) return;
+            const oldTitle = pt.title;
+            pt.title = newTitle;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${pt._id}/rename`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: newTitle })
+                });
+                const data = await res.json();
+                if (!data.success) pt.title = oldTitle;
+            } catch (e) { pt.title = oldTitle; console.error('[TaskLists] Preview rename error:', e); }
+        },
+
+        async openList(list) {
+            this.activeList = list;
+            this.loadingTasks = true;
+            this.showDone = false;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) this.tasks = data.tasks || [];
+            } catch (e) { console.error('[TaskLists] Load tasks error:', e); }
+            this.loadingTasks = false;
+        },
+
+        async addTask() {
+            if (!this.newTaskTitle.trim() || !this.activeList) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${this.activeList._id}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: this.newTaskTitle.trim() })
+                });
+                const data = await res.json();
+                if (data.success && data.task) {
+                    this.tasks.unshift(data.task);
+                    this.newTaskTitle = '';
+                    this.activeList.count = (this.activeList.count || 0) + 1;
+                }
+            } catch (e) { console.error('[TaskLists] Add task error:', e); }
+        },
+
+        async toggleDone(task) {
+            const isDone = task.status === 'Terminé';
+            const newStatus = isDone ? 'À faire' : 'Terminé';
+            await this.setStatus(task, newStatus);
+        },
+
+        async setStatus(task, statusLabel) {
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${task._id}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: statusLabel })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    task.status = data.status;
+                    task.statusColor = data.statusColor;
+                    if (this.activeList) {
+                        this.activeList.doneCount = this.doneTasks.length;
+                    }
+                }
+            } catch (e) { console.error('[TaskLists] Status error:', e); }
+        },
+
+        async deleteTask(taskId) {
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const wasDone = this.tasks.find(t => t._id === taskId)?.status === 'Terminé';
+                    this.tasks = this.tasks.filter(t => t._id !== taskId);
+                    if (this.activeList) {
+                        this.activeList.count = Math.max(0, (this.activeList.count || 0) - 1);
+                        if (wasDone) this.activeList.doneCount = Math.max(0, (this.activeList.doneCount || 0) - 1);
+                    }
+                }
+            } catch (e) { console.error('[TaskLists] Delete error:', e); }
+        },
+
+        startEditList(list) {
+            this.editingListId = list._id;
+            this.editListLabel = list.label;
+            this.$nextTick(() => {
+                const inp = this.$el.querySelector('.tl-card .tl-inline-edit');
+                if (inp) { inp.focus(); inp.select(); }
+            });
+        },
+
+        async saveListName(list) {
+            if (!this.editingListId) return;
+            const newLabel = this.editListLabel.trim();
+            this.editingListId = null;
+            if (!newLabel || newLabel === list.label) return;
+            const oldLabel = list.label;
+            list.label = newLabel;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ label: newLabel })
+                });
+                const data = await res.json();
+                if (!data.success) list.label = oldLabel;
+            } catch (e) { list.label = oldLabel; console.error('[TaskLists] Rename list error:', e); }
+        },
+
+        startEditTask(task) {
+            this.editingTaskId = task._id;
+            this.editTaskTitle = task.title;
+            this.$nextTick(() => {
+                const inp = this.$el.querySelector('.tl-task .tl-inline-edit');
+                if (inp) { inp.focus(); inp.select(); }
+            });
+        },
+
+        async saveTaskName(task) {
+            if (!this.editingTaskId) return;
+            const newTitle = this.editTaskTitle.trim();
+            this.editingTaskId = null;
+            if (!newTitle || newTitle === task.title) return;
+            const oldTitle = task.title;
+            task.title = newTitle;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${task._id}/rename`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: newTitle })
+                });
+                const data = await res.json();
+                if (!data.success) task.title = oldTitle;
+            } catch (e) { task.title = oldTitle; console.error('[TaskLists] Rename task error:', e); }
+        },
+
+        openCtx(e, type, target) {
+            this.ctxMenu = { x: e.clientX, y: e.clientY, type, target };
+        },
+
+        ctxRename() {
+            const { type, target } = this.ctxMenu;
+            this.ctxMenu = null;
+            if (type === 'list') {
+                this.editingListId = target._id;
+                this.editListLabel = target.label;
+                this.$nextTick(() => {
+                    const inp = this.$el.querySelector('.tl-card .tl-inline-edit');
+                    if (inp) { inp.focus(); inp.select(); }
+                });
+            } else {
+                this.editingTaskId = target._id;
+                this.editTaskTitle = target.title;
+                this.$nextTick(() => {
+                    const inp = this.$el.querySelector('.tl-task .tl-inline-edit');
+                    if (inp) { inp.focus(); inp.select(); }
+                });
+            }
+        },
+
+        async ctxChangeColor(color) {
+            const target = this.ctxMenu?.target;
+            if (!target) return;
+            const oldColor = target.color;
+            target.color = color;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${target._id}/color`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ color })
+                });
+                const data = await res.json();
+                if (!data.success) target.color = oldColor;
+            } catch (e) { target.color = oldColor; console.error('[TaskLists] Color error:', e); }
+            this.ctxMenu = null;
+        },
+
+        async ctxDelete() {
+            const { type, target } = this.ctxMenu;
+            this.ctxMenu = null;
+            if (type === 'task') {
+                await this.deleteTask(target._id);
+            } else {
+                await this.deleteList(target._id);
+            }
+        },
+
+        async deleteList(listId) {
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.lists = this.lists.filter(l => l._id !== listId);
+                }
+            } catch (e) { console.error('[TaskLists] Delete list error:', e); }
+        }
+    }));
+});
+</script>

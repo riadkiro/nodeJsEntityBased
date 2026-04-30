@@ -13,6 +13,7 @@ export default function TasksChecklist({
     onToggle,
     accountNumber,
     entitySlug,
+    onAddTask,
 }) {
     // Track which task is animating out (for transition effect)
     const [animatingId, setAnimatingId] = useState(null)
@@ -22,6 +23,8 @@ export default function TasksChecklist({
     const [draggedId, setDraggedId] = useState(null)
     const [dragOverId, setDragOverId] = useState(null)
     const [customOrder, setCustomOrder] = useState([]) // ordered IDs
+    const [newTaskTitle, setNewTaskTitle] = useState('')
+    const [isAdding, setIsAdding] = useState(false)
 
     // Split tasks into active vs completed
     const activeTasks = useMemo(() => {
@@ -328,6 +331,62 @@ export default function TasksChecklist({
                                 <TaskCard key={task._id} task={task} isCompleted={false} draggable={true} />
                             ))
                         )}
+
+                        {/* Inline add task */}
+                        <div
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl mt-1 transition-all"
+                            style={{
+                                backgroundColor: isAdding ? '#ffffff' : 'transparent',
+                                border: isAdding ? '1px solid #e5e7eb' : '1px dashed transparent',
+                            }}
+                        >
+                            {isAdding ? (
+                                <>
+                                    <div style={{
+                                        width: 22, height: 22, borderRadius: 8,
+                                        border: '2px solid #d1d5db',
+                                        flexShrink: 0, marginTop: 0,
+                                    }} />
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        placeholder="Titre de la tâche..."
+                                        value={newTaskTitle}
+                                        onChange={e => setNewTaskTitle(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && newTaskTitle.trim()) {
+                                                onAddTask?.(newTaskTitle.trim())
+                                                setNewTaskTitle('')
+                                            }
+                                            if (e.key === 'Escape') {
+                                                setIsAdding(false)
+                                                setNewTaskTitle('')
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (newTaskTitle.trim()) {
+                                                onAddTask?.(newTaskTitle.trim())
+                                            }
+                                            setNewTaskTitle('')
+                                            setIsAdding(false)
+                                        }}
+                                        className="flex-1 text-sm bg-transparent border-none outline-none placeholder-gray-300"
+                                        style={{ padding: 0, margin: 0 }}
+                                    />
+                                </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAdding(true)}
+                                    className="flex items-center gap-2 text-sm text-gray-400 hover:text-primary transition-colors w-full py-0.5"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                    Ajouter une tâche...
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

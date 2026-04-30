@@ -1576,7 +1576,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <% } %>
 
     <!-- ═══ OTHER MODULES (non-docs) ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive') { %>
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -1889,70 +1889,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
 
 
-        <% if (moduleName === 'tasks') { %>
-        <div class="rm-items-list">
-            
-            <div class="rm-item" style="animation-delay:0ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
-                    <iconify-icon icon="solar:round-double-alt-arrow-right-bold-duotone" width="20" style="color:#10b981"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Rappel contrôle HTA - 3 mois</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/07/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">En cours</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:60ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
-                    <iconify-icon icon="solar:check-circle-bold-duotone" width="20" style="color:#10b981"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Envoyer résultats labo</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 20/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Terminé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:120ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
-                    <iconify-icon icon="solar:alarm-bold-duotone" width="20" style="color:#10b981"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Renouveler ordonnance</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 25/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#ef444415;color:#ef4444">Urgent</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:180ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
-                    <iconify-icon icon="solar:check-circle-bold-duotone" width="20" style="color:#10b981"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Vérifier allergie médicament</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 18/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Terminé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:240ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
-                    <iconify-icon icon="solar:round-double-alt-arrow-right-bold-duotone" width="20" style="color:#10b981"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Planifier bilan annuel</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 01/06/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#0ea5e915;color:#0ea5e9">Planifié</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-        </div>
-        <% } %>
+        <!-- Tasks module is handled by the dynamic Alpine.js section below -->
 
         <% if (moduleName === 'agenda') { %>
         <div class="rm-items-list">
@@ -2058,6 +1995,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
             </div>
         </div>
+        <% } %>
+
+        <% if (moduleName === 'tasks') { %>
+        <%- include('../record/partials/record-tasks-module') %>
         <% } %>
 
         <% if (moduleName === 'emails') { %>

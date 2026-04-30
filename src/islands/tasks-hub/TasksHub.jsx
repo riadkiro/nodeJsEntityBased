@@ -39,6 +39,7 @@ export default function TasksHub({
     const [error, setError] = useState(null)
     const [entityMeta, setEntityMeta] = useState({})
     const [sidebarVisible, setSidebarVisible] = useState(true)
+    const [activeList, setActiveList] = useState(null)
 
     // Preferences (sort, density, pageSize, viewMode)
     const [preferences, setPreferences] = useState({
@@ -181,13 +182,17 @@ export default function TasksHub({
     // ─── Filtered rows (search + sidebar filters) ───────────────────
     const filteredRows = useMemo(() => {
         let result = rowsWithSearchIndex
+        // Filter by active list
+        if (activeList) {
+            result = result.filter(row => row.list === activeList)
+        }
         if (searchQuery.trim()) {
             const lowerQuery = searchQuery.toLowerCase()
             result = result.filter(row => row._searchIndex.includes(lowerQuery))
         }
         result = applyFilters(result, activeFilters)
         return result
-    }, [rowsWithSearchIndex, searchQuery, activeFilters, applyFilters])
+    }, [rowsWithSearchIndex, searchQuery, activeFilters, applyFilters, activeList])
 
     // ─── Paginated rows (for table view only) ───────────────────────
     const displayRows = useMemo(() => {
@@ -321,6 +326,36 @@ export default function TasksHub({
         }
     }, [allRows, accountNumber])
 
+    // ─── Add task (inline creation) ──────────────────────────────────
+    const handleAddTask = useCallback(async (taskTitle) => {
+        if (!taskTitle || !taskTitle.trim()) return
+
+        // Find the list filter to get the optionId for the active list
+        let listOptionId = null
+        if (activeList) {
+            const listFilter = filters.find(f => f.field === 'list')
+            if (listFilter) {
+                const listOpt = listFilter.options.find(o => o.label === activeList)
+                if (listOpt) listOptionId = listOpt.id
+            }
+        }
+
+        try {
+            const res = await fetch(`/account/${accountNumber}/api/tasks/quick-create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ title: taskTitle, listOptionId }),
+            })
+            const data = await res.json()
+            if (data.success && data.task) {
+                setAllRows(prev => [data.task, ...prev])
+            }
+        } catch (err) {
+            console.error('[TasksHub] Quick-create error:', err)
+        }
+    }, [accountNumber, activeList, filters])
+
     // ─── Loading / Error states ─────────────────────────────────────
     if (loading && allRows.length === 0) {
         return (
@@ -374,6 +409,7 @@ export default function TasksHub({
                 onToggle={handleToggleTask}
                 accountNumber={accountNumber}
                 entitySlug={resolvedSlug}
+                onAddTask={handleAddTask}
             />
         ),
         calendar: (
@@ -407,6 +443,9 @@ export default function TasksHub({
                 accountNumber={accountNumber}
                 totalCount={allRows.length}
                 filteredCount={filteredRows.length}
+                rows={allRows}
+                activeList={activeList}
+                onListChange={setActiveList}
             />
 
             {/* Main content */}

@@ -17,6 +17,7 @@ const EntitySchema = new mongoose.Schema(
     image: String,
     icon: String,
     color: String,
+    isSystem: { type: Boolean, default: false },
     order: { type: Number, default: 0 },
 
     // Champs standards activés

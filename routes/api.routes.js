@@ -517,7 +517,7 @@ router.get('/api/datagrid/tasks', async (req, res) => {
         const rows = records.map(r => {
             // Resolve classification values
             const cvs = r.classificationValues || []
-            let statusLabel = '', statusColor = '', priorityLabel = '', priorityColor = '', tags = []
+            let statusLabel = '', statusColor = '', priorityLabel = '', priorityColor = '', tags = [], listLabel = '', listColor = ''
 
             cvs.forEach(cv => {
                 const cls = classMap[cv.classificationId]
@@ -538,6 +538,9 @@ router.get('/api/datagrid/tasks', async (req, res) => {
                     priorityColor = opt.color
                 } else if (cls.key === 'tache_tags' || cls.key === 'task_tags') {
                     tags.push({ label: opt.label, color: opt.color })
+                } else if (cls.key === 'task_list') {
+                    listLabel = opt.label
+                    listColor = opt.color
                 }
             })
 
@@ -560,6 +563,8 @@ router.get('/api/datagrid/tasks', async (req, res) => {
                 assignedTo: assigneeField?.value || '',
                 dueDate: r.dueDate,
                 description: r.description || '',
+                list: listLabel,
+                listColor,
                 createdAt: r.createdAt
             }
         })
@@ -607,6 +612,7 @@ router.get('/api/datagrid/tasks', async (req, res) => {
             if (cls.key === 'tache_progression' || cls.key === 'task_status') { field = 'status' }
             else if (cls.key === 'tache_priority' || cls.key === 'task_priority') { field = 'priority' }
             else if (cls.key === 'tache_tags' || cls.key === 'task_tags') { field = 'tags'; type = 'tags' }
+            else if (cls.key === 'task_list') { field = 'list' }
 
             return {
                 id: cls._id.toString(),
@@ -708,6 +714,403 @@ router.post('/api/tasks/:taskId/toggle', async (req, res) => {
         res.json({ success: true, status: newStatusLabel })
     } catch (error) {
         console.error('[API] Task toggle error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/tasks/quick-create
+ * Quick-create a task with minimal fields (title + list)
+ */
+router.post('/api/tasks/quick-create', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record")
+        const Entity = await tenantCollection(req, "Entity")
+        const Classification = await tenantCollection(req, "Classification")
+
+        const { title, listOptionId } = req.body
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: 'Title is required' })
+        }
+
+        // Find the Tâches entity
+        const entity = await Entity.findOne({
+            $or: [
+                { slug: 'taches' },
+                { slug: 'tache' },
+                { name: { $regex: /tâche/i } }
+            ]
+        }).lean()
+        if (!entity) return res.status(404).json({ error: 'Tâches entity not found' })
+
+        // Get the status classification to set default "À faire"
+        const statusCls = await Classification.findById(entity.statusClassification).lean()
+        const defaultStatus = statusCls?.options?.find(o => o.label === 'À faire')
+
+        // Build classification values
+        const classificationValues = []
+        if (defaultStatus) {
+            classificationValues.push({
+                classificationId: statusCls._id.toString(),
+                optionId: defaultStatus._id.toString()
+            })
+        }
+
+        // Add list assignment if provided
+        if (listOptionId) {
+            const listCls = await Classification.findOne({ key: 'task_list' }).lean()
+            if (listCls) {
+                classificationValues.push({
+                    classificationId: listCls._id.toString(),
+                    optionId: listOptionId
+                })
+            }
+        }
+
+        const record = new Record({
+            entityId: entity._id,
+            title: title.trim(),
+            referenceTitle: title.trim(),
+            classificationValues,
+            customFields: [],
+            createdBy: req.user?._id,
+        })
+        await record.save()
+
+        // Return the created task as a row
+        const statusLabel = defaultStatus?.label || 'À faire'
+        const statusColor = defaultStatus?.color || '#9ca3af'
+
+        // Resolve list label
+        let listLabel = '', listColor = ''
+        if (listOptionId) {
+            const listCls = await Classification.findOne({ key: 'task_list' }).lean()
+            if (listCls) {
+                const listOpt = listCls.options?.find(o => o._id.toString() === listOptionId)
+                if (listOpt) {
+                    listLabel = listOpt.label
+                    listColor = listOpt.color
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            task: {
+                _id: record._id.toString(),
+                _icon: entity.icon || 'solar:checklist-minimalistic-bold-duotone',
+                _color: statusColor || entity.color || '#4361ee',
+                title: record.title,
+                status: statusLabel,
+                statusColor,
+                priority: '',
+                priorityColor: '',
+                tags: '',
+                progress: 0,
+                assignedTo: '',
+                dueDate: null,
+                description: '',
+                list: listLabel,
+                listColor,
+                createdAt: record.createdAt
+            }
+        })
+    } catch (error) {
+        console.error('[API] Task quick-create error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/tasks/:taskId/toggle
+ * Toggle a task between "À faire" and "Terminé" status
+ */
+router.post('/api/tasks/:taskId/toggle', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record")
+        const Entity = await tenantCollection(req, "Entity")
+        const Classification = await tenantCollection(req, "Classification")
+
+        const record = await Record.findById(req.params.taskId)
+        if (!record) return res.status(404).json({ error: 'Task not found' })
+
+        // Find the Tâches entity to get status classification
+        const entity = await Entity.findOne({ _id: record.entityId }).lean()
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        const statusCls = await Classification.findById(entity.statusClassification).lean()
+        if (!statusCls) return res.status(404).json({ error: 'Status classification not found' })
+
+        // Determine current status
+        const currentStatusVal = record.classificationValues?.find(
+            cv => cv.classificationId?.toString() === statusCls._id.toString()
+        )
+        const currentOption = currentStatusVal
+            ? statusCls.options?.find(o => o._id.toString() === currentStatusVal.optionId?.toString())
+            : null
+        const isCurrentlyDone = currentOption?.label === 'Terminé'
+
+        // Find the target status option
+        const targetLabel = isCurrentlyDone ? 'À faire' : 'Terminé'
+        const targetOption = statusCls.options?.find(o => o.label === targetLabel)
+        if (!targetOption) return res.status(400).json({ error: `Status "${targetLabel}" not found` })
+
+        // Update classification values
+        const newClassVals = (record.classificationValues || []).filter(
+            cv => cv.classificationId?.toString() !== statusCls._id.toString()
+        )
+        newClassVals.push({
+            classificationId: statusCls._id.toString(),
+            optionId: targetOption._id.toString()
+        })
+        record.classificationValues = newClassVals
+        await record.save()
+
+        res.json({
+            success: true,
+            status: targetLabel,
+            statusColor: targetOption.color || '#9ca3af'
+        })
+    } catch (error) {
+        console.error('[API] Task toggle error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// ═══════════════════════════════════════════════════════════════
+// RECORD TASKS — Per-record task lists & tasks (scoped to each record)
+// ═══════════════════════════════════════════════════════════════
+const TaskList = require('../models/task-list.model')
+const RecordTask = require('../models/record-task.model')
+
+/**
+ * GET /account/:account_number/api/record/:recordId/task-lists
+ * Get all task lists for a specific record with task counts
+ */
+router.get('/api/record/:recordId/task-lists', async (req, res) => {
+    try {
+        const lists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 }).lean()
+        const tasks = await RecordTask.find({ recordId: req.params.recordId }).lean()
+
+        const result = lists.map(l => {
+            const listTasks = tasks.filter(t => t.taskListId.toString() === l._id.toString())
+            // Sort: active first (by createdAt desc), then done
+            const sorted = listTasks.sort((a, b) => {
+                const aD = a.status === 'Terminé' ? 1 : 0
+                const bD = b.status === 'Terminé' ? 1 : 0
+                if (aD !== bD) return aD - bD
+                return new Date(b.createdAt) - new Date(a.createdAt)
+            })
+            return {
+                _id: l._id.toString(),
+                label: l.label,
+                color: l.color || '#6366f1',
+                count: listTasks.length,
+                doneCount: listTasks.filter(t => t.status === 'Terminé').length,
+                tasks: sorted.slice(0, 10).map(t => ({
+                    _id: t._id.toString(),
+                    title: t.title,
+                    status: t.status,
+                    statusColor: t.statusColor
+                }))
+            }
+        })
+
+        res.json({ success: true, lists: result })
+    } catch (error) {
+        console.error('[API] Task lists error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/record/:recordId/task-lists
+ * Create a new task list for a specific record
+ */
+router.post('/api/record/:recordId/task-lists', async (req, res) => {
+    try {
+        const { label, color } = req.body
+        if (!label?.trim()) return res.status(400).json({ error: 'Label required' })
+
+        const maxOrder = await TaskList.findOne({ recordId: req.params.recordId }).sort({ order: -1 }).lean()
+        const list = await TaskList.create({
+            recordId: req.params.recordId,
+            label: label.trim(),
+            color: color || '#6366f1',
+            order: (maxOrder?.order || 0) + 1
+        })
+
+        res.json({ success: true, list: { _id: list._id.toString(), label: list.label, color: list.color, count: 0, doneCount: 0 } })
+    } catch (error) {
+        console.error('[API] Create task list error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-lists/:listId
+ * Rename a task list
+ */
+router.put('/api/task-lists/:listId', async (req, res) => {
+    try {
+        const { label } = req.body
+        if (!label?.trim()) return res.status(400).json({ error: 'Label required' })
+
+        const list = await TaskList.findByIdAndUpdate(req.params.listId, { label: label.trim() }, { new: true })
+        if (!list) return res.status(404).json({ error: 'List not found' })
+
+        res.json({ success: true, label: list.label })
+    } catch (error) {
+        console.error('[API] Rename task list error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-lists/:listId/color
+ * Change a task list color
+ */
+router.put('/api/task-lists/:listId/color', async (req, res) => {
+    try {
+        const { color } = req.body
+        if (!color) return res.status(400).json({ error: 'Color required' })
+
+        const list = await TaskList.findByIdAndUpdate(req.params.listId, { color }, { new: true })
+        if (!list) return res.status(404).json({ error: 'List not found' })
+
+        res.json({ success: true, color: list.color })
+    } catch (error) {
+        console.error('[API] Change list color error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * DELETE /account/:account_number/api/task-lists/:listId
+ * Delete a task list and all its tasks
+ */
+router.delete('/api/task-lists/:listId', async (req, res) => {
+    try {
+        const list = await TaskList.findByIdAndDelete(req.params.listId)
+        if (!list) return res.status(404).json({ error: 'List not found' })
+
+        // Also delete all tasks in this list
+        await RecordTask.deleteMany({ taskListId: req.params.listId })
+
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Delete task list error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/task-lists/:listId/tasks
+ * Get all tasks for a specific list
+ */
+router.get('/api/task-lists/:listId/tasks', async (req, res) => {
+    try {
+        const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
+        res.json({ success: true, tasks: tasks.map(t => ({
+            _id: t._id.toString(),
+            title: t.title,
+            status: t.status,
+            statusColor: t.statusColor
+        })) })
+    } catch (error) {
+        console.error('[API] Get tasks error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/task-lists/:listId/tasks
+ * Create a new task in a specific list
+ */
+router.post('/api/task-lists/:listId/tasks', async (req, res) => {
+    try {
+        const { title } = req.body
+        if (!title?.trim()) return res.status(400).json({ error: 'Title required' })
+
+        const list = await TaskList.findById(req.params.listId).lean()
+        if (!list) return res.status(404).json({ error: 'List not found' })
+
+        const task = await RecordTask.create({
+            taskListId: req.params.listId,
+            recordId: list.recordId,
+            title: title.trim(),
+            status: 'À faire',
+            statusColor: '#9ca3af'
+        })
+
+        res.json({ success: true, task: {
+            _id: task._id.toString(),
+            title: task.title,
+            status: task.status,
+            statusColor: task.statusColor
+        } })
+    } catch (error) {
+        console.error('[API] Create task error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/record-tasks/:taskId/rename
+ * Rename a task
+ */
+router.put('/api/record-tasks/:taskId/rename', async (req, res) => {
+    try {
+        const { title } = req.body
+        if (!title?.trim()) return res.status(400).json({ error: 'Title required' })
+
+        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { title: title.trim() }, { new: true })
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+
+        res.json({ success: true, title: task.title })
+    } catch (error) {
+        console.error('[API] Rename task error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/record-tasks/:taskId/status
+ * Update task status
+ */
+router.post('/api/record-tasks/:taskId/status', async (req, res) => {
+    try {
+        const { status } = req.body
+        const statusColors = {
+            'À faire': '#9ca3af',
+            'En cours': '#3b82f6',
+            'En revue': '#f59e0b',
+            'Terminé': '#22c55e',
+            'Bloqué': '#ef4444'
+        }
+
+        const statusColor = statusColors[status] || '#9ca3af'
+        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor }, { new: true })
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+
+        res.json({ success: true, status: task.status, statusColor: task.statusColor })
+    } catch (error) {
+        console.error('[API] Task status error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * DELETE /account/:account_number/api/record-tasks/:taskId
+ * Delete a task
+ */
+router.delete('/api/record-tasks/:taskId', async (req, res) => {
+    try {
+        const task = await RecordTask.findByIdAndDelete(req.params.taskId)
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Delete task error:', error)
         res.status(500).json({ error: error.message })
     }
 })

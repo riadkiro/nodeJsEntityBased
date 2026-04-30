@@ -1,5 +1,8 @@
+const mongoose = require("mongoose");
 const User = require("../models/user.model");
 const Account = require("../models/account.model");
+const dbConfig = require("../config/db");
+const { ensureSystemEntities } = require("../utils/system-entities");
 
 module.exports = {
   addForm: async (req, res) => {
@@ -149,6 +152,18 @@ module.exports = {
           }
         }
       });
+
+      // Auto-provision system entities (Tâches, Notes) in the new tenant DB
+      try {
+        const dbUrl = `${dbConfig.uri}saas_app_rb_${account_number}`;
+        const tenantDb = mongoose.createConnection(dbUrl);
+        await new Promise(resolve => tenantDb.once('open', resolve));
+        await ensureSystemEntities(tenantDb);
+        await tenantDb.close();
+        console.log(`[CreateAccount] System entities provisioned for account ${account_number}`);
+      } catch (sysErr) {
+        console.warn('[CreateAccount] System entities provisioning error (non-blocking):', sysErr.message);
+      }
 
       res.redirect("/user/accounts");
 

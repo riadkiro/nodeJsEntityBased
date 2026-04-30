@@ -184,9 +184,10 @@ module.exports = {
      */
     chatPage: async (req, res) => {
         try {
-            res.render("chat/chat", {
+            res.render("account/account-chat-hub", {
                 layout: "layout-app",
                 account_number: req.account_number,
+                user: req.user,
                 currentUser: {
                     id: String(req.user._id),
                     name: req.user.name || req.user.email,
@@ -195,7 +196,7 @@ module.exports = {
                 },
             });
         } catch (err) {
-            console.error("[Chat API] Error rendering chat page:", err);
+            console.error("[Chat API] Error rendering chat hub:", err);
             res.status(500).send("Error loading chat");
         }
     },

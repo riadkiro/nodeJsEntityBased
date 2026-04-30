@@ -2599,6 +2599,7 @@ module.exports = {
                 ficheFields,
                 overviewFields,
                 account_number: req.account_number,
+                user: req.user,
                 layout: "layout-app"
             });
         } catch (error) {

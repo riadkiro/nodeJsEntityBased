@@ -3200,5 +3200,8 @@ router.get('/api/widget/dynamic-table-data', async (req, res) => {
     }
 })
 
+// ═══ Record Chat API (conversations + messages per record) ═══
+require('./api/api-record-chat.router')(router)
+
 module.exports = router
 

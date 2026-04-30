@@ -1,0 +1,380 @@
+<!-- Global Chat Hub — Windows-style navigation -->
+<div class="chat-hub-page" x-data="chatHub" x-cloak>
+    <style>
+        .chat-hub-page { max-width:1200px; margin:0 auto; padding:24px 32px; }
+        /* Header */
+        .ch-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding:28px 32px; background:linear-gradient(135deg,#f9731608,#f9731604); border:1px solid #f9731620; border-radius:16px; position:relative; overflow:hidden; }
+        .ch-header::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,#f9731612,transparent 70%); border-radius:50%; pointer-events:none; }
+        .ch-header-icon { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#f9731620,#f9731610); flex-shrink:0; z-index:1; }
+        .ch-header-info { flex:1; z-index:1; }
+        .ch-header-info h1 { font-size:22px; font-weight:700; color:#0e1726; margin:0 0 4px; }
+        .ch-header-info p { font-size:13px; color:#888da8; margin:0; }
+        .ch-header-count { text-align:center; z-index:1; }
+        .ch-header-count-value { font-size:28px; font-weight:800; color:#f97316; line-height:1; }
+        .ch-header-count-label { font-size:11px; color:#888da8; text-transform:uppercase; letter-spacing:.5px; }
+        /* Breadcrumb */
+        .ch-breadcrumb { display:flex; align-items:center; gap:4px; margin-bottom:18px; flex-wrap:wrap; }
+        .ch-bc-item { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#94a3b8; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all .15s; text-decoration:none; }
+        .ch-bc-item:hover { color:#f97316; background:#f9731608; }
+        .ch-bc-item--active { color:#1e293b; cursor:default; }
+        .ch-bc-item--active:hover { color:#1e293b; background:transparent; }
+        .ch-bc-sep { display:inline-flex; align-items:center; color:#cbd5e1; }
+        /* Folder grid */
+        .ch-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+        .ch-folder { display:flex; flex-direction:column; align-items:center; gap:8px; padding:20px 12px; border-radius:14px; border:1px solid #e0e6ed; background:#fff; cursor:pointer; transition:all .2s; text-align:center; }
+        .ch-folder:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.06); border-color:#f9731630; }
+        .ch-folder-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+        .ch-folder-name { font-size:13px; font-weight:600; color:#0e1726; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; }
+        .ch-folder-count { font-size:11px; color:#94a3b8; }
+        /* Conversation list */
+        .ch-conv-list { display:flex; flex-direction:column; gap:6px; }
+        .ch-conv-card { display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:12px; border:1px solid #e0e6ed; background:#fff; cursor:pointer; transition:all .2s; }
+        .ch-conv-card:hover { background:#f8fafc; border-color:#f9731630; transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.04); }
+        .ch-conv-card-icon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#f9731615,#f9731608); flex-shrink:0; }
+        .ch-conv-card-info { flex:1; min-width:0; }
+        .ch-conv-card-name { font-size:14px; font-weight:600; color:#0e1726; }
+        .ch-conv-card-preview { font-size:12px; color:#888da8; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ch-conv-card-time { font-size:11px; color:#bfc9d4; white-space:nowrap; }
+        .ch-conv-card-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:12px; }
+        /* Empty state */
+        .ch-empty { text-align:center; padding:48px 20px; color:#94a3b8; }
+        .ch-empty iconify-icon { opacity:.3; }
+        .ch-empty h3 { font-size:16px; font-weight:700; color:#0e1726; margin:10px 0 4px; }
+        .ch-empty p { font-size:13px; margin:0; }
+        /* Chat view within hub */
+        .ch-chat-view { border:1px solid #e0e6ed; border-radius:14px; overflow:hidden; background:#fff; min-height:400px; display:grid; grid-template-rows:auto 1fr auto; }
+        .ch-chat-header { padding:14px 20px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:10px; }
+        .ch-chat-title { font-size:14px; font-weight:700; color:#0e1726; }
+        .ch-chat-sub { font-size:11px; color:#888da8; }
+        .ch-chat-messages { overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:8px; max-height:500px; background:linear-gradient(180deg,#f8fafc,#fff); }
+        .ch-chat-input-area { padding:14px 20px; border-top:1px solid #e0e6ed; display:flex; gap:8px; align-items:flex-end; }
+        .ch-chat-input { flex:1; padding:10px 14px; border:1.5px solid #e0e6ed; border-radius:12px; font-size:13px; font-family:inherit; color:#0e1726; outline:none; resize:none; min-height:40px; max-height:100px; }
+        .ch-chat-input:focus { border-color:#f97316; box-shadow:0 0 0 3px #f9731610; }
+        .ch-chat-send { width:40px; height:40px; border-radius:12px; border:none; background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+        .ch-chat-send:hover { transform:scale(1.05); box-shadow:0 3px 12px #f9731640; }
+        .ch-chat-send:disabled { opacity:.4; cursor:default; transform:none; }
+        /* Reuse message styles from record chat */
+        .ch-msg { display:flex; gap:8px; max-width:70%; animation:chFadeIn .3s ease; }
+        .ch-msg.mine { margin-left:auto; flex-direction:row-reverse; }
+        .ch-msg-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#4361ee,#3b82f6); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; text-transform:uppercase; }
+        .ch-msg.mine .ch-msg-avatar { background:linear-gradient(135deg,#f97316,#ea580c); }
+        .ch-msg-bubble { padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.5; color:#0e1726; background:#f1f5f9; border:1px solid #e0e6ed; }
+        .ch-msg.mine .ch-msg-bubble { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; border:none; }
+        .ch-msg-meta { font-size:10px; color:#bfc9d4; margin-top:3px; padding:0 4px; }
+        .ch-msg.mine .ch-msg-meta { text-align:right; }
+        @keyframes chFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        /* Dark mode */
+        [data-theme="dark"] .ch-header { background:linear-gradient(135deg,#f9731610,#f9731606); border-color:#f9731630; }
+        [data-theme="dark"] .ch-header-info h1 { color:#e0e6ed; }
+        [data-theme="dark"] .ch-folder { background:#0e1726; border-color:#253b5c; }
+        [data-theme="dark"] .ch-folder:hover { border-color:#f9731640; }
+        [data-theme="dark"] .ch-folder-name { color:#e0e6ed; }
+        [data-theme="dark"] .ch-conv-card { background:#0e1726; border-color:#253b5c; }
+        [data-theme="dark"] .ch-conv-card:hover { background:#1b2e4b; border-color:#f9731640; }
+        [data-theme="dark"] .ch-conv-card-name { color:#e0e6ed; }
+        [data-theme="dark"] .ch-chat-view { background:#0e1726; border-color:#253b5c; }
+        [data-theme="dark"] .ch-chat-header { border-color:#253b5c; }
+        [data-theme="dark"] .ch-chat-title { color:#e0e6ed; }
+        [data-theme="dark"] .ch-chat-messages { background:linear-gradient(180deg,#0b1320,#0e1726); }
+        [data-theme="dark"] .ch-msg-bubble { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
+        [data-theme="dark"] .ch-chat-input-area { border-color:#253b5c; }
+        [data-theme="dark"] .ch-chat-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
+        [data-theme="dark"] .ch-empty h3 { color:#e0e6ed; }
+        [data-theme="dark"] .ch-bc-item--active { color:#e0e6ed; }
+    </style>
+
+    <!-- Header -->
+    <div class="ch-header">
+        <div class="ch-header-icon">
+            <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="28" style="color:#f97316"></iconify-icon>
+        </div>
+        <div class="ch-header-info">
+            <h1>Chat Hub</h1>
+            <p>Toutes les conversations de vos enregistrements</p>
+        </div>
+        <div class="ch-header-count">
+            <div class="ch-header-count-value" x-text="totalConversations"></div>
+            <div class="ch-header-count-label">Conversations</div>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="ch-breadcrumb">
+        <button class="ch-bc-item" :class="!currentEntity && !currentRecord && !activeConvId ? 'ch-bc-item--active' : ''" @click="goToRoot()">
+            <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="14" style="color:#f97316"></iconify-icon>
+            Chat Hub
+        </button>
+        <template x-if="currentEntity">
+            <span class="ch-bc-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <button class="ch-bc-item" :class="!currentRecord && !activeConvId ? 'ch-bc-item--active' : ''" @click="goToEntity(currentEntity)" x-text="currentEntity.entityName"></button>
+            </span>
+        </template>
+        <template x-if="currentRecord">
+            <span class="ch-bc-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <button class="ch-bc-item" :class="!activeConvId ? 'ch-bc-item--active' : ''" @click="goToRecord(currentRecord)" x-text="currentRecord.recordTitle"></button>
+            </span>
+        </template>
+        <template x-if="activeConvId">
+            <span class="ch-bc-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <span class="ch-bc-item ch-bc-item--active" x-text="activeConv?.name || 'Conversation'"></span>
+            </span>
+        </template>
+    </div>
+
+    <!-- Loading -->
+    <div x-show="loading" style="text-align:center;padding:40px;">
+        <iconify-icon icon="line-md:loading-twotone-loop" width="28" style="color:#f97316"></iconify-icon>
+        <p style="font-size:12px;color:#888da8;margin-top:8px;">Chargement...</p>
+    </div>
+
+    <!-- Level 1: Entity folders -->
+    <template x-if="!loading && !currentEntity && !activeConvId">
+        <div>
+            <div x-show="entities.length === 0" class="ch-empty">
+                <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="48"></iconify-icon>
+                <h3>Aucune conversation</h3>
+                <p>Les conversations apparaîtront ici lorsque vous en créerez dans les enregistrements</p>
+            </div>
+            <div class="ch-grid" x-show="entities.length > 0">
+                <template x-for="e in entities" :key="e.entityId">
+                    <div class="ch-folder" @dblclick="goToEntity(e)">
+                        <div class="ch-folder-icon" :style="'background:linear-gradient(135deg,' + (e.entityColor || '#f97316') + '15,' + (e.entityColor || '#f97316') + '08)'">
+                            <iconify-icon :icon="e.entityIcon || 'solar:folder-bold-duotone'" width="24" :style="'color:' + (e.entityColor || '#f97316')"></iconify-icon>
+                        </div>
+                        <div class="ch-folder-name" x-text="e.entityName"></div>
+                        <div class="ch-folder-count" x-text="e.totalConversations + ' conversation(s)'"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Level 2: Record folders within entity -->
+    <template x-if="!loading && currentEntity && !currentRecord && !activeConvId">
+        <div>
+            <div x-show="currentEntity.records.length === 0" class="ch-empty">
+                <iconify-icon icon="solar:folder-bold-duotone" width="48"></iconify-icon>
+                <h3>Aucun enregistrement avec des conversations</h3>
+            </div>
+            <div class="ch-grid" x-show="currentEntity.records.length > 0">
+                <template x-for="r in currentEntity.records" :key="r.recordId">
+                    <div class="ch-folder" @dblclick="goToRecord(r)">
+                        <div class="ch-folder-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                            <iconify-icon icon="solar:folder-bold-duotone" width="24" style="color:#f59e0b"></iconify-icon>
+                        </div>
+                        <div class="ch-folder-name" x-text="r.recordTitle || 'Sans titre'"></div>
+                        <div class="ch-folder-count" x-text="r.conversations.length + ' conversation(s)'"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Level 3: Conversations list for a record -->
+    <template x-if="!loading && currentRecord && !activeConvId">
+        <div class="ch-conv-list">
+            <template x-for="conv in currentRecord.conversations" :key="conv._id">
+                <div class="ch-conv-card" @click="openConversation(conv)">
+                    <div class="ch-conv-card-icon">
+                        <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="20" style="color:#f97316"></iconify-icon>
+                    </div>
+                    <div class="ch-conv-card-info">
+                        <div class="ch-conv-card-name" x-text="conv.name || 'Conversation'"></div>
+                        <div class="ch-conv-card-preview" x-text="conv.lastMessage?.text || 'Aucun message'"></div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                        <span class="ch-conv-card-time" x-text="conv.lastMessage?.sentAt ? formatTime(conv.lastMessage.sentAt) : ''"></span>
+                        <span class="ch-conv-card-badge" x-show="conv.participants?.length" :style="'background:#f9731610;color:#f97316'" x-text="(conv.participants?.length || 0) + ' 👤'"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- Level 4: Active conversation view -->
+    <template x-if="!loading && activeConvId">
+        <div class="ch-chat-view">
+            <div class="ch-chat-header">
+                <div class="ch-conv-card-icon">
+                    <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="18" style="color:#f97316"></iconify-icon>
+                </div>
+                <div>
+                    <div class="ch-chat-title" x-text="activeConv?.name || 'Conversation'"></div>
+                    <div class="ch-chat-sub" x-text="(activeConv?.participants?.length || 0) + ' participants'"></div>
+                </div>
+            </div>
+            <div class="ch-chat-messages" x-ref="hubMessages">
+                <template x-if="loadingMessages">
+                    <div style="text-align:center;padding:20px;">
+                        <iconify-icon icon="line-md:loading-twotone-loop" width="22" style="color:#f97316"></iconify-icon>
+                    </div>
+                </template>
+                <template x-for="msg in messages" :key="msg._id">
+                    <div>
+                        <div class="ch-msg" :class="msg.senderId === currentUserId ? 'mine' : ''">
+                            <div class="ch-msg-avatar" x-text="(msg.senderName || '?')[0]"></div>
+                            <div>
+                                <div class="ch-msg-bubble" x-text="msg.text"></div>
+                                <div class="ch-msg-meta">
+                                    <span x-text="msg.senderName"></span> · <span x-text="formatTime(msg.createdAt)"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="!loadingMessages && messages.length === 0">
+                    <div style="text-align:center;padding:40px;color:#bfc9d4;font-size:12px;">
+                        <iconify-icon icon="solar:chat-round-line-bold-duotone" width="28" style="opacity:.3"></iconify-icon>
+                        <p style="margin-top:8px;">Aucun message dans cette conversation</p>
+                    </div>
+                </template>
+            </div>
+            <div class="ch-chat-input-area">
+                <textarea class="ch-chat-input" x-model="messageText" @keydown.enter.prevent="sendMessage()" placeholder="Écrire un message..." rows="1"></textarea>
+                <button class="ch-chat-send" @click="sendMessage()" :disabled="!messageText.trim()">
+                    <iconify-icon icon="solar:plain-bold" width="18"></iconify-icon>
+                </button>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const _accountNumber = '<%= account_number %>';
+    const _apiBase = '/account/' + _accountNumber;
+    const _currentUserId = '<%= typeof user !== "undefined" && user ? user._id : "" %>';
+
+    Alpine.data('chatHub', () => ({
+        entities: [],
+        loading: true,
+        currentEntity: null,
+        currentRecord: null,
+        activeConvId: null,
+        activeConv: null,
+        messages: [],
+        loadingMessages: false,
+        messageText: '',
+        totalConversations: 0,
+        currentUserId: _currentUserId,
+
+        async init() {
+            await this.loadHub();
+        },
+
+        async loadHub() {
+            this.loading = true;
+            try {
+                const res = await fetch(_apiBase + '/api/chat-hub', { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    this.entities = data.entities || [];
+                    this.totalConversations = this.entities.reduce((sum, e) => sum + (e.totalConversations || 0), 0);
+                }
+            } catch (e) {
+                console.error('[ChatHub] Load error:', e);
+            }
+            this.loading = false;
+        },
+
+        goToRoot() {
+            this.currentEntity = null;
+            this.currentRecord = null;
+            this.activeConvId = null;
+            this.activeConv = null;
+            this.messages = [];
+        },
+
+        goToEntity(entity) {
+            this.currentEntity = entity;
+            this.currentRecord = null;
+            this.activeConvId = null;
+            this.activeConv = null;
+            this.messages = [];
+        },
+
+        goToRecord(record) {
+            this.currentRecord = record;
+            this.activeConvId = null;
+            this.activeConv = null;
+            this.messages = [];
+        },
+
+        async openConversation(conv) {
+            this.activeConvId = conv._id;
+            this.activeConv = conv;
+            this.loadingMessages = true;
+            this.messages = [];
+
+            try {
+                const recordId = conv.recordId;
+                const res = await fetch(_apiBase + '/api/record/' + recordId + '/conversations/' + conv._id, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    this.messages = data.messages || [];
+                    this.activeConv = data.conversation;
+                }
+            } catch (e) {
+                console.error('[ChatHub] Load messages error:', e);
+            }
+            this.loadingMessages = false;
+            this.$nextTick(() => {
+                const el = this.$refs.hubMessages;
+                if (el) el.scrollTop = el.scrollHeight;
+            });
+        },
+
+        async sendMessage() {
+            const text = this.messageText.trim();
+            if (!text || !this.activeConvId || !this.activeConv) return;
+
+            const tempMsg = {
+                _id: 'temp_' + Date.now(),
+                senderId: this.currentUserId,
+                senderName: 'Moi',
+                text,
+                createdAt: new Date().toISOString()
+            };
+            this.messages.push(tempMsg);
+            this.messageText = '';
+            this.$nextTick(() => {
+                const el = this.$refs.hubMessages;
+                if (el) el.scrollTop = el.scrollHeight;
+            });
+
+            try {
+                const recordId = this.activeConv.recordId;
+                const res = await fetch(_apiBase + '/api/record/' + recordId + '/conversations/' + this.activeConvId + '/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (data.success && data.message) {
+                    const idx = this.messages.findIndex(m => m._id === tempMsg._id);
+                    if (idx !== -1) this.messages[idx] = data.message;
+                }
+            } catch (e) {
+                console.error('[ChatHub] Send error:', e);
+            }
+        },
+
+        formatTime(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - d;
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return "à l'instant";
+            if (diffMins < 60) return diffMins + ' min';
+            const diffHrs = Math.floor(diffMins / 60);
+            if (diffHrs < 24) return diffHrs + 'h';
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        }
+    }));
+});
+</script>

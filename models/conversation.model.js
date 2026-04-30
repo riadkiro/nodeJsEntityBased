@@ -17,6 +17,13 @@ const ConversationSchema = new mongoose.Schema({
         default: "direct",
     },
 
+    // ── Record context (optional) ──
+    // If set, this conversation is scoped to a specific record
+    recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record', default: null, index: true },
+    entityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity', default: null },
+    entityName: { type: String, default: '' },     // Cached entity name
+    recordTitle: { type: String, default: '' },    // Cached record title
+
     // Group name (only for group conversations)
     name: { type: String, default: "" },
 
@@ -59,6 +66,8 @@ const ConversationSchema = new mongoose.Schema({
 ConversationSchema.index({ "participants.userId": 1 });
 // Index for sorting by latest message
 ConversationSchema.index({ "lastMessage.sentAt": -1 });
+// Index for record-scoped conversations
+ConversationSchema.index({ recordId: 1, updatedAt: -1 });
 
 const Conversation = mongoose.model("Conversation", ConversationSchema);
 module.exports = Conversation;

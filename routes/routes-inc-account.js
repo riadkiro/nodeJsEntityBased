@@ -34,6 +34,9 @@ router.use("/", require("./grid-template.router.js"));
 router.use("/", require("./grid-snapshot.router.js"));
 router.use("/", require("./line-defaults.router.js"));
 
+// Global Drive API (aggregated attachments across all records) — must be before api-account (has /:id catch-all)
+router.use("/api", require("./api/api-drive.router.js"));
+
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
@@ -142,6 +145,17 @@ router.get("/media", (req, res) => {
         account_number: req.account_number
     });
 });
+
+// Global Drive Page
+router.get("/drive", (req, res) => {
+    res.render("account/account-drive", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+
 
 // Doctor Clinical Command Center
 router.get("/doctor", (req, res) => {

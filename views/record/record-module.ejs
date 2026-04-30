@@ -1775,9 +1775,23 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             </div>
             <!-- Breadcrumb -->
             <div class="drive-breadcrumb">
-                <button @click="navigateTo('')" class="drive-breadcrumb-item" :class="!currentFolder && !viewingGenerated ? 'drive-breadcrumb-item--active' : ''">
-                    <iconify-icon icon="solar:home-2-bold" width="14"></iconify-icon>
+                <a href="/account/<%= account_number %>/drive" class="drive-breadcrumb-item" style="text-decoration:none;">
+                    <iconify-icon icon="solar:cloud-storage-bold-duotone" width="14" style="color:#ec4899"></iconify-icon>
                     Drive
+                </a>
+                <span class="drive-breadcrumb-sep">
+                    <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                </span>
+                <a href="/account/<%= account_number %>/drive" class="drive-breadcrumb-item" style="text-decoration:none;">
+                    <iconify-icon icon="<%= entity.icon || 'solar:folder-bold-duotone' %>" width="14" style="color:<%= entity.color || '#4361ee' %>"></iconify-icon>
+                    <%= entity.name %>
+                </a>
+                <span class="drive-breadcrumb-sep">
+                    <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                </span>
+                <button @click="navigateTo('')" class="drive-breadcrumb-item" :class="!currentFolder && !viewingGenerated ? 'drive-breadcrumb-item--active' : ''">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
+                    <%= record.title || 'Sans titre' %>
                 </button>
                 <template x-if="viewingGenerated">
                     <span class="drive-breadcrumb-sep">

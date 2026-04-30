@@ -1598,7 +1598,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <% } %>
 
     <!-- ═══ OTHER MODULES (non-docs) ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat') { %>
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -2050,56 +2050,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         <% } %>
 
         <% if (moduleName === 'notes') { %>
-        <div class="rm-items-list">
-            
-            <div class="rm-item" style="animation-delay:0ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608)">
-                    <iconify-icon icon="solar:notebook-bookmark-bold-duotone" width="20" style="color:#8b5cf6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Observation clinique - Consultation 15/04</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#8b5cf615;color:#8b5cf6">Récent</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:60ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608)">
-                    <iconify-icon icon="solar:notebook-bold-duotone" width="20" style="color:#8b5cf6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Antécédents familiaux détaillés</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 01/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#ef444415;color:#ef4444">Important</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:120ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608)">
-                    <iconify-icon icon="solar:notebook-bold-duotone" width="20" style="color:#8b5cf6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Évolution traitement HTA</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 28/03/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Suivi</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:180ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608)">
-                    <iconify-icon icon="solar:notebook-minimalistic-bold-duotone" width="20" style="color:#8b5cf6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Notes première consultation</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/03/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280">Archivé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-        </div>
+        <%- include('../record/partials/record-notes-module') %>
         <% } %>
 
     <% if (moduleName === 'chat') { %>

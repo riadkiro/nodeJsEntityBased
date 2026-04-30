@@ -44,6 +44,9 @@ router.use("/mailbox", require("./mailbox.router.js"));
 // Record Chat API (conversations + messages per record)
 require('./api/api-record-chat.router')(router);
 
+// Record Notes API (rich-text notes per record)
+require('./api/api-record-notes.router')(router);
+
 // React Islands API (JSON endpoints)
 router.use("/", require("./api.routes.js"));
 

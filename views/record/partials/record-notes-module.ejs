@@ -1,0 +1,408 @@
+<!-- Record Notes Module — Rich-text notes with color cards + inline editor + autosave -->
+<style>
+/* ── Notes Grid ── */
+.notes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+.note-card { border-radius:14px; border:1px solid #e0e6ed; background:#fff; cursor:pointer; transition:all .25s; overflow:hidden; position:relative; }
+.note-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.07); }
+.note-card-stripe { height:5px; }
+.note-card-body { padding:16px; }
+.note-card-title { font-size:14px; font-weight:700; color:#0e1726; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.note-card-preview { font-size:12px; color:#888da8; line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; min-height:54px; }
+.note-card-footer { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid #f1f3f5; }
+.note-card-date { font-size:10px; color:#bfc9d4; display:flex; align-items:center; gap:4px; }
+.note-card-pin { position:absolute; top:12px; right:12px; color:#f59e0b; }
+.note-card-actions { display:flex; gap:4px; }
+.note-card-actions button { width:26px; height:26px; border:none; background:transparent; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#94a3b8; transition:all .15s; }
+.note-card-actions button:hover { background:#f1f5f9; color:#0e1726; }
+.note-card-actions button.delete-btn:hover { background:#fef2f2; color:#ef4444; }
+/* ── Create Button ── */
+.note-add-card { border:2px dashed #e0e6ed; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:180px; cursor:pointer; transition:all .25s; background:#fafbfc; }
+.note-add-card:hover { border-color:#8b5cf6; background:#8b5cf608; transform:translateY(-2px); }
+.note-add-card iconify-icon { opacity:.4; }
+.note-add-card span { font-size:12px; font-weight:600; color:#94a3b8; }
+/* ── Create Modal ── */
+.note-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:999; display:flex; align-items:center; justify-content:center; animation:nmFadeIn .2s; }
+.note-modal { background:#fff; border-radius:16px; width:400px; max-width:92vw; box-shadow:0 20px 60px rgba(0,0,0,.15); overflow:hidden; animation:nmSlide .25s ease; }
+.note-modal-header { padding:20px 24px; border-bottom:1px solid #f1f3f5; }
+.note-modal-header h3 { font-size:16px; font-weight:700; color:#0e1726; margin:0; }
+.note-modal-body { padding:20px 24px; }
+.note-modal-body label { font-size:12px; font-weight:600; color:#64748b; display:block; margin-bottom:6px; }
+.note-modal-body input { width:100%; padding:10px 14px; border:1.5px solid #e0e6ed; border-radius:10px; font-size:13px; font-family:inherit; color:#0e1726; outline:none; }
+.note-modal-body input:focus { border-color:#8b5cf6; box-shadow:0 0 0 3px #8b5cf610; }
+.note-colors { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.note-color-dot { width:32px; height:32px; border-radius:50%; border:3px solid transparent; cursor:pointer; transition:all .15s; }
+.note-color-dot:hover { transform:scale(1.15); }
+.note-color-dot.active { border-color:#0e1726; box-shadow:0 0 0 2px #fff, 0 0 0 4px currentColor; }
+.note-modal-footer { padding:16px 24px; border-top:1px solid #f1f3f5; display:flex; justify-content:flex-end; gap:8px; }
+.note-modal-footer button { padding:8px 20px; border-radius:10px; font-size:13px; font-weight:600; border:none; cursor:pointer; transition:all .15s; font-family:inherit; }
+.note-modal-footer .btn-cancel { background:#f1f5f9; color:#64748b; }
+.note-modal-footer .btn-cancel:hover { background:#e2e8f0; }
+.note-modal-footer .btn-create { background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; }
+.note-modal-footer .btn-create:hover { box-shadow:0 4px 12px #8b5cf640; }
+/* ── Editor View ── */
+.note-editor-wrap { border:1px solid #e0e6ed; border-radius:14px; overflow:hidden; background:#fff; min-height:400px; display:flex; flex-direction:column; }
+.note-editor-topbar { padding:10px 16px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:10px; }
+.note-editor-back { display:flex; align-items:center; gap:5px; font-size:12px; color:#64748b; border:none; background:none; cursor:pointer; padding:6px 10px; border-radius:8px; font-family:inherit; font-weight:600; }
+.note-editor-back:hover { background:#f1f5f9; color:#8b5cf6; }
+.note-editor-title-input { flex:1; border:none; background:none; font-size:16px; font-weight:700; color:#0e1726; outline:none; font-family:inherit; }
+.note-editor-title-input::placeholder { color:#cbd5e1; }
+.note-editor-save-status { font-size:10px; color:#94a3b8; display:flex; align-items:center; gap:4px; white-space:nowrap; }
+.note-editor-save-status.saving { color:#f59e0b; }
+.note-editor-save-status.saved { color:#10b981; }
+/* ── Toolbar ── */
+.note-toolbar { display:flex; align-items:center; gap:2px; padding:6px 12px; border-bottom:1px solid #f1f3f5; flex-wrap:wrap; background:#fafbfc; }
+.note-toolbar button { width:32px; height:32px; border:none; background:transparent; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; transition:all .12s; font-family:inherit; font-size:13px; font-weight:700; }
+.note-toolbar button:hover { background:#e2e8f0; color:#0e1726; }
+.note-toolbar button.active { background:#8b5cf615; color:#8b5cf6; }
+.note-toolbar .sep { width:1px; height:20px; background:#e0e6ed; margin:0 4px; }
+.note-toolbar-colors { display:flex; gap:3px; margin-left:4px; }
+.note-toolbar-colors span { width:18px; height:18px; border-radius:50%; cursor:pointer; transition:transform .12s; border:2px solid transparent; }
+.note-toolbar-colors span:hover { transform:scale(1.2); border-color:#0e1726; }
+/* ── Content area ── */
+.note-editor-content { flex:1; padding:20px 24px; outline:none; font-size:14px; line-height:1.7; color:#0e1726; min-height:300px; overflow-y:auto; }
+.note-editor-content:empty::before { content:attr(data-placeholder); color:#cbd5e1; pointer-events:none; }
+.note-editor-content ul, .note-editor-content ol { padding-left:24px; }
+.note-editor-content blockquote { border-left:3px solid #8b5cf6; padding-left:14px; margin:8px 0; color:#64748b; font-style:italic; }
+/* Animations */
+@keyframes nmFadeIn { from{opacity:0} to{opacity:1} }
+@keyframes nmSlide { from{opacity:0;transform:translateY(-20px)scale(.95)} to{opacity:1;transform:none} }
+/* ── Empty ── */
+.notes-empty { text-align:center; padding:48px 20px; color:#94a3b8; }
+.notes-empty h3 { font-size:16px; font-weight:700; color:#0e1726; margin:10px 0 4px; }
+.notes-empty p { font-size:13px; margin:0; }
+/* Dark mode */
+[data-theme="dark"] .note-card { background:#0e1726; border-color:#253b5c; }
+[data-theme="dark"] .note-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.3); }
+[data-theme="dark"] .note-card-title { color:#e0e6ed; }
+[data-theme="dark"] .note-card-footer { border-color:#253b5c; }
+[data-theme="dark"] .note-add-card { background:#0b1320; border-color:#253b5c; }
+[data-theme="dark"] .note-add-card:hover { border-color:#8b5cf6; background:#8b5cf610; }
+[data-theme="dark"] .note-modal { background:#0e1726; }
+[data-theme="dark"] .note-modal-header { border-color:#253b5c; }
+[data-theme="dark"] .note-modal-header h3 { color:#e0e6ed; }
+[data-theme="dark"] .note-modal-body input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
+[data-theme="dark"] .note-modal-footer { border-color:#253b5c; }
+[data-theme="dark"] .note-modal-footer .btn-cancel { background:#1b2e4b; color:#94a3b8; }
+[data-theme="dark"] .note-editor-wrap { background:#0e1726; border-color:#253b5c; }
+[data-theme="dark"] .note-editor-topbar { border-color:#253b5c; }
+[data-theme="dark"] .note-editor-title-input { color:#e0e6ed; }
+[data-theme="dark"] .note-toolbar { background:#0b1320; border-color:#253b5c; }
+[data-theme="dark"] .note-toolbar button:hover { background:#1b2e4b; color:#e0e6ed; }
+[data-theme="dark"] .note-editor-content { color:#e0e6ed; }
+[data-theme="dark"] .notes-empty h3 { color:#e0e6ed; }
+[data-theme="dark"] .note-color-dot.active { border-color:#e0e6ed; }
+</style>
+
+<div x-data="notesModule" x-cloak>
+    <!-- Loading -->
+    <div x-show="loading" style="text-align:center;padding:32px;">
+        <iconify-icon icon="line-md:loading-twotone-loop" width="28" style="color:#8b5cf6"></iconify-icon>
+        <p style="font-size:12px;color:#888da8;margin-top:8px;">Chargement des notes...</p>
+    </div>
+
+    <!-- ═══ GRID VIEW ═══ -->
+    <template x-if="!loading && !activeNote">
+        <div>
+            <div x-show="notes.length === 0 && !loading" class="notes-empty">
+                <iconify-icon icon="solar:notebook-bold-duotone" width="48" style="opacity:.3"></iconify-icon>
+                <h3>Aucune note</h3>
+                <p>Créez votre première note pour cet enregistrement</p>
+            </div>
+
+            <div class="notes-grid">
+                <!-- Add card -->
+                <div class="note-add-card" @click="showCreateModal = true">
+                    <iconify-icon icon="solar:add-circle-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
+                    <span>Nouvelle note</span>
+                </div>
+                <!-- Note cards -->
+                <template x-for="note in notes" :key="note._id">
+                    <div class="note-card" @click="openNote(note)">
+                        <div class="note-card-stripe" :style="'background:' + note.color"></div>
+                        <div x-show="note.pinned" class="note-card-pin">
+                            <iconify-icon icon="solar:pin-bold" width="14"></iconify-icon>
+                        </div>
+                        <div class="note-card-body">
+                            <div class="note-card-title" x-text="note.title || 'Sans titre'"></div>
+                            <div class="note-card-preview" x-html="getPreview(note.content)"></div>
+                        </div>
+                        <div class="note-card-footer">
+                            <span class="note-card-date">
+                                <iconify-icon icon="solar:calendar-linear" width="11"></iconify-icon>
+                                <span x-text="formatDate(note.updatedAt)"></span>
+                            </span>
+                            <div class="note-card-actions" @click.stop>
+                                <button @click.stop="togglePin(note)" :title="note.pinned ? 'Désépingler' : 'Épingler'">
+                                    <iconify-icon :icon="note.pinned ? 'solar:pin-bold' : 'solar:pin-linear'" width="14"></iconify-icon>
+                                </button>
+                                <button class="delete-btn" @click.stop="deleteNote(note)" title="Supprimer">
+                                    <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- ═══ EDITOR VIEW ═══ -->
+    <template x-if="activeNote">
+        <div class="note-editor-wrap">
+            <div class="note-editor-topbar">
+                <button class="note-editor-back" @click="closeEditor()">
+                    <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+                    Retour
+                </button>
+                <div class="sep" style="width:1px;height:20px;background:#e0e6ed;margin:0 4px"></div>
+                <input type="text" class="note-editor-title-input" x-model="activeNote.title"
+                       placeholder="Titre de la note..." @input="scheduleAutosave()">
+                <div class="note-editor-save-status" :class="saveStatus">
+                    <template x-if="saveStatus === 'saving'">
+                        <span><iconify-icon icon="line-md:loading-twotone-loop" width="12"></iconify-icon> Sauvegarde...</span>
+                    </template>
+                    <template x-if="saveStatus === 'saved'">
+                        <span><iconify-icon icon="solar:check-circle-bold" width="12"></iconify-icon> Sauvegardé</span>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="note-toolbar">
+                <button @click="exec('bold')" title="Gras"><b>B</b></button>
+                <button @click="exec('italic')" title="Italique"><i>I</i></button>
+                <button @click="exec('underline')" title="Souligné"><u>U</u></button>
+                <button @click="exec('strikeThrough')" title="Barré"><s>S</s></button>
+                <div class="sep"></div>
+                <button @click="exec('insertUnorderedList')" title="Liste à puces">
+                    <iconify-icon icon="solar:list-bold" width="16"></iconify-icon>
+                </button>
+                <button @click="exec('insertOrderedList')" title="Liste numérotée">
+                    <iconify-icon icon="solar:list-1-bold" width="16"></iconify-icon>
+                </button>
+                <div class="sep"></div>
+                <button @click="exec('formatBlock','BLOCKQUOTE')" title="Citation">
+                    <iconify-icon icon="solar:quote-up-square-bold" width="16"></iconify-icon>
+                </button>
+                <button @click="insertCheckbox()" title="Checkbox">
+                    <iconify-icon icon="solar:check-square-bold" width="16"></iconify-icon>
+                </button>
+                <div class="sep"></div>
+                <button @click="exec('removeFormat')" title="Effacer formatage">
+                    <iconify-icon icon="solar:eraser-bold" width="16"></iconify-icon>
+                </button>
+                <div class="sep"></div>
+                <div class="note-toolbar-colors">
+                    <span style="background:#fef08a" @click="highlight('#fef08a')" title="Jaune"></span>
+                    <span style="background:#bbf7d0" @click="highlight('#bbf7d0')" title="Vert"></span>
+                    <span style="background:#bfdbfe" @click="highlight('#bfdbfe')" title="Bleu"></span>
+                    <span style="background:#fecaca" @click="highlight('#fecaca')" title="Rouge"></span>
+                    <span style="background:#e9d5ff" @click="highlight('#e9d5ff')" title="Violet"></span>
+                    <span style="background:transparent;border:1px solid #ccc" @click="highlight('transparent')" title="Effacer"></span>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="note-editor-content" contenteditable="true" x-ref="editorContent"
+                 data-placeholder="Commencez à écrire..."
+                 @input="scheduleAutosave()"></div>
+        </div>
+    </template>
+
+    <!-- ═══ CREATE MODAL ═══ -->
+    <template x-if="showCreateModal">
+        <div class="note-modal-overlay" @click.self="showCreateModal = false">
+            <div class="note-modal">
+                <div class="note-modal-header"><h3>Nouvelle note</h3></div>
+                <div class="note-modal-body">
+                    <label>Titre</label>
+                    <input type="text" x-model="newTitle" placeholder="Ex: Observation clinique..."
+                           @keydown.enter="createNote()">
+                    <label style="margin-top:16px">Couleur</label>
+                    <div class="note-colors">
+                        <template x-for="c in colorOptions" :key="c">
+                            <div class="note-color-dot" :class="newColor === c ? 'active' : ''"
+                                 :style="'background:' + c + ';color:' + c"
+                                 @click="newColor = c"></div>
+                        </template>
+                    </div>
+                </div>
+                <div class="note-modal-footer">
+                    <button class="btn-cancel" @click="showCreateModal = false">Annuler</button>
+                    <button class="btn-create" @click="createNote()">
+                        <iconify-icon icon="solar:add-circle-bold" width="14" style="margin-right:4px"></iconify-icon>
+                        Créer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const _accountNumber = '<%= account_number %>';
+    const _recordId = '<%= record._id %>';
+    const _apiBase = '/account/' + _accountNumber + '/api/record/' + _recordId + '/notes';
+    const _userId = '<%= typeof user !== "undefined" && user ? user._id : "" %>';
+    const _userName = '<%= typeof user !== "undefined" && user ? (user.name || user.email) : "" %>';
+
+    Alpine.data('notesModule', () => ({
+        notes: [],
+        loading: true,
+        activeNote: null,
+        showCreateModal: false,
+        newTitle: '',
+        newColor: '#8b5cf6',
+        saveStatus: '',
+        autosaveTimer: null,
+        colorOptions: ['#8b5cf6','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#14b8a6','#6366f1','#f97316','#64748b'],
+
+        async init() {
+            await this.loadNotes();
+        },
+
+        async loadNotes() {
+            this.loading = true;
+            try {
+                const res = await fetch(_apiBase, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) this.notes = data.notes || [];
+            } catch (e) { console.error('[Notes] Load error:', e); }
+            this.loading = false;
+        },
+
+        async createNote() {
+            const title = this.newTitle.trim() || 'Sans titre';
+            try {
+                const res = await fetch(_apiBase, {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, color: this.newColor })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.notes.unshift(data.note);
+                    this.showCreateModal = false;
+                    this.newTitle = '';
+                    this.newColor = '#8b5cf6';
+                    this.openNote(data.note);
+                }
+            } catch (e) { console.error('[Notes] Create error:', e); }
+        },
+
+        openNote(note) {
+            this.activeNote = { ...note };
+            this.$nextTick(() => {
+                const el = this.$refs.editorContent;
+                if (el) el.innerHTML = note.content || '';
+            });
+        },
+
+        closeEditor() {
+            this.doAutosave();
+            clearTimeout(this.autosaveTimer);
+            const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
+            if (idx !== -1) {
+                this.notes[idx] = { ...this.activeNote };
+                const el = this.$refs.editorContent;
+                if (el) this.notes[idx].content = el.innerHTML;
+            }
+            this.activeNote = null;
+            this.saveStatus = '';
+        },
+
+        scheduleAutosave() {
+            clearTimeout(this.autosaveTimer);
+            this.saveStatus = '';
+            this.autosaveTimer = setTimeout(() => this.doAutosave(), 1200);
+        },
+
+        async doAutosave() {
+            if (!this.activeNote) return;
+            this.saveStatus = 'saving';
+            const el = this.$refs.editorContent;
+            const content = el ? el.innerHTML : '';
+            try {
+                await fetch(_apiBase + '/' + this.activeNote._id, {
+                    method: 'PUT', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: this.activeNote.title,
+                        content: content
+                    })
+                });
+                this.saveStatus = 'saved';
+                const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
+                if (idx !== -1) {
+                    this.notes[idx].title = this.activeNote.title;
+                    this.notes[idx].content = content;
+                    this.notes[idx].updatedAt = new Date().toISOString();
+                }
+                setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
+            } catch (e) {
+                console.error('[Notes] Autosave error:', e);
+                this.saveStatus = '';
+            }
+        },
+
+        async deleteNote(note) {
+            if (!confirm('Supprimer cette note ?')) return;
+            try {
+                await fetch(_apiBase + '/' + note._id, { method: 'DELETE', credentials: 'include' });
+                this.notes = this.notes.filter(n => n._id !== note._id);
+            } catch (e) { console.error('[Notes] Delete error:', e); }
+        },
+
+        async togglePin(note) {
+            try {
+                const res = await fetch(_apiBase + '/' + note._id + '/pin', {
+                    method: 'PATCH', credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success !== undefined) {
+                    note.pinned = data.pinned;
+                    this.notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.updatedAt) - new Date(a.updatedAt));
+                }
+            } catch (e) { console.error('[Notes] Pin error:', e); }
+        },
+
+        exec(cmd, val) {
+            document.execCommand(cmd, false, val || null);
+            this.$refs.editorContent?.focus();
+            this.scheduleAutosave();
+        },
+
+        highlight(color) {
+            if (color === 'transparent') {
+                document.execCommand('removeFormat', false, null);
+            } else {
+                document.execCommand('hiliteColor', false, color);
+            }
+            this.$refs.editorContent?.focus();
+            this.scheduleAutosave();
+        },
+
+        insertCheckbox() {
+            document.execCommand('insertHTML', false,
+                '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:4px 0"><input type="checkbox" style="width:16px;height:16px;accent-color:#8b5cf6"> <span>Tâche</span></label>');
+            this.$refs.editorContent?.focus();
+            this.scheduleAutosave();
+        },
+
+        getPreview(html) {
+            if (!html) return '<span style="color:#cbd5e1;font-style:italic">Note vide</span>';
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const text = tmp.textContent || tmp.innerText || '';
+            return text.substring(0, 120) || '<span style="color:#cbd5e1;font-style:italic">Note vide</span>';
+        },
+
+        formatDate(d) {
+            if (!d) return '';
+            const date = new Date(d);
+            return date.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+        }
+    }));
+});
+</script>

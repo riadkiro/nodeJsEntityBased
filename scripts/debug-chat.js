@@ -1,101 +1,51 @@
-// Test: create conversation + send message via API
 const http = require('http');
 
-const loginData = JSON.stringify({ email: 'boukirou6@hotmail.com', password: 'test' });
-
-function makeRequest(options, body) {
+function makeReq(opts, body) {
     return new Promise((resolve, reject) => {
-        const req = http.request(options, (res) => {
-            let data = '';
-            res.on('data', d => data += d);
-            res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+        const r = http.request(opts, (res) => {
+            let d = '';
+            res.on('data', c => d += c);
+            res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: d }));
         });
-        req.on('error', reject);
-        if (body) req.write(body);
-        req.end();
+        r.on('error', reject);
+        if (body) r.write(body);
+        r.end();
     });
 }
 
 async function main() {
-    // 1. Login
-    const loginRes = await makeRequest({
+    const loginData = JSON.stringify({ email: 'boukirou6@hotmail.com', password: 'test' });
+    const loginRes = await makeReq({
         hostname: 'localhost', port: 3000, path: '/auth/login', method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(loginData) }
     }, loginData);
-    
     const cookie = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
-    console.log('1. Login:', loginRes.status, '| Cookie:', cookie.substring(0, 50) + '...');
+    console.log('Login:', loginRes.status);
 
-    // 2. List conversations (should be empty)
-    const listRes = await makeRequest({
-        hostname: 'localhost', port: 3000,
-        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations',
-        method: 'GET', headers: { 'Cookie': cookie }
-    });
-    console.log('\n2. List conversations:', listRes.status, listRes.body);
+    const base = '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/notes';
 
-    // 3. Create a conversation
-    const createBody = JSON.stringify({ name: 'Discussion patient test' });
-    const createRes = await makeRequest({
-        hostname: 'localhost', port: 3000,
-        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations',
-        method: 'POST',
-        headers: { 'Cookie': cookie, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(createBody) }
-    }, createBody);
-    console.log('\n3. Create conversation:', createRes.status);
-    const createData = JSON.parse(createRes.body);
-    console.log('   Success:', createData.success);
-    if (createData.conversation) {
-        console.log('   ID:', createData.conversation._id);
-        console.log('   Name:', createData.conversation.name);
-        console.log('   Participants:', createData.conversation.participants?.length);
+    // 1. List
+    const list = await makeReq({ hostname:'localhost', port:3000, path:base, method:'GET', headers:{Cookie:cookie} });
+    console.log('List:', list.status, list.body.substring(0, 200));
+
+    // 2. Create
+    const cb = JSON.stringify({ title: 'Test note', color: '#3b82f6' });
+    const create = await makeReq({ hostname:'localhost', port:3000, path:base, method:'POST',
+        headers:{Cookie:cookie, 'Content-Type':'application/json', 'Content-Length':Buffer.byteLength(cb)} }, cb);
+    console.log('Create:', create.status, create.body.substring(0, 200));
+
+    if (create.status === 200) {
+        const noteId = JSON.parse(create.body).note?._id;
+        if (noteId) {
+            // 3. Update
+            const ub = JSON.stringify({ title: 'Updated', content: '<b>Hello</b>' });
+            const update = await makeReq({ hostname:'localhost', port:3000, path:base+'/'+noteId, method:'PUT',
+                headers:{Cookie:cookie, 'Content-Type':'application/json', 'Content-Length':Buffer.byteLength(ub)} }, ub);
+            console.log('Update:', update.status, update.body.substring(0, 150));
+        }
     }
-    if (createData.error) console.log('   ERROR:', createData.error);
 
-    if (!createData.success) { process.exit(1); }
-
-    const convId = createData.conversation._id;
-
-    // 4. Send a message
-    const msgBody = JSON.stringify({ text: 'Bonjour, ceci est un test depuis le script!' });
-    const msgRes = await makeRequest({
-        hostname: 'localhost', port: 3000,
-        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations/' + convId + '/messages',
-        method: 'POST',
-        headers: { 'Cookie': cookie, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(msgBody) }
-    }, msgBody);
-    console.log('\n4. Send message:', msgRes.status);
-    const msgData = JSON.parse(msgRes.body);
-    console.log('   Success:', msgData.success);
-    if (msgData.message) {
-        console.log('   Message ID:', msgData.message._id);
-        console.log('   Text:', msgData.message.text);
-        console.log('   Sender:', msgData.message.senderName);
-    }
-    if (msgData.error) console.log('   ERROR:', msgData.error);
-
-    // 5. Get conversation with messages
-    const getRes = await makeRequest({
-        hostname: 'localhost', port: 3000,
-        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations/' + convId,
-        method: 'GET', headers: { 'Cookie': cookie }
-    });
-    console.log('\n5. Get conversation:', getRes.status);
-    const getData = JSON.parse(getRes.body);
-    console.log('   Messages count:', getData.messages?.length);
-
-    // 6. List again to verify
-    const list2Res = await makeRequest({
-        hostname: 'localhost', port: 3000,
-        path: '/account/7846/api/record/69e9e3e85ca57f4b82f9279f/conversations',
-        method: 'GET', headers: { 'Cookie': cookie }
-    });
-    console.log('\n6. List conversations (after create):', list2Res.status);
-    const list2Data = JSON.parse(list2Res.body);
-    console.log('   Count:', list2Data.conversations?.length);
-
-    console.log('\n✅ All API tests passed!');
+    console.log('\nDone!');
     process.exit(0);
 }
-
-main().catch(e => { console.error('FATAL:', e); process.exit(1); });
+main().catch(e => { console.error(e); process.exit(1); });

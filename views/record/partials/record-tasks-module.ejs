@@ -61,25 +61,12 @@
     }
     .tl-preview-item:hover .tl-preview-drag { opacity: 0.6; }
     .tl-preview-drag:hover { color: #4361ee !important; opacity: 1 !important; }
-    .tl-preview-item.dragging {
+    .tl-preview-item.sortable-ghost {
         opacity: 0.35; background: #eef2ff; border-radius: 6px;
-        transform: scale(0.97); transition: all 0.15s;
+        transform: scale(0.97);
     }
-    .tl-preview-item.drag-over {
-        position: relative;
-    }
-    .tl-preview-item.drag-over::before {
-        content: '';
-        position: absolute; left: 0; right: 0; top: -2px;
-        height: 2px; background: #4361ee;
-        border-radius: 2px;
-    }
-    .tl-preview-item.drag-over::after {
-        content: '';
-        position: absolute; left: -3px; top: -5px;
-        width: 8px; height: 8px;
-        background: #4361ee; border-radius: 50%;
-        border: 2px solid #fff; box-shadow: 0 0 0 1px #4361ee;
+    .tl-preview-item.sortable-chosen {
+        background: #f8fafc; border-radius: 6px;
     }
     /* Task context menu */
     .tl-task-ctx {
@@ -394,15 +381,12 @@
 
                         <!-- Expandable task preview -->
                         <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
+                            <div class="sortable-tasks-container" :data-list-id="list._id"
+                                 x-init="$nextTick(() => initPreviewSortable($el, list))"
+                                 x-effect="if(expandedListIds.includes(list._id)) $nextTick(() => initPreviewSortable($el, list))">
                             <template x-for="(pt, ptIdx) in (list.tasks || [])" :key="pt._id">
-                                <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé', 'dragging': dragTaskId === pt._id, 'drag-over': dragOverTaskId === pt._id}"
-                                     draggable="true"
-                                     @dragstart="dragTaskId = pt._id; dragTaskListId = list._id; $event.dataTransfer.effectAllowed = 'move'"
-                                     @dragend="dragTaskId = null; dragOverTaskId = null"
-                                     @dragover.prevent="$event.dataTransfer.dropEffect = 'move'"
-                                     @dragenter.prevent="if(dragTaskId && dragTaskId !== pt._id) dragOverTaskId = pt._id"
-                                     @dragleave="if(dragOverTaskId === pt._id) dragOverTaskId = null"
-                                     @drop.prevent="previewReorder(list, pt._id)"
+                                <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé'}"
+                                     :data-task-id="pt._id"
                                      @contextmenu.prevent.stop="openTaskCtx($event, list, pt)">
                                     <iconify-icon icon="solar:hamburger-menu-linear" width="12" class="tl-preview-drag"></iconify-icon>
                                     <div class="tl-preview-check" :class="{'checked': pt.status === 'Terminé'}" @click="previewToggle(list, pt)">
@@ -431,6 +415,7 @@
                                     </div>
                                 </div>
                             </template>
+                            </div>
                             <template x-if="list.count > 10">
                                 <div style="font-size:10.5px;color:#94a3b8;padding:4px 0 0;font-weight:500">+ <span x-text="list.count - 10"></span> autres tâches</div>
                             </template>
@@ -657,9 +642,7 @@ document.addEventListener('alpine:init', () => {
         previewEditId: null,
         previewEditTitle: '',
         taskCtx: null,
-        dragTaskId: null,
-        dragTaskListId: null,
-        dragOverTaskId: null,
+        _sortableInstances: {},
         ctxColors: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6b7280'],
         statuses: [
             { label: 'À faire',  color: '#9ca3af' },
@@ -839,21 +822,76 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { console.error('[TaskLists] Delete task error:', e); }
         },
 
-        async previewReorder(list, targetId) {
-            if (!this.dragTaskId || this.dragTaskId === targetId || this.dragTaskListId !== list._id) return;
-            const tasks = list.tasks || [];
-            const fromIdx = tasks.findIndex(t => t._id === this.dragTaskId);
-            const toIdx = tasks.findIndex(t => t._id === targetId);
-            if (fromIdx < 0 || toIdx < 0) return;
+        initPreviewSortable(el, list) {
+            if (!el || !list?._id) return;
+            const listId = list._id;
 
-            const [moved] = tasks.splice(fromIdx, 1);
-            tasks.splice(toIdx, 0, moved);
-            this.dragTaskId = null;
-            this.dragOverTaskId = null;
+            // Don't re-init if already active on this container
+            if (this._sortableInstances[listId]?.el === el) return;
 
-            // Persist order
+            // Destroy previous instance if any
+            if (this._sortableInstances[listId]) {
+                this._sortableInstances[listId].destroy();
+                delete this._sortableInstances[listId];
+            }
+
+            const comp = this;
+            const instance = Sortable.create(el, {
+                animation: 180,
+                handle: '.tl-preview-drag',
+                draggable: '.tl-preview-item',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                // DO NOT use fallbackOnBody or forceFallback with Alpine x-for
+                onStart() {
+                    comp._preDragKeys = (list.tasks || []).map(t => t._id);
+                },
+                onEnd(evt) {
+                    const { oldDraggableIndex, newDraggableIndex } = evt;
+                    if (oldDraggableIndex === newDraggableIndex) return;
+
+                    // 1. Compute new order from snapshot
+                    const keys = [...comp._preDragKeys];
+                    const fromId = keys[oldDraggableIndex];
+                    const tasks = list.tasks || [];
+                    const fromIdx = tasks.findIndex(t => t._id === fromId);
+                    if (fromIdx < 0) return;
+
+                    const newTasks = [...tasks];
+                    const [moved] = newTasks.splice(fromIdx, 1);
+                    // Insert at new position mapped back to full array
+                    const targetId = keys[newDraggableIndex];
+                    let toIdx = newTasks.findIndex(t => t._id === targetId);
+                    if (toIdx < 0) toIdx = newTasks.length;
+                    newTasks.splice(toIdx, 0, moved);
+
+                    // 2. Destroy Sortable to release DOM refs
+                    instance.destroy();
+                    delete comp._sortableInstances[listId];
+
+                    // 3. FLUSH: clear array so Alpine destroys all x-for nodes
+                    list.tasks = [];
+
+                    // 4. REBUILD: next tick, set new order
+                    comp.$nextTick(() => {
+                        list.tasks = newTasks;
+                        // 5. RE-INIT: double nextTick for stable DOM
+                        comp.$nextTick(() => {
+                            const newEl = document.querySelector(`.sortable-tasks-container[data-list-id="${listId}"]`);
+                            if (newEl) comp.initPreviewSortable(newEl, list);
+                        });
+                        // 6. Persist order to API
+                        comp._persistTaskOrder(listId, newTasks);
+                    });
+                }
+            });
+            instance.el = el;
+            this._sortableInstances[listId] = instance;
+        },
+
+        async _persistTaskOrder(listId, tasks) {
             try {
-                await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/reorder`, {
+                await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/reorder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',

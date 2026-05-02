@@ -172,6 +172,55 @@
             <iconify-icon icon="solar:arrow-right-linear" width="20" height="20" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
         </a>
 
+        <!-- Team & Collaboration Links -->
+        <div class="ts-section-title" style="font-size:13px;font-weight:700;color:#0e1726;margin:28px 0 14px;display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="16" style="color:#4361ee"></iconify-icon>
+            Membres & Collaboration
+            <span style="flex:1;height:1px;background:#e0e6ed;"></span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <a href="/account/<%= account_number %>/team" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block">
+                <div class="p-3 bg-primary/10 text-primary rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
+                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="24"></iconify-icon>
+                </div>
+                <div class="flex-1">
+                    <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Équipe & Membres</h6>
+                    <p class="text-sm text-gray-500 mt-0.5">Gérer les utilisateurs, inviter, modifier les rôles</p>
+                </div>
+                <iconify-icon icon="solar:arrow-right-linear" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+            </a>
+            <a href="/account/<%= account_number %>/permissions" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block">
+                <div class="p-3 rounded-xl transition-colors" style="background:rgba(124,58,237,.1);color:#7c3aed;">
+                    <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="24"></iconify-icon>
+                </div>
+                <div class="flex-1">
+                    <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Permissions & Rôles</h6>
+                    <p class="text-sm text-gray-500 mt-0.5">Configurer les droits d'accès et rôles personnalisés</p>
+                </div>
+                <iconify-icon icon="solar:arrow-right-linear" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+            </a>
+            <a href="/account/<%= account_number %>/sharing" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block">
+                <div class="p-3 rounded-xl transition-colors" style="background:rgba(16,185,129,.1);color:#10b981;">
+                    <iconify-icon icon="solar:share-bold-duotone" width="24"></iconify-icon>
+                </div>
+                <div class="flex-1">
+                    <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Centre de Partage</h6>
+                    <p class="text-sm text-gray-500 mt-0.5">Partager des espaces et éléments entre comptes</p>
+                </div>
+                <iconify-icon icon="solar:arrow-right-linear" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+            </a>
+            <a href="/account/<%= account_number %>/chat" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block">
+                <div class="p-3 rounded-xl transition-colors" style="background:rgba(249,115,22,.1);color:#f97316;">
+                    <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="24"></iconify-icon>
+                </div>
+                <div class="flex-1">
+                    <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Team Chat</h6>
+                    <p class="text-sm text-gray-500 mt-0.5">Chat d'équipe avec canaux et messages directs</p>
+                </div>
+                <iconify-icon icon="solar:arrow-right-linear" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+            </a>
+        </div>
+
         <!-- Danger Zone -->
         <div class="panel mt-6 border-danger/30">
             <div class="mb-5">

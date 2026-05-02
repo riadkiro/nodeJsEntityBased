@@ -1,0 +1,233 @@
+<link rel="stylesheet" href="/css/app/team-system.css" />
+
+<div x-data="sharingHub()" x-cloak>
+  <!-- Page Header -->
+  <div class="ts-page-header" style="background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(16,185,129,.02));border-color:rgba(16,185,129,.12);">
+    <div class="ts-page-header-icon" style="background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05));">
+      <iconify-icon icon="solar:share-bold-duotone" width="28" style="color:#10b981"></iconify-icon>
+    </div>
+    <div class="ts-page-header-info">
+      <h1>Centre de Partage</h1>
+      <p>Partagez des espaces, collections et éléments avec d'autres comptes et utilisateurs</p>
+    </div>
+    <button class="ts-btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);" @click="showShareModal = true">
+      <iconify-icon icon="solar:share-bold" width="16"></iconify-icon>
+      Nouveau partage
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="ts-stats">
+    <div class="ts-stat-card">
+      <div class="ts-stat-icon" style="background:rgba(67,97,238,.1);">
+        <iconify-icon icon="solar:arrow-right-up-bold-duotone" width="24" style="color:#4361ee"></iconify-icon>
+      </div>
+      <div>
+        <div class="ts-stat-value" x-text="sharedByMe.length">0</div>
+        <div class="ts-stat-label">Partagés par moi</div>
+      </div>
+    </div>
+    <div class="ts-stat-card">
+      <div class="ts-stat-icon" style="background:rgba(16,185,129,.1);">
+        <iconify-icon icon="solar:arrow-left-down-bold-duotone" width="24" style="color:#10b981"></iconify-icon>
+      </div>
+      <div>
+        <div class="ts-stat-value" x-text="sharedWithMe.length">0</div>
+        <div class="ts-stat-label">Partagés avec moi</div>
+      </div>
+    </div>
+    <div class="ts-stat-card">
+      <div class="ts-stat-icon" style="background:rgba(249,115,22,.1);">
+        <iconify-icon icon="solar:link-bold-duotone" width="24" style="color:#f97316"></iconify-icon>
+      </div>
+      <div>
+        <div class="ts-stat-value" x-text="publicLinks.length">0</div>
+        <div class="ts-stat-label">Liens publics</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="ts-toolbar">
+    <div class="ts-toolbar-left">
+      <div class="ts-view-toggle">
+        <button class="ts-view-btn" :class="tab === 'by-me' && 'active'" @click="tab = 'by-me'">
+          <iconify-icon icon="solar:arrow-right-up-bold" width="14"></iconify-icon> Partagés par moi
+        </button>
+        <button class="ts-view-btn" :class="tab === 'with-me' && 'active'" @click="tab = 'with-me'">
+          <iconify-icon icon="solar:arrow-left-down-bold" width="14"></iconify-icon> Partagés avec moi
+        </button>
+        <button class="ts-view-btn" :class="tab === 'links' && 'active'" @click="tab = 'links'">
+          <iconify-icon icon="solar:link-bold" width="14"></iconify-icon> Liens publics
+        </button>
+      </div>
+    </div>
+    <div class="ts-toolbar-right">
+      <div class="ts-search">
+        <iconify-icon icon="solar:magnifer-linear" width="15" class="ts-search-icon"></iconify-icon>
+        <input type="text" placeholder="Rechercher..." x-model="searchQuery" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared By Me -->
+  <template x-if="tab === 'by-me'">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+      <template x-for="item in sharedByMe" :key="item.id">
+        <div class="ts-share-card">
+          <div class="ts-share-card-header">
+            <div class="ts-share-card-icon" :style="'background:' + item.color + '15'">
+              <iconify-icon :icon="item.icon" width="20" :style="'color:' + item.color"></iconify-icon>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="ts-share-card-title" x-text="item.name"></div>
+              <div class="ts-share-card-type" x-text="item.type"></div>
+            </div>
+            <span class="ts-share-perm-badge" :class="'ts-share-perm-' + item.permission" x-text="item.permission === 'view' ? 'Lecture' : item.permission === 'edit' ? 'Édition' : 'Admin'"></span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;">
+            <div>
+              <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Partagé avec</div>
+              <div class="ts-share-avatars">
+                <template x-for="a in item.sharedWith.slice(0,4)" :key="a">
+                  <img :src="'https://i.pravatar.cc/60?img=' + a" alt="user" />
+                </template>
+                <span class="ts-share-more" x-show="item.sharedWith.length > 4" x-text="'+' + (item.sharedWith.length - 4)"></span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:#94a3b8;" x-text="item.sharedAt"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Shared With Me -->
+  <template x-if="tab === 'with-me'">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+      <template x-for="item in sharedWithMe" :key="item.id">
+        <div class="ts-share-card">
+          <div class="ts-share-card-header">
+            <div class="ts-share-card-icon" :style="'background:' + item.color + '15'">
+              <iconify-icon :icon="item.icon" width="20" :style="'color:' + item.color"></iconify-icon>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="ts-share-card-title" x-text="item.name"></div>
+              <div class="ts-share-card-type">
+                <span x-text="item.type"></span> · <span x-text="'depuis ' + item.from"></span>
+              </div>
+            </div>
+            <span class="ts-share-perm-badge" :class="'ts-share-perm-' + item.permission" x-text="item.permission === 'view' ? 'Lecture' : item.permission === 'edit' ? 'Édition' : 'Admin'"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;" class="dark:!border-[#253b5c]">
+            <img :src="'https://i.pravatar.cc/40?img=' + item.fromAvatar" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" />
+            <span style="font-size:12px;color:#64748b;" x-text="'Partagé par ' + item.from"></span>
+            <span style="margin-left:auto;font-size:11px;color:#94a3b8;" x-text="item.sharedAt"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Public Links -->
+  <template x-if="tab === 'links'">
+    <div class="ts-member-list">
+      <template x-for="link in publicLinks" :key="link.id">
+        <div class="ts-member-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <iconify-icon icon="solar:link-bold" width="16" style="color:#f97316"></iconify-icon>
+          </div>
+          <div class="ts-member-row-info">
+            <div class="ts-member-row-name" x-text="link.name"></div>
+            <div class="ts-member-row-email" x-text="link.url" style="font-family:monospace;font-size:11px;"></div>
+          </div>
+          <span style="font-size:11px;padding:3px 10px;border-radius:8px;font-weight:600;" :style="link.active ? 'background:rgba(34,197,94,.1);color:#22c55e' : 'background:rgba(239,68,68,.1);color:#ef4444'" x-text="link.active ? 'Actif' : 'Expiré'"></span>
+          <span style="font-size:11px;color:#94a3b8;" x-text="link.views + ' vues'"></span>
+          <span style="font-size:11px;color:#94a3b8;" x-text="link.expires"></span>
+          <button style="padding:6px;border:none;background:none;color:#94a3b8;cursor:pointer;border-radius:6px;">
+            <iconify-icon icon="solar:copy-bold" width="16"></iconify-icon>
+          </button>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Share Modal -->
+  <template x-if="showShareModal">
+    <div class="ts-modal-overlay" @click.self="showShareModal = false">
+      <div class="ts-modal" @click.stop>
+        <div class="ts-modal-header">
+          <h3>Partager un élément</h3>
+          <button class="ts-modal-close" @click="showShareModal = false">
+            <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+          </button>
+        </div>
+        <div class="ts-modal-body">
+          <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Élément à partager</label>
+            <select style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:#fff;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]">
+              <option>📁 Espace — Patients</option>
+              <option>📊 Collection — Consultations</option>
+              <option>📄 Document — Ordonnance Template</option>
+              <option>📋 Vue — Kanban Projets</option>
+            </select>
+          </div>
+          <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Partager avec (email ou compte)</label>
+            <input type="text" placeholder="email@example.com ou numéro de compte" style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:#fff;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]" />
+          </div>
+          <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Permission</label>
+            <div style="display:flex;gap:8px;">
+              <template x-for="p in [{key:'view',label:'Lecture',icon:'solar:eye-bold',color:'#10b981'},{key:'edit',label:'Édition',icon:'solar:pen-bold',color:'#4361ee'},{key:'admin',label:'Admin',icon:'solar:shield-bold',color:'#7c3aed'}]" :key="p.key">
+                <button style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #e0e6ed;background:none;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit;" :style="sharePermission === p.key ? 'border-color:'+p.color+';background:'+p.color+'08' : ''" @click="sharePermission = p.key" class="dark:!border-[#253b5c]">
+                  <iconify-icon :icon="p.icon" width="18" :style="'color:'+p.color"></iconify-icon>
+                  <span style="font-size:12px;font-weight:600;" x-text="p.label" class="dark:!text-[#e0e6ed]"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <button style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #e0e6ed;border-radius:10px;background:none;font-size:12px;font-weight:600;color:#f97316;cursor:pointer;font-family:inherit;" class="dark:!border-[#253b5c]">
+              <iconify-icon icon="solar:link-bold" width="14"></iconify-icon>
+              Générer un lien public
+            </button>
+            <button class="ts-btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);">
+              <iconify-icon icon="solar:share-bold" width="16"></iconify-icon>
+              Partager
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('sharingHub', () => ({
+    tab: 'by-me',
+    searchQuery: '',
+    showShareModal: false,
+    sharePermission: 'view',
+    sharedByMe: [
+      { id:1, name:'Patients', type:'Espace', icon:'solar:folder-bold-duotone', color:'#4361ee', permission:'edit', sharedWith:[3,5,8,10,12], sharedAt:'Il y a 3 jours' },
+      { id:2, name:'Consultations', type:'Collection', icon:'solar:clipboard-list-bold-duotone', color:'#f97316', permission:'view', sharedWith:[5,8], sharedAt:'Il y a 1 semaine' },
+      { id:3, name:'Kanban Projets', type:'Vue', icon:'solar:widget-5-bold-duotone', color:'#7c3aed', permission:'edit', sharedWith:[3,10], sharedAt:'Il y a 2 semaines' },
+      { id:4, name:'Template Ordonnance', type:'Document', icon:'solar:document-bold-duotone', color:'#10b981', permission:'admin', sharedWith:[5], sharedAt:'Il y a 1 mois' },
+    ],
+    sharedWithMe: [
+      { id:10, name:'Projets Actirama', type:'Espace', icon:'solar:case-bold-duotone', color:'#06b6d4', permission:'edit', from:'Marc Dubois', fromAvatar:3, sharedAt:'Il y a 2 jours' },
+      { id:11, name:'Contacts Fournisseurs', type:'Collection', icon:'solar:users-group-rounded-bold-duotone', color:'#f97316', permission:'view', from:'Julie Moreau', fromAvatar:10, sharedAt:'Il y a 1 semaine' },
+      { id:12, name:'Dashboard Commercial', type:'Vue', icon:'solar:chart-bold-duotone', color:'#7c3aed', permission:'view', from:'Sophie Martin', fromAvatar:1, sharedAt:'Il y a 3 semaines' },
+    ],
+    publicLinks: [
+      { id:20, name:'Formulaire Contact', url:'https://app.cyberbox.io/s/abc123', active:true, views:142, expires:'Expire dans 7 jours' },
+      { id:21, name:'Portfolio Client', url:'https://app.cyberbox.io/s/def456', active:true, views:89, expires:'Expire dans 30 jours' },
+      { id:22, name:'Ancien Catalogue', url:'https://app.cyberbox.io/s/ghi789', active:false, views:234, expires:'Expiré il y a 5 jours' },
+    ]
+  }));
+});
+</script>

@@ -13,7 +13,7 @@ const AccountSchema = new mongoose.Schema({
   users: [{
     userId: { type: String },
     email: { type: String },
-    role: { type: String, enum: ['owner', 'admin', 'member', 'viewer'], default: 'member' },
+    role: { type: String, enum: ['owner', 'admin', 'manager', 'member', 'viewer'], default: 'member' },
     joinedAt: { type: Date, default: Date.now },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, enum: ['active', 'pending', 'removed'], default: 'active' },
@@ -46,7 +46,7 @@ const AccountSchema = new mongoose.Schema({
   // Invitations
   invitations: [{
     email: { type: String },
-    role: { type: String, enum: ['admin', 'member', 'viewer'], default: 'member' },
+    role: { type: String, enum: ['admin', 'manager', 'member', 'viewer'], default: 'member' },
     token: { type: String },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     invitedAt: { type: Date, default: Date.now },

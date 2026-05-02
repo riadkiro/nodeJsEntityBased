@@ -35,7 +35,7 @@ const UserSchema = new mongoose.Schema({
       account_number: { type: String },
       name: { type: String },
       icon: { type: String },
-      role: { type: String, enum: ['owner', 'admin', 'member', 'viewer'], default: 'owner' },
+      role: { type: String, enum: ['owner', 'admin', 'manager', 'member', 'viewer'], default: 'owner' },
       joinedAt: { type: Date, default: Date.now },
     },
   ],

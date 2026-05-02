@@ -37,6 +37,8 @@ router.use("/", require("./line-defaults.router.js"));
 // Global Drive API (aggregated attachments across all records) — must be before api-account (has /:id catch-all)
 router.use("/api", require("./api/api-drive.router.js"));
 
+router.use("/api/team", require("./api/api-team.router.js"));
+router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
@@ -140,8 +142,7 @@ router.get("/tasks", (req, res) => {
     });
 });
 
-// Chat System (WebSocket + REST API)
-router.use("/chat", require("./chat.router.js"));
+// Chat System — old chat hub removed, now served by team-chat below
 
 // Media Page
 router.get("/media", (req, res) => {
@@ -242,6 +243,33 @@ router.get("/calendar-widgets", (req, res) => {
 // Team Page
 router.get("/team", (req, res) => {
     res.render("account/account-team", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Permissions & Roles Page
+router.get("/permissions", (req, res) => {
+    res.render("account/account-permissions", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Sharing Hub Page
+router.get("/sharing", (req, res) => {
+    res.render("account/account-sharing", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Team Chat Page (unified at /chat)
+router.get("/chat", (req, res) => {
+    res.render("account/account-team-chat", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number

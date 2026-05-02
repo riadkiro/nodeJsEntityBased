@@ -54,6 +54,16 @@ module.exports = (router) => {
 
             const entity = await EntityModel.findById(record.entityId).select('name slug icon color').lean();
 
+            // Check if a conversation with this name already exists for this record
+            if (name) {
+                const existing = await Conversation.findOne({
+                    recordId: req.params.recordId,
+                    name: name,
+                    archived: { $ne: true },
+                }).lean();
+                if (existing) return res.json({ success: true, conversation: existing, existed: true });
+            }
+
             // Use current user as creator/participant
             const participants = [{
                 userId: userId,

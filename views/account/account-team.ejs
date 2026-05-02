@@ -1,279 +1,437 @@
-<div>
-  <%- include("../nav/nav-breadcrumb") %>
-  <div class="pt-5">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-      <h5 class="text-lg font-semibold dark:text-white-light">Équipe</h5>
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="relative">
-          <input type="text" placeholder="Rechercher un membre..." class="form-input w-auto pr-10 dark:bg-[#1b2e4b] dark:border-[#1b2e4b] focus:border-primary" />
-          <div class="absolute inset-y-0 right-3 flex items-center">
-            <svg class="h-4 w-4 text-[#888ea8]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
-              <path d="M20 20L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-        </div>
-        <button type="button" class="btn btn-primary gap-2">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-            <path opacity="0.5" d="M18 9C19.6569 9 21 7.88071 21 6.5C21 5.11929 19.6569 4 18 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <ellipse cx="12" cy="17" rx="7" ry="4" stroke="currentColor" stroke-width="1.5"/>
-            <path opacity="0.5" d="M20 19C21.7542 18.6153 23 17.6411 23 16.5C23 15.3589 21.7542 14.3847 20 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Inviter
-        </button>
-      </div>
+<link rel="stylesheet" href="/css/app/team-system.css" />
+
+<div x-data="teamHub()" x-init="init()" x-cloak>
+  <!-- Page Header -->
+  <div class="ts-page-header">
+    <div class="ts-page-header-icon">
+      <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="28" style="color:#4361ee"></iconify-icon>
     </div>
-
-    <!-- Role Filters -->
-    <div class="mb-6 flex flex-wrap gap-3">
-      <button class="btn btn-sm btn-primary">Tous (12)</button>
-      <button class="btn btn-sm btn-outline-primary">Administrateurs (3)</button>
-      <button class="btn btn-sm btn-outline-primary">Managers (4)</button>
-      <button class="btn btn-sm btn-outline-primary">Membres (5)</button>
+    <div class="ts-page-header-info">
+      <h1>Équipe & Membres</h1>
+      <p x-text="accountName ? 'Gérez les membres de ' + accountName : 'Chargement...'"></p>
     </div>
-
-    <!-- Team Grid -->
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <!-- Team Member 1 - Admin -->
-      <div class="panel">
-        <div class="flex flex-col items-center pb-5">
-          <div class="relative mb-4">
-            <img src="https://i.pravatar.cc/150?img=1" alt="Avatar" class="h-20 w-20 rounded-full object-cover ring-4 ring-primary/20" />
-            <span class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-success dark:border-[#1b2e4b]"></span>
-          </div>
-          <h5 class="text-lg font-semibold dark:text-white-light">Sophie Martin</h5>
-          <p class="text-sm text-[#888ea8]">sophie.martin@email.com</p>
-          <span class="mt-2 badge bg-primary">Administrateur</span>
-        </div>
-        <div class="border-t border-[#ebedf2] pt-4 dark:border-[#1b2e4b]">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Département</span>
-            <span class="font-medium dark:text-white-light">Direction</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Membre depuis</span>
-            <span class="font-medium dark:text-white-light">Jan 2024</span>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-sm btn-outline-primary flex-1">Voir profil</button>
-          <button class="btn btn-sm btn-outline-secondary">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M12 9V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Team Member 2 - Manager -->
-      <div class="panel">
-        <div class="flex flex-col items-center pb-5">
-          <div class="relative mb-4">
-            <img src="https://i.pravatar.cc/150?img=3" alt="Avatar" class="h-20 w-20 rounded-full object-cover ring-4 ring-warning/20" />
-            <span class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-success dark:border-[#1b2e4b]"></span>
-          </div>
-          <h5 class="text-lg font-semibold dark:text-white-light">Marc Dubois</h5>
-          <p class="text-sm text-[#888ea8]">marc.dubois@email.com</p>
-          <span class="mt-2 badge bg-warning">Manager</span>
-        </div>
-        <div class="border-t border-[#ebedf2] pt-4 dark:border-[#1b2e4b]">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Département</span>
-            <span class="font-medium dark:text-white-light">Commercial</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Membre depuis</span>
-            <span class="font-medium dark:text-white-light">Mar 2024</span>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-sm btn-outline-primary flex-1">Voir profil</button>
-          <button class="btn btn-sm btn-outline-secondary">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M12 9V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Team Member 3 - Member -->
-      <div class="panel">
-        <div class="flex flex-col items-center pb-5">
-          <div class="relative mb-4">
-            <img src="https://i.pravatar.cc/150?img=5" alt="Avatar" class="h-20 w-20 rounded-full object-cover ring-4 ring-secondary/20" />
-            <span class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-warning dark:border-[#1b2e4b]"></span>
-          </div>
-          <h5 class="text-lg font-semibold dark:text-white-light">Claire Bernard</h5>
-          <p class="text-sm text-[#888ea8]">claire.bernard@email.com</p>
-          <span class="mt-2 badge bg-secondary">Membre</span>
-        </div>
-        <div class="border-t border-[#ebedf2] pt-4 dark:border-[#1b2e4b]">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Département</span>
-            <span class="font-medium dark:text-white-light">Design</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Membre depuis</span>
-            <span class="font-medium dark:text-white-light">Avr 2024</span>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-sm btn-outline-primary flex-1">Voir profil</button>
-          <button class="btn btn-sm btn-outline-secondary">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M12 9V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Team Member 4 - Admin -->
-      <div class="panel">
-        <div class="flex flex-col items-center pb-5">
-          <div class="relative mb-4">
-            <img src="https://i.pravatar.cc/150?img=8" alt="Avatar" class="h-20 w-20 rounded-full object-cover ring-4 ring-primary/20" />
-            <span class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-danger dark:border-[#1b2e4b]"></span>
-          </div>
-          <h5 class="text-lg font-semibold dark:text-white-light">Thomas Petit</h5>
-          <p class="text-sm text-[#888ea8]">thomas.petit@email.com</p>
-          <span class="mt-2 badge bg-primary">Administrateur</span>
-        </div>
-        <div class="border-t border-[#ebedf2] pt-4 dark:border-[#1b2e4b]">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Département</span>
-            <span class="font-medium dark:text-white-light">Technique</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Membre depuis</span>
-            <span class="font-medium dark:text-white-light">Fév 2024</span>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-sm btn-outline-primary flex-1">Voir profil</button>
-          <button class="btn btn-sm btn-outline-secondary">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M12 9V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Team Member 5 - Manager -->
-      <div class="panel">
-        <div class="flex flex-col items-center pb-5">
-          <div class="relative mb-4">
-            <img src="https://i.pravatar.cc/150?img=10" alt="Avatar" class="h-20 w-20 rounded-full object-cover ring-4 ring-warning/20" />
-            <span class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-success dark:border-[#1b2e4b]"></span>
-          </div>
-          <h5 class="text-lg font-semibold dark:text-white-light">Julie Moreau</h5>
-          <p class="text-sm text-[#888ea8]">julie.moreau@email.com</p>
-          <span class="mt-2 badge bg-warning">Manager</span>
-        </div>
-        <div class="border-t border-[#ebedf2] pt-4 dark:border-[#1b2e4b]">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Département</span>
-            <span class="font-medium dark:text-white-light">Marketing</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Membre depuis</span>
-            <span class="font-medium dark:text-white-light">Mai 2024</span>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-sm btn-outline-primary flex-1">Voir profil</button>
-          <button class="btn btn-sm btn-outline-secondary">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M12 9V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Team Member 6 - Member -->
-      <div class="panel">
-        <div class="flex flex-col items-center pb-5">
-          <div class="relative mb-4">
-            <img src="https://i.pravatar.cc/150?img=12" alt="Avatar" class="h-20 w-20 rounded-full object-cover ring-4 ring-secondary/20" />
-            <span class="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-success dark:border-[#1b2e4b]"></span>
-          </div>
-          <h5 class="text-lg font-semibold dark:text-white-light">Lucas Roux</h5>
-          <p class="text-sm text-[#888ea8]">lucas.roux@email.com</p>
-          <span class="mt-2 badge bg-secondary">Membre</span>
-        </div>
-        <div class="border-t border-[#ebedf2] pt-4 dark:border-[#1b2e4b]">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Département</span>
-            <span class="font-medium dark:text-white-light">Développement</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-sm">
-            <span class="text-[#888ea8]">Membre depuis</span>
-            <span class="font-medium dark:text-white-light">Juin 2024</span>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button class="btn btn-sm btn-outline-primary flex-1">Voir profil</button>
-          <button class="btn btn-sm btn-outline-secondary">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12H15M12 9V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Invite Card -->
-      <div class="panel border-2 border-dashed border-[#e0e6ed] bg-white-light/30 dark:border-[#1b2e4b] dark:bg-[#1b2e4b]/30">
-        <div class="flex h-full flex-col items-center justify-center py-10">
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-            <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-              <path opacity="0.5" d="M18 9C19.6569 9 21 7.88071 21 6.5C21 5.11929 19.6569 4 18 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <ellipse cx="12" cy="17" rx="7" ry="4" stroke="currentColor" stroke-width="1.5"/>
-              <path opacity="0.5" d="M20 19C21.7542 18.6153 23 17.6411 23 16.5C23 15.3589 21.7542 14.3847 20 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h6 class="text-lg font-semibold dark:text-white-light">Inviter un membre</h6>
-          <p class="mt-1 text-sm text-[#888ea8]">Développez votre équipe</p>
-          <button class="btn btn-primary mt-4">Envoyer une invitation</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Team Stats -->
-    <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="panel">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M15 9C16.6569 9 18 7.65685 18 6C18 4.34315 16.6569 3 15 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9" cy="17" rx="7" ry="4" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M18 14C19.7542 14.3847 21 15.3589 21 16.5C21 17.5293 19.9863 18.4229 18.5 18.8704" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold dark:text-white-light">12</p>
-            <p class="text-sm text-[#888ea8]">Membres total</p>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10 text-success">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 12.5L10.5 14.5L15.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold dark:text-white-light">8</p>
-            <p class="text-sm text-[#888ea8]">En ligne</p>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10 text-warning">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2 9H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold dark:text-white-light">3</p>
-            <p class="text-sm text-[#888ea8]">Invitations en attente</p>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-danger/10 text-danger">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold dark:text-white-light">4</p>
-            <p class="text-sm text-[#888ea8]">Départements</p>
-          </div>
-        </div>
-      </div>
+    <div style="display:flex;gap:10px;z-index:1;">
+      <a href="/account/<%= account_number %>/chat" class="ts-btn-primary" style="background:linear-gradient(135deg,#f97316,#ea580c);">
+        <iconify-icon icon="solar:chat-round-dots-bold" width="16"></iconify-icon> Team Chat
+      </a>
+      <button class="ts-btn-primary" @click="showInviteModal = true">
+        <iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon> Inviter
+      </button>
     </div>
   </div>
+
+  <!-- Loading -->
+  <template x-if="loading">
+    <div style="text-align:center;padding:60px 20px;color:#94a3b8;">
+      <iconify-icon icon="solar:refresh-bold-duotone" width="32" style="animation:spin 1s linear infinite;"></iconify-icon>
+      <p style="margin-top:8px;font-size:13px;">Chargement des membres...</p>
+    </div>
+  </template>
+
+  <template x-if="!loading">
+    <div>
+      <!-- Stats -->
+      <div class="ts-stats">
+        <div class="ts-stat-card">
+          <div class="ts-stat-icon" style="background:rgba(67,97,238,.1);"><iconify-icon icon="solar:users-group-rounded-bold-duotone" width="24" style="color:#4361ee"></iconify-icon></div>
+          <div><div class="ts-stat-value" x-text="members.length"></div><div class="ts-stat-label">Membres total</div></div>
+        </div>
+        <div class="ts-stat-card">
+          <div class="ts-stat-icon" style="background:rgba(34,197,94,.1);"><iconify-icon icon="solar:check-circle-bold-duotone" width="24" style="color:#22c55e"></iconify-icon></div>
+          <div><div class="ts-stat-value" x-text="members.filter(m => m.userStatus === 'active').length"></div><div class="ts-stat-label">Actifs</div></div>
+        </div>
+        <div class="ts-stat-card">
+          <div class="ts-stat-icon" style="background:rgba(249,115,22,.1);"><iconify-icon icon="solar:letter-bold-duotone" width="24" style="color:#f97316"></iconify-icon></div>
+          <div><div class="ts-stat-value" x-text="invitations.length"></div><div class="ts-stat-label">Invitations en attente</div></div>
+        </div>
+        <div class="ts-stat-card">
+          <div class="ts-stat-icon" style="background:rgba(124,58,237,.1);"><iconify-icon icon="solar:share-bold-duotone" width="24" style="color:#7c3aed"></iconify-icon></div>
+          <div><div class="ts-stat-value" x-text="myAccounts.length"></div><div class="ts-stat-label">Mes comptes</div></div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="ts-toolbar">
+        <div class="ts-toolbar-left">
+          <div class="ts-view-toggle">
+            <button class="ts-view-btn" :class="viewMode === 'grid' && 'active'" @click="viewMode = 'grid'">
+              <iconify-icon icon="solar:widget-bold" width="14"></iconify-icon> Grille
+            </button>
+            <button class="ts-view-btn" :class="viewMode === 'list' && 'active'" @click="viewMode = 'list'">
+              <iconify-icon icon="solar:list-bold" width="14"></iconify-icon> Liste
+            </button>
+          </div>
+          <template x-for="role in allRoles" :key="role.key">
+            <button class="ts-filter-btn" :class="activeFilter === role.key && 'active'" @click="activeFilter = activeFilter === role.key ? 'all' : role.key">
+              <span x-text="role.label"></span>
+              <span style="opacity:.6;" x-text="'(' + members.filter(m => role.key === 'all' ? true : m.role === role.key).length + ')'"></span>
+            </button>
+          </template>
+        </div>
+        <div class="ts-toolbar-right">
+          <div class="ts-search">
+            <iconify-icon icon="solar:magnifer-linear" width="15" class="ts-search-icon"></iconify-icon>
+            <input type="text" placeholder="Rechercher un membre..." x-model="searchQuery" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid View -->
+      <template x-if="viewMode === 'grid'">
+        <div class="ts-member-grid">
+          <template x-for="member in filteredMembers" :key="member._id">
+            <div class="ts-member-card" :data-role="member.role">
+              <div class="ts-member-actions" x-data="{open:false,editRole:false}" @click.outside="open=false;editRole=false">
+                <button @click="open=!open"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
+                <div x-show="open" x-transition style="position:absolute;right:0;top:32px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:6px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:10;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+                  <template x-if="!editRole">
+                    <div>
+                      <button @click="editRole=true" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                        <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon> Modifier le rôle
+                      </button>
+                      <button @click="removeMember(member._id, member.name); open=false" x-show="member.role !== 'owner'" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#ef4444;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon> Révoquer l'accès
+                      </button>
+                    </div>
+                  </template>
+                  <template x-if="editRole">
+                    <div>
+                      <div style="padding:6px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;">Choisir un rôle</div>
+                      <template x-for="r in ['admin','manager','member','viewer']" :key="r">
+                        <button @click="updateRole(member._id, r); open=false; editRole=false" style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                          <span class="ts-role-badge" :class="'ts-role-' + r" x-text="roleLabel(r)" style="font-size:9px;"></span>
+                          <iconify-icon x-show="member.role === r" icon="solar:check-circle-bold" width="14" style="color:#22c55e;margin-left:auto;"></iconify-icon>
+                        </button>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <div style="text-align:center;">
+                <div class="ts-member-avatar" style="display:inline-block;">
+                  <template x-if="member.avatar">
+                    <img :src="member.avatar" :alt="member.name" />
+                  </template>
+                  <template x-if="!member.avatar">
+                    <div style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;" :style="'background:' + avatarColor(member.name)">
+                      <span x-text="member.name.charAt(0).toUpperCase()"></span>
+                    </div>
+                  </template>
+                  <span class="ts-status" :class="member.userStatus === 'active' ? 'ts-status-online' : 'ts-status-offline'"></span>
+                </div>
+                <div class="ts-member-name" x-text="member.name"></div>
+                <div class="ts-member-email" x-text="member.email"></div>
+                <span class="ts-role-badge" :class="'ts-role-' + member.role" x-text="roleLabel(member.role)"></span>
+              </div>
+              <div class="ts-member-meta">
+                <span x-text="member.email.split('@')[1]"></span>
+                <span x-text="formatDate(member.joinedAt)"></span>
+              </div>
+            </div>
+          </template>
+          <div class="ts-invite-card" @click="showInviteModal = true">
+            <div class="ts-invite-card-icon"><iconify-icon icon="solar:user-plus-bold-duotone" width="24" style="color:#4361ee"></iconify-icon></div>
+            <h6>Inviter un membre</h6>
+            <p>Développez votre équipe</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- List View -->
+      <template x-if="viewMode === 'list'">
+        <div class="ts-member-list">
+          <template x-for="member in filteredMembers" :key="member._id">
+            <div class="ts-member-row">
+              <div style="position:relative;">
+                <template x-if="member.avatar"><img :src="member.avatar" :alt="member.name" /></template>
+                <template x-if="!member.avatar">
+                  <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;" :style="'background:' + avatarColor(member.name)">
+                    <span x-text="member.name.charAt(0).toUpperCase()"></span>
+                  </div>
+                </template>
+                <span class="ts-status" :class="member.userStatus === 'active' ? 'ts-status-online' : 'ts-status-offline'" style="position:absolute;bottom:0;right:-2px;"></span>
+              </div>
+              <div class="ts-member-row-info">
+                <div class="ts-member-row-name" x-text="member.name"></div>
+                <div class="ts-member-row-email" x-text="member.email"></div>
+              </div>
+              <span class="ts-role-badge" :class="'ts-role-' + member.role" x-text="roleLabel(member.role)"></span>
+              <span class="ts-member-row-dept" x-text="member.email.split('@')[1]"></span>
+              <span class="ts-member-row-date" x-text="formatDate(member.joinedAt)"></span>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- Pending Invites -->
+      <div class="ts-section-title" x-show="invitations.length > 0">
+        <iconify-icon icon="solar:letter-bold-duotone" width="16" style="color:#f97316"></iconify-icon> Invitations en attente
+      </div>
+      <div class="ts-member-list" x-show="invitations.length > 0">
+        <template x-for="inv in invitations" :key="inv.email">
+          <div class="ts-member-row" style="opacity:.75;">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <iconify-icon icon="solar:letter-bold" width="16" style="color:#f97316"></iconify-icon>
+            </div>
+            <div class="ts-member-row-info">
+              <div class="ts-member-row-name" x-text="inv.email"></div>
+              <div class="ts-member-row-email" x-text="'Invitation envoyée ' + formatDate(inv.invitedAt)"></div>
+            </div>
+            <span class="ts-role-badge" :class="'ts-role-' + inv.role" x-text="roleLabel(inv.role)"></span>
+            <button class="ts-filter-btn" style="font-size:11px;padding:5px 10px;" @click="resendInvite(inv.email)">Renvoyer</button>
+            <button style="padding:6px;border:none;background:none;color:#ef4444;cursor:pointer;border-radius:6px;" @click="cancelInvite(inv.email)">
+              <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <!-- My Accounts -->
+      <div class="ts-section-title">
+        <iconify-icon icon="solar:buildings-2-bold-duotone" width="16" style="color:#7c3aed"></iconify-icon> Mes comptes
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
+        <template x-for="acc in myAccounts" :key="acc.account_number">
+          <a :href="'/account/' + acc.account_number + '/team'" class="ts-share-card" style="cursor:pointer;text-decoration:none;">
+            <div class="ts-share-card-header">
+              <div class="ts-share-card-icon" :style="'background:' + (acc.isActive ? 'rgba(67,97,238,.12)' : 'rgba(100,116,139,.08)')">
+                <iconify-icon :icon="acc.icon" width="20" :style="'color:' + (acc.isActive ? '#4361ee' : '#64748b')"></iconify-icon>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div class="ts-share-card-title" x-text="acc.name"></div>
+                <div class="ts-share-card-type" x-text="acc.membersCount + ' membres'"></div>
+              </div>
+              <span class="ts-role-badge" :class="'ts-role-' + acc.role" x-text="roleLabel(acc.role)"></span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:6px;">
+              <span x-text="'#' + acc.account_number"></span>
+              <span x-show="acc.isActive" style="color:#22c55e;font-weight:600;">● Actif</span>
+            </div>
+          </a>
+        </template>
+      </div>
+    </div>
+  </template>
+
+  <!-- Invite Modal -->
+  <template x-if="showInviteModal">
+    <div class="ts-modal-overlay" @click.self="showInviteModal = false">
+      <div class="ts-modal" @click.stop>
+        <div class="ts-modal-header">
+          <h3>Inviter un membre</h3>
+          <button class="ts-modal-close" @click="showInviteModal = false"><iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon></button>
+        </div>
+        <div class="ts-modal-body">
+          <div x-show="inviteError" style="padding:10px 14px;border-radius:10px;background:rgba(239,68,68,.08);color:#ef4444;font-size:12px;font-weight:600;margin-bottom:14px;" x-text="inviteError"></div>
+          <div x-show="inviteSuccess" style="padding:10px 14px;border-radius:10px;background:rgba(34,197,94,.08);color:#22c55e;font-size:12px;font-weight:600;margin-bottom:14px;" x-text="inviteSuccess"></div>
+          <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Adresse email</label>
+            <input type="email" placeholder="email@example.com" x-model="inviteEmail" style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:#fff;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]" />
+          </div>
+          <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Rôle</label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+              <template x-for="r in [{key:'admin',label:'Admin',desc:'Accès complet',icon:'solar:shield-bold-duotone',color:'#4361ee'},{key:'manager',label:'Manager',desc:'Gestion d\'équipe',icon:'solar:user-check-bold-duotone',color:'#f97316'},{key:'member',label:'Membre',desc:'Accès standard',icon:'solar:user-bold-duotone',color:'#64748b'},{key:'viewer',label:'Observateur',desc:'Lecture seule',icon:'solar:eye-bold-duotone',color:'#10b981'}]" :key="r.key">
+                <div style="padding:12px;border-radius:12px;border:1.5px solid #e0e6ed;cursor:pointer;transition:all .2s;" :style="inviteRole === r.key ? 'border-color:#4361ee;background:rgba(67,97,238,.04)' : ''" @click="inviteRole = r.key" class="dark:!border-[#253b5c]">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <iconify-icon :icon="r.icon" width="16" :style="'color:'+r.color"></iconify-icon>
+                    <span style="font-size:13px;font-weight:600;" x-text="r.label" class="dark:!text-[#e0e6ed]"></span>
+                  </div>
+                  <div style="font-size:11px;color:#94a3b8;" x-text="r.desc"></div>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <button class="ts-filter-btn" @click="showInviteModal = false">Annuler</button>
+            <button class="ts-btn-primary" @click="sendInvite()" :disabled="inviteSending">
+              <iconify-icon icon="solar:plain-bold" width="16"></iconify-icon>
+              <span x-text="inviteSending ? 'Envoi...' : 'Envoyer l\'invitation'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Toast -->
+  <div x-show="toast" x-transition style="position:fixed;bottom:24px;right:24px;z-index:1000;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.15);" :style="'background:' + (toastType === 'success' ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#ef4444,#dc2626)')" x-text="toast"></div>
 </div>
+
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('teamHub', () => ({
+    loading: true,
+    viewMode: 'grid',
+    activeFilter: 'all',
+    searchQuery: '',
+    accountName: '',
+    members: [],
+    invitations: [],
+    myAccounts: [],
+    showInviteModal: false,
+    inviteEmail: '',
+    inviteRole: 'member',
+    inviteSending: false,
+    inviteError: '',
+    inviteSuccess: '',
+    toast: '',
+    toastType: 'success',
+    allRoles: [
+      { key: 'all', label: 'Tous' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'admin', label: 'Admin' },
+      { key: 'manager', label: 'Manager' },
+      { key: 'member', label: 'Membre' },
+      { key: 'viewer', label: 'Viewer' }
+    ],
+    apiBase: '/account/<%= account_number %>/api/team',
+
+    async init() {
+      await Promise.all([this.fetchMembers(), this.fetchMyAccounts()]);
+      this.loading = false;
+    },
+
+    async fetchMembers() {
+      try {
+        const res = await fetch(this.apiBase + '/members', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          this.members = data.members;
+          this.invitations = data.invitations;
+          this.accountName = data.accountName;
+        }
+      } catch (e) { console.error('fetchMembers error:', e); }
+    },
+
+    async fetchMyAccounts() {
+      try {
+        const res = await fetch(this.apiBase + '/my-accounts', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) this.myAccounts = data.accounts;
+      } catch (e) { console.error('fetchMyAccounts error:', e); }
+    },
+
+    async sendInvite() {
+      this.inviteError = '';
+      this.inviteSuccess = '';
+      if (!this.inviteEmail.trim()) { this.inviteError = 'Email requis'; return; }
+      this.inviteSending = true;
+      try {
+        const res = await fetch(this.apiBase + '/invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.inviteEmail, role: this.inviteRole }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.inviteSuccess = data.message;
+          this.inviteEmail = '';
+          await this.fetchMembers();
+          setTimeout(() => { this.showInviteModal = false; this.inviteSuccess = ''; }, 1500);
+          this.showToast(data.message, 'success');
+        } else {
+          this.inviteError = data.error;
+        }
+      } catch (e) { this.inviteError = 'Erreur réseau'; }
+      this.inviteSending = false;
+    },
+
+    async updateRole(userId, newRole) {
+      try {
+        const res = await fetch(this.apiBase + '/update-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId, newRole }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          await this.fetchMembers();
+          this.showToast('Rôle mis à jour', 'success');
+        }
+      } catch (e) { this.showToast('Erreur', 'error'); }
+    },
+
+    async removeMember(userId, name) {
+      if (!confirm('Retirer ' + name + ' du compte ?')) return;
+      try {
+        const res = await fetch(this.apiBase + '/remove-member', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          await this.fetchMembers();
+          this.showToast(name + ' retiré', 'success');
+        } else {
+          this.showToast(data.error, 'error');
+        }
+      } catch (e) { this.showToast('Erreur', 'error'); }
+    },
+
+    async resendInvite(email) {
+      try {
+        await fetch(this.apiBase + '/resend-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email }),
+        });
+        this.showToast('Invitation renvoyée', 'success');
+      } catch (e) { this.showToast('Erreur', 'error'); }
+    },
+
+    async cancelInvite(email) {
+      try {
+        await fetch(this.apiBase + '/cancel-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email }),
+        });
+        await this.fetchMembers();
+        this.showToast('Invitation annulée', 'success');
+      } catch (e) { this.showToast('Erreur', 'error'); }
+    },
+
+    showToast(msg, type) {
+      this.toast = msg;
+      this.toastType = type;
+      setTimeout(() => { this.toast = ''; }, 3000);
+    },
+
+    get filteredMembers() {
+      let list = this.members;
+      if (this.activeFilter !== 'all') list = list.filter(m => m.role === this.activeFilter);
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase();
+        list = list.filter(m => m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q));
+      }
+      return list;
+    },
+
+    roleLabel(role) {
+      return { owner:'Owner', admin:'Admin', manager:'Manager', member:'Membre', viewer:'Viewer' }[role] || role;
+    },
+
+    avatarColor(name) {
+      const colors = ['#4361ee','#7c3aed','#f97316','#10b981','#ec4899','#06b6d4','#ef4444','#8b5cf6'];
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return colors[Math.abs(hash) % colors.length];
+    },
+
+    formatDate(d) {
+      if (!d) return '-';
+      const date = new Date(d);
+      return date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    },
+  }));
+});
+</script>

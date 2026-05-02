@@ -25,6 +25,10 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const dbConfig = require("../../config/db");
 
+// Ensure models are registered globally
+require("../../models/conversation.model");
+require("../../models/message.model");
+
 // Cache tenant connections (reuse from tenant middleware)
 const cachedConnections = {};
 
@@ -148,10 +152,11 @@ function initSocketIO(server, sessionMiddleware) {
          */
         socket.on("chat:sendMessage", async (data) => {
             try {
-                const { conversationId, text, type = "text", attachment } = data;
-                const accountNumber = socket.accountNumber;
+                const { conversationId, text, type = "text", attachment, accountNumber: dataAccount } = data;
+                const accountNumber = socket.accountNumber || dataAccount;
 
                 if (!accountNumber) return socket.emit("chat:error", { message: "Not joined yet" });
+                if (!socket.accountNumber) socket.accountNumber = accountNumber;
                 if (!conversationId) return socket.emit("chat:error", { message: "Conversation ID required" });
                 if (!text || !text.trim()) return socket.emit("chat:error", { message: "Message text required" });
 
@@ -242,10 +247,14 @@ function initSocketIO(server, sessionMiddleware) {
          */
         socket.on("chat:loadMessages", async (data) => {
             try {
-                const { conversationId, before, limit = 50 } = data;
-                const accountNumber = socket.accountNumber;
+                const { conversationId, before, limit = 50, accountNumber: dataAccount } = data;
+                const accountNumber = socket.accountNumber || dataAccount;
 
                 if (!accountNumber) return socket.emit("chat:error", { message: "Not joined yet" });
+                if (!socket.accountNumber) socket.accountNumber = accountNumber;
+
+                // Auto-join this conversation room
+                socket.join(`conv:${conversationId}`);
 
                 const conn = await getTenantConnection(accountNumber);
                 const Message = getTenantModel(conn, "Message");
@@ -297,9 +306,10 @@ function initSocketIO(server, sessionMiddleware) {
          */
         socket.on("chat:markRead", async (data) => {
             try {
-                const { conversationId } = data;
-                const accountNumber = socket.accountNumber;
+                const { conversationId, accountNumber: dataAccount } = data;
+                const accountNumber = socket.accountNumber || dataAccount;
                 if (!accountNumber || !conversationId) return;
+                if (!socket.accountNumber) socket.accountNumber = accountNumber;
 
                 const conn = await getTenantConnection(accountNumber);
                 const Message = getTenantModel(conn, "Message");

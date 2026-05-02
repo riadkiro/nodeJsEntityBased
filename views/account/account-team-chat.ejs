@@ -1,0 +1,675 @@
+<link rel="stylesheet" href="/css/app/team-system.css" />
+
+<!-- Page Header -->
+<div class="ts-page-header">
+  <div class="ts-page-header-icon">
+    <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="28" style="color:#4361ee"></iconify-icon>
+  </div>
+  <div class="ts-page-header-info">
+    <h1>Chat</h1>
+    <p>Communication en temps réel avec votre équipe</p>
+  </div>
+  <div style="display:flex;gap:10px;z-index:1;">
+    <a href="/account/<%= account_number %>/team" class="ts-btn-primary" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">
+      <iconify-icon icon="solar:users-group-rounded-bold" width="16"></iconify-icon> Équipe
+    </a>
+  </div>
+</div>
+
+<div x-data="teamChat()" x-init="init()" x-cloak>
+  <!-- Chat Grid Layout -->
+  <div class="ts-chat-layout">
+    <!-- Sidebar -->
+    <div class="ts-chat-sidebar">
+      <div class="ts-chat-sidebar-header">
+        <h3 style="display:flex;align-items:center;justify-content:space-between;">
+          Conversations
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-weight:500;color:#94a3b8;" x-text="onlineCount + ' en ligne'"></span>
+            <button @click="showNewChannel = !showNewChannel" style="border:none;background:linear-gradient(135deg,#4361ee,#3b82f6);color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;transition:all .2s;" title="Nouveau canal">
+              <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+            </button>
+          </div>
+        </h3>
+        <!-- Inline new channel input -->
+        <div x-show="showNewChannel" x-transition style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="text" x-model="newChannelName" x-ref="newChannelInput" placeholder="# nom-du-canal" @keydown.enter="createChannel()" @keydown.escape="showNewChannel=false;newChannelName=''" style="flex:1;padding:7px 10px;border:1.5px solid #4361ee;border-radius:8px;font-size:12px;outline:none;font-family:inherit;" />
+          <button @click="createChannel()" style="border:none;background:#4361ee;color:#fff;border-radius:8px;padding:0 10px;cursor:pointer;font-size:12px;font-weight:600;">OK</button>
+        </div>
+        <!-- Unified search -->
+        <div style="position:relative;">
+          <div class="ts-search" style="width:100%;">
+            <iconify-icon icon="solar:magnifer-linear" width="14" class="ts-search-icon"></iconify-icon>
+            <input type="text" placeholder="Rechercher membres, canaux, records..." x-model="searchQuery" @input.debounce.300ms="onSearch()" @focus="if(searchQuery.length>=2) showSearchResults=true" style="width:100%;" />
+          </div>
+          <!-- Search results dropdown -->
+          <div x-show="showSearchResults && searchQuery.length >= 2" @click.outside="showSearchResults=false" x-transition x-ref="searchDropdown"
+               style="position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.12);z-index:999;max-height:320px;overflow-y:auto;">
+            <!-- Members -->
+            <template x-if="searchResultMembers.length > 0">
+              <div>
+                <div style="padding:8px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;">Membres</div>
+                <template x-for="m in searchResultMembers" :key="m._id">
+                  <div class="ts-chat-channel" @click="startDm(m._id);showSearchResults=false;searchQuery=''" style="padding:8px 12px;">
+                    <div class="ts-chat-msg-avatar-letter" style="width:28px;height:28px;font-size:10px;" :style="'background:' + avatarColor(m.name)"><span x-text="m.name.charAt(0).toUpperCase()"></span></div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="m.name"></div>
+                      <div style="font-size:10px;color:#94a3b8;" x-text="m.email"></div>
+                    </div>
+                    <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(124,58,237,.1);color:#7c3aed;">MEMBRE</span>
+                  </div>
+                </template>
+              </div>
+            </template>
+            <!-- Channels -->
+            <template x-if="searchResultChannels.length > 0">
+              <div>
+                <div style="padding:8px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;">Canaux</div>
+                <template x-for="ch in searchResultChannels" :key="ch._id">
+                  <div class="ts-chat-channel" @click="openConversation(ch);showSearchResults=false;searchQuery=''" style="padding:8px 12px;">
+                    <div class="ts-chat-channel-icon" style="background:rgba(67,97,238,.1);width:28px;height:28px;border-radius:8px;"><iconify-icon icon="solar:hashtag-chat-bold-duotone" width="14" style="color:#4361ee;"></iconify-icon></div>
+                    <div style="font-size:13px;font-weight:600;color:#0e1726;flex:1;" x-text="ch.name"></div>
+                    <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(67,97,238,.1);color:#4361ee;">CANAL</span>
+                  </div>
+                </template>
+              </div>
+            </template>
+            <!-- Records -->
+            <template x-if="searchResultRecords.length > 0">
+              <div>
+                <div style="padding:8px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;">Enregistrements</div>
+                <template x-for="r in searchResultRecords" :key="r.recordId">
+                  <div class="ts-chat-channel" @click="goToRecordChat(r);showSearchResults=false;searchQuery=''" style="padding:8px 12px;">
+                    <div class="ts-chat-channel-icon" style="width:28px;height:28px;border-radius:8px;" :style="'background:' + r.entityColor + '15'"><iconify-icon :icon="r.entityIcon" width="14" :style="'color:' + r.entityColor"></iconify-icon></div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="r.recordTitle"></div>
+                      <div style="font-size:10px;color:#94a3b8;" x-text="r.entityName"></div>
+                    </div>
+                    <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(249,115,22,.1);color:#f97316;">RECORD</span>
+                  </div>
+                </template>
+              </div>
+            </template>
+            <!-- No results -->
+            <div x-show="searchResultMembers.length===0 && searchResultChannels.length===0 && searchResultRecords.length===0" style="text-align:center;padding:20px;font-size:12px;color:#94a3b8;">Aucun résultat</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ts-chat-channels">
+        <!-- Unified list sorted by recency -->
+        <template x-for="conv in allConversations" :key="conv._id">
+          <div class="ts-chat-channel" :class="activeConv?._id === conv._id && 'active'" 
+               @click="conv._convType === 'record' ? openRecordConversation(conv) : openConversation(conv)"
+               @contextmenu.prevent="openContextMenu($event, conv)">
+            <!-- Channel icon -->
+            <template x-if="conv._convType === 'channel'">
+              <div class="ts-chat-channel-icon" style="background:rgba(67,97,238,.1);"><iconify-icon icon="solar:hashtag-chat-bold-duotone" width="16" style="color:#4361ee;"></iconify-icon></div>
+            </template>
+            <!-- DM avatar -->
+            <template x-if="conv._convType === 'dm'">
+              <div style="position:relative;">
+                <div class="ts-chat-msg-avatar-letter" :style="'background:' + avatarColor(conv.otherUser?.name || 'U')"><span x-text="(conv.otherUser?.name || 'U').charAt(0).toUpperCase()"></span></div>
+                <span class="ts-status" :class="onlineUserIds.includes(conv.otherUser?.userId) ? 'ts-status-online' : 'ts-status-offline'" style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;"></span>
+              </div>
+            </template>
+            <!-- Record icon -->
+            <template x-if="conv._convType === 'record'">
+              <div class="ts-chat-channel-icon" :style="'background:' + (conv.entityColor||'#f97316') + '15'"><iconify-icon :icon="conv.entityIcon || 'solar:folder-bold-duotone'" width="16" :style="'color:' + (conv.entityColor||'#f97316')"></iconify-icon></div>
+            </template>
+            <!-- Content -->
+            <div style="flex:1;min-width:0;">
+              <div class="ts-chat-channel-name" x-text="conv._displayName"></div>
+              <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="conv._subtitle"></div>
+            </div>
+            <div class="ts-chat-channel-badge" x-show="conv.myUnread > 0" x-text="conv.myUnread"></div>
+          </div>
+        </template>
+        <div x-show="allConversations.length === 0" style="text-align:center;padding:30px 16px;color:#94a3b8;font-size:13px;">Aucune conversation</div>
+      </div>
+    </div>
+
+    <!-- Right-click context menu -->
+    <div x-show="contextMenu.show" @click.away="contextMenu.show = false"
+         :style="'position:fixed;top:'+contextMenu.y+'px;left:'+contextMenu.x+'px;z-index:9999;'"
+         style="background:#fff;border:1px solid #e0e6ed;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px;min-width:160px;overflow:hidden;"
+         x-transition>
+      <button @click="contextMenu.show = false; showDeleteModal = true"
+              style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:#fef2f2 !important;cursor:pointer;border-radius:6px;font-size:13px;font-weight:500;color:#ef4444 !important;text-align:left;transition:background .15s;"
+              onmouseover="this.style.setProperty('background','#fee2e2','important')" onmouseout="this.style.setProperty('background','#fef2f2','important')">
+        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="16"></iconify-icon>
+        Supprimer
+      </button>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <template x-if="showDeleteModal">
+      <div style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;" @click.self="showDeleteModal = false">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.35);"></div>
+        <div style="position:relative;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.2);padding:24px;width:380px;max-width:90vw;" x-transition>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;justify-content:center;">
+              <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="18" style="color:#ef4444;"></iconify-icon>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:#0e1726;">Supprimer la conversation</div>
+          </div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;margin-bottom:20px;">
+            La conversation et tous les messages associés seront définitivement supprimés. Cette action est irréversible.
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button @click="showDeleteModal = false"
+                    style="padding:8px 18px !important;border:1px solid #e0e6ed !important;background:#fff !important;border-radius:8px !important;font-size:13px !important;font-weight:500 !important;color:#64748b !important;cursor:pointer !important;"
+                    onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e0e6ed'">
+              Annuler
+            </button>
+            <button @click="handleDeleteClick()"
+                    style="padding:8px 18px !important;border:none !important;background:#ef4444 !important;border-radius:8px !important;font-size:13px !important;font-weight:600 !important;color:#fff !important;cursor:pointer !important;"
+                    onmouseover="this.style.setProperty('background','#dc2626','important')" onmouseout="this.style.setProperty('background','#ef4444','important')">
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Main Chat Area -->
+    <div class="ts-chat-main">
+      <!-- Header -->
+      <div class="ts-chat-main-header">
+        <template x-if="activeConv">
+          <div style="display:flex;align-items:center;gap:12px;flex:1;">
+            <!-- Record context badge -->
+            <template x-if="activeConv.recordId">
+              <a :href="'/account/' + accountNumber + '/record/' + (activeConv.entitySlug || activeConv.entityDisplayName?.toLowerCase()) + '/' + activeConv.recordId + '/overview'"
+                 style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;text-decoration:none;transition:all .2s;"
+                 :style="'background:' + (activeConv.entityColor || '#f97316') + '12;color:' + (activeConv.entityColor || '#f97316')"
+                 title="Ouvrir le record">
+                <iconify-icon :icon="activeConv.entityIcon || 'solar:folder-bold-duotone'" width="14"></iconify-icon>
+                <span x-text="(activeConv.entityDisplayName || '') + ' / ' + (activeConv.recordDisplayTitle || '')"></span>
+                <iconify-icon icon="solar:arrow-right-up-linear" width="12" style="opacity:.6;"></iconify-icon>
+              </a>
+            </template>
+            <template x-if="activeConv.type === 'group' && !activeConv.recordId">
+              <div class="ts-chat-channel-icon" style="background:rgba(67,97,238,.1);">
+                <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="18" style="color:#4361ee;"></iconify-icon>
+              </div>
+            </template>
+            <template x-if="activeConv.type === 'direct'">
+              <div class="ts-chat-msg-avatar-letter" :style="'background:' + avatarColor(activeConv.otherUser?.name || 'U')">
+                <span x-text="(activeConv.otherUser?.name || 'U').charAt(0).toUpperCase()"></span>
+              </div>
+            </template>
+            <div>
+              <h4 x-text="activeConv.otherUser?.name || activeConv.name || 'Conversation'"></h4>
+              <span x-text="activeConv.participants?.length + ' participants'"></span>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+              <span x-show="typingUser" style="font-size:12px;color:#4361ee;font-style:italic;animation:pulse 1.5s infinite;" x-text="typingUser + ' écrit...'"></span>
+            </div>
+          </div>
+        </template>
+        <template x-if="!activeConv">
+          <span style="color:#94a3b8;">Sélectionnez une conversation</span>
+        </template>
+      </div>
+
+      <!-- Messages -->
+      <div class="ts-chat-messages" x-ref="messagesContainer">
+        <template x-if="!activeConv">
+          <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;">
+            <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="56" style="color:#cbd5e1;margin-bottom:16px;opacity:.4;"></iconify-icon>
+            <p style="font-size:15px;font-weight:600;color:#94a3b8;">Choisissez une conversation</p>
+            <p style="font-size:12px;color:#bfc9d4;margin-top:4px;">Sélectionnez un canal ou un contact pour commencer</p>
+          </div>
+        </template>
+
+        <template x-if="loadingMessages">
+          <div style="text-align:center;padding:30px;color:#94a3b8;">
+            <iconify-icon icon="solar:refresh-bold-duotone" width="24" style="animation:spin 1s linear infinite;"></iconify-icon>
+            <p style="font-size:12px;margin-top:8px;">Chargement...</p>
+          </div>
+        </template>
+
+        <template x-for="(msg, idx) in messages" :key="msg._id || idx">
+          <div>
+            <!-- Date Separator -->
+            <template x-if="idx === 0 || dateSep(messages[idx-1], msg)">
+              <div style="text-align:center;margin:20px 0 14px;">
+                <span style="font-size:10px;font-weight:700;color:#94a3b8;background:#eef2f7;padding:4px 14px;border-radius:20px;letter-spacing:.3px;" x-text="formatDateSep(msg.createdAt)"></span>
+              </div>
+            </template>
+            <!-- Message -->
+            <div class="ts-chat-msg" :class="msg.senderId === myUserId && 'mine'">
+              <template x-if="msg.senderId !== myUserId">
+                <div class="ts-chat-msg-avatar-letter" :style="'background:' + avatarColor(msg.senderName || 'U')">
+                  <span x-text="(msg.senderName || 'U').charAt(0).toUpperCase()"></span>
+                </div>
+              </template>
+              <div>
+                <template x-if="msg.senderId !== myUserId">
+                  <div style="font-size:11px;font-weight:700;margin-bottom:3px;padding-left:2px;" x-text="msg.senderName"></div>
+                </template>
+                <div class="ts-chat-msg-bubble" x-text="msg.text"></div>
+                <div class="ts-chat-msg-meta" x-text="formatTime(msg.createdAt)"></div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Input Area -->
+      <template x-if="activeConv">
+        <div class="ts-chat-input-area">
+          <input type="text" class="ts-chat-input" x-model="messageText" x-ref="msgInput"
+                 @keydown.enter.prevent="sendMessage()"
+                 @input="emitTyping()"
+                 :placeholder="'Écrire dans ' + (activeConv.name || activeConv.otherUser?.name || 'la conversation') + '...'" />
+          <button class="ts-chat-send" @click="sendMessage()">
+            <iconify-icon icon="solar:plain-bold" width="18"></iconify-icon>
+          </button>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.5} }
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('teamChat', () => ({
+    socket: null,
+    myUserId: '<%= user._id %>',
+    accountNumber: '<%= account_number %>',
+    apiBase: '/account/<%= account_number %>/api/team-chat',
+
+    channels: [],
+    dms: [],
+    recordConvs: [],
+    members: [],
+    messages: [],
+    activeConv: null,
+    contextMenu: { show: false, x: 0, y: 0, conv: null },
+    showDeleteModal: false,
+    messageText: '',
+    searchQuery: '',
+    showNewChannel: false,
+    newChannelName: '',
+    showSearchResults: false,
+    searchResultMembers: [],
+    searchResultChannels: [],
+    searchResultRecords: [],
+    loadingMessages: false,
+    typingUser: '',
+    typingTimeout: null,
+    onlineUserIds: [],
+    onlineCount: 0,
+
+    async init() {
+      await fetch(this.apiBase + '/ensure-channels', { method: 'POST', credentials: 'include' });
+      await Promise.all([this.fetchConversations(), this.fetchMembers()]);
+
+      this.socket = io({ transports: ['websocket', 'polling'] });
+
+      const self = this;
+      this.socket.on('connect', () => {
+        self.socket.emit('chat:join', { accountNumber: self.accountNumber });
+        setTimeout(() => {
+          if (!self.activeConv && self.allConversations.length > 0) {
+            const first = self.allConversations[0];
+            if (first._convType === 'record') self.openRecordConversation(first);
+            else self.openConversation(first);
+          }
+        }, 400);
+      });
+
+      this.socket.on('chat:onlineUsers', (list) => {
+        this.onlineUserIds = list;
+        this.onlineCount = list.length;
+      });
+
+      this.socket.on('chat:userStatus', (data) => {
+        if (data.online && !this.onlineUserIds.includes(data.userId)) this.onlineUserIds.push(data.userId);
+        else if (!data.online) this.onlineUserIds = this.onlineUserIds.filter(id => id !== data.userId);
+        this.onlineCount = this.onlineUserIds.length;
+      });
+
+      this.socket.on('chat:newMessage', (msg) => {
+        if (this.activeConv && msg.conversationId === this.activeConv._id) {
+          this.messages.push(msg);
+          this.$nextTick(() => this.scrollToBottom());
+          this.socket.emit('chat:markRead', { conversationId: this.activeConv._id, accountNumber: this.accountNumber });
+        }
+        this.bumpConversation(msg.conversationId, msg.text, msg.senderName);
+      });
+
+      this.socket.on('chat:messages', (data) => {
+        if (this.activeConv && data.conversationId === this.activeConv._id) {
+          this.messages = data.messages;
+          this.loadingMessages = false;
+          this.$nextTick(() => this.scrollToBottom());
+        }
+      });
+
+      this.socket.on('chat:userTyping', (data) => {
+        if (this.activeConv && data.conversationId === this.activeConv._id && data.userId !== this.myUserId) {
+          if (data.isTyping) {
+            const member = this.members.find(m => m._id === data.userId);
+            this.typingUser = member?.name || 'Quelqu\'un';
+            clearTimeout(this.typingTimeout);
+            this.typingTimeout = setTimeout(() => { this.typingUser = ''; }, 3000);
+          } else { this.typingUser = ''; }
+        }
+      });
+
+      this.socket.on('chat:error', (err) => console.error('[TeamChat]', err));
+    },
+
+    async fetchConversations() {
+      try {
+        const res = await fetch(this.apiBase + '/conversations', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          this.channels = data.channels;
+          this.dms = data.dms;
+          this.recordConvs = data.recordConversations || [];
+        }
+      } catch (e) { console.error(e); }
+    },
+
+    async fetchMembers() {
+      try {
+        const res = await fetch(this.apiBase + '/members', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) this.members = data.members;
+      } catch (e) { console.error(e); }
+    },
+
+    openConversation(conv) {
+      this.activeConv = conv;
+      this.messages = [];
+      this.loadingMessages = true;
+      this.typingUser = '';
+      this.socket.emit('chat:loadMessages', { conversationId: conv._id, limit: 50, accountNumber: this.accountNumber });
+      this.socket.emit('chat:markRead', { conversationId: conv._id, accountNumber: this.accountNumber });
+      this.$nextTick(() => { if (this.$refs.msgInput) this.$refs.msgInput.focus(); });
+    },
+
+    async openRecordConversation(rc) {
+      this.activeConv = rc;
+      this.messages = [];
+      this.loadingMessages = true;
+      this.typingUser = '';
+
+      // Load messages via record chat API
+      try {
+        const res = await fetch('/account/' + this.accountNumber + '/api/record/' + rc.recordId + '/conversations/' + rc._id, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          this.messages = data.messages || [];
+          // Merge conversation data but keep our enriched fields
+          this.activeConv = { ...data.conversation, ...rc, participants: data.conversation.participants };
+        }
+      } catch (e) {
+        console.error('[TeamChat] Load record messages error:', e);
+      }
+      this.loadingMessages = false;
+      this.$nextTick(() => this.scrollToBottom());
+      this.$nextTick(() => { if (this.$refs.msgInput) this.$refs.msgInput.focus(); });
+    },
+
+    sendMessage() {
+      if (!this.messageText.trim() || !this.activeConv) return;
+
+      // For record-scoped conversations, send via REST API
+      if (this.activeConv.recordId) {
+        this.sendRecordMessage();
+        return;
+      }
+
+      const text = this.messageText.trim();
+      this.socket.emit('chat:sendMessage', {
+        conversationId: this.activeConv._id,
+        text,
+        accountNumber: this.accountNumber,
+      });
+      this.messageText = '';
+      this.bumpConversation(this.activeConv._id, text, 'Moi');
+      this.socket.emit('chat:typing', { conversationId: this.activeConv._id, isTyping: false });
+    },
+
+    async sendRecordMessage() {
+      const text = this.messageText.trim();
+      if (!text || !this.activeConv) return;
+
+      // Optimistic add
+      const tempMsg = {
+        _id: 'temp_' + Date.now(),
+        senderId: this.myUserId,
+        senderName: 'Moi',
+        text,
+        createdAt: new Date().toISOString(),
+      };
+      this.messages.push(tempMsg);
+      this.messageText = '';
+      this.bumpConversation(this.activeConv._id, text, 'Moi');
+      this.$nextTick(() => this.scrollToBottom());
+
+      try {
+        const res = await fetch('/account/' + this.accountNumber + '/api/record/' + this.activeConv.recordId + '/conversations/' + this.activeConv._id + '/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        if (data.success && data.message) {
+          const idx = this.messages.findIndex(m => m._id === tempMsg._id);
+          if (idx !== -1) this.messages[idx] = data.message;
+        }
+      } catch (e) {
+        console.error('[TeamChat] Send record message error:', e);
+      }
+    },
+
+    emitTyping() {
+      if (!this.activeConv || this.activeConv.recordId) return;
+      this.socket.emit('chat:typing', { conversationId: this.activeConv._id, isTyping: true });
+      clearTimeout(this._typingTimer);
+      this._typingTimer = setTimeout(() => {
+        this.socket.emit('chat:typing', { conversationId: this.activeConv._id, isTyping: false });
+      }, 2000);
+    },
+
+    async startDm(targetUserId) {
+      try {
+        const res = await fetch(this.apiBase + '/create-dm', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', body: JSON.stringify({ targetUserId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          await this.fetchConversations();
+          const dm = this.dms.find(d => d._id === data.conversation._id);
+          if (dm) this.openConversation(dm);
+          this.socket.emit('chat:join', { accountNumber: this.accountNumber });
+        }
+      } catch (e) { console.error(e); }
+    },
+
+    openContextMenu(e, conv) {
+      this.contextMenu = { show: true, x: e.clientX, y: e.clientY, conv };
+    },
+
+    handleDeleteClick() {
+      const conv = this.contextMenu.conv;
+      this.showDeleteModal = false;
+      this.contextMenu.show = false;
+      if (conv) this.deleteConversation(conv);
+    },
+
+    async deleteConversation(conv) {
+      if (!conv) return;
+      try {
+        const res = await fetch(this.apiBase + '/conversations/' + conv._id, {
+          method: 'DELETE', credentials: 'include',
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (this.activeConv?._id === conv._id) {
+            this.activeConv = null;
+            this.messages = [];
+          }
+          await this.fetchConversations();
+        }
+      } catch (e) { console.error(e); }
+    },
+
+    async createChannel() {
+      const name = this.newChannelName.trim();
+      if (!name) return;
+      try {
+        const res = await fetch(this.apiBase + '/create-channel', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', body: JSON.stringify({ name: name.startsWith('#') ? name : '# ' + name }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          await this.fetchConversations();
+          this.showNewChannel = false; this.newChannelName = '';
+          const ch = this.channels.find(c => c._id === data.conversation._id);
+          if (ch) this.openConversation(ch);
+          this.socket.emit('chat:join', { accountNumber: this.accountNumber });
+        }
+      } catch (e) { console.error(e); }
+    },
+
+    async onSearch() {
+      const q = this.searchQuery.trim().toLowerCase();
+      if (q.length < 2) {
+        this.searchResultMembers = []; this.searchResultChannels = []; this.searchResultRecords = [];
+        this.showSearchResults = false;
+        return;
+      }
+      // Local: filter members
+      this.searchResultMembers = this.members.filter(m => m._id !== this.myUserId && (m.name || '').toLowerCase().includes(q));
+      // Local: filter channels + existing convs
+      this.searchResultChannels = [...this.channels, ...this.dms.map(d => ({ ...d, name: d.otherUser?.name || 'DM' }))].filter(c => (c.name || '').toLowerCase().includes(q));
+      // API: search records
+      try {
+        const res = await fetch(this.apiBase + '/search-records?q=' + encodeURIComponent(q), { credentials: 'include' });
+        const data = await res.json();
+        this.searchResultRecords = data.success ? data.results : [];
+      } catch (e) { this.searchResultRecords = []; }
+      this.showSearchResults = true;
+    },
+
+    async goToRecordChat(r) {
+      this.showSearchResults = false; this.searchQuery = '';
+      try {
+        // Create or find a conversation for this record
+        const res = await fetch('/account/' + this.accountNumber + '/api/record/' + r.recordId + '/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: '# ' + r.recordTitle }),
+        });
+        const data = await res.json();
+        if (data.success && data.conversation) {
+          // Refresh conversations to get the enriched version
+          await this.fetchConversations();
+          // Find the conversation in our record convs list
+          const rc = this.recordConvs.find(c => c._id === data.conversation._id);
+          if (rc) {
+            this.openRecordConversation(rc);
+          } else {
+            // Fallback: open directly with what we have
+            const conv = {
+              ...data.conversation,
+              entityDisplayName: r.entityName,
+              entityIcon: r.entityIcon,
+              entityColor: r.entityColor,
+              entitySlug: r.entitySlug,
+              recordDisplayTitle: r.recordTitle,
+            };
+            this.openRecordConversation(conv);
+          }
+        }
+      } catch (e) { console.error('[TeamChat] goToRecordChat error:', e); }
+    },
+
+    // Bump a conversation to the top by updating its updatedAt + lastMessage locally
+    bumpConversation(convId, text, senderName) {
+      const now = new Date().toISOString();
+      const update = (list) => {
+        const item = list.find(c => c._id === convId);
+        if (item) {
+          item.updatedAt = now;
+          if (text) {
+            item.lastMessage = { ...(item.lastMessage || {}), text, senderName, sentAt: now };
+          }
+        }
+        return !!item;
+      };
+      update(this.channels) || update(this.dms) || update(this.recordConvs);
+    },
+
+    scrollToBottom() {
+      const c = this.$refs.messagesContainer;
+      if (c) c.scrollTop = c.scrollHeight;
+    },
+
+    get allConversations() {
+      const tagged = [];
+      for (const ch of this.channels) {
+        tagged.push({ ...ch, _convType: 'channel', _displayName: ch.name || 'Canal', _subtitle: ch.lastMessage?.text || (ch.participants?.length || 0) + ' membres', _sortDate: ch.lastMessage?.sentAt || ch.updatedAt || ch.createdAt });
+      }
+      for (const dm of this.dms) {
+        tagged.push({ ...dm, _convType: 'dm', _displayName: dm.otherUser?.name || 'Utilisateur', _subtitle: dm.lastMessage?.text || 'Pas encore de message', _sortDate: dm.lastMessage?.sentAt || dm.updatedAt || dm.createdAt });
+      }
+      for (const rc of this.recordConvs) {
+        const entityName = rc.entityDisplayName || '';
+        const recordTitle = rc.recordDisplayTitle || '';
+        tagged.push({ ...rc, _convType: 'record', _displayName: rc.name || 'Conversation', _subtitle: entityName + ' · ' + recordTitle, _sortDate: rc.lastMessage?.sentAt || rc.updatedAt || rc.createdAt });
+      }
+      tagged.sort((a, b) => new Date(b._sortDate || 0) - new Date(a._sortDate || 0));
+      return tagged;
+    },
+
+    get dmCandidates() {
+      const existing = this.dms.map(d => d.otherUser?.userId).filter(Boolean);
+      return this.members.filter(m => m._id !== this.myUserId && !existing.includes(m._id));
+    },
+
+    avatarColor(name) {
+      const colors = ['#4361ee','#7c3aed','#f97316','#10b981','#ec4899','#06b6d4','#ef4444','#8b5cf6'];
+      let h = 0;
+      for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return colors[Math.abs(h) % colors.length];
+    },
+
+    formatTime(d) {
+      if (!d) return '';
+      return new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    },
+
+    formatDateSep(d) {
+      if (!d) return '';
+      const date = new Date(d); const today = new Date();
+      if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
+      const y = new Date(today); y.setDate(y.getDate() - 1);
+      if (date.toDateString() === y.toDateString()) return 'Hier';
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    },
+
+    dateSep(prev, curr) {
+      if (!prev || !curr) return false;
+      return new Date(prev.createdAt).toDateString() !== new Date(curr.createdAt).toDateString();
+    },
+  }));
+});
+</script>

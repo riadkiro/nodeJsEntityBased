@@ -637,6 +637,18 @@ document.addEventListener('alpine:init', () => {
         tagged.push({ ...rc, _convType: 'record', _displayName: rc.name || 'Conversation', _subtitle: entityName + ' · ' + recordTitle, _sortDate: rc.lastMessage?.sentAt || rc.updatedAt || rc.createdAt });
       }
       tagged.sort((a, b) => new Date(b._sortDate || 0) - new Date(a._sortDate || 0));
+
+      // Filter by search query
+      const q = (this.searchQuery || '').trim().toLowerCase();
+      if (q.length > 0) {
+        return tagged.filter(c => {
+          const name = (c._displayName || '').toLowerCase();
+          const subtitle = (c._subtitle || '').toLowerCase();
+          const lastMsg = (c.lastMessage?.text || '').toLowerCase();
+          return name.includes(q) || subtitle.includes(q) || lastMsg.includes(q);
+        });
+      }
+
       return tagged;
     },
 

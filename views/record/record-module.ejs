@@ -469,69 +469,17 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             </div>
         </div>
 
-        <!-- ═══ Dynamic Tables (Lignes) ═══ -->
+        <!-- ═══ Dynamic Tables (Lignes) — React Island ═══ -->
+        <script type="module" src="/dist/dynamicTable.js"></script>
         <div class="ov-card ov-card-lines ov-full">
-            <div class="ov-card-header">
-                <iconify-icon icon="solar:bill-list-bold-duotone" width="18" style="color:#6366f1"></iconify-icon>
-                <span>Tableaux dynamiques</span>
-                <a href="<%= _recBase %>/edit" class="ov-card-link">Modifier →</a>
-            </div>
-
-            <!-- Tab bar -->
-            <div class="ov-lines-tabs">
-                <button type="button" class="ov-lines-tab active">
-                    <span class="ov-lines-dot" style="background:#4361ee"></span>
-                    Traitement
-                    <span class="ov-lines-count">2</span>
-                </button>
-                <button type="button" class="ov-lines-tab">
-                    <span class="ov-lines-dot"></span>
-                    Prestations Consultation
-                    <span class="ov-lines-count">1</span>
-                </button>
-                <button type="button" class="ov-lines-tab">
-                    <span class="ov-lines-dot"></span>
-                    Examens à réaliser
-                    <span class="ov-lines-count">1</span>
-                </button>
-            </div>
-
-            <!-- Table -->
-            <div class="ov-lines-table-wrap">
-                <table class="ov-lines-table">
-                    <thead>
-                        <tr>
-                            <th>Traitement</th>
-                            <th>Moment</th>
-                            <th>Fréquence</th>
-                            <th>Durée</th>
-                            <th>Instructions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="ov-lines-primary">Bisoprolol 5mg</td>
-                            <td><span class="ov-lines-pill" style="background:rgba(16,185,129,.1);color:#10b981">Matin</span></td>
-                            <td><span class="ov-lines-pill" style="background:rgba(99,102,241,.1);color:#6366f1">2x / jour</span></td>
-                            <td><span class="ov-lines-pill" style="background:rgba(14,165,233,.1);color:#0ea5e9">7 jours</span></td>
-                            <td class="ov-lines-muted">Après le repas</td>
-                        </tr>
-                        <tr>
-                            <td class="ov-lines-primary">Alprazolam 0.25mg</td>
-                            <td><span class="ov-lines-pill" style="background:rgba(249,115,22,.1);color:#f97316">Soir</span></td>
-                            <td><span class="ov-lines-pill" style="background:rgba(99,102,241,.1);color:#6366f1">2x / jour</span></td>
-                            <td><span class="ov-lines-pill" style="background:rgba(14,165,233,.1);color:#0ea5e9">7 jours</span></td>
-                            <td class="ov-lines-muted">Le soir au coucher</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Footer -->
-            <div class="ov-lines-footer">
-                <span class="ov-lines-add">+ Ajouter</span>
-                <span class="ov-lines-meta">2 lignes</span>
-            </div>
+            <div
+                data-island="dynamic-table"
+                data-account-number="<%= account_number %>"
+                data-record-id="<%= record._id %>"
+                data-entity-id="<%= entity._id %>"
+                data-schema-filter=""
+                data-compact="false"
+            ></div>
         </div>
 
         <!-- Upcoming events -->
@@ -650,8 +598,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-drive-name{font-size:12px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ov-drive-meta{font-size:11px;color:#888da8;margin-top:2px;}
     /* ── Dynamic Tables (Lignes) ── */
-    .ov-card-lines{padding:0;overflow:hidden;}
-    .ov-card-lines .ov-card-header{padding:16px 20px 0;margin-bottom:0;}
+    .ov-card-lines{overflow:visible;}
+    .ov-card-lines .ov-card-header{margin-bottom:0;}
     .ov-lines-tabs{display:flex;align-items:center;gap:0;padding:0 20px;border-bottom:1px solid #f1f3f5;margin-top:8px;}
     .ov-lines-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 16px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:#888da8;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:inherit;}
     .ov-lines-tab:hover{color:#0e1726;}

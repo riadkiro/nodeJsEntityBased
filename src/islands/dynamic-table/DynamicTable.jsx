@@ -16,9 +16,9 @@ import { computeTotalsRows } from './utils/totals'
 
 const styles = {
     panel: {
-        background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e5e7eb',
+        background: 'transparent',
+        borderRadius: '0',
+        border: 'none',
         overflow: 'visible',
         height: '100%',
         display: 'flex',
@@ -358,6 +358,7 @@ export default function DynamicTable({
     const [snapshotDeletingId, setSnapshotDeletingId] = useState('')
     const [snapshotShowAllMap, setSnapshotShowAllMap] = useState({})
     const [snapshotPendingDeleteId, setSnapshotPendingDeleteId] = useState('')
+    const [showHistoryPanel, setShowHistoryPanel] = useState(false)
     const [savePresetModal, setSavePresetModal] = useState(INITIAL_SAVE_PRESET_MODAL)
     const deleteTimerRef = useRef(null)
     const [visibleSchemaIds, setVisibleSchemaIds] = useState([])
@@ -1183,7 +1184,7 @@ export default function DynamicTable({
 
     return (
         <div style={styles.panel}>
-            {schemas.length > 1 && (
+            {(schemas.length > 1 || schemas.find(s => s._id === activeSchemaId)?.snapshotConfig?.enabled) && (
                 <SchemaTabBar
                     schemas={schemas}
                     activeSchemaId={activeSchemaId}
@@ -1192,6 +1193,9 @@ export default function DynamicTable({
                     visibleSchemaIds={visibleSchemaIds}
                     onToggleSchemaVisibility={toggleSchemaVisibility}
                     onShowAllSchemas={showAllSchemas}
+                    showHistory={showHistoryPanel}
+                    onToggleHistory={() => setShowHistoryPanel(v => !v)}
+                    hasSnapshots={!!schemas.find(s => s._id === activeSchemaId)?.snapshotConfig?.enabled}
                 />
             )}
 
@@ -1948,11 +1952,8 @@ export default function DynamicTable({
                         lines={getSchemaLines(schema._id)}
                     />
 
-                    {schema.snapshotConfig?.enabled && (
-                        <div style={{ borderTop: '2px solid #e2e8f0', padding: '8px 10px', maxHeight: 240, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.04em' }}>
-                                Historique
-                            </div>
+                    {schema.snapshotConfig?.enabled && showHistoryPanel && (
+                        <div style={{ borderTop: '1px solid #e2e8f0', padding: '12px 14px 16px', maxHeight: 300, overflowY: 'auto', position: 'relative', zIndex: 1, background: '#fafbfc' }}>
                             {snapshotLoadingMap[schema._id] && (
                                 <div style={{ fontSize: 12, color: '#9ca3af' }}>Chargement...</div>
                             )}

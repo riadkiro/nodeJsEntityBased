@@ -127,7 +127,10 @@ export default function SchemaTabBar({
     getSchemaLines,
     visibleSchemaIds = [],
     onToggleSchemaVisibility,
-    onShowAllSchemas
+    onShowAllSchemas,
+    showHistory = false,
+    onToggleHistory,
+    hasSnapshots = false
 }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const menuRef = useRef(null)
@@ -182,56 +185,97 @@ export default function SchemaTabBar({
                 })}
             </div>
 
-            {schemas.length > 1 && (
-                <div style={menuWrap} ref={menuRef}>
-                    <button type="button" style={menuButton} onClick={() => setMenuOpen(v => !v)}>
-                        Onglets
-                        <span style={{ fontSize: 10, color: '#9ca3af' }}>{visibleCount}/{schemas.length}</span>
+            {/* Right-side controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                {/* Historique toggle */}
+                {hasSnapshots && (
+                    <button
+                        type="button"
+                        onClick={() => onToggleHistory?.()}
+                        style={{
+                            border: 'none',
+                            borderRadius: 6,
+                            background: showHistory ? 'rgba(67,97,238,0.08)' : 'transparent',
+                            color: showHistory ? '#4361ee' : '#888da8',
+                            fontSize: 11,
+                            fontWeight: 500,
+                            padding: '4px 9px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!showHistory) {
+                                e.currentTarget.style.color = '#4361ee'
+                                e.currentTarget.style.background = 'rgba(67,97,238,0.04)'
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!showHistory) {
+                                e.currentTarget.style.color = '#888da8'
+                                e.currentTarget.style.background = 'transparent'
+                            }
+                        }}
+                    >
+                        <iconify-icon icon="solar:clock-circle-bold-duotone" width="13"></iconify-icon>
+                        Historique
                     </button>
+                )}
 
-                    {menuOpen && (
-                        <div style={menuPanel}>
-                            <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280' }}>Afficher/Masquer</span>
-                                <button
-                                    type="button"
-                                    style={{ border: 'none', background: 'none', color: '#4361ee', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                                    onClick={() => onShowAllSchemas?.()}
-                                >
-                                    Tout afficher
-                                </button>
-                            </div>
+                {/* Onglets menu */}
+                {schemas.length > 1 && (
+                    <div style={menuWrap} ref={menuRef}>
+                        <button type="button" style={menuButton} onClick={() => setMenuOpen(v => !v)}>
+                            Onglets
+                            <span style={{ fontSize: 10, color: '#9ca3af' }}>{visibleCount}/{schemas.length}</span>
+                        </button>
 
-                            {schemas.map(schema => {
-                                const schemaId = String(schema._id)
-                                const checked = visibleSet.has(schemaId)
-                                return (
-                                    <label
-                                        key={schemaId}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            padding: '8px 10px',
-                                            borderBottom: '1px solid #f9fafb',
-                                            cursor: 'pointer',
-                                            fontSize: 12,
-                                            color: '#374151'
-                                        }}
+                        {menuOpen && (
+                            <div style={menuPanel}>
+                                <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280' }}>Afficher/Masquer</span>
+                                    <button
+                                        type="button"
+                                        style={{ border: 'none', background: 'none', color: '#4361ee', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                                        onClick={() => onShowAllSchemas?.()}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={checked}
-                                            onChange={() => onToggleSchemaVisibility?.(schema._id)}
-                                        />
-                                        <span>{schema.label || schema.name}</span>
-                                    </label>
-                                )
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
+                                        Tout afficher
+                                    </button>
+                                </div>
+
+                                {schemas.map(schema => {
+                                    const schemaId = String(schema._id)
+                                    const checked = visibleSet.has(schemaId)
+                                    return (
+                                        <label
+                                            key={schemaId}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '8px 10px',
+                                                borderBottom: '1px solid #f9fafb',
+                                                cursor: 'pointer',
+                                                fontSize: 12,
+                                                color: '#374151'
+                                            }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() => onToggleSchemaVisibility?.(schema._id)}
+                                            />
+                                            <span>{schema.label || schema.name}</span>
+                                        </label>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

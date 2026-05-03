@@ -46,8 +46,7 @@ const tdStyle = {
     verticalAlign: 'middle',
     color: '#0e1726',
     position: 'relative',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis'
+    overflow: 'visible'
 }
 
 const tdRelation = {
@@ -56,7 +55,7 @@ const tdRelation = {
     borderBottom: '1px solid #f1f3f5',
     verticalAlign: 'middle',
     position: 'relative',
-    overflow: 'hidden'
+    overflow: 'visible'
 }
 
 const dragHandleStyle = {

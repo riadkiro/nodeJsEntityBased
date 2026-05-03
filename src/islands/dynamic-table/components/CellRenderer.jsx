@@ -3,6 +3,7 @@
  * Supports: text, number, textarea, select, multiselect, duration, date, computed
  */
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 // ── Shared styles ──────────────────────────
 const inputStyle = {
@@ -41,18 +42,15 @@ const placeholderStyle = {
 }
 
 const dropdownStyle = {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 1200,
+    position: 'fixed',
+    zIndex: 6000,
     background: '#fff',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
     maxHeight: '180px',
     overflowY: 'auto',
-    marginTop: '2px'
+    minWidth: '160px'
 }
 
 const dropdownItemStyle = {
@@ -88,18 +86,48 @@ export default function CellRenderer({ col, value, line, onChange }) {
     const [dropdownOpen, setDropdownOpen] = useState(false)
     const [filterText, setFilterText] = useState('')
     const wrapRef = useRef(null)
+    const dropdownRef = useRef(null)
 
     // Close dropdown on outside click
     useEffect(() => {
         if (!dropdownOpen) return
         const handler = (e) => {
-            if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+            const inTrigger = wrapRef.current && wrapRef.current.contains(e.target)
+            const inDropdown = dropdownRef.current && dropdownRef.current.contains(e.target)
+            if (!inTrigger && !inDropdown) {
                 setDropdownOpen(false)
                 setFilterText('')
             }
         }
         document.addEventListener('mousedown', handler)
         return () => document.removeEventListener('mousedown', handler)
+    }, [dropdownOpen])
+
+    // Compute dropdown position from trigger element
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 })
+    useEffect(() => {
+        if (!dropdownOpen || !wrapRef.current) return
+        const updatePos = () => {
+            const rect = wrapRef.current.getBoundingClientRect()
+            const viewportH = window.innerHeight
+            const below = viewportH - rect.bottom - 8
+            const openUp = below < 150 && rect.top > below
+            setDropdownPos({
+                left: rect.left,
+                width: Math.max(160, rect.width),
+                ...(openUp
+                    ? { bottom: viewportH - rect.top + 2, top: undefined }
+                    : { top: rect.bottom + 2, bottom: undefined }
+                )
+            })
+        }
+        updatePos()
+        window.addEventListener('scroll', updatePos, true)
+        window.addEventListener('resize', updatePos)
+        return () => {
+            window.removeEventListener('scroll', updatePos, true)
+            window.removeEventListener('resize', updatePos)
+        }
     }, [dropdownOpen])
 
     // Get options for select/multiselect
@@ -248,8 +276,8 @@ export default function CellRenderer({ col, value, line, onChange }) {
                         <span style={{ color: '#c0c4cc', fontSize: '11px' }}>Sélectionner...</span>
                     )}
                 </div>
-                {dropdownOpen && (
-                    <div style={dropdownStyle}>
+                {dropdownOpen && createPortal(
+                    <div ref={dropdownRef} style={{ ...dropdownStyle, top: dropdownPos.top, bottom: dropdownPos.bottom, left: dropdownPos.left, width: dropdownPos.width }}>
                         {value && (
                             <div
                                 style={{ ...dropdownItemStyle, color: '#ef4444', borderBottom: '1px solid #f3f4f6' }}
@@ -275,7 +303,8 @@ export default function CellRenderer({ col, value, line, onChange }) {
                                 {opt.label || opt.value}
                             </div>
                         ))}
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </div>
         )
@@ -311,8 +340,8 @@ export default function CellRenderer({ col, value, line, onChange }) {
                         <span style={{ color: '#c0c4cc', fontSize: '11px' }}>Sélectionner...</span>
                     )}
                 </div>
-                {dropdownOpen && (
-                    <div style={dropdownStyle}>
+                {dropdownOpen && createPortal(
+                    <div ref={dropdownRef} style={{ ...dropdownStyle, top: dropdownPos.top, bottom: dropdownPos.bottom, left: dropdownPos.left, width: dropdownPos.width }}>
                         {/* Filter input */}
                         <div style={{ padding: '4px 8px', borderBottom: '1px solid #f3f4f6' }}>
                             <input
@@ -362,7 +391,8 @@ export default function CellRenderer({ col, value, line, onChange }) {
                                     </div>
                                 )
                             })}
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </div>
         )

@@ -90,6 +90,11 @@ const userPreferencesSchema = new mongoose.Schema({
         gridColumnWidths: {
             type: mongoose.Schema.Types.Mixed,
             default: undefined
+        },
+        // Overview layout builder (rows/columns/widgets)
+        rows: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
         }
     },
     updatedAt: {

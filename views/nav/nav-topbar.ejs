@@ -1033,6 +1033,23 @@
             Lock Screen</a
           >
         </li>
+        <li class="border-t border-white-light dark:border-white-light/10">
+          <a
+            href="javascript:;"
+            class="dark:hover:text-white flex items-center justify-between"
+            @click.prevent.stop="$store.app.toggleLayoutMode()"
+          >
+            <span class="flex items-center">
+              <iconify-icon icon="tabler:layout-dashboard" width="18" class="ltr:mr-2 rtl:ml-2" style="vertical-align:-3px;"></iconify-icon>
+              Mode mise en page
+            </span>
+            <div class="relative w-9 h-5 rounded-full transition-colors duration-200"
+                 :class="$store.app.layoutMode ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-600'">
+              <div class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                   :class="$store.app.layoutMode ? 'ltr:translate-x-4 rtl:-translate-x-4' : 'ltr:translate-x-0.5 rtl:-translate-x-0.5'"></div>
+            </div>
+          </a>
+        </li>
         <!-- Active Account -->
         <li class="border-t border-white-light dark:border-white-light/10">
           <div class="px-4 py-2">

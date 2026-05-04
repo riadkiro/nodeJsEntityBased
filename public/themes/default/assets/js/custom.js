@@ -208,6 +208,12 @@
             toggleSidebar() {
                 this.sidebar = !this.sidebar;
             },
+
+            // layout design mode
+            layoutMode: Alpine.$persist(false),
+            toggleLayoutMode() {
+                this.layoutMode = !this.layoutMode;
+            },
         });
     });
 })();

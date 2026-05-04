@@ -1177,7 +1177,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Sidebar panel visibility
             'sidebar_panels',
             // Dynamic table column widths
-            'gridColumnWidths'
+            'gridColumnWidths',
+            // Overview layout builder
+            'rows'
         ]
 
         prefKeys.forEach(key => {

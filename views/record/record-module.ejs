@@ -204,314 +204,109 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <%
         var _ovFields = (typeof overviewFields !== 'undefined' && overviewFields.length > 0) ? overviewFields : _ficheFields.map(function(f){ return Object.assign({}, f, { layoutWidth: 12 }); });
     %>
-    <div class="ov-grid" x-data="ovInlineEdit()">
-        <!-- Left: Key Fields (8/12) -->
-        <div class="ov-card ov-card-fields">
-            <div class="ov-card-header">
-                <iconify-icon icon="solar:card-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
-                <span>Informations clés</span>
-                <a href="<%= _recBase %>/fiche" class="ov-card-link">Voir tout →</a>
-            </div>
-            <div class="ov-fields-list">
-                <% _ovFields.forEach(function(f,i){ %>
-                <div class="ov-ef" data-key="<%= f.key %>"
-                     @click="startEdit('<%= f.key %>',$event)"
-                     <% if (f.type !== 'relation') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>>
-                    <div class="ov-ef-head">
-                        <div class="ov-ef-icon" style="background:linear-gradient(135deg,<%= f.color||'#4361ee' %>12,<%= f.color||'#4361ee' %>06)">
-                            <iconify-icon icon="<%= f.icon %>" width="13" style="color:<%= f.color||'#4361ee' %>"></iconify-icon>
-                        </div>
-                        <span class="ov-ef-label"><%= f.label %></span>
-                    </div>
-                    <div class="ov-ef-body">
-                        <!-- View state -->
-                        <div class="ov-ef-view" x-show="editingKey!=='<%= f.key %>'">
-                            <% if (f.type === 'relation') { %>
-                                <% if (f.rawValue && Array.isArray(f.rawValue) && f.rawValue.length > 0) { %>
-                                    <div class="ov-tags"><% f.rawValue.forEach(function(rv){ %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= rv.title %></span><% }); %></div>
-                                <% } else { %>
-                                    <span class="ov-placeholder">Sélectionner...</span>
-                                <% } %>
-                            <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
-                                <% var selArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
-                                <% if (selArr.length > 0) { %>
-                                    <div class="ov-tags"><% selArr.forEach(function(sv){ var optMatch = (f.options||[]).find(function(o){ return (o.value||o.label)===sv; }); %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= optMatch ? (optMatch.label||optMatch.value) : sv %></span><% }); %></div>
-                                <% } else { %>
-                                    <span class="ov-placeholder">Sélectionner...</span>
-                                <% } %>
-                            <% } else if (f.inputType === 'textarea') { %>
-                                <% if (f.value) { %><div class="ov-ef-text"><%= f.value %></div><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
-                            <% } else { %>
-                                <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
-                            <% } %>
-                        </div>
-                        <!-- Edit state -->
-                        <div class="ov-ef-edit" x-show="editingKey==='<%= f.key %>'" x-cloak @click.stop>
-                            <% if (f.inputType === 'textarea') { %>
-                            <textarea class="ov-input ov-textarea" name="<%= f.key %>" rows="<%= f.uiRows||3 %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" x-ref="input_<%= f.key %>"><%= f.rawValue||'' %></textarea>
-                            <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
-                            <% var mSelArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
-                            <div class="ov-ms-pills" x-data='{ selected: <%- JSON.stringify(mSelArr) %>, toggle(v){ const i=this.selected.indexOf(v); if(i===-1) this.selected.push(v); else this.selected.splice(i,1); }, isSelected(v){ return this.selected.includes(v); } }' x-ref="input_<%= f.key %>">
-                                <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %><label class="ov-ms-pill" :class="isSelected('<%= ov %>') ? 'active' : ''"><input type="checkbox" value="<%= ov %>" :checked="isSelected('<%= ov %>')" @change="toggle('<%= ov %>')" class="hidden"><svg x-show="isSelected('<%= ov %>')" class="ov-ms-check" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span><%= opt.label||opt.value %></span></label><% }); %>
+    <div x-data="ovLayoutBuilder()" :class="layoutMode ? 'ov-dm' : ''">
+        <!-- Design mode banner -->
+        <div class="ov-dm-banner">
+            <iconify-icon icon="tabler:layout-dashboard" width="16"></iconify-icon>
+            <span>Mode mise en page activé — Glissez les widgets pour réorganiser</span>
+            <button type="button" @click="$store.app.layoutMode = false" style="margin-left:auto;padding:4px 12px;border-radius:6px;border:1px solid rgba(67,97,238,.2);background:#fff;color:#4361ee;font-size:11px;font-weight:600;cursor:pointer;">Terminé</button>
+        </div>
+
+        <!-- Dynamic layout rows -->
+        <div x-ref="ovRowContainer">
+            <template x-for="row in rows" :key="row.id">
+                <div class="ov-layout-row" :data-row-id="row.id">
+                    <div class="ov-row-drag" title="Déplacer la ligne">⠿</div>
+                    <button type="button" class="ov-row-remove" @click="removeRow(row.id)" title="Supprimer la ligne">✕</button>
+                    <template x-for="(col, ci) in row.columns" :key="col.id">
+                        <div class="ov-layout-col" :style="'width:' + (col.width/12*100) + '%;position:relative;'">
+                            <!-- Column toolbar -->
+                            <div class="ov-col-toolbar">
+                                <button type="button" @click="splitColumn(row.id, col.id)" title="Diviser" x-show="col.width >= 4">⫽</button>
+                                <button type="button" @click="removeColumn(row.id, col.id)" title="Supprimer colonne" x-show="row.columns.length > 1" style="color:#ef4444;">✕</button>
                             </div>
-                            <% } else if (f.type === 'relation') { %>
-                            <!-- Relation inline editor with search dropdown -->
-                            <div class="ov-rel-editor" x-data='ovRelEditor({
-                                key: "<%= f.key %>",
-                                targetEntityId: "<%= f.targetEntityId %>",
-                                targetEntitySlug: "<%= f.targetEntitySlug || '' %>",
-                                isMulti: <%= f.isMulti ? 'true' : 'false' %>,
-                                color: "<%= (f.color||'#4361ee').replace(/'/g, '') %>",
-                                initial: <%- JSON.stringify(f.rawValue || []) %>
-                            })' @click.outside="closeAndSave()">
-                                <div class="ov-rel-tags">
-                                    <template x-for="tag in tags" :key="tag._id">
-                                        <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
-                                            <span x-text="tag.title"></span>
-                                            <button type="button" class="ov-tag-x" @click.stop="removeTag(tag._id)">&times;</button>
-                                        </span>
-                                    </template>
-                                    <input type="text" class="ov-rel-search" placeholder="Rechercher..."
-                                           x-model="searchQ" @input.debounce.300ms="search()" @focus="search()"
-                                           @keydown.escape="closeAndSave()" x-ref="relSearchInput">
-                                </div>
-                                <div class="ov-rel-dropdown" x-show="showDropdown" x-cloak>
-                                    <template x-if="results.length === 0 && searchQ.trim().length > 0">
-                                        <div class="ov-rel-empty">Aucun résultat pour "<span x-text="searchQ"></span>"</div>
-                                    </template>
-                                    <template x-for="r in results" :key="r._id">
-                                        <div class="ov-rel-option" @click.stop="addTag(r)">
-                                            <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>
-                                            <span x-text="r.title"></span>
+                            <!-- Resize handle between columns -->
+                            <template x-if="ci < row.columns.length - 1">
+                                <div class="ov-resize-handle" @mousedown="$event.preventDefault(); _onResizeStart($event, row.id, ci)"></div>
+                            </template>
+                            <!-- Widgets in this column -->
+                            <div class="ov-col-widgets" :data-col-id="col.id">
+                                <template x-for="wid in col.widgetIds" :key="wid">
+                                    <div class="ov-widget-wrap" :data-widget-id="wid">
+                                        <div class="ov-widget-drag" title="Déplacer">⠿</div>
+                                        <button type="button" class="ov-widget-remove" @click="removeWidget(wid)" title="Retirer">✕</button>
+                                        <!-- Widget: fields -->
+                                        <template x-if="wid === 'fields'">
+                                        <div class="ov-card ov-card-fields" x-data="ovInlineEdit()">
+                                            <% if (typeof _ovFields !== 'undefined') { %><%- include('partials/ov-widget-fields', { _ovFields: _ovFields, _recBase: _recBase }) %><% } %>
                                         </div>
-                                    </template>
-                                    <div class="ov-rel-create" @click.stop="createNew()" x-show="searchQ.trim().length > 0">
-                                        <iconify-icon icon="solar:add-square-bold" width="15"></iconify-icon>
-                                        <span>Créer "<span x-text="searchQ.trim()"></span>"</span>
+                                        </template>
+                                        <!-- Widget: tasks -->
+                                        <template x-if="wid === 'tasks'">
+                                        <div class="ov-card ov-card-tasks">
+                                            <%- include('partials/ov-widget-tasks', { _recBase: _recBase }) %>
+                                        </div>
+                                        </template>
+                                        <!-- Widget: docs -->
+                                        <template x-if="wid === 'docs'">
+                                        <div class="ov-card ov-card-docs" x-data="ovSmartDocs()">
+                                            <%- include('partials/ov-widget-docs', { _recBase: _recBase }) %>
+                                        </div>
+                                        </template>
+                                        <!-- Widget: drive -->
+                                        <template x-if="wid === 'drive'">
+                                        <div class="ov-card ov-card-drive">
+                                            <%- include('partials/ov-widget-drive', { _recBase: _recBase }) %>
+                                        </div>
+                                        </template>
+                                        <!-- Widget: lines -->
+                                        <template x-if="wid === 'lines'">
+                                        <div class="ov-card ov-card-lines">
+                                            <script type="module" src="/dist/dynamicTable.js"></script>
+                                            <div
+                                                data-island="dynamic-table"
+                                                data-account-number="<%= account_number %>"
+                                                data-record-id="<%= record._id %>"
+                                                data-entity-id="<%= entity._id %>"
+                                                data-schema-filter=""
+                                                data-compact="false"
+                                            ></div>
+                                        </div>
+                                        </template>
+                                        <!-- Widget: agenda -->
+                                        <template x-if="wid === 'agenda'">
+                                        <div class="ov-card ov-card-agenda">
+                                            <%- include('partials/ov-widget-agenda', { _recBase: _recBase }) %>
+                                        </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <!-- Add widget button -->
+                                <div class="ov-add-widget-btn" style="position:relative;" x-data="{ pickerOpen: false }" @click.outside="pickerOpen = false">
+                                    <div @click="pickerOpen = !pickerOpen" style="display:flex;align-items:center;gap:6px;width:100%;justify-content:center;">
+                                        <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                        <span>Widget</span>
+                                    </div>
+                                    <div class="ov-widget-picker" x-show="pickerOpen" x-cloak>
+                                        <template x-for="w in _availableWidgets()" :key="w.id">
+                                            <div class="ov-widget-picker-item" @click="addWidget(col.id, w.id); pickerOpen = false">
+                                                <iconify-icon :icon="w.icon" width="15" :style="'color:' + w.color"></iconify-icon>
+                                                <span x-text="w.label"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="_availableWidgets().length === 0" style="padding:10px;text-align:center;color:#888da8;font-size:11px;">Tous les widgets sont placés</div>
                                     </div>
                                 </div>
                             </div>
-                            <% } else if (f.inputType === 'select') { %>
-                            <select class="ov-input" name="<%= f.key %>" @change="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
-                                <option value="">Sélectionner...</option>
-                                <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %>
-                                <option value="<%= ov %>" <%= f.rawValue===ov?'selected':'' %>><%= opt.label %></option>
-                                <% }); %>
-                            </select>
-                            <% } else { %>
-                            <input type="<%= f.inputType==='date'?'date':f.inputType==='number'?'number':'text' %>" class="ov-input" name="<%= f.key %>" value="<%= f.rawValue||'' %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" @keydown.enter="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
-                            <% } %>
-                            <% if (f.type !== 'relation') { %>
-                            <div class="ov-ef-btns">
-                                <button type="button" class="ov-ef-ok" @click="saveCurrentField()"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
-                                <button type="button" class="ov-ef-cancel" @click="cancelEdit()"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
-                            </div>
-                            <% } %>
-                        </div>
-                    </div>
-                </div>
-                <% }); %>
-            </div>
-        </div>
-
-        <!-- Right column -->
-        <div class="ov-right-col">
-            <!-- Tasks summary -->
-            <div class="ov-card ov-card-tasks">
-                <div class="ov-card-header">
-                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" style="color:#10b981"></iconify-icon>
-                    <span>Tâches</span>
-                    <a href="<%= _recBase %>/tasks" class="ov-card-link">Voir tout →</a>
-                </div>
-                <div class="ov-tasks-chart">
-                    <div class="ov-chart-bars">
-                        <div class="ov-bar" style="--bar-h:60%;background:#10b981" title="Terminées: 3"><span>3</span></div>
-                        <div class="ov-bar" style="--bar-h:40%;background:#f59e0b" title="En cours: 2"><span>2</span></div>
-                        <div class="ov-bar" style="--bar-h:20%;background:#ef4444" title="Urgent: 1"><span>1</span></div>
-                        <div class="ov-bar" style="--bar-h:30%;background:#0ea5e9" title="Planifié: 1"><span>1</span></div>
-                    </div>
-                    <div class="ov-chart-labels">
-                        <span style="color:#10b981">Terminées</span>
-                        <span style="color:#f59e0b">En cours</span>
-                        <span style="color:#ef4444">Urgent</span>
-                        <span style="color:#0ea5e9">Planifié</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Documents templates (Dynamic) -->
-            <div class="ov-card ov-card-docs" x-data="ovSmartDocs()">
-                <div class="ov-card-header">
-                    <iconify-icon icon="solar:document-text-bold-duotone" width="18" style="color:#f59e0b"></iconify-icon>
-                    <span>Documents modèles</span>
-                    <span x-show="templates.length > 0" x-text="templates.length"
-                          style="font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#f59e0b;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;margin-left:2px;"></span>
-                    <a href="<%= _recBase %>/docs" class="ov-card-link">Voir tout →</a>
-                </div>
-                <!-- Loading -->
-                <div x-show="loading" style="padding:20px;text-align:center;">
-                    <iconify-icon icon="line-md:loading-twotone-loop" width="22" style="color:#f59e0b;"></iconify-icon>
-                </div>
-                <!-- Empty state -->
-                <div x-show="!loading && templates.length === 0" style="padding:16px 12px;text-align:center;">
-                    <iconify-icon icon="solar:document-add-linear" width="28" style="color:#d1d5db;"></iconify-icon>
-                    <p style="font-size:12px;color:#888da8;margin:6px 0 0;">Aucun document modèle lié</p>
-                </div>
-                <!-- Template list -->
-                <div class="ov-doc-list" x-show="!loading && templates.length > 0">
-                    <template x-for="tpl in templates" :key="tpl._id">
-                        <div class="ov-doc-item">
-                            <iconify-icon icon="solar:file-text-bold-duotone" width="16" style="color:#f59e0b"></iconify-icon>
-                            <span x-text="tpl.name"></span>
-                            <button class="ov-doc-gen" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id">
-                                <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
-                                <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
-                            </button>
                         </div>
                     </template>
                 </div>
-
-                <!-- Full-screen SmartDoc Preview/Editor -->
-                <template x-teleport="body">
-                    <div x-show="showPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                        x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                        class="fixed inset-0 flex flex-col bg-white" style="display:none; z-index: 99998;">
-                        <!-- Header -->
-                        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white" style="min-height: 52px;">
-                            <div class="flex items-center gap-3">
-                                <button type="button" @click="cancelPreview()" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Retour">
-                                    <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
-                                </button>
-                                <div>
-                                    <h3 class="text-[13px] font-bold text-gray-800" x-text="previewName || 'Document'"></h3>
-                                    <p class="text-[10px] text-gray-400 flex items-center gap-1" x-show="!finalized">
-                                        <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
-                                        Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
-                                    </p>
-                                    <p class="text-[10px] text-success flex items-center gap-1 font-medium" x-show="finalized">
-                                        <iconify-icon icon="solar:check-circle-bold" width="10"></iconify-icon>
-                                        PDF généré avec succès !
-                                    </p>
-                                </div>
-                            </div>
-                            <!-- Before finalization: Annuler + Finaliser -->
-                            <div class="flex items-center gap-2" x-show="!finalized">
-                                <button type="button" @click="cancelPreview()" :disabled="finalizing"
-                                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-danger hover:bg-danger/5 border border-gray-200 transition-all">
-                                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
-                                    Annuler
-                                </button>
-                                <button type="button" @click="finalizePreview()" :disabled="finalizing"
-                                    class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm disabled:opacity-50">
-                                    <iconify-icon :icon="finalizing ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
-                                    <span x-text="finalizing ? 'Génération en cours...' : 'Finaliser et générer le PDF'"></span>
-                                </button>
-                            </div>
-                            <!-- After finalization: Télécharger + Fermer -->
-                            <div class="flex items-center gap-2" x-show="finalized" x-cloak>
-                                <a :href="downloadUrl" download
-                                    class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-primary text-white hover:bg-primary/90 transition-all shadow-sm">
-                                    <iconify-icon icon="solar:download-bold" width="14"></iconify-icon>
-                                    Télécharger
-                                </a>
-                                <button type="button" @click="closePreview()"
-                                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200 transition-all">
-                                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
-                                    Fermer
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Editor iframe -->
-                        <div class="flex-1 overflow-hidden">
-                            <iframe id="ov-smartdoc-preview-iframe" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>
-                        </div>
-                    </div>
-                </template>
-            </div>
+            </template>
         </div>
-
-        <!-- Drive recent files -->
-        <div class="ov-card ov-card-drive ov-full">
-            <div class="ov-card-header">
-                <iconify-icon icon="solar:cloud-storage-bold-duotone" width="18" style="color:#ec4899"></iconify-icon>
-                <span>Fichiers récents</span>
-                <a href="<%= _recBase %>/drive" class="ov-card-link">Voir tout →</a>
-            </div>
-            <div class="ov-drive-grid">
-                <div class="ov-drive-file">
-                    <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#ec489910,#ec489905)">
-                        <iconify-icon icon="solar:gallery-bold-duotone" width="28" style="color:#ec4899"></iconify-icon>
-                    </div>
-                    <div class="ov-drive-name">Radio thorax.jpg</div>
-                    <div class="ov-drive-meta">2.4 MB · 15/04</div>
-                </div>
-                <div class="ov-drive-file">
-                    <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#0ea5e910,#0ea5e905)">
-                        <iconify-icon icon="solar:document-bold-duotone" width="28" style="color:#0ea5e9"></iconify-icon>
-                    </div>
-                    <div class="ov-drive-name">Bilan sanguin.pdf</div>
-                    <div class="ov-drive-meta">540 KB · 12/04</div>
-                </div>
-                <div class="ov-drive-file">
-                    <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#8b5cf610,#8b5cf605)">
-                        <iconify-icon icon="solar:document-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
-                    </div>
-                    <div class="ov-drive-name">Compte-rendu IRM.pdf</div>
-                    <div class="ov-drive-meta">1.2 MB · 05/04</div>
-                </div>
-                <div class="ov-drive-file">
-                    <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#10b98110,#10b98105)">
-                        <iconify-icon icon="solar:document-bold-duotone" width="28" style="color:#10b981"></iconify-icon>
-                    </div>
-                    <div class="ov-drive-name">Ordonnance.pdf</div>
-                    <div class="ov-drive-meta">120 KB · 01/04</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══ Dynamic Tables (Lignes) — React Island ═══ -->
-        <script type="module" src="/dist/dynamicTable.js"></script>
-        <div class="ov-card ov-card-lines ov-full">
-            <div
-                data-island="dynamic-table"
-                data-account-number="<%= account_number %>"
-                data-record-id="<%= record._id %>"
-                data-entity-id="<%= entity._id %>"
-                data-schema-filter=""
-                data-compact="false"
-            ></div>
-        </div>
-
-        <!-- Upcoming events -->
-        <div class="ov-card ov-card-agenda ov-full">
-            <div class="ov-card-header">
-                <iconify-icon icon="solar:calendar-bold-duotone" width="18" style="color:#14b8a6"></iconify-icon>
-                <span>Prochains rendez-vous</span>
-                <a href="<%= _recBase %>/agenda" class="ov-card-link">Voir tout →</a>
-            </div>
-            <div class="ov-agenda-row">
-                <div class="ov-agenda-item">
-                    <div class="ov-agenda-date-box" style="background:linear-gradient(135deg,#14b8a612,#14b8a606)">
-                        <div class="ov-agenda-day" style="color:#14b8a6">28</div>
-                        <div class="ov-agenda-month">AVR</div>
-                    </div>
-                    <div><div class="ov-agenda-title">Consultation de suivi</div><div class="ov-agenda-time">10:30 · Confirmé</div></div>
-                </div>
-                <div class="ov-agenda-item">
-                    <div class="ov-agenda-date-box" style="background:linear-gradient(135deg,#0ea5e912,#0ea5e906)">
-                        <div class="ov-agenda-day" style="color:#0ea5e9">15</div>
-                        <div class="ov-agenda-month">MAI</div>
-                    </div>
-                    <div><div class="ov-agenda-title">Contrôle tension</div><div class="ov-agenda-time">09:00 · Planifié</div></div>
-                </div>
-                <div class="ov-agenda-item">
-                    <div class="ov-agenda-date-box" style="background:linear-gradient(135deg,#0ea5e912,#0ea5e906)">
-                        <div class="ov-agenda-day" style="color:#0ea5e9">01</div>
-                        <div class="ov-agenda-month">JUN</div>
-                    </div>
-                    <div><div class="ov-agenda-title">Bilan annuel complet</div><div class="ov-agenda-time">14:00 · Planifié</div></div>
-                </div>
-            </div>
+        <!-- Add row button -->
+        <div class="ov-add-row-btn" @click="addRow()">
+            <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+            <span>Ajouter une ligne</span>
         </div>
     </div>
 
@@ -664,6 +459,47 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     [data-theme="dark"] .ov-rel-option{color:#e0e6ed;}
     [data-theme="dark"] .ov-rel-option:hover{background:#1b2e4b;}
     @media(max-width:768px){.ov-grid{grid-template-columns:1fr;}.ov-drive-grid{grid-template-columns:repeat(2,1fr);}.ov-agenda-row{flex-direction:column;}}
+    /* ── Layout Builder Design Mode ── */
+    .ov-layout-row{display:flex;gap:16px;margin-bottom:16px;position:relative;}
+    .ov-layout-col{position:relative;display:flex;flex-direction:column;gap:16px;min-height:40px;}
+    .ov-col-widgets{display:flex;flex-direction:column;gap:16px;min-height:40px;flex:1;}
+    .ov-widget-wrap{position:relative;}
+    /* Design mode overlays */
+    .ov-dm .ov-widget-wrap{border:2px dashed transparent;border-radius:14px;transition:border-color .2s;}
+    .ov-dm .ov-widget-wrap:hover{border-color:#4361ee40;}
+    .ov-dm .ov-layout-col{border:1px dashed #e2e8f0;border-radius:12px;padding:8px;background:rgba(67,97,238,.01);}
+    .ov-widget-drag,.ov-row-drag{display:none;}
+    .ov-dm .ov-widget-drag{display:flex;position:absolute;top:6px;left:6px;z-index:20;width:22px;height:22px;align-items:center;justify-content:center;border-radius:6px;background:rgba(67,97,238,.08);color:#4361ee;cursor:grab;opacity:0;transition:opacity .15s;}
+    .ov-dm .ov-widget-wrap:hover .ov-widget-drag{opacity:1;}
+    .ov-dm .ov-row-drag{display:flex;position:absolute;top:50%;left:-28px;transform:translateY(-50%);width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px;background:rgba(67,97,238,.08);color:#4361ee;cursor:grab;opacity:0;transition:opacity .15s;}
+    .ov-dm .ov-layout-row:hover > .ov-row-drag{opacity:1;}
+    .ov-row-remove{display:none;}
+    .ov-dm .ov-row-remove{display:flex;position:absolute;top:50%;right:-28px;transform:translateY(-50%);width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;background:rgba(239,68,68,.08);color:#ef4444;cursor:pointer;opacity:0;transition:opacity .15s;border:none;font-size:11px;}
+    .ov-dm .ov-layout-row:hover > .ov-row-remove{opacity:1;}
+    .ov-dm .ov-row-remove:hover{background:rgba(239,68,68,.15);}
+    .ov-widget-remove{display:none;}
+    .ov-dm .ov-widget-remove{display:flex;position:absolute;top:6px;right:6px;z-index:20;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;background:rgba(239,68,68,.08);color:#ef4444;cursor:pointer;opacity:0;transition:opacity .15s;border:none;font-size:12px;}
+    .ov-dm .ov-widget-wrap:hover .ov-widget-remove{opacity:1;}
+    .ov-resize-handle{display:none;}
+    .ov-dm .ov-resize-handle{display:block;position:absolute;top:0;right:-10px;width:20px;height:100%;cursor:col-resize;z-index:30;}
+    .ov-dm .ov-resize-handle::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:32px;border-radius:2px;background:#4361ee40;transition:background .15s;}
+    .ov-dm .ov-resize-handle:hover::after{background:#4361ee;}
+    .ov-sort-ghost{opacity:.15;border:2px dashed #4361ee !important;border-radius:12px;background:rgba(67,97,238,.04) !important;}
+    .ov-add-widget-btn{display:none;}
+    .ov-dm .ov-add-widget-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:2px dashed #e2e8f0;border-radius:10px;color:#888da8;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;}
+    .ov-dm .ov-add-widget-btn:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.03);}
+    .ov-add-row-btn{display:none;}
+    .ov-dm .ov-add-row-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:2px dashed #e2e8f0;border-radius:12px;color:#888da8;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:4px;}
+    .ov-dm .ov-add-row-btn:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.03);}
+    .ov-col-toolbar{display:none;}
+    .ov-dm .ov-col-toolbar{display:flex;gap:4px;position:absolute;top:-8px;right:8px;z-index:25;}
+    .ov-dm .ov-col-toolbar button{width:18px;height:18px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;color:#888da8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;}
+    .ov-dm .ov-col-toolbar button:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.05);}
+    .ov-widget-picker{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;padding:6px;max-height:200px;overflow-y:auto;}
+    .ov-widget-picker-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:500;color:#0e1726;cursor:pointer;transition:background .15s;}
+    .ov-widget-picker-item:hover{background:#f0f3ff;}
+    .ov-dm-banner{display:none;}
+    .ov-dm .ov-dm-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.15);border-radius:12px;margin-bottom:16px;font-size:12px;color:#4361ee;font-weight:600;}
     </style>
 
     <script>
@@ -986,6 +822,212 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 // Clear iframe
                 const iframe = document.getElementById('ov-smartdoc-preview-iframe');
                 if (iframe) iframe.src = 'about:blank';
+            }
+        }));
+
+        // ═══ Overview Layout Builder ═══
+        Alpine.data('ovLayoutBuilder', () => ({
+            layoutMode: false,
+            rows: [],
+            _defaultRows: [
+                { id: 'r1', columns: [{ id: 'c1', width: 8, widgetIds: ['fields'] }, { id: 'c2', width: 4, widgetIds: ['tasks','docs'] }] },
+                { id: 'r2', columns: [{ id: 'c3', width: 12, widgetIds: ['drive'] }] },
+                { id: 'r3', columns: [{ id: 'c4', width: 12, widgetIds: ['lines'] }] },
+                { id: 'r4', columns: [{ id: 'c5', width: 12, widgetIds: ['agenda'] }] }
+            ],
+            _accountNumber: '<%= account_number %>',
+            _entityId: '<%= entity._id %>',
+            _viewId: 'overview_<%= entity._id %>',
+            _sortables: [],
+            _resizing: null,
+
+            init() {
+                this.rows = JSON.parse(JSON.stringify(this._defaultRows));
+                this._loadLayout();
+                this.$watch('$store.app.layoutMode', (v) => {
+                    this.layoutMode = v;
+                    this.$nextTick(() => { if (v) this._initSortables(); else this._destroySortables(); });
+                });
+                this.layoutMode = this.$store.app.layoutMode;
+                this.$nextTick(() => { if (this.layoutMode) this._initSortables(); });
+                window.addEventListener('mousemove', (e) => this._onResizeMove(e));
+                window.addEventListener('mouseup', () => this._onResizeEnd());
+            },
+
+            async _loadLayout() {
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/user/view-preferences/${this._viewId}`, { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success && data.preferences && data.preferences.rows) {
+                        this.rows = data.preferences.rows;
+                    }
+                } catch (e) { /* use defaults */ }
+            },
+
+            async _saveLayout() {
+                try {
+                    await fetch(`/account/${this._accountNumber}/api/user/view-preferences`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows } })
+                    });
+                } catch (e) { console.error('[OvLayout] save error', e); }
+            },
+
+            _initSortables() {
+                this._destroySortables();
+                if (typeof Sortable === 'undefined') return;
+                // Make rows sortable
+                const rowContainer = this.$refs.ovRowContainer;
+                if (rowContainer) {
+                    this._sortables.push(new Sortable(rowContainer, {
+                        animation: 150, handle: '.ov-row-drag', ghostClass: 'ov-sort-ghost', draggable: '.ov-layout-row',
+                        onEnd: () => {
+                            const ids = Array.from(rowContainer.querySelectorAll(':scope > .ov-layout-row')).map(el => el.dataset.rowId);
+                            this.rows = ids.map(id => this.rows.find(r => r.id === id)).filter(Boolean);
+                            this._saveLayout();
+                        }
+                    }));
+                }
+                // Make widgets inside each column sortable
+                this.$el.querySelectorAll('.ov-col-widgets').forEach(colEl => {
+                    this._sortables.push(new Sortable(colEl, {
+                        animation: 150, handle: '.ov-widget-drag', ghostClass: 'ov-sort-ghost', draggable: '.ov-widget-wrap',
+                        group: 'ov-widgets',
+                        onEnd: (evt) => {
+                            // Rebuild widget order from DOM
+                            this.$el.querySelectorAll('.ov-col-widgets').forEach(cel => {
+                                const colId = cel.dataset.colId;
+                                const wIds = Array.from(cel.querySelectorAll(':scope > .ov-widget-wrap')).map(w => w.dataset.widgetId);
+                                this.rows.forEach(r => r.columns.forEach(c => { if (c.id === colId) c.widgetIds = wIds; }));
+                            });
+                            this._saveLayout();
+                        }
+                    }));
+                });
+            },
+
+            _destroySortables() {
+                this._sortables.forEach(s => s.destroy());
+                this._sortables = [];
+            },
+
+            addRow() {
+                const id = 'r_' + Date.now();
+                const colId = 'c_' + Date.now();
+                this.rows.push({ id, columns: [{ id: colId, width: 12, widgetIds: [] }] });
+                this._saveLayout();
+                this.$nextTick(() => this._initSortables());
+            },
+
+            removeRow(rowId) {
+                this.rows = this.rows.filter(r => r.id !== rowId);
+                this._saveLayout();
+            },
+
+            splitColumn(rowId, colId) {
+                const row = this.rows.find(r => r.id === rowId);
+                if (!row) return;
+                const ci = row.columns.findIndex(c => c.id === colId);
+                if (ci === -1) return;
+                const col = row.columns[ci];
+                if (col.width < 4) return;
+                const half = Math.floor(col.width / 2);
+                col.width = col.width - half;
+                row.columns.splice(ci + 1, 0, { id: 'c_' + Date.now(), width: half, widgetIds: [] });
+                this._saveLayout();
+                this.$nextTick(() => this._initSortables());
+            },
+
+            removeColumn(rowId, colId) {
+                const row = this.rows.find(r => r.id === rowId);
+                if (!row || row.columns.length <= 1) return;
+                const ci = row.columns.findIndex(c => c.id === colId);
+                if (ci === -1) return;
+                const removed = row.columns.splice(ci, 1)[0];
+                // Give width back to neighbor
+                const neighbor = row.columns[Math.min(ci, row.columns.length - 1)];
+                if (neighbor) neighbor.width = Math.min(12, neighbor.width + removed.width);
+                this._saveLayout();
+                this.$nextTick(() => this._initSortables());
+            },
+
+            _onResizeStart(e, rowId, colIndex) {
+                e.preventDefault();
+                this._resizing = { rowId, colIndex, startX: e.clientX };
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            },
+
+            _onResizeMove(e) {
+                if (!this._resizing) return;
+                const row = this.rows.find(r => r.id === this._resizing.rowId);
+                if (!row) return;
+                const ci = this._resizing.colIndex;
+                const col = row.columns[ci], next = row.columns[ci + 1];
+                if (!col || !next) return;
+                const rowEl = this.$el.querySelector(`[data-row-id="${this._resizing.rowId}"]`);
+                if (!rowEl) return;
+                const totalW = rowEl.offsetWidth;
+                const unitW = totalW / 12;
+                const dx = e.clientX - this._resizing.startX;
+                const deltaUnits = Math.round(dx / unitW);
+                if (deltaUnits === 0) return;
+                const newW = col.width + deltaUnits;
+                const newNextW = next.width - deltaUnits;
+                if (newW >= 2 && newNextW >= 2) {
+                    col.width = newW;
+                    next.width = newNextW;
+                    this._resizing.startX = e.clientX;
+                }
+            },
+
+            _onResizeEnd() {
+                if (!this._resizing) return;
+                this._resizing = null;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                this._saveLayout();
+            },
+
+            // Get all widget IDs currently placed
+            _placedWidgets() {
+                const ids = [];
+                this.rows.forEach(r => r.columns.forEach(c => ids.push(...(c.widgetIds || []))));
+                return ids;
+            },
+
+            // Available widgets not yet placed
+            _availableWidgets() {
+                const all = [
+                    { id: 'fields', label: 'Informations clés', icon: 'solar:card-bold-duotone', color: '#4361ee' },
+                    { id: 'tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981' },
+                    { id: 'docs', label: 'Documents', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
+                    { id: 'drive', label: 'Fichiers récents', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899' },
+                    { id: 'lines', label: 'Traitement', icon: 'solar:document-text-bold-duotone', color: '#6366f1' },
+                    { id: 'agenda', label: 'Rendez-vous', icon: 'solar:calendar-bold-duotone', color: '#14b8a6' },
+                    { id: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' }
+                ];
+                const placed = this._placedWidgets();
+                return all.filter(w => !placed.includes(w.id));
+            },
+
+            addWidget(colId, widgetId) {
+                this.rows.forEach(r => r.columns.forEach(c => {
+                    if (c.id === colId) c.widgetIds.push(widgetId);
+                }));
+                this._saveLayout();
+                this.$nextTick(() => this._initSortables());
+            },
+
+            removeWidget(widgetId) {
+                this.rows.forEach(r => r.columns.forEach(c => {
+                    c.widgetIds = (c.widgetIds || []).filter(w => w !== widgetId);
+                }));
+                this._saveLayout();
+            },
+
+            isWidgetVisible(widgetId) {
+                return this._placedWidgets().includes(widgetId);
             }
         }));
     });

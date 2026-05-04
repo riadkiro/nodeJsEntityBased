@@ -1,0 +1,105 @@
+<div class="ov-card-header">
+    <iconify-icon icon="solar:card-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
+    <span>Informations clés</span>
+    <a href="<%= _recBase %>/fiche" class="ov-card-link">Voir tout →</a>
+</div>
+<div class="ov-fields-list">
+    <% _ovFields.forEach(function(f,i){ %>
+    <div class="ov-ef" data-key="<%= f.key %>"
+         @click="startEdit('<%= f.key %>',$event)"
+         <% if (f.type !== 'relation') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>>
+        <div class="ov-ef-head">
+            <div class="ov-ef-icon" style="background:linear-gradient(135deg,<%= f.color||'#4361ee' %>12,<%= f.color||'#4361ee' %>06)">
+                <iconify-icon icon="<%= f.icon %>" width="13" style="color:<%= f.color||'#4361ee' %>"></iconify-icon>
+            </div>
+            <span class="ov-ef-label"><%= f.label %></span>
+        </div>
+        <div class="ov-ef-body">
+            <!-- View state -->
+            <div class="ov-ef-view" x-show="editingKey!=='<%= f.key %>'">
+                <% if (f.type === 'relation') { %>
+                    <% if (f.rawValue && Array.isArray(f.rawValue) && f.rawValue.length > 0) { %>
+                        <div class="ov-tags"><% f.rawValue.forEach(function(rv){ %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= rv.title %></span><% }); %></div>
+                    <% } else { %>
+                        <span class="ov-placeholder">Sélectionner...</span>
+                    <% } %>
+                <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
+                    <% var selArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
+                    <% if (selArr.length > 0) { %>
+                        <div class="ov-tags"><% selArr.forEach(function(sv){ var optMatch = (f.options||[]).find(function(o){ return (o.value||o.label)===sv; }); %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= optMatch ? (optMatch.label||optMatch.value) : sv %></span><% }); %></div>
+                    <% } else { %>
+                        <span class="ov-placeholder">Sélectionner...</span>
+                    <% } %>
+                <% } else if (f.inputType === 'textarea') { %>
+                    <% if (f.value) { %><div class="ov-ef-text"><%= f.value %></div><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                <% } else { %>
+                    <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                <% } %>
+            </div>
+            <!-- Edit state -->
+            <div class="ov-ef-edit" x-show="editingKey==='<%= f.key %>'" x-cloak @click.stop>
+                <% if (f.inputType === 'textarea') { %>
+                <textarea class="ov-input ov-textarea" name="<%= f.key %>" rows="<%= f.uiRows||3 %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" x-ref="input_<%= f.key %>"><%= f.rawValue||'' %></textarea>
+                <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
+                <% var mSelArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
+                <div class="ov-ms-pills" x-data='{ selected: <%- JSON.stringify(mSelArr) %>, toggle(v){ const i=this.selected.indexOf(v); if(i===-1) this.selected.push(v); else this.selected.splice(i,1); }, isSelected(v){ return this.selected.includes(v); } }' x-ref="input_<%= f.key %>">
+                    <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %><label class="ov-ms-pill" :class="isSelected('<%= ov %>') ? 'active' : ''"><input type="checkbox" value="<%= ov %>" :checked="isSelected('<%= ov %>')" @change="toggle('<%= ov %>')" class="hidden"><svg x-show="isSelected('<%= ov %>')" class="ov-ms-check" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span><%= opt.label||opt.value %></span></label><% }); %>
+                </div>
+                <% } else if (f.type === 'relation') { %>
+                <!-- Relation inline editor with search dropdown -->
+                <div class="ov-rel-editor" x-data='ovRelEditor({
+                    key: "<%= f.key %>",
+                    targetEntityId: "<%= f.targetEntityId %>",
+                    targetEntitySlug: "<%= f.targetEntitySlug || '' %>",
+                    isMulti: <%= f.isMulti ? 'true' : 'false' %>,
+                    color: "<%= (f.color||'#4361ee').replace(/'/g, '') %>",
+                    initial: <%- JSON.stringify(f.rawValue || []) %>
+                })' @click.outside="closeAndSave()">
+                    <div class="ov-rel-tags">
+                        <template x-for="tag in tags" :key="tag._id">
+                            <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
+                                <span x-text="tag.title"></span>
+                                <button type="button" class="ov-tag-x" @click.stop="removeTag(tag._id)">&times;</button>
+                            </span>
+                        </template>
+                        <input type="text" class="ov-rel-search" placeholder="Rechercher..."
+                               x-model="searchQ" @input.debounce.300ms="search()" @focus="search()"
+                               @keydown.escape="closeAndSave()" x-ref="relSearchInput">
+                    </div>
+                    <div class="ov-rel-dropdown" x-show="showDropdown" x-cloak>
+                        <template x-if="results.length === 0 && searchQ.trim().length > 0">
+                            <div class="ov-rel-empty">Aucun résultat pour "<span x-text="searchQ"></span>"</div>
+                        </template>
+                        <template x-for="r in results" :key="r._id">
+                            <div class="ov-rel-option" @click.stop="addTag(r)">
+                                <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>
+                                <span x-text="r.title"></span>
+                            </div>
+                        </template>
+                        <div class="ov-rel-create" @click.stop="createNew()" x-show="searchQ.trim().length > 0">
+                            <iconify-icon icon="solar:add-square-bold" width="15"></iconify-icon>
+                            <span>Créer "<span x-text="searchQ.trim()"></span>"</span>
+                        </div>
+                    </div>
+                </div>
+                <% } else if (f.inputType === 'select') { %>
+                <select class="ov-input" name="<%= f.key %>" @change="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
+                    <option value="">Sélectionner...</option>
+                    <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %>
+                    <option value="<%= ov %>" <%= f.rawValue===ov?'selected':'' %>><%= opt.label %></option>
+                    <% }); %>
+                </select>
+                <% } else { %>
+                <input type="<%= f.inputType==='date'?'date':f.inputType==='number'?'number':'text' %>" class="ov-input" name="<%= f.key %>" value="<%= f.rawValue||'' %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" @keydown.enter="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
+                <% } %>
+                <% if (f.type !== 'relation') { %>
+                <div class="ov-ef-btns">
+                    <button type="button" class="ov-ef-ok" @click="saveCurrentField()"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
+                    <button type="button" class="ov-ef-cancel" @click="cancelEdit()"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    <% }); %>
+</div>

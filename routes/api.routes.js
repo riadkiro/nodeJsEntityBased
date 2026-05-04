@@ -907,13 +907,21 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 _id: l._id.toString(),
                 label: l.label,
                 color: l.color || '#6366f1',
+                viewMode: l.viewMode || 'kanban',
                 count: listTasks.length,
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
                 tasks: sorted.slice(0, 10).map(t => ({
                     _id: t._id.toString(),
                     title: t.title,
+                    description: t.description || '',
                     status: t.status,
-                    statusColor: t.statusColor
+                    statusColor: t.statusColor,
+                    priority: t.priority || 'Aucune',
+                    priorityColor: t.priorityColor || '',
+                    startDate: t.startDate || null,
+                    dueDate: t.dueDate || null,
+                    assignedTo: t.assignedTo || '',
+                    createdAt: t.createdAt
                 }))
             }
         })
@@ -921,6 +929,24 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
         res.json({ success: true, lists: result })
     } catch (error) {
         console.error('[API] Task lists error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-lists/:listId/view-mode
+ * Update the view mode (list/kanban) for a task list
+ */
+router.put('/api/task-lists/:listId/view-mode', async (req, res) => {
+    try {
+        const { viewMode } = req.body
+        if (!['list', 'kanban'].includes(viewMode)) {
+            return res.status(400).json({ error: 'Invalid viewMode, must be list or kanban' })
+        }
+        await TaskList.findByIdAndUpdate(req.params.listId, { viewMode })
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Update view mode error:', error)
         res.status(500).json({ error: error.message })
     }
 })
@@ -1016,8 +1042,15 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
         res.json({ success: true, tasks: tasks.map(t => ({
             _id: t._id.toString(),
             title: t.title,
+            description: t.description || '',
             status: t.status,
-            statusColor: t.statusColor
+            statusColor: t.statusColor,
+            priority: t.priority || 'Aucune',
+            priorityColor: t.priorityColor || '',
+            startDate: t.startDate || null,
+            dueDate: t.dueDate || null,
+            assignedTo: t.assignedTo || '',
+            createdAt: t.createdAt
         })) })
     } catch (error) {
         console.error('[API] Get tasks error:', error)
@@ -1031,25 +1064,48 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
  */
 router.post('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
-        const { title } = req.body
+        const { title, description, priority, startDate, dueDate, assignedTo, status } = req.body
         if (!title?.trim()) return res.status(400).json({ error: 'Title required' })
 
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
 
+        const priorityColors = {
+            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
+        }
+
+        const statusColors = {
+            'À faire': '#9ca3af', 'En cours': '#3b82f6',
+            'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
+        }
+        const taskStatus = status && statusColors[status] ? status : 'À faire'
+
         const task = await RecordTask.create({
             taskListId: req.params.listId,
             recordId: list.recordId,
             title: title.trim(),
-            status: 'À faire',
-            statusColor: '#9ca3af'
+            description: description || '',
+            status: taskStatus,
+            statusColor: statusColors[taskStatus] || '#9ca3af',
+            priority: priority || 'Aucune',
+            priorityColor: priorityColors[priority] || '',
+            startDate: startDate || null,
+            dueDate: dueDate || null,
+            assignedTo: assignedTo || ''
         })
 
         res.json({ success: true, task: {
             _id: task._id.toString(),
             title: task.title,
+            description: task.description,
             status: task.status,
-            statusColor: task.statusColor
+            statusColor: task.statusColor,
+            priority: task.priority,
+            priorityColor: task.priorityColor,
+            startDate: task.startDate,
+            dueDate: task.dueDate,
+            assignedTo: task.assignedTo,
+            createdAt: task.createdAt
         } })
     } catch (error) {
         console.error('[API] Create task error:', error)
@@ -1113,6 +1169,66 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
         res.json({ success: true })
     } catch (error) {
         console.error('[API] Delete task error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/record-tasks/:taskId
+ * Generic update endpoint — accepts any editable field
+ */
+router.put('/api/record-tasks/:taskId', async (req, res) => {
+    try {
+        const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo']
+        const updates = {}
+
+        const statusColors = {
+            'À faire': '#9ca3af', 'En cours': '#3b82f6',
+            'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
+        }
+        const priorityColors = {
+            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
+        }
+
+        allowedFields.forEach(f => {
+            if (req.body[f] !== undefined) {
+                updates[f] = req.body[f]
+            }
+        })
+
+        // Auto-set color fields
+        if (updates.status) updates.statusColor = statusColors[updates.status] || '#9ca3af'
+        if (updates.priority) updates.priorityColor = priorityColors[updates.priority] || ''
+
+        // Handle null dates
+        if (updates.startDate === '' || updates.startDate === null) updates.startDate = null
+        if (updates.dueDate === '' || updates.dueDate === null) updates.dueDate = null
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' })
+        }
+
+        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, updates, { new: true })
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+
+        res.json({
+            success: true,
+            task: {
+                _id: task._id.toString(),
+                title: task.title,
+                description: task.description || '',
+                status: task.status,
+                statusColor: task.statusColor,
+                priority: task.priority || 'Aucune',
+                priorityColor: task.priorityColor || '',
+                startDate: task.startDate || null,
+                dueDate: task.dueDate || null,
+                assignedTo: task.assignedTo || '',
+                createdAt: task.createdAt
+            }
+        })
+    } catch (error) {
+        console.error('[API] Update task error:', error)
         res.status(500).json({ error: error.message })
     }
 })

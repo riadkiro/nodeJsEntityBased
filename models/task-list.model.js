@@ -13,6 +13,7 @@ const TaskListSchema = new mongoose.Schema({
     color: { type: String, default: '#6366f1' },
     icon: { type: String, default: 'tabler:list' },
     order: { type: Number, default: 0 },
+    viewMode: { type: String, enum: ['list', 'kanban'], default: 'kanban' },
 }, { timestamps: true });
 
 TaskListSchema.index({ recordId: 1, order: 1 });

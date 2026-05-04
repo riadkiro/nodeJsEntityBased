@@ -281,7 +281,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                         </template>
                                     </div>
                                 </template>
-                                <!-- Add widget button -->
+                            </div>
+                            <!-- Add widget button OUTSIDE sortable container -->
                                 <div class="ov-add-widget-btn" style="position:relative;" x-data="{ pickerOpen: false }" @click.outside="pickerOpen = false">
                                     <div @click="pickerOpen = !pickerOpen" style="display:flex;align-items:center;gap:6px;width:100%;justify-content:center;">
                                         <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
@@ -297,7 +298,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                         <div x-show="_availableWidgets().length === 0" style="padding:10px;text-align:center;color:#888da8;font-size:11px;">Tous les widgets sont placés</div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </template>
                 </div>
@@ -841,17 +841,51 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             _sortables: [],
             _resizing: null,
 
+            _sortableTimer: null,
+            _observer: null,
+            _sortableIniting: false,
+            _isDragging: false,
+
             init() {
                 this.rows = JSON.parse(JSON.stringify(this._defaultRows));
                 this._loadLayout();
                 this.$watch('$store.app.layoutMode', (v) => {
                     this.layoutMode = v;
-                    this.$nextTick(() => { if (v) this._initSortables(); else this._destroySortables(); });
+                    if (v) {
+                        this.$nextTick(() => this._startObserver());
+                    } else {
+                        this._stopObserver();
+                        this._destroySortables();
+                    }
                 });
                 this.layoutMode = this.$store.app.layoutMode;
-                this.$nextTick(() => { if (this.layoutMode) this._initSortables(); });
+                if (this.layoutMode) {
+                    this.$nextTick(() => this._startObserver());
+                }
                 window.addEventListener('mousemove', (e) => this._onResizeMove(e));
                 window.addEventListener('mouseup', () => this._onResizeEnd());
+            },
+
+            // MutationObserver watches for Alpine x-for DOM changes and re-inits Sortables
+            _startObserver() {
+                this._stopObserver();
+                this._scheduleSortableInit();
+                const container = this.$refs.ovRowContainer;
+                if (!container) return;
+                this._observer = new MutationObserver(() => {
+                    if (!this._sortableIniting && !this._isDragging) this._scheduleSortableInit();
+                });
+                this._observer.observe(container, { childList: true, subtree: true });
+            },
+
+            _stopObserver() {
+                if (this._observer) { this._observer.disconnect(); this._observer = null; }
+                if (this._sortableTimer) { clearTimeout(this._sortableTimer); this._sortableTimer = null; }
+            },
+
+            _scheduleSortableInit() {
+                if (this._sortableTimer) clearTimeout(this._sortableTimer);
+                this._sortableTimer = setTimeout(() => { this._initSortables(); }, 80);
             },
 
             async _loadLayout() {
@@ -874,41 +908,110 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             },
 
             _initSortables() {
+                this._sortableIniting = true;
                 this._destroySortables();
-                if (typeof Sortable === 'undefined') return;
-                // Make rows sortable
+                if (typeof Sortable === 'undefined') { this._sortableIniting = false; return; }
+                const self = this;
+
+                // ── Row reorder ──
                 const rowContainer = this.$refs.ovRowContainer;
                 if (rowContainer) {
                     this._sortables.push(new Sortable(rowContainer, {
-                        animation: 150, handle: '.ov-row-drag', ghostClass: 'ov-sort-ghost', draggable: '.ov-layout-row',
-                        onEnd: () => {
-                            const ids = Array.from(rowContainer.querySelectorAll(':scope > .ov-layout-row')).map(el => el.dataset.rowId);
-                            this.rows = ids.map(id => this.rows.find(r => r.id === id)).filter(Boolean);
-                            this._saveLayout();
+                        animation: 150,
+                        handle: '.ov-row-drag',
+                        ghostClass: 'ov-sort-ghost',
+                        draggable: '.ov-layout-row',
+                        onStart() { self._isDragging = true; },
+                        onEnd(evt) {
+                            self._isDragging = false;
+                            const rowId = evt.item.dataset.rowId;
+                            const oldIdx = evt.oldIndex;
+                            const newIdx = evt.newIndex;
+                            if (oldIdx === newIdx) return;
+
+                            // Revert DOM — put item back where it was
+                            evt.from.removeChild(evt.item);
+                            const rows = evt.from.querySelectorAll(':scope > .ov-layout-row');
+                            if (oldIdx >= rows.length) {
+                                evt.from.appendChild(evt.item);
+                            } else {
+                                evt.from.insertBefore(evt.item, rows[oldIdx]);
+                            }
+
+                            // Update Alpine data
+                            const idx = self.rows.findIndex(r => r.id === rowId);
+                            if (idx === -1) return;
+                            const [moved] = self.rows.splice(idx, 1);
+                            self.rows.splice(newIdx, 0, moved);
+                            self._saveLayout();
                         }
                     }));
                 }
-                // Make widgets inside each column sortable
+
+                // ── Widget drag across columns ──
                 this.$el.querySelectorAll('.ov-col-widgets').forEach(colEl => {
                     this._sortables.push(new Sortable(colEl, {
-                        animation: 150, handle: '.ov-widget-drag', ghostClass: 'ov-sort-ghost', draggable: '.ov-widget-wrap',
+                        animation: 150,
+                        handle: '.ov-widget-drag',
+                        ghostClass: 'ov-sort-ghost',
+                        draggable: '.ov-widget-wrap',
                         group: 'ov-widgets',
-                        onEnd: (evt) => {
-                            // Rebuild widget order from DOM
-                            this.$el.querySelectorAll('.ov-col-widgets').forEach(cel => {
-                                const colId = cel.dataset.colId;
-                                const wIds = Array.from(cel.querySelectorAll(':scope > .ov-widget-wrap')).map(w => w.dataset.widgetId);
-                                this.rows.forEach(r => r.columns.forEach(c => { if (c.id === colId) c.widgetIds = wIds; }));
-                            });
-                            this._saveLayout();
+                        swapThreshold: 0.65,
+                        // filter out non-draggable children
+                        filter: '.ov-add-widget-btn',
+                        onStart() { self._isDragging = true; },
+                        onEnd(evt) {
+                            self._isDragging = false;
+                            const widgetId = evt.item.dataset.widgetId;
+                            const fromColId = evt.from.dataset.colId;
+                            const toColId = evt.to.dataset.colId;
+                            if (!widgetId || !fromColId) return;
+
+                            // Compute real newIndex by counting only .ov-widget-wrap before evt.item in evt.to
+                            const toWidgets = Array.from(evt.to.querySelectorAll(':scope > .ov-widget-wrap'));
+                            let newIdx = toWidgets.indexOf(evt.item);
+                            if (newIdx === -1) newIdx = toWidgets.length;
+
+                            // ── REVERT Sortable's DOM move ──
+                            // Always remove the item from wherever Sortable put it
+                            if (evt.item.parentNode) evt.item.parentNode.removeChild(evt.item);
+                            // Put it back in the source container at its original position
+                            const fromWidgets = Array.from(evt.from.querySelectorAll(':scope > .ov-widget-wrap'));
+                            if (evt.oldIndex >= fromWidgets.length) {
+                                evt.from.appendChild(evt.item);
+                            } else {
+                                evt.from.insertBefore(evt.item, fromWidgets[evt.oldIndex] || null);
+                            }
+
+                            // ── Update Alpine data by ID ──
+                            let fromCol = null, toCol = null;
+                            self.rows.forEach(r => r.columns.forEach(c => {
+                                if (c.id === fromColId) fromCol = c;
+                                if (c.id === toColId) toCol = c;
+                            }));
+                            if (!fromCol) return;
+
+                            const fi = fromCol.widgetIds.findIndex(w => w === widgetId);
+                            if (fi === -1) return;
+                            fromCol.widgetIds.splice(fi, 1);
+
+                            if (toCol) {
+                                toCol.widgetIds.splice(newIdx, 0, widgetId);
+                            }
+                            self._saveLayout();
                         }
                     }));
                 });
+                this._sortableIniting = false;
             },
 
             _destroySortables() {
-                this._sortables.forEach(s => s.destroy());
+                this._sortables.forEach(s => { try { s.destroy(); } catch(e) {} });
                 this._sortables = [];
+            },
+
+            _reinitSortables() {
+                this._scheduleSortableInit();
             },
 
             addRow() {
@@ -916,7 +1019,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 const colId = 'c_' + Date.now();
                 this.rows.push({ id, columns: [{ id: colId, width: 12, widgetIds: [] }] });
                 this._saveLayout();
-                this.$nextTick(() => this._initSortables());
             },
 
             removeRow(rowId) {
@@ -935,7 +1037,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 col.width = col.width - half;
                 row.columns.splice(ci + 1, 0, { id: 'c_' + Date.now(), width: half, widgetIds: [] });
                 this._saveLayout();
-                this.$nextTick(() => this._initSortables());
             },
 
             removeColumn(rowId, colId) {
@@ -948,7 +1049,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 const neighbor = row.columns[Math.min(ci, row.columns.length - 1)];
                 if (neighbor) neighbor.width = Math.min(12, neighbor.width + removed.width);
                 this._saveLayout();
-                this.$nextTick(() => this._initSortables());
             },
 
             _onResizeStart(e, rowId, colIndex) {
@@ -1016,7 +1116,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     if (c.id === colId) c.widgetIds.push(widgetId);
                 }));
                 this._saveLayout();
-                this.$nextTick(() => this._initSortables());
             },
 
             removeWidget(widgetId) {

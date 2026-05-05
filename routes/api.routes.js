@@ -882,6 +882,7 @@ router.post('/api/tasks/:taskId/toggle', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 const TaskList = require('../models/task-list.model')
 const RecordTask = require('../models/record-task.model')
+const TaskComment = require('../models/task-comment.model')
 
 /**
  * GET /account/:account_number/api/record/:recordId/task-lists
@@ -1245,8 +1246,36 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             return res.status(400).json({ error: 'No valid fields to update' })
         }
 
+        // Fetch current task BEFORE update for activity logging
+        const oldTask = await RecordTask.findById(req.params.taskId).lean()
+        if (!oldTask) return res.status(404).json({ error: 'Task not found' })
+
         const task = await RecordTask.findByIdAndUpdate(req.params.taskId, updates, { new: true })
-        if (!task) return res.status(404).json({ error: 'Task not found' })
+
+        // Auto-log activity for status and priority changes
+        const activityFields = ['status', 'priority']
+        for (const field of activityFields) {
+            if (updates[field] && oldTask[field] !== updates[field]) {
+                try {
+                    await TaskComment.create({
+                        taskId: task._id,
+                        recordId: task.recordId,
+                        type: 'activity',
+                        text: '',
+                        userId: req.user?._id?.toString() || '',
+                        userName: req.user?.name || 'Système',
+                        userAvatar: req.user?.avatar || '',
+                        metadata: {
+                            field,
+                            oldValue: oldTask[field] || '',
+                            newValue: updates[field]
+                        }
+                    })
+                } catch (logErr) {
+                    console.error('[API] Activity log error:', logErr)
+                }
+            }
+        }
 
         res.json({
             success: true,
@@ -1287,6 +1316,149 @@ router.post('/api/task-lists/:listId/reorder', async (req, res) => {
         res.json({ success: true })
     } catch (error) {
         console.error('[API] Reorder tasks error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// ═══════════════════════════════════════════════════════════════
+// TASK COMMENTS & ACTIVITY — Per-task comment thread
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /account/:account_number/api/record-tasks/:taskId/comments
+ * Get all comments and activity entries for a task
+ */
+router.get('/api/record-tasks/:taskId/comments', async (req, res) => {
+    try {
+        const comments = await TaskComment.find({ taskId: req.params.taskId })
+            .sort({ createdAt: 1 })
+            .lean()
+
+        res.json({
+            success: true,
+            comments: comments.map(c => ({
+                _id: c._id.toString(),
+                taskId: c.taskId.toString(),
+                type: c.type,
+                text: c.text,
+                userId: c.userId,
+                userName: c.userName,
+                userAvatar: c.userAvatar,
+                metadata: c.metadata || {},
+                publishedToChat: c.publishedToChat || false,
+                createdAt: c.createdAt
+            }))
+        })
+    } catch (error) {
+        console.error('[API] Get task comments error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/record-tasks/:taskId/comments
+ * Post a comment on a task, optionally publish to record chat
+ */
+router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
+    try {
+        const { text, publishToChat } = req.body
+        if (!text?.trim()) return res.status(400).json({ error: 'Comment text required' })
+
+        const task = await RecordTask.findById(req.params.taskId).lean()
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+
+        const userId = req.user?._id?.toString() || ''
+        const userName = req.user?.name || 'Anonyme'
+        const userAvatar = req.user?.avatar || ''
+
+        const comment = await TaskComment.create({
+            taskId: task._id,
+            recordId: task.recordId,
+            type: 'comment',
+            text: text.trim(),
+            userId,
+            userName,
+            userAvatar,
+            publishedToChat: !!publishToChat
+        })
+
+        // If publishToChat is true, also send to the record's chat conversation
+        if (publishToChat) {
+            try {
+                const Conversation = await tenantCollection(req, 'Conversation')
+                const Message = await tenantCollection(req, 'Message')
+
+                // Find or create a "Tâches" conversation for this record
+                let conv = await Conversation.findOne({
+                    recordId: task.recordId,
+                    name: 'Tâches',
+                    archived: { $ne: true }
+                })
+
+                if (!conv) {
+                    conv = await Conversation.create({
+                        type: 'group',
+                        name: 'Tâches',
+                        recordId: task.recordId,
+                        participants: [{
+                            userId,
+                            name: userName,
+                            avatar: userAvatar,
+                            role: 'admin',
+                            joinedAt: new Date(),
+                            lastReadAt: new Date(),
+                            unreadCount: 0
+                        }]
+                    })
+                }
+
+                const chatText = `💬 [${task.title}] ${text.trim()}`
+                await Message.create({
+                    conversationId: conv._id,
+                    senderId: userId,
+                    senderName: userName,
+                    senderAvatar: userAvatar,
+                    type: 'text',
+                    text: chatText,
+                    readBy: [{ userId, readAt: new Date() }]
+                })
+
+                // Update conversation lastMessage
+                await Conversation.findByIdAndUpdate(conv._id, {
+                    $set: {
+                        lastMessage: {
+                            text: chatText,
+                            senderId: userId,
+                            senderName: userName,
+                            sentAt: new Date(),
+                            type: 'text'
+                        },
+                        updatedAt: new Date()
+                    }
+                })
+            } catch (chatErr) {
+                console.error('[API] Publish to chat error:', chatErr)
+                // Don't fail the comment creation if chat publish fails
+            }
+        }
+
+        res.json({
+            success: true,
+            comment: {
+                _id: comment._id.toString(),
+                taskId: comment.taskId.toString(),
+                type: comment.type,
+                text: comment.text,
+                userId: comment.userId,
+                userName: comment.userName,
+                userAvatar: comment.userAvatar,
+                metadata: comment.metadata || {},
+                publishedToChat: comment.publishedToChat,
+                createdAt: comment.createdAt
+            }
+        })
+    } catch (error) {
+        console.error('[API] Post task comment error:', error)
         res.status(500).json({ error: error.message })
     }
 })

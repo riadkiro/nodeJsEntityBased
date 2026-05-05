@@ -2392,6 +2392,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     } catch(e) {}
                 }
                 await this.loadConversations();
+                // Auto-scroll to the chat box on page load
+                this.$nextTick(() => {
+                    const chatEl = document.querySelector('.chat-wrap');
+                    if (chatEl) chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             },
 
             async loadConversations() {

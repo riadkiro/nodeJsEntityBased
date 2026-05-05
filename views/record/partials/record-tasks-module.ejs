@@ -1,4 +1,5 @@
 <%# ═══ TASKS MODULE — Two-level: Lists → Tasks ═══ %>
+<% var _isTasksTabLocal = (typeof _isTasksTab !== 'undefined') ? _isTasksTab : true; %>
 <style>
     .tl-wrap { max-width: 820px; }
     /* ─── Full-screen kanban app ─── */
@@ -908,6 +909,7 @@
 
 <div class="tl-wrap" :class="{'tl-fs-active': kanbanList}" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null; statusMgrListId = null; detailStatusMenu = false; detailPriorityMenu = false" @contextmenu.prevent>
 
+    <% if (_isTasksTabLocal) { %>
     <!-- ════════ VIEW 1: LISTS ════════ -->
     <template x-if="!activeList && !kanbanList">
         <div>
@@ -1335,6 +1337,7 @@
             </div>
         </div>
     </template>
+    <% } %>
 
     <!-- ════════ DETAIL MODAL (full-screen centered) ════════ -->
     <div class="tl-overlay" :class="{'open': detailTask}" @click="closeDetail()"></div>
@@ -1642,16 +1645,30 @@ document.addEventListener('alpine:init', () => {
                 }
             }
             // Listen for cross-tab task detail opens (e.g. from chat)
-            window.addEventListener('open-task-detail', (e) => {
+            window.addEventListener('open-task-detail', async (e) => {
                 const taskId = e.detail?.taskId;
                 if (!taskId) return;
+                // Try to find in locally loaded lists first
                 for (const list of this.lists) {
                     const task = (list.tasks || []).find(t => t._id === taskId);
                     if (task) {
                         this.openDetail(list, task);
-                        break;
+                        return;
                     }
                 }
+                // Fallback: fetch the task directly from API (useful on non-tasks tabs)
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success && data.task) {
+                        // Find or create a synthetic list reference
+                        let list = this.lists.find(l => l._id === data.task.taskListId);
+                        if (!list) {
+                            list = { _id: data.task.taskListId, label: 'Général', tasks: [data.task], statuses: this.defaultStatuses };
+                        }
+                        this.openDetail(list, data.task);
+                    }
+                } catch (err) { console.error('[TaskLists] Fallback open-task-detail error:', err); }
             });
         },
 

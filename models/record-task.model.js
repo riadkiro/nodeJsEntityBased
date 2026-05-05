@@ -11,7 +11,7 @@ const RecordTaskSchema = new mongoose.Schema({
     recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record', required: true, index: true },
     title: { type: String, required: true },
     description: { type: String, default: '' },
-    status: { type: String, default: 'À faire', enum: ['À faire', 'En cours', 'En revue', 'Terminé', 'Bloqué'] },
+    status: { type: String, default: 'À faire' },
     statusColor: { type: String, default: '#9ca3af' },
     priority: { type: String, default: 'Aucune', enum: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'] },
     priorityColor: { type: String, default: '' },

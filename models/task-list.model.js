@@ -14,6 +14,17 @@ const TaskListSchema = new mongoose.Schema({
     icon: { type: String, default: 'tabler:list' },
     order: { type: Number, default: 0 },
     viewMode: { type: String, enum: ['list', 'kanban'], default: 'kanban' },
+    statuses: { type: [{
+        label: { type: String, required: true },
+        color: { type: String, required: true },
+        order: { type: Number, default: 0 }
+    }], default: [
+        { label: 'À faire',  color: '#9ca3af', order: 0 },
+        { label: 'En cours', color: '#3b82f6', order: 1 },
+        { label: 'En revue', color: '#f59e0b', order: 2 },
+        { label: 'Terminé',  color: '#22c55e', order: 3 },
+        { label: 'Bloqué',   color: '#ef4444', order: 4 },
+    ]},
 }, { timestamps: true });
 
 TaskListSchema.index({ recordId: 1, order: 1 });

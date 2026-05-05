@@ -1,7 +1,76 @@
 <%# ═══ TASKS MODULE — Two-level: Lists → Tasks ═══ %>
 <style>
-    .tl-wrap { max-width: 100%; }
-    .rm-page:has(.tl-wrap) { max-width: 100%; }
+    .tl-wrap { max-width: 820px; }
+    /* ─── Full-screen kanban app ─── */
+    .tl-wrap.tl-fs-active { max-width: 100%; }
+    .rm-page:has(.tl-wrap.tl-fs-active) { max-width: 100%; }
+    /* Hide parent hero, back link, and tabs when kanban is active */
+    .rm-page:has(.tl-wrap.tl-fs-active) > .rm-back,
+    .rm-page:has(.tl-wrap.tl-fs-active) > .rm-hero,
+    .rm-page:has(.tl-wrap.tl-fs-active) > .rm-nav { display: none !important; }
+    .tl-kb-fs { display: flex; flex-direction: column; min-height: calc(100vh - 140px); }
+    .tl-kb-fs-header {
+        display: flex; align-items: center; gap: 14px; padding: 0 0 16px;
+        border-bottom: 1px solid #f1f3f5; margin-bottom: 0; flex-wrap: wrap;
+    }
+    .tl-kb-fs-title {
+        display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+    }
+    .tl-kb-fs-title-text { font-size: 18px; font-weight: 700; color: #0e1726; }
+    .tl-kb-fs-board { flex: 1; overflow: hidden; }
+    .tl-kb-fs .tl-kanban { height: calc(100vh - 250px); padding: 12px 0 20px; }
+    .tl-kb-fs .tl-kb-col { min-width: 280px; max-width: 320px; }
+    .tl-kb-fs .tl-kb-cards { max-height: none; }
+    .tl-kb-fs-actions { display: flex; align-items: center; gap: 8px; }
+    /* Breadcrumb */
+    .tl-kb-breadcrumb {
+        display: flex; align-items: center; gap: 0; flex: 1; min-width: 0;
+        font-size: 13px; font-weight: 500; color: #94a3b8;
+    }
+    .tl-kb-breadcrumb a,
+    .tl-kb-breadcrumb .tl-bc-back {
+        color: #94a3b8; text-decoration: none; transition: all 0.15s;
+        white-space: nowrap; cursor: pointer;
+    }
+    .tl-kb-breadcrumb a:hover,
+    .tl-kb-breadcrumb .tl-bc-back:hover { color: #4361ee; }
+    .tl-bc-back {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 6px 12px 6px 8px; border-radius: 8px; border: none; background: none;
+        font-size: 13px; font-weight: 600; font-family: inherit;
+        margin-right: 12px; transition: all 0.15s;
+    }
+    .tl-bc-back:hover { background: #f1f5f9; }
+    .tl-bc-sep { color: #d1d5db; font-size: 10px; flex-shrink: 0; margin: 0 8px; }
+    .tl-bc-record {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-weight: 600; color: #0e1726; max-width: 240px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tl-bc-record iconify-icon { flex-shrink: 0; }
+    .tl-bc-record-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tl-bc-current {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-weight: 700; font-size: 15px; color: #0e1726; white-space: nowrap;
+    }
+    .tl-bc-count {
+        font-size: 11px; font-weight: 500; color: #94a3b8;
+    }
+    /* "Vue kanban" link in card count */
+    .tl-kanban-link {
+        display: inline-flex; align-items: center; gap: 4px;
+        margin-left: 6px; color: #4361ee; font-weight: 600; cursor: pointer;
+        transition: all 0.15s; font-size: 11px;
+    }
+    .tl-kanban-link:hover { color: #3451d1; text-decoration: underline; }
+    .tl-kanban-link iconify-icon { flex-shrink: 0; }
+    /* Dark mode full-screen */
+    [data-theme="dark"] .tl-kb-fs-header { border-color: #253b5c; }
+    [data-theme="dark"] .tl-kb-fs-title-text { color: #e0e6ed; }
+    [data-theme="dark"] .tl-bc-record { color: #e0e6ed; }
+    [data-theme="dark"] .tl-bc-current { color: #e0e6ed; }
+    [data-theme="dark"] .tl-bc-sep { color: #506690; }
+    [data-theme="dark"] .tl-bc-back:hover { background: #1b2e4b; }
     /* ─── Back button ─── */
     .tl-back {
         display: inline-flex; align-items: center; gap: 6px;
@@ -358,15 +427,27 @@
     .tl-meta-overdue { color: #ef4444 !important; background: #fef2f2 !important; }
 
     /* ─── Kanban board ─── */
-    /* ─── Kanban board ─── */
-    .tl-kanban { display: flex; gap: 16px; overflow-x: auto; padding: 8px 0 16px; min-height: 260px; }
+    .tl-kanban {
+        display: flex; gap: 16px; overflow-x: auto; padding: 8px 0 16px;
+        min-height: 260px; position: relative; cursor: grab;
+        scroll-behavior: auto; -webkit-overflow-scrolling: touch;
+    }
+    .tl-kanban.is-dragging { cursor: grabbing; scroll-behavior: auto; }
+    .tl-kanban.is-dragging * { pointer-events: none; }
+    .tl-kanban.is-dragging .tl-kb-card,
+    .tl-kanban.is-dragging button,
+    .tl-kanban.is-dragging a,
+    .tl-kanban.is-dragging input { pointer-events: none; }
     .tl-kanban::-webkit-scrollbar { height: 6px; }
+    .tl-kanban::-webkit-scrollbar-track { background: transparent; margin: 0 8px; }
     .tl-kanban::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .tl-kanban::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     .tl-kb-col {
         min-width: 260px; flex: 1; flex-shrink: 0;
         display: flex; flex-direction: column;
-        background: #f8fafc; border-radius: 12px; border: 1px solid #e8ecf1;
+        border-radius: 12px; border: 1px solid #e8ecf1;
         overflow: hidden;
+        background: var(--kb-col-bg, #f8fafc);
     }
     .tl-kb-hdr {
         display: flex; align-items: center; gap: 8px;
@@ -448,70 +529,133 @@
     }
     .tl-kb-add-input::placeholder { color: #bfc9d4; }
 
-    /* ─── Detail panel (slide-out) ─── */
+    /* ─── Detail panel (full-screen modal) ─── */
     .tl-overlay {
         position: fixed; inset: 0; z-index: 900;
-        background: rgba(0,0,0,0.25); opacity: 0;
+        background: rgba(0,0,0,0.35); opacity: 0;
         transition: opacity 0.25s; pointer-events: none;
+        backdrop-filter: blur(2px);
     }
     .tl-overlay.open { opacity: 1; pointer-events: auto; }
     .tl-detail {
-        position: fixed; top: 0; right: -420px; bottom: 0;
-        width: 400px; z-index: 901; background: #fff;
-        box-shadow: -8px 0 32px rgba(0,0,0,0.1);
-        transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+        position: fixed; top: 50%; left: 50%;
+        transform: translate(-50%, -50%) scale(0.95);
+        width: 90vw; max-width: 860px;
+        height: 85vh; max-height: 680px;
+        z-index: 901; background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.18);
+        opacity: 0; pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
         display: flex; flex-direction: column; overflow: hidden;
     }
-    .tl-detail.open { right: 0; }
+    .tl-detail.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
     .tl-detail-header {
         display: flex; align-items: center; gap: 10px;
-        padding: 16px 20px; border-bottom: 1px solid #f1f3f5;
+        padding: 18px 24px; border-bottom: 1px solid #f1f3f5;
         flex-shrink: 0;
     }
+    .tl-detail-header-title {
+        font-size: 12px; font-weight: 600; color: #94a3b8; flex: 1;
+    }
     .tl-detail-close {
-        width: 28px; height: 28px; border: none; background: #f8fafc;
+        width: 32px; height: 32px; border: none; background: #f8fafc;
         border-radius: 8px; cursor: pointer; display: flex;
         align-items: center; justify-content: center; color: #94a3b8;
-        transition: all 0.2s; margin-left: auto;
+        transition: all 0.2s;
     }
     .tl-detail-close:hover { background: #fef2f2; color: #ef4444; }
-    .tl-detail-body { flex: 1; overflow-y: auto; padding: 20px; }
-    .tl-detail-field { margin-bottom: 16px; }
-    .tl-detail-label {
-        font-size: 10.5px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.4px; color: #94a3b8; margin-bottom: 5px;
+    .tl-detail-content {
+        flex: 1; display: flex; overflow: hidden;
     }
-    .tl-detail-input {
-        width: 100%; padding: 8px 12px; border: 1.5px solid #e8ecf1;
-        border-radius: 8px; font-size: 13px; font-family: inherit;
-        color: #0e1726; background: #fff; transition: border-color 0.2s;
-        box-sizing: border-box;
+    .tl-detail-main {
+        flex: 1; overflow-y: auto; padding: 28px 32px;
+        border-right: 1px solid #f1f3f5;
     }
-    .tl-detail-input:focus { outline: none; border-color: #4361ee; box-shadow: 0 0 0 3px #4361ee10; }
-    .tl-detail-textarea {
-        width: 100%; padding: 8px 12px; border: 1.5px solid #e8ecf1;
-        border-radius: 8px; font-size: 13px; font-family: inherit;
-        color: #0e1726; background: #fff; min-height: 80px; resize: vertical;
-        transition: border-color 0.2s; box-sizing: border-box;
+    .tl-detail-sidebar {
+        width: 280px; flex-shrink: 0; overflow-y: auto; padding: 24px 20px;
     }
-    .tl-detail-textarea:focus { outline: none; border-color: #4361ee; box-shadow: 0 0 0 3px #4361ee10; }
-    .tl-detail-select {
-        width: 100%; padding: 8px 12px; border: 1.5px solid #e8ecf1;
-        border-radius: 8px; font-size: 13px; font-family: inherit;
-        color: #0e1726; background: #fff; cursor: pointer;
-        transition: border-color 0.2s; appearance: auto;
-    }
-    .tl-detail-select:focus { outline: none; border-color: #4361ee; }
-    .tl-detail-row { display: flex; gap: 12px; }
-    .tl-detail-row .tl-detail-field { flex: 1; }
     .tl-detail-title-input {
         width: 100%; border: none; outline: none; background: none;
-        font-size: 17px; font-weight: 700; color: #0e1726;
-        font-family: inherit; padding: 0;
+        font-size: 22px; font-weight: 700; color: #0e1726;
+        font-family: inherit; padding: 0 0 16px; line-height: 1.3;
+        border-bottom: 2px solid transparent; transition: border-color 0.2s;
     }
-    .tl-detail-title-input:focus { border-bottom: 2px solid #4361ee; }
+    .tl-detail-title-input:focus { border-bottom-color: #4361ee; }
+    .tl-detail-desc-label {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: #94a3b8; margin: 20px 0 8px;
+    }
+    .tl-detail-textarea {
+        width: 100%; padding: 12px 14px; border: 1.5px solid #e8ecf1;
+        border-radius: 10px; font-size: 13px; font-family: inherit;
+        color: #0e1726; background: #fafbfc; min-height: 200px; resize: vertical;
+        transition: border-color 0.2s; box-sizing: border-box; line-height: 1.6;
+    }
+    .tl-detail-textarea:focus { outline: none; border-color: #4361ee; background: #fff; box-shadow: 0 0 0 3px #4361ee10; }
+
+    /* Sidebar property rows */
+    .tl-detail-prop {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 0; border-bottom: 1px solid #f8f9fa;
+    }
+    .tl-detail-prop:last-child { border-bottom: none; }
+    .tl-detail-prop-icon { width: 16px; color: #bfc9d4; flex-shrink: 0; display: flex; }
+    .tl-detail-prop-label {
+        font-size: 11.5px; font-weight: 600; color: #94a3b8;
+        min-width: 70px; flex-shrink: 0;
+    }
+    .tl-detail-prop-value { flex: 1; min-width: 0; }
+
+    /* Clickable pills */
+    .tl-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+        cursor: pointer; transition: all 0.15s; border: none; background: none;
+        font-family: inherit; position: relative;
+    }
+    .tl-pill:hover { filter: brightness(0.95); }
+    .tl-pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Pill dropdown */
+    .tl-pill-menu {
+        position: absolute; top: calc(100% + 4px); left: 0;
+        background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        padding: 4px; min-width: 160px; z-index: 10;
+    }
+    .tl-pill-menu button {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; padding: 7px 10px; border: none; background: none;
+        font-size: 12px; font-weight: 500; color: #0e1726;
+        cursor: pointer; border-radius: 6px; font-family: inherit;
+        transition: background 0.1s;
+    }
+    .tl-pill-menu button:hover { background: #f8fafc; }
+    .tl-pill-menu .pm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Date inputs in sidebar */
+    .tl-detail-date-input {
+        width: 100%; padding: 4px 8px; border: 1.5px solid transparent;
+        border-radius: 6px; font-size: 12px; font-family: inherit;
+        color: #0e1726; background: #f8fafc; cursor: pointer;
+        transition: border-color 0.2s;
+    }
+    .tl-detail-date-input:focus { outline: none; border-color: #4361ee; background: #fff; }
+
+    /* Assignee input */
+    .tl-detail-text-input {
+        width: 100%; padding: 4px 8px; border: 1.5px solid transparent;
+        border-radius: 6px; font-size: 12px; font-family: inherit;
+        color: #0e1726; background: #f8fafc;
+        transition: border-color 0.2s;
+    }
+    .tl-detail-text-input:focus { outline: none; border-color: #4361ee; background: #fff; }
+    .tl-detail-text-input::placeholder { color: #bfc9d4; }
+
+    /* Footer */
     .tl-detail-footer {
-        padding: 12px 20px; border-top: 1px solid #f1f3f5;
+        padding: 14px 24px; border-top: 1px solid #f1f3f5;
         display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
     }
     .tl-detail-delete {
@@ -520,10 +664,86 @@
         cursor: pointer; transition: all 0.2s; font-family: inherit;
     }
     .tl-detail-delete:hover { background: #fef2f2; border-color: #ef4444; }
-    .tl-detail-time { font-size: 10px; color: #bfc9d4; }
+    .tl-detail-time { font-size: 10.5px; color: #bfc9d4; }
 
-    /* ─── Kanban dark mode ─── */
-    [data-theme="dark"] .tl-kb-col { background: #0e1726; border-color: #253b5c; }
+    /* ─── Status manager popover ─── */
+    .tl-status-mgr {
+        position: absolute; top: calc(100% + 8px); right: 0;
+        background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 16px; width: 300px; z-index: 100;
+    }
+    .tl-status-mgr-title {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 12px;
+    }
+    .tl-status-mgr-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 0; border-bottom: 1px solid #f8f9fa;
+    }
+    .tl-status-mgr-item:last-child { border-bottom: none; }
+    .tl-status-mgr-color {
+        width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+        cursor: pointer; border: 2px solid transparent; transition: all 0.15s;
+        position: relative;
+    }
+    .tl-status-mgr-color:hover { border-color: #d1d5db; }
+    .tl-status-mgr-label {
+        flex: 1; padding: 3px 6px; border: 1.5px solid transparent;
+        border-radius: 5px; font-size: 12.5px; font-weight: 500;
+        color: #0e1726; background: none; font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .tl-status-mgr-label:focus { outline: none; border-color: #4361ee; background: #fff; }
+    .tl-status-mgr-del {
+        width: 22px; height: 22px; border: none; background: none;
+        border-radius: 5px; cursor: pointer; display: flex;
+        align-items: center; justify-content: center; color: #d1d5db;
+        transition: all 0.15s; flex-shrink: 0;
+    }
+    .tl-status-mgr-del:hover { background: #fef2f2; color: #ef4444; }
+    .tl-status-mgr-add {
+        display: flex; align-items: center; gap: 5px;
+        margin-top: 10px; padding: 6px 0; border: none; background: none;
+        font-size: 12px; font-weight: 500; color: #94a3b8;
+        cursor: pointer; font-family: inherit; transition: color 0.15s;
+    }
+    .tl-status-mgr-add:hover { color: #4361ee; }
+    .tl-status-mgr-save {
+        margin-top: 12px; width: 100%; padding: 8px;
+        border: none; border-radius: 8px;
+        background: #4361ee; color: #fff; font-size: 12px; font-weight: 600;
+        cursor: pointer; font-family: inherit; transition: background 0.2s;
+    }
+    .tl-status-mgr-save:hover { background: #3451d1; }
+    .tl-status-mgr-ghost {
+        opacity: 0.4; background: #eef2ff; border-radius: 6px;
+    }
+    .tl-status-mgr-dragging {
+        opacity: 0.9; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        border-radius: 6px; z-index: 999;
+    }
+    .tl-status-mgr-drag {
+        cursor: grab; color: #d1d5db; flex-shrink: 0;
+    }
+    .tl-status-mgr-drag:active { cursor: grabbing; }
+    /* Color picker grid */
+    .tl-color-grid {
+        display: flex; flex-wrap: wrap; gap: 5px;
+        padding: 8px; background: #fff; border: 1px solid #e8ecf1;
+        border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        position: absolute; top: 100%; left: 0; z-index: 10; min-width: 140px;
+    }
+    .tl-color-swatch {
+        width: 22px; height: 22px; border-radius: 5px;
+        cursor: pointer; border: 2px solid transparent;
+        transition: all 0.1s;
+    }
+    .tl-color-swatch:hover { border-color: #0e1726; transform: scale(1.15); }
+    .tl-color-swatch.active { border-color: #0e1726; }
+
+    /* ─── Dark mode ─── */
+    [data-theme="dark"] .tl-kb-col { border-color: #253b5c; }
     [data-theme="dark"] .tl-kb-hdr { border-color: #253b5c; }
     [data-theme="dark"] .tl-kb-count { color: #94a3b8; }
     [data-theme="dark"] .tl-kb-card { background: #1b2e4b; border-color: #253b5c; }
@@ -531,22 +751,33 @@
     [data-theme="dark"] .tl-kb-card-title { color: #e0e6ed; }
     [data-theme="dark"] .tl-kb-card-footer { border-color: #253b5c; }
     [data-theme="dark"] .tl-kb-footer { border-color: #253b5c; }
+    [data-theme="dark"] .tl-kanban::-webkit-scrollbar-thumb { background: #253b5c; }
+    [data-theme="dark"] .tl-kanban::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+    [data-theme="dark"] .tl-kb-add-input { background: #1b2e4b; border-color: #4361ee; color: #e0e6ed; }
+    [data-theme="dark"] .tl-kb-empty { color: #506690; }
     [data-theme="dark"] .tl-detail { background: #0e1726; }
     [data-theme="dark"] .tl-detail-header { border-color: #253b5c; }
     [data-theme="dark"] .tl-detail-close { background: #1b2e4b; color: #94a3b8; }
-    [data-theme="dark"] .tl-detail-input,
-    [data-theme="dark"] .tl-detail-textarea,
-    [data-theme="dark"] .tl-detail-select { background: #1b2e4b; border-color: #253b5c; color: #e0e6ed; }
+    [data-theme="dark"] .tl-detail-main { border-color: #253b5c; }
     [data-theme="dark"] .tl-detail-title-input { color: #e0e6ed; }
+    [data-theme="dark"] .tl-detail-textarea { background: #1b2e4b; border-color: #253b5c; color: #e0e6ed; }
+    [data-theme="dark"] .tl-detail-date-input,
+    [data-theme="dark"] .tl-detail-text-input { background: #1b2e4b; color: #e0e6ed; }
     [data-theme="dark"] .tl-detail-footer { border-color: #253b5c; }
+    [data-theme="dark"] .tl-detail-prop { border-color: #1b2e4b; }
+    [data-theme="dark"] .tl-pill-menu { background: #0e1726; border-color: #253b5c; }
+    [data-theme="dark"] .tl-pill-menu button { color: #e0e6ed; }
+    [data-theme="dark"] .tl-pill-menu button:hover { background: #1b2e4b; }
+    [data-theme="dark"] .tl-status-mgr { background: #0e1726; border-color: #253b5c; }
+    [data-theme="dark"] .tl-status-mgr-label { color: #e0e6ed; }
     [data-theme="dark"] .tl-meta-avatar { background: #253b5c; color: #94a3b8; }
     [data-theme="dark"] .tl-meta-overdue { color: #ef4444 !important; background: #7f1d1d30 !important; }
 </style>
 
-<div class="tl-wrap" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null" @contextmenu.prevent>
+<div class="tl-wrap" :class="{'tl-fs-active': kanbanList}" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null; statusMgrListId = null; detailStatusMenu = false; detailPriorityMenu = false" @contextmenu.prevent>
 
     <!-- ════════ VIEW 1: LISTS ════════ -->
-    <template x-if="!activeList">
+    <template x-if="!activeList && !kanbanList">
         <div>
             <!-- Add list -->
             <div class="tl-add">
@@ -584,19 +815,20 @@
                                     <template x-if="list.doneCount > 0">
                                         <span style="margin-left:4px;color:#10b981">· <span x-text="list.doneCount"></span> terminée<span x-show="list.doneCount !== 1">s</span></span>
                                     </template>
+                                    <span class="tl-kanban-link" @click.stop="openKanban(list)">
+                                        <iconify-icon icon="solar:widget-5-bold-duotone" width="12"></iconify-icon>
+                                        Vue kanban
+                                    </span>
                                 </div>
                             </div>
                             <div class="tl-card-progress" x-show="list.count > 0">
                                 <div class="tl-card-progress-bar" :style="'width:' + (list.count ? Math.round(list.doneCount/list.count*100) : 0) + '%;background:' + list.color"></div>
                             </div>
-                            <button type="button" class="tl-view-toggle" :class="{'active': kanbanListIds.includes(list._id)}" @click.stop="toggleKanban(list._id)" :title="kanbanListIds.includes(list._id) ? 'Vue Liste' : 'Vue Kanban'">
-                                <iconify-icon :icon="kanbanListIds.includes(list._id) ? 'solar:list-bold-duotone' : 'solar:widget-5-bold-duotone'" width="14"></iconify-icon>
-                            </button>
                             <iconify-icon icon="solar:alt-arrow-right-linear" width="16" class="tl-card-toggle" :class="{'expanded': expandedListIds.includes(list._id)}" @click.stop="toggleExpand(list._id)"></iconify-icon>
                         </div>
 
                         <!-- Expandable task preview -->
-                        <div class="tl-card-preview" x-show="expandedListIds.includes(list._id) && !kanbanListIds.includes(list._id)" x-collapse @click.stop>
+                        <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
                             <div class="sortable-tasks-container" :data-list-id="list._id"
                                  x-init="$nextTick(() => initPreviewSortable($el, list))"
                                  x-effect="if(expandedListIds.includes(list._id)) $nextTick(() => initPreviewSortable($el, list))">
@@ -664,60 +896,6 @@
                             </div>
                         </div>
 
-                        <!-- ═══ KANBAN VIEW ═══ -->
-                        <div class="tl-card-preview" x-show="kanbanListIds.includes(list._id) && expandedListIds.includes(list._id)" x-collapse @click.stop style="padding-left:0">
-                            <div class="tl-kanban" x-init="$nextTick(() => initKanbanSortable($el, list))" x-effect="if(kanbanListIds.includes(list._id)) $nextTick(() => initKanbanSortable($el, list))">
-                                <template x-for="s in statuses" :key="s.label">
-                                    <div class="tl-kb-col" :style="'border-top: 3px solid ' + s.color">
-                                        <div class="tl-kb-hdr">
-                                            <span class="tl-kb-hdr-pill" :style="'background:' + s.color" x-text="s.label"></span>
-                                            <span class="tl-kb-count" x-text="(list.tasks||[]).filter(t => (t.status||'À faire') === s.label).length"></span>
-                                        </div>
-                                        <div class="tl-kb-cards" :data-status="s.label" :data-list-id="list._id">
-                                            <template x-for="kt in (list.tasks||[]).filter(t => (t.status||'À faire') === s.label)" :key="kt._id">
-                                                <div class="tl-kb-card" :data-task-id="kt._id" @click="openDetail(list, kt)">
-                                                    <div class="tl-kb-card-title" x-text="kt.title"></div>
-                                                    <div class="tl-kb-card-status">
-                                                        <span class="tl-kb-card-status-dot" :style="'background:' + s.color"></span>
-                                                        <span class="tl-kb-card-status-pill" :style="'background:' + s.color + '15;color:' + s.color" x-text="s.label"></span>
-                                                    </div>
-                                                    <div class="tl-kb-card-footer">
-                                                        <div class="tl-kb-card-date">
-                                                            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 9H21" stroke="currentColor" stroke-width="2"/></svg>
-                                                            <span x-text="kt.dueDate ? new Date(kt.dueDate).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : (kt.createdAt ? new Date(kt.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—')"></span>
-                                                        </div>
-                                                        <div class="tl-kb-card-actions">
-                                                            <button type="button" @click.stop="openDetail(list, kt)" title="Modifier">
-                                                                <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
-                                                            </button>
-                                                            <button type="button" @click.stop="openDetail(list, kt)" title="Voir">
-                                                                <iconify-icon icon="solar:eye-linear" width="14"></iconify-icon>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                            <div class="tl-kb-empty" x-show="(list.tasks||[]).filter(t => (t.status||'À faire') === s.label).length === 0">Aucun enregistrement</div>
-                                        </div>
-                                        <div class="tl-kb-footer">
-                                            <template x-if="kanbanAddStatus === s.label && kanbanAddListId === list._id">
-                                                <input type="text" class="tl-kb-add-input"
-                                                       placeholder="Nom de la tâche..."
-                                                       x-model="kanbanNewTitle"
-                                                       @keydown.enter="kanbanAddTask(list, s.label)"
-                                                       @keydown.escape="kanbanAddStatus = null; kanbanAddListId = null; kanbanNewTitle = ''"
-                                                       @click.outside="kanbanAddStatus = null; kanbanAddListId = null; kanbanNewTitle = ''">
-                                            </template>
-                                            <template x-if="kanbanAddStatus !== s.label || kanbanAddListId !== list._id">
-                                                <button type="button" class="tl-kb-add-btn" @click.stop="kanbanAddStatus = s.label; kanbanAddListId = list._id; kanbanNewTitle = ''; $nextTick(() => { const inp = $el.closest('.tl-kb-footer').querySelector('.tl-kb-add-input'); if(inp) inp.focus(); })">
-                                                    + Ajouter
-                                                </button>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
                     </div>
                 </template>
             </div>
@@ -732,7 +910,7 @@
     </template>
 
     <!-- ════════ VIEW 2: TASKS INSIDE A LIST ════════ -->
-    <template x-if="activeList">
+    <template x-if="activeList && !kanbanList">
         <div>
             <!-- Back -->
             <button class="tl-back" @click="activeList = null; tasks = [];">
@@ -904,78 +1082,246 @@
         </button>
     </div>
 
-    <!-- ════════ DETAIL PANEL (slide-out) ════════ -->
+    <!-- ════════ VIEW 3: FULL-SCREEN KANBAN ════════ -->
+    <template x-if="kanbanList">
+        <div class="tl-kb-fs">
+            <!-- Header -->
+            <div class="tl-kb-fs-header">
+                <div class="tl-kb-breadcrumb">
+                    <button class="tl-bc-back" @click="closeKanban()" title="Retour aux tâches">
+                        <iconify-icon icon="solar:alt-arrow-left-linear" width="16"></iconify-icon>
+                    </button>
+                    <span class="tl-bc-record">
+                        <iconify-icon icon="<%= entity.icon || 'solar:folder-bold-duotone' %>" width="16" style="color:<%= entity.color || '#4361ee' %>"></iconify-icon>
+                        <span class="tl-bc-record-title"><%= record.title || 'Sans titre' %></span>
+                    </span>
+                    <iconify-icon icon="solar:alt-arrow-right-linear" width="10" class="tl-bc-sep"></iconify-icon>
+                    <span class="tl-bc-current">
+                        <div class="tl-card-icon" style="width:24px;height:24px;border-radius:7px" :style="'background:' + kanbanList.color + '12'">
+                            <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="13" :style="'color:' + kanbanList.color"></iconify-icon>
+                        </div>
+                        <span x-text="kanbanList.label"></span>
+                        <span class="tl-bc-count" x-text="(kanbanList.tasks||[]).length + ' tâche' + ((kanbanList.tasks||[]).length !== 1 ? 's' : '')"></span>
+                    </span>
+                </div>
+                <div class="tl-kb-fs-actions">
+                    <!-- Status manager gear -->
+                    <div style="position:relative">
+                        <button type="button" class="tl-view-toggle" @click.stop="openStatusMgr(kanbanList._id)" title="Gérer les statuts">
+                            <iconify-icon icon="solar:settings-linear" width="14"></iconify-icon>
+                        </button>
+                        <template x-if="statusMgrListId === kanbanList._id">
+                            <div class="tl-status-mgr" @click.stop>
+                                <div class="tl-status-mgr-title">Gérer les statuts</div>
+                                <div class="tl-status-mgr-list" x-init="$nextTick(() => { if (typeof Sortable !== 'undefined') { if ($el._sortable) { try { $el._sortable.destroy(); } catch(e){} } $el._sortable = new Sortable($el, { draggable: '.tl-status-mgr-item', handle: '.tl-status-mgr-drag', animation: 180, ghostClass: 'tl-status-mgr-ghost', dragClass: 'tl-status-mgr-dragging', onEnd: (evt) => { if (evt.oldIndex === evt.newIndex) return; const parent = evt.from; const item = evt.item; if (evt.oldIndex < evt.newIndex) { parent.insertBefore(item, parent.children[evt.oldIndex]); } else { parent.insertBefore(item, parent.children[evt.oldIndex + 1]); } const moved = statusMgrStatuses.splice(evt.oldIndex, 1)[0]; statusMgrStatuses.splice(evt.newIndex, 0, moved); statusMgrStatuses.forEach((s, i) => s.order = i); } }); } })">
+                                <template x-for="(ms, msIdx) in statusMgrStatuses" :key="ms.label + '_' + ms.color + '_' + msIdx">
+                                    <div class="tl-status-mgr-item" :data-idx="msIdx">
+                                        <iconify-icon icon="solar:hamburger-menu-linear" width="12" class="tl-status-mgr-drag"></iconify-icon>
+                                        <div style="position:relative">
+                                            <div class="tl-status-mgr-color" :style="'background:' + ms.color" @click.stop="statusMgrColorIdx = statusMgrColorIdx === msIdx ? null : msIdx"></div>
+                                            <template x-if="statusMgrColorIdx === msIdx">
+                                                <div class="tl-color-grid" @click.stop>
+                                                    <template x-for="sc in statusColors" :key="sc">
+                                                        <div class="tl-color-swatch" :class="{'active': ms.color === sc}" :style="'background:' + sc" @click="statusMgrSetColor(msIdx, sc)"></div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <input type="text" class="tl-status-mgr-label" x-model="ms.label" @click.stop>
+                                        <button type="button" class="tl-status-mgr-del" @click.stop="statusMgrRemoveStatus(msIdx)" title="Supprimer" :disabled="statusMgrStatuses.length <= 1">
+                                            <iconify-icon icon="solar:close-circle-linear" width="13"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </template>
+                                </div>
+                                <button type="button" class="tl-status-mgr-add" @click.stop="statusMgrAddStatus()">
+                                    <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                    Ajouter un statut
+                                </button>
+                                <button type="button" class="tl-status-mgr-save" @click.stop="statusMgrSave()">
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full-width kanban board -->
+            <div class="tl-kb-fs-board">
+                <div class="tl-kanban" x-init="$nextTick(() => { initKanbanSortable($el, kanbanList); initDragScroll($el); })" x-effect="if(kanbanList) $nextTick(() => { initKanbanSortable($el, kanbanList); initDragScroll($el); })">
+                    <template x-for="s in getStatuses(kanbanList)" :key="s.label">
+                        <div class="tl-kb-col" :style="'border-top: 3px solid ' + s.color + ';background: linear-gradient(180deg, ' + s.color + (document.documentElement.getAttribute('data-theme')==='dark' ? '12' : '08') + ' 0%, ' + s.color + '03 40%, ' + (document.documentElement.getAttribute('data-theme')==='dark' ? '#0e1726' : '#f8fafc') + ' 100%)'">
+                            <div class="tl-kb-hdr">
+                                <span class="tl-kb-hdr-pill" :style="'background:' + s.color" x-text="s.label"></span>
+                                <span class="tl-kb-count" x-text="(kanbanList.tasks||[]).filter(t => (t.status||'À faire') === s.label).length"></span>
+                            </div>
+                            <div class="tl-kb-cards" :data-status="s.label" :data-list-id="kanbanList._id">
+                                <template x-for="kt in (kanbanList.tasks||[]).filter(t => (t.status||'À faire') === s.label)" :key="kt._id">
+                                    <div class="tl-kb-card" :data-task-id="kt._id" @click="openDetail(kanbanList, kt)">
+                                        <div class="tl-kb-card-title" x-text="kt.title"></div>
+                                        <div class="tl-kb-card-status">
+                                            <span class="tl-kb-card-status-dot" :style="'background:' + s.color"></span>
+                                            <span class="tl-kb-card-status-pill" :style="'background:' + s.color + '15;color:' + s.color" x-text="s.label"></span>
+                                        </div>
+                                        <div class="tl-kb-card-footer">
+                                            <div class="tl-kb-card-date">
+                                                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 9H21" stroke="currentColor" stroke-width="2"/></svg>
+                                                <span x-text="kt.dueDate ? new Date(kt.dueDate).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : (kt.createdAt ? new Date(kt.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—')"></span>
+                                            </div>
+                                            <div class="tl-kb-card-actions">
+                                                <button type="button" @click.stop="openDetail(kanbanList, kt)" title="Modifier">
+                                                    <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
+                                                </button>
+                                                <button type="button" @click.stop="openDetail(kanbanList, kt)" title="Voir">
+                                                    <iconify-icon icon="solar:eye-linear" width="14"></iconify-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div class="tl-kb-empty" x-show="(kanbanList.tasks||[]).filter(t => (t.status||'À faire') === s.label).length === 0">Aucun enregistrement</div>
+                            </div>
+                            <div class="tl-kb-footer">
+                                <template x-if="kanbanAddStatus === s.label && kanbanAddListId === kanbanList._id">
+                                    <input type="text" class="tl-kb-add-input"
+                                           placeholder="Nom de la tâche..."
+                                           x-model="kanbanNewTitle"
+                                           @keydown.enter="kanbanAddTask(kanbanList, s.label)"
+                                           @keydown.escape="kanbanAddStatus = null; kanbanAddListId = null; kanbanNewTitle = ''"
+                                           @click.outside="kanbanAddStatus = null; kanbanAddListId = null; kanbanNewTitle = ''">
+                                </template>
+                                <template x-if="kanbanAddStatus !== s.label || kanbanAddListId !== kanbanList._id">
+                                    <button type="button" class="tl-kb-add-btn" @click.stop="kanbanAddStatus = s.label; kanbanAddListId = kanbanList._id; kanbanNewTitle = ''; $nextTick(() => { const inp = $el.closest('.tl-kb-footer').querySelector('.tl-kb-add-input'); if(inp) inp.focus(); })">
+                                        + Ajouter
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ════════ DETAIL MODAL (full-screen centered) ════════ -->
     <div class="tl-overlay" :class="{'open': detailTask}" @click="closeDetail()"></div>
-    <div class="tl-detail" :class="{'open': detailTask}" @click.stop>
+    <div class="tl-detail" :class="{'open': detailTask}" @click.stop @keydown.escape.window="closeDetail()">
         <template x-if="detailTask">
             <div style="display:flex;flex-direction:column;height:100%">
                 <div class="tl-detail-header">
                     <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
-                    <span style="font-size:12px;font-weight:600;color:#94a3b8">Détails de la tâche</span>
+                    <span class="tl-detail-header-title" x-text="detailList ? detailList.label : 'Détails de la tâche'"></span>
                     <button type="button" class="tl-detail-close" @click="closeDetail()">
-                        <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                        <iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon>
                     </button>
                 </div>
-                <div class="tl-detail-body">
-                    <!-- Title -->
-                    <div class="tl-detail-field">
-                        <div class="tl-detail-label">Titre</div>
-                        <input type="text" class="tl-detail-title-input" x-model="detailTask.title"
-                               @change="saveDetail('title', detailTask.title)">
-                    </div>
+                <div class="tl-detail-content">
+                    <!-- Left: Title + Description -->
+                    <div class="tl-detail-main">
+                        <input type="text" class="tl-detail-title-input"
+                               x-model="detailTask.title"
+                               @change="saveDetail('title', detailTask.title)"
+                               placeholder="Titre de la tâche...">
 
-                    <!-- Status + Priority row -->
-                    <div class="tl-detail-row">
-                        <div class="tl-detail-field">
-                            <div class="tl-detail-label">Statut</div>
-                            <select class="tl-detail-select" x-model="detailTask.status"
-                                    @change="saveDetail('status', detailTask.status)">
-                                <template x-for="s in statuses" :key="s.label">
-                                    <option :value="s.label" x-text="s.label" :selected="detailTask.status === s.label"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div class="tl-detail-field">
-                            <div class="tl-detail-label">Priorité</div>
-                            <select class="tl-detail-select" x-model="detailTask.priority"
-                                    @change="saveDetail('priority', detailTask.priority)">
-                                <template x-for="p in priorities" :key="p.label">
-                                    <option :value="p.label" x-text="p.label" :selected="detailTask.priority === p.label"></option>
-                                </template>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Dates row -->
-                    <div class="tl-detail-row">
-                        <div class="tl-detail-field">
-                            <div class="tl-detail-label">Date début</div>
-                            <input type="date" class="tl-detail-input"
-                                   :value="detailTask.startDate ? new Date(detailTask.startDate).toISOString().split('T')[0] : ''"
-                                   @change="detailTask.startDate = $event.target.value || null; saveDetail('startDate', detailTask.startDate)">
-                        </div>
-                        <div class="tl-detail-field">
-                            <div class="tl-detail-label">Échéance</div>
-                            <input type="date" class="tl-detail-input"
-                                   :value="detailTask.dueDate ? new Date(detailTask.dueDate).toISOString().split('T')[0] : ''"
-                                   @change="detailTask.dueDate = $event.target.value || null; saveDetail('dueDate', detailTask.dueDate)">
-                        </div>
-                    </div>
-
-                    <!-- Assigned to -->
-                    <div class="tl-detail-field">
-                        <div class="tl-detail-label">Assigné à</div>
-                        <input type="text" class="tl-detail-input" placeholder="Nom de la personne..."
-                               x-model="detailTask.assignedTo"
-                               @change="saveDetail('assignedTo', detailTask.assignedTo)">
-                    </div>
-
-                    <!-- Description -->
-                    <div class="tl-detail-field">
-                        <div class="tl-detail-label">Description</div>
-                        <textarea class="tl-detail-textarea" placeholder="Ajouter une description..."
+                        <div class="tl-detail-desc-label">Description</div>
+                        <textarea class="tl-detail-textarea"
+                                  placeholder="Ajouter une description détaillée..."
                                   x-model="detailTask.description"
                                   @change="saveDetail('description', detailTask.description)"></textarea>
+                    </div>
+
+                    <!-- Right: Properties sidebar -->
+                    <div class="tl-detail-sidebar">
+                        <!-- Status -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:flag-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Statut</div>
+                            <div class="tl-detail-prop-value" style="position:relative">
+                                <div class="tl-pill" :style="'background:' + getStatusColor(detailTask.status) + '15;color:' + getStatusColor(detailTask.status)"
+                                     @click.stop="detailStatusMenu = !detailStatusMenu">
+                                    <span class="tl-pill-dot" :style="'background:' + getStatusColor(detailTask.status)"></span>
+                                    <span x-text="detailTask.status || 'À faire'"></span>
+                                </div>
+                                <div class="tl-pill-menu" x-show="detailStatusMenu" x-cloak @click.stop>
+                                    <template x-for="s in getListStatuses()" :key="s.label">
+                                        <button @click="detailTask.status = s.label; detailTask.statusColor = s.color; saveDetail('status', s.label); detailStatusMenu = false">
+                                            <span class="pm-dot" :style="'background:' + s.color"></span>
+                                            <span x-text="s.label"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:sort-from-top-to-bottom-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Priorité</div>
+                            <div class="tl-detail-prop-value" style="position:relative">
+                                <div class="tl-pill" :style="'background:' + getPriorityColor(detailTask.priority) + '15;color:' + (getPriorityColor(detailTask.priority) || '#94a3b8')"
+                                     @click.stop="detailPriorityMenu = !detailPriorityMenu">
+                                    <span class="tl-pill-dot" :style="'background:' + (getPriorityColor(detailTask.priority) || '#d1d5db')"></span>
+                                    <span x-text="detailTask.priority || 'Aucune'"></span>
+                                </div>
+                                <div class="tl-pill-menu" x-show="detailPriorityMenu" x-cloak @click.stop>
+                                    <template x-for="p in priorities" :key="p.label">
+                                        <button @click="detailTask.priority = p.label; detailTask.priorityColor = p.color; saveDetail('priority', p.label); detailPriorityMenu = false">
+                                            <span class="pm-dot" :style="'background:' + (p.color || '#d1d5db')"></span>
+                                            <span x-text="p.label"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assignee -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:user-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Assigné</div>
+                            <div class="tl-detail-prop-value">
+                                <input type="text" class="tl-detail-text-input" placeholder="Non assigné"
+                                       x-model="detailTask.assignedTo"
+                                       @change="saveDetail('assignedTo', detailTask.assignedTo)">
+                            </div>
+                        </div>
+
+                        <!-- Start date -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:calendar-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Début</div>
+                            <div class="tl-detail-prop-value">
+                                <input type="date" class="tl-detail-date-input"
+                                       :value="detailTask.startDate ? new Date(detailTask.startDate).toISOString().split('T')[0] : ''"
+                                       @change="detailTask.startDate = $event.target.value || null; saveDetail('startDate', detailTask.startDate)">
+                            </div>
+                        </div>
+
+                        <!-- Due date -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:calendar-mark-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Échéance</div>
+                            <div class="tl-detail-prop-value">
+                                <input type="date" class="tl-detail-date-input"
+                                       :value="detailTask.dueDate ? new Date(detailTask.dueDate).toISOString().split('T')[0] : ''"
+                                       @change="detailTask.dueDate = $event.target.value || null; saveDetail('dueDate', detailTask.dueDate)">
+                            </div>
+                        </div>
+
+                        <!-- List name -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:list-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Liste</div>
+                            <div class="tl-detail-prop-value">
+                                <span style="font-size:12px;color:#0e1726;font-weight:500" x-text="detailList ? detailList.label : '—'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Created at -->
+                        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #f1f3f5">
+                            <span class="tl-detail-time" x-show="detailTask.createdAt"
+                                  x-text="'Créée le ' + (detailTask.createdAt ? new Date(detailTask.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}) : '')"></span>
+                        </div>
                     </div>
                 </div>
                 <div class="tl-detail-footer">
@@ -983,8 +1329,7 @@
                         <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13" style="margin-right:4px"></iconify-icon>
                         Supprimer
                     </button>
-                    <span class="tl-detail-time" x-show="detailTask.createdAt"
-                          x-text="'Créée le ' + (detailTask.createdAt ? new Date(detailTask.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}) : '')"></span>
+                    <span style="font-size:11px;color:#bfc9d4">Esc pour fermer</span>
                 </div>
             </div>
         </template>
@@ -1017,14 +1362,29 @@ document.addEventListener('alpine:init', () => {
         previewEditTitle: '',
         taskCtx: null,
         kanbanListIds: [],
+        kanbanList: null,
         kanbanAddStatus: null,
         kanbanAddListId: null,
         kanbanNewTitle: '',
         detailTask: null,
         detailList: null,
+        detailStatusMenu: false,
+        detailPriorityMenu: false,
+        statusMgrListId: null,
+        statusMgrStatuses: [],
+        statusMgrColorIdx: null,
         _kanbanInstances: {},
         _sortableInstances: {},
         ctxColors: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6b7280'],
+        statusColors: ['#9ca3af','#3b82f6','#f59e0b','#22c55e','#ef4444','#6366f1','#06b6d4','#10b981','#f97316','#ec4899','#8b5cf6','#dc2626','#0891b2','#7c3aed'],
+        defaultStatuses: [
+            { label: 'À faire',  color: '#9ca3af', order: 0 },
+            { label: 'En cours', color: '#3b82f6', order: 1 },
+            { label: 'En revue', color: '#f59e0b', order: 2 },
+            { label: 'Terminé',  color: '#22c55e', order: 3 },
+            { label: 'Bloqué',   color: '#ef4444', order: 4 },
+        ],
+        // Keep global statuses as fallback (used by view 2: tasks inside a list)
         statuses: [
             { label: 'À faire',  color: '#9ca3af' },
             { label: 'En cours', color: '#3b82f6' },
@@ -1053,6 +1413,95 @@ document.addEventListener('alpine:init', () => {
             await this.loadLists();
         },
 
+        // Helper: get color for a status label from current list's statuses
+        getStatusColor(statusLabel) {
+            if (!this.detailList) return '#9ca3af';
+            const list = this.lists.find(l => l._id === this.detailList._id);
+            const listStatuses = (list && list.statuses) || this.defaultStatuses;
+            const s = listStatuses.find(s => s.label === statusLabel);
+            return s ? s.color : '#9ca3af';
+        },
+
+        // Helper: get color for priority label
+        getPriorityColor(priorityLabel) {
+            const p = this.priorities.find(p => p.label === priorityLabel);
+            return p ? p.color : '';
+        },
+
+        // Helper: get statuses for current detail list
+        getListStatuses() {
+            if (!this.detailList) return this.defaultStatuses;
+            const list = this.lists.find(l => l._id === this.detailList._id);
+            return (list && list.statuses && list.statuses.length > 0) ? list.statuses : this.defaultStatuses;
+        },
+
+        // Helper: get statuses for a specific list (kanban)
+        getStatuses(list) {
+            return (list && list.statuses && list.statuses.length > 0) ? list.statuses : this.defaultStatuses;
+        },
+
+        closeDetail() {
+            this.detailTask = null;
+            this.detailList = null;
+            this.detailStatusMenu = false;
+            this.detailPriorityMenu = false;
+        },
+
+        // ─── Status Manager ───
+        openStatusMgr(listId) {
+            if (this.statusMgrListId === listId) {
+                this.statusMgrListId = null;
+                return;
+            }
+            const list = this.lists.find(l => l._id === listId);
+            const statuses = (list && list.statuses && list.statuses.length > 0) ? list.statuses : this.defaultStatuses;
+            this.statusMgrStatuses = JSON.parse(JSON.stringify(statuses));
+            this.statusMgrListId = listId;
+            this.statusMgrColorIdx = null;
+        },
+
+        statusMgrAddStatus() {
+            this.statusMgrStatuses.push({
+                label: 'Nouveau statut',
+                color: '#6366f1',
+                order: this.statusMgrStatuses.length
+            });
+        },
+
+        statusMgrRemoveStatus(idx) {
+            if (this.statusMgrStatuses.length <= 1) return;
+            this.statusMgrStatuses.splice(idx, 1);
+            this.statusMgrStatuses.forEach((s, i) => s.order = i);
+        },
+
+        statusMgrSetColor(idx, color) {
+            this.statusMgrStatuses[idx].color = color;
+            this.statusMgrColorIdx = null;
+        },
+
+        async statusMgrSave() {
+            if (!this.statusMgrListId) return;
+            const statuses = this.statusMgrStatuses.map((s, i) => ({
+                label: s.label.trim() || 'Sans nom',
+                color: s.color,
+                order: i
+            }));
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${this.statusMgrListId}/statuses`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ statuses })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const list = this.lists.find(l => l._id === this.statusMgrListId);
+                    if (list) list.statuses = data.statuses || statuses;
+                    this.statusMgrListId = null;
+                }
+            } catch (e) { console.error('[TaskLists] Save statuses error:', e); }
+        },
+
         async loadLists() {
             this.loading = true;
             try {
@@ -1076,8 +1525,6 @@ document.addEventListener('alpine:init', () => {
                     }
                     if (this.lists.length > 0) {
                         this.expandedListIds = [this.lists[0]._id];
-                        // Initialize kanban view from saved preferences
-                        this.kanbanListIds = this.lists.filter(l => (l.viewMode || 'kanban') === 'kanban').map(l => l._id);
                     }
                 }
             } catch (e) { console.error('[TaskLists] Load error:', e); }
@@ -1488,36 +1935,35 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { console.error('[TaskLists] Delete list error:', e); }
         },
 
-        // ─── Kanban toggle ───
-        toggleKanban(listId) {
-            const idx = this.kanbanListIds.indexOf(listId);
-            let newMode;
-            if (idx >= 0) {
-                this.kanbanListIds.splice(idx, 1);
-                newMode = 'list';
-                // Destroy kanban sortable instances for this list
-                this.statuses.forEach(s => {
-                    const key = listId + '_' + s.label;
+        // ─── Kanban open/close (full-screen) ───
+        async openKanban(list) {
+            // Ensure tasks are loaded
+            if (!list.tasks || list.tasks.length === 0) {
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success) list.tasks = data.tasks || [];
+                } catch (e) { console.error('[TaskLists] Load tasks for kanban:', e); }
+            }
+            this.kanbanList = list;
+            this.kanbanAddStatus = null;
+            this.kanbanAddListId = null;
+            this.kanbanNewTitle = '';
+        },
+        closeKanban() {
+            // Destroy kanban sortable instances
+            if (this.kanbanList) {
+                const list = this.kanbanList;
+                this.getStatuses(list).forEach(s => {
+                    const key = list._id + '_' + s.label;
                     if (this._kanbanInstances[key]) {
                         this._kanbanInstances[key].destroy();
                         delete this._kanbanInstances[key];
                     }
                 });
-            } else {
-                this.kanbanListIds.push(listId);
-                newMode = 'kanban';
-                // Also expand if not expanded, to load tasks
-                if (!this.expandedListIds.includes(listId)) {
-                    this.expandedListIds.push(listId);
-                }
             }
-            // Persist to DB
-            fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/view-mode`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ viewMode: newMode })
-            }).catch(e => console.error('[TaskLists] Save view mode error:', e));
+            this.kanbanList = null;
+            this.statusMgrListId = null;
         },
 
         async kanbanAddTask(list, status) {
@@ -1558,6 +2004,10 @@ document.addEventListener('alpine:init', () => {
                         animation: 180,
                         draggable: '.tl-kb-card',
                         ghostClass: 'sortable-ghost',
+                        scroll: kanbanEl,
+                        bubbleScroll: true,
+                        scrollSensitivity: 60,
+                        scrollSpeed: 12,
                         onEnd(evt) {
                             const taskId = evt.item.dataset.taskId;
                             const newStatus = evt.to.dataset.status;
@@ -1573,16 +2023,62 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
+        // ─── Drag-to-scroll (ClickUp style, mouse + touch) ───
+        initDragScroll(slider) {
+            if (!slider || slider._dragScrollInit) return;
+            slider._dragScrollInit = true;
+            let isDown = false, startX = 0, scrollLeft = 0, moved = false;
+            const THRESHOLD = 5; // px before we consider it a real drag
+
+            // ── Mouse events ──
+            slider.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.tl-kb-card') || e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('.tl-kb-add-input')) return;
+                isDown = true; moved = false;
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
+            slider.addEventListener('mouseleave', () => {
+                if (isDown) { isDown = false; slider.classList.remove('is-dragging'); }
+            });
+            slider.addEventListener('mouseup', () => {
+                isDown = false; slider.classList.remove('is-dragging');
+            });
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                const x = e.pageX - slider.offsetLeft;
+                const walk = x - startX;
+                if (!moved && Math.abs(walk) > THRESHOLD) {
+                    moved = true; slider.classList.add('is-dragging');
+                }
+                if (moved) {
+                    e.preventDefault();
+                    slider.scrollLeft = scrollLeft - walk;
+                }
+            });
+
+            // ── Touch events (tablet / mobile) ──
+            let touchStartX = 0, touchScrollLeft = 0, touchMoved = false;
+            slider.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.tl-kb-card') || e.target.closest('button') || e.target.closest('input')) return;
+                touchStartX = e.touches[0].pageX - slider.offsetLeft;
+                touchScrollLeft = slider.scrollLeft; touchMoved = false;
+            }, { passive: true });
+            slider.addEventListener('touchmove', (e) => {
+                if (touchStartX === 0) return;
+                const x = e.touches[0].pageX - slider.offsetLeft;
+                const walk = x - touchStartX;
+                if (!touchMoved && Math.abs(walk) > THRESHOLD) touchMoved = true;
+                if (touchMoved) slider.scrollLeft = touchScrollLeft - walk;
+            }, { passive: true });
+            slider.addEventListener('touchend', () => { touchStartX = 0; touchMoved = false; });
+        },
+
         // ─── Detail panel ───
         openDetail(list, task) {
             this.detailList = list;
             this.detailTask = { ...task };
         },
 
-        closeDetail() {
-            this.detailTask = null;
-            this.detailList = null;
-        },
 
         async saveDetail(field, value) {
             if (!this.detailTask) return;

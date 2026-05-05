@@ -903,11 +903,22 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 if (aD !== bD) return aD - bD
                 return new Date(b.createdAt) - new Date(a.createdAt)
             })
+            const defaultStatuses = [
+                { label: 'À faire',  color: '#9ca3af', order: 0 },
+                { label: 'En cours', color: '#3b82f6', order: 1 },
+                { label: 'En revue', color: '#f59e0b', order: 2 },
+                { label: 'Terminé',  color: '#22c55e', order: 3 },
+                { label: 'Bloqué',   color: '#ef4444', order: 4 },
+            ]
+            const listStatuses = (l.statuses && l.statuses.length > 0)
+                ? l.statuses.sort((a, b) => a.order - b.order).map(s => ({ label: s.label, color: s.color, order: s.order }))
+                : defaultStatuses
             return {
                 _id: l._id.toString(),
                 label: l.label,
                 color: l.color || '#6366f1',
                 viewMode: l.viewMode || 'kanban',
+                statuses: listStatuses,
                 count: listTasks.length,
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
                 tasks: sorted.slice(0, 10).map(t => ({
@@ -947,6 +958,32 @@ router.put('/api/task-lists/:listId/view-mode', async (req, res) => {
         res.json({ success: true })
     } catch (error) {
         console.error('[API] Update view mode error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-lists/:listId/statuses
+ * Update the custom statuses for a task list (add, reorder, rename, recolor)
+ */
+router.put('/api/task-lists/:listId/statuses', async (req, res) => {
+    try {
+        const { statuses } = req.body
+        if (!Array.isArray(statuses) || statuses.length === 0) {
+            return res.status(400).json({ error: 'At least one status is required' })
+        }
+        const cleaned = statuses.map((s, i) => ({
+            label: (s.label || '').trim(),
+            color: s.color || '#9ca3af',
+            order: typeof s.order === 'number' ? s.order : i
+        })).filter(s => s.label)
+        if (cleaned.length === 0) {
+            return res.status(400).json({ error: 'At least one valid status is required' })
+        }
+        await TaskList.findByIdAndUpdate(req.params.listId, { statuses: cleaned })
+        res.json({ success: true, statuses: cleaned })
+    } catch (error) {
+        console.error('[API] Update statuses error:', error)
         res.status(500).json({ error: error.message })
     }
 })

@@ -1626,6 +1626,33 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             await this.loadLists();
+            // Auto-open specific task if coming from chat link (?openTask=taskId)
+            const params = new URLSearchParams(window.location.search);
+            const openTaskId = params.get('openTask');
+            if (openTaskId) {
+                // Find the task across all lists
+                for (const list of this.lists) {
+                    const task = (list.tasks || []).find(t => t._id === openTaskId);
+                    if (task) {
+                        this.openDetail(list, task);
+                        // Clean URL
+                        window.history.replaceState({}, '', window.location.pathname);
+                        break;
+                    }
+                }
+            }
+            // Listen for cross-tab task detail opens (e.g. from chat)
+            window.addEventListener('open-task-detail', (e) => {
+                const taskId = e.detail?.taskId;
+                if (!taskId) return;
+                for (const list of this.lists) {
+                    const task = (list.tasks || []).find(t => t._id === taskId);
+                    if (task) {
+                        this.openDetail(list, task);
+                        break;
+                    }
+                }
+            });
         },
 
         // Helper: get color for a status/priority label from current list's statuses

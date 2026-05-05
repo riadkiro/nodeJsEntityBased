@@ -1212,6 +1212,21 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
 })
 
 /**
+ * GET /account/:account_number/api/record-tasks/:taskId
+ * Fetch a single task by ID
+ */
+router.get('/api/record-tasks/:taskId', async (req, res) => {
+    try {
+        const task = await RecordTask.findById(req.params.taskId).lean()
+        if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
+        res.json({ success: true, task })
+    } catch (err) {
+        console.error('[API] Get task error:', err)
+        res.status(500).json({ success: false, error: err.message })
+    }
+})
+
+/**
  * PUT /account/:account_number/api/record-tasks/:taskId
  * Generic update endpoint — accepts any editable field
  */
@@ -1412,7 +1427,7 @@ router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
                     })
                 }
 
-                const chatText = `__TASK__${task.title}__END__\n${text.trim()}`
+                const chatText = `__TASK__${task._id}|${task.title}__END__\n${text.trim()}`
                 await Message.create({
                     conversationId: conv._id,
                     senderId: userId,

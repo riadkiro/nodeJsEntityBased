@@ -2142,7 +2142,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <% if (moduleName === 'chat') { %>
     <style>
-        .chat-wrap { display:grid; grid-template-columns:280px 1fr; gap:0; height:90vh; min-height:350px; border-radius:14px; border:1px solid #e0e6ed; overflow:hidden; background:#fff; }
+        .chat-wrap { display:grid; grid-template-columns:280px 1fr; gap:0; height:calc(100vh - 100px); min-height:350px; border-radius:14px; border:1px solid #e0e6ed; overflow:hidden; background:#fff; }
         .chat-sidebar { border-right:1px solid #e0e6ed; display:flex; flex-direction:column; background:#fafbfc; }
         .chat-sidebar-header { padding:14px 16px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .chat-sidebar-title { font-size:13px; font-weight:700; color:#0e1726; }
@@ -2392,10 +2392,17 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     } catch(e) {}
                 }
                 await this.loadConversations();
-                // Auto-scroll to the chat box on page load
+                // Auto-scroll to the chat box and lock scroll there
                 this.$nextTick(() => {
                     const chatEl = document.querySelector('.chat-wrap');
-                    if (chatEl) chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (chatEl) {
+                        const maxY = chatEl.getBoundingClientRect().top + window.scrollY - 75;
+                        window.scrollTo({ top: maxY, behavior: 'smooth' });
+                        // Lock: prevent scrolling past the chat box
+                        window.addEventListener('scroll', function chatScrollLock() {
+                            if (window.scrollY > maxY) window.scrollTo({ top: maxY });
+                        });
+                    }
                 });
             },
 

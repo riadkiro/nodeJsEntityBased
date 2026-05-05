@@ -133,11 +133,11 @@
 .ts-share-avatars .ts-share-more { width:28px; height:28px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#64748b; margin-left:-8px; border:2px solid #fff; }
 
 /* ── Chat Layout ── */
-.ts-chat-layout { display:grid; grid-template-columns:260px 1fr; border:1px solid #e0e6ed; border-radius:16px; overflow:hidden; background:#fff; height:calc(100vh - 260px); min-height:500px; }
-.ts-chat-sidebar { border-right:1px solid #e0e6ed; display:flex; flex-direction:column; background:#f8fafc; min-height:0; }
-.ts-chat-sidebar-header { padding:18px 16px; border-bottom:1px solid #e0e6ed; }
+.ts-chat-layout { display:grid; grid-template-columns:260px 1fr; grid-template-rows:1fr; border:1px solid #e0e6ed; border-radius:16px; overflow:hidden; background:#fff; height:calc(100vh - 220px); max-height:calc(100vh - 220px); min-height:400px; }
+.ts-chat-sidebar { border-right:1px solid #e0e6ed; display:flex; flex-direction:column; background:#f8fafc; overflow:hidden; min-height:0; align-self:stretch; }
+.ts-chat-sidebar-header { padding:18px 16px; border-bottom:1px solid #e0e6ed; flex-shrink:0; }
 .ts-chat-sidebar-header h3 { font-size:15px; font-weight:700; color:#0e1726; margin:0 0 10px; }
-.ts-chat-channels { flex:1; overflow-y:auto; padding:8px; }
+.ts-chat-channels { flex:1 1 0; overflow-y:auto; padding:8px; min-height:0; }
 .ts-chat-channel { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; cursor:pointer; transition:all .15s; }
 .ts-chat-channel:hover { background:rgba(67,97,238,.06); }
 .ts-chat-channel.active { background:rgba(67,97,238,.1); }
@@ -146,7 +146,7 @@
 .ts-chat-channel-badge { min-width:18px; height:18px; border-radius:9px; background:#4361ee; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 5px; }
 .ts-chat-channel:hover .ts-chat-delete-btn { display:flex !important; }
 .ts-chat-delete-btn:hover { color:#ef4444 !important; background:rgba(239,68,68,.08); }
-.ts-chat-main { display:flex; flex-direction:column; }
+.ts-chat-main { display:flex; flex-direction:column; min-height:0; align-self:stretch; }
 .ts-chat-main-header { padding:14px 20px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:12px; }
 .ts-chat-main-header h4 { font-size:15px; font-weight:700; color:#0e1726; margin:0; }
 .ts-chat-main-header span { font-size:12px; color:#94a3b8; }

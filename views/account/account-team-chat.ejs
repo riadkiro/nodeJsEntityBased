@@ -1,5 +1,33 @@
 <link rel="stylesheet" href="/css/app/team-system.css" />
 
+<!-- Task quote CSS -->
+<style>
+    .chat-task-quote {
+        display:flex; align-items:center; gap:6px;
+        padding:7px 10px; margin-bottom:6px;
+        border-radius:8px; border-left:3px solid #4361ee;
+        background:rgba(67,97,238,0.08); cursor:pointer;
+        transition:background 0.15s;
+    }
+    .chat-task-quote:hover { background:rgba(67,97,238,0.14); }
+    .chat-task-quote-icon { color:#4361ee; flex-shrink:0; display:flex; }
+    .chat-task-quote-title {
+        font-size:11.5px; font-weight:700; color:#4361ee;
+        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .chat-task-quote-arrow { color:#94a3b8; flex-shrink:0; margin-left:auto; opacity:0; transition:opacity 0.15s; }
+    .chat-task-quote:hover .chat-task-quote-arrow { opacity:1; }
+    .chat-task-text { white-space:pre-wrap; word-break:break-word; }
+    .ts-chat-msg-bubble.has-task {
+        background:#fff !important; color:#0e1726 !important;
+        border:1px solid #e0e6ed !important;
+    }
+    .ts-chat-msg.mine .ts-chat-msg-bubble.has-task {
+        background:#fff !important; color:#0e1726 !important;
+        border:1px solid #fed7aa !important;
+    }
+</style>
+
 <!-- Page Header -->
 <div class="ts-page-header">
   <div class="ts-page-header-icon">
@@ -249,7 +277,7 @@
                 <template x-if="msg.senderId !== myUserId">
                   <div style="font-size:11px;font-weight:700;margin-bottom:3px;padding-left:2px;" x-text="msg.senderName"></div>
                 </template>
-                <div class="ts-chat-msg-bubble" x-text="msg.text"></div>
+                <div class="ts-chat-msg-bubble" :class="isTaskMessage(msg.text) ? 'has-task' : ''" x-html="renderMessageHtml(msg.text)"></div>
                 <div class="ts-chat-msg-meta" x-text="formatTime(msg.createdAt)"></div>
               </div>
             </div>
@@ -626,10 +654,10 @@ document.addEventListener('alpine:init', () => {
     get allConversations() {
       const tagged = [];
       for (const ch of this.channels) {
-        tagged.push({ ...ch, _convType: 'channel', _displayName: ch.name || 'Canal', _subtitle: ch.lastMessage?.text || (ch.participants?.length || 0) + ' membres', _sortDate: ch.lastMessage?.sentAt || ch.updatedAt || ch.createdAt });
+        tagged.push({ ...ch, _convType: 'channel', _displayName: ch.name || 'Canal', _subtitle: this.cleanPreview(ch.lastMessage?.text) || (ch.participants?.length || 0) + ' membres', _sortDate: ch.lastMessage?.sentAt || ch.updatedAt || ch.createdAt });
       }
       for (const dm of this.dms) {
-        tagged.push({ ...dm, _convType: 'dm', _displayName: dm.otherUser?.name || 'Utilisateur', _subtitle: dm.lastMessage?.text || 'Pas encore de message', _sortDate: dm.lastMessage?.sentAt || dm.updatedAt || dm.createdAt });
+        tagged.push({ ...dm, _convType: 'dm', _displayName: dm.otherUser?.name || 'Utilisateur', _subtitle: this.cleanPreview(dm.lastMessage?.text) || 'Pas encore de message', _sortDate: dm.lastMessage?.sentAt || dm.updatedAt || dm.createdAt });
       }
       for (const rc of this.recordConvs) {
         const entityName = rc.entityDisplayName || '';
@@ -681,6 +709,53 @@ document.addEventListener('alpine:init', () => {
     dateSep(prev, curr) {
       if (!prev || !curr) return false;
       return new Date(prev.createdAt).toDateString() !== new Date(curr.createdAt).toDateString();
+    },
+
+    isTaskMessage(text) {
+      if (!text) return false;
+      return /^__TASK__/.test(text) || /^\u{1F4AC}\s*\[/u.test(text);
+    },
+
+    renderMessageHtml(text) {
+      if (!text) return '';
+      const taskMatch = text.match(/^__TASK__(?:([a-f0-9]{24})\|)?(.+?)__END__\n?([\s\S]*)$/);
+      if (taskMatch) {
+        const taskId = taskMatch[1] || '';
+        const taskTitle = taskMatch[2].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const comment = (taskMatch[3] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const conv = this.activeConv;
+        let clickAction = '';
+        if (taskId && conv && conv.recordId) {
+          const entitySlug = conv.entitySlug || conv.entityDisplayName?.toLowerCase() || '';
+          clickAction = `window.location.href='/account/${this.accountNumber}/record/${entitySlug}/${conv.recordId}/tasks?openTask=${taskId}'`;
+        }
+        return `<div class="chat-task-quote" onclick="${clickAction}">` +
+          `<span class="chat-task-quote-icon"><iconify-icon icon="solar:checklist-minimalistic-bold" width="13"></iconify-icon></span>` +
+          `<span class="chat-task-quote-title">${taskTitle}</span>` +
+          `<span class="chat-task-quote-arrow"><iconify-icon icon="solar:arrow-right-linear" width="11"></iconify-icon></span>` +
+        `</div>` +
+        `<div class="chat-task-text">${comment}</div>`;
+      }
+      const legacyMatch = text.match(/^\u{1F4AC}\s*\[(.+?)\]\s*([\s\S]*)$/u);
+      if (legacyMatch) {
+        const taskTitle = legacyMatch[1].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const comment = (legacyMatch[2] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<div class="chat-task-quote">` +
+          `<span class="chat-task-quote-icon"><iconify-icon icon="solar:checklist-minimalistic-bold" width="13"></iconify-icon></span>` +
+          `<span class="chat-task-quote-title">${taskTitle}</span>` +
+        `</div>` +
+        `<div class="chat-task-text">${comment}</div>`;
+      }
+      return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    },
+
+    cleanPreview(text) {
+      if (!text) return '';
+      const m = text.match(/^__TASK__(?:[a-f0-9]{24}\|)?(.+?)__END__\n?([\s\S]*)$/);
+      if (m) return m[2] ? `\u{1F4CB} ${m[1]}: ${m[2]}` : `\u{1F4CB} ${m[1]}`;
+      const lm = text.match(/^\u{1F4AC}\s*\[(.+?)\]\s*([\s\S]*)$/u);
+      if (lm) return lm[2] ? `\u{1F4CB} ${lm[1]}: ${lm[2]}` : `\u{1F4CB} ${lm[1]}`;
+      return text;
     },
   }));
 });

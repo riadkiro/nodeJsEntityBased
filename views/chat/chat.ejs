@@ -11,6 +11,28 @@
   - Dark/light mode compatible
 -->
 
+<!-- Task quote CSS (shared with record-level chat) -->
+<style>
+    .chat-task-quote {
+        display:flex; align-items:center; gap:6px;
+        padding:7px 10px; margin-bottom:6px;
+        border-radius:8px; border-left:3px solid #4361ee;
+        background:rgba(67,97,238,0.08); cursor:pointer;
+        transition:background 0.15s;
+    }
+    .chat-task-quote:hover { background:rgba(67,97,238,0.14); }
+    .chat-task-quote-icon { color:#4361ee; flex-shrink:0; display:flex; }
+    .chat-task-quote-title {
+        font-size:11.5px; font-weight:700; color:#4361ee;
+        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .chat-task-quote-arrow { color:#94a3b8; flex-shrink:0; margin-left:auto; opacity:0; transition:opacity 0.15s; }
+    .chat-task-quote:hover .chat-task-quote-arrow { opacity:1; }
+    .chat-task-text { white-space:pre-wrap; word-break:break-word; }
+    [data-theme="dark"] .chat-task-quote { background:rgba(67,97,238,0.12); border-left-color:#4361ee; }
+    [data-theme="dark"] .chat-task-quote:hover { background:rgba(67,97,238,0.2); }
+</style>
+
 <!-- Chat container (full height) -->
 <div x-data="chatApp" class="relative flex h-[calc(100vh_-_150px)] gap-5 sm:min-h-0">
     
@@ -115,7 +137,7 @@
                                             <span class="text-white-dark text-xs">Vous: </span>
                                         </template>
                                         <p class="truncate text-xs text-white-dark"
-                                           x-text="conv.lastMessage?.text || 'Démarrer la conversation'"></p>
+                                           x-text="cleanPreview(conv.lastMessage?.text) || 'Démarrer la conversation'"></p>
                                     </div>
                                 </div>
                             </div>
@@ -269,12 +291,12 @@
                                     <!-- Message bubble -->
                                     <div class="rounded-xl px-4 py-2.5 shadow-sm"
                                          :class="msg.senderId === currentUser.id
-                                             ? 'bg-primary text-white ltr:rounded-br-none rtl:rounded-bl-none'
+                                             ? (isTaskMessage(msg.text) ? 'bg-white dark:bg-[#0e1726] text-[#0e1726] dark:text-[#e0e6ed] border border-[#fed7aa] ltr:rounded-br-none rtl:rounded-bl-none' : 'bg-primary text-white ltr:rounded-br-none rtl:rounded-bl-none')
                                              : 'bg-black/10 dark:bg-gray-800 ltr:rounded-bl-none rtl:rounded-br-none'">
                                         
                                         <!-- Text message -->
                                         <template x-if="msg.type === 'text' || !msg.type">
-                                            <div class="text-sm whitespace-pre-wrap break-words" x-text="msg.text"></div>
+                                            <div class="text-sm whitespace-pre-wrap break-words" x-html="renderMessageHtml(msg.text)"></div>
                                         </template>
                                         
                                         <!-- Image attachment -->
@@ -916,6 +938,74 @@ document.addEventListener('alpine:init', () => {
             if (bytes < 1024) return bytes + ' B';
             if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
             return (bytes / 1048576).toFixed(1) + ' MB';
+        },
+
+        /**
+         * Check if a message contains task tags
+         */
+        isTaskMessage(text) {
+            if (!text) return false;
+            return /^__TASK__/.test(text) || /^💬\s*\[/.test(text);
+        },
+
+        /**
+         * Render message HTML with task quote formatting
+         */
+        renderMessageHtml(text) {
+            if (!text) return '';
+            // Detect: __TASK__taskId|TaskTitle__END__\nComment
+            const taskMatch = text.match(/^__TASK__(?:([a-f0-9]{24})\|)?(.+?)__END__\n?([\s\S]*)$/);
+            if (taskMatch) {
+                const taskId = taskMatch[1] || '';
+                const taskTitle = taskMatch[2].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const comment = (taskMatch[3] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                // In global chat, navigate to the record's tasks tab with openTask param
+                const conv = this.selectedConversation;
+                let clickAction = '';
+                if (taskId && conv && conv.recordId) {
+                    const entitySlug = conv.entitySlug || '';
+                    clickAction = `window.location.href='/account/${this.accountNumber}/record/${entitySlug}/${conv.recordId}/tasks?openTask=${taskId}'`;
+                } else if (taskId) {
+                    clickAction = `window.location.href='/account/${this.accountNumber}/chat'`;
+                }
+                return `<div class="chat-task-quote" onclick="${clickAction}">` +
+                    `<span class="chat-task-quote-icon"><iconify-icon icon="solar:checklist-minimalistic-bold" width="13"></iconify-icon></span>` +
+                    `<span class="chat-task-quote-title">${taskTitle}</span>` +
+                    `<span class="chat-task-quote-arrow"><iconify-icon icon="solar:arrow-right-linear" width="11"></iconify-icon></span>` +
+                `</div>` +
+                `<div class="chat-task-text">${comment}</div>`;
+            }
+            // Legacy format: 💬 [TaskTitle] Comment
+            const legacyMatch = text.match(/^💬\s*\[(.+?)\]\s*([\s\S]*)$/);
+            if (legacyMatch) {
+                const taskTitle = legacyMatch[1].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const comment = (legacyMatch[2] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<div class="chat-task-quote">` +
+                    `<span class="chat-task-quote-icon"><iconify-icon icon="solar:checklist-minimalistic-bold" width="13"></iconify-icon></span>` +
+                    `<span class="chat-task-quote-title">${taskTitle}</span>` +
+                `</div>` +
+                `<div class="chat-task-text">${comment}</div>`;
+            }
+            // Regular message — escape HTML
+            return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        },
+
+        /**
+         * Clean __TASK__ tags from sidebar preview text
+         */
+        cleanPreview(text) {
+            if (!text) return '';
+            const taskMatch = text.match(/^__TASK__(?:[a-f0-9]{24}\|)?(.+?)__END__\n?([\s\S]*)$/);
+            if (taskMatch) {
+                const title = taskMatch[1];
+                const comment = taskMatch[2];
+                return comment ? `📋 ${title}: ${comment}` : `📋 ${title}`;
+            }
+            const legacyMatch = text.match(/^💬\s*\[(.+?)\]\s*([\s\S]*)$/);
+            if (legacyMatch) {
+                return legacyMatch[2] ? `📋 ${legacyMatch[1]}: ${legacyMatch[2]}` : `📋 ${legacyMatch[1]}`;
+            }
+            return text;
         }
     }));
 });

@@ -1412,7 +1412,7 @@ router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
                     })
                 }
 
-                const chatText = `💬 [${task.title}] ${text.trim()}`
+                const chatText = `__TASK__${task.title}__END__\n${text.trim()}`
                 await Message.create({
                     conversationId: conv._id,
                     senderId: userId,

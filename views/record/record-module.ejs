@@ -2173,6 +2173,27 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         .chat-msg.mine .chat-msg-bubble { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; border:none; }
         .chat-msg-meta { font-size:10px; color:#bfc9d4; margin-top:3px; padding:0 4px; }
         .chat-msg.mine .chat-msg-meta { text-align:right; }
+        /* WhatsApp-style task reply quote */
+        .chat-task-quote {
+            display:flex; align-items:center; gap:6px;
+            padding:7px 10px; margin-bottom:6px;
+            border-radius:8px; border-left:3px solid #4361ee;
+            background:rgba(67,97,238,0.08); cursor:pointer;
+            transition:background 0.15s;
+        }
+        .chat-task-quote:hover { background:rgba(67,97,238,0.14); }
+        .chat-task-quote-icon { color:#4361ee; flex-shrink:0; display:flex; }
+        .chat-task-quote-title {
+            font-size:11.5px; font-weight:700; color:#4361ee;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+        .chat-task-quote-arrow { color:#94a3b8; flex-shrink:0; margin-left:auto; opacity:0; transition:opacity 0.15s; }
+        .chat-task-quote:hover .chat-task-quote-arrow { opacity:1; }
+        .chat-msg.mine .chat-task-quote { border-left-color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.12); }
+        .chat-msg.mine .chat-task-quote-icon { color:rgba(255,255,255,0.8); }
+        .chat-msg.mine .chat-task-quote-title { color:#fff; }
+        .chat-msg.mine .chat-task-quote-arrow { color:rgba(255,255,255,0.6); }
+        .chat-task-text { white-space:pre-wrap; word-break:break-word; }
         .chat-input-area { padding:14px 20px; border-top:1px solid #e0e6ed; display:flex; gap:8px; align-items:flex-end; }
         .chat-input { flex:1; padding:10px 14px; border:1.5px solid #e0e6ed; border-radius:12px; font-size:13px; font-family:inherit; color:#0e1726; outline:none; resize:none; min-height:40px; max-height:120px; transition:border-color .2s; }
         .chat-input:focus { border-color:#f97316; box-shadow:0 0 0 3px #f9731610; }
@@ -2207,6 +2228,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         [data-theme="dark"] .chat-main-title { color:#e0e6ed; }
         [data-theme="dark"] .chat-messages { background:linear-gradient(180deg,#0b1320,#0e1726); }
         [data-theme="dark"] .chat-msg-bubble { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
+        [data-theme="dark"] .chat-task-quote { background:rgba(67,97,238,0.12); border-left-color:#4361ee; }
+        [data-theme="dark"] .chat-task-quote:hover { background:rgba(67,97,238,0.2); }
         [data-theme="dark"] .chat-input-area { border-color:#253b5c; }
         [data-theme="dark"] .chat-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
         [data-theme="dark"] .chat-empty h3 { color:#e0e6ed; }
@@ -2245,7 +2268,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             </div>
                             <div class="chat-conv-info">
                                 <div class="chat-conv-name" x-text="conv.name || 'Conversation'"></div>
-                                <div class="chat-conv-preview" x-text="conv.lastMessage?.text || 'Aucun message'"></div>
+                                <div class="chat-conv-preview" x-text="cleanPreviewText(conv.lastMessage?.text) || 'Aucun message'"></div>
                             </div>
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
                                 <span class="chat-conv-time" x-text="conv.lastMessage?.sentAt ? formatTime(conv.lastMessage.sentAt) : ''"></span>
@@ -2297,7 +2320,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                     <div class="chat-msg" :class="msg.senderId === currentUserId ? 'mine' : ''">
                                         <div class="chat-msg-avatar" x-text="(msg.senderName || '?')[0]"></div>
                                         <div>
-                                            <div class="chat-msg-bubble" x-text="msg.text"></div>
+                                            <div class="chat-msg-bubble" x-html="renderMessageHtml(msg.text)"></div>
                                             <div class="chat-msg-meta">
                                                 <span x-text="msg.senderName"></span> · <span x-text="formatTime(msg.createdAt)"></span>
                                             </div>
@@ -2493,6 +2516,46 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             scrollToBottom() {
                 const container = this.$refs.messagesContainer;
                 if (container) container.scrollTop = container.scrollHeight;
+            },
+
+            renderMessageHtml(text) {
+                if (!text) return '';
+                // Detect task-linked messages: __TASK__TaskTitle__END__\nComment text
+                const taskMatch = text.match(/^__TASK__(.+?)__END__\n?([\s\S]*)$/);
+                if (taskMatch) {
+                    const taskTitle = taskMatch[1].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const comment = (taskMatch[2] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const tasksUrl = window.location.pathname.replace(/\/[^/]*$/, '/tasks');
+                    return `<div class="chat-task-quote" onclick="window.location.href='${tasksUrl}'">` +
+                        `<span class="chat-task-quote-icon"><iconify-icon icon="solar:checklist-minimalistic-bold" width="13"></iconify-icon></span>` +
+                        `<span class="chat-task-quote-title">${taskTitle}</span>` +
+                        `<span class="chat-task-quote-arrow"><iconify-icon icon="solar:arrow-right-linear" width="11"></iconify-icon></span>` +
+                    `</div>` +
+                    `<div class="chat-task-text">${comment}</div>`;
+                }
+                // Also handle legacy format: 💬 [TaskTitle] Comment
+                const legacyMatch = text.match(/^💬\s*\[(.+?)\]\s*([\s\S]*)$/);
+                if (legacyMatch) {
+                    const taskTitle = legacyMatch[1].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const comment = (legacyMatch[2] || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const tasksUrl = window.location.pathname.replace(/\/[^/]*$/, '/tasks');
+                    return `<div class="chat-task-quote" onclick="window.location.href='${tasksUrl}'">` +
+                        `<span class="chat-task-quote-icon"><iconify-icon icon="solar:checklist-minimalistic-bold" width="13"></iconify-icon></span>` +
+                        `<span class="chat-task-quote-title">${taskTitle}</span>` +
+                        `<span class="chat-task-quote-arrow"><iconify-icon icon="solar:arrow-right-linear" width="11"></iconify-icon></span>` +
+                    `</div>` +
+                    `<div class="chat-task-text">${comment}</div>`;
+                }
+                // Regular message — escape HTML
+                return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            },
+
+            cleanPreviewText(text) {
+                if (!text) return '';
+                // Strip __TASK__...__END__ markers for sidebar preview
+                const taskMatch = text.match(/^__TASK__(.+?)__END__\n?([\s\S]*)$/);
+                if (taskMatch) return `📋 ${taskMatch[1]}: ${taskMatch[2]}`;
+                return text;
             },
 
             formatTime(dateStr) {

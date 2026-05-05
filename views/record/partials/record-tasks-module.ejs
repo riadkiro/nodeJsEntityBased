@@ -680,8 +680,8 @@
     }
     .tl-detail-comments-header iconify-icon { color: #4361ee; }
     .tl-comments-feed {
-        flex: 1; overflow-y: auto; padding: 12px 14px;
-        display: flex; flex-direction: column; gap: 2px;
+        flex: 1; overflow-y: auto; padding: 12px 10px;
+        display: flex; flex-direction: column; gap: 6px;
     }
     .tl-comments-feed::-webkit-scrollbar { width: 4px; }
     .tl-comments-feed::-webkit-scrollbar-thumb { background: #e0e6ed; border-radius: 4px; }
@@ -691,73 +691,64 @@
         color: #bfc9d4; font-size: 12px; text-align: center; padding: 20px;
     }
     .tl-comments-empty iconify-icon { opacity: 0.4; }
+    /* Chat message row */
+    .tl-msg-row { display: flex; flex-direction: column; align-items: flex-start; max-width: 88%; }
+    .tl-msg-row.mine { align-items: flex-end; align-self: flex-end; }
+    .tl-msg-name { font-size: 10px; font-weight: 600; color: #94a3b8; margin-bottom: 2px; padding: 0 6px; }
+    .tl-msg-row.mine .tl-msg-name { display: none; }
     /* Comment bubble */
     .tl-comment {
-        padding: 10px 12px; border-radius: 10px;
-        background: #fff; border: 1px solid #f1f3f5;
-        transition: border-color 0.15s;
+        padding: 8px 12px; border-radius: 14px 14px 14px 4px;
+        background: #fff; border: 1px solid #e8ecf1;
+        position: relative;
     }
-    .tl-comment:hover { border-color: #e0e6ed; }
-    .tl-comment-head {
-        display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
-    }
-    .tl-comment-avatar {
-        width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 10px; font-weight: 700; color: #fff;
-        background: linear-gradient(135deg, #4361ee, #6366f1);
-        text-transform: uppercase;
-    }
-    .tl-comment-name {
-        font-size: 11.5px; font-weight: 700; color: #0e1726; flex: 1;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .tl-comment-time {
-        font-size: 10px; color: #bfc9d4; white-space: nowrap;
+    .tl-msg-row.mine .tl-comment {
+        background: linear-gradient(135deg, #4361ee, #5a73f0);
+        border-color: transparent; border-radius: 14px 14px 4px 14px;
     }
     .tl-comment-text {
-        font-size: 12.5px; color: #334155; line-height: 1.55;
+        font-size: 12.5px; color: #334155; line-height: 1.5;
         word-break: break-word; white-space: pre-wrap;
     }
-    .tl-comment-chat-badge {
-        display: inline-flex; align-items: center; gap: 3px;
-        margin-top: 5px; font-size: 9.5px; color: #94a3b8;
-        background: #f1f5f9; border-radius: 4px; padding: 1px 6px;
+    .tl-msg-row.mine .tl-comment-text { color: #fff; }
+    .tl-msg-meta {
+        display: flex; align-items: center; gap: 4px; margin-top: 2px; padding: 0 6px;
     }
-    /* Activity entry */
+    .tl-msg-time { font-size: 9px; color: #bfc9d4; white-space: nowrap; }
+    .tl-msg-badge {
+        display: inline-flex; align-items: center; gap: 2px;
+        font-size: 8.5px; color: #94a3b8; background: #f1f5f9;
+        border-radius: 3px; padding: 0 4px; line-height: 16px;
+    }
+    .tl-msg-row.mine .tl-msg-badge { background: rgba(67,97,238,0.1); color: #4361ee; }
+    /* Activity entry (centered) */
     .tl-activity {
-        display: flex; align-items: flex-start; gap: 8px;
-        padding: 8px 4px; font-size: 11px; color: #94a3b8;
-    }
-    .tl-activity-icon {
-        width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        background: #f1f5f9;
-    }
-    .tl-activity-body {
-        flex: 1; min-width: 0; line-height: 1.5;
+        align-self: center; text-align: center;
+        padding: 4px 10px; font-size: 10px; color: #94a3b8;
+        background: #f8fafc; border-radius: 8px; max-width: 92%;
+        line-height: 1.5;
     }
     .tl-activity-user { font-weight: 600; color: #64748b; }
     .tl-activity-val {
         display: inline-flex; align-items: center; gap: 3px;
-        padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 10px;
+        padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 9px;
     }
-    .tl-activity-time { font-size: 10px; color: #cbd5e1; margin-top: 1px; }
+    .tl-activity-time { font-size: 9px; color: #cbd5e1; margin-top: 1px; }
     /* Comment input */
     .tl-comment-input-wrap {
-        padding: 12px 14px; border-top: 1px solid #f1f3f5;
+        padding: 10px 10px; border-top: 1px solid #f1f3f5;
     }
     .tl-comment-textarea {
-        width: 100%; padding: 10px 12px; border: 1.5px solid #e8ecf1;
+        width: 100%; padding: 8px 12px; border: 1.5px solid #e8ecf1;
         border-radius: 10px; font-size: 12px; font-family: inherit;
-        color: #0e1726; background: #fff; min-height: 60px; max-height: 120px;
+        color: #0e1726; background: #fff; min-height: 44px; max-height: 100px;
         resize: none; transition: border-color 0.2s; box-sizing: border-box;
         line-height: 1.5;
     }
     .tl-comment-textarea:focus { outline: none; border-color: #4361ee; box-shadow: 0 0 0 3px #4361ee10; }
     .tl-comment-textarea::placeholder { color: #bfc9d4; }
     .tl-comment-actions {
-        display: flex; align-items: center; gap: 8px; margin-top: 8px;
+        display: flex; align-items: center; gap: 8px; margin-top: 6px;
     }
     .tl-comment-send {
         padding: 6px 14px; border: none; border-radius: 8px;
@@ -888,10 +879,13 @@
     [data-theme="dark"] .tl-detail-prop { border-color: #1b2e4b; }
     [data-theme="dark"] .tl-detail-comments { background: #0b1320; border-color: #253b5c; }
     [data-theme="dark"] .tl-detail-comments-header { border-color: #253b5c; }
-    [data-theme="dark"] .tl-comment { background: #0e1726; border-color: #253b5c; }
-    [data-theme="dark"] .tl-comment:hover { border-color: #3b5270; }
-    [data-theme="dark"] .tl-comment-name { color: #e0e6ed; }
+    [data-theme="dark"] .tl-comment { background: #1b2e4b; border-color: #253b5c; }
+    [data-theme="dark"] .tl-msg-row.mine .tl-comment { background: linear-gradient(135deg, #4361ee, #5a73f0); border-color: transparent; }
+    [data-theme="dark"] .tl-msg-name { color: #506690; }
     [data-theme="dark"] .tl-comment-text { color: #c1cad6; }
+    [data-theme="dark"] .tl-msg-row.mine .tl-comment-text { color: #fff; }
+    [data-theme="dark"] .tl-activity { background: #1b2e4b; }
+    [data-theme="dark"] .tl-msg-badge { background: #1b2e4b; color: #506690; }
     [data-theme="dark"] .tl-comment-chat-badge { background: #1b2e4b; }
     [data-theme="dark"] .tl-activity-icon { background: #1b2e4b; }
     [data-theme="dark"] .tl-comment-textarea { background: #0e1726; border-color: #253b5c; color: #e0e6ed; }
@@ -1463,52 +1457,48 @@
                     <div class="tl-detail-comments">
                         <div class="tl-detail-comments-header">
                             <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="15"></iconify-icon>
-                            Activité
+                            Conversation
                             <span style="font-weight:500;text-transform:none;letter-spacing:0;font-size:11px" x-text="'(' + (detailComments||[]).length + ')'"></span>
                         </div>
                         <div class="tl-comments-feed" x-ref="commentsFeed">
                             <template x-if="!detailComments || detailComments.length === 0">
                                 <div class="tl-comments-empty">
                                     <iconify-icon icon="solar:chat-round-dots-linear" width="32"></iconify-icon>
-                                    <span>Aucune activité</span>
-                                    <span style="font-size:11px">Les commentaires et changements apparaîtront ici</span>
+                                    <span>Aucun message</span>
+                                    <span style="font-size:11px">Échangez avec votre équipe ici</span>
                                 </div>
                             </template>
                             <template x-for="c in (detailComments||[])" :key="c._id">
                                 <div>
-                                    <!-- Comment -->
+                                    <!-- Comment as chat bubble -->
                                     <template x-if="c.type === 'comment'">
-                                        <div class="tl-comment">
-                                            <div class="tl-comment-head">
-                                                <div class="tl-comment-avatar" x-text="(c.userName||'?')[0]"></div>
-                                                <span class="tl-comment-name" x-text="c.userName || 'Anonyme'"></span>
-                                                <span class="tl-comment-time" x-text="formatCommentTime(c.createdAt)"></span>
+                                        <div class="tl-msg-row" :class="{'mine': isMyComment(c)}">
+                                            <div class="tl-msg-name" x-text="c.userName || 'Anonyme'"></div>
+                                            <div class="tl-comment">
+                                                <div class="tl-comment-text" x-text="c.text"></div>
                                             </div>
-                                            <div class="tl-comment-text" x-text="c.text"></div>
-                                            <template x-if="c.publishedToChat">
-                                                <div class="tl-comment-chat-badge">
-                                                    <iconify-icon icon="solar:chat-round-dots-linear" width="10"></iconify-icon>
-                                                    Publié dans le chat
-                                                </div>
-                                            </template>
+                                            <div class="tl-msg-meta">
+                                                <span class="tl-msg-time" x-text="formatCommentTime(c.createdAt)"></span>
+                                                <template x-if="c.publishedToChat">
+                                                    <span class="tl-msg-badge">
+                                                        <iconify-icon icon="solar:chat-round-dots-linear" width="8"></iconify-icon>
+                                                        chat
+                                                    </span>
+                                                </template>
+                                            </div>
                                         </div>
                                     </template>
-                                    <!-- Activity -->
+                                    <!-- Activity (centered pill) -->
                                     <template x-if="c.type === 'activity'">
                                         <div class="tl-activity">
-                                            <div class="tl-activity-icon">
-                                                <iconify-icon icon="solar:restart-linear" width="11" style="color:#94a3b8"></iconify-icon>
-                                            </div>
-                                            <div class="tl-activity-body">
-                                                <span class="tl-activity-user" x-text="c.userName || 'Système'"></span>
-                                                a changé
-                                                <span x-text="c.metadata?.field === 'status' ? 'le statut' : 'la priorité'"></span>
-                                                <br>
-                                                <span class="tl-activity-val" :style="'background:' + getStatusColor(c.metadata?.oldValue) + '15;color:' + getStatusColor(c.metadata?.oldValue)" x-text="c.metadata?.oldValue || '—'"></span>
-                                                →
-                                                <span class="tl-activity-val" :style="'background:' + getStatusColor(c.metadata?.newValue) + '15;color:' + getStatusColor(c.metadata?.newValue)" x-text="c.metadata?.newValue || '—'"></span>
-                                                <div class="tl-activity-time" x-text="formatCommentTime(c.createdAt)"></div>
-                                            </div>
+                                            <span class="tl-activity-user" x-text="c.userName || 'Système'"></span>
+                                            a changé
+                                            <span x-text="c.metadata?.field === 'status' ? 'le statut' : 'la priorité'"></span>
+                                            :
+                                            <span class="tl-activity-val" :style="'background:' + getStatusColor(c.metadata?.oldValue) + '15;color:' + getStatusColor(c.metadata?.oldValue)" x-text="c.metadata?.oldValue || '—'"></span>
+                                            →
+                                            <span class="tl-activity-val" :style="'background:' + getStatusColor(c.metadata?.newValue) + '15;color:' + getStatusColor(c.metadata?.newValue)" x-text="c.metadata?.newValue || '—'"></span>
+                                            <div class="tl-activity-time" x-text="formatCommentTime(c.createdAt)"></div>
                                         </div>
                                     </template>
                                 </div>
@@ -1517,7 +1507,7 @@
                         <!-- Comment input -->
                         <div class="tl-comment-input-wrap">
                             <textarea class="tl-comment-textarea"
-                                      placeholder="Écrire un commentaire..."
+                                      placeholder="Écrire un message..."
                                       x-model="detailNewComment"
                                       @keydown.ctrl.enter="postComment()"
                                       @keydown.meta.enter="postComment()"></textarea>
@@ -1585,7 +1575,8 @@ document.addEventListener('alpine:init', () => {
         detailPriorityMenu: false,
         detailComments: [],
         detailNewComment: '',
-        detailPublishToChat: false,
+        detailPublishToChat: true,
+        _currentUserId: '',
         detailPostingComment: false,
         detailLoadingComments: false,
         statusMgrListId: null,
@@ -1628,6 +1619,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         async init() {
+            // Get current user ID for chat bubble alignment
+            const userEl = document.querySelector('[data-user-id]');
+            if (userEl) this._currentUserId = userEl.dataset.userId || '';
             await this.loadLists();
             // Auto-open specific task if coming from chat link (?openTask=taskId)
             const params = new URLSearchParams(window.location.search);
@@ -2213,10 +2207,15 @@ document.addEventListener('alpine:init', () => {
                     if (data.success) list.tasks = data.tasks || [];
                 } catch (e) { console.error('[TaskLists] Load tasks for kanban:', e); }
             }
-            this.kanbanList = list;
-            this.kanbanAddStatus = null;
-            this.kanbanAddListId = null;
-            this.kanbanNewTitle = '';
+            // Force Alpine reactivity: clear first, then set on nextTick
+            // (assigning an existing reactive object after await can fail detection)
+            this.kanbanList = null;
+            this.$nextTick(() => {
+                this.kanbanList = list;
+                this.kanbanAddStatus = null;
+                this.kanbanAddListId = null;
+                this.kanbanNewTitle = '';
+            });
         },
         closeKanban() {
             // Destroy kanban sortable instances
@@ -2447,6 +2446,11 @@ document.addEventListener('alpine:init', () => {
                 }
             } catch (e) { console.error('[TaskLists] Post comment error:', e); }
             this.detailPostingComment = false;
+        },
+
+        isMyComment(c) {
+            if (!c.userId || !this._currentUserId) return false;
+            return c.userId === this._currentUserId;
         },
 
         formatCommentTime(dateStr) {

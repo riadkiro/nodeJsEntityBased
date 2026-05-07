@@ -39,6 +39,94 @@ router.use("/api", require("./api/api-drive.router.js"));
 
 router.use("/api/team", require("./api/api-team.router.js"));
 router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
+
+// Agenda Hub API — must be before api-account (has /:id catch-all)
+router.get("/api/agenda-hub", async (req, res) => {
+    try {
+        const _tc = require('../middleware/tenant').tenantCollection;
+        const Entity = await _tc(req, "Entity");
+        const Record = await _tc(req, "Record");
+        await _tc(req, "FieldTemplate");
+        await _tc(req, "Classification");
+
+        const eventsEntity = await Entity.findOne({ slug: 'events' })
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification')
+            .lean();
+        if (!eventsEntity) {
+            return res.json({ success: true, events: [], entities: [], entityData: null });
+        }
+
+        const allEvents = await Record.find({ entityId: eventsEntity._id })
+            .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })
+            .sort({ date: 1 })
+            .lean();
+
+        const recordIds = new Set();
+        allEvents.forEach(ev => {
+            (ev.relations || []).forEach(rel => {
+                const ids = Array.isArray(rel.value) ? rel.value : [rel.value];
+                ids.forEach(id => { if (id) recordIds.add(id.toString()); });
+            });
+        });
+
+        const parentRecords = recordIds.size > 0
+            ? await Record.find({ _id: { $in: [...recordIds] } }).select('title entityId computedTitle').lean()
+            : [];
+        const parentEntityIds = [...new Set(parentRecords.map(r => r.entityId?.toString()).filter(Boolean))];
+        const parentEntities = parentEntityIds.length > 0
+            ? await Entity.find({ _id: { $in: parentEntityIds } }).select('name slug icon color').lean()
+            : [];
+
+        const entityLookup = {};
+        parentEntities.forEach(e => { entityLookup[e._id.toString()] = e; });
+        const recordLookup = {};
+        parentRecords.forEach(r => { recordLookup[r._id.toString()] = r; });
+
+        const entityMap = {};
+        allEvents.forEach(ev => {
+            let parentId = null;
+            (ev.relations || []).forEach(rel => {
+                const ids = Array.isArray(rel.value) ? rel.value : [rel.value];
+                if (ids[0]) parentId = ids[0].toString();
+            });
+            if (!parentId) return;
+            const parent = recordLookup[parentId];
+            if (!parent) return;
+            const eId = parent.entityId?.toString() || 'unknown';
+            const entityInfo = entityLookup[eId] || {};
+            if (!entityMap[eId]) {
+                entityMap[eId] = {
+                    entityId: eId, entityName: entityInfo.name || 'Unknown',
+                    entitySlug: entityInfo.slug || '',
+                    entityIcon: entityInfo.icon || 'solar:folder-bold-duotone',
+                    entityColor: entityInfo.color || '#4361ee', records: {}
+                };
+            }
+            if (!entityMap[eId].records[parentId]) {
+                entityMap[eId].records[parentId] = {
+                    recordId: parentId,
+                    recordTitle: parent.computedTitle || parent.title || 'Sans titre',
+                    eventCount: 0
+                };
+            }
+            entityMap[eId].records[parentId].eventCount++;
+        });
+
+        const entities = Object.values(entityMap).map(e => ({
+            ...e,
+            records: Object.values(e.records).sort((a, b) => a.recordTitle.localeCompare(b.recordTitle)),
+            totalEvents: Object.values(e.records).reduce((sum, r) => sum + r.eventCount, 0)
+        }));
+
+        res.json({ success: true, events: allEvents, entities, entityData: eventsEntity });
+    } catch (error) {
+        console.error('[AgendaHub] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
@@ -136,6 +224,15 @@ router.use("/workflows", require("../src/integrations/routes/workflows.routes.js
 // Tasks Page
 router.get("/tasks", (req, res) => {
     res.render("record/record-tasks", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Agenda Hub (aggregated events across all records)
+router.get("/agenda", (req, res) => {
+    res.render("account/account-agenda-hub", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number

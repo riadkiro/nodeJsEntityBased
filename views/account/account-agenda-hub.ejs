@@ -1,0 +1,530 @@
+<%# Agenda Hub — Aggregated events across all records %>
+<% const _apiBase = '/account/' + account_number; %>
+
+<style>
+/* ═══ Agenda Hub — Full-Height App Layout ═══ */
+.ah-page { display:flex; flex-direction:column; height:calc(100vh - 70px); padding:0; overflow:hidden; }
+.ah-topbar {
+    display:flex; align-items:center; gap:12px; padding:12px 24px; flex-shrink:0;
+    border-bottom:1px solid #e8ecf1;
+}
+.ah-topbar-left { display:flex; align-items:center; gap:10px; }
+.ah-breadcrumb { display:flex; align-items:center; gap:6px; font-size:13px; }
+.ah-breadcrumb a { color:#888da8; text-decoration:none; transition:color .2s; }
+.ah-breadcrumb a:hover { color:#14b8a6; }
+.ah-breadcrumb .sep { color:#d1d5db; }
+.ah-breadcrumb .current { font-weight:700; color:#0e1726; }
+.ah-topbar-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.ah-view-pills {
+    display:flex; gap:2px; padding:3px; background:#f1f5f9; border-radius:10px; border:1px solid #e2e8f0;
+}
+.ah-vpill {
+    display:flex; align-items:center; gap:5px; padding:6px 12px; border:none; border-radius:8px;
+    font-size:12px; font-weight:600; color:#6b7280; background:transparent; cursor:pointer;
+    transition:all .2s; font-family:'Nunito',sans-serif; white-space:nowrap;
+}
+.ah-vpill:hover { color:#374151; background:rgba(0,0,0,.04); }
+.ah-vpill.active { background:#fff; color:#14b8a6; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.ah-count-badge {
+    display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px;
+    padding:0 6px; border-radius:11px; font-size:11px; font-weight:700;
+    background:rgba(20,184,166,.1); color:#14b8a6;
+}
+
+.ah-body { display:flex; flex:1; min-height:0; overflow:hidden; }
+
+/* ── Sidebar ── */
+.ah-sidebar {
+    width:280px; flex-shrink:0; border-right:1px solid #e8ecf1;
+    display:flex; flex-direction:column; background:#fafbfc; overflow:hidden;
+}
+.ah-sidebar-header {
+    padding:14px 16px; border-bottom:1px solid #e8ecf1;
+    font-size:12px; font-weight:700; color:#0e1726;
+    text-transform:uppercase; letter-spacing:.04em;
+    display:flex; align-items:center; justify-content:space-between;
+}
+.ah-sidebar-search {
+    margin:10px 12px; padding:7px 10px; border:1px solid #e2e8f0;
+    border-radius:8px; font-size:12px; background:#fff; color:#0e1726;
+    outline:none; font-family:inherit; width:calc(100% - 24px);
+}
+.ah-sidebar-search:focus { border-color:#14b8a6; }
+.ah-sidebar-body { flex:1; overflow-y:auto; padding:4px 0; }
+.ah-sidebar-all {
+    display:flex; align-items:center; gap:8px; padding:8px 16px;
+    font-size:12px; font-weight:600; color:#14b8a6; cursor:pointer;
+    transition:background .15s; border-bottom:1px solid #f1f5f9;
+}
+.ah-sidebar-all:hover { background:#f0fdfa; }
+.ah-sidebar-all.active { background:#f0fdfa; font-weight:700; }
+.ah-entity-group { border-bottom:1px solid #f1f5f9; }
+.ah-entity-header {
+    display:flex; align-items:center; gap:8px; padding:8px 16px; cursor:pointer;
+    font-size:12px; font-weight:700; color:#0e1726; transition:background .15s;
+}
+.ah-entity-header:hover { background:#f8fafc; }
+.ah-entity-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.ah-entity-count {
+    margin-left:auto; font-size:10px; font-weight:700;
+    padding:1px 6px; border-radius:6px; background:#f1f5f9; color:#9ca3af;
+}
+.ah-record-item {
+    display:flex; align-items:center; gap:8px; padding:6px 16px 6px 34px;
+    font-size:12px; color:#6b7280; cursor:pointer; transition:all .15s;
+}
+.ah-record-item:hover { background:#f8fafc; color:#0e1726; }
+.ah-record-item.active { background:#f0fdfa; color:#14b8a6; font-weight:600; }
+.ah-record-count {
+    margin-left:auto; font-size:10px; font-weight:600; color:#d1d5db;
+}
+
+/* ── Main ── */
+.ah-main { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+.ah-calendar-container { flex:1; min-height:0; padding:16px; }
+.ah-list-container { flex:1; min-height:0; overflow-y:auto; padding:16px; }
+
+/* FullCalendar overrides */
+.ah-calendar-container .fc { font-family:'Nunito',sans-serif; height:100% !important; }
+.ah-calendar-container .fc .fc-toolbar-title { font-size:18px; font-weight:700; color:#0e1726; }
+.ah-calendar-container .fc .fc-button {
+    background:#f8fafc !important; border:1px solid #e2e8f0 !important;
+    color:#4b5563 !important; font-size:12px !important; font-weight:600 !important;
+    padding:6px 14px !important; border-radius:8px !important;
+    transition:all .2s !important; box-shadow:none !important; text-transform:none !important;
+}
+.ah-calendar-container .fc .fc-button:hover { background:#e2e8f0 !important; color:#0e1726 !important; }
+.ah-calendar-container .fc .fc-button-active {
+    background:linear-gradient(135deg, #14b8a6, #14b8a6dd) !important;
+    border-color:#14b8a6 !important; color:#fff !important;
+}
+.ah-calendar-container .fc .fc-col-header-cell-cushion { font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
+.ah-calendar-container .fc .fc-daygrid-day-number { font-size:13px; font-weight:600; color:#374151; padding:6px 8px; }
+.ah-calendar-container .fc .fc-day-today { background:rgba(20,184,166,.04) !important; }
+.ah-calendar-container .fc .fc-event {
+    border:none !important; border-radius:6px !important; padding:2px 6px !important;
+    font-size:12px !important; font-weight:600 !important; cursor:pointer !important;
+    transition:transform .15s, box-shadow .15s !important;
+}
+.ah-calendar-container .fc .fc-event:hover {
+    transform:translateY(-1px) !important; box-shadow:0 4px 12px rgba(0,0,0,.15) !important;
+}
+.ah-calendar-container .fc td, .ah-calendar-container .fc th { border-color:#f1f3f5 !important; }
+.ah-calendar-container .fc .fc-scrollgrid { border-color:#e8ecf1 !important; }
+.ah-calendar-container .fc .fc-timegrid-slot { height:40px; }
+.ah-calendar-container .fc .fc-timegrid-slot-label-cushion { font-size:11px; font-weight:600; color:#9ca3af; }
+.ah-calendar-container .fc .fc-now-indicator-line { border-color:#ef4444 !important; }
+
+/* List view table */
+.ah-list-table { width:100%; border-collapse:collapse; }
+.ah-list-table th {
+    text-align:left; padding:10px 14px; font-size:11px; font-weight:700;
+    color:#9ca3af; text-transform:uppercase; letter-spacing:.05em;
+    border-bottom:1px solid #e8ecf1; white-space:nowrap;
+}
+.ah-list-table td {
+    padding:10px 14px; border-bottom:1px solid #f1f5f9; font-size:13px;
+    color:#374151; white-space:nowrap;
+}
+.ah-list-table tr { cursor:pointer; transition:background .15s; }
+.ah-list-table tr:hover { background:#f9fafb; }
+.ah-status-pill {
+    font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px;
+    text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;
+}
+.ah-record-link { color:#14b8a6; font-weight:600; font-size:12px; text-decoration:none; }
+.ah-record-link:hover { text-decoration:underline; }
+
+/* Empty state */
+.ah-empty { text-align:center; padding:60px 20px; color:#9ca3af; }
+.ah-empty svg { opacity:.2; margin-bottom:12px; }
+.ah-empty h3 { font-size:16px; font-weight:700; color:#374151; margin:0 0 4px; }
+.ah-empty p { font-size:13px; margin:0; }
+
+/* Loading */
+.ah-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:60px; color:#888da8; font-size:14px; }
+.ah-spin { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:#14b8a6; border-radius:50%; animation:ahSpin .8s linear infinite; }
+@keyframes ahSpin { to { transform:rotate(360deg); } }
+
+/* ═══ Dark Mode ═══ */
+.dark .ah-topbar { border-color:#253b5c; }
+.dark .ah-breadcrumb .current { color:#e0e6ed; }
+.dark .ah-view-pills { background:#1b2e4b; border-color:#253b5c; }
+.dark .ah-vpill { color:#888da8; }
+.dark .ah-vpill:hover { color:#e0e6ed; background:rgba(255,255,255,.04); }
+.dark .ah-vpill.active { background:#0e1726; color:#14b8a6; }
+.dark .ah-sidebar { background:#0e1726; border-color:#253b5c; }
+.dark .ah-sidebar-header { color:#e0e6ed; border-color:#253b5c; }
+.dark .ah-sidebar-search { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
+.dark .ah-sidebar-all { border-color:#1b2e4b; }
+.dark .ah-sidebar-all:hover, .dark .ah-sidebar-all.active { background:#1b2e4b; }
+.dark .ah-entity-group { border-color:#1b2e4b; }
+.dark .ah-entity-header { color:#e0e6ed; }
+.dark .ah-entity-header:hover { background:#1b2e4b; }
+.dark .ah-entity-count { background:#1b2e4b; color:#506690; }
+.dark .ah-record-item { color:#888da8; }
+.dark .ah-record-item:hover { background:#1b2e4b; color:#e0e6ed; }
+.dark .ah-record-item.active { background:#0b2a3a; color:#14b8a6; }
+.dark .ah-record-count { color:#506690; }
+.dark .ah-calendar-container .fc .fc-toolbar-title { color:#e0e6ed; }
+.dark .ah-calendar-container .fc .fc-button { background:#1b2e4b !important; border-color:#253b5c !important; color:#888da8 !important; }
+.dark .ah-calendar-container .fc .fc-button:hover { background:#253b5c !important; color:#e0e6ed !important; }
+.dark .ah-calendar-container .fc .fc-button-active { background:linear-gradient(135deg,#14b8a6,#14b8a6dd) !important; border-color:#14b8a6 !important; color:#fff !important; }
+.dark .ah-calendar-container .fc .fc-col-header-cell-cushion { color:#506690; }
+.dark .ah-calendar-container .fc .fc-daygrid-day-number { color:#888da8; }
+.dark .ah-calendar-container .fc .fc-day-today { background:rgba(20,184,166,.08) !important; }
+.dark .ah-calendar-container .fc td, .dark .ah-calendar-container .fc th { border-color:#1b2e4b !important; }
+.dark .ah-calendar-container .fc .fc-scrollgrid { border-color:#253b5c !important; }
+.dark .ah-calendar-container .fc .fc-timegrid-slot-label-cushion { color:#506690; }
+.dark .ah-list-table th { color:#506690; border-color:#253b5c; }
+.dark .ah-list-table td { color:#e0e6ed; border-color:#1b2e4b; }
+.dark .ah-list-table tr:hover { background:#1b2e4b; }
+.dark .ah-empty h3 { color:#e0e6ed; }
+</style>
+
+<div class="ah-page" x-data="agendaHub()" x-cloak>
+    <!-- Top bar -->
+    <div class="ah-topbar">
+        <div class="ah-topbar-left">
+            <div class="ah-breadcrumb">
+                <a href="<%= _apiBase %>/dashboard">
+                    <iconify-icon icon="solar:home-2-bold-duotone" width="16"></iconify-icon>
+                </a>
+                <span class="sep">/</span>
+                <span class="current">
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:#14b8a6;vertical-align:-3px"></iconify-icon>
+                    Agenda
+                </span>
+            </div>
+            <span class="ah-count-badge" x-text="filteredEvents.length" x-show="!loading"></span>
+        </div>
+        <div class="ah-topbar-right">
+            <div class="ah-view-pills">
+                <button class="ah-vpill" :class="viewMode==='calendar' && 'active'" @click="setView('calendar')">
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon> Calendrier
+                </button>
+                <button class="ah-vpill" :class="viewMode==='list' && 'active'" @click="setView('list')">
+                    <iconify-icon icon="solar:list-bold" width="14"></iconify-icon> Liste
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="ah-body">
+        <!-- Sidebar -->
+        <div class="ah-sidebar">
+            <div class="ah-sidebar-header">
+                <span>Filtrer par enregistrement</span>
+            </div>
+            <input type="text" class="ah-sidebar-search" placeholder="Rechercher..."
+                   x-model="search" @input="filterSearch()">
+            <div class="ah-sidebar-body">
+                <!-- All -->
+                <div class="ah-sidebar-all" :class="!filterRecordId && 'active'" @click="clearFilter()">
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:#14b8a6"></iconify-icon>
+                    Tous les événements
+                    <span class="ah-count-badge" x-text="allEvents.length" style="margin-left:auto"></span>
+                </div>
+
+                <!-- Entities → Records -->
+                <template x-for="ent in filteredEntities" :key="ent.entityId">
+                    <div class="ah-entity-group">
+                        <div class="ah-entity-header" @click="ent._open = !ent._open">
+                            <span class="ah-entity-dot" :style="`background:${ent.entityColor}`"></span>
+                            <span x-text="ent.entityName"></span>
+                            <span class="ah-entity-count" x-text="ent.totalEvents"></span>
+                        </div>
+                        <template x-if="ent._open">
+                            <div>
+                                <template x-for="rec in ent.records" :key="rec.recordId">
+                                    <div class="ah-record-item"
+                                         :class="filterRecordId === rec.recordId && 'active'"
+                                         @click="setFilter(rec.recordId)">
+                                        <span x-text="rec.recordTitle"></span>
+                                        <span class="ah-record-count" x-text="rec.eventCount"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="ah-main">
+            <!-- Loading -->
+            <template x-if="loading">
+                <div class="ah-loading"><div class="ah-spin"></div> Chargement de l'agenda...</div>
+            </template>
+
+            <!-- Calendar View -->
+            <template x-if="!loading && viewMode==='calendar'">
+                <div class="ah-calendar-container" x-ref="calendarEl"></div>
+            </template>
+
+            <!-- List View -->
+            <template x-if="!loading && viewMode==='list'">
+                <div class="ah-list-container">
+                    <template x-if="filteredEvents.length === 0">
+                        <div class="ah-empty">
+                            <iconify-icon icon="solar:calendar-minimalistic-linear" width="48"></iconify-icon>
+                            <h3>Aucun événement</h3>
+                            <p>Les événements créés depuis les fiches apparaîtront ici.</p>
+                        </div>
+                    </template>
+                    <template x-if="filteredEvents.length > 0">
+                        <table class="ah-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Titre</th>
+                                    <th>Date</th>
+                                    <th>Heure</th>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Enregistrement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="ev in filteredEvents" :key="ev._id">
+                                    <tr @click="openRecord(ev)">
+                                        <td style="font-weight:600" x-text="ev.title || 'Sans titre'"></td>
+                                        <td x-text="formatDate(ev.date)"></td>
+                                        <td style="color:#14b8a6;font-weight:700" x-text="formatTime(ev.date)"></td>
+                                        <td><span x-text="getType(ev)"></span></td>
+                                        <td>
+                                            <span class="ah-status-pill"
+                                                  :style="`background:${getStatus(ev).color}15;color:${getStatus(ev).color}`"
+                                                  x-text="getStatus(ev).label"></span>
+                                        </td>
+                                        <td>
+                                            <a class="ah-record-link"
+                                               :href="getRecordLink(ev)"
+                                               @click.stop
+                                               x-text="getRecordTitle(ev)"></a>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<link href="/assets/css/fullcalendar.min.css" rel="stylesheet" />
+<script src="/assets/js/fullcalendar.min.js"></script>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('agendaHub', () => ({
+        loading: true,
+        viewMode: 'calendar',
+        allEvents: [],
+        entities: [],
+        entityData: null,
+        filterRecordId: null,
+        search: '',
+        calendar: null,
+        _parentLookup: {},
+
+        async init() {
+            await this.fetchData();
+            this.loading = false;
+            this.$nextTick(() => {
+                if (this.viewMode === 'calendar') this.initCalendar();
+            });
+        },
+
+        async fetchData() {
+            try {
+                const res = await fetch('<%= _apiBase %>/api/agenda-hub', { credentials: 'include' });
+                const data = await res.json();
+                console.log('[AgendaHub] API response:', data);
+                if (data.success) {
+                    this.allEvents = data.events || [];
+                    this.entities = (data.entities || []).map(e => ({ ...e, _open: true }));
+                    this.entityData = data.entityData;
+                    console.log('[AgendaHub] Events loaded:', this.allEvents.length, 'Entities:', this.entities.length);
+
+                    // Build parent lookup from relations
+                    this.entities.forEach(ent => {
+                        ent.records.forEach(rec => {
+                            this._parentLookup[rec.recordId] = {
+                                recordId: rec.recordId,
+                                recordTitle: rec.recordTitle,
+                                entitySlug: ent.entitySlug
+                            };
+                        });
+                    });
+                }
+            } catch(e) { console.error('[AgendaHub]', e); }
+        },
+
+        get filteredEvents() {
+            if (!this.filterRecordId) return this.allEvents;
+            return this.allEvents.filter(ev => {
+                return (ev.relations || []).some(rel => {
+                    const ids = Array.isArray(rel.value) ? rel.value : [rel.value];
+                    return ids.some(id => id?.toString() === this.filterRecordId);
+                });
+            });
+        },
+
+        get filteredEntities() {
+            if (!this.search.trim()) return this.entities;
+            const q = this.search.toLowerCase();
+            return this.entities.filter(ent => {
+                if (ent.entityName.toLowerCase().includes(q)) return true;
+                return ent.records.some(r => r.recordTitle.toLowerCase().includes(q));
+            });
+        },
+
+        setView(mode) {
+            this.viewMode = mode;
+            if (mode === 'calendar') {
+                this.$nextTick(() => this.initCalendar());
+            }
+        },
+
+        setFilter(recordId) {
+            this.filterRecordId = recordId;
+            if (this.calendar) {
+                this.calendar.removeAllEvents();
+                this.calendar.addEventSource(this.toCalendarEvents(this.filteredEvents));
+            }
+        },
+
+        clearFilter() {
+            this.filterRecordId = null;
+            if (this.calendar) {
+                this.calendar.removeAllEvents();
+                this.calendar.addEventSource(this.toCalendarEvents(this.filteredEvents));
+            }
+        },
+
+        filterSearch() { /* reactive via getter */ },
+
+        getParentId(ev) {
+            let pid = null;
+            (ev.relations || []).forEach(rel => {
+                const ids = Array.isArray(rel.value) ? rel.value : [rel.value];
+                if (ids[0]) pid = ids[0].toString();
+            });
+            return pid;
+        },
+
+        getRecordTitle(ev) {
+            const pid = this.getParentId(ev);
+            return this._parentLookup[pid]?.recordTitle || 'Sans titre';
+        },
+
+        getRecordLink(ev) {
+            const pid = this.getParentId(ev);
+            const info = this._parentLookup[pid];
+            if (!info) return '#';
+            return '<%= _apiBase %>/record/' + info.entitySlug + '/' + info.recordId + '/agenda';
+        },
+
+        openRecord(ev) {
+            const link = this.getRecordLink(ev);
+            if (link !== '#') window.location.href = link;
+        },
+
+        getFieldValue(ev, fieldName) {
+            if (!this.entityData) return null;
+            const field = (this.entityData.customFields || []).find(f => f.name === fieldName);
+            if (!field) return null;
+            const cf = (ev.customFields || []).find(c => {
+                const fid = c.field_id?._id || c.field_id;
+                return fid?.toString() === field._id?.toString();
+            });
+            return cf?.value || null;
+        },
+
+        getType(ev) {
+            const t = this.getFieldValue(ev, 'type_evenement');
+            return t ? t.charAt(0).toUpperCase() + t.slice(1) : '—';
+        },
+
+        getStatus(ev) {
+            if (!this.entityData?.statusClassification) return { label: 'Planifié', color: '#3b82f6' };
+            const cls = this.entityData.statusClassification;
+            const cv = (ev.classificationValues || []).find(c => c.classificationId?.toString() === cls._id?.toString());
+            if (!cv) return { label: 'Planifié', color: '#3b82f6' };
+            const opt = (cls.options || []).find(o => o._id?.toString() === cv.optionId?.toString());
+            return opt ? { label: opt.label, color: opt.color || '#3b82f6' } : { label: 'Planifié', color: '#3b82f6' };
+        },
+
+        formatDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+        },
+
+        formatTime(d) {
+            if (!d) return '';
+            return new Date(d).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
+        },
+
+        toCalendarEvents(evts) {
+            return evts.map(ev => {
+                const status = this.getStatus(ev);
+                const duration = this.getFieldValue(ev, 'duree_evenement');
+                let start = ev.date ? new Date(ev.date) : new Date();
+                let end = ev.end_date ? new Date(ev.end_date) : null;
+                if (!end && duration) { end = new Date(start.getTime() + (parseInt(duration) || 30) * 60000); }
+                else if (!end) { end = new Date(start.getTime() + 30 * 60000); }
+
+                return {
+                    id: ev._id?.toString(),
+                    title: ev.title || 'Sans titre',
+                    start: start.toISOString(),
+                    end: end.toISOString(),
+                    backgroundColor: status.color,
+                    borderColor: status.color,
+                    textColor: '#fff',
+                    extendedProps: { _ev: ev }
+                };
+            });
+        },
+
+        initCalendar() {
+            if (this.calendar) { this.calendar.destroy(); this.calendar = null; }
+            const el = this.$refs.calendarEl;
+            if (!el || typeof FullCalendar === 'undefined') return;
+
+            this.calendar = new FullCalendar.Calendar(el, {
+                initialView: 'dayGridMonth',
+                locale: 'fr',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay',
+                },
+                buttonText: { today:"Aujourd'hui", month:'Mois', week:'Semaine', day:'Jour' },
+                dayMaxEvents: 3,
+                nowIndicator: true,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '21:00:00',
+                allDaySlot: false,
+                height: '100%',
+                expandRows: true,
+                eventTimeFormat: { hour:'2-digit', minute:'2-digit', meridiem:false, hour12:false },
+                events: this.toCalendarEvents(this.filteredEvents),
+                eventClick: (info) => {
+                    const ev = info.event.extendedProps._ev;
+                    this.openRecord(ev);
+                },
+                eventDidMount: (info) => {
+                    const ev = info.event.extendedProps._ev;
+                    info.el.title = info.event.title + '\n📋 ' + this.getRecordTitle(ev);
+                }
+            });
+            this.calendar.render();
+        }
+    }));
+});
+</script>

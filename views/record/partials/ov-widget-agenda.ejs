@@ -3,26 +3,67 @@
     <span>Prochains rendez-vous</span>
     <a href="<%= _recBase %>/agenda" class="ov-card-link">Voir tout →</a>
 </div>
-<div class="ov-agenda-row">
-    <div class="ov-agenda-item">
-        <div class="ov-agenda-date-box" style="background:linear-gradient(135deg,#14b8a612,#14b8a606)">
-            <div class="ov-agenda-day" style="color:#14b8a6">28</div>
-            <div class="ov-agenda-month">AVR</div>
+<div class="ov-agenda-row"
+     x-data="{
+         events: [],
+         loading: true,
+         async init() {
+             try {
+                 const res = await fetch('/account/<%= account_number %>/api/records/<%= record._id %>/events', { credentials: 'include' });
+                 const data = await res.json();
+                 if (data.success && data.events) {
+                     const now = new Date();
+                     this.events = data.events
+                         .filter(e => e.date && new Date(e.date) >= now)
+                         .sort((a, b) => new Date(a.date) - new Date(b.date))
+                         .slice(0, 3)
+                         .map(e => {
+                             const d = new Date(e.date);
+                             const statusCls = data.entityData?.statusClassification;
+                             const cv = (e.classificationValues || []).find(c => c.classificationId?.toString() === statusCls?._id?.toString());
+                             const opt = cv ? (statusCls?.options || []).find(o => o._id?.toString() === cv.optionId?.toString()) : null;
+                             return {
+                                 title: e.title || 'Sans titre',
+                                 day: d.getDate().toString().padStart(2, '0'),
+                                 month: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase(),
+                                 time: d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                                 status: opt?.label || 'Planifié',
+                                 color: opt?.color || '#14b8a6'
+                             };
+                         });
+                 }
+             } catch(e) { console.warn('[OV-Agenda]', e); }
+             this.loading = false;
+         }
+     }">
+    <!-- Loading skeleton -->
+    <template x-if="loading">
+        <div style="display:flex;gap:10px;padding:8px 0">
+            <template x-for="i in 3" :key="i">
+                <div style="flex:1;height:52px;border-radius:8px;background:#f1f5f9;animation:pulse 1.5s infinite"></div>
+            </template>
         </div>
-        <div><div class="ov-agenda-title">Consultation de suivi</div><div class="ov-agenda-time">10:30 · Confirmé</div></div>
-    </div>
-    <div class="ov-agenda-item">
-        <div class="ov-agenda-date-box" style="background:linear-gradient(135deg,#0ea5e912,#0ea5e906)">
-            <div class="ov-agenda-day" style="color:#0ea5e9">15</div>
-            <div class="ov-agenda-month">MAI</div>
+    </template>
+
+    <!-- Events -->
+    <template x-for="(ev, idx) in events" :key="idx">
+        <div class="ov-agenda-item">
+            <div class="ov-agenda-date-box" :style="`background:linear-gradient(135deg,${ev.color}12,${ev.color}06)`">
+                <div class="ov-agenda-day" :style="`color:${ev.color}`" x-text="ev.day"></div>
+                <div class="ov-agenda-month" x-text="ev.month"></div>
+            </div>
+            <div>
+                <div class="ov-agenda-title" x-text="ev.title"></div>
+                <div class="ov-agenda-time"><span x-text="ev.time"></span> · <span x-text="ev.status"></span></div>
+            </div>
         </div>
-        <div><div class="ov-agenda-title">Contrôle tension</div><div class="ov-agenda-time">09:00 · Planifié</div></div>
-    </div>
-    <div class="ov-agenda-item">
-        <div class="ov-agenda-date-box" style="background:linear-gradient(135deg,#0ea5e912,#0ea5e906)">
-            <div class="ov-agenda-day" style="color:#0ea5e9">01</div>
-            <div class="ov-agenda-month">JUN</div>
+    </template>
+
+    <!-- Empty -->
+    <template x-if="!loading && events.length === 0">
+        <div style="text-align:center;padding:16px 0;color:#9ca3af;font-size:12px">
+            <iconify-icon icon="solar:calendar-minimalistic-linear" width="24" style="display:block;margin:0 auto 6px;opacity:.5"></iconify-icon>
+            Aucun événement à venir
         </div>
-        <div><div class="ov-agenda-title">Bilan annuel complet</div><div class="ov-agenda-time">14:00 · Planifié</div></div>
-    </div>
+    </template>
 </div>

@@ -25,6 +25,7 @@ export default defineConfig({
                 cardRendererWidget: path.resolve(__dirname, 'src/islands/card-renderer-widget/entry.jsx'),
                 dynamicTable: path.resolve(__dirname, 'src/islands/dynamic-table/entry.jsx'),
                 docGenerateWizard: path.resolve(__dirname, 'src/islands/doc-generate-wizard/entry.jsx'),
+                recordAgenda: path.resolve(__dirname, 'src/islands/record-agenda/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

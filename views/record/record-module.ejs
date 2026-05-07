@@ -171,12 +171,17 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 }
 </style>
 
-<div class="rm-page">
+<div class="rm-page" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } %>>
     <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list" class="rm-back">
         <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
         Retour à <strong><%= entity.name %></strong>
+        <% if (moduleName === 'agenda') { %>
+        <span style="color:#bfc9d4;margin:0 4px">·</span>
+        <span style="font-weight:600;color:#0e1726"><%= record.title || 'Sans titre' %></span>
+        <% } %>
     </a>
 
+    <% if (moduleName !== 'agenda') { %>
     <div class="rm-hero">
         <div class="rm-hero-icon">
             <iconify-icon icon="<%= entity.icon || _mod.icon %>" width="28" style="color:<%= entity.color || _modColor %>"></iconify-icon>
@@ -198,6 +203,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             </form>
         </div>
     </div>
+    <% } %>
 
     <nav class="rm-nav">
         <% const _allMods = [
@@ -1637,7 +1643,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <% } %>
 
     <!-- ═══ OTHER MODULES (non-docs) ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes') { %>
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -1967,68 +1973,21 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         <!-- Tasks module is handled by the dynamic Alpine.js section below -->
 
         <% if (moduleName === 'agenda') { %>
-        <div class="rm-items-list">
-            
-            <div class="rm-item" style="animation-delay:0ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#14b8a615,#14b8a608)">
-                    <iconify-icon icon="solar:calendar-mark-bold-duotone" width="20" style="color:#14b8a6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Consultation de suivi</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 28/04/2026 - 10:30</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Confirmé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:60ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#14b8a615,#14b8a608)">
-                    <iconify-icon icon="solar:calendar-mark-bold-duotone" width="20" style="color:#14b8a6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Contrôle tension</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/05/2026 - 09:00</div>
-                </div>
-                <span class="rm-item-badge" style="background:#0ea5e915;color:#0ea5e9">Planifié</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:120ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#14b8a615,#14b8a608)">
-                    <iconify-icon icon="solar:calendar-bold-duotone" width="20" style="color:#14b8a6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Bilan annuel complet</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 01/06/2026 - 14:00</div>
-                </div>
-                <span class="rm-item-badge" style="background:#0ea5e915;color:#0ea5e9">Planifié</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:180ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#14b8a615,#14b8a608)">
-                    <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" width="20" style="color:#14b8a6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Consultation initiale</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/03/2026 - 11:00</div>
-                </div>
-                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280">Passé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:240ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#14b8a615,#14b8a608)">
-                    <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" width="20" style="color:#14b8a6"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Contrôle HTA #75</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 01/04/2026 - 10:00</div>
-                </div>
-                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280">Passé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
+        <div data-island="record-agenda"
+             data-account-number="<%= account_number %>"
+             data-record-id="<%= record._id %>"
+             data-entity-slug="<%= entity.slug %>"
+             data-record-title="<%= (record.title || 'Sans titre').replace(/"/g, '&quot;') %>"
+             style="flex:1;min-height:0;display:flex;flex-direction:column;">
+            <!-- Loading state while React mounts -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:60px 0;color:#888da8;font-size:14px">
+                <div style="width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#14b8a6;border-radius:50%;animation:spin .8s linear infinite"></div>
+                Chargement de l'agenda...
             </div>
         </div>
+        <link href="/assets/css/fullcalendar.min.css" rel="stylesheet" />
+        <script src="/assets/js/fullcalendar.min.js"></script>
+        <script type="module" src="/dist/recordAgenda.js"></script>
         <% } %>
 
         <%- include('../record/partials/record-tasks-module', { _isTasksTab: moduleName === 'tasks' }) %>

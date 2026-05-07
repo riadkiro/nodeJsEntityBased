@@ -1534,7 +1534,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Dynamic table column widths
             'gridColumnWidths',
             // Overview layout builder
-            'rows'
+            'rows',
+            // Record Agenda
+            'agendaPrefs'
         ]
 
         prefKeys.forEach(key => {
@@ -2081,6 +2083,315 @@ router.patch('/api/records/:recordId/date', async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 })
+
+// ═══════════════════════════════════════════════════════════════════════
+// 📅 RECORD AGENDA / EVENTS API
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /account/:account_number/api/records/:recordId/events
+ * Fetch all events linked to a specific record via relations
+ */
+router.get('/api/records/:recordId/events', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity");
+        const Record = await tenantCollection(req, "Record");
+        await tenantCollection(req, "FieldTemplate");
+        await tenantCollection(req, "Classification");
+
+        // Find the events entity
+        const eventsEntity = await Entity.findOne({ slug: 'events' })
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification')
+            .lean();
+        if (!eventsEntity) {
+            return res.json({ success: false, events: [], message: 'Events entity not found' });
+        }
+
+        // Find events linked to this record via relations
+        const events = await Record.find({
+            entityId: eventsEntity._id,
+            'relations.value': req.params.recordId
+        })
+            .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })
+            .sort({ date: -1 })
+            .lean();
+
+        res.json({
+            success: true,
+            events,
+            entityData: eventsEntity,
+        });
+    } catch (error) {
+        console.error('[API] Fetch record events error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /account/:account_number/api/records/:recordId/events
+ * Create a new event linked to a specific record
+ */
+router.post('/api/records/:recordId/events', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity");
+        const Record = await tenantCollection(req, "Record");
+
+        const { title, date, endDate, duration, durationFieldId, type, lieu, statusOptionId } = req.body;
+        const parentRecordId = req.params.recordId;
+
+        // Find the events entity
+        const eventsEntity = await Entity.findOne({ slug: 'events' })
+            .populate('customFields')
+            .populate('statusClassification')
+            .lean();
+        if (!eventsEntity) {
+            return res.status(404).json({ error: 'Events entity not found' });
+        }
+
+        // Find the parent record to get its entityId
+        const parentRecord = await Record.findById(parentRecordId).select('entityId').lean();
+        if (!parentRecord) {
+            return res.status(404).json({ error: 'Parent record not found' });
+        }
+
+        // Find the relation key for this entity type
+        const parentEntity = await Entity.findById(parentRecord.entityId).select('slug').lean();
+        const relationKey = parentEntity ? `event_${parentEntity.slug}` : null;
+
+        // Build custom fields
+        const customFields = [];
+        const fieldMap = {};
+        (eventsEntity.customFields || []).forEach(f => {
+            fieldMap[f.name] = f._id.toString();
+        });
+
+        if (fieldMap.duree_evenement && duration) {
+            customFields.push({ field_id: fieldMap.duree_evenement, value: parseInt(duration) || 30 });
+        }
+        if (fieldMap.lieu_evenement && lieu) {
+            customFields.push({ field_id: fieldMap.lieu_evenement, value: lieu });
+        }
+        if (fieldMap.type_evenement && type) {
+            customFields.push({ field_id: fieldMap.type_evenement, value: type });
+        }
+        if (fieldMap.heure_fin && endDate) {
+            customFields.push({ field_id: fieldMap.heure_fin, value: endDate });
+        }
+
+        // Build classification values
+        const classificationValues = [];
+        if (statusOptionId && eventsEntity.statusClassification) {
+            const opt = eventsEntity.statusClassification.options?.find(
+                o => o._id.toString() === statusOptionId
+            );
+            classificationValues.push({
+                classificationId: eventsEntity.statusClassification._id,
+                optionId: statusOptionId,
+                label: opt?.label || 'Planifié',
+                color: opt?.color || '#3b82f6',
+            });
+        } else if (eventsEntity.statusClassification?.options?.length) {
+            // Default to first option (Planifié)
+            const defaultOpt = eventsEntity.statusClassification.options[0];
+            classificationValues.push({
+                classificationId: eventsEntity.statusClassification._id,
+                optionId: defaultOpt._id,
+                label: defaultOpt.label,
+                color: defaultOpt.color,
+            });
+        }
+
+        // Build relations
+        const relations = [];
+        if (relationKey) {
+            relations.push({ relationKey, value: parentRecordId });
+        }
+
+        const recordData = {
+            entityId: eventsEntity._id,
+            title: title || 'Nouvel événement',
+            date: date ? new Date(date) : new Date(),
+            end_date: endDate ? new Date(endDate) : null,
+            published: true,
+            customFields,
+            classificationValues,
+            relations,
+            createdBy: req.user?._id,
+        };
+
+        // Compute denormalized fields
+        try {
+            const denormService = require('../services/record-denorm.service');
+            const denorm = await denormService.computeDenorm(recordData, eventsEntity, Record, Entity);
+            Object.assign(recordData, denorm);
+        } catch (e) {
+            // denorm is optional, don't block creation
+        }
+
+        const newRecord = new Record(recordData);
+        await newRecord.save();
+
+        // Return enriched record
+        const saved = await Record.findById(newRecord._id)
+            .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })
+            .lean();
+
+        res.json({ success: true, record: saved });
+    } catch (error) {
+        console.error('[API] Create record event error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * PATCH /account/:account_number/api/records/:recordId/events/:eventId
+ * Update an existing event (title, dates, status, etc.)
+ */
+router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record");
+        const Entity = await tenantCollection(req, "Entity");
+        await tenantCollection(req, "FieldTemplate");
+        await tenantCollection(req, "Classification");
+
+        const { eventId } = req.params;
+        const { title, date, endDate, duration, type, lieu, notes, statusOptionId } = req.body;
+
+        const event = await Record.findById(eventId);
+        if (!event) return res.status(404).json({ error: 'Event not found' });
+
+        // Find events entity for field mapping
+        const eventsEntity = await Entity.findOne({ slug: 'events' })
+            .populate('customFields')
+            .populate('statusClassification')
+            .lean();
+        if (!eventsEntity) return res.status(404).json({ error: 'Events entity not found' });
+
+        const fieldMap = {};
+        (eventsEntity.customFields || []).forEach(f => {
+            fieldMap[f.name] = f._id.toString();
+        });
+
+        // Update standard fields
+        if (title !== undefined) event.title = title;
+        if (date !== undefined) event.date = date ? new Date(date) : null;
+        if (endDate !== undefined) event.end_date = endDate ? new Date(endDate) : null;
+
+        // Update custom fields
+        const updateCustomField = (fieldName, value) => {
+            const fid = fieldMap[fieldName];
+            if (!fid || value === undefined) return;
+            const cfIdx = (event.customFields || []).findIndex(cf =>
+                (cf.field_id?._id || cf.field_id)?.toString() === fid
+            );
+            if (cfIdx >= 0) {
+                event.customFields[cfIdx].value = value;
+            } else {
+                event.customFields.push({ field_id: fid, value });
+            }
+        };
+
+        updateCustomField('duree_evenement', duration ? parseInt(duration) : undefined);
+        updateCustomField('type_evenement', type);
+        updateCustomField('lieu_evenement', lieu);
+        updateCustomField('notes_evenement', notes);
+
+        if (endDate !== undefined) updateCustomField('heure_fin', endDate);
+
+        // Update status classification
+        if (statusOptionId && eventsEntity.statusClassification) {
+            event.classificationValues = (event.classificationValues || []).filter(
+                cv => cv.classificationId?.toString() !== eventsEntity.statusClassification._id.toString()
+            );
+            event.classificationValues.push({
+                classificationId: eventsEntity.statusClassification._id,
+                optionId: statusOptionId
+            });
+            event.markModified('classificationValues');
+        }
+
+        event.markModified('customFields');
+        await event.save();
+
+        // Return enriched record
+        const saved = await Record.findById(event._id)
+            .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })
+            .lean();
+
+        res.json({ success: true, record: saved });
+    } catch (error) {
+        console.error('[API] Update record event error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * DELETE /account/:account_number/api/records/:recordId/events/:eventId
+ * Delete an event
+ */
+router.delete('/api/records/:recordId/events/:eventId', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record");
+        const { eventId } = req.params;
+
+        const result = await Record.findByIdAndDelete(eventId);
+        if (!result) return res.status(404).json({ error: 'Event not found' });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[API] Delete record event error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * PATCH /account/:account_number/api/records/:recordId/events/:eventId/drag
+ * Quick date update for calendar drag & drop
+ */
+router.patch('/api/records/:recordId/events/:eventId/drag', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record");
+        const Entity = await tenantCollection(req, "Entity");
+        await tenantCollection(req, "FieldTemplate");
+
+        const { eventId } = req.params;
+        const { newStart, newEnd } = req.body;
+
+        const event = await Record.findById(eventId);
+        if (!event) return res.status(404).json({ error: 'Event not found' });
+
+        // Update date fields
+        if (newStart) event.date = new Date(newStart);
+        if (newEnd) event.end_date = new Date(newEnd);
+
+        // Also update heure_fin custom field
+        const eventsEntity = await Entity.findOne({ slug: 'events' })
+            .populate('customFields')
+            .lean();
+        if (eventsEntity) {
+            const heureFinField = (eventsEntity.customFields || []).find(f => f.name === 'heure_fin');
+            if (heureFinField && newEnd) {
+                const cfIdx = (event.customFields || []).findIndex(cf =>
+                    (cf.field_id?._id || cf.field_id)?.toString() === heureFinField._id.toString()
+                );
+                if (cfIdx >= 0) {
+                    event.customFields[cfIdx].value = newEnd;
+                } else {
+                    event.customFields.push({ field_id: heureFinField._id, value: newEnd });
+                }
+                event.markModified('customFields');
+            }
+        }
+
+        await event.save();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[API] Drag event error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 /**
  * POST /account/:account_number/api/entity/:entityId/records/quick-add

@@ -343,12 +343,10 @@ document.addEventListener('alpine:init', () => {
             try {
                 const res = await fetch('<%= _apiBase %>/api/agenda-hub', { credentials: 'include' });
                 const data = await res.json();
-                console.log('[AgendaHub] API response:', data);
                 if (data.success) {
                     this.allEvents = data.events || [];
                     this.entities = (data.entities || []).map(e => ({ ...e, _open: true }));
                     this.entityData = data.entityData;
-                    console.log('[AgendaHub] Events loaded:', this.allEvents.length, 'Entities:', this.entities.length);
 
                     // Build parent lookup from relations
                     this.entities.forEach(ent => {

@@ -28,6 +28,7 @@ const RecordSchema = new mongoose.Schema({
     default: 'draft'
   },
   published: { type: Boolean, default: false },
+  isDraft: { type: Boolean, default: false },
   order: { type: Number, default: 0 },
 
   // 📌 Denormalized title (pre-resolved from entity.referenceTitleTokens)

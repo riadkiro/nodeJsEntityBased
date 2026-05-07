@@ -164,7 +164,7 @@ export default function QuickViewModal({ record, columns, accountNumber, entityS
                     <div className="flex items-center gap-1 flex-shrink-0">
                         {/* Open full page */}
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}`}
+                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
                             className="p-2 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
                             title="Ouvrir la page complète"
                         >
@@ -176,7 +176,7 @@ export default function QuickViewModal({ record, columns, accountNumber, entityS
                         </a>
                         {/* Edit full page */}
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/edit`}
+                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
                             className="p-2 rounded-lg text-gray-400 hover:text-info hover:bg-info/10 transition-all"
                             title="Modifier"
                         >
@@ -298,13 +298,13 @@ export default function QuickViewModal({ record, columns, accountNumber, entityS
                         </div>
                         <div className="flex items-center gap-2">
                             <a
-                                href={`/account/${accountNumber}/record/${entitySlug}/${recordId}`}
+                                href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
                                 className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-medium rounded-lg hover:bg-primary/20 transition-colors"
                             >
                                 Voir
                             </a>
                             <a
-                                href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/edit`}
+                                href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
                                 className="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
                             >
                                 Modifier

@@ -51,6 +51,23 @@ router.get('/conversations', async (req, res) => {
         }).sort({ updatedAt: -1 }).lean();
 
         // Enrich with entity details for icon/color
+        // First, resolve entityId from Records for conversations missing it
+        const RecordModel = await tenantCollection(req, 'Entity') ? await tenantCollection(req, 'Record') : null;
+        const convsWithoutEntity = recordConvs.filter(c => !c.entityId && c.recordId);
+        if (RecordModel && convsWithoutEntity.length > 0) {
+            const recordIds = convsWithoutEntity.map(c => c.recordId);
+            const records = await RecordModel.find({ _id: { $in: recordIds } }).select('entityId title').lean();
+            const recordLookup = {};
+            records.forEach(r => { recordLookup[r._id.toString()] = r; });
+            convsWithoutEntity.forEach(c => {
+                const rec = recordLookup[c.recordId.toString()];
+                if (rec) {
+                    c.entityId = rec.entityId;
+                    if (!c.recordTitle) c.recordTitle = rec.title;
+                }
+            });
+        }
+
         const entityIds = [...new Set(recordConvs.map(c => c.entityId?.toString()).filter(Boolean))];
         const entitiesDb = entityIds.length > 0
             ? await EntityModel.find({ _id: { $in: entityIds } }).select('name slug icon color').lean()

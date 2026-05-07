@@ -112,7 +112,7 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
 
     // Open in edit page
     const editUrl = entitySlug && accountNumber
-        ? `/account/${accountNumber}/record/${entitySlug}/edit/${record._id}`
+        ? `/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`
         : null
 
     return (

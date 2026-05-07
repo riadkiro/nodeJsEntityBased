@@ -41,7 +41,7 @@ export default function CardDetailPanel({
     const customFields = record.customFields || []
 
     const editUrl = entitySlug && accountNumber
-        ? `/account/${accountNumber}/record/${entitySlug}/edit/${record._id}`
+        ? `/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`
         : null
 
     // Find current column/status

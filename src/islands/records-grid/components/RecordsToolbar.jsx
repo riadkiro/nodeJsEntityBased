@@ -180,9 +180,22 @@ export default function RecordsToolbar({
         <div className="dataTable-top flex items-center mb-0 justify-between gap-2">
             {/* Add button + Search input - LEFT */}
             <div className="flex items-center gap-2">
-                {/* Expandable Add Button - pill style */}
-                <a
-                    href={`/account/${accountNumber}/record/${entitySlug}/add`}
+                <button
+                    type="button"
+                    onClick={async () => {
+                        try {
+                            const res = await fetch(`/account/${accountNumber}/record/api/create-draft`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ entitySlug })
+                            });
+                            const data = await res.json();
+                            if (data.success && data._id) {
+                                window.location.href = `/account/${accountNumber}/record/${entitySlug}/${data._id}/fiche`;
+                            }
+                        } catch (e) { console.error('[CreateDraft]', e); }
+                    }}
                     className="btn-add-expandable block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
                     title="Ajouter"
                 >
@@ -190,7 +203,7 @@ export default function RecordsToolbar({
                         <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                     </svg>
                     <span className="btn-add-label">Ajouter</span>
-                </a>
+                </button>
 
                 <div className="dataTable-search relative w-64" style={{ marginLeft: 0 }}>
                     <svg

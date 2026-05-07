@@ -1,5 +1,5 @@
-✅ DONE — Seed scripts updated to use separate environments instead of spaces within one environment.
-- seed-cabinet-medical.js: 1 env → 5 envs (Activité Clinique, Documents, Facturation, Organisation, Stock & Pharmacie)
-- seed-notaire.js: 1 env → 3 envs (Clientèle, Dossiers & Actes, Facturation Notaire)
-- seed-cabinet-dentiste.js: inherits from seed-cabinet-medical.js (automatic)
-- seed-demo-9194.js: already uses separate environments (no change needed)
+
+Mision 1 : Quand je suis en navigation normal (pas privée) je n'arrive pas a changer le mode light et dark, c'est touijours dark, corrige ce bug, en plus quand je toggle le mode dark light via top barre, jai comme deux mode dark, qui sont different, ![alt text](image-93.png) celui là par exemple il n'est pas bon niveau couleur, je prefere que tout les mode sombres soit comme celui la ![alt text](image-94.png)
+
+Mision 2 : Travail l'agenda : http://localhost:3000/account/9194/record/patients/69ccfac0738ff763a647e29d/agenda , je dois avoir une entité systeme activable dans tout les comptes, qui s'appelle event, l'agenda va gérer les event, je peux creer different type d'event, affichage en mode agenda ou timeline ou listing ... un systeme complet d'agenda, on a deja une vue agenda par exemple ici http://localhost:3000/account/9194/record/rendez-vous/list , je veux un peu la meme chose avec drag and drop, ajout d'venement ficlement, mais aussi la possibilité d'une vue genre emploi du temps... un systeme complet et robuste, avec notif et relance aussi...
+

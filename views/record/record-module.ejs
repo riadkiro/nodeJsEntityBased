@@ -74,40 +74,46 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .rm-item-action:hover { background:#f1f5f9; color:#0e1726; }
 
 /* ═══ Fiche Module Styles ═══ */
-.fiche-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:4px; }
+.fiche-grid { display:flex; flex-direction:column; gap:0; }
 .fiche-field {
-    display:flex; align-items:flex-start; gap:12px; padding:16px 18px;
-    background:#fff; border-radius:12px; border:1px solid transparent;
-    transition:all .3s; position:relative; cursor:default;
+    display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
+    border-radius:8px; cursor:pointer; transition:background .15s;
+    border:1px solid transparent; position:relative;
     animation:rmFadeIn .4s ease both;
 }
 .fiche-field:hover {
-    border-color:#e0e6ed; background:#fafbfc;
-    box-shadow:0 2px 8px rgba(0,0,0,.03);
+    background:#f8fafc; border-color:#e8ecf1;
 }
+.fiche-field + .fiche-field { border-top:1px solid #f1f3f5; }
+.fiche-field:hover + .fiche-field { border-top-color:transparent; }
 .fiche-field:hover .fiche-edit-hint { opacity:1; transform:translateX(0); }
-.fiche-field.full-width { grid-column:1/-1; }
+.fiche-field.full-width { }
+.fiche-field-head {
+    display:flex; align-items:center; gap:7px; width:200px; min-width:200px;
+    flex-shrink:0; padding-top:2px;
+}
 .fiche-field-icon {
-    width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg, #4361ee10, #4361ee05); flex-shrink:0; margin-top:1px;
+    width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
 }
 .fiche-field-body { flex:1; min-width:0; }
 .fiche-field-label {
-    font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.6px;
-    color:#888da8; margin-bottom:4px; display:flex; align-items:center; gap:4px;
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+    color:#888da8; white-space:nowrap;
 }
+.fiche-field-view { min-height:24px; display:flex; align-items:center; flex-wrap:wrap; gap:5px; }
 .fiche-field-value {
-    font-size:14px; font-weight:500; color:#0e1726; line-height:1.5;
+    font-size:13px; font-weight:500; color:#0e1726; line-height:1.5;
     word-break:break-word;
 }
 .fiche-field-value.empty { color:#bfc9d4; font-style:italic; font-weight:400; }
 .fiche-edit-hint {
-    position:absolute; top:12px; right:12px;
+    position:absolute; top:50%; right:12px; transform:translateY(-50%) translateX(4px);
     display:flex; align-items:center; gap:4px;
-    font-size:11px; color:#888da8; opacity:0;
-    transition:all .25s; transform:translateX(4px);
-    background:linear-gradient(135deg, #4361ee08, #4361ee04);
+    font-size:11px; color:#4361ee; opacity:0;
+    transition:all .25s;
     padding:4px 10px; border-radius:6px;
+    background:linear-gradient(135deg, #4361ee08, #4361ee04);
 }
 .fiche-edit-hint iconify-icon { color:#4361ee; }
 .fiche-section {
@@ -128,52 +134,66 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .fiche-empty-state p { font-size:13px; color:#888da8; margin:0; }
 
 @keyframes rmFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-[data-theme="dark"] .rm-hero { background:linear-gradient(135deg, <%= _modColor %>10, <%= _modColor %>05); border-color:<%= _modColor %>30; }
-[data-theme="dark"] .rm-hero-info h1 { color:#e0e6ed; }
-[data-theme="dark"] .rm-nav { background:#1b2e4b; border-color:#253b5c; }
-[data-theme="dark"] .rm-nav a { color:#888da8; }
-[data-theme="dark"] .rm-nav a:hover,[data-theme="dark"] .rm-nav a.active { background:#0e1726; color:#e0e6ed; }
-[data-theme="dark"] .rm-item,[data-theme="dark"] .fiche-field { background:#0e1726; }
-[data-theme="dark"] .rm-item:hover,[data-theme="dark"] .fiche-field:hover { border-color:#253b5c; background:#1b2e4b; }
-[data-theme="dark"] .rm-item-title,[data-theme="dark"] .fiche-field-value { color:#e0e6ed; }
-[data-theme="dark"] .rm-search { background:#1b2e4b; border-color:#253b5c; }
-[data-theme="dark"] .rm-search input { color:#e0e6ed; }
-[data-theme="dark"] .fiche-section { border-color:#253b5c; }
+/* ═══ Dark Mode — Record Module ═══ */
+.dark .rm-page { background:transparent; }
+.dark .rm-back { color:#888da8; }
+.dark .rm-back:hover { color:#e0e6ed; }
+.dark .rm-hero { background:linear-gradient(135deg, <%= _modColor %>10, <%= _modColor %>05); border-color:<%= _modColor %>30; }
+.dark .rm-hero-info h1 { color:#e0e6ed; }
+.dark .rm-hero-info p { color:#888da8; }
+.dark .rm-nav { background:#1b2e4b; border-color:#253b5c; }
+.dark .rm-nav a { color:#888da8; }
+.dark .rm-nav a:hover,.dark .rm-nav a.active { background:#0e1726; color:#e0e6ed; }
+.dark .rm-item,.dark .fiche-field { background:transparent; border-color:transparent; }
+.dark .rm-item:hover,.dark .fiche-field:hover { border-color:#253b5c; background:#1b2e4b; }
+.dark .rm-item-title,.dark .fiche-field-value { color:#e0e6ed; }
+.dark .fiche-field-label { color:#506690; }
+.dark .fiche-field-value.empty { color:#506690; }
+.dark .fiche-field + .fiche-field { border-top-color:#1b2e4b; }
+.dark .fiche-field:hover + .fiche-field { border-top-color:transparent; }
+.dark .fiche-edit-hint { background:rgba(67,97,238,.1); color:#818cf8; }
+.dark .fiche-empty-state h3 { color:#e0e6ed; }
+.dark .fiche-empty-state p { color:#506690; }
+.dark .rm-search { background:#1b2e4b; border-color:#253b5c; }
+.dark .rm-search input { color:#e0e6ed; }
+.dark .fiche-section { border-color:#253b5c; }
+.dark .rm-toolbar { background:#0e1726; border-color:#253b5c; }
+/* Dark mode fiche inline edit inputs */
+.dark .fiche-field .ov-input { background:#0e1726; border-color:#253b5c; color:#e0e6ed; }
+.dark .fiche-field .ov-input:focus { border-color:#4361ee; }
+.dark .fiche-field .ov-textarea { background:#0e1726; border-color:#253b5c; color:#e0e6ed; }
 
 @media (max-width:768px) {
     .rm-page { padding:16px; }
-    .fiche-grid { grid-template-columns:1fr; }
     .rm-hero { flex-direction:column; text-align:center; padding:20px; }
 }
 </style>
 
 <div class="rm-page">
-    <a href="<%= _recBase %>/edit" class="rm-back">
+    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list" class="rm-back">
         <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
-        Retour à <strong><%= record.title || 'la fiche' %></strong>
+        Retour à <strong><%= entity.name %></strong>
     </a>
 
     <div class="rm-hero">
         <div class="rm-hero-icon">
-            <iconify-icon icon="<%= _mod.icon %>" width="28" style="color:<%= _modColor %>"></iconify-icon>
+            <iconify-icon icon="<%= entity.icon || _mod.icon %>" width="28" style="color:<%= entity.color || _modColor %>"></iconify-icon>
         </div>
         <div class="rm-hero-info">
-            <h1><%= _mod.label %> <span>— <%= record.title || 'Sans titre' %></span></h1>
-            <p><%= _mod.desc %> pour ce <span style="text-transform:lowercase"><%= entity.name %></span></p>
+            <h1><%= record.title || 'Sans titre' %></h1>
+            <p><%= entity.nameSingular || entity.name %></p>
         </div>
-        <div class="rm-hero-meta">
-            <div>
-                <% if (moduleName === 'overview') { %>
-                    <div class="rm-hero-count"><%= _ficheFields.length %></div>
-                    <div class="rm-hero-count-label">champs</div>
-                <% } else if (moduleName === 'fiche') { %>
-                    <div class="rm-hero-count"><%= _ficheFields.length %></div>
-                    <div class="rm-hero-count-label">champs</div>
-                <% } else { %>
-                    <div class="rm-hero-count"><%= _mod.count || 0 %></div>
-                    <div class="rm-hero-count-label">éléments</div>
-                <% } %>
-            </div>
+        <div class="rm-hero-actions" style="display:flex;align-items:center;gap:8px;z-index:1;">
+            <button type="button" onclick="createDraftRecord()" class="rm-btn-primary" style="background:linear-gradient(135deg,<%= entity.color || '#4361ee' %>,<%= entity.color || '#4361ee' %>dd);font-size:12px;padding:7px 14px;border:none;cursor:pointer;">
+                <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+                Nouveau
+            </button>
+            <form method="POST" action="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>" onsubmit="return confirm('Supprimer cet enregistrement ?')" style="margin:0;">
+                <button type="submit" class="rm-btn-primary" style="background:linear-gradient(135deg,#e7515a,#e7515add);font-size:12px;padding:7px 14px;">
+                    <iconify-icon icon="solar:trash-bin-trash-bold" width="15"></iconify-icon>
+                    Supprimer
+                </button>
+            </form>
         </div>
     </div>
 
@@ -417,21 +437,21 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-lines-add:hover{color:#4361ee;}
     .ov-lines-meta{font-size:11px;color:#bfc9d4;font-weight:500;}
     /* Dark: Lines */
-    [data-theme="dark"] .ov-lines-tabs{border-bottom-color:#1b2e4b;}
-    [data-theme="dark"] .ov-lines-tab{color:#506690;}
-    [data-theme="dark"] .ov-lines-tab:hover,[data-theme="dark"] .ov-lines-tab.active{color:#e0e6ed;}
-    [data-theme="dark"] .ov-lines-tab.active{border-bottom-color:#818cf8;}
-    [data-theme="dark"] .ov-lines-dot{background:#506690;}
-    [data-theme="dark"] .ov-lines-tab.active .ov-lines-dot{background:#818cf8;}
-    [data-theme="dark"] .ov-lines-table thead th{border-bottom-color:#1b2e4b;color:#506690;}
-    [data-theme="dark"] .ov-lines-table tbody td{border-bottom-color:#1b2e4b;color:#e0e6ed;}
-    [data-theme="dark"] .ov-lines-table tbody tr:hover{background:#1b2e4b;}
-    [data-theme="dark"] .ov-lines-primary{color:#e0e6ed;}
-    [data-theme="dark"] .ov-lines-muted{color:#506690;}
-    [data-theme="dark"] .ov-lines-footer{border-top-color:#1b2e4b;}
-    [data-theme="dark"] .ov-lines-add{color:#506690;}
-    [data-theme="dark"] .ov-lines-add:hover{color:#818cf8;}
-    [data-theme="dark"] .ov-lines-meta{color:#3b4f6f;}
+    .dark .ov-lines-tabs{border-bottom-color:#1b2e4b;}
+    .dark .ov-lines-tab{color:#506690;}
+    .dark .ov-lines-tab:hover,.dark .ov-lines-tab.active{color:#e0e6ed;}
+    .dark .ov-lines-tab.active{border-bottom-color:#818cf8;}
+    .dark .ov-lines-dot{background:#506690;}
+    .dark .ov-lines-tab.active .ov-lines-dot{background:#818cf8;}
+    .dark .ov-lines-table thead th{border-bottom-color:#1b2e4b;color:#506690;}
+    .dark .ov-lines-table tbody td{border-bottom-color:#1b2e4b;color:#e0e6ed;}
+    .dark .ov-lines-table tbody tr:hover{background:#1b2e4b;}
+    .dark .ov-lines-primary{color:#e0e6ed;}
+    .dark .ov-lines-muted{color:#506690;}
+    .dark .ov-lines-footer{border-top-color:#1b2e4b;}
+    .dark .ov-lines-add{color:#506690;}
+    .dark .ov-lines-add:hover{color:#818cf8;}
+    .dark .ov-lines-meta{color:#3b4f6f;}
     /* Agenda */
     .ov-agenda-row{display:flex;gap:12px;}
     .ov-agenda-item{flex:1;display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e8ecf1;transition:all .2s;}
@@ -442,22 +462,22 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-agenda-title{font-size:13px;font-weight:600;color:#0e1726;}
     .ov-agenda-time{font-size:11.5px;color:#888da8;margin-top:2px;}
     /* Dark mode */
-    [data-theme="dark"] .ov-card{background:#0e1726;border-color:#253b5c;}
-    [data-theme="dark"] .ov-card-header,[data-theme="dark"] .ov-ef-val,[data-theme="dark"] .ov-ef-text,[data-theme="dark"] .ov-doc-item,[data-theme="dark"] .ov-drive-name,[data-theme="dark"] .ov-agenda-title{color:#e0e6ed;}
-    [data-theme="dark"] .ov-ef:hover{background:#1b2e4b;border-color:#253b5c;}
-    [data-theme="dark"] .ov-ef + .ov-ef{border-top-color:#1b2e4b;}
-    [data-theme="dark"] .ov-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
-    [data-theme="dark"] .ov-tags-wrap{background:#0e1726;border-color:#253b5c;}
-    [data-theme="dark"] .ov-ms-pill{background:#0e1726;border-color:#253b5c;color:#888da8;}
-    [data-theme="dark"] .ov-ms-pill.active{background:rgba(67,97,238,.15);border-color:#4361ee;color:#4361ee;}
-    [data-theme="dark"] .ov-doc-item:hover{background:#1b2e4b;}
-    [data-theme="dark"] .ov-agenda-item{border-color:#253b5c;}
-    [data-theme="dark"] .ov-placeholder{color:#506690;}
-    [data-theme="dark"] .ov-rel-tags{background:#0e1726;border-color:#253b5c;}
-    [data-theme="dark"] .ov-rel-search{color:#e0e6ed;}
-    [data-theme="dark"] .ov-rel-dropdown{background:#0e1726;border-color:#253b5c;}
-    [data-theme="dark"] .ov-rel-option{color:#e0e6ed;}
-    [data-theme="dark"] .ov-rel-option:hover{background:#1b2e4b;}
+    .dark .ov-card{background:#0e1726;border-color:#253b5c;}
+    .dark .ov-card-header,.dark .ov-ef-val,.dark .ov-ef-text,.dark .ov-doc-item,.dark .ov-drive-name,.dark .ov-agenda-title{color:#e0e6ed;}
+    .dark .ov-ef:hover{background:#1b2e4b;border-color:#253b5c;}
+    .dark .ov-ef + .ov-ef{border-top-color:#1b2e4b;}
+    .dark .ov-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+    .dark .ov-tags-wrap{background:#0e1726;border-color:#253b5c;}
+    .dark .ov-ms-pill{background:#0e1726;border-color:#253b5c;color:#888da8;}
+    .dark .ov-ms-pill.active{background:rgba(67,97,238,.15);border-color:#4361ee;color:#4361ee;}
+    .dark .ov-doc-item:hover{background:#1b2e4b;}
+    .dark .ov-agenda-item{border-color:#253b5c;}
+    .dark .ov-placeholder{color:#506690;}
+    .dark .ov-rel-tags{background:#0e1726;border-color:#253b5c;}
+    .dark .ov-rel-search{color:#e0e6ed;}
+    .dark .ov-rel-dropdown{background:#0e1726;border-color:#253b5c;}
+    .dark .ov-rel-option{color:#e0e6ed;}
+    .dark .ov-rel-option:hover{background:#1b2e4b;}
     @media(max-width:768px){.ov-grid{grid-template-columns:1fr;}.ov-drive-grid{grid-template-columns:repeat(2,1fr);}.ov-agenda-row{flex-direction:column;}}
     /* ── Layout Builder Design Mode ── */
     .ov-layout-row{display:flex;gap:16px;margin-bottom:16px;position:relative;}
@@ -1657,24 +1677,76 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <!-- ═══ FICHE MODULE ═══ -->
     <% if (moduleName === 'fiche') { %>
-    <div class="fiche-grid">
+    <div class="fiche-grid" x-data="ovInlineEdit()">
         <% if (_ficheFields.length === 0) { %>
-            <div class="fiche-empty-state">
+            <div class="fiche-empty-state" style="padding:60px 20px;text-align:center;">
                 <iconify-icon icon="solar:card-bold-duotone" width="48" style="color:#bfc9d4"></iconify-icon>
-                <h3>Aucun champ renseigné</h3>
-                <p>Les informations encodées apparaîtront ici</p>
+                <h3>Aucun champ configuré</h3>
+                <p>Configurez les champs de cette entité pour commencer</p>
             </div>
         <% } else { %>
             <% _ficheFields.forEach(function(f, idx) { %>
-            <div class="fiche-field<%= (f.type === 'textarea' || f.type === 'richtext' || f.key === 'description' || String(f.value).length > 80) ? ' full-width' : '' %>"
+            <div class="fiche-field"
                  style="animation-delay:<%= idx * 40 %>ms"
-                 title="Cliquer pour modifier">
-                <div class="fiche-field-icon" style="background:linear-gradient(135deg, <%= f.color || '#4361ee' %>12, <%= f.color || '#4361ee' %>06)">
-                    <iconify-icon icon="<%= f.icon %>" width="18" style="color:<%= f.color || '#4361ee' %>"></iconify-icon>
+                 data-key="<%= f.key %>"
+                 @click="startEdit('<%= f.key %>', $event)"
+                 <% if (f.type !== 'relation') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>>
+                <div class="fiche-field-head">
+                    <div class="fiche-field-icon" style="background:linear-gradient(135deg, <%= f.color || '#4361ee' %>12, <%= f.color || '#4361ee' %>06)">
+                        <iconify-icon icon="<%= f.icon %>" width="14" style="color:<%= f.color || '#4361ee' %>"></iconify-icon>
+                    </div>
+                    <span class="fiche-field-label"><%= f.label %></span>
                 </div>
                 <div class="fiche-field-body">
-                    <div class="fiche-field-label"><%= f.label %></div>
-                    <div class="fiche-field-value"><%= f.value %></div>
+                    <!-- View state -->
+                    <template x-if="editingKey !== '<%= f.key %>'">
+                        <div class="fiche-field-view">
+                            <% if (f.value) { %>
+                                <span class="fiche-field-value"><%= f.value %></span>
+                            <% } else { %>
+                                <span class="fiche-field-value empty"><%= f.label %></span>
+                            <% } %>
+                        </div>
+                    </template>
+                    <!-- Edit state -->
+                    <template x-if="editingKey === '<%= f.key %>'">
+                        <div class="ov-ef-edit" @click.stop>
+                            <% if (f.inputType === 'textarea') { %>
+                                <textarea class="ov-input ov-textarea" x-ref="input_<%= f.key %>"
+                                    rows="<%= f.uiRows || 3 %>" placeholder="<%= f.label %>"
+                                    @keydown.escape="cancelEdit()"><%= f.rawValue || f.value || '' %></textarea>
+                            <% } else if (f.inputType === 'select' && f.options && f.options.length) { %>
+                                <select class="ov-input" x-ref="input_<%= f.key %>"
+                                    @change="saveCurrentField()">
+                                    <option value="">— Choisir —</option>
+                                    <% f.options.forEach(function(opt) { %>
+                                    <option value="<%= opt %>" <%= (f.rawValue || f.value) === opt ? 'selected' : '' %>><%= opt %></option>
+                                    <% }); %>
+                                </select>
+                            <% } else if (f.inputType === 'checkbox') { %>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                    <input type="checkbox" x-ref="input_<%= f.key %>"
+                                        <%= f.rawValue === true || f.rawValue === 'true' ? 'checked' : '' %>
+                                        @change="saveField('<%= f.key %>', $refs.input_<%= f.key %>.checked)">
+                                    <span style="font-size:13px;color:#0e1726;">Oui</span>
+                                </label>
+                            <% } else { %>
+                                <input type="<%= f.inputType || 'text' %>" class="ov-input" x-ref="input_<%= f.key %>"
+                                    value="<%= (f.rawValue || f.value || '').toString().replace(/"/g, '&quot;') %>"
+                                    placeholder="<%= f.label %>"
+                                    @keydown.enter="saveCurrentField()"
+                                    @keydown.escape="cancelEdit()">
+                            <% } %>
+                            <div class="ov-ef-btns">
+                                <button class="ov-ef-ok" @click.stop="saveCurrentField()" title="Enregistrer">
+                                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                                </button>
+                                <button class="ov-ef-cancel" @click.stop="cancelEdit()" title="Annuler">
+                                    <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
                 </div>
                 <div class="fiche-edit-hint">
                     <iconify-icon icon="solar:pen-2-bold" width="12"></iconify-icon>
@@ -2213,26 +2285,26 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         .chat-create-submit:hover { transform:translateY(-1px); box-shadow:0 3px 12px #f9731640; }
         .chat-create-submit:disabled { opacity:.4; cursor:default; transform:none; }
         /* Dark mode */
-        [data-theme="dark"] .chat-wrap { border-color:#253b5c; background:#0e1726; }
-        [data-theme="dark"] .chat-sidebar { background:#0b1320; border-color:#253b5c; }
-        [data-theme="dark"] .chat-sidebar-header { border-color:#253b5c; }
-        [data-theme="dark"] .chat-sidebar-title { color:#e0e6ed; }
-        [data-theme="dark"] .chat-conv-item:hover { background:#1b2e4b; }
-        [data-theme="dark"] .chat-conv-item.active { background:#1b2e4b; border-color:#f9731630; }
-        [data-theme="dark"] .chat-conv-name { color:#e0e6ed; }
-        [data-theme="dark"] .chat-main-header { border-color:#253b5c; }
-        [data-theme="dark"] .chat-main-title { color:#e0e6ed; }
-        [data-theme="dark"] .chat-messages { background:linear-gradient(180deg,#0b1320,#0e1726); }
-        [data-theme="dark"] .chat-msg-bubble { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }\r
-        [data-theme="dark"] .chat-msg.mine .chat-msg-bubble.has-task { background:#0e1726; color:#e0e6ed; border-color:#253b5c; }
-        [data-theme="dark"] .chat-task-quote { background:rgba(67,97,238,0.12); border-left-color:#4361ee; }
-        [data-theme="dark"] .chat-task-quote:hover { background:rgba(67,97,238,0.2); }
-        [data-theme="dark"] .chat-input-area { border-color:#253b5c; }
-        [data-theme="dark"] .chat-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
-        [data-theme="dark"] .chat-empty h3 { color:#e0e6ed; }
-        [data-theme="dark"] .chat-create-modal { background:#0e1726; }
-        [data-theme="dark"] .chat-create-modal h3 { color:#e0e6ed; }
-        [data-theme="dark"] .chat-create-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
+        .dark .chat-wrap { border-color:#253b5c; background:#0e1726; }
+        .dark .chat-sidebar { background:#0b1320; border-color:#253b5c; }
+        .dark .chat-sidebar-header { border-color:#253b5c; }
+        .dark .chat-sidebar-title { color:#e0e6ed; }
+        .dark .chat-conv-item:hover { background:#1b2e4b; }
+        .dark .chat-conv-item.active { background:#1b2e4b; border-color:#f9731630; }
+        .dark .chat-conv-name { color:#e0e6ed; }
+        .dark .chat-main-header { border-color:#253b5c; }
+        .dark .chat-main-title { color:#e0e6ed; }
+        .dark .chat-messages { background:linear-gradient(180deg,#0b1320,#0e1726); }
+        .dark .chat-msg-bubble { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
+        .dark .chat-msg.mine .chat-msg-bubble.has-task { background:#0e1726; color:#e0e6ed; border-color:#253b5c; }
+        .dark .chat-task-quote { background:rgba(67,97,238,0.12); border-left-color:#4361ee; }
+        .dark .chat-task-quote:hover { background:rgba(67,97,238,0.2); }
+        .dark .chat-input-area { border-color:#253b5c; }
+        .dark .chat-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
+        .dark .chat-empty h3 { color:#e0e6ed; }
+        .dark .chat-create-modal { background:#0e1726; }
+        .dark .chat-create-modal h3 { color:#e0e6ed; }
+        .dark .chat-create-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
         @media(max-width:768px) { .chat-wrap { grid-template-columns:1fr; } .chat-sidebar { display:none; } }
     </style>
 
@@ -2593,6 +2665,95 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     </script>
     <% } %>
 
+    <% if (moduleName === 'fiche') { %>
+    <script>
+    document.addEventListener('alpine:init', () => {
+        const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
 
+        Alpine.data('ovInlineEdit', () => ({
+            editingKey: '',
+            saving: false,
+            startEdit(key, e) {
+                if (this.editingKey === key) return;
+                if (this.editingKey) this._doSave(this.editingKey);
+                this.editingKey = key;
+                this.$nextTick(() => {
+                    const ref = this.$refs['input_' + key];
+                    if (ref) ref.focus();
+                });
+            },
+            cancelEdit() { this.editingKey = ''; },
+            autoSave(key) {
+                if (this.editingKey !== key) return;
+                this._doSave(key);
+            },
+            saveCurrentField() {
+                if (!this.editingKey) return;
+                this._doSave(this.editingKey);
+            },
+            _doSave(key) {
+                const ref = this.$refs['input_' + key];
+                if (!ref) { this.editingKey = ''; return; }
+                this.saveField(key, ref.value);
+            },
+            async saveField(key, value) {
+                if (this.saving) return;
+                this.saving = true;
+                const editingK = key;
+                try {
+                    const res = await fetch(_recUrl + '/update-field', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ fieldKey: key, value })
+                    });
+                    if (res.ok) {
+                        const fieldEl = document.querySelector('.fiche-field[data-key="' + editingK + '"]');
+                        if (fieldEl) {
+                            const viewEl = fieldEl.querySelector('.fiche-field-value');
+                            if (viewEl) {
+                                const displayVal = Array.isArray(value) ? value.join(', ') : (value || '');
+                                if (displayVal) {
+                                    viewEl.textContent = displayVal;
+                                    viewEl.classList.remove('empty');
+                                } else {
+                                    viewEl.textContent = fieldEl.querySelector('.fiche-field-label')?.textContent || 'Valeur';
+                                    viewEl.classList.add('empty');
+                                }
+                            }
+                        }
+                        this.editingKey = '';
+                    }
+                } catch (e) { console.error('[Fiche save]', e); }
+                this.saving = false;
+            }
+        }));
+    });
+    </script>
+    <% } %>
+
+    <!-- Global: Create Draft Record -->
+    <script>
+    async function createDraftRecord() {
+        try {
+            const res = await fetch('/account/<%= account_number %>/record/api/create-draft', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ entitySlug: '<%= entity.slug %>' })
+            });
+            const data = await res.json();
+            if (data.success && data._id) {
+                window.location.href = '/account/<%= account_number %>/record/<%= entity.slug %>/' + data._id + '/fiche';
+            } else {
+                console.error('[CreateDraft] Failed:', data);
+                alert('Erreur lors de la création');
+            }
+        } catch (e) {
+            console.error('[CreateDraft]', e);
+            alert('Erreur réseau');
+        }
+    }
+    </script>
 
 </div>

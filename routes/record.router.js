@@ -11,6 +11,7 @@ router.get("/api/search", recordController.searchAjax);
 router.post("/api/bulk-delete", recordController.bulkDelete);
 router.post("/api/bulk-update-classification", recordController.bulkUpdateClassification);
 router.post("/api/quick-create", recordController.quickCreate);
+router.post("/api/create-draft", recordController.createDraft);
 
 // Dynamic Record management based on Entity slug
 router.get("/:entityName/list", recordController.list);

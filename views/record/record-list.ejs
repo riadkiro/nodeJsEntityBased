@@ -37,7 +37,7 @@
                 </div>
             </div>
 
-            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add" class="btn btn-primary">Ajouter un record</a>
+            <button type="button" class="btn btn-primary" onclick="createDraftRecord()">Ajouter un record</button>
         </div>
       </div>
       
@@ -86,7 +86,7 @@ const rows = records.map(record => {
     
     // Actions HTML
     const actions = `<div class="flex items-center gap-2">
-        <a href="/account/${account_number}/record/${entity.slug}/edit/${record._id}" class="btn btn-sm btn-outline-info">Modifier</a>
+        <a href="/account/${account_number}/record/${entity.slug}/${record._id}/overview" class="btn btn-sm btn-outline-info">Voir</a>
         <a href="/account/${account_number}/record/${entity.slug}/delete/${record._id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Confirmer la suppression ?')">Supprimer</a>
     </div>`;
     row.push(actions);
@@ -216,3 +216,24 @@ const rows = records.map(record => {
 </script>
 
 <script src="/themes/default/assets/js/simple-datatables.js"></script>
+<script>
+async function createDraftRecord() {
+    try {
+        const res = await fetch('/account/<%= account_number %>/record/api/create-draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ entitySlug: '<%= entity.slug %>' })
+        });
+        const data = await res.json();
+        if (data.success && data._id) {
+            window.location.href = '/account/<%= account_number %>/record/<%= entity.slug %>/' + data._id + '/fiche';
+        } else {
+            alert('Erreur lors de la création');
+        }
+    } catch (e) {
+        console.error('[CreateDraft]', e);
+        alert('Erreur réseau');
+    }
+}
+</script>

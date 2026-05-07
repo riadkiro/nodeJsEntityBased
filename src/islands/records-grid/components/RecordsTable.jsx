@@ -273,7 +273,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                         </div>
                     )}
                     <a
-                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/edit`}
+                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`}
                         className={`${config.fontWeight} hover:text-primary transition-colors truncate`}
                         title={refTitle}
                     >
@@ -291,7 +291,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                 <div className="flex items-center gap-0">
                     {/* View */}
                     <a
-                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}`}
+                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`}
                         className="p-1 rounded-lg text-gray-500 hover:text-primary hover:bg-primary/10 transition-all"
                         title="Voir"
                     >
@@ -302,7 +302,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                     </a>
                     {/* Edit */}
                     <a
-                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/edit`}
+                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`}
                         className="p-1 rounded-lg text-gray-500 hover:text-info hover:bg-info/10 transition-all"
                         title="Modifier"
                     >

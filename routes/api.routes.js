@@ -1411,10 +1411,25 @@ router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
                 })
 
                 if (!conv) {
+                    // Resolve entity info for the record so task links work from team chat
+                    const RecordModel = await tenantCollection(req, 'Record')
+                    const EntityModel = await tenantCollection(req, 'Entity')
+                    const record = await RecordModel.findById(task.recordId).select('title entityId').lean()
+                    let entityId = record?.entityId || null
+                    let entityName = ''
+                    let recordTitle = record?.title || ''
+                    if (entityId) {
+                        const entity = await EntityModel.findById(entityId).select('name').lean()
+                        entityName = entity?.name || ''
+                    }
+
                     conv = await Conversation.create({
                         type: 'group',
                         name: 'Tâches',
                         recordId: task.recordId,
+                        entityId,
+                        entityName,
+                        recordTitle,
                         participants: [{
                             userId,
                             name: userName,

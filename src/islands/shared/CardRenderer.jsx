@@ -239,7 +239,7 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
                 <div key={key} style={{ display: 'flex', alignItems: 'center' }}>
                     {items.includes('open') && (
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/edit/${recordId}`}
+                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
                             style={{
                                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                 padding: '10px', fontSize: 12, fontWeight: 600, color: '#4361ee',
@@ -272,7 +272,7 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
                     )}
                     {items.includes('edit') && (
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/edit`}
+                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
                             className="p-1 hover:text-info rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                             onClick={(e) => e.stopPropagation()}
                             onPointerDown={(e) => e.stopPropagation()}

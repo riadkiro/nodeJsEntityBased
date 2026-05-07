@@ -26,6 +26,89 @@
         background:#fff !important; color:#0e1726 !important;
         border:1px solid #fed7aa !important;
     }
+
+    /* ── Record Group Container ── */
+    .ts-record-group {
+        border-radius:12px;
+        margin:2px 0;
+        padding:2px;
+        transition:all .25s ease;
+        background:transparent;
+    }
+    .ts-record-group:hover {
+        background:var(--rg-bg);
+    }
+    .ts-record-group.expanded {
+        background:var(--rg-bg);
+    }
+    .ts-record-group-header {
+        border-radius:10px !important;
+    }
+    .ts-record-group-count {
+        font-size:10px;
+        font-weight:700;
+        padding:1px 7px;
+        border-radius:6px;
+        min-width:18px;
+        text-align:center;
+    }
+    .ts-record-group-child {
+        padding-left:22px !important;
+        border-radius:8px !important;
+        margin:1px 4px;
+    }
+    .ts-record-group-child.active {
+        background:rgba(67,97,238,.07) !important;
+    }
+    .ts-record-child-icon {
+        width:20px;
+        height:20px;
+        border-radius:6px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        flex-shrink:0;
+    }
+    .ts-record-add-btn {
+        display:flex;
+        align-items:center;
+        gap:5px;
+        padding:5px 10px;
+        margin:2px 4px 4px 22px;
+        border-radius:8px;
+        border:none;
+        background:transparent;
+        color:#94a3b8;
+        font-size:11.5px;
+        font-weight:500;
+        cursor:pointer;
+        transition:all .15s;
+        width:calc(100% - 26px);
+        text-align:left;
+    }
+    .ts-record-add-btn:hover {
+        background:rgba(67,97,238,.08);
+        color:#4361ee;
+    }
+    .ts-record-new-input {
+        display:flex;
+        align-items:center;
+        gap:6px;
+        margin:4px 4px 6px 22px;
+    }
+    .ts-record-new-input input {
+        flex:1;
+        border:1.5px solid rgba(67,97,238,.3);
+        border-radius:7px;
+        padding:5px 10px;
+        font-size:12px;
+        outline:none;
+        background:#fff;
+        transition:border-color .15s;
+    }
+    .ts-record-new-input input:focus {
+        border-color:rgba(67,97,238,.6);
+    }
 </style>
 
 <!-- Page Header -->
@@ -127,30 +210,102 @@
       <div class="ts-chat-channels">
         <!-- Unified list sorted by recency -->
         <template x-for="conv in allConversations" :key="conv._id">
-          <div class="ts-chat-channel" :class="activeConv?._id === conv._id && 'active'" 
-               @click="conv._convType === 'record' ? openRecordConversation(conv) : openConversation(conv)"
-               @contextmenu.prevent="openContextMenu($event, conv)">
-            <!-- Channel icon -->
-            <template x-if="conv._convType === 'channel'">
-              <div class="ts-chat-channel-icon" style="background:rgba(67,97,238,.1);"><iconify-icon icon="solar:hashtag-chat-bold-duotone" width="16" style="color:#4361ee;"></iconify-icon></div>
-            </template>
-            <!-- DM avatar -->
-            <template x-if="conv._convType === 'dm'">
-              <div style="position:relative;">
-                <div class="ts-chat-msg-avatar-letter" :style="'background:' + avatarColor(conv.otherUser?.name || 'U')"><span x-text="(conv.otherUser?.name || 'U').charAt(0).toUpperCase()"></span></div>
-                <span class="ts-status" :class="onlineUserIds.includes(conv.otherUser?.userId) ? 'ts-status-online' : 'ts-status-offline'" style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;"></span>
+          <div>
+            <!-- ═══ Record Parent (grouped container box) ═══ -->
+            <template x-if="conv._convType === 'record-parent'">
+              <div class="ts-record-group" :class="expandedRecords[conv._groupKey] && 'expanded'" :style="'--rg-border:' + (conv.entityColor||'#f97316') + '35;--rg-bg:' + (conv.entityColor||'#f97316') + '08'">
+                <!-- Parent header (click to toggle) -->
+                <div class="ts-chat-channel ts-record-group-header"
+                     @click="toggleRecordGroup(conv._groupKey)"
+                     @contextmenu.prevent="">
+                  <div class="ts-chat-channel-icon" :style="'background:' + (conv.entityColor||'#f97316') + '18'">
+                    <iconify-icon :icon="conv.entityIcon || 'solar:folder-bold-duotone'" width="16" :style="'color:' + (conv.entityColor||'#f97316')"></iconify-icon>
+                  </div>
+                  <div style="flex:1;min-width:0;">
+                    <div class="ts-chat-channel-name" x-text="conv._displayName"></div>
+                    <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="conv._subtitle"></div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <template x-if="conv._children.length !== 1">
+                      <span class="ts-record-group-count" :style="'background:' + (conv.entityColor||'#f97316') + '15;color:' + (conv.entityColor||'#f97316')" x-text="conv._children.length"></span>
+                    </template>
+                    <iconify-icon :icon="expandedRecords[conv._groupKey] ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-right-linear'" width="14" :style="'color:' + (conv.entityColor||'#f97316') + '80'" style="transition:transform .2s;"></iconify-icon>
+                  </div>
+                </div>
+                <!-- Children (expanded) -->
+                <div x-show="expandedRecords[conv._groupKey]" x-collapse>
+                  <template x-for="child in conv._children" :key="child._id">
+                    <div class="ts-chat-channel ts-record-group-child" :class="activeConv?._id === child._id && 'active'"
+                         @click="openRecordConversation(child)" @contextmenu.prevent="openContextMenu($event, child)">
+                      <div class="ts-record-child-icon" :style="'background:' + (child.entityColor||'#f97316') + '12'">
+                        <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="11" :style="'color:' + (child.entityColor||'#f97316')"></iconify-icon>
+                      </div>
+                      <div style="flex:1;min-width:0;">
+                        <div class="ts-chat-channel-name" style="font-size:12.5px;" x-text="child._displayName"></div>
+                        <div style="font-size:10px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="child._subtitle"></div>
+                      </div>
+                      <div class="ts-chat-channel-badge" x-show="child.myUnread > 0" x-text="child.myUnread"></div>
+                    </div>
+                  </template>
+                  <!-- Add new conversation -->
+                  <template x-if="newConvGroupKey === conv._groupKey">
+                    <div class="ts-record-new-input">
+                      <input type="text" x-model="newConvName" placeholder="Nom..."
+                             @keydown.enter="submitNewConversation(conv)"
+                             @keydown.escape="newConvGroupKey = null; newConvName = ''"
+                             x-ref="newConvInput"
+                             x-init="$nextTick(() => $el.focus())" />
+                    </div>
+                  </template>
+                  <template x-if="newConvGroupKey !== conv._groupKey">
+                    <button class="ts-record-add-btn" @click.stop="newConvGroupKey = conv._groupKey; newConvName = ''; $nextTick(() => { const inp = $el.closest('.ts-record-group').querySelector('.ts-record-new-input input'); if(inp) inp.focus(); })">
+                      <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                      <span>Nouvelle conversation</span>
+                    </button>
+                  </template>
+                </div>
               </div>
             </template>
-            <!-- Record icon -->
-            <template x-if="conv._convType === 'record'">
-              <div class="ts-chat-channel-icon" :style="'background:' + (conv.entityColor||'#f97316') + '15'"><iconify-icon :icon="conv.entityIcon || 'solar:folder-bold-duotone'" width="16" :style="'color:' + (conv.entityColor||'#f97316')"></iconify-icon></div>
+
+            <!-- ═══ Record Child (skip — rendered inside parent box above) ═══ -->
+            <template x-if="conv._convType === 'record-child'">
+              <div style="display:none;"></div>
             </template>
-            <!-- Content -->
-            <div style="flex:1;min-width:0;">
-              <div class="ts-chat-channel-name" x-text="conv._displayName"></div>
-              <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="conv._subtitle"></div>
-            </div>
-            <div class="ts-chat-channel-badge" x-show="conv.myUnread > 0" x-text="conv.myUnread"></div>
+
+            <!-- (Record solo removed — all records use group container now) -->
+
+            <!-- ═══ Channel ═══ -->
+            <template x-if="conv._convType === 'channel'">
+              <div class="ts-chat-channel" :class="activeConv?._id === conv._id && 'active'"
+                   @click="openConversation(conv)" @contextmenu.prevent="openContextMenu($event, conv)">
+                <div class="ts-chat-channel-icon" style="background:rgba(67,97,238,.1);">
+                  <iconify-icon icon="solar:hashtag-chat-bold-duotone" width="16" style="color:#4361ee;"></iconify-icon>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div class="ts-chat-channel-name" x-text="conv._displayName"></div>
+                  <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="conv._subtitle"></div>
+                </div>
+                <div class="ts-chat-channel-badge" x-show="conv.myUnread > 0" x-text="conv.myUnread"></div>
+              </div>
+            </template>
+
+            <!-- ═══ DM ═══ -->
+            <template x-if="conv._convType === 'dm'">
+              <div class="ts-chat-channel" :class="activeConv?._id === conv._id && 'active'"
+                   @click="openConversation(conv)" @contextmenu.prevent="openContextMenu($event, conv)">
+                <div style="position:relative;">
+                  <div class="ts-chat-msg-avatar-letter" :style="'background:' + avatarColor(conv.otherUser?.name || 'U')">
+                    <span x-text="(conv.otherUser?.name || 'U').charAt(0).toUpperCase()"></span>
+                  </div>
+                  <span class="ts-status" :class="onlineUserIds.includes(conv.otherUser?.userId) ? 'ts-status-online' : 'ts-status-offline'" style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;"></span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div class="ts-chat-channel-name" x-text="conv._displayName"></div>
+                  <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="conv._subtitle"></div>
+                </div>
+                <div class="ts-chat-channel-badge" x-show="conv.myUnread > 0" x-text="conv.myUnread"></div>
+              </div>
+            </template>
           </div>
         </template>
         <div x-show="allConversations.length === 0" style="text-align:center;padding:30px 16px;color:#94a3b8;font-size:13px;">Aucune conversation</div>
@@ -251,7 +406,7 @@
           </div>
         </template>
 
-        <template x-if="loadingMessages">
+        <template x-if="loadingMessages && activeConv">
           <div style="text-align:center;padding:30px;color:#94a3b8;">
             <iconify-icon icon="solar:refresh-bold-duotone" width="24" style="animation:spin 1s linear infinite;"></iconify-icon>
             <p style="font-size:12px;margin-top:8px;">Chargement...</p>
@@ -336,6 +491,9 @@ document.addEventListener('alpine:init', () => {
     typingTimeout: null,
     onlineUserIds: [],
     onlineCount: 0,
+    expandedRecords: {},
+    newConvGroupKey: null,
+    newConvName: '',
 
     async init() {
       await fetch(this.apiBase + '/ensure-channels', { method: 'POST', credentials: 'include' });
@@ -346,13 +504,6 @@ document.addEventListener('alpine:init', () => {
       const self = this;
       this.socket.on('connect', () => {
         self.socket.emit('chat:join', { accountNumber: self.accountNumber });
-        setTimeout(() => {
-          if (!self.activeConv && self.allConversations.length > 0) {
-            const first = self.allConversations[0];
-            if (first._convType === 'record') self.openRecordConversation(first);
-            else self.openConversation(first);
-          }
-        }, 400);
       });
 
       this.socket.on('chat:onlineUsers', (list) => {
@@ -651,6 +802,40 @@ document.addEventListener('alpine:init', () => {
       if (c) c.scrollTop = c.scrollHeight;
     },
 
+    toggleRecordGroup(groupKey) {
+      const isOpen = this.expandedRecords[groupKey];
+      // Accordion: close all, then toggle the clicked one
+      const fresh = {};
+      if (!isOpen) fresh[groupKey] = true;
+      this.expandedRecords = fresh;
+    },
+
+    async createRecordConversation(parentConv) {
+      const name = this.newConvName?.trim();
+      if (!name) return;
+      this.newConvGroupKey = null;
+      this.newConvName = '';
+      try {
+        const res = await fetch('/account/' + this.accountNumber + '/api/record/' + parentConv.recordId + '/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name }),
+        });
+        const data = await res.json();
+        if (data.success && data.conversation) {
+          await this.fetchConversations();
+          this.expandedRecords = { [parentConv._groupKey]: true };
+          const rc = this.recordConvs.find(c => c._id === data.conversation._id);
+          if (rc) this.openRecordConversation(rc);
+        }
+      } catch (e) { console.error('[TeamChat] createRecordConversation error:', e); }
+    },
+
+    submitNewConversation(parentConv) {
+      this.createRecordConversation(parentConv);
+    },
+
     get allConversations() {
       const tagged = [];
       for (const ch of this.channels) {
@@ -659,17 +844,84 @@ document.addEventListener('alpine:init', () => {
       for (const dm of this.dms) {
         tagged.push({ ...dm, _convType: 'dm', _displayName: dm.otherUser?.name || 'Utilisateur', _subtitle: this.cleanPreview(dm.lastMessage?.text) || 'Pas encore de message', _sortDate: dm.lastMessage?.sentAt || dm.updatedAt || dm.createdAt });
       }
+
+      // ── Group record conversations by recordId ──
+      const recordGroups = {};
       for (const rc of this.recordConvs) {
-        const entityName = rc.entityDisplayName || '';
-        const recordTitle = rc.recordDisplayTitle || '';
-        tagged.push({ ...rc, _convType: 'record', _displayName: rc.name || 'Conversation', _subtitle: entityName + ' · ' + recordTitle, _sortDate: rc.lastMessage?.sentAt || rc.updatedAt || rc.createdAt });
+        const rId = rc.recordId?.toString() || rc._id;
+        if (!recordGroups[rId]) {
+          recordGroups[rId] = {
+            recordId: rId,
+            recordTitle: rc.recordDisplayTitle || 'Sans titre',
+            entityDisplayName: rc.entityDisplayName || '',
+            entityIcon: rc.entityIcon || 'solar:folder-bold-duotone',
+            entityColor: rc.entityColor || '#f97316',
+            entitySlug: rc.entitySlug || '',
+            children: [],
+          };
+        }
+        recordGroups[rId].children.push(rc);
       }
-      tagged.sort((a, b) => new Date(b._sortDate || 0) - new Date(a._sortDate || 0));
+
+      for (const rId of Object.keys(recordGroups)) {
+        const group = recordGroups[rId];
+        const children = group.children;
+        // Sort children by most recent
+        children.sort((a, b) => new Date(b.lastMessage?.sentAt || b.updatedAt || b.createdAt || 0) - new Date(a.lastMessage?.sentAt || a.updatedAt || a.createdAt || 0));
+        const newestDate = children[0].lastMessage?.sentAt || children[0].updatedAt || children[0].createdAt;
+
+        // All records → parent header + children (even single conversations)
+        const groupKey = 'rec_' + rId;
+        const taggedChildren = children.map(rc => ({
+          ...rc,
+          _convType: 'record-child',
+          _groupKey: groupKey,
+          _displayName: rc.name || 'Conversation',
+          _subtitle: this.cleanPreview(rc.lastMessage?.text) || '',
+          _sortDate: rc.lastMessage?.sentAt || rc.updatedAt || rc.createdAt,
+        }));
+
+        // Parent header entry (virtual — not a real conversation)
+        const subtitle = children.length === 1
+          ? group.entityDisplayName
+          : group.entityDisplayName + ' · ' + children.length + ' conversations';
+        tagged.push({
+          _id: 'parent_' + rId,
+          _convType: 'record-parent',
+          _groupKey: groupKey,
+          _displayName: group.recordTitle,
+          _subtitle: subtitle,
+          _sortDate: newestDate,
+          recordId: group.recordId,
+          entityIcon: group.entityIcon,
+          entityColor: group.entityColor,
+          entitySlug: group.entitySlug,
+          entityDisplayName: group.entityDisplayName,
+          recordDisplayTitle: group.recordTitle,
+          _children: taggedChildren,
+        });
+      }
+
+      // Sort only top-level entries (exclude children — they follow their parent)
+      const topLevel = tagged.filter(c => c._convType !== 'record-child');
+      topLevel.sort((a, b) => new Date(b._sortDate || 0) - new Date(a._sortDate || 0));
+
+      // Rebuild final list, injecting children directly after each parent
+      const result = [];
+      for (const item of topLevel) {
+        result.push(item);
+        if (item._convType === 'record-parent' && item._children) {
+          for (const child of item._children) {
+            result.push(child);
+          }
+        }
+      }
 
       // Filter by search query
       const q = (this.searchQuery || '').trim().toLowerCase();
       if (q.length > 0) {
-        return tagged.filter(c => {
+        // When searching, show children as flat items matching the query
+        return result.filter(c => {
           const name = (c._displayName || '').toLowerCase();
           const subtitle = (c._subtitle || '').toLowerCase();
           const lastMsg = (c.lastMessage?.text || '').toLowerCase();
@@ -677,7 +929,7 @@ document.addEventListener('alpine:init', () => {
         });
       }
 
-      return tagged;
+      return result;
     },
 
     get dmCandidates() {

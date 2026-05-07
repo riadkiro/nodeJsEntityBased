@@ -232,7 +232,21 @@ export default function RecordsSidebar({
                         </div>
                         {/* Bottom Add button */}
                         <div className="absolute bottom-0 w-full p-4 left-0">
-                            <a href={`/account/${accountNumber}/record/${entitySlug}/add`} className="btn btn-primary w-full">
+                            <button type="button" className="btn btn-primary w-full"
+                                onClick={async () => {
+                                    try {
+                                        const res = await fetch(`/account/${accountNumber}/record/api/create-draft`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            credentials: 'include',
+                                            body: JSON.stringify({ entitySlug })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success && data._id) {
+                                            window.location.href = `/account/${accountNumber}/record/${entitySlug}/${data._id}/fiche`;
+                                        }
+                                    } catch (e) { console.error('[CreateDraft]', e); }
+                                }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-5 w-5 ltr:mr-2 rtl:ml-2">
@@ -240,7 +254,7 @@ export default function RecordsSidebar({
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
                                 Ajouter
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>

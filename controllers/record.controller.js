@@ -667,7 +667,7 @@ module.exports = {
                 record: newRecord.toObject()
             }).catch(err => console.error('[Workflow Trigger Error]', err));
 
-            res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${newRecord._id}?success=true`);
+            res.redirect(`/account/${req.account_number}/record/${entity.slug}/${newRecord._id}/overview`);
         } catch (error) {
             console.error(error);
             res.status(500).send("Server Error");
@@ -675,6 +675,17 @@ module.exports = {
     },
 
     editForm: async (req, res) => {
+        try {
+            // Legacy /edit route → redirect to /overview for backward compatibility
+            return res.redirect(`/account/${req.account_number}/record/${req.params.entityName}/${req.params.id}/overview`);
+        } catch (error) {
+            console.error(error);
+            res.status(500).send("Server Error");
+        }
+    },
+
+    // ═══ LEGACY editForm (preserved for reference, no longer routed) ═══
+    _legacyEditForm: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");
             await tenantCollection(req, "Classification");
@@ -1674,7 +1685,7 @@ module.exports = {
             denormService.syncDependents(req.params.id, req, { source: 'controller' })
                 .catch(err => console.error('[Denorm Sync Error]', err));
 
-            res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${req.params.id}?success=true`);
+            res.redirect(`/account/${req.account_number}/record/${entity.slug}/${req.params.id}/overview`);
         } catch (error) {
             console.error(error);
             res.status(500).send("Server Error");
@@ -2330,6 +2341,11 @@ module.exports = {
                 record.markModified('customFields');
             }
 
+            // Clear draft flag on first edit
+            if (record.isDraft) {
+                record.isDraft = false;
+            }
+
             await record.save();
             res.json({ success: true });
         } catch (err) {
@@ -2369,6 +2385,51 @@ module.exports = {
             });
         } catch (err) {
             console.error('[QuickCreate]', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
+    // ═══ Create Draft (blank record for inline editing) ═══
+    createDraft: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+            const { entitySlug } = req.body;
+
+            if (!entitySlug) {
+                return res.status(400).json({ success: false, error: 'Missing entitySlug' });
+            }
+
+            const entity = await EntityModel.findOne({ slug: entitySlug });
+            if (!entity) return res.status(404).json({ success: false, error: 'Entity not found' });
+
+            // Cleanup stale drafts (older than 5 minutes, still blank)
+            const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+            await RecordModel.deleteMany({
+                entityId: entity._id,
+                isDraft: true,
+                createdAt: { $lt: fiveMinAgo }
+            });
+
+            const newRecord = new RecordModel({
+                entityId: entity._id,
+                title: '',
+                published: false,
+                isDraft: true,
+                customFields: [],
+                relations: [],
+                classificationValues: [],
+                createdBy: req.user?._id
+            });
+            await newRecord.save();
+
+            res.json({
+                success: true,
+                _id: newRecord._id.toString(),
+                slug: entity.slug
+            });
+        } catch (err) {
+            console.error('[CreateDraft]', err);
             res.status(500).json({ success: false, error: err.message });
         }
     },
@@ -2447,10 +2508,12 @@ module.exports = {
             let entity, record;
             if (moduleName === 'fiche' || moduleName === 'overview') {
                 await tenantCollection(req, "FieldTemplate");
+                await tenantCollection(req, "Classification");
                 entity = await EntityModel.findOne({ slug: req.params.entityName })
                     .populate('customFields')
                     .populate('classifications')
-                    .populate('statusClassification');
+                    .populate('statusClassification')
+                    .populate('relations.targetEntity');
             } else {
                 entity = await EntityModel.findOne({ slug: req.params.entityName })
                     .select('name slug icon color');
@@ -2493,7 +2556,7 @@ module.exports = {
                     { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '', rawValue: record.description || '', fieldType: 'standard', inputType: 'textarea', uiRows: 3, uiWidth: 'full' },
                     { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '', rawValue: record.date ? new Date(record.date).toISOString().split('T')[0] : '', fieldType: 'standard', inputType: 'date', uiRows: 1, uiWidth: 'half' },
                 ];
-                ficheFields = standardFields.filter(f => f.value);
+                ficheFields = moduleName === 'fiche' ? [...standardFields] : standardFields.filter(f => f.value);
 
                 // Custom fields
                 (entity.customFields || []).forEach(cf => {
@@ -2598,6 +2661,7 @@ module.exports = {
                 moduleName,
                 ficheFields,
                 overviewFields,
+                isDraft: record.isDraft || false,
                 account_number: req.account_number,
                 user: req.user,
                 layout: "layout-app"

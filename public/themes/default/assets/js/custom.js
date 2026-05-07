@@ -117,14 +117,37 @@
         Alpine.data('main', (value) => ({}));
 
         Alpine.store('app', {
-            // theme
-            theme: Alpine.$persist($themeConfig.theme),
+            // theme — persisted server-side (user.preferences.theme)
+            theme: window.__USER_THEME__ || 'light',
+            init() {
+                // Clean up legacy localStorage theme key (was Alpine.$persist)
+                localStorage.removeItem('_x_theme');
+                // Sync <html> dark class reactively
+                Alpine.effect(() => {
+                    const t = this.theme;
+                    if (t === 'dark') {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                });
+            },
             toggleTheme(val) {
                 if (!val) {
-                    val = this.theme || $themeConfig.theme; // light|dark|system
+                    val = this.theme === 'dark' ? 'light' : 'dark';
                 }
-
+                if (val === 'system') val = 'dark';
                 this.theme = val;
+                // Persist to server
+                const acct = window.__ACCOUNT_NUMBER__;
+                if (acct) {
+                    fetch('/account/' + acct + '/api/user/theme', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ theme: val })
+                    }).catch(e => console.warn('[Theme] Save failed:', e));
+                }
             },
 
             // navigation menu

@@ -22,6 +22,18 @@
   <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 </head>
 
+<script>
+// Server-rendered user theme preference (from DB)
+window.__USER_THEME__ = '<%= (typeof user !== "undefined" && user && user.preferences && user.preferences.theme) ? user.preferences.theme : "light" %>';
+window.__ACCOUNT_NUMBER__ = '<%= typeof account_number !== "undefined" ? account_number : "" %>';
+// Apply immediately to prevent flash-of-wrong-theme
+(function(){
+  if (window.__USER_THEME__ === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+})();
+</script>
+
 <body x-data="main" class="relative font-nunito text-sm font-normal antialiased"
   :class="[ $store.app.sidebar ? 'toggle-sidebar' : '', $store.app.theme, $store.app.menu, $store.app.layout,$store.app.rtlClass]">
   <!-- sidebar menu overlay -->

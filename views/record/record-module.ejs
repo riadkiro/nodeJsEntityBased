@@ -73,65 +73,77 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .rm-item-action { width:28px; height:28px; border:none; background:none; border-radius:6px; color:#bfc9d4; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
 .rm-item-action:hover { background:#f1f5f9; color:#0e1726; }
 
-/* ═══ Fiche Module Styles ═══ */
-.fiche-grid { display:flex; flex-direction:column; gap:0; }
-.fiche-field {
-    display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
-    border-radius:8px; cursor:pointer; transition:background .15s;
-    border:1px solid transparent; position:relative;
-    animation:rmFadeIn .4s ease both;
-}
-.fiche-field:hover {
-    background:#f8fafc; border-color:#e8ecf1;
-}
-.fiche-field + .fiche-field { border-top:1px solid #f1f3f5; }
-.fiche-field:hover + .fiche-field { border-top-color:transparent; }
-.fiche-field:hover .fiche-edit-hint { opacity:1; transform:translateX(0); }
-.fiche-field.full-width { }
-.fiche-field-head {
-    display:flex; align-items:center; gap:7px; width:200px; min-width:200px;
-    flex-shrink:0; padding-top:2px;
-}
-.fiche-field-icon {
-    width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center;
-    flex-shrink:0;
-}
-.fiche-field-body { flex:1; min-width:0; }
-.fiche-field-label {
-    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
-    color:#888da8; white-space:nowrap;
-}
-.fiche-field-view { min-height:24px; display:flex; align-items:center; flex-wrap:wrap; gap:5px; }
-.fiche-field-value {
-    font-size:13px; font-weight:500; color:#0e1726; line-height:1.5;
-    word-break:break-word;
-}
-.fiche-field-value.empty { color:#bfc9d4; font-style:italic; font-weight:400; }
-.fiche-edit-hint {
-    position:absolute; top:50%; right:12px; transform:translateY(-50%) translateX(4px);
-    display:flex; align-items:center; gap:4px;
-    font-size:11px; color:#4361ee; opacity:0;
-    transition:all .25s;
-    padding:4px 10px; border-radius:6px;
-    background:linear-gradient(135deg, #4361ee08, #4361ee04);
-}
-.fiche-edit-hint iconify-icon { color:#4361ee; }
-.fiche-section {
-    margin-bottom:8px; padding:12px 0 8px;
-    border-bottom:1px solid #f1f5f9;
-    display:flex; align-items:center; gap:8px;
-}
-.fiche-section-title {
-    font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#4361ee;
-}
-.fiche-section-line { flex:1; height:1px; background:linear-gradient(to right, #4361ee15, transparent); }
-.fiche-empty-state {
-    grid-column:1/-1; display:flex; flex-direction:column; align-items:center;
-    padding:60px 20px; text-align:center;
-}
-.fiche-empty-state iconify-icon { margin-bottom:12px; }
-.fiche-empty-state h3 { font-size:15px; color:#0e1726; margin:0 0 4px; }
-.fiche-empty-state p { font-size:13px; color:#888da8; margin:0; }
+/* ═══ Shared Field Styles (Overview + Fiche) ═══ */
+.ov-card{background:#fff;border-radius:14px;border:1px solid #e8ecf1;padding:18px;transition:box-shadow .3s;animation:rmFadeIn .4s ease both;overflow:visible;position:relative;}
+.ov-card-fields{z-index:10;}
+.ov-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.04);}
+.ov-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px;font-weight:700;color:#0e1726;}
+.ov-card-link{margin-left:auto;font-size:12px;font-weight:500;color:#888da8;text-decoration:none;transition:color .2s;}
+.ov-card-link:hover{color:#4361ee;}
+.ov-fields-list{display:flex;flex-direction:column;gap:0;}
+.ov-ef{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent;position:relative;}
+.ov-ef:hover{background:#f8fafc;border-color:#e8ecf1;}
+.ov-ef + .ov-ef{border-top:1px solid #f1f3f5;}
+.ov-ef:hover + .ov-ef{border-top-color:transparent;}
+.ov-ef-head{display:flex;align-items:center;gap:7px;width:180px;min-width:180px;flex-shrink:0;padding-top:2px;}
+.ov-ef-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ov-ef-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888da8;white-space:nowrap;}
+.ov-ef-body{flex:1;min-width:0;}
+.ov-ef-view{min-height:24px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
+.ov-ef-val{font-size:13px;font-weight:500;color:#0e1726;}
+.ov-ef-text{font-size:13px;font-weight:500;color:#0e1726;white-space:pre-wrap;line-height:1.45;}
+.ov-placeholder{font-size:12.5px;color:#bfc9d4;font-weight:400;font-style:italic;}
+.ov-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.ov-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid;line-height:1.4;}
+.ov-tag-x{background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px;color:inherit;opacity:.6;transition:opacity .15s;}
+.ov-tag-x:hover{opacity:1;}
+.ov-ms-pills{display:flex;flex-wrap:wrap;gap:5px;}
+.ov-ms-pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid #e2e8f0;background:#fff;color:#888da8;transition:all .2s;user-select:none;}
+.ov-ms-pill.active{background:rgba(67,97,238,.1);border-color:#4361ee;color:#4361ee;}
+.ov-ms-pill:hover{border-color:rgba(67,97,238,.3);background:rgba(67,97,238,.05);color:rgba(67,97,238,.7);}
+.ov-ms-check{width:13px;height:13px;flex-shrink:0;}
+.ov-rel-editor{position:relative;}
+.ov-rel-tags{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;min-height:32px;background:#fff;transition:border-color .2s;cursor:text;align-items:center;}
+.ov-rel-tags:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+.ov-rel-search{border:none;outline:none;font-size:12.5px;min-width:60px;flex:1;background:transparent;color:#0e1726;font-family:inherit;padding:1px 0;}
+.ov-rel-search::placeholder{color:#bfc9d4;}
+.ov-rel-dropdown{position:absolute;left:0;right:0;top:100%;margin-top:3px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 10px 32px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:9999;}
+.ov-rel-option{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:12.5px;font-weight:500;color:#0e1726;cursor:pointer;transition:background .12s;}
+.ov-rel-option:hover{background:#f0f3ff;}
+.ov-rel-option:first-child{border-radius:8px 8px 0 0;}
+.ov-rel-option:last-child{border-radius:0 0 8px 8px;}
+.ov-rel-create{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12px;font-weight:600;color:#4361ee;cursor:pointer;transition:background .12s;border-top:1px solid #e8ecf1;border-radius:0 0 8px 8px;}
+.ov-rel-create:hover{background:#f0f3ff;}
+.ov-rel-empty{padding:10px 12px;font-size:12px;color:#888da8;text-align:center;}
+.ov-ef-edit{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.ov-input{width:100%;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-family:inherit;color:#0e1726;background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;}
+.ov-input:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+.ov-textarea{resize:vertical;min-height:50px;line-height:1.45;}
+.ov-tags-wrap{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;min-height:32px;background:#fff;transition:border-color .2s;}
+.ov-tags-wrap:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+.ov-tag-input{border:none;outline:none;font-size:12.5px;min-width:80px;flex:1;background:transparent;color:#888da8;font-family:inherit;cursor:pointer;}
+.ov-ef-btns{display:flex;gap:3px;justify-content:flex-end;}
+.ov-ef-ok,.ov-ef-cancel{background:none;border:none;cursor:pointer;padding:1px;border-radius:4px;transition:transform .15s;line-height:0;}
+.ov-ef-ok{color:#10b981;}.ov-ef-ok:hover{transform:scale(1.15);}
+.ov-ef-cancel{color:#ef4444;}.ov-ef-cancel:hover{transform:scale(1.15);}
+/* Dark mode — shared fields */
+.dark .ov-card{background:#0e1726;border-color:#253b5c;}
+.dark .ov-card-header{color:#e0e6ed;}
+.dark .ov-card-link{color:#506690;}
+.dark .ov-ef{border-color:transparent;}
+.dark .ov-ef:hover{background:#1b2e4b;border-color:#253b5c;}
+.dark .ov-ef + .ov-ef{border-top-color:#1b2e4b;}
+.dark .ov-ef:hover + .ov-ef{border-top-color:transparent;}
+.dark .ov-ef-label{color:#506690;}
+.dark .ov-ef-val,.dark .ov-ef-text{color:#e0e6ed;}
+.dark .ov-placeholder{color:#506690;}
+.dark .ov-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .ov-input:focus{border-color:#4361ee;}
+.dark .ov-textarea{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .ov-rel-tags{background:#0e1726;border-color:#253b5c;}
+.dark .ov-rel-dropdown{background:#0e1726;border-color:#253b5c;}
+.dark .ov-rel-option{color:#e0e6ed;}
+.dark .ov-rel-option:hover{background:#1b2e4b;}
 
 @keyframes rmFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 /* ═══ Dark Mode — Record Module ═══ */
@@ -144,24 +156,14 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .dark .rm-nav { background:#1b2e4b; border-color:#253b5c; }
 .dark .rm-nav a { color:#888da8; }
 .dark .rm-nav a:hover,.dark .rm-nav a.active { background:#0e1726; color:#e0e6ed; }
-.dark .rm-item,.dark .fiche-field { background:transparent; border-color:transparent; }
-.dark .rm-item:hover,.dark .fiche-field:hover { border-color:#253b5c; background:#1b2e4b; }
-.dark .rm-item-title,.dark .fiche-field-value { color:#e0e6ed; }
-.dark .fiche-field-label { color:#506690; }
-.dark .fiche-field-value.empty { color:#506690; }
-.dark .fiche-field + .fiche-field { border-top-color:#1b2e4b; }
-.dark .fiche-field:hover + .fiche-field { border-top-color:transparent; }
-.dark .fiche-edit-hint { background:rgba(67,97,238,.1); color:#818cf8; }
+.dark .rm-item { background:transparent; border-color:transparent; }
+.dark .rm-item:hover { border-color:#253b5c; background:#1b2e4b; }
+.dark .rm-item-title { color:#e0e6ed; }
 .dark .fiche-empty-state h3 { color:#e0e6ed; }
 .dark .fiche-empty-state p { color:#506690; }
 .dark .rm-search { background:#1b2e4b; border-color:#253b5c; }
 .dark .rm-search input { color:#e0e6ed; }
-.dark .fiche-section { border-color:#253b5c; }
 .dark .rm-toolbar { background:#0e1726; border-color:#253b5c; }
-/* Dark mode fiche inline edit inputs */
-.dark .fiche-field .ov-input { background:#0e1726; border-color:#253b5c; color:#e0e6ed; }
-.dark .fiche-field .ov-input:focus { border-color:#4361ee; }
-.dark .fiche-field .ov-textarea { background:#0e1726; border-color:#253b5c; color:#e0e6ed; }
 
 @media (max-width:768px) {
     .rm-page { padding:16px; }
@@ -333,64 +335,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <style>
     .ov-grid{display:grid;grid-template-columns:8fr 4fr;gap:16px;}
     .ov-full{grid-column:1/-1;}
-    .ov-card{background:#fff;border-radius:14px;border:1px solid #e8ecf1;padding:18px;transition:box-shadow .3s;animation:rmFadeIn .4s ease both;overflow:visible;position:relative;}
-    .ov-card-fields{z-index:10;}
-    .ov-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.04);}
-    .ov-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px;font-weight:700;color:#0e1726;}
-    .ov-card-link{margin-left:auto;font-size:12px;font-weight:500;color:#888da8;text-decoration:none;transition:color .2s;}
-    .ov-card-link:hover{color:#4361ee;}
     .ov-right-col{display:flex;flex-direction:column;gap:16px;}
-    /* ── Fields list (compact, one per line) ── */
-    .ov-fields-list{display:flex;flex-direction:column;gap:0;}
-    .ov-ef{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent;position:relative;}
-    .ov-ef:hover{background:#f8fafc;border-color:#e8ecf1;}
-    .ov-ef + .ov-ef{border-top:1px solid #f1f3f5;}
-    .ov-ef:hover + .ov-ef{border-top-color:transparent;}
-    .ov-ef-head{display:flex;align-items:center;gap:7px;width:180px;min-width:180px;flex-shrink:0;padding-top:2px;}
-    .ov-ef-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .ov-ef-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888da8;white-space:nowrap;}
-    .ov-ef-body{flex:1;min-width:0;}
-    .ov-ef-view{min-height:24px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
-    .ov-ef-val{font-size:13px;font-weight:500;color:#0e1726;}
-    .ov-ef-text{font-size:13px;font-weight:500;color:#0e1726;white-space:pre-wrap;line-height:1.45;}
-    .ov-placeholder{font-size:12.5px;color:#bfc9d4;font-weight:400;font-style:italic;}
-    /* Tags */
-    .ov-tags{display:flex;flex-wrap:wrap;gap:4px;}
-    .ov-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid;line-height:1.4;}
-    .ov-tag-x{background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px;color:inherit;opacity:.6;transition:opacity .15s;}
-    .ov-tag-x:hover{opacity:1;}
-    /* Multiselect pills */
-    .ov-ms-pills{display:flex;flex-wrap:wrap;gap:5px;}
-    .ov-ms-pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid #e2e8f0;background:#fff;color:#888da8;transition:all .2s;user-select:none;}
-    .ov-ms-pill.active{background:rgba(67,97,238,.1);border-color:#4361ee;color:#4361ee;}
-    .ov-ms-pill:hover{border-color:rgba(67,97,238,.3);background:rgba(67,97,238,.05);color:rgba(67,97,238,.7);}
-    .ov-ms-check{width:13px;height:13px;flex-shrink:0;}
-    /* Relation editor */
-    .ov-rel-editor{position:relative;}
-    .ov-rel-tags{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;min-height:32px;background:#fff;transition:border-color .2s;cursor:text;align-items:center;}
-    .ov-rel-tags:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
-    .ov-rel-search{border:none;outline:none;font-size:12.5px;min-width:60px;flex:1;background:transparent;color:#0e1726;font-family:inherit;padding:1px 0;}
-    .ov-rel-search::placeholder{color:#bfc9d4;}
-    .ov-rel-dropdown{position:absolute;left:0;right:0;top:100%;margin-top:3px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 10px 32px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:9999;}
-    .ov-rel-option{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:12.5px;font-weight:500;color:#0e1726;cursor:pointer;transition:background .12s;}
-    .ov-rel-option:hover{background:#f0f3ff;}
-    .ov-rel-option:first-child{border-radius:8px 8px 0 0;}
-    .ov-rel-option:last-child{border-radius:0 0 8px 8px;}
-    .ov-rel-create{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12px;font-weight:600;color:#4361ee;cursor:pointer;transition:background .12s;border-top:1px solid #e8ecf1;border-radius:0 0 8px 8px;}
-    .ov-rel-create:hover{background:#f0f3ff;}
-    .ov-rel-empty{padding:10px 12px;font-size:12px;color:#888da8;text-align:center;}
-    /* Edit state */
-    .ov-ef-edit{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
-    .ov-input{width:100%;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-family:inherit;color:#0e1726;background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;}
-    .ov-input:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
-    .ov-textarea{resize:vertical;min-height:50px;line-height:1.45;}
-    .ov-tags-wrap{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;min-height:32px;background:#fff;transition:border-color .2s;}
-    .ov-tags-wrap:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
-    .ov-tag-input{border:none;outline:none;font-size:12.5px;min-width:80px;flex:1;background:transparent;color:#888da8;font-family:inherit;cursor:pointer;}
-    .ov-ef-btns{display:flex;gap:3px;justify-content:flex-end;}
-    .ov-ef-ok,.ov-ef-cancel{background:none;border:none;cursor:pointer;padding:1px;border-radius:4px;transition:transform .15s;line-height:0;}
-    .ov-ef-ok{color:#10b981;}.ov-ef-ok:hover{transform:scale(1.15);}
-    .ov-ef-cancel{color:#ef4444;}.ov-ef-cancel:hover{transform:scale(1.15);}
     /* Tasks chart */
     .ov-tasks-chart{padding:8px 0;}
     .ov-chart-bars{display:flex;align-items:flex-end;gap:12px;height:80px;padding:0 8px;}
@@ -1677,7 +1622,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <!-- ═══ FICHE MODULE ═══ -->
     <% if (moduleName === 'fiche') { %>
-    <div class="fiche-grid" x-data="ovInlineEdit()">
+    <div class="ov-card ov-card-fields" x-data="ovInlineEdit()" style="border:none;box-shadow:none;padding:0;">
         <% if (_ficheFields.length === 0) { %>
             <div class="fiche-empty-state" style="padding:60px 20px;text-align:center;">
                 <iconify-icon icon="solar:card-bold-duotone" width="48" style="color:#bfc9d4"></iconify-icon>
@@ -1685,75 +1630,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 <p>Configurez les champs de cette entité pour commencer</p>
             </div>
         <% } else { %>
-            <% _ficheFields.forEach(function(f, idx) { %>
-            <div class="fiche-field"
-                 style="animation-delay:<%= idx * 40 %>ms"
-                 data-key="<%= f.key %>"
-                 @click="startEdit('<%= f.key %>', $event)"
-                 <% if (f.type !== 'relation') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>>
-                <div class="fiche-field-head">
-                    <div class="fiche-field-icon" style="background:linear-gradient(135deg, <%= f.color || '#4361ee' %>12, <%= f.color || '#4361ee' %>06)">
-                        <iconify-icon icon="<%= f.icon %>" width="14" style="color:<%= f.color || '#4361ee' %>"></iconify-icon>
-                    </div>
-                    <span class="fiche-field-label"><%= f.label %></span>
-                </div>
-                <div class="fiche-field-body">
-                    <!-- View state -->
-                    <template x-if="editingKey !== '<%= f.key %>'">
-                        <div class="fiche-field-view">
-                            <% if (f.value) { %>
-                                <span class="fiche-field-value"><%= f.value %></span>
-                            <% } else { %>
-                                <span class="fiche-field-value empty"><%= f.label %></span>
-                            <% } %>
-                        </div>
-                    </template>
-                    <!-- Edit state -->
-                    <template x-if="editingKey === '<%= f.key %>'">
-                        <div class="ov-ef-edit" @click.stop>
-                            <% if (f.inputType === 'textarea') { %>
-                                <textarea class="ov-input ov-textarea" x-ref="input_<%= f.key %>"
-                                    rows="<%= f.uiRows || 3 %>" placeholder="<%= f.label %>"
-                                    @keydown.escape="cancelEdit()"><%= f.rawValue || f.value || '' %></textarea>
-                            <% } else if (f.inputType === 'select' && f.options && f.options.length) { %>
-                                <select class="ov-input" x-ref="input_<%= f.key %>"
-                                    @change="saveCurrentField()">
-                                    <option value="">— Choisir —</option>
-                                    <% f.options.forEach(function(opt) { %>
-                                    <option value="<%= opt %>" <%= (f.rawValue || f.value) === opt ? 'selected' : '' %>><%= opt %></option>
-                                    <% }); %>
-                                </select>
-                            <% } else if (f.inputType === 'checkbox') { %>
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                    <input type="checkbox" x-ref="input_<%= f.key %>"
-                                        <%= f.rawValue === true || f.rawValue === 'true' ? 'checked' : '' %>
-                                        @change="saveField('<%= f.key %>', $refs.input_<%= f.key %>.checked)">
-                                    <span style="font-size:13px;color:#0e1726;">Oui</span>
-                                </label>
-                            <% } else { %>
-                                <input type="<%= f.inputType || 'text' %>" class="ov-input" x-ref="input_<%= f.key %>"
-                                    value="<%= (f.rawValue || f.value || '').toString().replace(/"/g, '&quot;') %>"
-                                    placeholder="<%= f.label %>"
-                                    @keydown.enter="saveCurrentField()"
-                                    @keydown.escape="cancelEdit()">
-                            <% } %>
-                            <div class="ov-ef-btns">
-                                <button class="ov-ef-ok" @click.stop="saveCurrentField()" title="Enregistrer">
-                                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                                </button>
-                                <button class="ov-ef-cancel" @click.stop="cancelEdit()" title="Annuler">
-                                    <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
-                                </button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-                <div class="fiche-edit-hint">
-                    <iconify-icon icon="solar:pen-2-bold" width="12"></iconify-icon>
-                    Modifier
-                </div>
-            </div>
-            <% }); %>
+            <% var _showHeader = false; var _ovFields = _ficheFields; %>
+            <%- include('partials/ov-widget-fields', { _ovFields: _ficheFields, _recBase: _recBase, _showHeader: false }) %>
         <% } %>
     </div>
     <% } %>
@@ -2708,17 +2586,17 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         body: JSON.stringify({ fieldKey: key, value })
                     });
                     if (res.ok) {
-                        const fieldEl = document.querySelector('.fiche-field[data-key="' + editingK + '"]');
+                        const fieldEl = document.querySelector('.ov-ef[data-key="' + editingK + '"]');
                         if (fieldEl) {
-                            const viewEl = fieldEl.querySelector('.fiche-field-value');
+                            const viewEl = fieldEl.querySelector('.ov-ef-val') || fieldEl.querySelector('.ov-placeholder');
                             if (viewEl) {
                                 const displayVal = Array.isArray(value) ? value.join(', ') : (value || '');
                                 if (displayVal) {
                                     viewEl.textContent = displayVal;
-                                    viewEl.classList.remove('empty');
+                                    viewEl.className = 'ov-ef-val';
                                 } else {
-                                    viewEl.textContent = fieldEl.querySelector('.fiche-field-label')?.textContent || 'Valeur';
-                                    viewEl.classList.add('empty');
+                                    viewEl.textContent = fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur';
+                                    viewEl.className = 'ov-placeholder';
                                 }
                             }
                         }

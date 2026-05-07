@@ -3560,5 +3560,33 @@ router.get('/api/widget/dynamic-table-data', async (req, res) => {
 // ═══ Record Chat API (conversations + messages per record) ═══
 require('./api/api-record-chat.router')(router)
 
+// ═══════════════════════════════════════════════════════════════
+// USER THEME PREFERENCE
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * POST /account/:account_number/api/user/theme
+ * Persist user's theme preference (light/dark) in the DB
+ */
+const User = require('../models/user.model')
+router.post('/api/user/theme', async (req, res) => {
+    try {
+        const { theme } = req.body
+        if (!theme || !['light', 'dark'].includes(theme)) {
+            return res.status(400).json({ error: 'Invalid theme. Must be "light" or "dark".' })
+        }
+        if (!req.user?._id) {
+            return res.status(401).json({ error: 'User not authenticated' })
+        }
+        await User.findByIdAndUpdate(req.user._id, {
+            $set: { 'preferences.theme': theme }
+        })
+        res.json({ success: true, theme })
+    } catch (error) {
+        console.error('[API] Theme save error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 module.exports = router
 

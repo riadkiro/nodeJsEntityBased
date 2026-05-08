@@ -141,6 +141,98 @@
 .ah-empty h3 { font-size:16px; font-weight:700; color:#374151; margin:0 0 4px; }
 .ah-empty p { font-size:13px; margin:0; }
 
+/* ═══ Event Detail Modal ═══ */
+.ah-modal-overlay {
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.25);
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    animation:ahFadeIn .2s ease;
+}
+.ah-modal {
+    background:#fff; border-radius:16px;
+    box-shadow:0 20px 60px rgba(0,0,0,.15);
+    width:480px; max-width:calc(100vw - 40px);
+    max-height:calc(100vh - 40px); overflow-y:auto;
+    animation:ahSlideUp .3s ease;
+}
+@keyframes ahFadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes ahSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+.ah-modal-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 24px 0;
+}
+.ah-modal-header-left { display:flex; align-items:center; gap:10px; }
+.ah-modal-icon {
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, #14b8a618, #14b8a608);
+    color:#14b8a6;
+}
+.ah-modal-header h3 { font-size:16px; font-weight:700; color:#0e1726; margin:0; }
+.ah-modal-close {
+    width:32px; height:32px; border:none; border-radius:8px;
+    background:transparent; color:#9ca3af; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .15s;
+}
+.ah-modal-close:hover { background:#f1f5f9; color:#374151; }
+
+.ah-modal-body { padding:20px 24px; display:flex; flex-direction:column; gap:14px; }
+.ah-detail-row {
+    display:flex; align-items:flex-start; gap:10px;
+}
+.ah-detail-icon {
+    width:28px; height:28px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    background:#f1f5f9; color:#6b7280; flex-shrink:0; margin-top:1px;
+}
+.ah-detail-content { flex:1; min-width:0; }
+.ah-detail-label {
+    font-size:11px; font-weight:700; color:#9ca3af;
+    text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;
+}
+.ah-detail-value {
+    font-size:13px; font-weight:600; color:#0e1726;
+}
+.ah-detail-notes {
+    font-size:13px; color:#6b7280; line-height:1.5;
+    background:#f9fafb; border-radius:8px; padding:10px 12px;
+    border:1px solid #f1f5f9;
+}
+
+.ah-modal-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px 20px; gap:12px; border-top:1px solid #f1f5f9;
+}
+.ah-modal-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:9px 18px; border-radius:8px;
+    font-size:13px; font-weight:600; cursor:pointer;
+    transition:all .15s; font-family:'Nunito',sans-serif; border:none;
+}
+.ah-modal-btn-outline {
+    background:#fff; border:1.5px solid #e2e8f0; color:#6b7280;
+}
+.ah-modal-btn-outline:hover { background:#f9fafb; border-color:#d1d5db; }
+.ah-modal-btn-primary {
+    background:linear-gradient(135deg, #14b8a6, #14b8a6dd);
+    color:#fff; border:none;
+}
+.ah-modal-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(20,184,166,.3); }
+
+/* Modal dark mode */
+.dark .ah-modal { background:#0e1726; border:1px solid #253b5c; }
+.dark .ah-modal-header h3 { color:#e0e6ed; }
+.dark .ah-modal-close:hover { background:#1b2e4b; color:#e0e6ed; }
+.dark .ah-detail-icon { background:#1b2e4b; color:#888da8; }
+.dark .ah-detail-label { color:#506690; }
+.dark .ah-detail-value { color:#e0e6ed; }
+.dark .ah-detail-notes { background:#1b2e4b; border-color:#253b5c; color:#888da8; }
+.dark .ah-modal-footer { border-color:#253b5c; }
+.dark .ah-modal-btn-outline { background:#1b2e4b; border-color:#253b5c; color:#888da8; }
+
 /* Loading */
 .ah-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:60px; color:#888da8; font-size:14px; }
 .ah-spin { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:#14b8a6; border-radius:50%; animation:ahSpin .8s linear infinite; }
@@ -288,7 +380,7 @@
                             </thead>
                             <tbody>
                                 <template x-for="ev in filteredEvents" :key="ev._id">
-                                    <tr @click="openRecord(ev)">
+                                    <tr @click="showDetail(ev)">
                                         <td style="font-weight:600" x-text="ev.title || 'Sans titre'"></td>
                                         <td x-text="formatDate(ev.date)"></td>
                                         <td style="color:#14b8a6;font-weight:700" x-text="formatTime(ev.date)"></td>
@@ -313,6 +405,134 @@
             </template>
         </div>
     </div>
+
+    <!-- Event Detail Modal -->
+    <template x-if="selectedEvent">
+        <div class="ah-modal-overlay" @click="selectedEvent = null">
+            <div class="ah-modal" @click.stop>
+                <div class="ah-modal-header">
+                    <div class="ah-modal-header-left">
+                        <div class="ah-modal-icon">
+                            <iconify-icon icon="solar:calendar-bold-duotone" width="18"></iconify-icon>
+                        </div>
+                        <h3 x-text="selectedEvent.title || 'Sans titre'"></h3>
+                    </div>
+                    <button class="ah-modal-close" @click="selectedEvent = null">
+                        <iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon>
+                    </button>
+                </div>
+
+                <div class="ah-modal-body">
+                    <!-- Date & Time -->
+                    <div class="ah-detail-row">
+                        <div class="ah-detail-icon">
+                            <iconify-icon icon="solar:clock-circle-bold-duotone" width="16"></iconify-icon>
+                        </div>
+                        <div class="ah-detail-content">
+                            <div class="ah-detail-label">Date & Heure</div>
+                            <div class="ah-detail-value">
+                                <span x-text="formatDate(selectedEvent.date)"></span>
+                                <span style="color:#14b8a6;margin-left:6px" x-text="formatTime(selectedEvent.date)"></span>
+                                <template x-if="selectedEvent.end_date">
+                                    <span style="color:#9ca3af"> — <span x-text="formatTime(selectedEvent.end_date)"></span></span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Type -->
+                    <div class="ah-detail-row">
+                        <div class="ah-detail-icon">
+                            <iconify-icon icon="solar:tag-bold-duotone" width="16"></iconify-icon>
+                        </div>
+                        <div class="ah-detail-content">
+                            <div class="ah-detail-label">Type</div>
+                            <div class="ah-detail-value" x-text="getType(selectedEvent)"></div>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="ah-detail-row">
+                        <div class="ah-detail-icon">
+                            <iconify-icon icon="solar:check-circle-bold-duotone" width="16"></iconify-icon>
+                        </div>
+                        <div class="ah-detail-content">
+                            <div class="ah-detail-label">Statut</div>
+                            <div>
+                                <span class="ah-status-pill"
+                                      :style="`background:${getStatus(selectedEvent).color}15;color:${getStatus(selectedEvent).color}`"
+                                      x-text="getStatus(selectedEvent).label"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <template x-if="getFieldValue(selectedEvent, 'lieu_evenement')">
+                        <div class="ah-detail-row">
+                            <div class="ah-detail-icon">
+                                <iconify-icon icon="solar:map-point-bold-duotone" width="16"></iconify-icon>
+                            </div>
+                            <div class="ah-detail-content">
+                                <div class="ah-detail-label">Lieu</div>
+                                <div class="ah-detail-value" x-text="getFieldValue(selectedEvent, 'lieu_evenement')"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Duration -->
+                    <template x-if="getFieldValue(selectedEvent, 'duree_evenement')">
+                        <div class="ah-detail-row">
+                            <div class="ah-detail-icon">
+                                <iconify-icon icon="solar:hourglass-bold-duotone" width="16"></iconify-icon>
+                            </div>
+                            <div class="ah-detail-content">
+                                <div class="ah-detail-label">Durée</div>
+                                <div class="ah-detail-value" x-text="getFieldValue(selectedEvent, 'duree_evenement') + ' min'"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Record -->
+                    <div class="ah-detail-row">
+                        <div class="ah-detail-icon">
+                            <iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon>
+                        </div>
+                        <div class="ah-detail-content">
+                            <div class="ah-detail-label">Enregistrement</div>
+                            <div>
+                                <a class="ah-record-link" style="font-size:13px"
+                                   :href="getRecordLink(selectedEvent)"
+                                   x-text="getRecordTitle(selectedEvent)"></a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <template x-if="getFieldValue(selectedEvent, 'notes_evenement')">
+                        <div class="ah-detail-row">
+                            <div class="ah-detail-icon">
+                                <iconify-icon icon="solar:notes-bold-duotone" width="16"></iconify-icon>
+                            </div>
+                            <div class="ah-detail-content">
+                                <div class="ah-detail-label">Notes</div>
+                                <div class="ah-detail-notes" x-text="getFieldValue(selectedEvent, 'notes_evenement')"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="ah-modal-footer">
+                    <button class="ah-modal-btn ah-modal-btn-outline" @click="selectedEvent = null">
+                        Fermer
+                    </button>
+                    <a class="ah-modal-btn ah-modal-btn-primary" :href="getRecordLink(selectedEvent)" style="text-decoration:none">
+                        <iconify-icon icon="solar:arrow-right-linear" width="14"></iconify-icon>
+                        Ouvrir la fiche
+                    </a>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 
 <link href="/assets/css/fullcalendar.min.css" rel="stylesheet" />
@@ -329,6 +549,7 @@ document.addEventListener('alpine:init', () => {
         filterRecordId: null,
         search: '',
         calendar: null,
+        selectedEvent: null,
         _parentLookup: {},
 
         async init() {
@@ -432,6 +653,10 @@ document.addEventListener('alpine:init', () => {
             if (link !== '#') window.location.href = link;
         },
 
+        showDetail(ev) {
+            this.selectedEvent = ev;
+        },
+
         getFieldValue(ev, fieldName) {
             if (!this.entityData) return null;
             const field = (this.entityData.customFields || []).find(f => f.name === fieldName);
@@ -514,7 +739,7 @@ document.addEventListener('alpine:init', () => {
                 events: this.toCalendarEvents(this.filteredEvents),
                 eventClick: (info) => {
                     const ev = info.event.extendedProps._ev;
-                    this.openRecord(ev);
+                    this.showDetail(ev);
                 },
                 eventDidMount: (info) => {
                     const ev = info.event.extendedProps._ev;

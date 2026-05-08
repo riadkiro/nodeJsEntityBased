@@ -232,7 +232,10 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 setIsModalOpen(true)
             },
             dateClick: (info) => {
-                setPrefillDate(info.dateStr)
+                // Round to nearest 5 minutes for clean time slots
+                const d = new Date(info.dateStr)
+                d.setMinutes(Math.round(d.getMinutes() / 5) * 5, 0, 0)
+                setPrefillDate(d.toISOString())
                 setEditingEvent(null)
                 setIsModalOpen(true)
             },

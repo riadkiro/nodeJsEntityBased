@@ -60,11 +60,13 @@ export default function EventModal({
                 if (isNaN(d.getTime())) {
                     defaultDate = prefillDate + 'T09:00'
                 } else {
+                    // Round to nearest 5 minutes
+                    d.setMinutes(Math.round(d.getMinutes() / 5) * 5, 0, 0)
                     defaultDate = toLocalDateTime(d)
                 }
             } else {
                 const now = new Date()
-                now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0)
+                now.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0)
                 defaultDate = toLocalDateTime(now)
             }
 
@@ -170,6 +172,7 @@ export default function EventModal({
                             <input
                                 type="datetime-local"
                                 className="ra-input"
+                                step="300"
                                 value={form.date}
                                 onChange={e => handleChange('date', e.target.value)}
                             />

@@ -169,6 +169,9 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
             calendarInstance.current.destroy()
         }
 
+        // Guard: skip datesSet during init to avoid overwriting persisted prefs
+        let calendarReady = false
+
         const calendar = new FullCalendar.Calendar(calendarRef.current, {
             initialView: calendarViewTypeRef.current,
             initialDate: currentDate || undefined,
@@ -191,6 +194,8 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
             nowIndicator: true,
             slotMinTime: '07:00:00',
             slotMaxTime: '21:00:00',
+            slotDuration: '00:15:00',
+            snapDuration: '00:05:00',
             allDaySlot: false,
             height: '100%',
             expandRows: true,
@@ -203,6 +208,8 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
             events: calendarEvents,
             // Save view type on change (fires when user clicks Month/Week/Day)
             datesSet: (info) => {
+                // Skip the initial datesSet fired by FullCalendar on render
+                if (!calendarReady) return
                 const newViewType = info.view.type
                 if (newViewType !== calendarViewTypeRef.current) {
                     calendarViewTypeRef.current = newViewType
@@ -274,6 +281,9 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
 
         calendar.render()
         calendarInstance.current = calendar
+
+        // Mark calendar as ready after initial render so datesSet fires only on user interaction
+        requestAnimationFrame(() => { calendarReady = true })
 
         return () => {
             if (calendarInstance.current) {
@@ -459,7 +469,7 @@ function getStyles() {
 .ra-calendar-wrap {
     background:#fff; border-radius:14px; border:1px solid #e8ecf1;
     padding:16px; overflow:hidden;
-    flex: 1; min-height: 0;
+    flex: 1; min-height: 500px;
     display: flex; flex-direction: column;
     animation: raFadeIn .4s ease;
 }

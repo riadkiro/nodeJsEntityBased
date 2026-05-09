@@ -37,6 +37,10 @@
           <div><div class="ts-stat-value" x-text="members.length"></div><div class="ts-stat-label">Membres total</div></div>
         </div>
         <div class="ts-stat-card">
+          <div class="ts-stat-icon" style="background:rgba(124,58,237,.1);"><iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="24" style="color:#7c3aed"></iconify-icon></div>
+          <div><div class="ts-stat-value" x-text="teams.length"></div><div class="ts-stat-label">Teams</div></div>
+        </div>
+        <div class="ts-stat-card">
           <div class="ts-stat-icon" style="background:rgba(34,197,94,.1);"><iconify-icon icon="solar:check-circle-bold-duotone" width="24" style="color:#22c55e"></iconify-icon></div>
           <div><div class="ts-stat-value" x-text="members.filter(m => m.userStatus === 'active').length"></div><div class="ts-stat-label">Actifs</div></div>
         </div>
@@ -44,9 +48,46 @@
           <div class="ts-stat-icon" style="background:rgba(249,115,22,.1);"><iconify-icon icon="solar:letter-bold-duotone" width="24" style="color:#f97316"></iconify-icon></div>
           <div><div class="ts-stat-value" x-text="invitations.length"></div><div class="ts-stat-label">Invitations en attente</div></div>
         </div>
-        <div class="ts-stat-card">
-          <div class="ts-stat-icon" style="background:rgba(124,58,237,.1);"><iconify-icon icon="solar:share-bold-duotone" width="24" style="color:#7c3aed"></iconify-icon></div>
-          <div><div class="ts-stat-value" x-text="myAccounts.length"></div><div class="ts-stat-label">Mes comptes</div></div>
+
+      </div>
+
+      <!-- Teams Section -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
+            <span style="font-size:14px;font-weight:700;color:#0e1726;">Teams</span>
+            <span style="font-size:11px;color:#94a3b8;font-weight:500;" x-text="teams.length + ' groupe(s)'"></span>
+          </div>
+          <button @click="openTeamModal()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px dashed #7c3aed40;background:transparent;color:#7c3aed;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;" onmouseover="this.style.background='#7c3aed08';this.style.borderColor='#7c3aed'" onmouseout="this.style.background='transparent';this.style.borderColor='#7c3aed40'">
+            <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon> Nouvelle team
+          </button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
+          <template x-for="team in teams" :key="team._id">
+            <div style="padding:14px 16px;border-radius:12px;border:1px solid #e0e6ed;background:#fff;cursor:pointer;transition:all .2s;position:relative;" :style="teamFilter === team._id ? 'border-color:' + team.color + ';box-shadow:0 0 0 2px ' + team.color + '25' : ''" @click="teamFilter = teamFilter === team._id ? null : team._id" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)'" onmouseout="if(!this.classList.contains('active')){this.style.transform='';this.style.boxShadow=''}">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" :style="'background:' + team.color + '15'">
+                  <iconify-icon :icon="team.icon" width="16" :style="'color:' + team.color"></iconify-icon>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:700;color:#0e1726;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="team.name"></div>
+                  <div style="font-size:11px;color:#94a3b8;" x-text="team.memberCount + ' membre(s)'"></div>
+                </div>
+                <button @click.stop="openTeamModal(team)" style="border:none;background:transparent;cursor:pointer;padding:4px;border-radius:6px;color:#94a3b8;transition:all .15s;" onmouseover="this.style.color='#7c3aed';this.style.background='#7c3aed08'" onmouseout="this.style.color='#94a3b8';this.style.background='transparent'">
+                  <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+                </button>
+              </div>
+              <div style="display:flex;gap:-4px;">
+                <template x-for="(mid, idx) in (team.memberIds || []).slice(0, 5)" :key="mid">
+                  <div style="width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;margin-left:-4px;" :style="'background:' + avatarColor(getMemberName(mid))" x-text="getMemberName(mid).charAt(0).toUpperCase()"></div>
+                </template>
+                <template x-if="(team.memberIds || []).length > 5">
+                  <div style="width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#64748b;background:#f1f5f9;margin-left:-4px;" x-text="'+' + ((team.memberIds || []).length - 5)"></div>
+                </template>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -65,6 +106,12 @@
             <button class="ts-filter-btn" :class="activeFilter === role.key && 'active'" @click="activeFilter = activeFilter === role.key ? 'all' : role.key">
               <span x-text="role.label"></span>
               <span style="opacity:.6;" x-text="'(' + members.filter(m => role.key === 'all' ? true : m.role === role.key).length + ')'"></span>
+            </button>
+          </template>
+          <template x-if="teamFilter">
+            <button class="ts-filter-btn active" style="background:#7c3aed10;color:#7c3aed;border-color:#7c3aed40;" @click="teamFilter = null">
+              <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
+              <span x-text="teams.find(t => t._id === teamFilter)?.name || 'Team'"></span>
             </button>
           </template>
         </div>
@@ -156,6 +203,15 @@
                 <div class="ts-member-row-email" x-text="member.email"></div>
               </div>
               <span class="ts-role-badge" :class="'ts-role-' + member.role" x-text="roleLabel(member.role)"></span>
+              <template x-if="member.entityAccess && member.entityAccess.length > 0">
+                <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(249,115,22,.08);color:#f97316;white-space:nowrap;" x-text="member.entityAccess.length + ' entité(s)'"></span>
+              </template>
+              <template x-if="!member.entityAccess || member.entityAccess.length === 0">
+                <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(34,197,94,.08);color:#22c55e;white-space:nowrap;">Accès complet</span>
+              </template>
+              <button @click="openPermissionsModal(member)" style="padding:4px 10px;border:1px solid #e0e6ed;background:#fff;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;white-space:nowrap;transition:all .15s;" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'" :disabled="member.role === 'owner'">
+                <iconify-icon icon="solar:lock-keyhole-bold" width="12"></iconify-icon> Accès
+              </button>
               <span class="ts-member-row-dept" x-text="member.email.split('@')[1]"></span>
               <span class="ts-member-row-date" x-text="formatDate(member.joinedAt)"></span>
             </div>
@@ -186,30 +242,7 @@
         </template>
       </div>
 
-      <!-- My Accounts -->
-      <div class="ts-section-title">
-        <iconify-icon icon="solar:buildings-2-bold-duotone" width="16" style="color:#7c3aed"></iconify-icon> Mes comptes
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
-        <template x-for="acc in myAccounts" :key="acc.account_number">
-          <a :href="'/account/' + acc.account_number + '/team'" class="ts-share-card" style="cursor:pointer;text-decoration:none;">
-            <div class="ts-share-card-header">
-              <div class="ts-share-card-icon" :style="'background:' + (acc.isActive ? 'rgba(67,97,238,.12)' : 'rgba(100,116,139,.08)')">
-                <iconify-icon :icon="acc.icon" width="20" :style="'color:' + (acc.isActive ? '#4361ee' : '#64748b')"></iconify-icon>
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div class="ts-share-card-title" x-text="acc.name"></div>
-                <div class="ts-share-card-type" x-text="acc.membersCount + ' membres'"></div>
-              </div>
-              <span class="ts-role-badge" :class="'ts-role-' + acc.role" x-text="roleLabel(acc.role)"></span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:6px;">
-              <span x-text="'#' + acc.account_number"></span>
-              <span x-show="acc.isActive" style="color:#22c55e;font-weight:600;">● Actif</span>
-            </div>
-          </a>
-        </template>
-      </div>
+
     </div>
   </template>
 
@@ -242,6 +275,29 @@
               </template>
             </div>
           </div>
+          <!-- Entity Access Picker -->
+          <div style="margin-bottom:18px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">
+              Accès aux entités
+              <span style="font-weight:400;color:#94a3b8;">(vide = accès complet)</span>
+            </label>
+            <template x-if="allEntities.length === 0">
+              <div style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;border:1px dashed #e0e6ed;border-radius:10px;">Chargement des entités...</div>
+            </template>
+            <template x-if="allEntities.length > 0">
+              <div style="max-height:180px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;" class="dark:!border-[#253b5c]">
+                <template x-for="entity in allEntities" :key="entity._id">
+                  <label :style="'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;transition:background .15s;' + (inviteEntityAccess.includes(String(entity._id)) ? 'background:rgba(67,97,238,.04)' : '')">
+                    <input type="checkbox" :checked="inviteEntityAccess.includes(String(entity._id))" @change="toggleInviteEntity(entity._id)" :style="'accent-color:#4361ee;width:15px;min-width:15px;max-width:15px;height:15px;min-height:15px;max-height:15px;cursor:pointer;flex-shrink:0;'" />
+                    <div :style="'width:24px;min-width:24px;max-width:24px;height:24px;min-height:24px;max-height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:' + (entity.color || '#4361ee') + '15'">
+                      <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="13" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
+                    </div>
+                    <span style="font-size:13px;font-weight:500;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="entity.name"></span>
+                  </label>
+                </template>
+              </div>
+            </template>
+          </div>
           <div style="display:flex;justify-content:flex-end;gap:10px;">
             <button class="ts-filter-btn" @click="showInviteModal = false">Annuler</button>
             <button class="ts-btn-primary" @click="sendInvite()" :disabled="inviteSending">
@@ -256,6 +312,127 @@
 
   <!-- Toast -->
   <div x-show="toast" x-transition style="position:fixed;bottom:24px;right:24px;z-index:1000;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.15);" :style="'background:' + (toastType === 'success' ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#ef4444,#dc2626)')" x-text="toast"></div>
+
+  <!-- Team Create/Edit Modal -->
+  <template x-if="showTeamModal">
+    <div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;" @click.self="showTeamModal = false">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(3px);"></div>
+      <div style="position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:480px;max-width:calc(100vw - 40px);max-height:85vh;overflow-y:auto;animation:nhSlideUp .3s ease;" x-transition @click.stop>
+        <div style="padding:20px 24px;border-bottom:1px solid #e0e6ed;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;" :style="'background:' + teamForm.color + '15'">
+            <iconify-icon :icon="teamForm.icon" width="20" :style="'color:' + teamForm.color"></iconify-icon>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:700;color:#0e1726;" x-text="teamForm._id ? 'Modifier la team' : 'Nouvelle team'"></div>
+            <div style="font-size:12px;color:#94a3b8;">Organisez vos membres en groupes</div>
+          </div>
+          <button @click="showTeamModal = false" style="border:none;background:#f1f5f9;cursor:pointer;padding:6px;border-radius:8px;color:#64748b;">
+            <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+          </button>
+        </div>
+        <div style="padding:20px 24px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;">Nom de la team *</label>
+            <input type="text" x-model="teamForm.name" placeholder="ex: Développement" style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;">Description</label>
+            <input type="text" x-model="teamForm.description" placeholder="Description optionnelle..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Couleur</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <template x-for="c in teamColors" :key="c">
+                <button @click="teamForm.color = c" style="width:28px;height:28px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all .15s;" :style="'background:' + c + (teamForm.color === c ? ';border-color:#0e1726;transform:scale(1.15)' : '')">
+                </button>
+              </template>
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Membres <span style="color:#94a3b8;font-weight:400;" x-text="'(' + teamForm.memberIds.length + ' sélectionné(s))'"></span></label>
+            <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;">
+              <template x-for="m in members" :key="m._id">
+                <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;" :style="teamForm.memberIds.includes(String(m._id)) ? 'background:#7c3aed08' : ''">
+                  <input type="checkbox" :checked="teamForm.memberIds.includes(String(m._id))" @change="toggleTeamMember(m._id)" style="accent-color:#7c3aed;width:16px;height:16px;cursor:pointer;" />
+                  <div style="width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;" :style="'background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="m.name"></div>
+                    <div style="font-size:11px;color:#94a3b8;" x-text="m.email"></div>
+                  </div>
+                  <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;" x-text="roleLabel(m.role)"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+        </div>
+        <div style="padding:14px 24px 20px;display:flex;align-items:center;gap:8px;justify-content:space-between;">
+          <div>
+            <template x-if="teamForm._id">
+              <button @click="deleteTeam(teamForm._id)" style="padding:8px 16px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;font-family:inherit;transition:all .15s;">
+                <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12" style="vertical-align:-2px;"></iconify-icon> Supprimer
+              </button>
+            </template>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button @click="showTeamModal = false" style="padding:8px 18px;border:1px solid #e0e6ed;background:#fff;border-radius:8px;font-size:13px;font-weight:500;color:#64748b;cursor:pointer;font-family:inherit;">Annuler</button>
+            <button @click="saveTeam()" style="padding:8px 18px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:8px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all .15s;" x-text="teamForm._id ? 'Enregistrer' : 'Créer la team'"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Permissions Modal -->
+  <template x-if="showPermissionsModal">
+    <div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;" @click.self="showPermissionsModal = false">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(3px);"></div>
+      <div style="position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:520px;max-width:calc(100vw - 40px);max-height:85vh;overflow-y:auto;animation:nhSlideUp .3s ease;" x-transition @click.stop>
+        <div style="padding:20px 24px;border-bottom:1px solid #e0e6ed;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(67,97,238,.1);display:flex;align-items:center;justify-content:center;">
+            <iconify-icon icon="solar:lock-keyhole-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:700;color:#0e1726;" x-text="'Accès de ' + (permMember?.name || '')"></div>
+            <div style="font-size:12px;color:#94a3b8;">Choisissez les entités accessibles</div>
+          </div>
+          <button @click="showPermissionsModal = false" style="border:none;background:#f1f5f9;cursor:pointer;padding:6px;border-radius:8px;color:#64748b;">
+            <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+          </button>
+        </div>
+        <div style="padding:20px 24px;">
+          <!-- Quick actions -->
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button @click="permEntityAccess = []" style="padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;" :style="permEntityAccess.length === 0 ? 'border-color:#22c55e;background:rgba(34,197,94,.06);color:#22c55e' : 'color:#64748b'">
+              <iconify-icon icon="solar:check-circle-bold" width="12" style="vertical-align:-1px;"></iconify-icon> Accès complet
+            </button>
+            <button @click="permEntityAccess = allEntities.map(e => String(e._id))" style="padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;background:#fff;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;transition:all .15s;">
+              <iconify-icon icon="solar:checklist-bold" width="12" style="vertical-align:-1px;"></iconify-icon> Tout cocher
+            </button>
+          </div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:10px;font-weight:500;">
+            <iconify-icon icon="solar:info-circle-bold" width="12" style="vertical-align:-1px;"></iconify-icon>
+            Aucune sélection = accès à toutes les entités
+          </div>
+          <!-- Entity Grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:300px;overflow-y:auto;">
+            <template x-for="entity in allEntities" :key="entity._id">
+              <label :style="'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid ' + (permEntityAccess.includes(String(entity._id)) ? (entity.color || '#4361ee') : '#e0e6ed') + ';cursor:pointer;transition:all .15s;' + (permEntityAccess.includes(String(entity._id)) ? 'background:' + (entity.color || '#4361ee') + '06' : '')">
+                <input type="checkbox" :checked="permEntityAccess.includes(String(entity._id))" @change="togglePermEntity(entity._id)" :style="'accent-color:#4361ee;width:15px;min-width:15px;max-width:15px;height:15px;min-height:15px;max-height:15px;cursor:pointer;flex-shrink:0;'" />
+                <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:' + (entity.color || '#4361ee') + '15'">
+                  <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="14" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
+                </div>
+                <span style="font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="entity.name"></span>
+              </label>
+            </template>
+          </div>
+        </div>
+        <div style="padding:14px 24px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #f1f5f9;">
+          <button @click="showPermissionsModal = false" style="padding:8px 18px;border:1px solid #e0e6ed;background:#fff;border-radius:8px;font-size:13px;font-weight:500;color:#64748b;cursor:pointer;font-family:inherit;">Annuler</button>
+          <button @click="savePermissions()" style="padding:8px 18px;border:none;background:linear-gradient(135deg,#4361ee,#3b82f6);border-radius:8px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all .15s;">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </template>
 </div>
 
 <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
@@ -264,19 +441,32 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('teamHub', () => ({
     loading: true,
-    viewMode: 'grid',
+    viewMode: 'list',
     activeFilter: 'all',
     searchQuery: '',
     accountName: '',
     members: [],
     invitations: [],
-    myAccounts: [],
+    teams: [],
+    teamFilter: null,
+    allEntities: [],
+
+    // Team modal
+    showTeamModal: false,
+    teamForm: { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [] },
+    teamColors: ['#4361ee','#7c3aed','#f97316','#10b981','#ec4899','#06b6d4','#ef4444','#8b5cf6','#eab308','#14b8a6'],
     showInviteModal: false,
     inviteEmail: '',
     inviteRole: 'member',
     inviteSending: false,
     inviteError: '',
     inviteSuccess: '',
+    inviteEntityAccess: [],
+
+    // Permissions modal
+    showPermissionsModal: false,
+    permMember: null,
+    permEntityAccess: [],
     toast: '',
     toastType: 'success',
     allRoles: [
@@ -290,8 +480,16 @@ document.addEventListener('alpine:init', () => {
     apiBase: '/account/<%= account_number %>/api/team',
 
     async init() {
-      await Promise.all([this.fetchMembers(), this.fetchMyAccounts()]);
+      await Promise.all([this.fetchMembers(), this.fetchEntities()]);
       this.loading = false;
+    },
+
+    async fetchEntities() {
+      try {
+        const res = await fetch(this.apiBase + '/entities', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) this.allEntities = data.entities;
+      } catch (e) { console.error('fetchEntities error:', e); }
     },
 
     async fetchMembers() {
@@ -301,18 +499,13 @@ document.addEventListener('alpine:init', () => {
         if (data.success) {
           this.members = data.members;
           this.invitations = data.invitations;
+          this.teams = data.teams || [];
           this.accountName = data.accountName;
         }
       } catch (e) { console.error('fetchMembers error:', e); }
     },
 
-    async fetchMyAccounts() {
-      try {
-        const res = await fetch(this.apiBase + '/my-accounts', { credentials: 'include' });
-        const data = await res.json();
-        if (data.success) this.myAccounts = data.accounts;
-      } catch (e) { console.error('fetchMyAccounts error:', e); }
-    },
+
 
     async sendInvite() {
       this.inviteError = '';
@@ -324,12 +517,13 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ email: this.inviteEmail, role: this.inviteRole }),
+          body: JSON.stringify({ email: this.inviteEmail, role: this.inviteRole, entityAccess: this.inviteEntityAccess }),
         });
         const data = await res.json();
         if (data.success) {
           this.inviteSuccess = data.message;
           this.inviteEmail = '';
+          this.inviteEntityAccess = [];
           await this.fetchMembers();
           setTimeout(() => { this.showInviteModal = false; this.inviteSuccess = ''; }, 1500);
           this.showToast(data.message, 'success');
@@ -406,14 +600,113 @@ document.addEventListener('alpine:init', () => {
       setTimeout(() => { this.toast = ''; }, 3000);
     },
 
+    // Entity Permissions
+    openPermissionsModal(member) {
+      if (member.role === 'owner') return;
+      this.permMember = member;
+      this.permEntityAccess = [...(member.entityAccess || [])];
+      this.showPermissionsModal = true;
+    },
+
+    togglePermEntity(entityId) {
+      const id = String(entityId);
+      const idx = this.permEntityAccess.indexOf(id);
+      if (idx === -1) this.permEntityAccess.push(id);
+      else this.permEntityAccess.splice(idx, 1);
+    },
+
+    toggleInviteEntity(entityId) {
+      const id = String(entityId);
+      const idx = this.inviteEntityAccess.indexOf(id);
+      if (idx === -1) this.inviteEntityAccess.push(id);
+      else this.inviteEntityAccess.splice(idx, 1);
+    },
+
+    async savePermissions() {
+      if (!this.permMember) return;
+      try {
+        const res = await fetch(this.apiBase + '/update-permissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId: String(this.permMember._id), entityAccess: this.permEntityAccess }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.showPermissionsModal = false;
+          await this.fetchMembers();
+          this.showToast('Permissions mises à jour', 'success');
+        } else {
+          this.showToast(data.error || 'Erreur', 'error');
+        }
+      } catch (e) { this.showToast('Erreur', 'error'); }
+    },
+
     get filteredMembers() {
       let list = this.members;
       if (this.activeFilter !== 'all') list = list.filter(m => m.role === this.activeFilter);
+      if (this.teamFilter) list = list.filter(m => (m.teamIds || []).some(tid => String(tid) === String(this.teamFilter)));
       if (this.searchQuery.trim()) {
         const q = this.searchQuery.toLowerCase();
         list = list.filter(m => m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q));
       }
       return list;
+    },
+
+    getMemberName(userId) {
+      const m = this.members.find(m => String(m._id) === String(userId));
+      return m?.name || 'Inconnu';
+    },
+
+    openTeamModal(team) {
+      if (team) {
+        this.teamForm = { _id: team._id, name: team.name, description: team.description || '', color: team.color, icon: team.icon, memberIds: [...(team.memberIds || [])] };
+      } else {
+        this.teamForm = { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [] };
+      }
+      this.showTeamModal = true;
+    },
+
+    toggleTeamMember(userId) {
+      const idx = this.teamForm.memberIds.indexOf(String(userId));
+      if (idx === -1) this.teamForm.memberIds.push(String(userId));
+      else this.teamForm.memberIds.splice(idx, 1);
+    },
+
+    async saveTeam() {
+      if (!this.teamForm.name.trim()) return;
+      try {
+        const url = this.teamForm._id
+          ? this.apiBase + '/teams/' + this.teamForm._id
+          : this.apiBase + '/teams';
+        const method = this.teamForm._id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.teamForm),
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.showTeamModal = false;
+          await this.fetchMembers();
+          this.showToast(this.teamForm._id ? 'Team mise à jour' : 'Team créée', 'success');
+        }
+      } catch (e) { this.showToast('Erreur', 'error'); }
+    },
+
+    async deleteTeam(teamId) {
+      if (!confirm('Supprimer cette team ?')) return;
+      try {
+        const res = await fetch(this.apiBase + '/teams/' + teamId, { method: 'DELETE', credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          this.showTeamModal = false;
+          if (this.teamFilter === teamId) this.teamFilter = null;
+          await this.fetchMembers();
+          this.showToast('Team supprimée', 'success');
+        }
+      } catch (e) { this.showToast('Erreur', 'error'); }
     },
 
     roleLabel(role) {
@@ -435,3 +728,8 @@ document.addEventListener('alpine:init', () => {
   }));
 });
 </script>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes nhSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+</style>

@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../../models/user.model');
 const Account = require('../../models/account.model');
 const crypto = require('crypto');
+const { tenantCollection } = require('../../middleware/tenant');
 
 // ── GET /api/team/members ─────────────────────────────────
 // Returns all members + pending invitations for the current account
@@ -24,6 +25,7 @@ router.get('/members', async (req, res) => {
                 email: member.email || user?.email,
                 avatar: user?.avatar || null,
                 role: member.role || 'member',
+                entityAccess: member.entityAccess || [],
                 status: member.status || 'active',
                 joinedAt: member.joinedAt,
                 lastLogin: user?.lastLogin || null,
@@ -42,10 +44,30 @@ router.get('/members', async (req, res) => {
                 status: inv.status,
             }));
 
+        // Build teamIds per member from account.teams
+        const teams = (account.teams || []).map(t => ({
+            _id: t._id,
+            name: t.name,
+            description: t.description,
+            color: t.color,
+            icon: t.icon,
+            memberIds: t.memberIds || [],
+            memberCount: (t.memberIds || []).length,
+            createdAt: t.createdAt,
+        }));
+
+        // Enrich each member with their teamIds
+        members.forEach(m => {
+            const uid = String(m._id);
+            m.teamIds = teams.filter(t => t.memberIds.includes(uid)).map(t => t._id);
+            m.teams = teams.filter(t => t.memberIds.includes(uid)).map(t => ({ _id: t._id, name: t.name, color: t.color }));
+        });
+
         res.json({
             success: true,
             members,
             invitations,
+            teams,
             accountName: account.name,
         });
     } catch (error) {
@@ -58,7 +80,7 @@ router.get('/members', async (req, res) => {
 // Invite a user by email. If they already exist, add them directly.
 router.post('/invite', async (req, res) => {
     try {
-        const { email, role, message } = req.body;
+        const { email, role, message, entityAccess } = req.body;
         if (!email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
         const targetRole = ['admin', 'manager', 'member', 'viewer'].includes(role) ? role : 'member';
@@ -84,6 +106,7 @@ router.post('/invite', async (req, res) => {
                 userId: existingUser._id.toString(),
                 email: existingUser.email,
                 role: targetRole,
+                entityAccess: entityAccess || [],
                 status: 'active',
                 joinedAt: new Date(),
                 invitedBy: req.user._id,
@@ -268,6 +291,152 @@ router.get('/my-accounts', async (req, res) => {
         res.json({ success: true, accounts });
     } catch (error) {
         console.error('[Team API] my-accounts error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ═══════════════════════════════════════════════════
+// ENTITY PERMISSIONS
+// ═══════════════════════════════════════════════════
+
+// ── GET /api/team/entities ──────────────────────────
+// List all entities for the entity permission picker
+router.get('/entities', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, 'Entity');
+        if (!Entity) return res.json({ success: true, entities: [] });
+
+        const entities = await Entity.find({}).select('name slug icon color order isSystem').sort({ order: 1 }).lean();
+        res.json({ success: true, entities });
+    } catch (error) {
+        console.error('[Team API] entities error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── POST /api/team/update-permissions ────────────────
+// Update a member's entity access list
+router.post('/update-permissions', async (req, res) => {
+    try {
+        const { userId, entityAccess } = req.body;
+        if (!userId) return res.status(400).json({ error: 'userId required' });
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const member = account.users.find(u => u.userId === userId);
+        if (!member) return res.status(404).json({ error: 'Member not found' });
+
+        // Don't allow restricting owner
+        if (member.role === 'owner') {
+            return res.status(403).json({ error: 'Impossible de restreindre l\'accès du propriétaire' });
+        }
+
+        member.entityAccess = Array.isArray(entityAccess) ? entityAccess : [];
+        await account.save();
+
+        res.json({ success: true, entityAccess: member.entityAccess });
+    } catch (error) {
+        console.error('[Team API] update-permissions error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ═══════════════════════════════════════════════════
+// TEAMS CRUD
+// ═══════════════════════════════════════════════════
+
+// ── GET /api/team/teams ─────────────────────────────
+router.get('/teams', async (req, res) => {
+    try {
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const teams = (account.teams || []).map(t => ({
+            _id: t._id,
+            name: t.name,
+            description: t.description,
+            color: t.color,
+            icon: t.icon,
+            memberIds: t.memberIds || [],
+            memberCount: (t.memberIds || []).length,
+            createdBy: t.createdBy,
+            createdAt: t.createdAt,
+        }));
+
+        res.json({ success: true, teams });
+    } catch (error) {
+        console.error('[Team API] list teams error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── POST /api/team/teams ────────────────────────────
+router.post('/teams', async (req, res) => {
+    try {
+        const { name, description, color, icon, memberIds } = req.body;
+        if (!name?.trim()) return res.status(400).json({ error: 'Nom de team requis' });
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const team = {
+            name: name.trim(),
+            description: description || '',
+            color: color || '#4361ee',
+            icon: icon || 'solar:users-group-rounded-bold-duotone',
+            memberIds: memberIds || [],
+            createdBy: String(req.user._id),
+            createdAt: new Date(),
+        };
+
+        account.teams.push(team);
+        await account.save();
+
+        const created = account.teams[account.teams.length - 1];
+        res.json({ success: true, team: created });
+    } catch (error) {
+        console.error('[Team API] create team error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── PUT /api/team/teams/:teamId ─────────────────────
+router.put('/teams/:teamId', async (req, res) => {
+    try {
+        const { name, description, color, icon, memberIds } = req.body;
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const team = account.teams.id(req.params.teamId);
+        if (!team) return res.status(404).json({ error: 'Team not found' });
+
+        if (name !== undefined) team.name = name.trim();
+        if (description !== undefined) team.description = description;
+        if (color !== undefined) team.color = color;
+        if (icon !== undefined) team.icon = icon;
+        if (memberIds !== undefined) team.memberIds = memberIds;
+
+        await account.save();
+        res.json({ success: true, team });
+    } catch (error) {
+        console.error('[Team API] update team error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── DELETE /api/team/teams/:teamId ──────────────────
+router.delete('/teams/:teamId', async (req, res) => {
+    try {
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        account.teams.pull({ _id: req.params.teamId });
+        await account.save();
+
+        res.json({ success: true, message: 'Team supprimée' });
+    } catch (error) {
+        console.error('[Team API] delete team error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

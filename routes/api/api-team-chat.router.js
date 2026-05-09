@@ -327,5 +327,99 @@ router.get('/search-records', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+// ═══════════════════════════════════════════════════
+// PARTICIPANT MANAGEMENT
+// ═══════════════════════════════════════════════════
+
+// ── GET /api/team-chat/conversations/:id/participants ─────
+// Get participants of a conversation
+router.get('/conversations/:id/participants', async (req, res) => {
+    try {
+        const Conversation = await tenantCollection(req, 'Conversation');
+        if (!Conversation) return res.status(500).json({ error: 'DB not ready' });
+
+        const conv = await Conversation.findById(req.params.id).lean();
+        if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+
+        // Enrich with latest user info
+        const participants = [];
+        for (const p of (conv.participants || [])) {
+            const user = p.userId ? await User.findById(p.userId).select('name email avatar status').lean() : null;
+            participants.push({
+                userId: p.userId,
+                name: user?.name || p.name || 'Inconnu',
+                email: user?.email || p.email || '',
+                avatar: user?.avatar || p.avatar || null,
+                status: user?.status || 'inactive',
+                role: p.role || 'member',
+            });
+        }
+
+        res.json({ success: true, participants, conversationType: conv.type });
+    } catch (error) {
+        console.error('[TeamChat API] get participants error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── POST /api/team-chat/conversations/:id/add-participant ─
+router.post('/conversations/:id/add-participant', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'userId required' });
+
+        const Conversation = await tenantCollection(req, 'Conversation');
+        if (!Conversation) return res.status(500).json({ error: 'DB not ready' });
+
+        const conv = await Conversation.findById(req.params.id);
+        if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+        if (conv.type !== 'group') return res.status(400).json({ error: 'Seuls les channels supportent l\'ajout de participants' });
+
+        // Check if already in
+        const already = conv.participants.some(p => p.userId === userId);
+        if (already) return res.status(400).json({ error: 'Déjà participant' });
+
+        const user = await User.findById(userId).select('name email avatar').lean();
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        conv.participants.push({
+            userId,
+            name: user.name || user.email,
+            email: user.email,
+            avatar: user.avatar || '',
+            role: 'member',
+            unreadCount: 0,
+        });
+        await conv.save();
+
+        res.json({ success: true, message: `${user.name || user.email} ajouté au channel` });
+    } catch (error) {
+        console.error('[TeamChat API] add participant error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── POST /api/team-chat/conversations/:id/remove-participant
+router.post('/conversations/:id/remove-participant', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'userId required' });
+
+        const Conversation = await tenantCollection(req, 'Conversation');
+        if (!Conversation) return res.status(500).json({ error: 'DB not ready' });
+
+        const conv = await Conversation.findById(req.params.id);
+        if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+        if (conv.type !== 'group') return res.status(400).json({ error: 'Seuls les channels supportent le retrait de participants' });
+
+        conv.participants = conv.participants.filter(p => p.userId !== userId);
+        await conv.save();
+
+        res.json({ success: true, message: 'Participant retiré' });
+    } catch (error) {
+        console.error('[TeamChat API] remove participant error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 module.exports = router;

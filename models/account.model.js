@@ -14,6 +14,7 @@ const AccountSchema = new mongoose.Schema({
     userId: { type: String },
     email: { type: String },
     role: { type: String, enum: ['owner', 'admin', 'manager', 'member', 'viewer'], default: 'member' },
+    entityAccess: [{ type: String }],  // Entity IDs user can access. Empty = all entities
     joinedAt: { type: Date, default: Date.now },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, enum: ['active', 'pending', 'removed'], default: 'active' },
@@ -52,6 +53,17 @@ const AccountSchema = new mongoose.Schema({
     invitedAt: { type: Date, default: Date.now },
     expiresAt: { type: Date },
     status: { type: String, enum: ['pending', 'accepted', 'expired'], default: 'pending' },
+  }],
+
+  // Teams (groups of members)
+  teams: [{
+    name: { type: String, required: true },
+    description: { type: String, default: '' },
+    color: { type: String, default: '#4361ee' },
+    icon: { type: String, default: 'solar:users-group-rounded-bold-duotone' },
+    memberIds: [{ type: String }],
+    createdBy: { type: String },
+    createdAt: { type: Date, default: Date.now },
   }],
 
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],

@@ -14,6 +14,8 @@
  */
 
 const { tenantCollection } = require('../../middleware/tenant');
+let bcrypt;
+try { bcrypt = require('bcryptjs'); } catch (e) { bcrypt = require('bcrypt'); }
 
 module.exports = (router) => {
 
@@ -32,7 +34,16 @@ module.exports = (router) => {
             .sort({ pinned: -1, updatedAt: -1 })
             .lean();
 
-            res.json({ success: true, notes });
+            // Redact content for protected notes
+            const safeNotes = notes.map(n => {
+                if (n.isProtected) {
+                    return { ...n, content: null, pinHash: undefined };
+                }
+                const { pinHash, ...rest } = n;
+                return rest;
+            });
+
+            res.json({ success: true, notes: safeNotes });
         } catch (err) {
             console.error('[RecordNotes] List error:', err);
             res.status(500).json({ success: false, error: err.message });
@@ -48,10 +59,18 @@ module.exports = (router) => {
             const RecordModel = await tenantCollection(req, 'Record');
             if (!RecordNote) return res.status(500).json({ success: false, error: 'DB not ready' });
 
-            const { title, color, icon } = req.body;
+            const { title, color, icon, pinCode } = req.body;
             const userId = String(req.user._id);
 
             const record = await RecordModel.findById(req.params.recordId).select('entityId').lean();
+
+            // Hash PIN if provided
+            let pinHash = null;
+            let isProtected = false;
+            if (pinCode && pinCode.length >= 4) {
+                pinHash = await bcrypt.hash(pinCode, 10);
+                isProtected = true;
+            }
 
             const note = await RecordNote.create({
                 recordId: req.params.recordId,
@@ -61,7 +80,9 @@ module.exports = (router) => {
                 color: color || '#8b5cf6',
                 icon: icon || 'solar:notebook-bold-duotone',
                 createdBy: userId,
-                createdByName: req.user.name || req.user.email || 'Unknown'
+                createdByName: req.user.name || req.user.email || 'Unknown',
+                pinHash,
+                isProtected
             });
 
             res.json({ success: true, note });
@@ -168,6 +189,37 @@ module.exports = (router) => {
             res.json({ success: true, pinned: note.pinned });
         } catch (err) {
             console.error('[RecordNotes] Pin error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ═══════════════════════════════════════════
+    // POST /api/record/:recordId/notes/:noteId/verify-pin
+    // ═══════════════════════════════════════════
+    router.post('/api/record/:recordId/notes/:noteId/verify-pin', async (req, res) => {
+        try {
+            const RecordNote = await tenantCollection(req, 'RecordNote');
+            if (!RecordNote) return res.status(500).json({ success: false, error: 'DB not ready' });
+
+            const note = await RecordNote.findOne({
+                _id: req.params.noteId,
+                recordId: req.params.recordId
+            }).lean();
+
+            if (!note) return res.status(404).json({ success: false, error: 'Note not found' });
+            if (!note.isProtected) return res.json({ success: true, content: note.content });
+
+            const { pin } = req.body;
+            if (!pin) return res.status(400).json({ success: false, error: 'PIN requis' });
+
+            const match = await bcrypt.compare(String(pin), note.pinHash);
+            if (!match) return res.status(403).json({ success: false, error: 'PIN incorrect' });
+
+            // PIN correct — return full content
+            const { pinHash, ...safeNote } = note;
+            res.json({ success: true, note: safeNote, content: note.content });
+        } catch (err) {
+            console.error('[RecordNotes] Verify PIN error:', err);
             res.status(500).json({ success: false, error: err.message });
         }
     });

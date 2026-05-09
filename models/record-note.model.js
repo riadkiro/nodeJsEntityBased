@@ -20,6 +20,10 @@ const RecordNoteSchema = new mongoose.Schema({
     pinned: { type: Boolean, default: false },
     archived: { type: Boolean, default: false },
 
+    // PIN protection
+    pinHash: { type: String, default: null },        // bcrypt hash of 4-6 digit PIN
+    isProtected: { type: Boolean, default: false },  // quick flag for UI
+
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

@@ -40,6 +40,8 @@ router.use("/api", require("./api/api-drive.router.js"));
 router.use("/api/team", require("./api/api-team.router.js"));
 router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
 
+// Notes Hub API — must be before api-account (has /:id catch-all)
+router.use("/api/notes-hub", require("./api/api-notes-hub.router.js"));
 // Agenda Hub API — must be before api-account (has /:id catch-all)
 router.get("/api/agenda-hub", async (req, res) => {
     try {
@@ -373,9 +375,9 @@ router.get("/chat", (req, res) => {
     });
 });
 
-// Notes Page
+// Notes Hub (aggregated notes across all records)
 router.get("/notes", (req, res) => {
-    res.render("record/record-notes", {
+    res.render("account/account-notes-hub", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number

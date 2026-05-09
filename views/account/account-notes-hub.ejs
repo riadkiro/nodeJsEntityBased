@@ -1,0 +1,398 @@
+<%# Notes Hub — Aggregated notes across all records %>
+<% const _apiBase = '/account/' + account_number; %>
+<% const _userId = typeof user !== 'undefined' && user ? user._id : ''; %>
+
+<style>
+/* ═══ Notes Hub ═══ */
+.nh-page { max-width:1200px; margin:0 auto; padding:24px 32px; }
+.nh-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding:28px 32px; background:linear-gradient(135deg,#8b5cf608,#8b5cf604); border:1px solid #8b5cf620; border-radius:16px; position:relative; overflow:hidden; }
+.nh-header::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,#8b5cf612,transparent 70%); border-radius:50%; pointer-events:none; }
+.nh-header-icon { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#8b5cf620,#8b5cf610); flex-shrink:0; z-index:1; }
+.nh-header-info { flex:1; z-index:1; }
+.nh-header-info h1 { font-size:22px; font-weight:700; color:#0e1726; margin:0 0 4px; }
+.nh-header-info p { font-size:13px; color:#888da8; margin:0; }
+.nh-header-count { text-align:center; z-index:1; }
+.nh-header-count-value { font-size:28px; font-weight:800; color:#8b5cf6; line-height:1; }
+.nh-header-count-label { font-size:11px; color:#888da8; text-transform:uppercase; letter-spacing:.5px; }
+
+/* Breadcrumb */
+.nh-breadcrumb { display:flex; align-items:center; gap:4px; margin-bottom:18px; flex-wrap:wrap; }
+.nh-bc-item { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#94a3b8; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all .15s; text-decoration:none; font-family:inherit; }
+.nh-bc-item:hover { color:#8b5cf6; background:#8b5cf608; }
+.nh-bc-item--active { color:#1e293b; cursor:default; }
+.nh-bc-item--active:hover { color:#1e293b; background:transparent; }
+.nh-bc-sep { display:inline-flex; align-items:center; color:#cbd5e1; }
+
+/* Folder grid */
+.nh-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+.nh-folder { display:flex; flex-direction:column; align-items:center; gap:8px; padding:20px 12px; border-radius:14px; border:1px solid #e0e6ed; background:#fff; cursor:pointer; transition:all .2s; text-align:center; }
+.nh-folder:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.06); border-color:#8b5cf630; }
+.nh-folder-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+.nh-folder-name { font-size:13px; font-weight:600; color:#0e1726; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; }
+.nh-folder-count { font-size:11px; color:#94a3b8; }
+
+/* Notes list */
+.nh-notes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.nh-note-card { padding:18px; border-radius:14px; border:1px solid #e0e6ed; background:#fff; cursor:pointer; transition:all .2s; position:relative; }
+.nh-note-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.06); border-color:#8b5cf630; }
+.nh-note-card-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.nh-note-card-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.nh-note-card-title { font-size:14px; font-weight:700; color:#0e1726; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nh-note-card-preview { font-size:12px; color:#888da8; line-height:1.5; max-height:42px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.nh-note-card-meta { display:flex; align-items:center; justify-content:space-between; margin-top:12px; font-size:11px; color:#bfc9d4; }
+.nh-note-pin-badge { position:absolute; top:12px; right:12px; color:#f59e0b; }
+.nh-note-lock-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px; background:#8b5cf610; color:#8b5cf6; }
+
+/* Note viewer */
+.nh-viewer { border:1px solid #e0e6ed; border-radius:14px; overflow:hidden; background:#fff; min-height:400px; display:grid; grid-template-rows:auto 1fr; }
+.nh-viewer-header { padding:14px 20px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:10px; }
+.nh-viewer-title { font-size:14px; font-weight:700; color:#0e1726; flex:1; }
+.nh-viewer-body { padding:24px; overflow-y:auto; max-height:60vh; font-size:14px; line-height:1.7; color:#334155; }
+.nh-viewer-body:empty::after { content:'Cette note est vide'; color:#bfc9d4; font-style:italic; }
+
+/* PIN modal */
+.nh-pin-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.35); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; animation:nhFadeIn .2s ease; }
+.nh-pin-modal { background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.15); width:360px; max-width:calc(100vw - 40px); padding:32px; text-align:center; animation:nhSlideUp .3s ease; }
+@keyframes nhFadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes nhSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.nh-pin-icon { width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg,#8b5cf618,#8b5cf608); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.nh-pin-title { font-size:16px; font-weight:700; color:#0e1726; margin-bottom:4px; }
+.nh-pin-desc { font-size:12px; color:#888da8; margin-bottom:20px; }
+.nh-pin-input { width:160px; padding:12px; border:1.5px solid #e0e6ed; border-radius:12px; font-size:20px; font-weight:700; text-align:center; letter-spacing:8px; outline:none; font-family:'Nunito',sans-serif; color:#0e1726; }
+.nh-pin-input:focus { border-color:#8b5cf6; box-shadow:0 0 0 3px #8b5cf610; }
+.nh-pin-error { color:#ef4444; font-size:12px; font-weight:600; margin-top:8px; min-height:18px; }
+.nh-pin-actions { display:flex; gap:10px; justify-content:center; margin-top:16px; }
+.nh-pin-btn { padding:9px 20px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:inherit; transition:all .15s; }
+.nh-pin-btn-cancel { background:#f1f5f9; color:#64748b; }
+.nh-pin-btn-cancel:hover { background:#e2e8f0; }
+.nh-pin-btn-ok { background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; }
+.nh-pin-btn-ok:hover { transform:translateY(-1px); box-shadow:0 4px 12px #8b5cf640; }
+
+/* Empty */
+.nh-empty { text-align:center; padding:48px 20px; color:#94a3b8; }
+.nh-empty iconify-icon { opacity:.3; }
+.nh-empty h3 { font-size:16px; font-weight:700; color:#0e1726; margin:10px 0 4px; }
+.nh-empty p { font-size:13px; margin:0; }
+
+/* Dark mode */
+[data-theme="dark"] .nh-header { background:linear-gradient(135deg,#8b5cf610,#8b5cf606); border-color:#8b5cf630; }
+[data-theme="dark"] .nh-header-info h1,
+.dark .nh-header-info h1 { color:#e0e6ed; }
+[data-theme="dark"] .nh-folder, .dark .nh-folder { background:#0e1726; border-color:#253b5c; }
+[data-theme="dark"] .nh-folder:hover, .dark .nh-folder:hover { border-color:#8b5cf640; }
+[data-theme="dark"] .nh-folder-name, .dark .nh-folder-name { color:#e0e6ed; }
+[data-theme="dark"] .nh-note-card, .dark .nh-note-card { background:#0e1726; border-color:#253b5c; }
+[data-theme="dark"] .nh-note-card:hover, .dark .nh-note-card:hover { border-color:#8b5cf640; }
+[data-theme="dark"] .nh-note-card-title, .dark .nh-note-card-title { color:#e0e6ed; }
+[data-theme="dark"] .nh-viewer, .dark .nh-viewer { background:#0e1726; border-color:#253b5c; }
+[data-theme="dark"] .nh-viewer-header, .dark .nh-viewer-header { border-color:#253b5c; }
+[data-theme="dark"] .nh-viewer-title, .dark .nh-viewer-title { color:#e0e6ed; }
+[data-theme="dark"] .nh-viewer-body, .dark .nh-viewer-body { color:#cbd5e1; }
+[data-theme="dark"] .nh-pin-modal, .dark .nh-pin-modal { background:#0e1726; border:1px solid #253b5c; }
+[data-theme="dark"] .nh-pin-title, .dark .nh-pin-title { color:#e0e6ed; }
+[data-theme="dark"] .nh-pin-input, .dark .nh-pin-input { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
+[data-theme="dark"] .nh-bc-item--active, .dark .nh-bc-item--active { color:#e0e6ed; }
+[data-theme="dark"] .nh-empty h3, .dark .nh-empty h3 { color:#e0e6ed; }
+</style>
+
+<div class="nh-page" x-data="notesHub" x-cloak>
+    <!-- Header -->
+    <div class="nh-header">
+        <div class="nh-header-icon">
+            <iconify-icon icon="solar:notebook-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
+        </div>
+        <div class="nh-header-info">
+            <h1>Notes Hub</h1>
+            <p>Toutes les notes de vos enregistrements</p>
+        </div>
+        <div class="nh-header-count">
+            <div class="nh-header-count-value" x-text="totalNotes"></div>
+            <div class="nh-header-count-label">Notes</div>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="nh-breadcrumb">
+        <button class="nh-bc-item" :class="!currentEntity && !currentRecord && !activeNote ? 'nh-bc-item--active' : ''" @click="goToRoot()">
+            <iconify-icon icon="solar:notebook-bold-duotone" width="14" style="color:#8b5cf6"></iconify-icon>
+            Notes Hub
+        </button>
+        <template x-if="currentEntity">
+            <span class="nh-bc-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <button class="nh-bc-item" :class="!currentRecord && !activeNote ? 'nh-bc-item--active' : ''" @click="goToEntity(currentEntity)" x-text="currentEntity.entityName"></button>
+            </span>
+        </template>
+        <template x-if="currentRecord">
+            <span class="nh-bc-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <button class="nh-bc-item" :class="!activeNote ? 'nh-bc-item--active' : ''" @click="goToRecord(currentRecord)" x-text="currentRecord.recordTitle"></button>
+            </span>
+        </template>
+        <template x-if="activeNote">
+            <span class="nh-bc-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <span class="nh-bc-item nh-bc-item--active" x-text="activeNote.title || 'Sans titre'"></span>
+            </span>
+        </template>
+    </div>
+
+    <!-- Loading -->
+    <div x-show="loading" style="text-align:center;padding:40px;">
+        <iconify-icon icon="line-md:loading-twotone-loop" width="28" style="color:#8b5cf6"></iconify-icon>
+        <p style="font-size:12px;color:#888da8;margin-top:8px;">Chargement...</p>
+    </div>
+
+    <!-- Level 1: Entity folders -->
+    <template x-if="!loading && !currentEntity && !activeNote">
+        <div>
+            <div x-show="entities.length === 0" class="nh-empty">
+                <iconify-icon icon="solar:notebook-bold-duotone" width="48"></iconify-icon>
+                <h3>Aucune note</h3>
+                <p>Les notes apparaîtront ici lorsque vous en créerez dans les enregistrements</p>
+            </div>
+            <div class="nh-grid" x-show="entities.length > 0">
+                <template x-for="e in entities" :key="e.entityId">
+                    <div class="nh-folder" @dblclick="goToEntity(e)">
+                        <div class="nh-folder-icon" :style="'background:linear-gradient(135deg,' + (e.entityColor || '#8b5cf6') + '15,' + (e.entityColor || '#8b5cf6') + '08)'">
+                            <iconify-icon :icon="e.entityIcon || 'solar:folder-bold-duotone'" width="24" :style="'color:' + (e.entityColor || '#8b5cf6')"></iconify-icon>
+                        </div>
+                        <div class="nh-folder-name" x-text="e.entityName"></div>
+                        <div class="nh-folder-count" x-text="e.totalNotes + ' note(s)'"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Level 2: Record folders within entity -->
+    <template x-if="!loading && currentEntity && !currentRecord && !activeNote">
+        <div>
+            <div x-show="currentEntity.records.length === 0" class="nh-empty">
+                <iconify-icon icon="solar:folder-bold-duotone" width="48"></iconify-icon>
+                <h3>Aucun enregistrement avec des notes</h3>
+            </div>
+            <div class="nh-grid" x-show="currentEntity.records.length > 0">
+                <template x-for="r in currentEntity.records" :key="r.recordId">
+                    <div class="nh-folder" @dblclick="goToRecord(r)">
+                        <div class="nh-folder-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                            <iconify-icon icon="solar:folder-bold-duotone" width="24" style="color:#f59e0b"></iconify-icon>
+                        </div>
+                        <div class="nh-folder-name" x-text="r.recordTitle || 'Sans titre'"></div>
+                        <div class="nh-folder-count" x-text="r.notes.length + ' note(s)'"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Level 3: Notes cards for a record -->
+    <template x-if="!loading && currentRecord && !activeNote">
+        <div class="nh-notes-grid">
+            <template x-for="note in currentRecord.notes" :key="note._id">
+                <div class="nh-note-card" @click="openNote(note)">
+                    <template x-if="note.pinned">
+                        <div class="nh-note-pin-badge"><iconify-icon icon="solar:pin-bold" width="14"></iconify-icon></div>
+                    </template>
+                    <div class="nh-note-card-header">
+                        <div class="nh-note-card-icon" :style="'background:' + (note.color || '#8b5cf6') + '15'">
+                            <iconify-icon :icon="note.icon || 'solar:notebook-bold-duotone'" width="18" :style="'color:' + (note.color || '#8b5cf6')"></iconify-icon>
+                        </div>
+                        <div class="nh-note-card-title" x-text="note.title || 'Sans titre'"></div>
+                    </div>
+                    <div class="nh-note-card-preview" x-show="!note.isProtected" x-html="stripHtml(note.content || '')"></div>
+                    <div x-show="note.isProtected" style="display:flex;align-items:center;gap:6px;color:#8b5cf6;font-size:12px;font-weight:600;">
+                        <iconify-icon icon="solar:lock-keyhole-bold-duotone" width="14"></iconify-icon>
+                        Note protégée par PIN
+                    </div>
+                    <div class="nh-note-card-meta">
+                        <span x-text="note.createdByName || 'Inconnu'"></span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <template x-if="note.isProtected">
+                                <span class="nh-note-lock-badge"><iconify-icon icon="solar:lock-bold" width="10"></iconify-icon> PIN</span>
+                            </template>
+                            <span x-text="formatTime(note.updatedAt)"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- Level 4: Active note viewer -->
+    <template x-if="!loading && activeNote">
+        <div class="nh-viewer">
+            <div class="nh-viewer-header">
+                <div style="width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;" :style="'background:' + (activeNote.color || '#8b5cf6') + '15'">
+                    <iconify-icon :icon="activeNote.icon || 'solar:notebook-bold-duotone'" width="16" :style="'color:' + (activeNote.color || '#8b5cf6')"></iconify-icon>
+                </div>
+                <div class="nh-viewer-title" x-text="activeNote.title || 'Sans titre'"></div>
+                <div style="font-size:11px;color:#94a3b8;" x-text="activeNote.createdByName"></div>
+                <a :href="getNoteRecordLink()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;color:#8b5cf6;background:#8b5cf608;border:1px solid #8b5cf620;text-decoration:none;transition:all .15s;margin-left:auto;" onmouseover="this.style.background='#8b5cf615'" onmouseout="this.style.background='#8b5cf608'">
+                    <iconify-icon icon="solar:arrow-right-linear" width="12"></iconify-icon> Ouvrir la fiche
+                </a>
+            </div>
+            <div class="nh-viewer-body" x-html="activeNoteContent"></div>
+        </div>
+    </template>
+
+    <!-- PIN Modal -->
+    <template x-if="showPinModal">
+        <div class="nh-pin-overlay" @click.self="closePinModal()">
+            <div class="nh-pin-modal" @click.stop>
+                <div class="nh-pin-icon">
+                    <iconify-icon icon="solar:lock-keyhole-bold-duotone" width="24" style="color:#8b5cf6"></iconify-icon>
+                </div>
+                <div class="nh-pin-title">Note protégée</div>
+                <div class="nh-pin-desc" x-text="'Entrez le PIN pour accéder à : ' + (pinTarget?.title || 'cette note')"></div>
+                <input type="password" class="nh-pin-input" maxlength="6" placeholder="····" x-model="pinValue" @keydown.enter="verifyPin()" x-ref="pinInput" inputmode="numeric" pattern="[0-9]*">
+                <div class="nh-pin-error" x-text="pinError"></div>
+                <div class="nh-pin-actions">
+                    <button class="nh-pin-btn nh-pin-btn-cancel" @click="closePinModal()">Annuler</button>
+                    <button class="nh-pin-btn nh-pin-btn-ok" @click="verifyPin()" :disabled="pinLoading">
+                        <span x-text="pinLoading ? 'Vérification...' : 'Déverrouiller'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const _accountNumber = '<%= account_number %>';
+    const _apiBase = '/account/' + _accountNumber;
+
+    Alpine.data('notesHub', () => ({
+        entities: [],
+        loading: true,
+        totalNotes: 0,
+        currentEntity: null,
+        currentRecord: null,
+        activeNote: null,
+        activeNoteContent: '',
+
+        // PIN
+        showPinModal: false,
+        pinTarget: null,
+        pinValue: '',
+        pinError: '',
+        pinLoading: false,
+
+        async init() {
+            await this.loadHub();
+        },
+
+        async loadHub() {
+            this.loading = true;
+            try {
+                const res = await fetch(_apiBase + '/api/notes-hub', { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    this.entities = data.entities || [];
+                    this.totalNotes = data.totalNotes || 0;
+                }
+            } catch (e) {
+                console.error('[NotesHub] Load error:', e);
+            }
+            this.loading = false;
+        },
+
+        goToRoot() {
+            this.currentEntity = null;
+            this.currentRecord = null;
+            this.activeNote = null;
+            this.activeNoteContent = '';
+        },
+
+        goToEntity(entity) {
+            this.currentEntity = entity;
+            this.currentRecord = null;
+            this.activeNote = null;
+            this.activeNoteContent = '';
+        },
+
+        goToRecord(record) {
+            this.currentRecord = record;
+            this.activeNote = null;
+            this.activeNoteContent = '';
+        },
+
+        openNote(note) {
+            if (note.isProtected) {
+                this.pinTarget = note;
+                this.pinValue = '';
+                this.pinError = '';
+                this.showPinModal = true;
+                this.$nextTick(() => { if (this.$refs.pinInput) this.$refs.pinInput.focus(); });
+                return;
+            }
+            this.activeNote = note;
+            this.activeNoteContent = note.content || '';
+        },
+
+        closePinModal() {
+            this.showPinModal = false;
+            this.pinTarget = null;
+            this.pinValue = '';
+            this.pinError = '';
+        },
+
+        async verifyPin() {
+            if (!this.pinValue || this.pinValue.length < 4) {
+                this.pinError = 'Le PIN doit contenir au moins 4 chiffres';
+                return;
+            }
+            this.pinLoading = true;
+            this.pinError = '';
+            try {
+                const note = this.pinTarget;
+                const res = await fetch(_apiBase + '/api/record/' + note.recordId + '/notes/' + note._id + '/verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ pin: this.pinValue })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.activeNote = data.note || note;
+                    this.activeNoteContent = data.content || '';
+                    this.closePinModal();
+                } else {
+                    this.pinError = data.error || 'PIN incorrect';
+                    this.pinValue = '';
+                    if (this.$refs.pinInput) this.$refs.pinInput.focus();
+                }
+            } catch (e) {
+                this.pinError = 'Erreur réseau';
+            }
+            this.pinLoading = false;
+        },
+
+        getNoteRecordLink() {
+            if (!this.activeNote || !this.currentEntity) return '#';
+            return _apiBase + '/record/' + this.currentEntity.entitySlug + '/' + this.activeNote.recordId + '/notes';
+        },
+
+        stripHtml(html) {
+            if (!html) return '';
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        },
+
+        formatTime(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - d;
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return "à l'instant";
+            if (diffMins < 60) return diffMins + ' min';
+            const diffHrs = Math.floor(diffMins / 60);
+            if (diffHrs < 24) return diffHrs + 'h';
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        }
+    }));
+});
+</script>

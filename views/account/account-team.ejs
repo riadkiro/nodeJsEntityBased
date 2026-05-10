@@ -52,12 +52,12 @@
       </div>
 
       <!-- Teams Section -->
-      <div style="margin-bottom:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:8px;">
+      <div class="ts-teams-section">
+        <div class="ts-teams-section-header">
+          <div class="ts-teams-section-title">
             <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
-            <span style="font-size:14px;font-weight:700;color:#0e1726;">Teams</span>
-            <span style="font-size:11px;color:#94a3b8;font-weight:500;" x-text="teams.length + ' groupe(s)'"></span>
+            Teams
+            <span class="ts-teams-section-count" x-text="teams.length + ' groupe(s)'"></span>
           </div>
           <button @click="openTeamModal()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px dashed #7c3aed40;background:transparent;color:#7c3aed;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;" onmouseover="this.style.background='#7c3aed08';this.style.borderColor='#7c3aed'" onmouseout="this.style.background='transparent';this.style.borderColor='#7c3aed40'">
             <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon> Nouvelle team
@@ -65,22 +65,22 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
           <template x-for="team in teams" :key="team._id">
-            <div style="padding:14px 16px;border-radius:12px;border:1px solid #e0e6ed;background:#fff;cursor:pointer;transition:all .2s;position:relative;" :style="teamFilter === team._id ? 'border-color:' + team.color + ';box-shadow:0 0 0 2px ' + team.color + '25' : ''" @click="teamFilter = teamFilter === team._id ? null : team._id" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)'" onmouseout="if(!this.classList.contains('active')){this.style.transform='';this.style.boxShadow=''}">
+            <div class="ts-team-card" :class="teamFilter === team._id && 'ts-team-active'" @click="teamFilter = teamFilter === team._id ? null : team._id">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <div style="width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" :style="'background:' + team.color + '15'">
+                <div :style="'width:32px;min-width:32px;max-width:32px;height:32px;min-height:32px;max-height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + team.color + '15'">
                   <iconify-icon :icon="team.icon" width="16" :style="'color:' + team.color"></iconify-icon>
                 </div>
                 <div style="flex:1;min-width:0;">
-                  <div style="font-size:13px;font-weight:700;color:#0e1726;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="team.name"></div>
-                  <div style="font-size:11px;color:#94a3b8;" x-text="team.memberCount + ' membre(s)'"></div>
+                  <div style="font-size:13px;font-weight:700;color:#0e1726;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="dark:!text-[#e0e6ed]" x-text="team.name"></div>
+                  <div style="font-size:11px;color:#94a3b8;" x-text="(team.memberIds || []).length + ' membre(s)'"></div>
                 </div>
                 <button @click.stop="openTeamModal(team)" style="border:none;background:transparent;cursor:pointer;padding:4px;border-radius:6px;color:#94a3b8;transition:all .15s;" onmouseover="this.style.color='#7c3aed';this.style.background='#7c3aed08'" onmouseout="this.style.color='#94a3b8';this.style.background='transparent'">
                   <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
                 </button>
               </div>
-              <div style="display:flex;gap:-4px;">
+              <div style="display:flex;">
                 <template x-for="(mid, idx) in (team.memberIds || []).slice(0, 5)" :key="mid">
-                  <div style="width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;margin-left:-4px;" :style="'background:' + avatarColor(getMemberName(mid))" x-text="getMemberName(mid).charAt(0).toUpperCase()"></div>
+                  <div :style="'width:22px;min-width:22px;max-width:22px;height:22px;min-height:22px;max-height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;margin-left:' + (idx === 0 ? '0' : '-4px') + ';flex-shrink:0;background:' + avatarColor(getMemberName(mid))" x-text="getMemberName(mid).charAt(0).toUpperCase()"></div>
                 </template>
                 <template x-if="(team.memberIds || []).length > 5">
                   <div style="width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#64748b;background:#f1f5f9;margin-left:-4px;" x-text="'+' + ((team.memberIds || []).length - 5)"></div>
@@ -91,190 +91,257 @@
         </div>
       </div>
 
-      <!-- Toolbar -->
-      <div class="ts-toolbar">
-        <div class="ts-toolbar-left">
-          <div class="ts-view-toggle">
-            <button class="ts-view-btn" :class="viewMode === 'grid' && 'active'" @click="viewMode = 'grid'">
-              <iconify-icon icon="solar:widget-bold" width="14"></iconify-icon> Grille
-            </button>
-            <button class="ts-view-btn" :class="viewMode === 'list' && 'active'" @click="viewMode = 'list'">
-              <iconify-icon icon="solar:list-bold" width="14"></iconify-icon> Liste
-            </button>
-          </div>
-          <template x-for="role in allRoles" :key="role.key">
-            <button class="ts-filter-btn" :class="activeFilter === role.key && 'active'" @click="activeFilter = activeFilter === role.key ? 'all' : role.key">
-              <span x-text="role.label"></span>
-              <span style="opacity:.6;" x-text="'(' + members.filter(m => role.key === 'all' ? true : m.role === role.key).length + ')'"></span>
-            </button>
-          </template>
-          <template x-if="teamFilter">
-            <button class="ts-filter-btn active" style="background:#7c3aed10;color:#7c3aed;border-color:#7c3aed40;" @click="teamFilter = null">
-              <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
-              <span x-text="teams.find(t => t._id === teamFilter)?.name || 'Team'"></span>
-            </button>
-          </template>
-        </div>
-        <div class="ts-toolbar-right">
-          <div class="ts-search">
-            <iconify-icon icon="solar:magnifer-linear" width="15" class="ts-search-icon"></iconify-icon>
-            <input type="text" placeholder="Rechercher un membre..." x-model="searchQuery" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Grid View -->
-      <template x-if="viewMode === 'grid'">
-        <div class="ts-member-grid">
-          <template x-for="member in filteredMembers" :key="member._id">
-            <div class="ts-member-card" :data-role="member.role">
-              <div class="ts-member-actions" x-data="{open:false,editRole:false}" @click.outside="open=false;editRole=false">
-                <button @click="open=!open"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-                <div x-show="open" x-transition style="position:absolute;right:0;top:32px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:6px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:10;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
-                  <template x-if="!editRole">
-                    <div>
-                      <button @click="editRole=true" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
-                        <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon> Modifier le rôle
-                      </button>
-                      <button @click="removeMember(member._id, member.name); open=false" x-show="member.role !== 'owner'" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#ef4444;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
-                        <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon> Révoquer l'accès
-                      </button>
-                    </div>
-                  </template>
-                  <template x-if="editRole">
-                    <div>
-                      <div style="padding:6px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;">Choisir un rôle</div>
-                      <template x-for="r in ['admin','manager','member','viewer']" :key="r">
-                        <button @click="updateRole(member._id, r); open=false; editRole=false" style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
-                          <span class="ts-role-badge" :class="'ts-role-' + r" x-text="roleLabel(r)" style="font-size:9px;"></span>
-                          <iconify-icon x-show="member.role === r" icon="solar:check-circle-bold" width="14" style="color:#22c55e;margin-left:auto;"></iconify-icon>
-                        </button>
-                      </template>
-                    </div>
-                  </template>
-                </div>
-              </div>
-              <div style="text-align:center;">
-                <div class="ts-member-avatar" style="display:inline-block;">
-                  <template x-if="member.avatar">
-                    <img :src="member.avatar" :alt="member.name" />
-                  </template>
-                  <template x-if="!member.avatar">
-                    <div style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;" :style="'background:' + avatarColor(member.name)">
-                      <span x-text="member.name.charAt(0).toUpperCase()"></span>
-                    </div>
-                  </template>
-                  <span class="ts-status" :class="member.userStatus === 'active' ? 'ts-status-online' : 'ts-status-offline'"></span>
-                </div>
-                <div class="ts-member-name" x-text="member.name"></div>
-                <div class="ts-member-email" x-text="member.email"></div>
-                <span class="ts-role-badge" :class="'ts-role-' + member.role" x-text="roleLabel(member.role)"></span>
-              </div>
-              <div class="ts-member-meta">
-                <span x-text="member.email.split('@')[1]"></span>
-                <span x-text="formatDate(member.joinedAt)"></span>
+      <!-- Members Section -->
+      <div class="ts-members-section">
+        <!-- Toolbar -->
+        <div class="ts-members-toolbar">
+          <div class="ts-members-toolbar-left">
+            <!-- Role Dropdown -->
+            <div style="position:relative;" x-data="{roleOpen:false}" @click.outside="roleOpen=false">
+              <button @click="roleOpen=!roleOpen" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid #e0e6ed;border-radius:10px;background:#fff;font-size:12px;font-weight:600;color:#334155;cursor:pointer;font-family:inherit;transition:all .15s;min-width:130px;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#cbd5e1]" :style="activeFilter !== 'all' ? 'border-color:#4361ee;background:rgba(67,97,238,.04);color:#4361ee' : ''">
+                <iconify-icon icon="solar:shield-user-bold-duotone" width="14" style="flex-shrink:0;"></iconify-icon>
+                <span x-text="activeFilter === 'all' ? 'Tous les rôles' : roleLabel(activeFilter)" style="flex:1;text-align:left;"></span>
+                <span style="font-size:10px;opacity:.6;" x-text="'(' + (activeFilter === 'all' ? members.length : members.filter(m => m.role === activeFilter).length) + ')'"></span>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" style="flex-shrink:0;opacity:.5;"></iconify-icon>
+              </button>
+              <div x-show="roleOpen" x-transition style="position:absolute;top:calc(100% + 4px);left:0;min-width:180px;max-width:220px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:20;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+                <template x-for="role in allRoles" :key="'dd-'+role.key">
+                  <div style="display:block;">
+                    <button @click="activeFilter = role.key; roleOpen=false" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;transition:background .1s;text-align:left;box-sizing:border-box;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'" :style="activeFilter === role.key ? 'background:#f1f5f9;font-weight:700;' : ''">
+                      <span x-text="role.label" style="flex:1;text-align:left;"></span>
+                      <span style="font-size:10px;color:#94a3b8;" x-text="'(' + (role.key === 'all' ? members.length : members.filter(m => m.role === role.key).length) + ')'"></span>
+                      <iconify-icon x-show="activeFilter === role.key" icon="solar:check-circle-bold" width="14" style="color:#4361ee;"></iconify-icon>
+                    </button>
+                  </div>
+                </template>
               </div>
             </div>
-          </template>
-          <div class="ts-invite-card" @click="showInviteModal = true">
-            <div class="ts-invite-card-icon"><iconify-icon icon="solar:user-plus-bold-duotone" width="24" style="color:#4361ee"></iconify-icon></div>
-            <h6>Inviter un membre</h6>
-            <p>Développez votre équipe</p>
+            <!-- Team Dropdown -->
+            <template x-if="teams.length > 0">
+              <div style="position:relative;" x-data="{teamOpen:false}" @click.outside="teamOpen=false">
+                <button @click="teamOpen=!teamOpen" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid #e0e6ed;border-radius:10px;background:#fff;font-size:12px;font-weight:600;color:#334155;cursor:pointer;font-family:inherit;transition:all .15s;min-width:130px;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#cbd5e1]" :style="teamFilter ? 'border-color:#7c3aed;background:rgba(124,58,237,.04);color:#7c3aed' : ''">
+                  <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="14" style="flex-shrink:0;"></iconify-icon>
+                  <span x-text="teamFilter ? teams.find(t => t._id === teamFilter)?.name || 'Team' : 'Toutes les teams'" style="flex:1;text-align:left;"></span>
+                  <iconify-icon icon="solar:alt-arrow-down-linear" width="14" style="flex-shrink:0;opacity:.5;"></iconify-icon>
+                </button>
+                <div x-show="teamOpen" x-transition style="position:absolute;top:calc(100% + 4px);left:0;min-width:200px;max-width:260px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:20;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+                  <div style="display:block;">
+                    <button @click="teamFilter=null; teamOpen=false" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;transition:background .1s;text-align:left;box-sizing:border-box;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'" :style="!teamFilter ? 'background:#f1f5f9;font-weight:700;' : ''">
+                      <span style="flex:1;text-align:left;">Toutes les teams</span>
+                      <iconify-icon x-show="!teamFilter" icon="solar:check-circle-bold" width="14" style="color:#7c3aed;"></iconify-icon>
+                    </button>
+                  </div>
+                  <template x-for="team in teams" :key="'tdd-'+team._id">
+                    <div style="display:block;">
+                      <button @click="teamFilter=team._id; teamOpen=false" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;transition:background .1s;text-align:left;box-sizing:border-box;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'" :style="teamFilter === team._id ? 'background:#f1f5f9;font-weight:700;' : ''">
+                        <div :style="'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + team.color"></div>
+                        <span x-text="team.name" style="flex:1;text-align:left;"></span>
+                        <span style="font-size:10px;color:#94a3b8;" x-text="(team.memberIds || []).length + ' membres'"></span>
+                        <iconify-icon x-show="teamFilter === team._id" icon="solar:check-circle-bold" width="14" style="color:#7c3aed;"></iconify-icon>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="ts-members-toolbar-right">
+            <div class="ts-search">
+              <iconify-icon icon="solar:magnifer-linear" width="15" class="ts-search-icon"></iconify-icon>
+              <input type="text" placeholder="Rechercher un membre..." x-model="searchQuery" />
+            </div>
           </div>
         </div>
-      </template>
 
-      <!-- List View -->
-      <template x-if="viewMode === 'list'">
-        <div class="ts-member-list">
+        <!-- Member Rows -->
+        <div>
           <template x-for="member in filteredMembers" :key="member._id">
-            <div class="ts-member-row">
-              <div style="position:relative;">
+            <div class="ts-member-row" x-data="{open:false,editRole:false}" @click.outside="open=false;editRole=false">
+              <div style="position:relative;flex-shrink:0;">
                 <template x-if="member.avatar"><img :src="member.avatar" :alt="member.name" /></template>
                 <template x-if="!member.avatar">
-                  <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;" :style="'background:' + avatarColor(member.name)">
+                  <div :style="'width:36px;min-width:36px;max-width:36px;height:36px;min-height:36px;max-height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(member.name)">
                     <span x-text="member.name.charAt(0).toUpperCase()"></span>
                   </div>
                 </template>
                 <span class="ts-status" :class="member.userStatus === 'active' ? 'ts-status-online' : 'ts-status-offline'" style="position:absolute;bottom:0;right:-2px;"></span>
               </div>
-              <div class="ts-member-row-info">
+              <div class="ts-member-row-info" style="min-width:120px;">
                 <div class="ts-member-row-name" x-text="member.name"></div>
                 <div class="ts-member-row-email" x-text="member.email"></div>
               </div>
               <span class="ts-role-badge" :class="'ts-role-' + member.role" x-text="roleLabel(member.role)"></span>
-              <template x-if="member.entityAccess && member.entityAccess.length > 0">
-                <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(249,115,22,.08);color:#f97316;white-space:nowrap;" x-text="member.entityAccess.length + ' entité(s)'"></span>
+              <!-- Team Badges -->
+              <div style="display:flex;gap:4px;flex-wrap:wrap;min-width:0;">
+                <template x-for="team in getMemberTeams(member._id)" :key="'tb-'+team._id">
+                  <span class="ts-team-badge" :style="'background:' + team.color + '10;color:' + team.color">
+                    <div :style="'width:6px;height:6px;border-radius:50%;background:' + team.color + ';flex-shrink:0;'"></div>
+                    <span x-text="team.name"></span>
+                  </span>
+                </template>
+              </div>
+              <!-- Permission Status -->
+              <template x-if="member.entityPermissions && member.entityPermissions.length > 0">
+                <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(249,115,22,.08);color:#f97316;white-space:nowrap;" x-text="member.entityPermissions.length + ' entité(s)'"></span>
               </template>
-              <template x-if="!member.entityAccess || member.entityAccess.length === 0">
+              <template x-if="(!member.entityPermissions || member.entityPermissions.length === 0) && (!member.entityAccess || member.entityAccess.length === 0)">
                 <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(34,197,94,.08);color:#22c55e;white-space:nowrap;">Accès complet</span>
               </template>
-              <button @click="openPermissionsModal(member)" style="padding:4px 10px;border:1px solid #e0e6ed;background:#fff;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;white-space:nowrap;transition:all .15s;" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'" :disabled="member.role === 'owner'">
-                <iconify-icon icon="solar:lock-keyhole-bold" width="12"></iconify-icon> Accès
-              </button>
-              <span class="ts-member-row-dept" x-text="member.email.split('@')[1]"></span>
-              <span class="ts-member-row-date" x-text="formatDate(member.joinedAt)"></span>
+              <!-- Actions -->
+              <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;">
+                <a :href="'/account/<%= account_number %>/permissions?user=' + member._id" style="padding:4px 10px;border:1px solid #e0e6ed;background:#fff;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;white-space:nowrap;transition:all .15s;text-decoration:none;" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'" x-show="member.role !== 'owner'">
+                  <iconify-icon icon="solar:lock-keyhole-bold" width="12"></iconify-icon> Accès
+                </a>
+                <div style="position:relative;" x-show="member.role !== 'owner'">
+                  <button @click="open=!open" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#0e1726'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
+                    <iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon>
+                  </button>
+                  <div x-show="open" x-transition style="position:absolute;right:0;top:32px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:6px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:10;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+                    <template x-if="!editRole">
+                      <div>
+                        <button @click="editRole=true" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                          <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon> Modifier le rôle
+                        </button>
+                        <button @click="removeMember(member._id, member.name); open=false" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#ef4444;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+                          <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon> Révoquer l'accès
+                        </button>
+                      </div>
+                    </template>
+                    <template x-if="editRole">
+                      <div>
+                        <div style="padding:6px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;">Choisir un rôle</div>
+                        <template x-for="r in ['admin','manager','member','viewer']" :key="r">
+                          <button @click="updateRole(member._id, r); open=false; editRole=false" style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                            <span class="ts-role-badge" :class="'ts-role-' + r" x-text="roleLabel(r)" style="font-size:9px;"></span>
+                            <iconify-icon x-show="member.role === r" icon="solar:check-circle-bold" width="14" style="color:#22c55e;margin-left:auto;"></iconify-icon>
+                          </button>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+          <template x-if="filteredMembers.length === 0">
+            <div style="padding:40px 20px;text-align:center;color:#94a3b8;">
+              <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="32" style="opacity:.5;"></iconify-icon>
+              <p style="margin-top:8px;font-size:13px;">Aucun membre ne correspond aux filtres</p>
             </div>
           </template>
         </div>
-      </template>
+      </div>
 
       <!-- Pending Invites -->
-      <div class="ts-section-title" x-show="invitations.length > 0">
-        <iconify-icon icon="solar:letter-bold-duotone" width="16" style="color:#f97316"></iconify-icon> Invitations en attente
-      </div>
-      <div class="ts-member-list" x-show="invitations.length > 0">
-        <template x-for="inv in invitations" :key="inv.email">
-          <div class="ts-member-row" style="opacity:.75;">
-            <div style="width:36px;height:36px;border-radius:50%;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <iconify-icon icon="solar:letter-bold" width="16" style="color:#f97316"></iconify-icon>
+      <template x-if="invitations.length > 0">
+        <div style="margin-top:24px;">
+          <div class="ts-separator">
+            <div class="ts-separator-line"></div>
+            <div class="ts-separator-label">
+              <iconify-icon icon="solar:letter-bold-duotone" width="14" style="color:#f97316"></iconify-icon>
+              Invitations en attente
             </div>
-            <div class="ts-member-row-info">
-              <div class="ts-member-row-name" x-text="inv.email"></div>
-              <div class="ts-member-row-email" x-text="'Invitation envoyée ' + formatDate(inv.invitedAt)"></div>
-            </div>
-            <span class="ts-role-badge" :class="'ts-role-' + inv.role" x-text="roleLabel(inv.role)"></span>
-            <button class="ts-filter-btn" style="font-size:11px;padding:5px 10px;" @click="resendInvite(inv.email)">Renvoyer</button>
-            <button style="padding:6px;border:none;background:none;color:#ef4444;cursor:pointer;border-radius:6px;" @click="cancelInvite(inv.email)">
-              <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
-            </button>
+            <div class="ts-separator-line"></div>
           </div>
-        </template>
-      </div>
-
-
+          <div class="ts-members-section">
+            <template x-for="inv in invitations" :key="inv.email">
+              <div class="ts-member-row" style="opacity:.75;">
+                <div style="width:36px;height:36px;border-radius:50%;background:rgba(249,115,22,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <iconify-icon icon="solar:letter-bold" width="16" style="color:#f97316"></iconify-icon>
+                </div>
+                <div class="ts-member-row-info">
+                  <div class="ts-member-row-name" x-text="inv.email"></div>
+                  <div class="ts-member-row-email" x-text="'Invitation envoyée ' + formatDate(inv.invitedAt)"></div>
+                </div>
+                <span class="ts-role-badge" :class="'ts-role-' + inv.role" x-text="roleLabel(inv.role)"></span>
+                <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+                  <button class="ts-filter-btn" style="font-size:11px;padding:5px 10px;" @click="resendInvite(inv.email)">Renvoyer</button>
+                  <button style="padding:6px;border:none;background:none;color:#ef4444;cursor:pointer;border-radius:6px;" @click="cancelInvite(inv.email)">
+                    <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
     </div>
   </template>
 
   <!-- Invite Modal -->
   <template x-if="showInviteModal">
     <div class="ts-modal-overlay" @click.self="showInviteModal = false">
-      <div class="ts-modal" @click.stop>
-        <div class="ts-modal-header">
-          <h3>Inviter un membre</h3>
-          <button class="ts-modal-close" @click="showInviteModal = false"><iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon></button>
-        </div>
-        <div class="ts-modal-body">
-          <div x-show="inviteError" style="padding:10px 14px;border-radius:10px;background:rgba(239,68,68,.08);color:#ef4444;font-size:12px;font-weight:600;margin-bottom:14px;" x-text="inviteError"></div>
-          <div x-show="inviteSuccess" style="padding:10px 14px;border-radius:10px;background:rgba(34,197,94,.08);color:#22c55e;font-size:12px;font-weight:600;margin-bottom:14px;" x-text="inviteSuccess"></div>
-          <div style="margin-bottom:18px;">
-            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Adresse email</label>
-            <input type="email" placeholder="email@example.com" x-model="inviteEmail" style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:#fff;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]" />
+      <div class="ts-modal" @click.stop style="max-width:520px;">
+        <div style="padding:20px 24px;border-bottom:1px solid #e0e6ed;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(67,97,238,.1);flex-shrink:0;">
+            <iconify-icon icon="solar:user-plus-bold-duotone" width="20" style="color:#4361ee;"></iconify-icon>
           </div>
-          <div style="margin-bottom:18px;">
-            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Rôle</label>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
-              <template x-for="r in [{key:'admin',label:'Admin',desc:'Accès complet',icon:'solar:shield-bold-duotone',color:'#4361ee'},{key:'manager',label:'Manager',desc:'Gestion d\'équipe',icon:'solar:user-check-bold-duotone',color:'#f97316'},{key:'member',label:'Membre',desc:'Accès standard',icon:'solar:user-bold-duotone',color:'#64748b'},{key:'viewer',label:'Observateur',desc:'Lecture seule',icon:'solar:eye-bold-duotone',color:'#10b981'}]" :key="r.key">
-                <div style="padding:12px;border-radius:12px;border:1.5px solid #e0e6ed;cursor:pointer;transition:all .2s;" :style="inviteRole === r.key ? 'border-color:#4361ee;background:rgba(67,97,238,.04)' : ''" @click="inviteRole = r.key" class="dark:!border-[#253b5c]">
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                    <iconify-icon :icon="r.icon" width="16" :style="'color:'+r.color"></iconify-icon>
-                    <span style="font-size:13px;font-weight:600;" x-text="r.label" class="dark:!text-[#e0e6ed]"></span>
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:700;color:#0e1726;">Ajouter un membre</div>
+            <div style="font-size:12px;color:#94a3b8;">Inviter par email ou ajouter un utilisateur existant</div>
+          </div>
+          <button @click="showInviteModal = false" style="border:none;background:#f1f5f9;cursor:pointer;padding:6px;border-radius:8px;color:#64748b;">
+            <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+          </button>
+        </div>
+        <div style="padding:20px 24px;">
+          <div x-show="inviteError" style="padding:10px 14px;border-radius:10px;background:rgba(239,68,68,.08);color:#ef4444;font-size:12px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
+            <span x-text="inviteError"></span>
+          </div>
+          <div x-show="inviteSuccess" style="padding:10px 14px;border-radius:10px;background:rgba(34,197,94,.08);color:#22c55e;font-size:12px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+            <span x-text="inviteSuccess"></span>
+          </div>
+
+          <!-- Email Input with lookup -->
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">Adresse email</label>
+            <div style="position:relative;">
+              <input type="email" placeholder="email@example.com" x-model="inviteEmail"
+                @input.debounce.500ms="lookupEmail()"
+                style="width:100%;padding:10px 14px 10px 38px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:#fff;box-sizing:border-box;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]"
+                :style="inviteLookup ? 'border-color:#22c55e;' : ''" />
+              <iconify-icon icon="solar:letter-bold-duotone" width="16" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"></iconify-icon>
+            </div>
+            <!-- Lookup result: existing user found -->
+            <template x-if="inviteLookup">
+              <div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);display:flex;align-items:center;gap:10px;">
+                <div :style="'width:28px;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;background:' + avatarColor(inviteLookup.name)" x-text="inviteLookup.name.charAt(0).toUpperCase()"></div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:12px;font-weight:600;color:#0e1726;" x-text="inviteLookup.name"></div>
+                  <div style="font-size:11px;color:#22c55e;display:flex;align-items:center;gap:3px;">
+                    <iconify-icon icon="solar:check-circle-bold" width="11"></iconify-icon>
+                    Utilisateur existant — sera ajouté directement
                   </div>
-                  <div style="font-size:11px;color:#94a3b8;" x-text="r.desc"></div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Role Selector -->
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:8px;" class="dark:!text-[#cbd5e1]">Rôle</label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+              <template x-for="r in [{key:'admin',label:'Admin',desc:'Accès complet',icon:'solar:shield-bold-duotone',color:'#4361ee'},{key:'manager',label:'Manager',desc:'Gestion d\'équipe',icon:'solar:user-check-bold-duotone',color:'#f97316'},{key:'member',label:'Membre',desc:'Accès standard',icon:'solar:user-bold-duotone',color:'#64748b'},{key:'viewer',label:'Observateur',desc:'Lecture seule',icon:'solar:eye-bold-duotone',color:'#10b981'}]" :key="r.key">
+                <div class="ts-role-select-card dark:!border-[#253b5c]" :class="inviteRole === r.key && 'ts-role-select-active'" :style="inviteRole === r.key ? '--role-color:'+r.color+';border-color:'+r.color+';background:'+r.color+'08;box-shadow:0 0 0 3px '+r.color+'12' : '--role-color:#94a3b8'" @click="inviteRole = r.key">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div :style="'width:34px;min-width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:'+r.color+'12;transition:all .2s;'">
+                      <iconify-icon :icon="r.icon" width="17" :style="'color:'+r.color"></iconify-icon>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:700;color:#0e1726;line-height:1.2;" class="dark:!text-[#e0e6ed]" x-text="r.label"></div>
+                      <div style="font-size:11px;color:#94a3b8;margin-top:1px;" x-text="r.desc"></div>
+                    </div>
+                    <div :style="'width:18px;min-width:18px;height:18px;border-radius:50%;border:2px solid '+(inviteRole === r.key ? r.color : '#d1d5db')+';display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;'">
+                      <div :style="'width:8px;height:8px;border-radius:50%;background:'+(inviteRole === r.key ? r.color : 'transparent')+';transition:all .2s;'"></div>
+                    </div>
+                  </div>
                 </div>
               </template>
             </div>
           </div>
+
           <!-- Entity Access Picker -->
           <div style="margin-bottom:18px;">
             <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:6px;" class="dark:!text-[#cbd5e1]">
@@ -285,24 +352,26 @@
               <div style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;border:1px dashed #e0e6ed;border-radius:10px;">Chargement des entités...</div>
             </template>
             <template x-if="allEntities.length > 0">
-              <div style="max-height:180px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;" class="dark:!border-[#253b5c]">
+              <div style="max-height:160px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;" class="dark:!border-[#253b5c]">
                 <template x-for="entity in allEntities" :key="entity._id">
-                  <label :style="'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;transition:background .15s;' + (inviteEntityAccess.includes(String(entity._id)) ? 'background:rgba(67,97,238,.04)' : '')">
-                    <input type="checkbox" :checked="inviteEntityAccess.includes(String(entity._id))" @change="toggleInviteEntity(entity._id)" :style="'accent-color:#4361ee;width:15px;min-width:15px;max-width:15px;height:15px;min-height:15px;max-height:15px;cursor:pointer;flex-shrink:0;'" />
+                  <div :style="'display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;transition:background .15s;' + (inviteEntityAccess.includes(String(entity._id)) ? 'background:rgba(67,97,238,.04)' : '')" @click="toggleInviteEntity(entity._id)">
+                    <input type="checkbox" :checked="inviteEntityAccess.includes(String(entity._id))" style="accent-color:#4361ee;width:15px;min-width:15px;max-width:15px;height:15px;min-height:15px;max-height:15px;cursor:pointer;flex-shrink:0;margin:0;pointer-events:none;" />
                     <div :style="'width:24px;min-width:24px;max-width:24px;height:24px;min-height:24px;max-height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:' + (entity.color || '#4361ee') + '15'">
                       <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="13" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
                     </div>
                     <span style="font-size:13px;font-weight:500;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="entity.name"></span>
-                  </label>
+                  </div>
                 </template>
               </div>
             </template>
           </div>
-          <div style="display:flex;justify-content:flex-end;gap:10px;">
-            <button class="ts-filter-btn" @click="showInviteModal = false">Annuler</button>
-            <button class="ts-btn-primary" @click="sendInvite()" :disabled="inviteSending">
-              <iconify-icon icon="solar:plain-bold" width="16"></iconify-icon>
-              <span x-text="inviteSending ? 'Envoi...' : 'Envoyer l\'invitation'"></span>
+
+          <!-- Actions -->
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:6px;border-top:1px solid #f1f5f9;">
+            <button @click="showInviteModal = false" style="padding:9px 18px;border:1px solid #e0e6ed;background:#fff;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;">Annuler</button>
+            <button @click="sendInvite()" :disabled="inviteSending" style="padding:9px 18px;border:none;border-radius:10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s;" :style="inviteLookup ? 'background:linear-gradient(135deg,#22c55e,#16a34a)' : 'background:linear-gradient(135deg,#4361ee,#3b82f6)'">
+              <iconify-icon :icon="inviteLookup ? 'solar:user-plus-bold' : 'solar:plain-bold'" width="15"></iconify-icon>
+              <span x-text="inviteSending ? 'Envoi...' : (inviteLookup ? 'Ajouter directement' : 'Envoyer l\'invitation')"></span>
             </button>
           </div>
         </div>
@@ -352,15 +421,15 @@
             <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Membres <span style="color:#94a3b8;font-weight:400;" x-text="'(' + teamForm.memberIds.length + ' sélectionné(s))'"></span></label>
             <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;">
               <template x-for="m in members" :key="m._id">
-                <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;" :style="teamForm.memberIds.includes(String(m._id)) ? 'background:#7c3aed08' : ''">
-                  <input type="checkbox" :checked="teamForm.memberIds.includes(String(m._id))" @change="toggleTeamMember(m._id)" style="accent-color:#7c3aed;width:16px;height:16px;cursor:pointer;" />
-                  <div style="width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;" :style="'background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
-                  <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="m.name"></div>
-                    <div style="font-size:11px;color:#94a3b8;" x-text="m.email"></div>
+                <div :style="'display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;' + (teamForm.memberIds.includes(String(m._id)) ? 'background:rgba(124,58,237,.04)' : '')" @click="toggleTeamMember(m._id)">
+                  <input type="checkbox" :checked="teamForm.memberIds.includes(String(m._id))" style="accent-color:#7c3aed;width:16px;min-width:16px;max-width:16px;height:16px;min-height:16px;max-height:16px;cursor:pointer;flex-shrink:0;margin:0;pointer-events:none;" />
+                  <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;line-height:1;background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
+                  <div style="flex:1;min-width:0;overflow:hidden;">
+                    <div style="font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" x-text="m.name"></div>
+                    <div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" x-text="m.email"></div>
                   </div>
-                  <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;" x-text="roleLabel(m.role)"></span>
-                </label>
+                  <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;flex-shrink:0;white-space:nowrap;" x-text="roleLabel(m.role)"></span>
+                </div>
               </template>
             </div>
           </div>
@@ -368,8 +437,9 @@
         <div style="padding:14px 24px 20px;display:flex;align-items:center;gap:8px;justify-content:space-between;">
           <div>
             <template x-if="teamForm._id">
-              <button @click="deleteTeam(teamForm._id)" style="padding:8px 16px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;font-family:inherit;transition:all .15s;">
-                <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12" style="vertical-align:-2px;"></iconify-icon> Supprimer
+              <button @click="confirmDeleteTeam ? deleteTeam(teamForm._id) : (confirmDeleteTeam = true)" :style="confirmDeleteTeam ? 'padding:8px 16px;border:1px solid #ef4444;background:#ef4444;border-radius:8px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all .15s;' : 'padding:8px 16px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;font-family:inherit;transition:all .15s;'">
+                <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12" style="vertical-align:-2px;"></iconify-icon>
+                <span x-text="confirmDeleteTeam ? 'Confirmer la suppression' : 'Supprimer'"></span>
               </button>
             </template>
           </div>
@@ -416,13 +486,13 @@
           <!-- Entity Grid -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:300px;overflow-y:auto;">
             <template x-for="entity in allEntities" :key="entity._id">
-              <label :style="'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid ' + (permEntityAccess.includes(String(entity._id)) ? (entity.color || '#4361ee') : '#e0e6ed') + ';cursor:pointer;transition:all .15s;' + (permEntityAccess.includes(String(entity._id)) ? 'background:' + (entity.color || '#4361ee') + '06' : '')">
-                <input type="checkbox" :checked="permEntityAccess.includes(String(entity._id))" @change="togglePermEntity(entity._id)" :style="'accent-color:#4361ee;width:15px;min-width:15px;max-width:15px;height:15px;min-height:15px;max-height:15px;cursor:pointer;flex-shrink:0;'" />
+              <div :style="'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid ' + (permEntityAccess.includes(String(entity._id)) ? (entity.color || '#4361ee') : '#e0e6ed') + ';cursor:pointer;transition:all .15s;' + (permEntityAccess.includes(String(entity._id)) ? 'background:' + (entity.color || '#4361ee') + '06' : '')" @click="togglePermEntity(entity._id)">
+                <input type="checkbox" :checked="permEntityAccess.includes(String(entity._id))" style="accent-color:#4361ee;width:15px;min-width:15px;max-width:15px;height:15px;min-height:15px;max-height:15px;cursor:pointer;flex-shrink:0;margin:0;pointer-events:none;" />
                 <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:' + (entity.color || '#4361ee') + '15'">
                   <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="14" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
                 </div>
                 <span style="font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="entity.name"></span>
-              </label>
+              </div>
             </template>
           </div>
         </div>
@@ -453,6 +523,7 @@ document.addEventListener('alpine:init', () => {
 
     // Team modal
     showTeamModal: false,
+    confirmDeleteTeam: false,
     teamForm: { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [] },
     teamColors: ['#4361ee','#7c3aed','#f97316','#10b981','#ec4899','#06b6d4','#ef4444','#8b5cf6','#eab308','#14b8a6'],
     showInviteModal: false,
@@ -462,6 +533,7 @@ document.addEventListener('alpine:init', () => {
     inviteError: '',
     inviteSuccess: '',
     inviteEntityAccess: [],
+    inviteLookup: null,
 
     // Permissions modal
     showPermissionsModal: false,
@@ -524,6 +596,7 @@ document.addEventListener('alpine:init', () => {
           this.inviteSuccess = data.message;
           this.inviteEmail = '';
           this.inviteEntityAccess = [];
+          this.inviteLookup = null;
           await this.fetchMembers();
           setTimeout(() => { this.showInviteModal = false; this.inviteSuccess = ''; }, 1500);
           this.showToast(data.message, 'success');
@@ -532,6 +605,19 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (e) { this.inviteError = 'Erreur réseau'; }
       this.inviteSending = false;
+    },
+
+    async lookupEmail() {
+      this.inviteLookup = null;
+      const email = this.inviteEmail?.trim();
+      if (!email || !email.includes('@') || email.length < 5) return;
+      try {
+        const res = await fetch(this.apiBase + '/lookup-user?email=' + encodeURIComponent(email), { credentials: 'include' });
+        const data = await res.json();
+        if (data.found) {
+          this.inviteLookup = { name: data.name, email: data.email };
+        }
+      } catch (e) { /* silent */ }
     },
 
     async updateRole(userId, newRole) {
@@ -658,12 +744,17 @@ document.addEventListener('alpine:init', () => {
       return m?.name || 'Inconnu';
     },
 
+    getMemberTeams(userId) {
+      return this.teams.filter(t => (t.memberIds || []).some(mid => String(mid) === String(userId)));
+    },
+
     openTeamModal(team) {
       if (team) {
         this.teamForm = { _id: team._id, name: team.name, description: team.description || '', color: team.color, icon: team.icon, memberIds: [...(team.memberIds || [])] };
       } else {
         this.teamForm = { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [] };
       }
+      this.confirmDeleteTeam = false;
       this.showTeamModal = true;
     },
 
@@ -696,17 +787,23 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteTeam(teamId) {
-      if (!confirm('Supprimer cette team ?')) return;
       try {
         const res = await fetch(this.apiBase + '/teams/' + teamId, { method: 'DELETE', credentials: 'include' });
         const data = await res.json();
         if (data.success) {
           this.showTeamModal = false;
+          this.confirmDeleteTeam = false;
           if (this.teamFilter === teamId) this.teamFilter = null;
           await this.fetchMembers();
           this.showToast('Team supprimée', 'success');
+        } else {
+          this.showToast(data.error || 'Erreur', 'error');
         }
-      } catch (e) { this.showToast('Erreur', 'error'); }
+      } catch (e) {
+        console.error('[Team] Delete error:', e);
+        this.showToast('Erreur réseau', 'error');
+      }
+      this.confirmDeleteTeam = false;
     },
 
     roleLabel(role) {

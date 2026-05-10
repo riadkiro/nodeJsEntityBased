@@ -719,6 +719,8 @@ document.addEventListener('alpine:init', () => {
             const el = this.$refs.calendarEl;
             if (!el || typeof FullCalendar === 'undefined') return;
 
+            const self = this;
+
             this.calendar = new FullCalendar.Calendar(el, {
                 initialView: 'dayGridMonth',
                 locale: 'fr',
@@ -728,10 +730,14 @@ document.addEventListener('alpine:init', () => {
                     right: 'dayGridMonth,timeGridWeek,timeGridDay',
                 },
                 buttonText: { today:"Aujourd'hui", month:'Mois', week:'Semaine', day:'Jour' },
+                editable: true,
+                selectable: true,
                 dayMaxEvents: 3,
                 nowIndicator: true,
                 slotMinTime: '07:00:00',
                 slotMaxTime: '21:00:00',
+                slotDuration: '00:15:00',
+                snapDuration: '00:05:00',
                 allDaySlot: false,
                 height: '100%',
                 expandRows: true,
@@ -739,11 +745,76 @@ document.addEventListener('alpine:init', () => {
                 events: this.toCalendarEvents(this.filteredEvents),
                 eventClick: (info) => {
                     const ev = info.event.extendedProps._ev;
-                    this.showDetail(ev);
+                    self.showDetail(ev);
+                },
+                dateClick: (info) => {
+                    // Open the record page of the first linked record's agenda if possible
+                    // For now, navigate to the first record's agenda for event creation
+                    if (self.filteredEvents.length > 0) {
+                        const firstEv = self.filteredEvents[0];
+                        const link = self.getRecordLink(firstEv);
+                        if (link !== '#') {
+                            window.location.href = link;
+                            return;
+                        }
+                    }
+                    // If no events/records, show an alert
+                    alert("Pour créer un événement, ouvrez l'agenda depuis une fiche.");
+                },
+                eventDrop: async (info) => {
+                    const ev = info.event.extendedProps._ev;
+                    const parentId = self.getParentId(ev);
+                    if (!parentId) { info.revert(); return; }
+                    const newStart = info.event.start?.toISOString();
+                    const newEnd = info.event.end?.toISOString();
+                    try {
+                        const res = await fetch(`<%= _apiBase %>/api/records/${parentId}/events/${ev._id}/drag`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ newStart, newEnd })
+                        });
+                        const data = await res.json();
+                        if (!data.success) { info.revert(); return; }
+                        // Update local data
+                        const localEv = self.allEvents.find(e => e._id === ev._id);
+                        if (localEv) {
+                            localEv.date = newStart;
+                            if (newEnd) localEv.end_date = newEnd;
+                        }
+                    } catch (err) {
+                        console.error('[AgendaHub] Drag error:', err);
+                        info.revert();
+                    }
+                },
+                eventResize: async (info) => {
+                    const ev = info.event.extendedProps._ev;
+                    const parentId = self.getParentId(ev);
+                    if (!parentId) { info.revert(); return; }
+                    const newStart = info.event.start?.toISOString();
+                    const newEnd = info.event.end?.toISOString();
+                    try {
+                        const res = await fetch(`<%= _apiBase %>/api/records/${parentId}/events/${ev._id}/drag`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ newStart, newEnd })
+                        });
+                        const data = await res.json();
+                        if (!data.success) { info.revert(); return; }
+                        const localEv = self.allEvents.find(e => e._id === ev._id);
+                        if (localEv) {
+                            localEv.date = newStart;
+                            if (newEnd) localEv.end_date = newEnd;
+                        }
+                    } catch (err) {
+                        console.error('[AgendaHub] Resize error:', err);
+                        info.revert();
+                    }
                 },
                 eventDidMount: (info) => {
                     const ev = info.event.extendedProps._ev;
-                    info.el.title = info.event.title + '\n📋 ' + this.getRecordTitle(ev);
+                    info.el.title = info.event.title + '\n📋 ' + self.getRecordTitle(ev);
                 }
             });
             this.calendar.render();

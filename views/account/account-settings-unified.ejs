@@ -1,0 +1,489 @@
+<div class="animate__animated p-6" :class="[$store.app.animation]">
+    <ul class="flex space-x-2 rtl:space-x-reverse">
+        <li>
+            <a href="/account/<%= account_number %>/dashboard" class="text-primary hover:underline">Dashboard</a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+            <span>Paramètres</span>
+        </li>
+    </ul>
+
+    <div class="pt-5" x-data="settingsPage()">
+        <!-- Tab Navigation -->
+        <div class="mb-6 flex items-center gap-1 border-b border-gray-200 dark:border-[#1b2e4b]">
+            <button @click="activeTab = 'general'"
+                class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
+                :class="activeTab === 'general' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+                <iconify-icon icon="solar:settings-bold-duotone" width="18"></iconify-icon>
+                Général
+            </button>
+            <% if (isAdmin) { %>
+            <button @click="activeTab = 'members'"
+                class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
+                :class="activeTab === 'members' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+                <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="18"></iconify-icon>
+                Membres
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary"><%= members.length %></span>
+            </button>
+            <% } %>
+            <button @click="activeTab = 'advanced'"
+                class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
+                :class="activeTab === 'advanced' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+                <iconify-icon icon="solar:tuning-2-bold-duotone" width="18"></iconify-icon>
+                Avancé
+            </button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB: Général -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <div x-show="activeTab === 'general'" x-transition>
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <!-- Account Info Form -->
+                <div class="panel">
+                    <div class="mb-5">
+                        <h6 class="text-lg font-bold dark:text-white-light">Informations du compte</h6>
+                        <p class="text-sm text-gray-500 mt-1">Modifiez les informations de votre espace de travail</p>
+                    </div>
+                    <form @submit.prevent="saveAccountInfo">
+                        <div class="mb-5">
+                            <label for="accountName" class="block text-sm font-medium mb-2">Nom du compte</label>
+                            <input id="accountName" type="text" x-model="accountName" class="form-input" placeholder="Entrez le nom du compte" />
+                        </div>
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium mb-2">Icône du compte</label>
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-primary/10 text-primary rounded-lg">
+                                    <iconify-icon :icon="accountIcon" width="32" height="32"></iconify-icon>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex flex-wrap gap-2 mb-2">
+                                        <template x-for="icon in popularIcons" :key="icon">
+                                            <button type="button" class="p-2 rounded-lg border transition-all"
+                                                :class="accountIcon === icon ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800 hover:border-primary'"
+                                                @click="accountIcon = icon">
+                                                <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
+                                            </button>
+                                        </template>
+                                    </div>
+                                    <input type="text" x-model="accountIcon" class="form-input text-sm" placeholder="solar:home-bold" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium mb-2">Numéro de compte</label>
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="<%= account_number %>" class="form-input bg-gray-100 dark:bg-gray-800" disabled />
+                                <button type="button" class="btn btn-outline-secondary btn-sm" @click="copyAccountNumber">
+                                    <iconify-icon icon="solar:copy-linear" width="16"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="submit" class="btn btn-primary" :disabled="isSaving">
+                                <span x-show="isSaving" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 inline-block mr-2"></span>
+                                <span x-text="isSaving ? 'Enregistrement...' : 'Enregistrer'"></span>
+                            </button>
+                            <span x-show="saveSuccess" x-transition class="text-success text-sm">
+                                <iconify-icon icon="solar:check-circle-bold" class="align-middle"></iconify-icon>
+                                Enregistré
+                            </span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Stats -->
+                <div class="panel">
+                    <div class="mb-5">
+                        <h6 class="text-lg font-bold dark:text-white-light">Statistiques</h6>
+                        <p class="text-sm text-gray-500 mt-1">Aperçu de votre espace</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-primary/20 text-primary rounded-lg">
+                                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="24"></iconify-icon>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-500">Membres actifs</div>
+                                    <div class="text-lg font-semibold"><%= members.length %></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-warning/20 text-warning rounded-lg">
+                                    <iconify-icon icon="solar:letter-bold-duotone" width="24"></iconify-icon>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-500">Invitations en attente</div>
+                                    <div class="text-lg font-semibold"><%= pendingInvites.length %></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-info/20 text-info rounded-lg">
+                                    <iconify-icon icon="solar:calendar-bold-duotone" width="24"></iconify-icon>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-500">Date de création</div>
+                                    <div class="text-lg font-semibold"><%= account && account.created_on ? new Date(account.created_on).toLocaleDateString('fr-FR') : '—' %></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB: Membres (admin only) -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <% if (isAdmin) { %>
+        <div x-show="activeTab === 'members'" x-transition>
+            <!-- Invite Button -->
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h5 class="text-lg font-bold dark:text-white-light">Gestion des membres</h5>
+                    <p class="text-sm text-gray-500 mt-0.5"><%= account.name %> · <%= members.length %> membre(s)</p>
+                </div>
+                <button onclick="document.getElementById('inviteModal').showModal()" class="btn btn-primary">
+                    <iconify-icon icon="solar:user-plus-bold" width="16" class="mr-1.5"></iconify-icon>
+                    Inviter un membre
+                </button>
+            </div>
+
+            <!-- Members Table -->
+            <div class="panel !p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Membre</th>
+                                <th>Rôle</th>
+                                <th>Plan</th>
+                                <th>Dernière connexion</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% members.forEach(m => { %>
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <% if (m.avatar) { %>
+                                            <img src="<%= m.avatar %>" class="w-9 h-9 rounded-lg object-cover" alt="" />
+                                        <% } else { %>
+                                            <div class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                                                <%= m.name ? m.name.charAt(0).toUpperCase() : '?' %>
+                                            </div>
+                                        <% } %>
+                                        <div>
+                                            <div class="font-semibold dark:text-white-light"><%= m.name || '—' %></div>
+                                            <div class="text-xs text-gray-500"><%= m.email %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <% if (m.workspaceRole === 'owner') { %>
+                                        <span class="badge bg-purple-100 text-purple-600">
+                                            <iconify-icon icon="solar:crown-bold" width="12" class="mr-1"></iconify-icon>
+                                            Propriétaire
+                                        </span>
+                                    <% } else if (m.workspaceRole === 'admin') { %>
+                                        <span class="badge bg-info-light text-info">Admin</span>
+                                    <% } else if (m.workspaceRole === 'viewer') { %>
+                                        <span class="badge bg-dark-light text-dark">Lecteur</span>
+                                    <% } else { %>
+                                        <span class="badge bg-primary-light text-primary">Membre</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span class="badge bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"><%= (m.membership?.plan || 'free').toUpperCase() %></span>
+                                </td>
+                                <td class="text-xs text-gray-500">
+                                    <% if (m.lastLogin) { %>
+                                        <%= new Date(m.lastLogin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
+                                    <% } else { %>
+                                        —
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div class="flex items-center justify-center gap-2">
+                                        <% if (m.workspaceRole !== 'owner' && String(m._id) !== String(user._id)) { %>
+                                            <select onchange="changeMemberRole('<%= m._id %>', this.value)" class="form-select form-select-sm w-auto text-xs">
+                                                <option value="admin" <%= m.workspaceRole === 'admin' ? 'selected' : '' %>>Admin</option>
+                                                <option value="member" <%= m.workspaceRole === 'member' ? 'selected' : '' %>>Membre</option>
+                                                <option value="viewer" <%= m.workspaceRole === 'viewer' ? 'selected' : '' %>>Lecteur</option>
+                                            </select>
+                                            <button onclick="removeMember('<%= m._id %>', '<%= (m.name || m.email).replace(/'/g, "\\'") %>')" class="btn btn-sm btn-outline-danger !p-1.5" title="Retirer">
+                                                <iconify-icon icon="solar:user-minus-bold" width="16"></iconify-icon>
+                                            </button>
+                                        <% } else if (m.workspaceRole === 'owner') { %>
+                                            <span class="text-xs text-gray-400 italic">propriétaire</span>
+                                        <% } else { %>
+                                            <span class="text-xs text-gray-400 italic">vous</span>
+                                        <% } %>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                            <% if (members.length === 0) { %>
+                            <tr><td colspan="5" class="text-center py-8 text-gray-400">Aucun membre</td></tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pending Invitations -->
+            <% if (pendingInvites.length > 0) { %>
+            <div class="mt-6">
+                <h6 class="text-sm font-bold mb-3 flex items-center gap-2 dark:text-white-light">
+                    <iconify-icon icon="solar:letter-bold-duotone" width="16" class="text-warning"></iconify-icon>
+                    Invitations en attente (<%= pendingInvites.length %>)
+                </h6>
+                <div class="panel !p-0 overflow-hidden">
+                    <% pendingInvites.forEach(inv => { %>
+                    <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-[#1b2e4b] last:border-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+                                <iconify-icon icon="solar:letter-bold" width="16" class="text-warning"></iconify-icon>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold dark:text-white-light"><%= inv.email %></div>
+                                <div class="text-xs text-gray-400">
+                                    Invité en tant que <%= inv.role %>
+                                    <% if (inv.expiresAt) { %> · expire le <%= new Date(inv.expiresAt).toLocaleDateString('fr-FR') %><% } %>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="cancelInvite('<%= inv._id %>')" class="btn btn-sm btn-outline-danger">Annuler</button>
+                    </div>
+                    <% }); %>
+                </div>
+            </div>
+            <% } %>
+        </div>
+        <% } %>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB: Avancé -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <div x-show="activeTab === 'advanced'" x-transition>
+            <!-- App Presets -->
+            <a href="/account/<%= account_number %>/app-presets" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block mb-5">
+                <div class="p-3 bg-primary/10 text-primary rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
+                    <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="28"></iconify-icon>
+                </div>
+                <div class="flex-1">
+                    <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Démo / Presets</h6>
+                    <p class="text-sm text-gray-500 mt-0.5">Installer un modèle métier complet (Cabinet médical, Notaire...)</p>
+                </div>
+                <iconify-icon icon="solar:arrow-right-linear" width="20" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+            </a>
+
+            <!-- Quick Links -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <a href="/account/<%= account_number %>/integrations" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block">
+                    <div class="p-3 rounded-xl transition-colors bg-info/10 text-info">
+                        <iconify-icon icon="solar:plug-circle-bold-duotone" width="24"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Intégrations</h6>
+                        <p class="text-sm text-gray-500 mt-0.5">Connecter des services externes</p>
+                    </div>
+                    <iconify-icon icon="solar:arrow-right-linear" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+                </a>
+                <a href="/account/<%= account_number %>/team" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block">
+                    <div class="p-3 rounded-xl transition-colors bg-success/10 text-success">
+                        <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="24"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <h6 class="font-semibold dark:text-white-light group-hover:text-primary transition-colors">Équipe & Collaboration</h6>
+                        <p class="text-sm text-gray-500 mt-0.5">Page d'équipe et chat</p>
+                    </div>
+                    <iconify-icon icon="solar:arrow-right-linear" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+                </a>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="panel border-danger/30">
+                <div class="mb-5">
+                    <h6 class="text-lg font-bold text-danger">Zone de danger</h6>
+                    <p class="text-sm text-gray-500 mt-1">Actions irréversibles</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+                        <h6 class="font-semibold mb-2 dark:text-white-light">Exporter les données</h6>
+                        <p class="text-sm text-gray-500 mb-3">Téléchargez toutes les données au format JSON.</p>
+                        <button type="button" class="btn btn-outline-primary btn-sm">
+                            <iconify-icon icon="solar:download-bold" class="mr-1"></iconify-icon>
+                            Exporter
+                        </button>
+                    </div>
+                    <div class="p-4 border border-danger/30 rounded-lg bg-danger/5">
+                        <h6 class="font-semibold mb-2 text-danger">Supprimer le compte</h6>
+                        <p class="text-sm text-gray-500 mb-3">Toutes les données seront supprimées.</p>
+                        <button type="button" class="btn btn-danger btn-sm" @click="confirmDelete">
+                            <iconify-icon icon="solar:trash-bin-trash-bold" class="mr-1"></iconify-icon>
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Modal -->
+<% if (locals.isAdmin) { %>
+<dialog id="inviteModal" class="rounded-xl bg-white dark:bg-[#0e1726] p-0 backdrop:bg-black/50 max-w-md w-full" style="border:none;">
+    <div style="background: linear-gradient(135deg, #4361ee, #06b6d4); padding: 24px;">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,.2);">
+                    <iconify-icon icon="solar:user-plus-bold-duotone" width="22" style="color:#fff;"></iconify-icon>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Inviter un membre</h3>
+                    <p class="text-xs" style="color:rgba(255,255,255,.7);">Envoyer une invitation</p>
+                </div>
+            </div>
+            <button onclick="this.closest('dialog').close()" class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(255,255,255,.15);border:none;cursor:pointer;">
+                <iconify-icon icon="solar:close-circle-bold" width="20" style="color:#fff;"></iconify-icon>
+            </button>
+        </div>
+    </div>
+    <form id="inviteForm" class="p-6">
+        <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">Adresse email <span class="text-danger">*</span></label>
+            <input name="email" type="email" required class="form-input" placeholder="membre@example.com" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">Rôle</label>
+            <select name="role" class="form-select">
+                <option value="member">Membre</option>
+                <option value="admin">Admin</option>
+                <option value="viewer">Lecteur</option>
+            </select>
+        </div>
+    </form>
+    <div class="p-4 pt-0 flex gap-3 justify-end">
+        <button onclick="this.closest('dialog').close()" class="btn btn-outline-dark">Annuler</button>
+        <button onclick="inviteMember()" id="inviteBtn" class="btn btn-primary">
+            <iconify-icon icon="solar:letter-bold" width="14" class="mr-1.5"></iconify-icon>
+            Envoyer
+        </button>
+    </div>
+</dialog>
+<% } %>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('settingsPage', () => ({
+        activeTab: new URLSearchParams(window.location.search).get('tab') || 'general',
+        accountName: '<%= typeof account !== "undefined" && account ? (account.name || "").replace(/'/g, "\\'") : "" %>',
+        accountIcon: '<%= typeof account !== "undefined" && account ? account.icon || "solar:settings-bold-duotone" : "solar:settings-bold-duotone" %>',
+        isSaving: false,
+        saveSuccess: false,
+        popularIcons: [
+            'solar:settings-bold-duotone', 'solar:home-bold-duotone', 'solar:buildings-bold-duotone',
+            'solar:case-bold-duotone', 'solar:shop-bold-duotone', 'solar:cart-large-bold-duotone',
+            'solar:code-bold-duotone', 'solar:heart-bold-duotone', 'solar:star-bold-duotone', 'solar:rocket-bold-duotone'
+        ],
+
+        async saveAccountInfo() {
+            this.isSaving = true;
+            this.saveSuccess = false;
+            try {
+                const res = await fetch('/account/<%= account_number %>/admin/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: this.accountName, icon: this.accountIcon })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.saveSuccess = true;
+                    setTimeout(() => this.saveSuccess = false, 3000);
+                } else {
+                    alert('Erreur: ' + (data.message || 'Impossible de sauvegarder'));
+                }
+            } catch (e) { alert('Erreur'); }
+            finally { this.isSaving = false; }
+        },
+
+        copyAccountNumber() {
+            navigator.clipboard.writeText('<%= account_number %>');
+            if (window.showMessage) window.showMessage('Numéro copié !');
+        },
+
+        confirmDelete() {
+            if (window.Swal) {
+                Swal.fire({
+                    title: 'Êtes-vous sûr?',
+                    text: "Cette action est irréversible.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e7515a',
+                    cancelButtonColor: '#888ea8',
+                    confirmButtonText: 'Oui, supprimer',
+                    cancelButtonText: 'Annuler'
+                });
+            } else {
+                confirm('Êtes-vous sûr de vouloir supprimer ce compte?');
+            }
+        }
+    }));
+});
+
+// Member management API calls
+const accountNumber = '<%= account_number %>';
+
+async function apiCall(endpoint, body) {
+    const res = await fetch(`/account/${accountNumber}/admin/api/${endpoint}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', body: JSON.stringify(body)
+    });
+    return res.json();
+}
+
+async function changeMemberRole(userId, role) {
+    const data = await apiCall('members/role', { userId, role });
+    if (data.success) location.reload();
+    else alert(data.error || 'Erreur');
+}
+
+async function removeMember(userId, name) {
+    if (!confirm(`Retirer ${name} du workspace ?`)) return;
+    const data = await apiCall('members/remove', { userId });
+    if (data.success) location.reload();
+    else alert(data.error || 'Erreur');
+}
+
+async function cancelInvite(inviteId) {
+    if (!confirm('Annuler cette invitation ?')) return;
+    const data = await apiCall('invites/cancel', { inviteId });
+    if (data.success) location.reload();
+    else alert(data.error || 'Erreur');
+}
+
+async function inviteMember() {
+    const form = document.getElementById('inviteForm');
+    const fd = new FormData(form);
+    const btn = document.getElementById('inviteBtn');
+    btn.disabled = true;
+    try {
+        const data = await apiCall('members/invite', Object.fromEntries(fd));
+        if (data.success) {
+            alert('Invitation envoyée !');
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur');
+            btn.disabled = false;
+        }
+    } catch (e) { alert('Erreur'); btn.disabled = false; }
+}
+</script>

@@ -12,7 +12,34 @@ module.exports = {
 
   // ── Register Form ────────────────────────────────────────
   registerForm: async (req, res) => {
-    res.render("auth/auth-register", { layout: false, error_msg: null, error: null });
+    const { invite, account } = req.query;
+    let inviteEmail = '';
+    let inviteInfo = null;
+
+    // If we have an invite token, look up the email and account info
+    if (invite) {
+      try {
+        const acc = await Account.findOne({
+          'invitations.token': invite,
+          'invitations.status': 'pending',
+        }).lean();
+        if (acc) {
+          const inv = acc.invitations.find(i => i.token === invite && i.status === 'pending');
+          if (inv && (!inv.expiresAt || new Date() < new Date(inv.expiresAt))) {
+            inviteEmail = inv.email;
+            inviteInfo = { accountName: acc.name, role: inv.role, accountIcon: acc.icon };
+          }
+        }
+      } catch (e) {
+        console.error('[Register] Invite lookup error:', e.message);
+      }
+    }
+
+    res.render("auth/auth-register", {
+      layout: false, error_msg: null, error: null,
+      inviteToken: invite || '', accountNumber: account || '',
+      inviteEmail, inviteInfo,
+    });
   },
 
   // ── Register (POST) ──────────────────────────────────────
@@ -101,6 +128,46 @@ module.exports = {
         role: 'owner',
       });
       await newUser.save();
+
+      // Auto-accept invitation if invite token is present
+      const inviteToken = req.body.inviteToken;
+      if (inviteToken) {
+        try {
+          const invAcc = await Account.findOne({
+            'invitations.token': inviteToken,
+            'invitations.status': 'pending',
+          });
+          if (invAcc) {
+            const inv = invAcc.invitations.find(i => i.token === inviteToken && i.status === 'pending');
+            if (inv && (!inv.expiresAt || new Date() < new Date(inv.expiresAt))) {
+              // Add user to the inviting account
+              invAcc.users.push({
+                userId: newUser._id.toString(),
+                email: newUser.email,
+                role: inv.role,
+                status: 'active',
+                invitedBy: inv.invitedBy,
+                joinedAt: new Date(),
+              });
+              inv.status = 'accepted';
+              await invAcc.save();
+
+              // Add the inviting account to user's accounts
+              newUser.accounts.push({
+                account_number: invAcc.account_number,
+                name: invAcc.name,
+                icon: invAcc.icon || 'solar:home-2-bold-duotone',
+                role: inv.role,
+                joinedAt: new Date(),
+              });
+              await newUser.save();
+              console.log(`[Register] Auto-accepted invitation for ${newUser.email} → account ${invAcc.account_number}`);
+            }
+          }
+        } catch (invErr) {
+          console.error('[Register] Auto-accept invite error:', invErr.message);
+        }
+      }
 
       // Auto-login after registration
       req.login(newUser, (err) => {

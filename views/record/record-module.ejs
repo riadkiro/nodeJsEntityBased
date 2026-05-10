@@ -2051,7 +2051,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <% if (moduleName === 'chat') { %>
     <style>
-        .chat-wrap { display:grid; grid-template-columns:280px 1fr; gap:0; height:calc(100vh - 100px); min-height:350px; border-radius:14px; border:1px solid #e0e6ed; overflow:hidden; background:#fff; }
+        .chat-wrap { display:grid; grid-template-columns:280px 1fr; gap:0; height:calc(100vh - 100px); min-height:350px; border-radius:14px; border:1px solid #e0e6ed; overflow:hidden; background:#fff; transition:grid-template-columns .3s ease; }
+        .chat-wrap.has-panel { grid-template-columns:280px 1fr 320px; }
         .chat-sidebar { border-right:1px solid #e0e6ed; display:flex; flex-direction:column; background:#fafbfc; }
         .chat-sidebar-header { padding:14px 16px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .chat-sidebar-title { font-size:13px; font-weight:700; color:#0e1726; }
@@ -2142,11 +2143,64 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         .dark .chat-create-modal { background:#0e1726; }
         .dark .chat-create-modal h3 { color:#e0e6ed; }
         .dark .chat-create-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
-        @media(max-width:768px) { .chat-wrap { grid-template-columns:1fr; } .chat-sidebar { display:none; } }
+
+        /* ═══ Participants Panel ═══ */
+        .chat-participants-panel { border-left:1px solid #e0e6ed; display:flex; flex-direction:column; background:#fafbfc; overflow-y:auto; }
+        .chat-pp-header { padding:14px 16px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; justify-content:space-between; }
+        .chat-pp-title { font-size:13px; font-weight:700; color:#0e1726; display:flex; align-items:center; gap:6px; }
+        .chat-pp-close { background:none; border:none; cursor:pointer; color:#94a3b8; padding:4px; border-radius:6px; transition:all .15s; display:flex; }
+        .chat-pp-close:hover { background:#f1f5f9; color:#0e1726; }
+        .chat-pp-section { padding:12px 16px; }
+        .chat-pp-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#94a3b8; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+        .chat-pp-search { width:100%; padding:8px 10px; border:1.5px solid #e0e6ed; border-radius:8px; font-size:12px; outline:none; font-family:inherit; color:#0e1726; transition:border-color .15s; margin-bottom:10px; }
+        .chat-pp-search:focus { border-color:#f97316; box-shadow:0 0 0 3px #f9731610; }
+        .chat-pp-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; transition:background .15s; cursor:default; margin-bottom:2px; }
+        .chat-pp-item:hover { background:rgba(0,0,0,.03); }
+        .chat-pp-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; flex-shrink:0; text-transform:uppercase; }
+        .chat-pp-info { flex:1; min-width:0; }
+        .chat-pp-name { font-size:12.5px; font-weight:600; color:#0e1726; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chat-pp-email { font-size:10.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chat-pp-role { font-size:9px; font-weight:700; padding:2px 6px; border-radius:5px; background:rgba(249,115,22,.1); color:#f97316; text-transform:uppercase; }
+        .chat-pp-remove { background:none; border:none; cursor:pointer; color:#94a3b8; padding:3px; border-radius:6px; display:flex; transition:all .15s; }
+        .chat-pp-remove:hover { color:#ef4444; background:rgba(239,68,68,.08); }
+        .chat-pp-add-btn { background:none; border:none; cursor:pointer; color:#94a3b8; padding:3px; border-radius:6px; display:flex; transition:all .15s; }
+        .chat-pp-add-btn:hover { color:#f97316; background:rgba(249,115,22,.08); }
+        .chat-pp-team-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; margin-bottom:4px; border:1px solid #e0e6ed; transition:all .15s; cursor:pointer; }
+        .chat-pp-team-item:hover { border-color:#f97316; background:rgba(249,115,22,.04); }
+        .chat-pp-team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .chat-pp-team-info { flex:1; min-width:0; }
+        .chat-pp-team-name { font-size:12.5px; font-weight:600; color:#0e1726; }
+        .chat-pp-team-count { font-size:10px; color:#94a3b8; }
+        .chat-pp-team-add { padding:4px 10px; border-radius:7px; border:none; background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; font-size:10px; font-weight:700; cursor:pointer; transition:all .2s; white-space:nowrap; }
+        .chat-pp-team-add:hover { transform:translateY(-1px); box-shadow:0 2px 8px #f9731640; }
+        .chat-pp-team-add:disabled { opacity:.4; cursor:default; transform:none; box-shadow:none; }
+        .chat-pp-divider { height:1px; background:#e0e6ed; margin:4px 0; }
+        .chat-pp-empty { text-align:center; padding:16px; font-size:11px; color:#94a3b8; }
+        .chat-pp-success { font-size:11px; color:#10b981; font-weight:600; padding:6px 10px; background:rgba(16,185,129,.08); border-radius:8px; text-align:center; margin-bottom:8px; animation:rmFadeIn .3s ease; }
+        .chat-participants-btn { background:none; border:1px solid #e0e6ed; cursor:pointer; color:#64748b; padding:5px 10px; border-radius:8px; display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; transition:all .15s; font-family:inherit; }
+        .chat-participants-btn:hover { border-color:#f97316; color:#f97316; background:rgba(249,115,22,.04); }
+        .chat-participants-btn.active { border-color:#f97316; color:#f97316; background:rgba(249,115,22,.08); }
+
+        /* Dark mode: participants panel */
+        .dark .chat-participants-panel { background:#0b1320; border-color:#253b5c; }
+        .dark .chat-pp-header { border-color:#253b5c; }
+        .dark .chat-pp-title { color:#e0e6ed; }
+        .dark .chat-pp-close:hover { background:#1b2e4b; color:#e0e6ed; }
+        .dark .chat-pp-search { background:#0e1726; border-color:#253b5c; color:#e0e6ed; }
+        .dark .chat-pp-item:hover { background:rgba(255,255,255,.04); }
+        .dark .chat-pp-name { color:#e0e6ed; }
+        .dark .chat-pp-team-item { border-color:#253b5c; }
+        .dark .chat-pp-team-item:hover { border-color:#f97316; background:rgba(249,115,22,.08); }
+        .dark .chat-pp-team-name { color:#e0e6ed; }
+        .dark .chat-pp-divider { background:#253b5c; }
+        .dark .chat-participants-btn { border-color:#253b5c; color:#94a3b8; }
+        .dark .chat-participants-btn:hover { border-color:#f97316; color:#f97316; }
+
+        @media(max-width:768px) { .chat-wrap { grid-template-columns:1fr; } .chat-sidebar { display:none; } .chat-participants-panel { display:none; } }
     </style>
 
     <div x-data="chatModule" x-cloak>
-        <div class="chat-wrap">
+        <div class="chat-wrap" :class="showParticipants && activeConvId ? 'has-panel' : ''">
             <!-- Sidebar: conversation list -->
             <div class="chat-sidebar">
                 <div class="chat-sidebar-header">
@@ -2207,7 +2261,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                 <div class="chat-main-title" x-text="activeConv?.name || 'Conversation'"></div>
                                 <div class="chat-main-sub" x-text="(activeConv?.participants?.length || 0) + ' participants'"></div>
                             </div>
-                            <div style="margin-left:auto;">
+                            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+                                <button class="chat-participants-btn" :class="showParticipants ? 'active' : ''" @click="toggleParticipants()" title="Participants">
+                                    <iconify-icon icon="solar:users-group-rounded-bold" width="14"></iconify-icon>
+                                    <span x-text="(activeConv?.participants?.length || 0)"></span>
+                                </button>
                                 <button @click="deleteConversation()" style="background:none;border:none;cursor:pointer;color:#ef4444;opacity:.5;transition:opacity .2s;" title="Supprimer">
                                     <iconify-icon icon="solar:trash-bin-trash-bold" width="18" @mouseover="$el.style.opacity=1" @mouseout="$el.style.opacity=.5"></iconify-icon>
                                 </button>
@@ -2252,6 +2310,103 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     </div>
                 </template>
             </div>
+
+            <!-- ═══ Participants Panel ═══ -->
+            <template x-if="showParticipants && activeConvId">
+                <div class="chat-participants-panel">
+                    <div class="chat-pp-header">
+                        <span class="chat-pp-title">
+                            <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="16" style="color:#f97316"></iconify-icon>
+                            Participants
+                        </span>
+                        <button class="chat-pp-close" @click="showParticipants = false">
+                            <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Success message -->
+                    <template x-if="ppSuccess">
+                        <div class="chat-pp-success" x-text="ppSuccess"></div>
+                    </template>
+
+                    <!-- Current participants -->
+                    <div class="chat-pp-section">
+                        <div class="chat-pp-section-title">
+                            <iconify-icon icon="solar:user-check-rounded-bold" width="12"></iconify-icon>
+                            Membres actuels (<span x-text="participants.length"></span>)
+                        </div>
+                        <template x-for="p in participants" :key="p.userId">
+                            <div class="chat-pp-item">
+                                <div class="chat-pp-avatar" :style="'background:' + ppAvatarColor(p.name)" x-text="(p.name || '?')[0]"></div>
+                                <div class="chat-pp-info">
+                                    <div class="chat-pp-name" x-text="p.name"></div>
+                                    <div class="chat-pp-email" x-text="p.email"></div>
+                                </div>
+                                <span class="chat-pp-role" x-text="p.role"></span>
+                                <button class="chat-pp-remove" @click="removeParticipant(p.userId)" title="Retirer" x-show="p.userId !== currentUserId">
+                                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                </button>
+                            </div>
+                        </template>
+                        <div x-show="ppLoadingParticipants" style="text-align:center;padding:10px;">
+                            <iconify-icon icon="line-md:loading-twotone-loop" width="18" style="color:#f97316"></iconify-icon>
+                        </div>
+                    </div>
+
+                    <div class="chat-pp-divider"></div>
+
+                    <!-- Search -->
+                    <div class="chat-pp-section" style="padding-bottom:0;">
+                        <input type="text" class="chat-pp-search" x-model="ppSearch" placeholder="Rechercher membres ou équipes..." />
+                    </div>
+
+                    <!-- Teams section -->
+                    <div class="chat-pp-section" x-show="filteredTeams.length > 0">
+                        <div class="chat-pp-section-title">
+                            <iconify-icon icon="solar:users-group-two-rounded-bold" width="12"></iconify-icon>
+                            Équipes
+                        </div>
+                        <template x-for="team in filteredTeams" :key="team._id">
+                            <div class="chat-pp-team-item">
+                                <div class="chat-pp-team-dot" :style="'background:' + (team.color || '#4361ee')"></div>
+                                <div class="chat-pp-team-info">
+                                    <div class="chat-pp-team-name" x-text="team.name"></div>
+                                    <div class="chat-pp-team-count" x-text="(team.memberCount || 0) + ' membres'"></div>
+                                </div>
+                                <button class="chat-pp-team-add" @click="addTeam(team._id)" :disabled="ppAdding">
+                                    <iconify-icon icon="solar:add-circle-bold" width="12"></iconify-icon>
+                                    Ajouter
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Individual members section -->
+                    <div class="chat-pp-section" x-show="filteredNonParticipants.length > 0">
+                        <div class="chat-pp-section-title">
+                            <iconify-icon icon="solar:user-plus-rounded-bold" width="12"></iconify-icon>
+                            Ajouter un membre
+                        </div>
+                        <template x-for="m in filteredNonParticipants" :key="m._id">
+                            <div class="chat-pp-item" style="cursor:pointer;" @click="addParticipant(m._id)">
+                                <div class="chat-pp-avatar" :style="'background:' + ppAvatarColor(m.name)" x-text="(m.name || '?')[0]"></div>
+                                <div class="chat-pp-info">
+                                    <div class="chat-pp-name" x-text="m.name"></div>
+                                    <div class="chat-pp-email" x-text="m.email"></div>
+                                </div>
+                                <button class="chat-pp-add-btn" title="Ajouter">
+                                    <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div class="chat-pp-empty" x-show="filteredTeams.length === 0 && filteredNonParticipants.length === 0 && !ppLoadingParticipants">
+                        Tous les membres sont déjà participants
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- Create conversation modal -->
@@ -2291,6 +2446,15 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             newConvName: '',
             creating: false,
             currentUserId: _currentUserId || (document.cookie.match(/userId=([^;]+)/) || [])[1] || '',
+            // Participants panel
+            showParticipants: false,
+            participants: [],
+            allMembers: [],
+            allTeams: [],
+            ppSearch: '',
+            ppLoadingParticipants: false,
+            ppAdding: false,
+            ppSuccess: '',
 
             async init() {
                 // Try to get currentUserId from page if not available
@@ -2483,6 +2647,128 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 const taskMatch = text.match(/^__TASK__(?:[a-f0-9]{24}\|)?(.+?)__END__\n?([\s\S]*)$/);
                 if (taskMatch) return `📋 ${taskMatch[1]}: ${taskMatch[2]}`;
                 return text;
+            },
+
+            // ═══ Participants panel methods ═══
+            async toggleParticipants() {
+                this.showParticipants = !this.showParticipants;
+                if (this.showParticipants) {
+                    await this.loadParticipantsPanel();
+                }
+            },
+
+            async loadParticipantsPanel() {
+                this.ppLoadingParticipants = true;
+                this.ppSuccess = '';
+                try {
+                    // Load current participants
+                    const pRes = await fetch(_apiBase + '/conversations/' + this.activeConvId + '/participants', { credentials: 'include' });
+                    const pData = await pRes.json();
+                    if (pData.success) this.participants = pData.participants || [];
+
+                    // Load all account members
+                    const mRes = await fetch('/account/<%= account_number %>/api/team/members', { credentials: 'include' });
+                    const mData = await mRes.json();
+                    if (mData.success) {
+                        this.allMembers = mData.members || [];
+                        this.allTeams = mData.teams || [];
+                    }
+                } catch (e) {
+                    console.error('[Chat] Load participants error:', e);
+                }
+                this.ppLoadingParticipants = false;
+            },
+
+            get filteredTeams() {
+                const q = (this.ppSearch || '').toLowerCase();
+                let teams = this.allTeams || [];
+                if (q) teams = teams.filter(t => (t.name || '').toLowerCase().includes(q));
+                return teams;
+            },
+
+            get filteredNonParticipants() {
+                const q = (this.ppSearch || '').toLowerCase();
+                const participantIds = this.participants.map(p => p.userId);
+                let members = (this.allMembers || []).filter(m => !participantIds.includes(String(m._id)));
+                if (q) members = members.filter(m => (m.name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q));
+                return members;
+            },
+
+            async addParticipant(userId) {
+                if (this.ppAdding) return;
+                this.ppAdding = true;
+                this.ppSuccess = '';
+                try {
+                    const res = await fetch(_apiBase + '/conversations/' + this.activeConvId + '/add-participant', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ userId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.ppSuccess = data.message || 'Membre ajouté';
+                        await this.loadParticipantsPanel();
+                        // Update header count
+                        if (this.activeConv) this.activeConv.participants = this.participants;
+                        setTimeout(() => this.ppSuccess = '', 3000);
+                    }
+                } catch (e) {
+                    console.error('[Chat] Add participant error:', e);
+                }
+                this.ppAdding = false;
+            },
+
+            async addTeam(teamId) {
+                if (this.ppAdding) return;
+                this.ppAdding = true;
+                this.ppSuccess = '';
+                try {
+                    const res = await fetch(_apiBase + '/conversations/' + this.activeConvId + '/add-team', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ teamId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.ppSuccess = data.message || 'Équipe ajoutée';
+                        await this.loadParticipantsPanel();
+                        if (this.activeConv) this.activeConv.participants = this.participants;
+                        setTimeout(() => this.ppSuccess = '', 3000);
+                    }
+                } catch (e) {
+                    console.error('[Chat] Add team error:', e);
+                }
+                this.ppAdding = false;
+            },
+
+            async removeParticipant(userId) {
+                if (this.ppAdding) return;
+                this.ppAdding = true;
+                try {
+                    const res = await fetch(_apiBase + '/conversations/' + this.activeConvId + '/remove-participant', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ userId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        await this.loadParticipantsPanel();
+                        if (this.activeConv) this.activeConv.participants = this.participants;
+                    }
+                } catch (e) {
+                    console.error('[Chat] Remove participant error:', e);
+                }
+                this.ppAdding = false;
+            },
+
+            ppAvatarColor(name) {
+                const colors = ['#4361ee','#10b981','#f97316','#8b5cf6','#ec4899','#06b6d4','#f59e0b','#ef4444'];
+                let hash = 0;
+                for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                return colors[Math.abs(hash) % colors.length];
             },
 
             formatTime(dateStr) {

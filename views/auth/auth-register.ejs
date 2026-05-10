@@ -45,7 +45,11 @@
                             <iconify-icon icon="solar:user-plus-bold-duotone" width="28" class="text-primary"></iconify-icon>
                         </div>
                         <h2 class="text-2xl font-bold">Créer un compte</h2>
-                        <p class="text-gray-500 dark:text-gray-400 mt-1">Inscrivez-vous pour accéder à votre espace</p>
+                        <% if (locals.inviteInfo) { %>
+                            <p class="text-gray-500 dark:text-gray-400 mt-1">Inscrivez-vous pour rejoindre l'espace</p>
+                        <% } else { %>
+                            <p class="text-gray-500 dark:text-gray-400 mt-1">Inscrivez-vous pour accéder à votre espace</p>
+                        <% } %>
                     </div>
 
                     <% if (locals.error_msg && locals.error_msg.length > 0) { %>
@@ -72,7 +76,26 @@
                         <div class="relative z-[1] inline-block bg-white px-2 font-bold text-white-dark dark:bg-[#0e1726]"><span>OU</span></div>
                     </div>
 
+                    <% if (locals.inviteInfo) { %>
+                        <div class="flex items-center gap-3 p-3.5 rounded-xl border-2 border-primary/20 bg-primary/5 mb-5">
+                            <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <iconify-icon icon="<%= inviteInfo.accountIcon || 'solar:buildings-2-bold-duotone' %>" width="20" class="text-primary"></iconify-icon>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-gray-800 dark:text-white-light truncate">Invitation à rejoindre <span class="text-primary"><%= inviteInfo.accountName %></span></p>
+                                <p class="text-xs text-gray-500">en tant que <span class="font-semibold text-primary"><%= inviteInfo.role === 'admin' ? 'Administrateur' : inviteInfo.role === 'manager' ? 'Manager' : inviteInfo.role === 'viewer' ? 'Observateur' : 'Membre' %></span></p>
+                            </div>
+                            <iconify-icon icon="solar:verified-check-bold" width="20" class="text-success shrink-0"></iconify-icon>
+                        </div>
+                    <% } %>
+
                     <form class="space-y-4" action="/auth/register" method="POST" id="registerForm">
+                        <% if (locals.inviteToken) { %>
+                            <input type="hidden" name="inviteToken" value="<%= inviteToken %>" />
+                        <% } %>
+                        <% if (locals.accountNumber) { %>
+                            <input type="hidden" name="accountNumber" value="<%= accountNumber %>" />
+                        <% } %>
                         <div>
                             <label for="name" class="block text-sm font-semibold mb-1">Nom complet</label>
                             <div class="relative">
@@ -88,8 +111,14 @@
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                                     <iconify-icon icon="solar:letter-bold" width="16"></iconify-icon>
                                 </span>
-                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required value="<%= locals.email || '' %>" />
+                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required value="<%= locals.inviteEmail || locals.email || '' %>" <%= locals.inviteEmail ? 'readonly style="background:#f8fafc;cursor:not-allowed;opacity:.8;"' : '' %> />
                             </div>
+                            <% if (locals.inviteEmail) { %>
+                                <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                    <iconify-icon icon="solar:lock-bold" width="10"></iconify-icon>
+                                    Email prédéfini par l'invitation
+                                </p>
+                            <% } %>
                         </div>
                         <div>
                             <label for="password" class="block text-sm font-semibold mb-1">Mot de passe</label>

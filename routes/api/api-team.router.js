@@ -4,6 +4,7 @@ const User = require('../../models/user.model');
 const Account = require('../../models/account.model');
 const crypto = require('crypto');
 const { tenantCollection } = require('../../middleware/tenant');
+const mailer = require('../../services/mailer');
 
 // ── GET /api/team/members ─────────────────────────────────
 // Returns all members + pending invitations for the current account
@@ -26,6 +27,7 @@ router.get('/members', async (req, res) => {
                 avatar: user?.avatar || null,
                 role: member.role || 'member',
                 entityAccess: member.entityAccess || [],
+                entityPermissions: member.entityPermissions || [],
                 status: member.status || 'active',
                 joinedAt: member.joinedAt,
                 lastLogin: user?.lastLogin || null,
@@ -76,11 +78,35 @@ router.get('/members', async (req, res) => {
     }
 });
 
+// ── GET /api/team/lookup-user ──────────────────────────────
+// Lookup if a user exists in the SaaS platform by email
+router.get('/lookup-user', async (req, res) => {
+    try {
+        const email = req.query.email?.toLowerCase()?.trim();
+        if (!email) return res.json({ found: false });
+
+        const user = await User.findOne({ email }).select('name email').lean();
+        if (user) {
+            // Check if already a member
+            const account = await Account.findOne({ account_number: req.account_number }).lean();
+            const alreadyMember = account?.users?.some(u => u.email === email);
+            if (alreadyMember) {
+                return res.json({ found: false, alreadyMember: true });
+            }
+            return res.json({ found: true, name: user.name || user.email, email: user.email });
+        }
+        res.json({ found: false });
+    } catch (error) {
+        console.error('[Team API] lookup-user error:', error);
+        res.json({ found: false });
+    }
+});
+
 // ── POST /api/team/invite ─────────────────────────────────
 // Invite a user by email. If they already exist, add them directly.
 router.post('/invite', async (req, res) => {
     try {
-        const { email, role, message, entityAccess } = req.body;
+        const { email, role, message, entityAccess, entityPermissions } = req.body;
         if (!email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
         const targetRole = ['admin', 'manager', 'member', 'viewer'].includes(role) ? role : 'member';
@@ -107,6 +133,7 @@ router.post('/invite', async (req, res) => {
                 email: existingUser.email,
                 role: targetRole,
                 entityAccess: entityAccess || [],
+                entityPermissions: entityPermissions || [],
                 status: 'active',
                 joinedAt: new Date(),
                 invitedBy: req.user._id,
@@ -146,6 +173,20 @@ router.post('/invite', async (req, res) => {
                 status: 'pending',
             });
             await account.save();
+
+            // Send invitation email
+            const inviteUrl = `${req.protocol}://${req.get('host')}/auth/invite/${token}`;
+            try {
+                await mailer.sendInvitation({
+                    to: email.toLowerCase().trim(),
+                    accountName: account.name || `Compte ${req.account_number}`,
+                    inviterName: req.user?.name || req.user?.email || 'Un administrateur',
+                    role: targetRole,
+                    inviteUrl,
+                });
+            } catch (mailErr) {
+                console.error('[Team API] Email send failed (invite saved):', mailErr.message);
+            }
 
             return res.json({
                 success: true,
@@ -258,6 +299,24 @@ router.post('/resend-invite', async (req, res) => {
             }
         );
 
+        // Re-send the invitation email
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        const invitation = account?.invitations?.find(i => i.email === email.toLowerCase().trim() && i.status === 'pending');
+        if (invitation?.token) {
+            const inviteUrl = `${req.protocol}://${req.get('host')}/auth/invite/${invitation.token}`;
+            try {
+                await mailer.sendInvitation({
+                    to: email.toLowerCase().trim(),
+                    accountName: account.name || `Compte ${req.account_number}`,
+                    inviterName: req.user?.name || req.user?.email || 'Un administrateur',
+                    role: invitation.role || 'member',
+                    inviteUrl,
+                });
+            } catch (mailErr) {
+                console.error('[Team API] Email resend failed:', mailErr.message);
+            }
+        }
+
         res.json({ success: true, message: 'Invitation renvoyée' });
     } catch (error) {
         console.error('[Team API] resend-invite error:', error);
@@ -315,10 +374,12 @@ router.get('/entities', async (req, res) => {
 });
 
 // ── POST /api/team/update-permissions ────────────────
-// Update a member's entity access list
+// Update a member's entity permissions (CRUD per entity)
+// Accepts either: { userId, entityPermissions: [{entityId, create, read, update, delete}] }
+//            or legacy: { userId, entityAccess: [entityId] }
 router.post('/update-permissions', async (req, res) => {
     try {
-        const { userId, entityAccess } = req.body;
+        const { userId, entityAccess, entityPermissions } = req.body;
         if (!userId) return res.status(400).json({ error: 'userId required' });
 
         const account = await Account.findOne({ account_number: req.account_number });
@@ -332,10 +393,28 @@ router.post('/update-permissions', async (req, res) => {
             return res.status(403).json({ error: 'Impossible de restreindre l\'accès du propriétaire' });
         }
 
-        member.entityAccess = Array.isArray(entityAccess) ? entityAccess : [];
+        // Handle new CRUD format
+        if (entityPermissions !== undefined) {
+            member.entityPermissions = Array.isArray(entityPermissions) ? entityPermissions : [];
+            // Also sync entityAccess for backward compat (entities with at least read=true)
+            member.entityAccess = member.entityPermissions
+                .filter(ep => ep.read !== false)
+                .map(ep => ep.entityId);
+        } else if (entityAccess !== undefined) {
+            // Legacy format — convert to CRUD (all permissions true for selected entities)
+            member.entityAccess = Array.isArray(entityAccess) ? entityAccess : [];
+            member.entityPermissions = member.entityAccess.map(id => ({
+                entityId: id, create: true, read: true, update: true, delete: true
+            }));
+        }
+
         await account.save();
 
-        res.json({ success: true, entityAccess: member.entityAccess });
+        res.json({
+            success: true,
+            entityAccess: member.entityAccess,
+            entityPermissions: member.entityPermissions,
+        });
     } catch (error) {
         console.error('[Team API] update-permissions error:', error);
         res.status(500).json({ error: 'Server error' });

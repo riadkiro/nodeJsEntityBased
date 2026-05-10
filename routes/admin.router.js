@@ -53,10 +53,10 @@ const ensureTenantAdmin = async (req, res, next) => {
 // Apply to all routes
 router.use(ensureTenantAdmin);
 
-// ── Pages ────────────────────────────────────────────────────
-router.get("/", adminController.dashboard);
-router.get("/members", adminController.membersList);
-router.get("/settings", adminController.settings);
+// ── Pages → Redirect to unified settings ─────────────────────
+router.get("/", (req, res) => res.redirect(`/account/${req.account_number}/settings`));
+router.get("/members", (req, res) => res.redirect(`/account/${req.account_number}/settings?tab=members`));
+router.get("/settings", (req, res) => res.redirect(`/account/${req.account_number}/settings`));
 
 // ── API ──────────────────────────────────────────────────────
 router.post("/api/members/invite", adminController.inviteMember);

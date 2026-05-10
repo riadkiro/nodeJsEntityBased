@@ -14,7 +14,14 @@ const AccountSchema = new mongoose.Schema({
     userId: { type: String },
     email: { type: String },
     role: { type: String, enum: ['owner', 'admin', 'manager', 'member', 'viewer'], default: 'member' },
-    entityAccess: [{ type: String }],  // Entity IDs user can access. Empty = all entities
+    entityAccess: [{ type: String }],  // Legacy: Entity IDs (kept for backward compat)
+    entityPermissions: [{
+      entityId: { type: String },
+      create: { type: Boolean, default: true },
+      read:   { type: Boolean, default: true },
+      update: { type: Boolean, default: true },
+      delete: { type: Boolean, default: true },
+    }],  // Granular CRUD per entity. Empty = full access to all entities
     joinedAt: { type: Date, default: Date.now },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, enum: ['active', 'pending', 'removed'], default: 'active' },

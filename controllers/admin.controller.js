@@ -172,7 +172,24 @@ module.exports = {
             });
             await account.save();
 
-            res.json({ success: true, inviteLink: `/auth/invite/${token}` });
+            // Send invitation email via SMTP
+            const inviteLink = `/auth/invite/${token}`;
+            const appUrl = process.env.APP_URL || 'http://localhost:3000';
+            try {
+                const mailer = require('../services/mailer');
+                await mailer.sendInvitation({
+                    to: email.toLowerCase(),
+                    accountName: account.name || `Compte #${req.account_number}`,
+                    inviterName: req.user.name || req.user.email,
+                    role: role || 'member',
+                    inviteUrl: `${appUrl}${inviteLink}`,
+                });
+            } catch (mailErr) {
+                console.error('[TenantAdmin] Email send failed (invite saved):', mailErr.message);
+                // Invitation is saved even if email fails — don't block the response
+            }
+
+            res.json({ success: true, inviteLink });
         } catch (error) {
             console.error("[TenantAdmin] Invite error:", error);
             res.status(500).json({ error: "Server Error" });

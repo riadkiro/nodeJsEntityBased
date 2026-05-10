@@ -66,31 +66,98 @@
                         </span>
                     </div>
 
+
+                    <!-- Pending Invitations -->
+                    <% if (locals.pendingInvitations && pendingInvitations.length > 0) { %>
+                        <div class="mb-5">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-6 h-6 rounded-lg bg-warning/10 flex items-center justify-center">
+                                    <iconify-icon icon="solar:letter-bold-duotone" width="14" class="text-warning"></iconify-icon>
+                                </div>
+                                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Invitations en attente</span>
+                                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-warning/10 text-warning"><%= pendingInvitations.length %></span>
+                            </div>
+                            <div class="space-y-2">
+                                <% for (let inv of pendingInvitations) { %>
+                                    <div class="flex items-center p-3 rounded-xl border-2 border-warning/20 bg-warning/5 gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
+                                            <iconify-icon icon="<%= inv.accountIcon %>" width="20" class="text-warning"></iconify-icon>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-bold text-sm text-black dark:text-white-light truncate"><%= inv.accountName %></h4>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <span class="text-[11px] text-gray-400 font-mono">#<%= inv.accountNumber %></span>
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase
+                                                    <%= inv.role === 'admin' ? 'bg-blue-100 text-blue-600' : inv.role === 'manager' ? 'bg-orange-100 text-orange-600' : inv.role === 'viewer' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500' %>">
+                                                    <%= inv.role === 'admin' ? 'Admin' : inv.role === 'manager' ? 'Manager' : inv.role === 'viewer' ? 'Observateur' : 'Membre' %>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-1.5 shrink-0">
+                                            <form method="POST" action="/user/invitations/decline" style="margin:0;">
+                                                <input type="hidden" name="token" value="<%= inv.token %>" />
+                                                <button type="submit" class="w-8 h-8 rounded-lg border border-gray-200 dark:border-[#253b5c] bg-white dark:bg-[#1b2e4b] flex items-center justify-center text-gray-400 hover:text-danger hover:border-danger transition-all" title="Refuser">
+                                                    <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="/user/invitations/accept" style="margin:0;">
+                                                <input type="hidden" name="token" value="<%= inv.token %>" />
+                                                <button type="submit" class="px-3 h-8 rounded-lg bg-success text-white text-xs font-bold flex items-center gap-1 hover:bg-success/90 transition-all">
+                                                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                                                    Accepter
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } %>
+
                     <!-- Workspace List -->
                     <div class="space-y-2.5 mb-4">
                         <% if (locals.accounts && accounts.length > 0) { %>
                             <% for (let i = 0; i < accounts.length; i++) { %>
-                                <a href="/account/<%= accounts[i].account_number %>/home" 
-                                   class="flex items-center p-3.5 rounded-lg border border-white-light dark:border-[#1b2e4b] hover:border-primary hover:shadow-md dark:hover:border-primary bg-white dark:bg-[#1b2e4b] transition-all group">
-                                    <div class="bg-primary/10 text-primary rounded-lg p-2.5 mr-3 group-hover:bg-primary group-hover:text-white transition-colors">
-                                        <iconify-icon icon="<%= accounts[i].icon || 'solar:home-2-bold-duotone' %>" width="20"></iconify-icon>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <h4 class="font-bold text-sm text-black dark:text-white-light group-hover:text-primary transition-colors truncate"><%= accounts[i].name %></h4>
-                                        <div class="flex items-center gap-2 mt-0.5">
-                                            <span class="text-[11px] text-gray-400 font-mono">#<%= accounts[i].account_number %></span>
-                                            <% if (accounts[i].role) { %>
-                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase
-                                                    <%= accounts[i].role === 'owner' ? 'bg-amber-100 text-amber-700' : accounts[i].role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500' %>">
-                                                    <%= accounts[i].role %>
-                                                </span>
-                                            <% } %>
+                                <div class="relative group" x-data="{ showLeave: false }">
+                                    <a href="/account/<%= accounts[i].account_number %>/home" 
+                                       class="flex items-center p-3.5 rounded-lg border border-white-light dark:border-[#1b2e4b] hover:border-primary hover:shadow-md dark:hover:border-primary bg-white dark:bg-[#1b2e4b] transition-all group/card">
+                                        <div class="bg-primary/10 text-primary rounded-lg p-2.5 mr-3 group-hover/card:bg-primary group-hover/card:text-white transition-colors">
+                                            <iconify-icon icon="<%= accounts[i].icon || 'solar:home-2-bold-duotone' %>" width="20"></iconify-icon>
                                         </div>
-                                    </div>
-                                    <div class="ml-auto text-gray-300 group-hover:text-primary transition-colors">
-                                        <iconify-icon icon="solar:arrow-right-linear" width="18"></iconify-icon>
-                                    </div>
-                                </a>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-bold text-sm text-black dark:text-white-light group-hover/card:text-primary transition-colors truncate"><%= accounts[i].name %></h4>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <span class="text-[11px] text-gray-400 font-mono">#<%= accounts[i].account_number %></span>
+                                                <% if (accounts[i].role) { %>
+                                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase
+                                                        <%= accounts[i].role === 'owner' ? 'bg-amber-100 text-amber-700' : accounts[i].role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500' %>">
+                                                        <%= accounts[i].role %>
+                                                    </span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                        <div class="ml-auto text-gray-300 group-hover/card:text-primary transition-colors">
+                                            <iconify-icon icon="solar:arrow-right-linear" width="18"></iconify-icon>
+                                        </div>
+                                    </a>
+                                    <% if (accounts[i].role !== 'owner') { %>
+                                        <!-- Leave button -->
+                                        <button @click.stop="showLeave = !showLeave" class="absolute top-1/2 -translate-y-1/2 right-[-8px] w-6 h-6 rounded-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-[#253b5c] shadow-sm flex items-center justify-center text-gray-300 hover:text-danger hover:border-danger transition-all opacity-0 group-hover:opacity-100" title="Quitter cet espace">
+                                            <iconify-icon icon="solar:logout-2-bold" width="12"></iconify-icon>
+                                        </button>
+                                        <!-- Leave confirmation -->
+                                        <div x-show="showLeave" x-transition @click.outside="showLeave = false" class="absolute right-0 top-full mt-1 z-10 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-[#253b5c] rounded-xl p-3 shadow-lg w-64">
+                                            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2.5">Voulez-vous vraiment quitter <strong class="text-gray-800 dark:text-white"><%= accounts[i].name %></strong> ?</p>
+                                            <div class="flex gap-2">
+                                                <button @click="showLeave = false" class="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-[#253b5c] text-xs font-semibold text-gray-500 hover:bg-gray-50">Annuler</button>
+                                                <form method="POST" action="/user/accounts/leave" style="margin:0;flex:1;">
+                                                    <input type="hidden" name="accountNumber" value="<%= accounts[i].account_number %>" />
+                                                    <button type="submit" class="w-full px-3 py-1.5 rounded-lg bg-danger text-white text-xs font-bold hover:bg-danger/90 transition-all">Quitter</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                </div>
                             <% } %>
                         <% } else { %>
                             <div class="text-center py-8">

@@ -213,6 +213,54 @@ router.use("/", require("./datatable.routes.js"));
 // Profile Page
 router.use("/profile", require("./profile.routes.js"));
 
+// Unified Settings Page (consolidates admin + account-settings)
+router.get("/settings", async (req, res) => {
+    try {
+        const Account = require("../models/account.model");
+        const User = require("../models/user.model");
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).send("Account not found");
+
+        // Determine if current user is admin/owner
+        const memberEntry = account.users.find(
+            u => String(u.userId) === String(req.user._id) && u.status === 'active'
+        );
+        const isAdmin = memberEntry && (memberEntry.role === 'owner' || memberEntry.role === 'admin');
+
+        // Get members
+        const activeMembers = account.users.filter(u => u.status === 'active');
+        const userIds = activeMembers.map(u => u.userId);
+        const users = await User.find({ _id: { $in: userIds } })
+            .select('name email avatar status membership.plan lastLogin created_on');
+
+        const members = users.map(u => {
+            const entry = activeMembers.find(m => String(m.userId) === String(u._id));
+            return {
+                ...u.toObject(),
+                workspaceRole: entry?.role || 'member',
+                joinedAt: entry?.joinedAt,
+            };
+        });
+
+        // Pending invitations
+        const pendingInvites = account.invitations.filter(i => i.status === 'pending');
+
+        res.render("account/account-settings-unified", {
+            layout: "layout-app",
+            user: req.user,
+            account_number: req.account_number,
+            account,
+            members,
+            pendingInvites,
+            isAdmin,
+        });
+    } catch (error) {
+        console.error("[Settings] Error:", error);
+        res.status(500).send("Error loading settings page");
+    }
+});
+
 // App Presets (factory reset / preset installer)
 router.use("/", require("./preset.router.js"));
 

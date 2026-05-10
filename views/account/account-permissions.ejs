@@ -1,206 +1,380 @@
 <link rel="stylesheet" href="/css/app/team-system.css" />
 
-<div x-data="permissionsHub()" x-cloak>
+<div class="animate__animated p-6" :class="[$store.app.animation]">
+<div x-data="permissionsHub()" x-init="init()" x-cloak>
   <!-- Page Header -->
   <div class="ts-page-header">
     <div class="ts-page-header-icon" style="background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(124,58,237,.05));">
       <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="28" style="color:#7c3aed"></iconify-icon>
     </div>
     <div class="ts-page-header-info">
-      <h1>Permissions & Rôles</h1>
-      <p>Configurez les droits d'accès pour chaque rôle de votre organisation</p>
+      <h1>Permissions & Accès</h1>
+      <p>Configurez les droits d'accès CRUD pour chaque membre par entité</p>
     </div>
+    <a href="/account/<%= account_number %>/team" style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:8px 18px;border:1px solid #e0e6ed;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;text-decoration:none;transition:all .15s;" class="dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
+      <iconify-icon icon="solar:arrow-left-linear" width="14"></iconify-icon>
+      Équipe
+    </a>
   </div>
 
-  <!-- Tabs -->
-  <div style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #e0e6ed;padding-bottom:0;" class="dark:!border-[#253b5c]">
-    <template x-for="t in [{key:'matrix',label:'Matrice',icon:'solar:tuning-square-2-bold-duotone'},{key:'roles',label:'Rôles personnalisés',icon:'solar:user-id-bold-duotone'},{key:'groups',label:'Groupes',icon:'solar:users-group-two-rounded-bold-duotone'},{key:'log',label:'Journal',icon:'solar:clipboard-list-bold-duotone'}]" :key="t.key">
-      <button style="padding:10px 18px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:#94a3b8;transition:all .2s;display:flex;align-items:center;gap:6px;font-family:inherit;" :style="tab === t.key ? 'color:#4361ee;border-bottom-color:#4361ee' : ''" @click="tab = t.key" class="dark:!text-[#94a3b8]">
-        <iconify-icon :icon="t.icon" width="16"></iconify-icon>
-        <span x-text="t.label"></span>
-      </button>
-    </template>
-  </div>
+  <!-- Loading -->
+  <template x-if="loading">
+    <div style="display:flex;align-items:center;justify-content:center;padding:80px 0;">
+      <div class="animate-spin" style="width:28px;height:28px;border:3px solid #e0e6ed;border-top-color:#4361ee;border-radius:50%;"></div>
+    </div>
+  </template>
 
-  <!-- Matrix Tab -->
-  <template x-if="tab === 'matrix'">
-    <div style="overflow-x:auto;border:1px solid #e0e6ed;border-radius:14px;background:#fff;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
-      <table class="ts-perm-matrix">
-        <thead>
-          <tr>
-            <th style="min-width:220px;">Permission</th>
-            <th>Owner</th>
-            <th>Admin</th>
-            <th>Manager</th>
-            <th>Membre</th>
-            <th>Viewer</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="cat in permCategories" :key="cat.name">
-            <template x-fragment>
-              <tr><td colspan="6" class="ts-perm-category" x-text="cat.name"></td></tr>
-              <template x-for="perm in cat.perms" :key="perm.key">
-                <tr>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <iconify-icon :icon="perm.icon" width="16" style="color:#94a3b8;flex-shrink:0;"></iconify-icon>
-                      <span x-text="perm.label"></span>
-                    </div>
-                  </td>
-                  <template x-for="role in ['owner','admin','manager','member','viewer']" :key="role">
-                    <td>
-                      <template x-if="role === 'owner'">
-                        <iconify-icon icon="solar:check-circle-bold" width="20" style="color:#22c55e"></iconify-icon>
-                      </template>
-                      <template x-if="role !== 'owner'">
-                        <label class="ts-toggle">
-                          <input type="checkbox" :checked="perm.roles.includes(role)" />
-                          <span class="ts-toggle-slider"></span>
-                        </label>
-                      </template>
-                    </td>
-                  </template>
-                </tr>
-              </template>
-            </template>
+  <template x-if="!loading">
+    <div>
+      <!-- Member Selector -->
+      <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;padding:20px;margin-bottom:20px;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;letter-spacing:.04em;">Sélectionnez un membre</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <template x-for="m in editableMembers" :key="m._id">
+            <button @click="selectMember(m)" :style="'display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;border:1.5px solid ' + (selectedMember?._id === m._id ? '#4361ee' : '#e0e6ed') + ';background:' + (selectedMember?._id === m._id ? 'rgba(67,97,238,.04)' : '#fff') + ';cursor:pointer;transition:all .15s;font-family:inherit;'" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]">
+              <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(m.name)">
+                <span x-text="m.name.charAt(0).toUpperCase()"></span>
+              </div>
+              <div style="text-align:left;">
+                <div style="font-size:12px;font-weight:600;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="m.name"></div>
+                <div style="font-size:10px;color:#94a3b8;" x-text="m.role.toUpperCase()"></div>
+              </div>
+            </button>
           </template>
-        </tbody>
-      </table>
-    </div>
-  </template>
-
-  <!-- Custom Roles Tab -->
-  <template x-if="tab === 'roles'">
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-        <p style="font-size:13px;color:#64748b;">Créez des rôles personnalisés avec des permissions spécifiques</p>
-        <button class="ts-btn-primary">
-          <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
-          Nouveau rôle
-        </button>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
-        <template x-for="r in customRoles" :key="r.name">
-          <div class="ts-share-card">
-            <div class="ts-share-card-header">
-              <div class="ts-share-card-icon" :style="'background:' + r.color + '15'">
-                <iconify-icon :icon="r.icon" width="20" :style="'color:' + r.color"></iconify-icon>
+
+      <!-- CRUD Matrix -->
+      <template x-if="selectedMember">
+        <div>
+          <!-- Selected Member Header -->
+          <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div :style="'width:36px;min-width:36px;max-width:36px;height:36px;min-height:36px;max-height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(selectedMember.name)">
+                <span x-text="selectedMember.name.charAt(0).toUpperCase()"></span>
               </div>
-              <div style="flex:1;">
-                <div class="ts-share-card-title" x-text="r.name"></div>
-                <div class="ts-share-card-type" x-text="r.usersCount + ' utilisateurs'"></div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="selectedMember.name"></div>
+                <div style="font-size:12px;color:#94a3b8;" x-text="selectedMember.email"></div>
               </div>
+              <span :style="'display:inline-flex;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:' + roleColor(selectedMember.role) + '15;color:' + roleColor(selectedMember.role)" x-text="selectedMember.role"></span>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;">
-              <template x-for="p in r.permissions" :key="p">
-                <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:#f1f5f9;color:#64748b;" class="dark:!bg-[#1b2e4b] dark:!text-[#94a3b8]" x-text="p"></span>
-              </template>
+            <div style="display:flex;gap:6px;">
+              <button @click="setAllPermissions(true)" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
+                <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
+                Accès complet
+              </button>
+              <button @click="setReadOnly()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#3b82f6';this.style.color='#3b82f6'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
+                <iconify-icon icon="solar:eye-bold" width="13"></iconify-icon>
+                Lecture seule
+              </button>
+              <button @click="clearAllPermissions()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
+                <iconify-icon icon="solar:close-circle-bold" width="13"></iconify-icon>
+                Aucun accès
+              </button>
             </div>
           </div>
-        </template>
-      </div>
-    </div>
-  </template>
 
-  <!-- Groups Tab -->
-  <template x-if="tab === 'groups'">
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-        <p style="font-size:13px;color:#64748b;">Organisez vos membres en départements et équipes</p>
-        <button class="ts-btn-primary">
-          <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
-          Nouveau groupe
-        </button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
-        <template x-for="g in groups" :key="g.name">
-          <div class="ts-share-card">
-            <div class="ts-share-card-header">
-              <div class="ts-share-card-icon" :style="'background:' + g.color + '15'">
-                <iconify-icon :icon="g.icon" width="20" :style="'color:' + g.color"></iconify-icon>
-              </div>
-              <div style="flex:1;">
-                <div class="ts-share-card-title" x-text="g.name"></div>
-                <div class="ts-share-card-type" x-text="g.members.length + ' membres'"></div>
-              </div>
-            </div>
-            <div class="ts-share-avatars" style="margin-top:10px;">
-              <template x-for="m in g.members.slice(0,5)" :key="m">
-                <img :src="'https://i.pravatar.cc/60?img=' + m" alt="member" />
-              </template>
-              <span class="ts-share-more" x-show="g.members.length > 5" x-text="'+' + (g.members.length - 5)"></span>
-            </div>
+          <!-- Info Banner -->
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(67,97,238,.04);border:1px solid rgba(67,97,238,.12);border-radius:10px;margin-bottom:16px;" class="dark:!bg-[rgba(67,97,238,.08)] dark:!border-[rgba(67,97,238,.2)]">
+            <iconify-icon icon="solar:info-circle-bold" width="16" style="color:#4361ee;flex-shrink:0;"></iconify-icon>
+            <span style="font-size:12px;color:#4361ee;font-weight:500;">Aucune entité configurée = accès complet à toutes les entités. Cochez uniquement les entités auxquelles ce membre doit avoir accès.</span>
           </div>
-        </template>
-      </div>
-    </div>
-  </template>
 
-  <!-- Activity Log Tab -->
-  <template x-if="tab === 'log'">
-    <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;padding:20px;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
-      <template x-for="log in activityLogs" :key="log.id">
-        <div class="ts-activity-item">
-          <div class="ts-activity-dot" :style="'background:' + log.color"></div>
-          <div style="flex:1;">
-            <div class="ts-activity-text" x-html="log.text"></div>
-            <div class="ts-activity-time" x-text="log.time"></div>
+          <!-- Entity CRUD Matrix Table -->
+          <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:1px solid #e0e6ed;" class="dark:!border-[#253b5c]">
+                  <th style="text-align:left;padding:14px 18px;font-size:12px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.04em;" class="dark:!text-[#e0e6ed]">Entité</th>
+                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                      <iconify-icon icon="solar:eye-bold" width="15" style="color:#3b82f6;"></iconify-icon>
+                      Voir
+                    </div>
+                  </th>
+                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                      <iconify-icon icon="solar:add-square-bold" width="15" style="color:#22c55e;"></iconify-icon>
+                      Créer
+                    </div>
+                  </th>
+                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                      <iconify-icon icon="solar:pen-bold" width="15" style="color:#f59e0b;"></iconify-icon>
+                      Modifier
+                    </div>
+                  </th>
+                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                      <iconify-icon icon="solar:trash-bin-trash-bold" width="15" style="color:#ef4444;"></iconify-icon>
+                      Supprimer
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="entity in allEntities" :key="entity._id">
+                  <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <td style="padding:12px 18px;">
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <div :style="'width:32px;min-width:32px;max-width:32px;height:32px;min-height:32px;max-height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (entity.color || '#4361ee') + '15'">
+                          <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="16" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
+                        </div>
+                        <div>
+                          <div style="font-size:13px;font-weight:600;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="entity.name"></div>
+                          <div style="font-size:10px;color:#94a3b8;" x-text="entity.slug"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="text-align:center;padding:12px;">
+                      <label style="display:inline-flex;cursor:pointer;position:relative;">
+                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'read')" @change="togglePerm(entity._id, 'read')" style="display:none;" />
+                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'read') ? 'background:#3b82f6' : 'background:#e0e6ed')">
+                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'read') ? 'left:18px' : 'left:2px')"></div>
+                        </div>
+                      </label>
+                    </td>
+                    <td style="text-align:center;padding:12px;">
+                      <label style="display:inline-flex;cursor:pointer;position:relative;">
+                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'create')" @change="togglePerm(entity._id, 'create')" style="display:none;" />
+                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'create') ? 'background:#22c55e' : 'background:#e0e6ed')">
+                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'create') ? 'left:18px' : 'left:2px')"></div>
+                        </div>
+                      </label>
+                    </td>
+                    <td style="text-align:center;padding:12px;">
+                      <label style="display:inline-flex;cursor:pointer;position:relative;">
+                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'update')" @change="togglePerm(entity._id, 'update')" style="display:none;" />
+                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'update') ? 'background:#f59e0b' : 'background:#e0e6ed')">
+                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'update') ? 'left:18px' : 'left:2px')"></div>
+                        </div>
+                      </label>
+                    </td>
+                    <td style="text-align:center;padding:12px;">
+                      <label style="display:inline-flex;cursor:pointer;position:relative;">
+                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'delete')" @change="togglePerm(entity._id, 'delete')" style="display:none;" />
+                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'delete') ? 'background:#ef4444' : 'background:#e0e6ed')">
+                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'delete') ? 'left:18px' : 'left:2px')"></div>
+                        </div>
+                      </label>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
           </div>
+
+          <!-- Save Status -->
+          <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:14px;gap:10px;">
+            <template x-if="saveStatus === 'saving'">
+              <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;">
+                <div class="animate-spin" style="width:14px;height:14px;border:2px solid #e0e6ed;border-top-color:#4361ee;border-radius:50%;"></div>
+                Enregistrement...
+              </span>
+            </template>
+            <template x-if="saveStatus === 'saved'">
+              <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#22c55e;font-weight:600;">
+                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                Enregistré
+              </span>
+            </template>
+            <template x-if="saveStatus === 'error'">
+              <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#ef4444;font-weight:600;">
+                <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
+                Erreur
+              </span>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- No Member Selected -->
+      <template x-if="!selectedMember && editableMembers.length > 0">
+        <div style="text-align:center;padding:60px 20px;">
+          <iconify-icon icon="solar:user-check-bold-duotone" width="48" style="color:#e0e6ed;"></iconify-icon>
+          <p style="font-size:14px;color:#94a3b8;margin-top:12px;">Sélectionnez un membre ci-dessus pour configurer ses permissions</p>
+        </div>
+      </template>
+
+      <!-- No Editable Members -->
+      <template x-if="editableMembers.length === 0 && !loading">
+        <div style="text-align:center;padding:60px 20px;">
+          <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="48" style="color:#e0e6ed;"></iconify-icon>
+          <p style="font-size:14px;color:#94a3b8;margin-top:12px;">Aucun membre à configurer. Seuls les membres non-owner peuvent avoir des permissions personnalisées.</p>
         </div>
       </template>
     </div>
   </template>
 </div>
+</div>
 
 <script>
 document.addEventListener('alpine:init', () => {
   Alpine.data('permissionsHub', () => ({
-    tab: 'matrix',
-    permCategories: [
-      { name: 'Données', perms: [
-        { key:'create_records', label:'Créer des enregistrements', icon:'solar:add-square-bold', roles:['admin','manager','member'] },
-        { key:'edit_records', label:'Modifier des enregistrements', icon:'solar:pen-bold', roles:['admin','manager','member'] },
-        { key:'delete_records', label:'Supprimer des enregistrements', icon:'solar:trash-bin-trash-bold', roles:['admin','manager'] },
-        { key:'export_data', label:'Exporter les données', icon:'solar:download-bold', roles:['admin','manager'] },
-        { key:'import_data', label:'Importer les données', icon:'solar:upload-bold', roles:['admin'] },
-      ]},
-      { name: 'Espaces & Vues', perms: [
-        { key:'create_spaces', label:'Créer des espaces', icon:'solar:widget-add-bold', roles:['admin','manager'] },
-        { key:'manage_views', label:'Gérer les vues', icon:'solar:eye-bold', roles:['admin','manager','member'] },
-        { key:'share_views', label:'Partager des vues', icon:'solar:share-bold', roles:['admin','manager'] },
-      ]},
-      { name: 'Documents', perms: [
-        { key:'create_docs', label:'Créer des documents', icon:'solar:document-add-bold', roles:['admin','manager','member'] },
-        { key:'edit_templates', label:'Modifier les templates', icon:'solar:file-text-bold', roles:['admin'] },
-        { key:'sign_docs', label:'Signer des documents', icon:'solar:pen-new-square-bold', roles:['admin','manager','member'] },
-      ]},
-      { name: 'Administration', perms: [
-        { key:'manage_users', label:'Gérer les utilisateurs', icon:'solar:users-group-rounded-bold', roles:['admin'] },
-        { key:'manage_billing', label:'Gérer la facturation', icon:'solar:wallet-bold', roles:['admin'] },
-        { key:'manage_integrations', label:'Gérer les intégrations', icon:'solar:plug-circle-bold', roles:['admin'] },
-        { key:'account_settings', label:'Paramètres du compte', icon:'solar:settings-bold', roles:['admin'] },
-      ]},
-    ],
-    customRoles: [
-      { name:'Comptable', icon:'solar:calculator-bold-duotone', color:'#06b6d4', usersCount:2, permissions:['Voir données','Exporter','Documents'] },
-      { name:'Stagiaire', icon:'solar:graduation-cap-bold-duotone', color:'#8b5cf6', usersCount:3, permissions:['Voir données','Chat'] },
-      { name:'Commercial', icon:'solar:case-bold-duotone', color:'#f97316', usersCount:5, permissions:['CRUD données','Partager','Documents','Chat'] },
-    ],
-    groups: [
-      { name:'Direction', icon:'solar:crown-bold-duotone', color:'#7c3aed', members:[1,3,5,8] },
-      { name:'Développement', icon:'solar:code-bold-duotone', color:'#4361ee', members:[11,12,14,15,17,20] },
-      { name:'Marketing', icon:'solar:chart-bold-duotone', color:'#f97316', members:[10,16,22] },
-      { name:'Support Client', icon:'solar:headphones-round-bold-duotone', color:'#10b981', members:[9,23,25,26] },
-    ],
-    activityLogs: [
-      { id:1, text:'<strong>Riad Boukirou</strong> a modifié le rôle de <strong>Marc Dubois</strong> de Membre à Manager', time:'Il y a 2 heures', color:'#4361ee' },
-      { id:2, text:'<strong>Sophie Martin</strong> a invité <strong>nouveau@email.com</strong> avec le rôle Membre', time:'Il y a 5 heures', color:'#f97316' },
-      { id:3, text:'<strong>Riad Boukirou</strong> a créé le groupe <strong>Support Client</strong>', time:'Hier', color:'#7c3aed' },
-      { id:4, text:'<strong>Thomas Petit</strong> a révoqué l\'accès de <strong>ancien@email.com</strong>', time:'Il y a 2 jours', color:'#ef4444' },
-      { id:5, text:'<strong>Sophie Martin</strong> a activé la permission <em>Exporter les données</em> pour le rôle Manager', time:'Il y a 3 jours', color:'#22c55e' },
-      { id:6, text:'<strong>Riad Boukirou</strong> a créé le rôle personnalisé <strong>Commercial</strong>', time:'Il y a 1 semaine', color:'#06b6d4' },
-    ]
+    loading: true,
+    members: [],
+    allEntities: [],
+    selectedMember: null,
+    permMap: {}, // { entityId: { create, read, update, delete } }
+    saveStatus: '', // 'saving' | 'saved' | 'error'
+    saveTimeout: null,
+    apiBase: '/account/<%= account_number %>/api/team',
+
+    async init() {
+      // Check URL param for preselected user
+      const params = new URLSearchParams(window.location.search);
+      const preselectedUserId = params.get('user');
+
+      await Promise.all([this.fetchMembers(), this.fetchEntities()]);
+      this.loading = false;
+
+      // Auto-select if user param provided
+      if (preselectedUserId) {
+        const member = this.editableMembers.find(m => String(m._id) === preselectedUserId);
+        if (member) this.selectMember(member);
+      }
+    },
+
+    get editableMembers() {
+      return this.members.filter(m => m.role !== 'owner');
+    },
+
+    async fetchMembers() {
+      try {
+        const res = await fetch(this.apiBase + '/members', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) this.members = data.members;
+      } catch (e) { console.error('Fetch members error:', e); }
+    },
+
+    async fetchEntities() {
+      try {
+        const res = await fetch(this.apiBase + '/entities', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) this.allEntities = data.entities;
+      } catch (e) { console.error('Fetch entities error:', e); }
+    },
+
+    selectMember(member) {
+      this.selectedMember = member;
+      this.saveStatus = '';
+      // Build permMap from member's entityPermissions
+      this.permMap = {};
+      (member.entityPermissions || []).forEach(ep => {
+        this.permMap[ep.entityId] = {
+          create: ep.create !== false,
+          read: ep.read !== false,
+          update: ep.update !== false,
+          delete: ep.delete !== false,
+        };
+      });
+    },
+
+    getEntityPerm(entityId, action) {
+      return !!this.permMap[entityId]?.[action];
+    },
+
+    togglePerm(entityId, action) {
+      if (!this.permMap[entityId]) {
+        this.permMap[entityId] = { create: false, read: false, update: false, delete: false };
+      }
+      this.permMap[entityId][action] = !this.permMap[entityId][action];
+
+      // If enabling create/update/delete, also enable read
+      if (action !== 'read' && this.permMap[entityId][action]) {
+        this.permMap[entityId].read = true;
+      }
+
+      // Clean up: remove entity from map if all permissions are false
+      const ep = this.permMap[entityId];
+      if (!ep.create && !ep.read && !ep.update && !ep.delete) {
+        delete this.permMap[entityId];
+      }
+
+      this.autoSave();
+    },
+
+    setAllPermissions(enable) {
+      this.allEntities.forEach(entity => {
+        this.permMap[entity._id] = {
+          create: enable, read: enable, update: enable, delete: enable
+        };
+      });
+      this.autoSave();
+    },
+
+    setReadOnly() {
+      this.allEntities.forEach(entity => {
+        this.permMap[entity._id] = {
+          create: false, read: true, update: false, delete: false
+        };
+      });
+      this.autoSave();
+    },
+
+    clearAllPermissions() {
+      this.permMap = {};
+      this.autoSave();
+    },
+
+    autoSave() {
+      clearTimeout(this.saveTimeout);
+      this.saveStatus = 'saving';
+      this.saveTimeout = setTimeout(() => this.savePermissions(), 600);
+    },
+
+    async savePermissions() {
+      if (!this.selectedMember) return;
+      try {
+        // Build entityPermissions array from permMap
+        const entityPermissions = Object.entries(this.permMap).map(([entityId, perms]) => ({
+          entityId,
+          create: perms.create,
+          read: perms.read,
+          update: perms.update,
+          delete: perms.delete,
+        }));
+
+        const res = await fetch(this.apiBase + '/update-permissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            userId: String(this.selectedMember._id),
+            entityPermissions,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.saveStatus = 'saved';
+          // Update local member data
+          const member = this.members.find(m => String(m._id) === String(this.selectedMember._id));
+          if (member) {
+            member.entityPermissions = entityPermissions;
+            member.entityAccess = data.entityAccess;
+          }
+          setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
+        } else {
+          this.saveStatus = 'error';
+        }
+      } catch (e) {
+        console.error('Save permissions error:', e);
+        this.saveStatus = 'error';
+      }
+    },
+
+    avatarColor(name) {
+      const colors = ['#4361ee','#805dca','#00ab55','#e7515a','#e2a03f','#2196f3','#3b3f5c','#009688'];
+      let hash = 0;
+      for (let i = 0; i < (name||'').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return colors[Math.abs(hash) % colors.length];
+    },
+
+    roleColor(role) {
+      const map = { owner:'#7c3aed', admin:'#4361ee', manager:'#f59e0b', member:'#22c55e', viewer:'#94a3b8' };
+      return map[role] || '#94a3b8';
+    },
   }));
 });
 </script>

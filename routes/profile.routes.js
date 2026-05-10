@@ -1,35 +1,46 @@
 const express = require("express");
 const router = express.Router();
+const Account = require("../models/account.model");
 
-// Profile Page
+// Profile Page — user info + workspaces + invitations
 router.get("/", async (req, res) => {
     try {
         const user = req.user;
 
+        // Find pending invitations for this user's email
+        let pendingInvitations = [];
+        try {
+            const accountsWithInvites = await Account.find({
+                'invitations.email': user.email.toLowerCase(),
+                'invitations.status': 'pending',
+            }).select('name icon account_number invitations').lean();
+
+            pendingInvitations = accountsWithInvites.flatMap(acc => {
+                return acc.invitations
+                    .filter(i => i.email === user.email.toLowerCase() && i.status === 'pending'
+                        && (!i.expiresAt || new Date() < new Date(i.expiresAt)))
+                    .map(i => ({
+                        token: i.token,
+                        accountName: acc.name,
+                        accountIcon: acc.icon || 'solar:buildings-2-bold-duotone',
+                        accountNumber: acc.account_number,
+                        role: i.role,
+                        invitedAt: i.invitedAt,
+                    }));
+            });
+        } catch (e) {
+            console.error('[Profile] Pending invitations lookup error:', e.message);
+        }
+
         res.render("account/account-profile", {
             account_number: req.account_number,
             user: user,
+            pendingInvitations,
             layout: "layout-app",
         });
     } catch (error) {
         console.error("Profile page error:", error);
         res.status(500).send("Error loading profile page");
-    }
-});
-
-// Profile Settings Page
-router.get("/settings", async (req, res) => {
-    try {
-        const user = req.user;
-
-        res.render("account/account-profile-settings", {
-            account_number: req.account_number,
-            user: user,
-            layout: "layout-app",
-        });
-    } catch (error) {
-        console.error("Profile settings page error:", error);
-        res.status(500).send("Error loading profile settings page");
     }
 });
 
@@ -44,37 +55,12 @@ router.post("/update", async (req, res) => {
     }
 });
 
-// Account Settings Page
-router.get("/account-settings", async (req, res) => {
-    try {
-        const Account = require("../models/account.model");
-        let account = await Account.findOne({ account_number: req.account_number });
-
-        // If account doesn't exist in Account collection, create a fallback from user's accounts
-        if (!account && req.user && req.user.accounts) {
-            const userAccount = req.user.accounts.find(a => a.account_number === req.account_number);
-            if (userAccount) {
-                // Create account object with available info
-                account = {
-                    name: userAccount.name || '',
-                    account_number: req.account_number,
-                    status: 'active',
-                    users: [req.user.email],
-                    created_on: req.user.created_on || new Date()
-                };
-            }
-        }
-
-        res.render("account/account-settings", {
-            account_number: req.account_number,
-            user: req.user,
-            account: account || { name: '', status: 'active', account_number: req.account_number },
-            layout: "layout-app",
-        });
-    } catch (error) {
-        console.error("Account settings page error:", error);
-        res.status(500).send("Error loading account settings page");
-    }
+// Legacy redirects — old pages now consolidated
+router.get("/settings", (req, res) => {
+    res.redirect(`/account/${req.account_number}/profile`);
+});
+router.get("/account-settings", (req, res) => {
+    res.redirect(`/account/${req.account_number}/settings`);
 });
 
 module.exports = router;

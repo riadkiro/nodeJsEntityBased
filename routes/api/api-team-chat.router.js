@@ -399,6 +399,60 @@ router.post('/conversations/:id/add-participant', async (req, res) => {
     }
 });
 
+// ── POST /api/team-chat/conversations/:id/add-team ────
+// Bulk-add all members of a team to a channel
+router.post('/conversations/:id/add-team', async (req, res) => {
+    try {
+        const { teamId } = req.body;
+        if (!teamId) return res.status(400).json({ error: 'teamId required' });
+
+        const Conversation = await tenantCollection(req, 'Conversation');
+        if (!Conversation) return res.status(500).json({ error: 'DB not ready' });
+
+        const conv = await Conversation.findById(req.params.id);
+        if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+        if (conv.type !== 'group') return res.status(400).json({ error: 'Seuls les channels supportent l\'ajout de participants' });
+
+        // Load team from account
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const team = (account.teams || []).find(t => t._id.toString() === teamId);
+        if (!team) return res.status(404).json({ error: 'Team not found' });
+
+        const existingIds = conv.participants.map(p => p.userId);
+        let addedCount = 0;
+
+        for (const memberId of (team.memberIds || [])) {
+            if (existingIds.includes(memberId)) continue;
+
+            const user = await User.findById(memberId).select('name email avatar').lean();
+            if (!user) continue;
+
+            conv.participants.push({
+                userId: memberId,
+                name: user.name || user.email,
+                email: user.email,
+                avatar: user.avatar || '',
+                role: 'member',
+                unreadCount: 0,
+            });
+            addedCount++;
+        }
+
+        if (addedCount > 0) await conv.save();
+
+        res.json({
+            success: true,
+            message: `${addedCount} membre(s) de "${team.name}" ajouté(s)`,
+            addedCount
+        });
+    } catch (error) {
+        console.error('[TeamChat API] add team error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // ── POST /api/team-chat/conversations/:id/remove-participant
 router.post('/conversations/:id/remove-participant', async (req, res) => {
     try {

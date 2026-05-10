@@ -218,6 +218,167 @@ module.exports = (router) => {
     });
 
     // ═══════════════════════════════════════════
+    // PARTICIPANT MANAGEMENT (Record Chat)
+    // ═══════════════════════════════════════════
+
+    // ── GET /api/record/:recordId/conversations/:convId/participants
+    router.get('/api/record/:recordId/conversations/:convId/participants', async (req, res) => {
+        try {
+            const Conversation = await tenantCollection(req, 'Conversation');
+            const User = require('../../models/user.model');
+
+            const conv = await Conversation.findOne({
+                _id: req.params.convId,
+                recordId: req.params.recordId
+            }).lean();
+            if (!conv) return res.status(404).json({ success: false, error: 'Conversation not found' });
+
+            // Enrich participants with latest user info
+            const participants = [];
+            for (const p of (conv.participants || [])) {
+                const user = p.userId ? await User.findById(p.userId).select('name email avatar status').lean() : null;
+                participants.push({
+                    userId: p.userId,
+                    name: user?.name || p.name || 'Inconnu',
+                    email: user?.email || p.email || '',
+                    avatar: user?.avatar || p.avatar || null,
+                    status: user?.status || 'inactive',
+                    role: p.role || 'member',
+                });
+            }
+
+            res.json({ success: true, participants, conversationType: conv.type });
+        } catch (err) {
+            console.error('[RecordChat] Get participants error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ── POST /api/record/:recordId/conversations/:convId/add-participant
+    router.post('/api/record/:recordId/conversations/:convId/add-participant', async (req, res) => {
+        try {
+            const { userId } = req.body;
+            if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+
+            const Conversation = await tenantCollection(req, 'Conversation');
+            const User = require('../../models/user.model');
+
+            const conv = await Conversation.findOne({
+                _id: req.params.convId,
+                recordId: req.params.recordId
+            });
+            if (!conv) return res.status(404).json({ success: false, error: 'Conversation not found' });
+
+            // Check if already participant
+            const already = conv.participants.some(p => p.userId === userId);
+            if (already) return res.status(400).json({ success: false, error: 'Déjà participant' });
+
+            const user = await User.findById(userId).select('name email avatar').lean();
+            if (!user) return res.status(404).json({ success: false, error: 'Utilisateur non trouvé' });
+
+            conv.participants.push({
+                userId,
+                name: user.name || user.email,
+                email: user.email,
+                avatar: user.avatar || '',
+                role: 'member',
+                joinedAt: new Date(),
+                lastReadAt: new Date(),
+                unreadCount: 0
+            });
+            await conv.save();
+
+            res.json({ success: true, message: `${user.name || user.email} ajouté` });
+        } catch (err) {
+            console.error('[RecordChat] Add participant error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ── POST /api/record/:recordId/conversations/:convId/add-team
+    // Bulk-add all members of a team to this conversation
+    router.post('/api/record/:recordId/conversations/:convId/add-team', async (req, res) => {
+        try {
+            const { teamId } = req.body;
+            if (!teamId) return res.status(400).json({ success: false, error: 'teamId required' });
+
+            const Conversation = await tenantCollection(req, 'Conversation');
+            const User = require('../../models/user.model');
+            const Account = require('../../models/account.model');
+
+            const conv = await Conversation.findOne({
+                _id: req.params.convId,
+                recordId: req.params.recordId
+            });
+            if (!conv) return res.status(404).json({ success: false, error: 'Conversation not found' });
+
+            // Load team from account
+            const account = await Account.findOne({ account_number: req.account_number }).lean();
+            if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
+
+            const team = (account.teams || []).find(t => t._id.toString() === teamId);
+            if (!team) return res.status(404).json({ success: false, error: 'Team not found' });
+
+            const existingIds = conv.participants.map(p => p.userId);
+            let addedCount = 0;
+
+            for (const memberId of (team.memberIds || [])) {
+                if (existingIds.includes(memberId)) continue;
+
+                const user = await User.findById(memberId).select('name email avatar').lean();
+                if (!user) continue;
+
+                conv.participants.push({
+                    userId: memberId,
+                    name: user.name || user.email,
+                    email: user.email,
+                    avatar: user.avatar || '',
+                    role: 'member',
+                    joinedAt: new Date(),
+                    lastReadAt: new Date(),
+                    unreadCount: 0
+                });
+                addedCount++;
+            }
+
+            if (addedCount > 0) await conv.save();
+
+            res.json({
+                success: true,
+                message: `${addedCount} membre(s) de "${team.name}" ajouté(s)`,
+                addedCount
+            });
+        } catch (err) {
+            console.error('[RecordChat] Add team error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ── POST /api/record/:recordId/conversations/:convId/remove-participant
+    router.post('/api/record/:recordId/conversations/:convId/remove-participant', async (req, res) => {
+        try {
+            const { userId } = req.body;
+            if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+
+            const Conversation = await tenantCollection(req, 'Conversation');
+
+            const conv = await Conversation.findOne({
+                _id: req.params.convId,
+                recordId: req.params.recordId
+            });
+            if (!conv) return res.status(404).json({ success: false, error: 'Conversation not found' });
+
+            conv.participants = conv.participants.filter(p => p.userId !== userId);
+            await conv.save();
+
+            res.json({ success: true, message: 'Participant retiré' });
+        } catch (err) {
+            console.error('[RecordChat] Remove participant error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ═══════════════════════════════════════════
     // GET /api/chat-hub
     // Aggregated view: all record-scoped conversations grouped by entity → record
     // ═══════════════════════════════════════════

@@ -438,14 +438,32 @@ module.exports = {
                 inv => inv.token === token && inv.status === 'pending'
             );
 
-            if (!invitation || new Date() > invitation.expiresAt) {
+            if (!invitation || (invitation.expiresAt && new Date() > invitation.expiresAt)) {
                 if (invitation) invitation.status = 'expired';
                 await account.save();
                 return res.redirect("/auth/login?error=Invitation expirée");
             }
 
             if (!req.user) {
-                return res.redirect(`/auth/register?invite=${token}`);
+                // Check if the invited user already has an account (registered but not logged in)
+                const User = require("../models/user.model");
+                const existingUser = await User.findOne({ email: invitation.email.toLowerCase() });
+                if (existingUser) {
+                    // User exists but not logged in — redirect to login with invite context
+                    return res.redirect(`/auth/login?error=Connectez-vous pour accepter l'invitation à ${account.name}&invite=${token}`);
+                }
+                // User doesn't exist — redirect to register with invite token + account info
+                return res.redirect(`/auth/register?invite=${token}&account=${account.account_number}`);
+            }
+
+            // User is logged in — check if already a member
+            const alreadyMember = account.users?.some(
+                u => u.userId === req.user._id.toString() || u.email === req.user.email.toLowerCase()
+            );
+            if (alreadyMember) {
+                invitation.status = 'accepted';
+                await account.save();
+                return res.redirect("/user/accounts");
             }
 
             // Add user to account
@@ -455,23 +473,30 @@ module.exports = {
                 role: invitation.role,
                 status: 'active',
                 invitedBy: invitation.invitedBy,
+                joinedAt: new Date(),
             });
 
             invitation.status = 'accepted';
             await account.save();
 
             // Add account to user's accounts
-            await User.findByIdAndUpdate(req.user._id, {
-                $push: {
-                    accounts: {
-                        account_number: account.account_number,
-                        name: account.name,
-                        icon: account.icon,
-                        role: invitation.role,
-                    }
-                }
-            });
+            const User = require("../models/user.model");
+            const user = await User.findById(req.user._id);
+            const alreadyLinked = user?.accounts?.some(
+                a => a.account_number === account.account_number
+            );
+            if (user && !alreadyLinked) {
+                user.accounts.push({
+                    account_number: account.account_number,
+                    name: account.name,
+                    icon: account.icon,
+                    role: invitation.role,
+                    joinedAt: new Date(),
+                });
+                await user.save();
+            }
 
+            console.log(`[Invitation] ${req.user.email} accepted invite via link to account ${account.account_number}`);
             res.redirect("/user/accounts");
         } catch (error) {
             console.error("[SuperAdmin] Accept invite error:", error);

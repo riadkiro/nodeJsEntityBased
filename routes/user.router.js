@@ -13,6 +13,13 @@ router.get("/accounts", userController.userAccounts);
 // Create new account
 router.post("/accounts/create", userController.createAccount);
 
+// Invitations
+router.post("/invitations/accept", userController.acceptInvitation);
+router.post("/invitations/decline", userController.declineInvitation);
+
+// Leave account
+router.post("/accounts/leave", userController.leaveAccount);
+
 //Generated from template
 //list
 router.get("/list", userController.list);

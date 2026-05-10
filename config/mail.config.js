@@ -6,5 +6,22 @@ module.exports = {
         port: process.env.IMAP_PORT || 993,
         tls: true,
         authTimeout: 3000
-    }
+    },
+
+    // ═══ SMTP (Brevo / Sendinblue) ═══
+    smtp: {
+        host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: false, // true for 465, false for 587
+        auth: {
+            user: process.env.SMTP_USER || '',     // Brevo login email
+            pass: process.env.SMTP_PASS || '',      // Brevo SMTP key
+        },
+    },
+
+    // Default sender
+    from: {
+        name: process.env.MAIL_FROM_NAME || 'Actibox',
+        email: process.env.MAIL_FROM_EMAIL || 'noreply@actirama.com',
+    },
 };

@@ -26,12 +26,14 @@
                 <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary"><%= members.length %></span>
             </button>
             <% } %>
+            <% if (isAdmin) { %>
             <button @click="activeTab = 'advanced'"
                 class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
                 :class="activeTab === 'advanced' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
                 <iconify-icon icon="solar:tuning-2-bold-duotone" width="18"></iconify-icon>
                 Avancé
             </button>
+            <% } %>
         </div>
 
         <!-- ═══════════════════════════════════════════════ -->
@@ -211,19 +213,26 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center justify-center gap-2">
-                                        <% if (m.workspaceRole !== 'owner' && String(m._id) !== String(user._id)) { %>
+                                        <% if (m.workspaceRole === 'owner') { %>
+                                            <span class="text-xs text-gray-400 italic">propriétaire</span>
+                                        <% } else if (String(m._id) === String(user._id)) { %>
+                                            <span class="text-xs text-gray-400 italic">vous</span>
+                                        <% } else if (userRole === 'owner') { %>
+                                            <%/* Owner can do everything */%>
                                             <select onchange="changeMemberRole('<%= m._id %>', this.value)" class="form-select form-select-sm w-auto text-xs">
                                                 <option value="admin" <%= m.workspaceRole === 'admin' ? 'selected' : '' %>>Admin</option>
                                                 <option value="member" <%= m.workspaceRole === 'member' ? 'selected' : '' %>>Membre</option>
-                                                <option value="viewer" <%= m.workspaceRole === 'viewer' ? 'selected' : '' %>>Lecteur</option>
                                             </select>
                                             <button onclick="removeMember('<%= m._id %>', '<%= (m.name || m.email).replace(/'/g, "\\'") %>')" class="btn btn-sm btn-outline-danger !p-1.5" title="Retirer">
                                                 <iconify-icon icon="solar:user-minus-bold" width="16"></iconify-icon>
                                             </button>
-                                        <% } else if (m.workspaceRole === 'owner') { %>
-                                            <span class="text-xs text-gray-400 italic">propriétaire</span>
-                                        <% } else { %>
-                                            <span class="text-xs text-gray-400 italic">vous</span>
+                                        <% } else if (userRole === 'admin' && m.workspaceRole === 'member') { %>
+                                            <%/* Admin can only manage members (not other admins) */%>
+                                            <button onclick="removeMember('<%= m._id %>', '<%= (m.name || m.email).replace(/'/g, "\\'") %>')" class="btn btn-sm btn-outline-danger !p-1.5" title="Retirer">
+                                                <iconify-icon icon="solar:user-minus-bold" width="16"></iconify-icon>
+                                            </button>
+                                        <% } else if (userRole === 'admin' && m.workspaceRole === 'admin') { %>
+                                            <span class="text-xs text-gray-400 italic">admin</span>
                                         <% } %>
                                     </div>
                                 </td>
@@ -271,6 +280,7 @@
         <!-- ═══════════════════════════════════════════════ -->
         <!-- TAB: Avancé -->
         <!-- ═══════════════════════════════════════════════ -->
+        <% if (isAdmin) { %>
         <div x-show="activeTab === 'advanced'" x-transition>
             <!-- App Presets -->
             <a href="/account/<%= account_number %>/app-presets" class="panel flex items-center gap-4 hover:border-primary transition-colors group cursor-pointer block mb-5">
@@ -308,11 +318,12 @@
                 </a>
             </div>
 
-            <!-- Danger Zone -->
+            <!-- Danger Zone — Owner Only -->
+            <% if (isOwner) { %>
             <div class="panel border-danger/30">
                 <div class="mb-5">
                     <h6 class="text-lg font-bold text-danger">Zone de danger</h6>
-                    <p class="text-sm text-gray-500 mt-1">Actions irréversibles</p>
+                    <p class="text-sm text-gray-500 mt-1">Actions irréversibles — réservées au propriétaire</p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
@@ -333,7 +344,9 @@
                     </div>
                 </div>
             </div>
+            <% } %>
         </div>
+        <% } %>
     </div>
 </div>
 
@@ -365,8 +378,9 @@
             <label class="block text-sm font-semibold mb-2">Rôle</label>
             <select name="role" class="form-select">
                 <option value="member">Membre</option>
+                <% if (isOwner) { %>
                 <option value="admin">Admin</option>
-                <option value="viewer">Lecteur</option>
+                <% } %>
             </select>
         </div>
     </form>

@@ -2,14 +2,16 @@
  * Tenant Admin Controller - Workspace-Level Administration
  * ─────────────────────────────────────────────────────────
  * LEVEL 2: Workspace/Account administration
- * Accessible to users who are 'owner' or 'admin' in the account
  * Route: /account/:account_id/admin/*
  * 
- * This panel manages ONLY the members and settings of one specific workspace.
- * It does NOT see other tenants or global users.
+ * Permission enforcement:
+ * - Owner: full access
+ * - Admin: can manage members (but not promote to admin, not remove admins/owner)
+ * - Member: no access to admin APIs
  */
 const User = require("../models/user.model");
 const Account = require("../models/account.model");
+const { getRoleLevel } = require('../middleware/permissions');
 
 module.exports = {
 
@@ -40,7 +42,7 @@ module.exports = {
                     totalMembers: activeMembers.length,
                     pendingInvites: pendingInvites.length,
                     maxMembers: planLimits.maxUsersPerAccount,
-                    storageUsed: 0, // TODO: implement storage tracking
+                    storageUsed: 0,
                     storageLimit: planLimits.storageLimit,
                 },
                 members,
@@ -48,7 +50,7 @@ module.exports = {
             });
         } catch (error) {
             console.error("[TenantAdmin] Dashboard error:", error);
-            res.status(500).send("Server Error");
+            res.status(500).send("Error");
         }
     },
 
@@ -58,91 +60,107 @@ module.exports = {
             const account = await Account.findOne({ account_number: req.account_number });
             if (!account) return res.status(404).send("Account not found");
 
-            const search = req.query.search || '';
-            const roleFilter = req.query.role || '';
+            const activeMembers = account.users.filter(u => u.status === 'active');
+            const memberUserIds = activeMembers.map(u => u.userId);
+            const users = await User.find({ _id: { $in: memberUserIds } })
+                .select('name email avatar status membership.plan lastLogin');
 
-            // Get all members
-            let memberEntries = account.users.filter(u => u.status === 'active');
-
-            // Get full user info for each member
-            const userIds = memberEntries.map(u => u.userId);
-            let users = await User.find({ _id: { $in: userIds } })
-                .select('name email avatar status membership.plan lastLogin created_on');
-
-            // Apply search filter
-            if (search) {
-                users = users.filter(u =>
-                    (u.name && u.name.toLowerCase().includes(search.toLowerCase())) ||
-                    u.email.toLowerCase().includes(search.toLowerCase())
-                );
-            }
-
-            // Enrich with workspace role
-            const enrichedMembers = users.map(u => {
-                const memberEntry = memberEntries.find(m => String(m.userId) === String(u._id));
+            const members = users.map(u => {
+                const entry = activeMembers.find(m => String(m.userId) === String(u._id));
                 return {
                     ...u.toObject(),
-                    workspaceRole: memberEntry?.role || 'member',
-                    joinedAt: memberEntry?.joinedAt,
+                    workspaceRole: entry?.role || 'member',
+                    joinedAt: entry?.joinedAt,
                 };
             });
 
-            // Apply role filter
-            const filtered = roleFilter
-                ? enrichedMembers.filter(m => m.workspaceRole === roleFilter)
-                : enrichedMembers;
-
-            // Pending invitations
             const pendingInvites = account.invitations.filter(i => i.status === 'pending');
-
-            // Current user's role in this workspace
-            const currentUserEntry = account.users.find(u => String(u.userId) === String(req.user._id));
-            const currentUserRole = currentUserEntry?.role || 'member';
-
-            const planLimits = User.getPlanLimits(req.user.membership?.plan || 'free');
 
             res.render("admin/admin-members", {
                 layout: "layout-app",
                 user: req.user,
                 account_number: req.account_number,
                 account,
-                members: filtered,
+                members,
                 pendingInvites,
-                currentUserRole,
-                maxMembers: planLimits.maxUsersPerAccount,
-                filters: { search, role: roleFilter },
             });
         } catch (error) {
-            console.error("[TenantAdmin] Members list error:", error);
-            res.status(500).send("Server Error");
+            console.error("[TenantAdmin] Members error:", error);
+            res.status(500).send("Error");
         }
     },
 
-    // ── Workspace Settings ────────────────────────────────────
+    // ── Settings ──────────────────────────────────────────────
     settings: async (req, res) => {
         try {
             const account = await Account.findOne({ account_number: req.account_number });
             if (!account) return res.status(404).send("Account not found");
 
-            const owner = account.ownerId ? await User.findById(account.ownerId).select('name email avatar') : null;
-
-            res.render("admin/admin-settings", {
+            res.render("account/account-settings", {
                 layout: "layout-app",
                 user: req.user,
                 account_number: req.account_number,
                 account,
-                owner,
             });
         } catch (error) {
             console.error("[TenantAdmin] Settings error:", error);
-            res.status(500).send("Server Error");
+            res.status(500).send("Error");
         }
     },
 
-    // ── API: Invite Member ────────────────────────────────────
+    // ── Resend Invite ──────────────────────────────────────────
+    resendInvite: async (req, res) => {
+        try {
+            const { inviteId } = req.body;
+            const account = await Account.findOne({ account_number: req.account_number });
+            if (!account) return res.status(404).json({ error: 'Account not found' });
+
+            const invite = account.invitations.id(inviteId);
+            if (!invite || invite.status !== 'pending') {
+                return res.status(404).json({ error: 'Invitation non trouvée ou déjà traitée' });
+            }
+
+            // Send email
+            const appUrl = process.env.APP_URL || 'http://localhost:3000';
+            try {
+                const mailer = require('../services/mailer');
+                await mailer.sendInvitation({
+                    to: invite.email,
+                    accountName: account.name || `Compte #${req.account_number}`,
+                    inviterName: req.user.name || req.user.email,
+                    role: invite.role || 'member',
+                    inviteUrl: `${appUrl}/auth/invite/${invite.token}`,
+                });
+            } catch (mailErr) {
+                console.error('[TenantAdmin] Resend email failed:', mailErr.message);
+                return res.status(500).json({ error: 'Erreur d\'envoi d\'email' });
+            }
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[TenantAdmin] Resend invite error:", error);
+            res.status(500).json({ error: "Server Error" });
+        }
+    },
+
+    // ═══════════════════════════════════════════════════════════
+    // API: Invite Member
+    // ═══════════════════════════════════════════════════════════
     inviteMember: async (req, res) => {
         try {
             const { email, role } = req.body;
+            const callerRole = req.workspaceRole;
+
+            // ── Permission check: admin cannot invite as admin ──
+            if (role === 'admin' && callerRole !== 'owner') {
+                return res.status(403).json({
+                    error: 'Seul le propriétaire peut inviter en tant qu\'admin'
+                });
+            }
+
+            // Normalize: only 'admin' or 'member' allowed
+            const inviteRole = (role === 'admin') ? 'admin' : 'member';
+
             const account = await Account.findOne({ account_number: req.account_number });
             if (!account) return res.status(404).json({ error: 'Account not found' });
 
@@ -165,7 +183,7 @@ module.exports = {
 
             account.invitations.push({
                 email: email.toLowerCase(),
-                role: ['admin', 'member', 'viewer'].includes(role) ? role : 'member',
+                role: inviteRole,
                 token,
                 invitedBy: req.user._id,
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -181,12 +199,11 @@ module.exports = {
                     to: email.toLowerCase(),
                     accountName: account.name || `Compte #${req.account_number}`,
                     inviterName: req.user.name || req.user.email,
-                    role: role || 'member',
+                    role: inviteRole,
                     inviteUrl: `${appUrl}${inviteLink}`,
                 });
             } catch (mailErr) {
                 console.error('[TenantAdmin] Email send failed (invite saved):', mailErr.message);
-                // Invitation is saved even if email fails — don't block the response
             }
 
             res.json({ success: true, inviteLink });
@@ -196,23 +213,49 @@ module.exports = {
         }
     },
 
-    // ── API: Change Member Role ───────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // API: Change Member Role
+    // ═══════════════════════════════════════════════════════════
     changeMemberRole: async (req, res) => {
         try {
             const { userId, role } = req.body;
-            if (!['admin', 'member', 'viewer'].includes(role)) {
-                return res.status(400).json({ error: 'Invalid role' });
+            const callerRole = req.workspaceRole;
+
+            // Validate role value
+            if (!['admin', 'member'].includes(role)) {
+                return res.status(400).json({ error: 'Rôle invalide' });
+            }
+
+            // ── Permission: only owner can promote to admin ──
+            if (role === 'admin' && callerRole !== 'owner') {
+                return res.status(403).json({
+                    error: 'Seul le propriétaire peut promouvoir en admin'
+                });
             }
 
             const account = await Account.findOne({ account_number: req.account_number });
             if (!account) return res.status(404).json({ error: 'Account not found' });
 
             const memberEntry = account.users.find(u => String(u.userId) === String(userId));
-            if (!memberEntry) return res.status(404).json({ error: 'Member not found' });
+            if (!memberEntry) return res.status(404).json({ error: 'Membre introuvable' });
 
             // Cannot change owner's role
             if (memberEntry.role === 'owner') {
                 return res.status(400).json({ error: 'Impossible de modifier le rôle du propriétaire' });
+            }
+
+            // ── Admin cannot change another admin's role ──
+            if (callerRole === 'admin' && memberEntry.role === 'admin') {
+                return res.status(403).json({
+                    error: 'Un admin ne peut pas modifier le rôle d\'un autre admin'
+                });
+            }
+
+            // ── Admin can only set role to 'member' (cannot promote to admin) ──
+            if (callerRole === 'admin' && role === 'admin') {
+                return res.status(403).json({
+                    error: 'Seul le propriétaire peut promouvoir en admin'
+                });
             }
 
             memberEntry.role = role;
@@ -231,15 +274,19 @@ module.exports = {
         }
     },
 
-    // ── API: Remove Member ────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // API: Remove Member
+    // ═══════════════════════════════════════════════════════════
     removeMember: async (req, res) => {
         try {
             const { userId } = req.body;
+            const callerRole = req.workspaceRole;
+
             const account = await Account.findOne({ account_number: req.account_number });
             if (!account) return res.status(404).json({ error: 'Account not found' });
 
             const memberEntry = account.users.find(u => String(u.userId) === String(userId));
-            if (!memberEntry) return res.status(404).json({ error: 'Member not found' });
+            if (!memberEntry) return res.status(404).json({ error: 'Membre introuvable' });
 
             // Cannot remove owner
             if (memberEntry.role === 'owner') {
@@ -249,6 +296,13 @@ module.exports = {
             // Cannot remove yourself
             if (String(userId) === String(req.user._id)) {
                 return res.status(400).json({ error: 'Impossible de vous retirer vous-même' });
+            }
+
+            // ── Admin cannot remove another admin ──
+            if (callerRole === 'admin' && memberEntry.role === 'admin') {
+                return res.status(403).json({
+                    error: 'Un admin ne peut pas retirer un autre admin'
+                });
             }
 
             memberEntry.status = 'removed';
@@ -275,7 +329,7 @@ module.exports = {
             if (!account) return res.status(404).json({ error: 'Account not found' });
 
             const invite = account.invitations.id(inviteId);
-            if (!invite) return res.status(404).json({ error: 'Invitation not found' });
+            if (!invite) return res.status(404).json({ error: 'Invitation non trouvée' });
 
             invite.status = 'expired';
             await account.save();

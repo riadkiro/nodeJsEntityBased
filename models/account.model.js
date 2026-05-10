@@ -13,7 +13,7 @@ const AccountSchema = new mongoose.Schema({
   users: [{
     userId: { type: String },
     email: { type: String },
-    role: { type: String, enum: ['owner', 'admin', 'manager', 'member', 'viewer'], default: 'member' },
+    role: { type: String, enum: ['owner', 'admin', 'member'], default: 'member' },
     entityAccess: [{ type: String }],  // Legacy: Entity IDs (kept for backward compat)
     entityPermissions: [{
       entityId: { type: String },
@@ -54,7 +54,7 @@ const AccountSchema = new mongoose.Schema({
   // Invitations
   invitations: [{
     email: { type: String },
-    role: { type: String, enum: ['admin', 'manager', 'member', 'viewer'], default: 'member' },
+    role: { type: String, enum: ['admin', 'member'], default: 'member' },
     token: { type: String },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     invitedAt: { type: Date, default: Date.now },

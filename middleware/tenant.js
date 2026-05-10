@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const dbConfig = require("../config/db");
 const model = require("mongoose").model;
+const { hydrateWorkspaceRole } = require('./permissions');
 
 const cachedConnections = {};
 
@@ -79,7 +80,9 @@ const connectToTenantDb = async (req, res, next) => {
 
         req.tenantDbConnection = cachedConnections[tenantId];
         req.tenantDbReady = true;
-        next();
+
+        // Hydrate workspace role & permissions
+        return hydrateWorkspaceRole(req, res, next);
       } else {
         req.tenantDbReady = false;
         console.log("No permission to manage this account");
@@ -97,3 +100,4 @@ const connectToTenantDb = async (req, res, next) => {
 };
 
 module.exports = { connectToTenantDb, tenantCollection };
+

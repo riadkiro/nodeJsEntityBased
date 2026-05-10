@@ -216,17 +216,22 @@ router.use("/profile", require("./profile.routes.js"));
 // Unified Settings Page (consolidates admin + account-settings)
 router.get("/settings", async (req, res) => {
     try {
+        const { buildCanObject } = require("../middleware/permissions");
+
+        // Only owner/admin can access settings
+        if (!req.can || !req.can('settings.view')) {
+            return res.redirect(`/account/${req.account_number}/dashboard`);
+        }
+
         const Account = require("../models/account.model");
         const User = require("../models/user.model");
 
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).send("Account not found");
 
-        // Determine if current user is admin/owner
-        const memberEntry = account.users.find(
-            u => String(u.userId) === String(req.user._id) && u.status === 'active'
-        );
-        const isAdmin = memberEntry && (memberEntry.role === 'owner' || memberEntry.role === 'admin');
+        const userRole = req.workspaceRole || 'member';
+        const isOwner = userRole === 'owner';
+        const isAdmin = userRole === 'owner' || userRole === 'admin';
 
         // Get members
         const activeMembers = account.users.filter(u => u.status === 'active');
@@ -246,6 +251,9 @@ router.get("/settings", async (req, res) => {
         // Pending invitations
         const pendingInvites = account.invitations.filter(i => i.status === 'pending');
 
+        // Build permission object for template
+        const can = buildCanObject(userRole);
+
         res.render("account/account-settings-unified", {
             layout: "layout-app",
             user: req.user,
@@ -254,6 +262,9 @@ router.get("/settings", async (req, res) => {
             members,
             pendingInvites,
             isAdmin,
+            isOwner,
+            userRole,
+            can,
         });
     } catch (error) {
         console.error("[Settings] Error:", error);

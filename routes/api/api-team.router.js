@@ -4,10 +4,12 @@ const User = require('../../models/user.model');
 const Account = require('../../models/account.model');
 const crypto = require('crypto');
 const { tenantCollection } = require('../../middleware/tenant');
+const { requirePerm, getRoleLevel } = require('../../middleware/permissions');
 const mailer = require('../../services/mailer');
 
 // ── GET /api/team/members ─────────────────────────────────
 // Returns all members + pending invitations for the current account
+// Read-only — accessible to all members
 router.get('/members', async (req, res) => {
     try {
         const account = await Account.findOne({ account_number: req.account_number }).lean();
@@ -35,16 +37,19 @@ router.get('/members', async (req, res) => {
             });
         }
 
-        // Pending invitations
-        const invitations = (account.invitations || [])
-            .filter(inv => inv.status === 'pending')
-            .map(inv => ({
-                email: inv.email,
-                role: inv.role,
-                invitedAt: inv.invitedAt,
-                expiresAt: inv.expiresAt,
-                status: inv.status,
-            }));
+        // Pending invitations — only show to admin/owner
+        let invitations = [];
+        if (req.can && req.can('members.view')) {
+            invitations = (account.invitations || [])
+                .filter(inv => inv.status === 'pending')
+                .map(inv => ({
+                    email: inv.email,
+                    role: inv.role,
+                    invitedAt: inv.invitedAt,
+                    expiresAt: inv.expiresAt,
+                    status: inv.status,
+                }));
+        }
 
         // Build teamIds per member from account.teams
         const teams = (account.teams || []).map(t => ({
@@ -71,6 +76,7 @@ router.get('/members', async (req, res) => {
             invitations,
             teams,
             accountName: account.name,
+            callerRole: req.workspaceRole || 'member',
         });
     } catch (error) {
         console.error('[Team API] members error:', error);
@@ -79,8 +85,8 @@ router.get('/members', async (req, res) => {
 });
 
 // ── GET /api/team/lookup-user ──────────────────────────────
-// Lookup if a user exists in the SaaS platform by email
-router.get('/lookup-user', async (req, res) => {
+// Lookup if a user exists — requires invite permission
+router.get('/lookup-user', requirePerm('members.invite'), async (req, res) => {
     try {
         const email = req.query.email?.toLowerCase()?.trim();
         if (!email) return res.json({ found: false });
@@ -103,13 +109,20 @@ router.get('/lookup-user', async (req, res) => {
 });
 
 // ── POST /api/team/invite ─────────────────────────────────
-// Invite a user by email. If they already exist, add them directly.
-router.post('/invite', async (req, res) => {
+// Invite a user by email — requires invite permission
+router.post('/invite', requirePerm('members.invite'), async (req, res) => {
     try {
         const { email, role, message, entityAccess, entityPermissions } = req.body;
         if (!email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
-        const targetRole = ['admin', 'manager', 'member', 'viewer'].includes(role) ? role : 'member';
+        const callerRole = req.workspaceRole;
+
+        // ── Permission: admin cannot invite as admin ──
+        if (role === 'admin' && callerRole !== 'owner') {
+            return res.status(403).json({ error: 'Seul le propriétaire peut inviter en tant qu\'admin' });
+        }
+
+        const targetRole = (role === 'admin' && callerRole === 'owner') ? 'admin' : 'member';
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).json({ error: 'Account not found' });
 
@@ -201,19 +214,47 @@ router.post('/invite', async (req, res) => {
 });
 
 // ── POST /api/team/update-role ────────────────────────────
-router.post('/update-role', async (req, res) => {
+router.post('/update-role', requirePerm('members.changeRole'), async (req, res) => {
     try {
         const { userId, newRole } = req.body;
         if (!userId || !newRole) return res.status(400).json({ error: 'userId and newRole required' });
-        if (!['admin', 'manager', 'member', 'viewer'].includes(newRole)) {
-            return res.status(400).json({ error: 'Invalid role' });
+
+        const callerRole = req.workspaceRole;
+
+        // Validate role
+        if (!['admin', 'member'].includes(newRole)) {
+            return res.status(400).json({ error: 'Rôle invalide. Rôles autorisés: admin, member' });
+        }
+
+        // Only owner can promote to admin
+        if (newRole === 'admin' && callerRole !== 'owner') {
+            return res.status(403).json({ error: 'Seul le propriétaire peut promouvoir en admin' });
+        }
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const targetMember = account.users.find(u => String(u.userId) === String(userId));
+        if (!targetMember) return res.status(404).json({ error: 'Membre introuvable' });
+
+        // Cannot change owner's role
+        if (targetMember.role === 'owner') {
+            return res.status(403).json({ error: 'Impossible de modifier le rôle du propriétaire' });
+        }
+
+        // Admin cannot change another admin's role
+        if (callerRole === 'admin' && targetMember.role === 'admin') {
+            return res.status(403).json({ error: 'Un admin ne peut pas modifier le rôle d\'un autre admin' });
+        }
+
+        // Cannot change your own role
+        if (String(userId) === String(req.user._id)) {
+            return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle' });
         }
 
         // Update in Account.users
-        await Account.updateOne(
-            { account_number: req.account_number, 'users.userId': userId },
-            { $set: { 'users.$.role': newRole } }
-        );
+        targetMember.role = newRole;
+        await account.save();
 
         // Update in User.accounts
         await User.updateOne(
@@ -229,21 +270,33 @@ router.post('/update-role', async (req, res) => {
 });
 
 // ── POST /api/team/remove-member ──────────────────────────
-router.post('/remove-member', async (req, res) => {
+router.post('/remove-member', requirePerm('members.remove'), async (req, res) => {
     try {
         const { userId } = req.body;
         if (!userId) return res.status(400).json({ error: 'userId required' });
+
+        const callerRole = req.workspaceRole;
 
         // Cannot remove yourself
         if (userId === req.user._id.toString()) {
             return res.status(400).json({ error: 'Vous ne pouvez pas vous retirer vous-même' });
         }
 
-        // Cannot remove the owner
+        // Lookup target
         const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
         const targetMember = account?.users?.find(u => u.userId === userId);
-        if (targetMember?.role === 'owner') {
-            return res.status(400).json({ error: 'Impossible de retirer le propriétaire du compte' });
+        if (!targetMember) return res.status(404).json({ error: 'Membre introuvable' });
+
+        // Cannot remove the owner
+        if (targetMember.role === 'owner') {
+            return res.status(403).json({ error: 'Impossible de retirer le propriétaire du compte' });
+        }
+
+        // Admin cannot remove another admin
+        if (callerRole === 'admin' && targetMember.role === 'admin') {
+            return res.status(403).json({ error: 'Un admin ne peut pas retirer un autre admin' });
         }
 
         // Remove from Account.users
@@ -266,7 +319,7 @@ router.post('/remove-member', async (req, res) => {
 });
 
 // ── POST /api/team/cancel-invite ──────────────────────────
-router.post('/cancel-invite', async (req, res) => {
+router.post('/cancel-invite', requirePerm('invites.cancel'), async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) return res.status(400).json({ error: 'email required' });
@@ -284,7 +337,7 @@ router.post('/cancel-invite', async (req, res) => {
 });
 
 // ── POST /api/team/resend-invite ──────────────────────────
-router.post('/resend-invite', async (req, res) => {
+router.post('/resend-invite', requirePerm('members.invite'), async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) return res.status(400).json({ error: 'email required' });
@@ -325,7 +378,7 @@ router.post('/resend-invite', async (req, res) => {
 });
 
 // ── GET /api/team/my-accounts ─────────────────────────────
-// Returns all accounts the current user belongs to
+// Returns all accounts the current user belongs to — no restriction
 router.get('/my-accounts', async (req, res) => {
     try {
         const user = await User.findById(req.user._id).lean();
@@ -355,11 +408,11 @@ router.get('/my-accounts', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
-// ENTITY PERMISSIONS
+// ENTITY PERMISSIONS — requires members.changeRole
 // ═══════════════════════════════════════════════════
 
 // ── GET /api/team/entities ──────────────────────────
-// List all entities for the entity permission picker
+// List all entities for the entity permission picker — read-only
 router.get('/entities', async (req, res) => {
     try {
         const Entity = await tenantCollection(req, 'Entity');
@@ -374,13 +427,12 @@ router.get('/entities', async (req, res) => {
 });
 
 // ── POST /api/team/update-permissions ────────────────
-// Update a member's entity permissions (CRUD per entity)
-// Accepts either: { userId, entityPermissions: [{entityId, create, read, update, delete}] }
-//            or legacy: { userId, entityAccess: [entityId] }
-router.post('/update-permissions', async (req, res) => {
+router.post('/update-permissions', requirePerm('members.changeRole'), async (req, res) => {
     try {
         const { userId, entityAccess, entityPermissions } = req.body;
         if (!userId) return res.status(400).json({ error: 'userId required' });
+
+        const callerRole = req.workspaceRole;
 
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).json({ error: 'Account not found' });
@@ -391,6 +443,11 @@ router.post('/update-permissions', async (req, res) => {
         // Don't allow restricting owner
         if (member.role === 'owner') {
             return res.status(403).json({ error: 'Impossible de restreindre l\'accès du propriétaire' });
+        }
+
+        // Admin cannot change another admin's permissions
+        if (callerRole === 'admin' && member.role === 'admin') {
+            return res.status(403).json({ error: 'Un admin ne peut pas modifier les permissions d\'un autre admin' });
         }
 
         // Handle new CRUD format
@@ -422,10 +479,11 @@ router.post('/update-permissions', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
-// TEAMS CRUD
+// TEAMS CRUD — requires admin permissions
 // ═══════════════════════════════════════════════════
 
 // ── GET /api/team/teams ─────────────────────────────
+// Read-only — accessible to all members
 router.get('/teams', async (req, res) => {
     try {
         const account = await Account.findOne({ account_number: req.account_number }).lean();
@@ -451,7 +509,7 @@ router.get('/teams', async (req, res) => {
 });
 
 // ── POST /api/team/teams ────────────────────────────
-router.post('/teams', async (req, res) => {
+router.post('/teams', requirePerm('members.invite'), async (req, res) => {
     try {
         const { name, description, color, icon, memberIds } = req.body;
         if (!name?.trim()) return res.status(400).json({ error: 'Nom de team requis' });
@@ -481,7 +539,7 @@ router.post('/teams', async (req, res) => {
 });
 
 // ── PUT /api/team/teams/:teamId ─────────────────────
-router.put('/teams/:teamId', async (req, res) => {
+router.put('/teams/:teamId', requirePerm('members.invite'), async (req, res) => {
     try {
         const { name, description, color, icon, memberIds } = req.body;
         const account = await Account.findOne({ account_number: req.account_number });
@@ -505,7 +563,7 @@ router.put('/teams/:teamId', async (req, res) => {
 });
 
 // ── DELETE /api/team/teams/:teamId ──────────────────
-router.delete('/teams/:teamId', async (req, res) => {
+router.delete('/teams/:teamId', requirePerm('members.invite'), async (req, res) => {
     try {
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).json({ error: 'Account not found' });

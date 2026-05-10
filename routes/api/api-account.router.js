@@ -9,6 +9,7 @@ const uploadToDynamic = require('../../middleware/upload');
 const viewController = require('../../controllers/view.controller');
 const entityController = require('../../controllers/entity.controller');
 const recordController = require('../../controllers/record.controller');
+const { requirePerm } = require('../../middleware/permissions');
 
 //Do not delete the comments
 //Auto generated routers 
@@ -27,8 +28,8 @@ router.get('/space-templates', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-router.post('/space-templates/:id/check-conflicts', hierarchyController.checkTemplateConflicts);
-router.post('/space-templates/:id/apply', hierarchyController.applySpaceTemplate);
+router.post('/space-templates/:id/check-conflicts', requirePerm('entities.manage'), hierarchyController.checkTemplateConflicts);
+router.post('/space-templates/:id/apply', requirePerm('entities.manage'), hierarchyController.applySpaceTemplate);
 
 //Generated from template
 //list
@@ -43,25 +44,25 @@ router.delete('/:id', accountController.delete_Api);
 router.get('/hierarchy/list', hierarchyController.getHierarchy);
 // Environment CRUD
 router.get('/hierarchy/environments', hierarchyController.listEnvironments);
-router.post('/hierarchy/environment', hierarchyController.createEnvironment);
-router.post('/hierarchy/environment/update', hierarchyController.updateEnvironment);
-router.post('/hierarchy/environment/delete', hierarchyController.deleteEnvironment);
-router.post('/hierarchy/environment/reorder', hierarchyController.reorderEnvironments);
-router.post('/hierarchy/move', hierarchyController.move);
-router.post('/hierarchy/reorder', hierarchyController.reorder);
-router.post('/hierarchy/space', hierarchyController.createSpace);
-router.post('/hierarchy/folder', hierarchyController.createFolder);
-router.post('/hierarchy/entity', hierarchyController.createEntity);
-router.post('/hierarchy/rename', hierarchyController.renameItem);
-router.post('/hierarchy/icon', hierarchyController.updateIcon);
-router.post('/hierarchy/delete', hierarchyController.deleteItem);
+router.post('/hierarchy/environment', requirePerm('entities.manage'), hierarchyController.createEnvironment);
+router.post('/hierarchy/environment/update', requirePerm('entities.manage'), hierarchyController.updateEnvironment);
+router.post('/hierarchy/environment/delete', requirePerm('entities.manage'), hierarchyController.deleteEnvironment);
+router.post('/hierarchy/environment/reorder', requirePerm('entities.manage'), hierarchyController.reorderEnvironments);
+router.post('/hierarchy/move', requirePerm('entities.manage'), hierarchyController.move);
+router.post('/hierarchy/reorder', requirePerm('entities.manage'), hierarchyController.reorder);
+router.post('/hierarchy/space', requirePerm('entities.manage'), hierarchyController.createSpace);
+router.post('/hierarchy/folder', requirePerm('entities.manage'), hierarchyController.createFolder);
+router.post('/hierarchy/entity', requirePerm('entities.manage'), hierarchyController.createEntity);
+router.post('/hierarchy/rename', requirePerm('entities.manage'), hierarchyController.renameItem);
+router.post('/hierarchy/icon', requirePerm('entities.manage'), hierarchyController.updateIcon);
+router.post('/hierarchy/delete', requirePerm('entities.manage'), hierarchyController.deleteItem);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/entity/:entityId/fields', hierarchyController.getEntityFields);
-router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
-router.post('/hierarchy/link-cockpit', hierarchyController.linkCockpit);
-router.post('/hierarchy/promote-space-to-environment', hierarchyController.promoteSpaceToEnvironment);
-router.post('/hierarchy/promote-folder-to-environment', hierarchyController.promoteFolderToEnvironment);
+router.post('/hierarchy/link-entity', requirePerm('entities.manage'), hierarchyController.linkEntity);
+router.post('/hierarchy/link-cockpit', requirePerm('entities.manage'), hierarchyController.linkCockpit);
+router.post('/hierarchy/promote-space-to-environment', requirePerm('entities.manage'), hierarchyController.promoteSpaceToEnvironment);
+router.post('/hierarchy/promote-folder-to-environment', requirePerm('entities.manage'), hierarchyController.promoteFolderToEnvironment);
 
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
 router.get('/hierarchy/icons', hierarchyController.getIcons);
@@ -90,16 +91,16 @@ router.post('/user/sidebar-prefs', hierarchyController.saveSidebarPrefs);
 
 router.get('/entity/:id', entityController.getDetails_Api);
 router.post('/view/config', viewController.saveConfig);
-router.post('/record/update-status', recordController.updateStatus);
-router.post('/record/update-classification', recordController.updateClassification);
-router.post('/record/update-title', recordController.updateTitle);
+router.post('/record/update-status', requirePerm('records.update'), recordController.updateStatus);
+router.post('/record/update-classification', requirePerm('records.update'), recordController.updateClassification);
+router.post('/record/update-title', requirePerm('records.update'), recordController.updateTitle);
 
 // Account Settings API
 const Account = require('../../models/account.model');
 const User = require('../../models/user.model');
 
-// Update Account Info
-router.post('/account/update', async (req, res) => {
+// Update Account Info — requires settings.update permission
+router.post('/account/update', requirePerm('settings.update'), async (req, res) => {
     try {
         const { name, icon, status } = req.body;
         const account_number = req.account_number;

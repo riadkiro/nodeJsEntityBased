@@ -156,7 +156,7 @@
         <!-- Member Rows -->
         <div>
           <template x-for="member in filteredMembers" :key="member._id">
-            <div class="ts-member-row" x-data="{open:false,editRole:false}" @click.outside="open=false;editRole=false">
+            <div class="ts-member-row" x-data="{open:false,editRole:false,confirmRevoke:false}" @click.outside="open=false;editRole=false;confirmRevoke=false">
               <div style="position:relative;flex-shrink:0;">
                 <template x-if="member.avatar"><img :src="member.avatar" :alt="member.name" /></template>
                 <template x-if="!member.avatar">
@@ -202,8 +202,9 @@
                         <button @click="editRole=true" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#334155;cursor:pointer;font-family:inherit;" class="dark:!text-[#cbd5e1]" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
                           <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon> Modifier le rôle
                         </button>
-                        <button @click="removeMember(member._id, member.name); open=false" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#ef4444;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
-                          <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon> Révoquer l'accès
+                        <button @click="confirmRevoke ? (removeMember(member._id, member.name), open=false, confirmRevoke=false) : (confirmRevoke = true)" :style="confirmRevoke ? 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:#fef2f2;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;font-family:inherit;' : 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;width:100%;border:none;background:none;font-size:12px;font-weight:500;color:#ef4444;cursor:pointer;font-family:inherit;'" onmouseover="if(!this.__x_refs)this.style.background='#fef2f2'" onmouseout="if(!this.__x_refs)this.style.background='none'">
+                          <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+                          <span x-text="confirmRevoke ? 'Confirmer la révocation' : 'Révoquer l\'accès'"></span>
                         </button>
                       </div>
                     </template>
@@ -380,7 +381,7 @@
   </template>
 
   <!-- Toast -->
-  <div x-show="toast" x-transition style="position:fixed;bottom:24px;right:24px;z-index:1000;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.15);" :style="'background:' + (toastType === 'success' ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#ef4444,#dc2626)')" x-text="toast"></div>
+  <div x-show="toast" x-transition :style="'position:fixed;bottom:24px;right:24px;z-index:1000;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.15);background:' + (toastType === 'success' ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#ef4444,#dc2626)')" x-text="toast"></div>
 
   <!-- Team Create/Edit Modal -->
   <template x-if="showTeamModal">
@@ -637,7 +638,6 @@ document.addEventListener('alpine:init', () => {
     },
 
     async removeMember(userId, name) {
-      if (!confirm('Retirer ' + name + ' du compte ?')) return;
       try {
         const res = await fetch(this.apiBase + '/remove-member', {
           method: 'POST',

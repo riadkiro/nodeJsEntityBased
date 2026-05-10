@@ -1,0 +1,268 @@
+<!-- Tasks Hub — Split-view workspace with iframe embed for full feature parity -->
+<style>
+.th-wrap{display:flex;flex-direction:column;height:calc(100vh - 70px);overflow:hidden}
+.th-header{display:flex;align-items:center;gap:16px;padding:18px 24px;background:linear-gradient(135deg,#4361ee08,#4361ee03);border-bottom:1px solid #e0e6ed;flex-shrink:0}
+.th-header-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#4361ee18,#4361ee08);flex-shrink:0}
+.th-header h1{font-size:18px;font-weight:700;color:#0e1726;margin:0}
+.th-header p{font-size:12px;color:#888da8;margin:0}
+.th-header-stats{margin-left:auto;display:flex;gap:16px}
+.th-stat{text-align:center}.th-stat b{font-size:20px;font-weight:800;display:block;line-height:1}.th-stat small{font-size:9px;color:#888da8;text-transform:uppercase;letter-spacing:.4px}
+.th-body{display:flex;flex:1;overflow:hidden}
+/* Sidebar */
+.th-side{width:260px;border-right:1px solid #e0e6ed;display:flex;flex-direction:column;flex-shrink:0;background:#fafbfc;overflow:hidden;transition:width .25s}
+.th-side-header{padding:12px 14px;border-bottom:1px solid #f1f3f5;display:flex;align-items:center;gap:8px}
+.th-side-header input{flex:1;border:1.5px solid #e0e6ed;border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;color:#0e1726;outline:none;background:#fff}
+.th-side-header input:focus{border-color:#4361ee}
+.th-side-header input::placeholder{color:#bfc9d4}
+.th-side-list{flex:1;overflow-y:auto;padding:8px}
+.th-side-list::-webkit-scrollbar{width:4px}.th-side-list::-webkit-scrollbar-thumb{background:#e0e6ed;border-radius:2px}
+/* Flat record items (no expand) */
+.th-record-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .15s;font-size:12.5px;font-weight:600;color:#475569;margin-bottom:2px}
+.th-record-item:hover{background:#f1f5f9}
+.th-record-item.active{background:#4361ee0d;color:#4361ee;border:1px solid #4361ee20}
+.th-record-item .th-rec-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.th-record-item .th-rec-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th-record-item .th-rec-badge{font-size:10px;font-weight:700;color:#94a3b8;background:#f1f3f5;padding:1px 6px;border-radius:8px;flex-shrink:0}
+.th-record-item.active .th-rec-badge{background:#4361ee15;color:#4361ee}
+/* Main area */
+.th-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fff;margin-left:1px}
+.th-main-header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #f1f3f5;flex-shrink:0}
+.th-main-title{font-size:15px;font-weight:700;color:#0e1726;flex:1}
+.th-view-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;border:1px solid #e0e6ed;background:#fff;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;transition:all .15s;font-family:inherit}
+.th-view-btn:hover{border-color:#4361ee;color:#4361ee}
+.th-view-btn.active{background:#4361ee;color:#fff;border-color:#4361ee}
+.th-main-content{flex:1;overflow:hidden;position:relative}
+.th-main-content iframe{width:100%;height:100%;border:none}
+/* Full-width mode — iframe covers everything */
+.th-wrap.fullscreen .th-side{width:0;border:none;overflow:hidden}
+.th-wrap.fullscreen .th-header{display:none}
+.th-fs-bar{display:none;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #f1f3f5;flex-shrink:0}
+.th-wrap.fullscreen .th-fs-bar{display:flex}
+.th-fs-back{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1px solid #e0e6ed;background:#fff;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;transition:all .15s;font-family:inherit}
+.th-fs-back:hover{border-color:#4361ee;color:#4361ee}
+.th-fs-title{font-size:14px;font-weight:700;color:#0e1726}
+/* Modal-expanded: iframe expands to cover full screen so modals in the iframe fill the viewport */
+.th-wrap.modal-expanded{position:fixed;inset:0;z-index:9998}
+.th-wrap.modal-expanded .th-side{display:none}
+.th-wrap.modal-expanded .th-header{display:none}
+.th-wrap.modal-expanded .th-main-header{display:none}
+.th-wrap.modal-expanded .th-main{margin:0}
+.th-wrap.modal-expanded .th-main-content iframe{position:fixed;inset:0;width:100vw;height:100vh;z-index:9999}
+/* Empty */
+.th-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:#94a3b8;text-align:center;padding:40px}
+.th-empty h3{font-size:15px;font-weight:700;color:#0e1726;margin:0}
+.th-empty p{font-size:12px;margin:0}
+/* Dark mode */
+.dark .th-header{background:linear-gradient(135deg,#4361ee10,#4361ee06);border-color:#253b5c}
+.dark .th-header h1{color:#e0e6ed}
+.dark .th-side{background:#0b1320;border-color:#253b5c}
+.dark .th-side-header{border-color:#253b5c}
+.dark .th-side-header input{background:#0e1726;border-color:#253b5c;color:#e0e6ed}
+.dark .th-record-item{color:#94a3b8}.dark .th-record-item:hover{background:#1b2e4b}
+.dark .th-record-item.active{background:#4361ee15;color:#4361ee;border-color:#4361ee30}
+.dark .th-record-item .th-rec-badge{background:#1b2e4b;color:#506690}
+.dark .th-record-item.active .th-rec-badge{background:#4361ee20;color:#4361ee}
+.dark .th-main{background:#0e1726}
+.dark .th-main-header{border-color:#253b5c}
+.dark .th-main-title{color:#e0e6ed}
+.dark .th-view-btn{background:#0e1726;border-color:#253b5c;color:#94a3b8}
+.dark .th-fs-bar{border-color:#253b5c}
+.dark .th-fs-back{background:#1b2e4b;border-color:#253b5c;color:#94a3b8}
+.dark .th-fs-title{color:#e0e6ed}
+.dark .th-empty h3{color:#e0e6ed}
+</style>
+
+<div class="th-wrap" :class="{'fullscreen': isFullscreen, 'modal-expanded': modalExpanded}" x-data="tasksHubApp" x-cloak>
+    <!-- Header -->
+    <div class="th-header">
+        <div class="th-header-icon">
+            <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="22" style="color:#4361ee"></iconify-icon>
+        </div>
+        <div>
+            <h1>Tasks Hub</h1>
+            <p>Toutes les tâches de vos enregistrements</p>
+        </div>
+        <div class="th-header-stats">
+            <div class="th-stat"><b style="color:#4361ee" x-text="totalTasks"></b><small>Tâches</small></div>
+            <div class="th-stat"><b style="color:#22c55e" x-text="doneTasks"></b><small>Terminées</small></div>
+        </div>
+    </div>
+
+    <div class="th-body">
+        <!-- Sidebar — flat record list, no sub-lists -->
+        <div class="th-side">
+            <div class="th-side-header">
+                <input type="text" placeholder="Rechercher..." x-model="searchQuery">
+            </div>
+            <div class="th-side-list">
+                <template x-if="sideLoading">
+                    <div style="text-align:center;padding:24px">
+                        <iconify-icon icon="line-md:loading-twotone-loop" width="20" style="color:#4361ee"></iconify-icon>
+                    </div>
+                </template>
+                <template x-for="entity in filteredEntities" :key="entity.entityId">
+                    <div>
+                        <template x-for="record in entity.records" :key="record.recordId">
+                            <div class="th-record-item" :class="{'active': activeRecordId === record.recordId}" @click="selectRecord(record, entity)">
+                                <div class="th-rec-icon" :style="'background:linear-gradient(135deg,' + (entity.entityColor || '#4361ee') + '15,' + (entity.entityColor || '#4361ee') + '08)'">
+                                    <iconify-icon :icon="entity.entityIcon || 'solar:folder-bold-duotone'" width="15" :style="'color:' + (entity.entityColor || '#4361ee')"></iconify-icon>
+                                </div>
+                                <span class="th-rec-title" x-text="record.recordTitle || 'Sans titre'"></span>
+                                <span class="th-rec-badge" x-text="record.totalTasks"></span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Main Area -->
+        <div class="th-main">
+            <!-- Full-screen bar -->
+            <div class="th-fs-bar">
+                <button class="th-fs-back" @click="isFullscreen = false">
+                    <iconify-icon icon="solar:arrow-left-linear" width="14"></iconify-icon> Retour
+                </button>
+                <div>
+                    <span class="th-fs-title" x-text="activeRecordTitle"></span>
+                </div>
+            </div>
+
+            <!-- Main header -->
+            <div class="th-main-header" x-show="activeRecordId">
+                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
+                <span class="th-main-title" x-text="activeRecordTitle"></span>
+                <button class="th-view-btn" :class="{'active': !isFullscreen}" @click="isFullscreen = false" title="Normal">
+                    <iconify-icon icon="solar:widget-5-bold-duotone" width="14"></iconify-icon>
+                </button>
+                <button class="th-view-btn" :class="{'active': isFullscreen}" @click="isFullscreen = true" title="Plein écran">
+                    <iconify-icon icon="solar:maximize-bold-duotone" width="14"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="th-main-content">
+                <!-- Empty state -->
+                <template x-if="!activeRecordId">
+                    <div class="th-empty">
+                        <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="48" style="opacity:.3"></iconify-icon>
+                        <h3>Sélectionnez un enregistrement</h3>
+                        <p>Choisissez un enregistrement dans la barre latérale pour voir ses tâches</p>
+                    </div>
+                </template>
+
+                <!-- Loading -->
+                <div x-show="embedLoading && activeRecordId" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;z-index:5">
+                    <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
+                </div>
+
+                <!-- Iframe embed of the full record tasks module -->
+                <iframe x-ref="tasksIframe" x-show="activeRecordId" :src="embedUrl" @load="onIframeLoad()" style="display:block"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const API = '/account/<%= account_number %>';
+
+    Alpine.data('tasksHubApp', () => ({
+        entities: [], totalTasks: 0, doneTasks: 0,
+        sideLoading: true, searchQuery: '',
+        activeRecordId: null, activeRecordTitle: '',
+        isFullscreen: false,
+        embedUrl: '', embedLoading: false,
+        modalExpanded: false,
+
+        get filteredEntities() {
+            const q = this.searchQuery.toLowerCase().trim();
+            // Filter out records with 0 tasks
+            const base = this.entities.map(e => ({
+                ...e,
+                records: e.records.filter(r => r.totalTasks > 0)
+            })).filter(e => e.records.length > 0);
+            if (!q) return base;
+            return base.map(e => ({
+                ...e,
+                records: e.records.filter(r =>
+                    (r.recordTitle || '').toLowerCase().includes(q)
+                )
+            })).filter(e => e.records.length > 0);
+        },
+
+        async init() {
+            // Listen for iframe postMessage (modal open/close)
+            window.addEventListener('message', (e) => {
+                if (e.data && e.data.type === 'tasks-modal-open') {
+                    this.modalExpanded = true;
+                } else if (e.data && e.data.type === 'tasks-modal-close') {
+                    this.modalExpanded = false;
+                }
+            });
+            await this.loadSidebar();
+        },
+
+        async loadSidebar() {
+            this.sideLoading = true;
+            try {
+                const res = await fetch(API + '/api/tasks-hub', {credentials:'include'});
+                const data = await res.json();
+                if (data.success) {
+                    this.entities = data.entities || [];
+                    this.totalTasks = data.totalTasks || 0;
+                    this.doneTasks = data.doneTasks || 0;
+                    // Auto-select first record with tasks
+                    this.autoSelectFirst();
+                }
+            } catch(e) { console.error('[TasksHub]', e); }
+            this.sideLoading = false;
+        },
+
+        autoSelectFirst() {
+            for (const e of this.entities) {
+                for (const r of e.records) {
+                    if (r.totalTasks > 0) {
+                        this.selectRecord(r, e);
+                        return;
+                    }
+                }
+            }
+        },
+
+        selectRecord(record, entity) {
+            if (this.activeRecordId === record.recordId) return;
+            this.activeRecordId = record.recordId;
+            this.activeRecordTitle = record.recordTitle || 'Sans titre';
+            this.embedLoading = true;
+            this.embedUrl = API + '/tasks-embed/' + record.recordId;
+        },
+
+        onIframeLoad() {
+            this.embedLoading = false;
+            // Inject postMessage bridge into iframe for modal detection
+            try {
+                const iframeDoc = this.$refs.tasksIframe.contentDocument;
+                if (!iframeDoc) return;
+                const script = iframeDoc.createElement('script');
+                script.textContent = `
+                    // Watch for detail modal open/close and notify parent
+                    (function() {
+                        var observer = new MutationObserver(function() {
+                            var detail = document.querySelector('.tl-detail.open');
+                            var overlay = document.querySelector('.tl-overlay.open');
+                            if (detail || overlay) {
+                                window.parent.postMessage({type:'tasks-modal-open'}, '*');
+                            } else {
+                                window.parent.postMessage({type:'tasks-modal-close'}, '*');
+                            }
+                        });
+                        observer.observe(document.body, {attributes:true, subtree:true, attributeFilter:['class']});
+                    })();
+                `;
+                iframeDoc.body.appendChild(script);
+            } catch(e) { /* cross-origin safety */ }
+        }
+    }));
+});
+</script>

@@ -128,6 +128,76 @@ router.get("/api/agenda-hub", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+// Tasks Hub API — must be before api-account (has /:id catch-all)
+const TaskListModel = require('../models/task-list.model');
+const RecordTaskModel = require('../models/record-task.model');
+router.get("/api/tasks-hub", async (req, res) => {
+    try {
+        const _tc = require('../middleware/tenant').tenantCollection;
+        const Entity = await _tc(req, "Entity");
+        const Record = await _tc(req, "Record");
+
+        const allLists = await TaskListModel.find({}).lean();
+        if (allLists.length === 0) {
+            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
+        }
+
+        const allTasks = await RecordTaskModel.find({}).lean();
+        const recordIds = [...new Set(allLists.map(l => l.recordId.toString()))];
+        const records = await Record.find({ _id: { $in: recordIds } }).select('title referenceTitle entityId').lean();
+        const recordMap = {};
+        records.forEach(r => { recordMap[r._id.toString()] = r; });
+
+        const entityIds = [...new Set(records.map(r => r.entityId?.toString()).filter(Boolean))];
+        const entities = await Entity.find({ _id: { $in: entityIds } }).select('name slug icon color').lean();
+        const entityMap = {};
+        entities.forEach(e => { entityMap[e._id.toString()] = e; });
+
+        const entityGroups = {};
+        let totalTasks = 0, totalDone = 0;
+
+        allLists.forEach(list => {
+            const rId = list.recordId.toString();
+            const record = recordMap[rId];
+            if (!record) return;
+            const eId = record.entityId?.toString() || 'unknown';
+            const entity = entityMap[eId];
+
+            if (!entityGroups[eId]) {
+                entityGroups[eId] = {
+                    entityId: eId, entityName: entity?.name || 'Sans entité',
+                    entitySlug: entity?.slug || '', entityIcon: entity?.icon || 'solar:folder-bold-duotone',
+                    entityColor: entity?.color || '#4361ee', totalTasks: 0, doneTasks: 0, records: {}
+                };
+            }
+            if (!entityGroups[eId].records[rId]) {
+                entityGroups[eId].records[rId] = {
+                    recordId: rId, recordTitle: record.referenceTitle || record.title || 'Sans titre',
+                    totalTasks: 0, doneTasks: 0, listsCount: 0
+                };
+            }
+
+            const listTasks = allTasks.filter(t => t.taskListId.toString() === list._id.toString());
+            const done = listTasks.filter(t => t.status === 'Terminé').length;
+            entityGroups[eId].records[rId].totalTasks += listTasks.length;
+            entityGroups[eId].records[rId].doneTasks += done;
+            entityGroups[eId].records[rId].listsCount += 1;
+            entityGroups[eId].totalTasks += listTasks.length;
+            entityGroups[eId].doneTasks += done;
+            totalTasks += listTasks.length;
+            totalDone += done;
+        });
+
+        const result = Object.values(entityGroups).map(eg => ({
+            ...eg, records: Object.values(eg.records).sort((a, b) => a.recordTitle.localeCompare(b.recordTitle))
+        })).sort((a, b) => b.totalTasks - a.totalTasks);
+
+        res.json({ success: true, entities: result, totalTasks, doneTasks: totalDone });
+    } catch (error) {
+        console.error('[TasksHub] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
@@ -282,13 +352,41 @@ router.use("/integrations", require("../src/integrations/routes/oauth.routes.js"
 router.use("/integrations", require("../src/integrations/routes/tenant.integrations.routes.js"));
 router.use("/workflows", require("../src/integrations/routes/workflows.routes.js"));
 
-// Tasks Page
+// Tasks Hub (aggregated tasks across all records)
 router.get("/tasks", (req, res) => {
-    res.render("record/record-tasks", {
+    res.render("account/account-tasks-hub", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number
     });
+});
+
+// Tasks Embed (chromeless render of record-tasks-module for iframe in Tasks Hub)
+router.get("/tasks-embed/:recordId", async (req, res) => {
+    try {
+        const _tc = require('../middleware/tenant').tenantCollection;
+        const EntityModel = await _tc(req, "Entity");
+        const RecordModel = await _tc(req, "Record");
+
+        const record = await RecordModel.findById(req.params.recordId).select('title _id entityId');
+        if (!record) return res.status(404).send("Record not found");
+
+        const entity = await EntityModel.findById(record.entityId).select('name slug icon color');
+        if (!entity) return res.status(404).send("Entity not found");
+
+        res.render("account/account-tasks-embed", {
+            layout: "layout-embed",
+            user: req.user,
+            account_number: req.account_number,
+            record,
+            entity,
+            moduleName: 'tasks',
+            _isTasksTab: true
+        });
+    } catch (error) {
+        console.error('[TasksEmbed] Error:', error);
+        res.status(500).send("Error loading tasks embed");
+    }
 });
 
 // Agenda Hub (aggregated events across all records)

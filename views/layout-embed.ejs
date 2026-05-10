@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tasks Embed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="/themes/default/assets/css/style.css" />
+  <link rel="stylesheet" type="text/css" href="/css/app/main.css" />
+  <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; overflow-x: hidden; font-family: 'Nunito', sans-serif; background: #fff; }
+    /* Add breathing room: padding around the tasks module content */
+    .tl-wrap { padding: 20px 24px !important; }
+    /* In embed context, let the kanban fill the available height */
+    .tl-kb-fs .tl-kanban { height: calc(100vh - 160px) !important; }
+    .tl-kb-fs { min-height: calc(100vh - 40px) !important; }
+  </style>
+</head>
+
+<script>
+window.__USER_THEME__ = '<%= (typeof user !== "undefined" && user && user.preferences && user.preferences.theme) ? user.preferences.theme : "light" %>';
+window.__ACCOUNT_NUMBER__ = '<%= typeof account_number !== "undefined" ? account_number : "" %>';
+(function(){
+  if (window.__USER_THEME__ === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+})();
+</script>
+
+<body class="font-nunito text-sm font-normal antialiased" style="background:transparent;">
+    <%- body %>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+    // Global touch support for SortableJS
+    (function() {
+      function injectTouchDefaults(opts) {
+        opts = opts || {};
+        if (opts.delay === undefined) opts.delay = 150;
+        if (opts.delayOnTouchOnly === undefined) opts.delayOnTouchOnly = true;
+        if (opts.touchStartThreshold === undefined) opts.touchStartThreshold = 5;
+        return opts;
+      }
+      var _origCreate = Sortable.create;
+      Sortable.create = function(el, opts) {
+        return _origCreate.call(Sortable, el, injectTouchDefaults(opts));
+      };
+      var _OrigSortable = window.Sortable;
+      var PatchedSortable = function(el, opts) {
+        return new _OrigSortable(el, injectTouchDefaults(opts));
+      };
+      Object.keys(_OrigSortable).forEach(function(key) {
+        if (key === 'create') {
+          PatchedSortable.create = Sortable.create;
+        } else {
+          PatchedSortable[key] = _OrigSortable[key];
+        }
+      });
+      PatchedSortable.prototype = _OrigSortable.prototype;
+      window.Sortable = PatchedSortable;
+    })();
+    </script>
+    <script src="/themes/default/assets/js/alpine-collaspe.min.js"></script>
+    <script src="/themes/default/assets/js/alpine-persist.min.js"></script>
+    <script defer src="/themes/default/assets/js/alpine-ui.min.js"></script>
+    <script defer src="/themes/default/assets/js/alpine.min.js"></script>
+</body>
+</html>

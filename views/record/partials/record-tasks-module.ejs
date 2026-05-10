@@ -432,6 +432,7 @@
         display: flex; gap: 16px; overflow-x: auto; padding: 8px 0 16px;
         min-height: 260px; position: relative; cursor: grab;
         scroll-behavior: auto; -webkit-overflow-scrolling: touch;
+        -webkit-user-select: none; user-select: none;
     }
     .tl-kanban.is-dragging { cursor: grabbing; scroll-behavior: auto; }
     .tl-kanban.is-dragging * { pointer-events: none; }

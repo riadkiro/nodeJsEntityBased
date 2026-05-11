@@ -1,5 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/themes/default/assets/css/style.css">
+    <link rel="stylesheet" href="/css/app/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body style="margin:0; padding:0; overflow:hidden;">
+
 <div x-data="documentEditor()" @insert-token.window="insertVariableToken($event.detail.path, $event.detail.metadata)"
-  class="h-[calc(100vh-80px)] flex flex-col">
+  class="h-screen flex flex-col">
   <!-- Header Bar -->
   <%- include('partials/editor-header') %>
 
@@ -1780,24 +1799,24 @@
 
         convertToLayout: function (index) {
           var page = this.doc.pages[index];
-          var content = page.content || '';
+
+          // Read content from DOM for accuracy (DOM is the source of truth for contenteditable)
+          var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+          var content = pageEl ? pageEl.innerHTML : (page.content || '');
           if (!content.trim()) return;
 
-          // Clean HTML using the existing Word cleaner
-          var cleanHtml = this.cleanWordHtml(content);
-
-          // Wrap everything into a single HTML block
+          // Wrap everything into a single HTML block — preserve content as-is (no cleanWordHtml)
           page.rows = [{
             columns: 1,
             elements: [{
               id: Date.now() + Math.random(),
               type: 'html',
-              content: cleanHtml,
+              content: content,
               column: 0
             }]
           }];
 
-          console.log('Converted whole page to single layout block.');
+          console.log('Converted whole page to single layout block (content preserved).');
         },
 
         addPage: function () {
@@ -2449,3 +2468,6 @@
     font-family: inherit;
   }
 </style>
+
+</body>
+</html>

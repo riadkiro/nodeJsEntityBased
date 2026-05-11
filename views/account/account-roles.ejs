@@ -1,0 +1,411 @@
+<link rel="stylesheet" href="/css/app/team-system.css" />
+
+<div class="animate__animated p-6" :class="[$store.app.animation]">
+<div x-data="rolesConfig()" x-init="init()" x-cloak>
+  <!-- Page Header -->
+  <div class="ts-page-header">
+    <div class="ts-page-header-icon" style="background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(124,58,237,.05));">
+      <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="28" style="color:#7c3aed"></iconify-icon>
+    </div>
+    <div class="ts-page-header-info">
+      <h1>Rôles & Permissions</h1>
+      <p>Configurez les permissions par défaut de chaque rôle</p>
+    </div>
+    <div style="display:flex;gap:8px;margin-left:auto;">
+      <button @click="showCreateModal = true" style="display:flex;align-items:center;gap:6px;padding:8px 18px;border:1.5px dashed #7c3aed40;border-radius:10px;font-size:12px;font-weight:600;color:#7c3aed;cursor:pointer;background:transparent;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='#7c3aed08';this.style.borderColor='#7c3aed'" onmouseout="this.style.background='transparent';this.style.borderColor='#7c3aed40'">
+        <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+        Nouveau rôle
+      </button>
+      <a href="/account/<%= account_number %>/team" style="display:flex;align-items:center;gap:6px;padding:8px 18px;border:1px solid #e0e6ed;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;text-decoration:none;transition:all .15s;" class="dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
+        <iconify-icon icon="solar:arrow-left-linear" width="14"></iconify-icon>
+        Équipe
+      </a>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <template x-if="loading">
+    <div style="display:flex;align-items:center;justify-content:center;padding:80px 0;">
+      <div class="animate-spin" style="width:28px;height:28px;border:3px solid #e0e6ed;border-top-color:#4361ee;border-radius:50%;"></div>
+    </div>
+  </template>
+
+  <template x-if="!loading">
+    <div>
+      <!-- Role Cards -->
+      <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+        <template x-for="role in roles" :key="role.slug">
+          <button @click="selectRole(role.slug)" :style="'display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:12px;border:1.5px solid ' + (selectedRole === role.slug ? role.color : '#e0e6ed') + ';background:' + (selectedRole === role.slug ? role.color + '08' : '#fff') + ';cursor:pointer;transition:all .2s;font-family:inherit;min-width:140px;'" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]">
+            <div :style="'width:36px;min-width:36px;max-width:36px;height:36px;min-height:36px;max-height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + role.color + '15'">
+              <iconify-icon :icon="role.icon" width="18" :style="'color:' + role.color"></iconify-icon>
+            </div>
+            <div style="text-align:left;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:13px;font-weight:700;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="role.name"></span>
+                <template x-if="role.isCustom">
+                  <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(124,58,237,.08);color:#7c3aed;text-transform:uppercase;">Custom</span>
+                </template>
+              </div>
+              <div style="font-size:10px;color:#94a3b8;" x-text="role.memberCount + ' membre(s)'"></div>
+            </div>
+            <template x-if="!role.editable">
+              <iconify-icon icon="solar:lock-bold" width="12" style="color:#94a3b8;margin-left:auto;" title="Non modifiable"></iconify-icon>
+            </template>
+          </button>
+        </template>
+      </div>
+
+      <!-- Selected Role Info -->
+      <template x-if="selectedRole && currentRole">
+        <div>
+          <!-- Role Header Bar -->
+          <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div :style="'width:40px;min-width:40px;max-width:40px;height:40px;min-height:40px;max-height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + currentRole.color + '15'">
+                <iconify-icon :icon="currentRole.icon" width="20" :style="'color:' + currentRole.color"></iconify-icon>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:16px;font-weight:700;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="currentRole.name"></span>
+                  <template x-if="currentRole.isCustom && currentRole.baseRole">
+                    <span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(148,163,184,.08);color:#94a3b8;font-weight:600;">Basé sur <span x-text="currentRole.baseRole"></span></span>
+                  </template>
+                </div>
+                <div style="font-size:12px;color:#94a3b8;">
+                  <span x-text="currentRole.memberCount + ' membre(s)'"></span>
+                  <template x-if="Object.keys(currentRole.overrides).length > 0">
+                    <span :style="'margin-left:8px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:' + currentRole.color + '12;color:' + currentRole.color" x-text="Object.keys(currentRole.overrides).length + ' personnalisée(s)'"></span>
+                  </template>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <template x-if="currentRole.editable">
+                <button @click="resetRole()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#f59e0b';this.style.color='#f59e0b'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
+                  <iconify-icon icon="solar:restart-bold" width="13"></iconify-icon>
+                  Restaurer
+                </button>
+              </template>
+              <!-- Delete custom role -->
+              <template x-if="currentRole.isCustom">
+                <button @click="confirmDeleteRole = !confirmDeleteRole" :style="confirmDeleteRole ? 'display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #ef4444;border-radius:8px;font-size:11px;font-weight:600;color:#fff;cursor:pointer;background:#ef4444;font-family:inherit;transition:all .15s;' : 'display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#ef4444;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;'" @click.away="confirmDeleteRole = false">
+                  <iconify-icon icon="solar:trash-bin-trash-bold" width="13"></iconify-icon>
+                  <span x-text="confirmDeleteRole ? 'Confirmer' : 'Supprimer'" @click="if(confirmDeleteRole) deleteRole()"></span>
+                </button>
+              </template>
+              <!-- Save Status -->
+              <template x-if="saveStatus === 'saving'">
+                <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;padding:6px 14px;">
+                  <div class="animate-spin" style="width:14px;height:14px;border:2px solid #e0e6ed;border-top-color:#4361ee;border-radius:50%;"></div>
+                </span>
+              </template>
+              <template x-if="saveStatus === 'saved'">
+                <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#22c55e;font-weight:600;padding:6px 14px;">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                </span>
+              </template>
+            </div>
+          </div>
+
+          <!-- Non-editable info -->
+          <template x-if="!currentRole.editable">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.15);border-radius:10px;margin-bottom:16px;">
+              <iconify-icon icon="solar:lock-bold-duotone" width="16" style="color:#94a3b8;flex-shrink:0;"></iconify-icon>
+              <span style="font-size:12px;color:#94a3b8;font-weight:500;">Les permissions de ce rôle sont fixes et ne peuvent pas être modifiées.</span>
+            </div>
+          </template>
+
+          <!-- Permission Categories -->
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <template x-for="cat in categories" :key="cat.key">
+              <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+                <!-- Category Header -->
+                <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
+                  <iconify-icon :icon="cat.icon" width="16" style="color:#4361ee;"></iconify-icon>
+                  <span style="font-size:13px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.04em;" class="dark:!text-[#e0e6ed]" x-text="cat.name"></span>
+                  <span style="font-size:10px;color:#94a3b8;font-weight:600;" x-text="cat.permissions.length + ' permissions'"></span>
+                </div>
+                <!-- Permission Rows -->
+                <template x-for="perm in cat.permissions" :key="perm">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid #f8fafc;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:12.5px;font-weight:500;color:#334155;" class="dark:!text-[#cbd5e1]" x-text="labels[perm] || perm"></span>
+                      <template x-if="currentRole.overrides[perm] !== undefined">
+                        <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(249,115,22,.08);color:#f97316;text-transform:uppercase;">Modifié</span>
+                      </template>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="font-size:9px;color:#cbd5e1;font-family:monospace;" x-text="perm"></span>
+                      <label :style="'display:inline-flex;position:relative;' + (currentRole.editable ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:.5;')">
+                        <input type="checkbox" :checked="currentRole.effectivePermissions[perm]" @change="togglePermission(perm)" :disabled="!currentRole.editable" style="display:none;" />
+                        <div :style="'width:38px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (currentRole.effectivePermissions[perm] ? 'background:' + currentRole.color : 'background:#e0e6ed')">
+                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (currentRole.effectivePermissions[perm] ? 'left:20px' : 'left:2px')"></div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- No Role Selected -->
+      <template x-if="!selectedRole && roles.length > 0">
+        <div style="text-align:center;padding:60px 20px;">
+          <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="48" style="color:#e0e6ed;"></iconify-icon>
+          <p style="font-size:14px;color:#94a3b8;margin-top:12px;">Sélectionnez un rôle ci-dessus pour configurer ses permissions</p>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- ═══ Create Role Modal ═══ -->
+  <template x-if="showCreateModal">
+    <div style="position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;" @click.self="showCreateModal = false">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);"></div>
+      <div style="position:relative;background:#fff;border-radius:16px;padding:28px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.15);z-index:1;" class="dark:!bg-[#0e1726]">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,.1);">
+            <iconify-icon icon="solar:shield-plus-bold-duotone" width="20" style="color:#7c3aed;"></iconify-icon>
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:#0e1726;" class="dark:!text-[#e0e6ed]">Nouveau rôle</div>
+            <div style="font-size:12px;color:#94a3b8;">Créez un rôle personnalisé avec des permissions spécifiques</div>
+          </div>
+          <button @click="showCreateModal = false" style="margin-left:auto;border:none;background:none;cursor:pointer;color:#94a3b8;padding:4px;">
+            <iconify-icon icon="solar:close-circle-bold" width="20"></iconify-icon>
+          </button>
+        </div>
+
+        <!-- Form -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- Name -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;letter-spacing:.04em;">Nom du rôle *</label>
+            <input type="text" x-model="newRole.name" placeholder="Ex: Chef de projet, Comptable, Stagiaire..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;color:#0e1726;outline:none;transition:border-color .15s;box-sizing:border-box;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
+          </div>
+
+          <!-- Base Role -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;letter-spacing:.04em;">Basé sur le rôle</label>
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;">Les permissions par défaut seront copiées depuis ce rôle</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <template x-for="br in ['manager', 'member', 'external', 'guest']" :key="br">
+                <button @click="newRole.baseRole = br" :style="'padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid ' + (newRole.baseRole === br ? '#7c3aed' : '#e0e6ed') + ';cursor:pointer;font-family:inherit;transition:all .15s;background:' + (newRole.baseRole === br ? '#7c3aed08' : '#fff') + ';color:' + (newRole.baseRole === br ? '#7c3aed' : '#64748b')" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]" x-text="br.charAt(0).toUpperCase() + br.slice(1)">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;letter-spacing:.04em;">Description (optionnel)</label>
+            <input type="text" x-model="newRole.description" placeholder="Rôle pour..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;font-family:inherit;color:#0e1726;outline:none;transition:border-color .15s;box-sizing:border-box;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#e0e6ed]" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
+          </div>
+
+          <!-- Error -->
+          <template x-if="createError">
+            <div style="padding:8px 12px;border-radius:8px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);font-size:12px;color:#ef4444;font-weight:500;" x-text="createError"></div>
+          </template>
+
+          <!-- Actions -->
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
+            <button @click="showCreateModal = false" style="padding:8px 20px;border:1px solid #e0e6ed;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;">Annuler</button>
+            <button @click="createRole()" :disabled="!newRole.name.trim() || creating" style="padding:8px 24px;border:none;border-radius:10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#6d28d9);font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:6px;" :style="(!newRole.name.trim() || creating) && 'opacity:.5;cursor:not-allowed;'">
+              <template x-if="creating">
+                <div class="animate-spin" style="width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;"></div>
+              </template>
+              <iconify-icon x-show="!creating" icon="solar:add-circle-bold" width="14"></iconify-icon>
+              Créer le rôle
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('rolesConfig', () => ({
+    loading: true,
+    roles: [],
+    categories: [],
+    labels: {},
+    selectedRole: null,
+    saveStatus: '',
+    saveTimeout: null,
+    confirmDeleteRole: false,
+    showCreateModal: false,
+    creating: false,
+    createError: '',
+    newRole: { name: '', baseRole: 'member', description: '' },
+    apiBase: '/account/<%= account_number %>/api/team',
+
+    get currentRole() {
+      return this.roles.find(r => r.slug === this.selectedRole) || null;
+    },
+
+    async init() {
+      await this.fetchRoles();
+      this.loading = false;
+      this.cacheDefaults();
+
+      // Auto-select manager (first editable role)
+      const firstEditable = this.roles.find(r => r.editable);
+      if (firstEditable) this.selectedRole = firstEditable.slug;
+    },
+
+    async fetchRoles() {
+      try {
+        const res = await fetch(this.apiBase + '/roles', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          this.roles = data.roles;
+          this.categories = data.categories;
+          this.labels = data.labels;
+        }
+      } catch (e) { console.error('Fetch roles error:', e); }
+    },
+
+    selectRole(slug) {
+      this.selectedRole = slug;
+      this.saveStatus = '';
+      this.confirmDeleteRole = false;
+    },
+
+    togglePermission(perm) {
+      const role = this.currentRole;
+      if (!role || !role.editable) return;
+
+      role.effectivePermissions[perm] = !role.effectivePermissions[perm];
+
+      // Track override
+      const defaultPerms = this.getDefaultPermissions(role.slug);
+      if (role.effectivePermissions[perm] !== defaultPerms[perm]) {
+        role.overrides[perm] = role.effectivePermissions[perm];
+      } else {
+        delete role.overrides[perm];
+      }
+
+      this.autoSave();
+    },
+
+    getDefaultPermissions(slug) {
+      if (!this._defaults) this._defaults = {};
+      return this._defaults[slug] || {};
+    },
+
+    resetRole() {
+      const role = this.currentRole;
+      if (!role || !role.editable) return;
+      this.savePermissions({});
+    },
+
+    autoSave() {
+      clearTimeout(this.saveTimeout);
+      this.saveStatus = 'saving';
+      this.saveTimeout = setTimeout(() => {
+        this.savePermissions(this.currentRole.effectivePermissions);
+      }, 600);
+    },
+
+    async savePermissions(permissions) {
+      if (!this.selectedRole) return;
+      try {
+        this.saveStatus = 'saving';
+        const res = await fetch(this.apiBase + '/roles/' + this.selectedRole, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ permissions }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.saveStatus = 'saved';
+          await this.fetchRoles();
+          this.cacheDefaults();
+          setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
+        } else {
+          this.saveStatus = 'error';
+        }
+      } catch (e) {
+        console.error('Save roles error:', e);
+        this.saveStatus = 'error';
+      }
+    },
+
+    async createRole() {
+      if (!this.newRole.name.trim()) return;
+      this.creating = true;
+      this.createError = '';
+      try {
+        const res = await fetch(this.apiBase + '/roles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.newRole),
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.showCreateModal = false;
+          this.newRole = { name: '', baseRole: 'member', description: '' };
+          await this.fetchRoles();
+          this.cacheDefaults();
+          // Auto-select the new role
+          this.selectedRole = data.slug;
+          if (window.showMessage) window.showMessage('Rôle créé avec succès');
+        } else {
+          this.createError = data.error || 'Erreur lors de la création';
+        }
+      } catch (e) {
+        this.createError = 'Erreur réseau';
+      } finally {
+        this.creating = false;
+      }
+    },
+
+    async deleteRole() {
+      if (!this.currentRole?.isCustom) return;
+      try {
+        const res = await fetch(this.apiBase + '/roles/' + this.selectedRole, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.confirmDeleteRole = false;
+          this.selectedRole = null;
+          await this.fetchRoles();
+          this.cacheDefaults();
+          // Select first editable
+          const first = this.roles.find(r => r.editable);
+          if (first) this.selectedRole = first.slug;
+          if (window.showMessage) window.showMessage(data.message);
+        }
+      } catch (e) {
+        console.error('Delete role error:', e);
+      }
+    },
+
+    cacheDefaults() {
+      this._defaults = {};
+      for (const role of this.roles) {
+        const defaults = {};
+        for (const [perm, value] of Object.entries(role.effectivePermissions)) {
+          if (role.overrides[perm] !== undefined) {
+            defaults[perm] = !role.overrides[perm];
+          } else {
+            defaults[perm] = value;
+          }
+        }
+        this._defaults[role.slug] = defaults;
+      }
+    },
+  }));
+});
+</script>

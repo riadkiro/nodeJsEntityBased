@@ -43,6 +43,8 @@
 .ts-role-manager { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; }
 .ts-role-member { background:#f1f5f9; color:#64748b; }
 .ts-role-viewer { background:rgba(16,185,129,.12); color:#10b981; }
+.ts-role-external { background:rgba(6,182,212,.12); color:#06b6d4; }
+.ts-role-guest { background:rgba(16,185,129,.12); color:#10b981; }
 
 /* ── Status Indicators ── */
 .ts-status { width:12px; height:12px; border-radius:50%; border:2px solid #fff; flex-shrink:0; }
@@ -236,3 +238,64 @@
 .dark .ts-section-title { color:#e0e6ed; }
 .dark .ts-section-title::after { background:#253b5c; }
 .dark .ts-role-member { background:#1b2e4b; color:#94a3b8; }
+
+/* ═══ TEAM SECTION CONTAINER ═══ */
+.ts-teams-section { background:linear-gradient(135deg,rgba(124,58,237,.03),rgba(124,58,237,.01)); border:1px solid rgba(124,58,237,.1); border-radius:16px; padding:18px 20px; margin-bottom:24px; }
+.dark .ts-teams-section { background:rgba(124,58,237,.04); border-color:rgba(124,58,237,.15); }
+.ts-teams-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.ts-teams-section-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:#0e1726; }
+.dark .ts-teams-section-title { color:#e0e6ed; }
+.ts-teams-section-count { font-size:11px; color:#94a3b8; font-weight:500; }
+
+/* ── Team Card v2 ── */
+.ts-team-card { padding:12px 14px; border-radius:12px; border:1px solid #e0e6ed; background:#fff; cursor:pointer; transition:all .25s ease; position:relative; }
+.ts-team-card:hover { padding:14px 16px; margin:-2px; border-color:rgba(124,58,237,.3); box-shadow:0 4px 16px rgba(124,58,237,.08); }
+.ts-team-card.ts-team-active { border-color:#7c3aed; box-shadow:0 0 0 2px rgba(124,58,237,.15); background:rgba(124,58,237,.02); }
+.dark .ts-team-card { background:#0e1726; border-color:#253b5c; }
+.dark .ts-team-card:hover { border-color:rgba(124,58,237,.4); box-shadow:0 4px 16px rgba(124,58,237,.15); }
+.dark .ts-team-card.ts-team-active { background:rgba(124,58,237,.06); }
+
+/* ── Team Badge (on member rows) ── */
+.ts-team-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600; white-space:nowrap; transition:all .15s; }
+
+/* ── Members Section Container ── */
+.ts-members-section { background:#fff; border:1px solid #e0e6ed; border-radius:16px; padding:0; overflow:hidden; }
+.dark .ts-members-section { background:#0e1726; border-color:#253b5c; }
+.ts-members-toolbar { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
+.dark .ts-members-toolbar { border-color:#253b5c; }
+.ts-members-toolbar-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; }
+.ts-members-toolbar-right { display:flex; align-items:center; gap:8px; }
+
+/* ── Team Filter Chips ── */
+.ts-team-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; border:1px solid #e0e6ed; background:#fff; color:#64748b; }
+.ts-team-chip:hover { border-color:#7c3aed; color:#7c3aed; }
+.ts-team-chip.active { border-color:#7c3aed; background:rgba(124,58,237,.06); color:#7c3aed; }
+.dark .ts-team-chip { background:#1b2e4b; border-color:#253b5c; color:#94a3b8; }
+.dark .ts-team-chip.active { background:rgba(124,58,237,.12); border-color:#7c3aed; color:#a78bfa; }
+
+/* ── Member Row v2 (inside container) ── */
+.ts-members-section .ts-member-row { border:none; border-radius:0; border-bottom:1px solid #f1f5f9; }
+.ts-members-section .ts-member-row:last-child { border-bottom:none; }
+.ts-members-section .ts-member-row:hover { background:#f8fafc; }
+.dark .ts-members-section .ts-member-row { border-color:#1b2e4b; }
+.dark .ts-members-section .ts-member-row:hover { background:#1b2e4b; }
+
+/* ── Separator Line ── */
+.ts-separator { display:flex; align-items:center; gap:10px; margin:24px 0 16px; }
+.ts-separator-line { flex:1; height:1px; background:#e0e6ed; }
+.dark .ts-separator-line { background:#253b5c; }
+.ts-separator-label { font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; display:flex; align-items:center; gap:6px; }
+
+/* ── Chat Team Section ── */
+.ts-chat-team-item { display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:8px; cursor:pointer; transition:background .15s; }
+.ts-chat-team-item:hover { background:rgba(124,58,237,.04); }
+
+/* ── Role Select Cards (Invite Modal) ── */
+.ts-role-select-card { padding:12px 14px; border-radius:12px; border:1.5px solid #e0e6ed; cursor:pointer; transition:all .25s ease; position:relative; }
+.ts-role-select-card:hover { border-color:#bfc9d4; background:#f8fafc; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.04); }
+.ts-role-select-card.ts-role-select-active { transform:translateY(-1px); }
+.ts-role-select-card.ts-role-select-active:hover { transform:translateY(-2px); }
+.dark .ts-role-select-card { border-color:#253b5c; background:#0e1726; }
+.dark .ts-role-select-card:hover { background:#1b2e4b; border-color:#3b5998; }
+.dark .ts-role-select-card.ts-role-select-active { background:rgba(67,97,238,.06); }
+

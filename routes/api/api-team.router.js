@@ -4,7 +4,7 @@ const User = require('../../models/user.model');
 const Account = require('../../models/account.model');
 const crypto = require('crypto');
 const { tenantCollection } = require('../../middleware/tenant');
-const { requirePerm, getRoleLevel } = require('../../middleware/permissions');
+const { requirePerm, getRoleLevel, canManageRole, getAssignableRoles, PERMISSIONS, PERMISSION_CATEGORIES, PERMISSION_LABELS, ROLE_HIERARCHY, ROLE_META } = require('../../middleware/permissions');
 const mailer = require('../../services/mailer');
 
 // ── GET /api/team/members ─────────────────────────────────
@@ -84,6 +84,23 @@ router.get('/members', async (req, res) => {
     }
 });
 
+// ── GET /api/team/entities ────────────────────────────────
+// Returns all entities for the current workspace (for permissions matrix)
+router.get('/entities', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, 'Entity');
+        const entities = await Entity.find({})
+            .select('name slug icon color')
+            .sort({ name: 1 })
+            .lean();
+
+        res.json({ success: true, entities });
+    } catch (error) {
+        console.error('[Team API] entities error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // ── GET /api/team/lookup-user ──────────────────────────────
 // Lookup if a user exists — requires invite permission
 router.get('/lookup-user', requirePerm('members.invite'), async (req, res) => {
@@ -110,19 +127,39 @@ router.get('/lookup-user', requirePerm('members.invite'), async (req, res) => {
 
 // ── POST /api/team/invite ─────────────────────────────────
 // Invite a user by email — requires invite permission
-router.post('/invite', requirePerm('members.invite'), async (req, res) => {
+// Manager can only invite external/guest roles
+router.post('/invite', async (req, res) => {
     try {
         const { email, role, message, entityAccess, entityPermissions } = req.body;
         if (!email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
         const callerRole = req.workspaceRole;
 
-        // ── Permission: admin cannot invite as admin ──
-        if (role === 'admin' && callerRole !== 'owner') {
-            return res.status(403).json({ error: 'Seul le propriétaire peut inviter en tant qu\'admin' });
+        // ── Determine target role with hierarchy validation ──
+        let targetRole = role || 'member';
+        const validRoles = ['admin', 'manager', 'member', 'external', 'guest'];
+        if (!validRoles.includes(targetRole)) {
+            return res.status(400).json({ error: `Rôle invalide. Rôles autorisés: ${validRoles.join(', ')}` });
         }
 
-        const targetRole = (role === 'admin' && callerRole === 'owner') ? 'admin' : 'member';
+        // Check caller can invite this role
+        if (!canManageRole(callerRole, targetRole)) {
+            return res.status(403).json({
+                error: `Vous ne pouvez pas inviter avec le rôle "${targetRole}"`,
+                assignableRoles: getAssignableRoles(callerRole),
+            });
+        }
+
+        // Manager can only invite external/guest
+        if (callerRole === 'manager' && !['external', 'guest'].includes(targetRole)) {
+            return res.status(403).json({ error: 'Un manager ne peut inviter que des collaborateurs externes ou guests' });
+        }
+
+        // member/external/guest cannot invite
+        if (!req.can('members.invite') && !req.can('members.inviteExternal')) {
+            return res.status(403).json({ error: 'Permission refusée' });
+        }
+
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).json({ error: 'Account not found' });
 
@@ -222,13 +259,17 @@ router.post('/update-role', requirePerm('members.changeRole'), async (req, res) 
         const callerRole = req.workspaceRole;
 
         // Validate role
-        if (!['admin', 'member'].includes(newRole)) {
-            return res.status(400).json({ error: 'Rôle invalide. Rôles autorisés: admin, member' });
+        const validRoles = ['admin', 'manager', 'member', 'external', 'guest'];
+        if (!validRoles.includes(newRole)) {
+            return res.status(400).json({ error: `Rôle invalide. Rôles autorisés: ${validRoles.join(', ')}` });
         }
 
-        // Only owner can promote to admin
-        if (newRole === 'admin' && callerRole !== 'owner') {
-            return res.status(403).json({ error: 'Seul le propriétaire peut promouvoir en admin' });
+        // Caller can only assign roles below their own level
+        if (!canManageRole(callerRole, newRole)) {
+            return res.status(403).json({
+                error: `Vous ne pouvez pas assigner le rôle "${newRole}"`,
+                assignableRoles: getAssignableRoles(callerRole),
+            });
         }
 
         const account = await Account.findOne({ account_number: req.account_number });
@@ -242,9 +283,9 @@ router.post('/update-role', requirePerm('members.changeRole'), async (req, res) 
             return res.status(403).json({ error: 'Impossible de modifier le rôle du propriétaire' });
         }
 
-        // Admin cannot change another admin's role
-        if (callerRole === 'admin' && targetMember.role === 'admin') {
-            return res.status(403).json({ error: 'Un admin ne peut pas modifier le rôle d\'un autre admin' });
+        // Can only change roles of people below you
+        if (!canManageRole(callerRole, targetMember.role)) {
+            return res.status(403).json({ error: `Vous ne pouvez pas modifier le rôle d'un ${targetMember.role}` });
         }
 
         // Cannot change your own role
@@ -262,7 +303,7 @@ router.post('/update-role', requirePerm('members.changeRole'), async (req, res) 
             { $set: { 'accounts.$.role': newRole } }
         );
 
-        res.json({ success: true, message: 'Rôle mis à jour' });
+        res.json({ success: true, message: `Rôle mis à jour: ${newRole}` });
     } catch (error) {
         console.error('[Team API] update-role error:', error);
         res.status(500).json({ error: 'Server error' });
@@ -294,9 +335,9 @@ router.post('/remove-member', requirePerm('members.remove'), async (req, res) =>
             return res.status(403).json({ error: 'Impossible de retirer le propriétaire du compte' });
         }
 
-        // Admin cannot remove another admin
-        if (callerRole === 'admin' && targetMember.role === 'admin') {
-            return res.status(403).json({ error: 'Un admin ne peut pas retirer un autre admin' });
+        // Can only remove people below you in hierarchy
+        if (!canManageRole(callerRole, targetMember.role)) {
+            return res.status(403).json({ error: `Vous ne pouvez pas retirer un ${targetMember.role}` });
         }
 
         // Remove from Account.users
@@ -574,6 +615,315 @@ router.delete('/teams/:teamId', requirePerm('members.invite'), async (req, res) 
         res.json({ success: true, message: 'Team supprimée' });
     } catch (error) {
         console.error('[Team API] delete team error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+// ═══════════════════════════════════════════
+// ROLES CONFIGURATION
+// ═══════════════════════════════════════════
+
+// ── GET /api/team/roles ──────────────────────────────
+// Returns all roles with their effective permissions
+router.get('/roles', requirePerm('settings.view'), async (req, res) => {
+    try {
+        const account = await Account.findOne(
+            { account_number: req.account_number },
+            { customRoles: 1, users: 1 }
+        ).lean();
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const customRoles = account.customRoles || [];
+        const systemSlugs = ['owner', 'admin', 'manager', 'member', 'external', 'guest'];
+
+        // Build system roles
+        const roles = systemSlugs.map(slug => {
+            const meta = ROLE_META[slug];
+            const override = customRoles.find(r => r.slug === slug && !r.isCustom);
+            const overridePerms = override?.permissions
+                ? (override.permissions instanceof Map
+                    ? Object.fromEntries(override.permissions)
+                    : override.permissions)
+                : {};
+
+            const effectivePermissions = {};
+            const overrides = {};
+            for (const perm of Object.keys(PERMISSIONS)) {
+                const defaultValue = slug === 'owner' ? true : PERMISSIONS[perm].includes(slug);
+                const overrideValue = overridePerms[perm];
+                effectivePermissions[perm] = overrideValue !== undefined ? overrideValue : defaultValue;
+                if (overrideValue !== undefined) {
+                    overrides[perm] = overrideValue;
+                }
+            }
+
+            const memberCount = (account.users || []).filter(u => u.role === slug).length;
+
+            return {
+                slug,
+                name: override?.name || meta.name,
+                color: override?.color || meta.color,
+                icon: override?.icon || meta.icon,
+                level: ROLE_HIERARCHY[slug],
+                editable: meta.editable,
+                isCustom: false,
+                memberCount,
+                effectivePermissions,
+                overrides,
+            };
+        });
+
+        // Add custom roles
+        const customRoleEntries = customRoles.filter(r => r.isCustom);
+        for (const cr of customRoleEntries) {
+            const crPerms = cr.permissions
+                ? (cr.permissions instanceof Map
+                    ? Object.fromEntries(cr.permissions)
+                    : cr.permissions)
+                : {};
+            const baseSlug = cr.baseRole || 'member';
+
+            const effectivePermissions = {};
+            const overrides = {};
+            for (const perm of Object.keys(PERMISSIONS)) {
+                const baseDefault = PERMISSIONS[perm].includes(baseSlug);
+                const overrideValue = crPerms[perm];
+                effectivePermissions[perm] = overrideValue !== undefined ? overrideValue : baseDefault;
+                if (overrideValue !== undefined && overrideValue !== baseDefault) {
+                    overrides[perm] = overrideValue;
+                }
+            }
+
+            const memberCount = (account.users || []).filter(u => u.role === cr.slug).length;
+
+            roles.push({
+                slug: cr.slug,
+                name: cr.name || cr.slug,
+                color: cr.color || '#4361ee',
+                icon: cr.icon || 'solar:shield-bold-duotone',
+                level: cr.level || ROLE_HIERARCHY[baseSlug] || 40,
+                editable: true,
+                isCustom: true,
+                baseRole: baseSlug,
+                description: cr.description || '',
+                memberCount,
+                effectivePermissions,
+                overrides,
+            });
+        }
+
+        // Sort by level descending
+        roles.sort((a, b) => b.level - a.level);
+
+        res.json({
+            success: true,
+            roles,
+            categories: PERMISSION_CATEGORIES,
+            labels: PERMISSION_LABELS,
+            systemRoles: systemSlugs,
+        });
+    } catch (error) {
+        console.error('[Team API] get roles error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── PUT /api/team/roles/:slug ────────────────────────
+// Update permission overrides for a role
+router.put('/roles/:slug', requirePerm('settings.update'), async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const { permissions } = req.body;
+
+        // Validate role exists and is editable
+        const meta = ROLE_META[slug];
+        if (!meta) {
+            // Check if it's a custom role
+            const account = await Account.findOne({ account_number: req.account_number });
+            if (!account) return res.status(404).json({ error: 'Account not found' });
+            const customRole = (account.customRoles || []).find(r => r.slug === slug && r.isCustom);
+            if (!customRole) return res.status(404).json({ error: 'Rôle non trouvé' });
+            // Update custom role permissions directly (store all)
+            customRole.permissions = permissions;
+            customRole.updatedAt = new Date();
+            account.markModified('customRoles');
+            await account.save();
+            return res.json({ success: true, overrideCount: Object.keys(permissions).length, message: `Permissions mises à jour pour ${customRole.name}` });
+        }
+        if (!meta.editable) return res.status(403).json({ error: 'Ce rôle ne peut pas être modifié' });
+        if (!permissions || typeof permissions !== 'object') {
+            return res.status(400).json({ error: 'permissions object required' });
+        }
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        // Compute sparse overrides (only store diffs from defaults)
+        const sparseOverrides = {};
+        for (const [perm, value] of Object.entries(permissions)) {
+            if (!PERMISSIONS[perm]) continue;
+            const defaultValue = PERMISSIONS[perm].includes(slug);
+            if (value !== defaultValue) {
+                sparseOverrides[perm] = value;
+            }
+        }
+
+        // Find or create the customRole entry
+        if (!account.customRoles) account.customRoles = [];
+        let roleEntry = account.customRoles.find(r => r.slug === slug);
+
+        if (Object.keys(sparseOverrides).length === 0) {
+            if (roleEntry) {
+                account.customRoles = account.customRoles.filter(r => r.slug !== slug);
+            }
+        } else {
+            if (!roleEntry) {
+                account.customRoles.push({
+                    slug,
+                    name: meta.name,
+                    permissions: sparseOverrides,
+                    updatedAt: new Date(),
+                });
+            } else {
+                roleEntry.permissions = sparseOverrides;
+                roleEntry.updatedAt = new Date();
+            }
+        }
+
+        account.markModified('customRoles');
+        await account.save();
+
+        res.json({
+            success: true,
+            overrideCount: Object.keys(sparseOverrides).length,
+            message: Object.keys(sparseOverrides).length > 0
+                ? `${Object.keys(sparseOverrides).length} permission(s) personnalisée(s) pour ${meta.name}`
+                : `Permissions par défaut restaurées pour ${meta.name}`,
+        });
+    } catch (error) {
+        console.error('[Team API] update role error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── POST /api/team/roles ─────────────────────────────
+// Create a new custom role
+router.post('/roles', requirePerm('settings.update'), async (req, res) => {
+    try {
+        const { name, baseRole, color, icon, description } = req.body;
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Le nom du rôle est requis' });
+        }
+
+        // Generate slug from name
+        const slug = name.trim().toLowerCase()
+            .replace(/[àáâã]/g, 'a').replace(/[éèêë]/g, 'e')
+            .replace(/[ïî]/g, 'i').replace(/[ôö]/g, 'o').replace(/[ùûü]/g, 'u')
+            .replace(/[ç]/g, 'c').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+        // Validate slug uniqueness
+        const systemSlugs = ['owner', 'admin', 'manager', 'member', 'external', 'guest'];
+        if (systemSlugs.includes(slug)) {
+            return res.status(400).json({ error: 'Ce nom est réservé à un rôle système' });
+        }
+
+        const validBase = baseRole && ['manager', 'member', 'external', 'guest'].includes(baseRole)
+            ? baseRole : 'member';
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        if (!account.customRoles) account.customRoles = [];
+
+        // Check duplicate
+        if (account.customRoles.some(r => r.slug === slug)) {
+            return res.status(400).json({ error: 'Un rôle avec ce nom existe déjà' });
+        }
+
+        // Determine level: same as base role
+        const level = ROLE_HIERARCHY[validBase] || 40;
+
+        // Build initial permissions from base role defaults
+        const permissions = {};
+        for (const perm of Object.keys(PERMISSIONS)) {
+            permissions[perm] = PERMISSIONS[perm].includes(validBase);
+        }
+
+        const roleColors = ['#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#ef4444'];
+        const randomColor = color || roleColors[account.customRoles.length % roleColors.length];
+
+        account.customRoles.push({
+            slug,
+            name: name.trim(),
+            description: description || '',
+            color: randomColor,
+            icon: icon || 'solar:shield-bold-duotone',
+            isCustom: true,
+            baseRole: validBase,
+            level,
+            permissions,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        account.markModified('customRoles');
+        await account.save();
+
+        res.json({
+            success: true,
+            slug,
+            message: `Rôle "${name.trim()}" créé avec succès`,
+        });
+    } catch (error) {
+        console.error('[Team API] create role error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── DELETE /api/team/roles/:slug ──────────────────────
+// Delete a custom role (reassign members to baseRole)
+router.delete('/roles/:slug', requirePerm('settings.update'), async (req, res) => {
+    try {
+        const { slug } = req.params;
+
+        // Prevent deleting system roles
+        const systemSlugs = ['owner', 'admin', 'manager', 'member', 'external', 'guest'];
+        if (systemSlugs.includes(slug)) {
+            return res.status(403).json({ error: 'Impossible de supprimer un rôle système' });
+        }
+
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const roleEntry = (account.customRoles || []).find(r => r.slug === slug && r.isCustom);
+        if (!roleEntry) {
+            return res.status(404).json({ error: 'Rôle non trouvé' });
+        }
+
+        const fallbackRole = roleEntry.baseRole || 'member';
+
+        // Reassign members with this role to the base role
+        let reassigned = 0;
+        for (const user of account.users) {
+            if (user.role === slug) {
+                user.role = fallbackRole;
+                reassigned++;
+            }
+        }
+
+        // Remove the custom role
+        account.customRoles = account.customRoles.filter(r => r.slug !== slug);
+
+        await account.save();
+
+        res.json({
+            success: true,
+            reassigned,
+            fallbackRole,
+            message: `Rôle supprimé. ${reassigned} membre(s) réassigné(s) en "${fallbackRole}".`,
+        });
+    } catch (error) {
+        console.error('[Team API] delete role error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

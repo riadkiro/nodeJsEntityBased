@@ -276,8 +276,9 @@ router.get('/new', async (req, res) => {
         document: documentData,
         isNew: true,
         isTemplateMode: isTemplateMode,
+        isFocusMode: true,
         account_number: req.account_number,
-        layout: isTemplateMode ? false : 'layout-app'
+        layout: false
     });
 });
 
@@ -299,8 +300,9 @@ router.get('/:id/edit', async (req, res) => {
             title: `Éditer - ${document.name}`,
             document,
             isNew: false,
+            isFocusMode: true,
             account_number: req.account_number,
-            layout: 'layout-app'
+            layout: false
         });
     } catch (error) {
         console.error('[Documents] Error loading document:', error);
@@ -343,9 +345,10 @@ router.get('/:id/edit-react', async (req, res) => {
             isNew: false,
             isMinimal: isMinimal,
             isTemplateMode: isTemplateMode,
+            isFocusMode: true,
             contextFreeBindings: contextFreeBindings,
             account_number: req.account_number,
-            layout: (isMinimal || isTemplateMode) ? false : 'layout-app'
+            layout: false
         });
     } catch (error) {
         console.error('[Documents] Error loading document (React):', error);

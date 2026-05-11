@@ -27,6 +27,14 @@
             </button>
             <% } %>
             <% if (isAdmin) { %>
+            <button @click="activeTab = 'billing'"
+                class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
+                :class="activeTab === 'billing' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+                <iconify-icon icon="solar:card-bold-duotone" width="18"></iconify-icon>
+                Facturation
+            </button>
+            <% } %>
+            <% if (isAdmin) { %>
             <button @click="activeTab = 'advanced'"
                 class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
                 :class="activeTab === 'advanced' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
@@ -195,8 +203,12 @@
                                         </span>
                                     <% } else if (m.workspaceRole === 'admin') { %>
                                         <span class="badge bg-info-light text-info">Admin</span>
-                                    <% } else if (m.workspaceRole === 'viewer') { %>
-                                        <span class="badge bg-dark-light text-dark">Lecteur</span>
+                                    <% } else if (m.workspaceRole === 'manager') { %>
+                                        <span class="badge bg-warning-light text-warning">Manager</span>
+                                    <% } else if (m.workspaceRole === 'external') { %>
+                                        <span class="badge bg-secondary-light text-secondary">Externe</span>
+                                    <% } else if (m.workspaceRole === 'guest') { %>
+                                        <span class="badge bg-dark-light text-dark">Invité</span>
                                     <% } else { %>
                                         <span class="badge bg-primary-light text-primary">Membre</span>
                                     <% } %>
@@ -221,7 +233,10 @@
                                             <%/* Owner can do everything */%>
                                             <select onchange="changeMemberRole('<%= m._id %>', this.value)" class="form-select form-select-sm w-auto text-xs">
                                                 <option value="admin" <%= m.workspaceRole === 'admin' ? 'selected' : '' %>>Admin</option>
+                                                <option value="manager" <%= m.workspaceRole === 'manager' ? 'selected' : '' %>>Manager</option>
                                                 <option value="member" <%= m.workspaceRole === 'member' ? 'selected' : '' %>>Membre</option>
+                                                <option value="external" <%= m.workspaceRole === 'external' ? 'selected' : '' %>>Externe</option>
+                                                <option value="guest" <%= m.workspaceRole === 'guest' ? 'selected' : '' %>>Invité</option>
                                             </select>
                                             <button onclick="removeMember('<%= m._id %>', '<%= (m.name || m.email).replace(/'/g, "\\'") %>')" class="btn btn-sm btn-outline-danger !p-1.5" title="Retirer">
                                                 <iconify-icon icon="solar:user-minus-bold" width="16"></iconify-icon>
@@ -268,12 +283,147 @@
                                 </div>
                             </div>
                         </div>
-                        <button onclick="cancelInvite('<%= inv._id %>')" class="btn btn-sm btn-outline-danger">Annuler</button>
+                        <button onclick="cancelInvite('<%= inv.email %>')" class="btn btn-sm btn-outline-danger">Annuler</button>
                     </div>
                     <% }); %>
                 </div>
             </div>
             <% } %>
+        </div>
+        <% } %>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB: Facturation & Plan -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <% if (isAdmin) { %>
+        <div x-show="activeTab === 'billing'" x-transition x-data="billingTab()" x-init="init()">
+            <!-- Loading -->
+            <template x-if="loading">
+                <div class="text-center py-12">
+                    <iconify-icon icon="solar:refresh-bold-duotone" width="32" class="text-primary animate-spin"></iconify-icon>
+                    <p class="text-sm text-gray-500 mt-2">Chargement...</p>
+                </div>
+            </template>
+
+            <template x-if="!loading">
+                <div>
+                    <!-- Current Plan Card -->
+                    <div class="panel mb-6">
+                        <div class="flex items-center justify-between mb-5">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 rounded-xl" :style="'background:' + (planColor || '#4361ee') + '15'">
+                                    <iconify-icon icon="solar:crown-bold-duotone" width="28" :style="'color:' + (planColor || '#4361ee')"></iconify-icon>
+                                </div>
+                                <div>
+                                    <h5 class="text-lg font-bold dark:text-white-light" x-text="'Plan ' + planName"></h5>
+                                    <p class="text-sm text-gray-500" x-text="planDescription"></p>
+                                </div>
+                            </div>
+                            <template x-if="planSlug !== 'enterprise'">
+                                <span class="badge px-3 py-1.5 text-xs font-bold" :class="subStatus === 'active' ? 'bg-success-light text-success' : subStatus === 'trialing' ? 'bg-info-light text-info' : 'bg-warning-light text-warning'" x-text="subStatus === 'active' ? 'Actif' : subStatus === 'trialing' ? 'Essai' : subStatus"></span>
+                            </template>
+                        </div>
+
+                        <!-- Usage Bars -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <template x-for="bar in usageBars" :key="bar.key">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                                            <iconify-icon :icon="bar.icon" width="14"></iconify-icon>
+                                            <span x-text="bar.label"></span>
+                                        </span>
+                                        <span class="text-xs font-bold" :class="bar.pct >= 90 ? 'text-danger' : bar.pct >= 70 ? 'text-warning' : 'text-gray-500'" x-text="bar.limit === -1 ? bar.current + ' / ∞' : bar.current + ' / ' + bar.limit"></span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 dark:bg-[#1b2e4b] rounded-full h-2">
+                                        <div class="h-2 rounded-full transition-all" :class="bar.pct >= 90 ? 'bg-danger' : bar.pct >= 70 ? 'bg-warning' : 'bg-primary'" :style="'width:' + Math.min(bar.pct, 100) + '%'"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Plan Comparison Grid -->
+                    <div class="panel mb-6">
+                        <h6 class="font-bold text-base mb-4 dark:text-white-light flex items-center gap-2">
+                            <iconify-icon icon="solar:chart-2-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                            Changer de plan
+                        </h6>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <template x-for="plan in availablePlans" :key="plan.slug">
+                                <div class="border rounded-xl p-5 transition-all relative"
+                                    :class="plan.slug === planSlug ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-gray-200 dark:border-[#1b2e4b] hover:border-primary/40'"
+                                >
+                                    <template x-if="plan.badge">
+                                        <span class="absolute -top-2.5 right-3 px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary text-white" x-text="plan.badge"></span>
+                                    </template>
+                                    <div class="mb-3">
+                                        <h6 class="font-bold text-lg dark:text-white-light" x-text="plan.name"></h6>
+                                        <p class="text-xs text-gray-500 mt-1" x-text="plan.description"></p>
+                                    </div>
+                                    <div class="mb-4">
+                                        <span class="text-2xl font-bold dark:text-white-light" x-text="plan.price.monthly + '€'"></span>
+                                        <span class="text-xs text-gray-500">/utilisateur/mois</span>
+                                    </div>
+                                    <ul class="text-xs text-gray-600 dark:text-gray-400 space-y-1.5 mb-4">
+                                        <li class="flex items-center gap-1.5">
+                                            <iconify-icon icon="solar:check-circle-bold" width="13" class="text-success"></iconify-icon>
+                                            <span x-text="plan.limits.users === -1 ? 'Utilisateurs illimités' : plan.limits.users + ' utilisateur(s)'"></span>
+                                        </li>
+                                        <li class="flex items-center gap-1.5">
+                                            <iconify-icon icon="solar:check-circle-bold" width="13" class="text-success"></iconify-icon>
+                                            <span x-text="plan.limits.entities === -1 ? 'Entités illimitées' : plan.limits.entities + ' entités'"></span>
+                                        </li>
+                                        <li class="flex items-center gap-1.5">
+                                            <iconify-icon icon="solar:check-circle-bold" width="13" class="text-success"></iconify-icon>
+                                            <span x-text="plan.limits.records === -1 ? 'Records illimités' : plan.limits.records + ' records'"></span>
+                                        </li>
+                                        <li class="flex items-center gap-1.5">
+                                            <iconify-icon icon="solar:check-circle-bold" width="13" class="text-success"></iconify-icon>
+                                            <span x-text="plan.limits.storageMB === -1 ? 'Stockage illimité' : (plan.limits.storageMB >= 1024 ? (plan.limits.storageMB / 1024) + ' GB' : plan.limits.storageMB + ' MB') + ' stockage'"></span>
+                                        </li>
+                                    </ul>
+                                    <button
+                                        :disabled="plan.slug === planSlug || changingPlan"
+                                        @click="changePlan(plan.slug)"
+                                        class="btn w-full text-xs font-bold"
+                                        :class="plan.slug === planSlug ? 'btn-primary opacity-50 cursor-default' : 'btn-outline-primary hover:btn-primary'"
+                                        x-text="plan.slug === planSlug ? 'Plan actuel' : 'Passer à ' + plan.name"
+                                    ></button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Active Addons -->
+                    <template x-if="activeAddons.length > 0">
+                        <div class="panel">
+                            <h6 class="font-bold text-base mb-4 dark:text-white-light flex items-center gap-2">
+                                <iconify-icon icon="solar:widget-add-bold-duotone" width="18" class="text-info"></iconify-icon>
+                                Addons actifs
+                            </h6>
+                            <div class="space-y-3">
+                                <template x-for="addon in activeAddons" :key="addon.addonSlug">
+                                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-[#1b2e4b]">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 rounded-lg bg-info/10 flex items-center justify-center">
+                                                <iconify-icon :icon="addon.icon || 'solar:widget-bold-duotone'" width="18" class="text-info"></iconify-icon>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-semibold dark:text-white-light" x-text="addon.name"></div>
+                                                <div class="text-xs text-gray-400" x-text="'Activé le ' + new Date(addon.activatedAt).toLocaleDateString('fr-FR')"></div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" @click="removeAddon(addon.addonSlug)">
+                                            <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
         </div>
         <% } %>
 
@@ -378,9 +528,12 @@
             <label class="block text-sm font-semibold mb-2">Rôle</label>
             <select name="role" class="form-select">
                 <option value="member">Membre</option>
+                <option value="manager">Manager</option>
                 <% if (isOwner) { %>
                 <option value="admin">Admin</option>
                 <% } %>
+                <option value="external">Externe</option>
+                <option value="guest">Invité</option>
             </select>
         </div>
     </form>
@@ -453,33 +606,34 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-// Member management API calls
+// ── Member management API calls (using Team API) ──
 const accountNumber = '<%= account_number %>';
+const teamApiBase = `/account/${accountNumber}/api/team`;
 
-async function apiCall(endpoint, body) {
-    const res = await fetch(`/account/${accountNumber}/admin/api/${endpoint}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify(body)
+async function teamApiCall(path, body, method = 'POST') {
+    const res = await fetch(`${teamApiBase}${path}`, {
+        method, headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', body: body ? JSON.stringify(body) : undefined
     });
     return res.json();
 }
 
-async function changeMemberRole(userId, role) {
-    const data = await apiCall('members/role', { userId, role });
+async function changeMemberRole(userId, newRole) {
+    const data = await teamApiCall('/update-role', { userId, newRole });
     if (data.success) location.reload();
     else alert(data.error || 'Erreur');
 }
 
 async function removeMember(userId, name) {
     if (!confirm(`Retirer ${name} du workspace ?`)) return;
-    const data = await apiCall('members/remove', { userId });
+    const data = await teamApiCall('/remove-member', { userId });
     if (data.success) location.reload();
     else alert(data.error || 'Erreur');
 }
 
-async function cancelInvite(inviteId) {
+async function cancelInvite(email) {
     if (!confirm('Annuler cette invitation ?')) return;
-    const data = await apiCall('invites/cancel', { inviteId });
+    const data = await teamApiCall('/cancel-invite', { email });
     if (data.success) location.reload();
     else alert(data.error || 'Erreur');
 }
@@ -490,9 +644,9 @@ async function inviteMember() {
     const btn = document.getElementById('inviteBtn');
     btn.disabled = true;
     try {
-        const data = await apiCall('members/invite', Object.fromEntries(fd));
+        const data = await teamApiCall('/invite', Object.fromEntries(fd));
         if (data.success) {
-            alert('Invitation envoyée !');
+            alert(data.message || 'Invitation envoyée !');
             location.reload();
         } else {
             alert(data.error || 'Erreur');
@@ -500,4 +654,103 @@ async function inviteMember() {
         }
     } catch (e) { alert('Erreur'); btn.disabled = false; }
 }
+
+// ── Billing Tab Alpine Component ──
+document.addEventListener('alpine:init', () => {
+    Alpine.data('billingTab', () => ({
+        loading: true,
+        planSlug: 'free',
+        planName: 'Free',
+        planDescription: '',
+        planColor: '#6b7280',
+        subStatus: 'active',
+        changingPlan: false,
+        availablePlans: [],
+        activeAddons: [],
+        usageBars: [],
+
+        async init() {
+            await Promise.all([this.fetchSubscription(), this.fetchPlans()]);
+            this.loading = false;
+        },
+
+        async fetchSubscription() {
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/billing/subscription`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    const sub = data.subscription;
+                    this.planSlug = sub.planSlug || 'free';
+                    this.planName = sub.plan?.name || 'Free';
+                    this.planDescription = sub.plan?.description || '';
+                    this.planColor = sub.plan?.color || '#6b7280';
+                    this.subStatus = sub.status || 'active';
+                    this.activeAddons = (sub.addons || []).map(a => ({
+                        addonSlug: a.addonSlug,
+                        name: a.addonSlug,
+                        icon: 'solar:widget-bold-duotone',
+                        activatedAt: a.activatedAt
+                    }));
+
+                    // Build usage bars
+                    const limits = sub.effectiveLimits || sub.plan?.limits || {};
+                    const usage = data.usage || {};
+                    const bars = [
+                        { key: 'users', label: 'Utilisateurs', icon: 'solar:users-group-rounded-bold-duotone', current: usage.activeUsers || 0, limit: limits.users ?? 0 },
+                        { key: 'entities', label: 'Entités', icon: 'solar:folder-bold-duotone', current: usage.entities || 0, limit: limits.entities ?? 0 },
+                        { key: 'records', label: 'Records', icon: 'solar:document-text-bold-duotone', current: usage.records || 0, limit: limits.records ?? 0 },
+                        { key: 'storage', label: 'Stockage', icon: 'solar:cloud-storage-bold-duotone', current: usage.storageMB || 0, limit: limits.storageMB ?? 0 },
+                        { key: 'ai', label: 'Crédits IA', icon: 'solar:magic-stick-3-bold-duotone', current: usage.aiCreditsUsed || 0, limit: limits.aiCreditsPerMonth ?? 0 },
+                        { key: 'automations', label: 'Automations', icon: 'solar:bolt-circle-bold-duotone', current: usage.automationsRun || 0, limit: limits.automationsPerMonth ?? 0 },
+                    ];
+                    this.usageBars = bars.map(b => ({
+                        ...b,
+                        pct: b.limit === -1 ? 0 : (b.limit > 0 ? Math.round((b.current / b.limit) * 100) : 0)
+                    }));
+                }
+            } catch (e) { console.error('[Billing] fetch error:', e); }
+        },
+
+        async fetchPlans() {
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/billing/plans`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) this.availablePlans = data.plans;
+            } catch (e) { console.error('[Billing] plans error:', e); }
+        },
+
+        async changePlan(slug) {
+            if (slug === this.planSlug || this.changingPlan) return;
+            if (!confirm(`Changer vers le plan ${slug} ?`)) return;
+            this.changingPlan = true;
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/billing/change-plan`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify({ planSlug: slug })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await this.fetchSubscription();
+                    if (window.showMessage) window.showMessage(data.message || 'Plan changé');
+                } else {
+                    alert(data.error || 'Erreur');
+                }
+            } catch (e) { alert('Erreur'); }
+            this.changingPlan = false;
+        },
+
+        async removeAddon(slug) {
+            if (!confirm('Retirer cet addon ?')) return;
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/billing/remove-addon`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify({ addonSlug: slug })
+                });
+                const data = await res.json();
+                if (data.success) await this.fetchSubscription();
+                else alert(data.error || 'Erreur');
+            } catch (e) { alert('Erreur'); }
+        }
+    }));
+});
 </script>

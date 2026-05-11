@@ -4,7 +4,7 @@
     Supports minimal mode (isMinimal: true) for iframe embedding
 -->
 
-<% if (locals.isMinimal || locals.isTemplateMode) { %>
+<% if (locals.isMinimal || locals.isTemplateMode || locals.isFocusMode) { %>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -133,14 +133,14 @@
     <% if (locals.isTemplateMode) { %>
     data-is-template-mode="true"
     <% } %>
-    class="<%= (locals.isMinimal || locals.isTemplateMode) ? 'h-screen' : '' %>"
-    style="<%= (locals.isMinimal || locals.isTemplateMode) ? '' : 'height:100%;overflow:hidden;' %>"
+    class="<%= (locals.isMinimal || locals.isTemplateMode || locals.isFocusMode) ? 'h-screen' : '' %>"
+    style="<%= (locals.isMinimal || locals.isTemplateMode || locals.isFocusMode) ? '' : 'height:100%;overflow:hidden;' %>"
 ></div>
 
 <!-- React Island Script -->
 <script type="module" src="/dist/documentEditor.js"></script>
 
-<% if (locals.isMinimal || locals.isTemplateMode) { %>
+<% if (locals.isMinimal || locals.isTemplateMode || locals.isFocusMode) { %>
 </body>
 </html>
 <% } %>

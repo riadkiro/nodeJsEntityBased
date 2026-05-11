@@ -39,6 +39,8 @@ router.use("/api", require("./api/api-drive.router.js"));
 
 router.use("/api/team", require("./api/api-team.router.js"));
 router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
+router.use("/api/record-access", require("./api/api-record-access.router.js"));
+router.use("/api/billing", require("./api/api-billing.router.js"));
 
 // Notes Hub API — must be before api-account (has /:id catch-all)
 router.use("/api/notes-hub", require("./api/api-notes-hub.router.js"));
@@ -506,8 +508,25 @@ router.get("/team", (req, res) => {
 });
 
 // Permissions & Roles Page
+const { requirePerm: requirePermRoute } = require('../middleware/permissions');
 router.get("/permissions", (req, res) => {
+    // Guard: only admin/owner can access (actual API is already guarded, but page should be too)
+    if (!req.can || !req.can('members.changeRole')) {
+        return res.redirect(`/account/${req.account_number}/dashboard`);
+    }
     res.render("account/account-permissions", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Roles Configuration Page
+router.get("/roles", (req, res) => {
+    if (!req.can || !req.can('settings.view')) {
+        return res.redirect(`/account/${req.account_number}/dashboard`);
+    }
+    res.render("account/account-roles", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number

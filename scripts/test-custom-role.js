@@ -1,27 +1,23 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-async function check() {
+async function resetPasswords() {
     const conn = mongoose.createConnection('mongodb://127.0.0.1:27017/saasDemo?directConnection=true');
     await new Promise(r => conn.once('open', r));
     
-    // List all accounts
-    const accounts = await conn.db.collection('accounts').find({}, { projection: { account_number: 1, name: 1 } }).toArray();
-    console.log('All accounts:');
-    for (const a of accounts) {
-        console.log(`  ${a.account_number} (${typeof a.account_number}) - ${a.name}`);
-    }
+    const hashedPwd = await bcrypt.hash('test', 10);
     
-    // Try to find 9194 with string
-    const acc = await conn.db.collection('accounts').findOne({ account_number: "9194" });
-    if (acc) {
-        console.log('\nFound account 9194 (as string):');
-        console.log('Users:');
-        for (const u of acc.users || []) {
-            console.log(`  userId=${u.userId}, email=${u.email}, role=${u.role}, status='${u.status}'`);
-        }
+    const emails = ['sophie.martin@actirama.com', 'marc.dubois@actirama.com', 'julie.moreau@actirama.com'];
+    
+    for (const email of emails) {
+        const result = await conn.db.collection('users').updateOne(
+            { email },
+            { $set: { password: hashedPwd } }
+        );
+        console.log(`${email}: ${result.modifiedCount ? 'password reset to "test"' : 'not modified (already set or not found)'}`);
     }
     
     await conn.close();
 }
 
-check().catch(e => { console.error(e); process.exit(1); });
+resetPasswords().catch(e => { console.error(e); process.exit(1); });

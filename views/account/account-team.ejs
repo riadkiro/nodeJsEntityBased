@@ -11,15 +11,19 @@
       <p x-text="accountName ? 'Gérez les membres de ' + accountName : 'Chargement...'"></p>
     </div>
     <div style="display:flex;gap:10px;z-index:1;">
+      <% if (isAdmin) { %>
       <a href="/account/<%= account_number %>/roles" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid #7c3aed40;border-radius:10px;font-size:12px;font-weight:600;color:#7c3aed;text-decoration:none;transition:all .15s;background:transparent;" onmouseover="this.style.background='#7c3aed08';this.style.borderColor='#7c3aed'" onmouseout="this.style.background='transparent';this.style.borderColor='#7c3aed40'">
         <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="16"></iconify-icon> Rôles
       </a>
+      <% } %>
       <a href="/account/<%= account_number %>/chat" class="ts-btn-primary" style="background:linear-gradient(135deg,#f97316,#ea580c);">
         <iconify-icon icon="solar:chat-round-dots-bold" width="16"></iconify-icon> Team Chat
       </a>
+      <% if (isAdmin) { %>
       <button class="ts-btn-primary" @click="showInviteModal = true">
         <iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon> Inviter
       </button>
+      <% } %>
     </div>
   </div>
 
@@ -62,9 +66,11 @@
             Teams
             <span class="ts-teams-section-count" x-text="teams.length + ' groupe(s)'"></span>
           </div>
+          <% if (isAdmin) { %>
           <button @click="openTeamModal()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px dashed #7c3aed40;background:transparent;color:#7c3aed;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;" onmouseover="this.style.background='#7c3aed08';this.style.borderColor='#7c3aed'" onmouseout="this.style.background='transparent';this.style.borderColor='#7c3aed40'">
             <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon> Nouvelle team
           </button>
+          <% } %>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
           <template x-for="team in teams" :key="team._id">
@@ -77,9 +83,11 @@
                   <div style="font-size:13px;font-weight:700;color:#0e1726;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="dark:!text-[#e0e6ed]" x-text="team.name"></div>
                   <div style="font-size:11px;color:#94a3b8;" x-text="(team.memberIds || []).length + ' membre(s)'"></div>
                 </div>
+                <% if (isAdmin) { %>
                 <button @click.stop="openTeamModal(team)" style="border:none;background:transparent;cursor:pointer;padding:4px;border-radius:6px;color:#94a3b8;transition:all .15s;" onmouseover="this.style.color='#7c3aed';this.style.background='#7c3aed08'" onmouseout="this.style.color='#94a3b8';this.style.background='transparent'">
                   <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
                 </button>
+                <% } %>
               </div>
               <div style="display:flex;">
                 <template x-for="(mid, idx) in (team.memberIds || []).slice(0, 5)" :key="mid">
@@ -195,6 +203,7 @@
               </template>
               <!-- Actions -->
               <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;">
+                <% if (isAdmin) { %>
                 <a :href="'/account/<%= account_number %>/permissions?user=' + member._id" style="padding:4px 10px;border:1px solid #e0e6ed;background:#fff;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;white-space:nowrap;transition:all .15s;text-decoration:none;" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'" x-show="member.role !== 'owner'">
                   <iconify-icon icon="solar:lock-keyhole-bold" width="12"></iconify-icon> Accès
                 </a>
@@ -227,6 +236,7 @@
                     </template>
                   </div>
                 </div>
+                <% } %>
               </div>
             </div>
           </template>

@@ -500,10 +500,14 @@ router.get("/calendar-widgets", (req, res) => {
 
 // Team Page
 router.get("/team", (req, res) => {
+    const userRole = req.workspaceRole || 'member';
+    const isAdmin = userRole === 'owner' || userRole === 'admin';
     res.render("account/account-team", {
         layout: "layout-app",
         user: req.user,
-        account_number: req.account_number
+        account_number: req.account_number,
+        userRole,
+        isAdmin,
     });
 });
 

@@ -9,7 +9,7 @@
     </div>
     <div class="ts-page-header-info">
       <h1>Permissions & Accès</h1>
-      <p>Configurez les droits d'accès CRUD pour chaque membre par entité</p>
+      <p>Configurez les droits d'accès pour chaque membre</p>
     </div>
     <a href="/account/<%= account_number %>/team" style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:8px 18px;border:1px solid #e0e6ed;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;text-decoration:none;transition:all .15s;" class="dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
       <iconify-icon icon="solar:arrow-left-linear" width="14"></iconify-icon>
@@ -32,7 +32,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <template x-for="m in editableMembers" :key="m._id">
             <button @click="selectMember(m)" :style="'display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;border:1.5px solid ' + (selectedMember?._id === m._id ? '#4361ee' : '#e0e6ed') + ';background:' + (selectedMember?._id === m._id ? 'rgba(67,97,238,.04)' : '#fff') + ';cursor:pointer;transition:all .15s;font-family:inherit;'" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]">
-              <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(m.name)">
+              <div :style="'width:28px;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(m.name)">
                 <span x-text="m.name.charAt(0).toUpperCase()"></span>
               </div>
               <div style="text-align:left;">
@@ -50,7 +50,7 @@
           <!-- Selected Member Header -->
           <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div :style="'width:36px;min-width:36px;max-width:36px;height:36px;min-height:36px;max-height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(selectedMember.name)">
+              <div :style="'width:36px;min-width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(selectedMember.name)">
                 <span x-text="selectedMember.name.charAt(0).toUpperCase()"></span>
               </div>
               <div>
@@ -59,132 +59,128 @@
               </div>
               <span :style="'display:inline-flex;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:' + roleColor(selectedMember.role) + '15;color:' + roleColor(selectedMember.role)" x-text="selectedMember.role"></span>
             </div>
-            <div style="display:flex;gap:6px;">
-              <button @click="setAllPermissions(true)" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
-                <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
-                Accès complet
-              </button>
-              <button @click="setReadOnly()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#3b82f6';this.style.color='#3b82f6'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
-                <iconify-icon icon="solar:eye-bold" width="13"></iconify-icon>
-                Lecture seule
-              </button>
-              <button @click="clearAllPermissions()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1px solid #e0e6ed;border-radius:8px;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c] dark:!text-[#94a3b8]" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='#e0e6ed';this.style.color='#64748b'">
-                <iconify-icon icon="solar:close-circle-bold" width="13"></iconify-icon>
-                Aucun accès
-              </button>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <!-- Save Status -->
+              <template x-if="saveStatus === 'saving'">
+                <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;">
+                  <div class="animate-spin" style="width:14px;height:14px;border:2px solid #e0e6ed;border-top-color:#4361ee;border-radius:50%;"></div>
+                </span>
+              </template>
+              <template x-if="saveStatus === 'saved'">
+                <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#22c55e;font-weight:600;">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  Enregistré
+                </span>
+              </template>
             </div>
           </div>
 
-          <!-- Info Banner -->
-          <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(67,97,238,.04);border:1px solid rgba(67,97,238,.12);border-radius:10px;margin-bottom:16px;" class="dark:!bg-[rgba(67,97,238,.08)] dark:!border-[rgba(67,97,238,.2)]">
-            <iconify-icon icon="solar:info-circle-bold" width="16" style="color:#4361ee;flex-shrink:0;"></iconify-icon>
-            <span style="font-size:12px;color:#4361ee;font-weight:500;">Aucune entité configurée = accès complet à toutes les entités. Cochez uniquement les entités auxquelles ce membre doit avoir accès.</span>
+          <!-- ═══ ACCORDION 1: Modules Système ═══ -->
+          <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;margin-bottom:12px;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+            <button @click="openModules = !openModules" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border:none;background:none;cursor:pointer;font-family:inherit;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <iconify-icon icon="solar:widget-bold-duotone" width="18" style="color:#7c3aed;"></iconify-icon>
+                <span style="font-size:14px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.03em;" class="dark:!text-[#e0e6ed]">Modules Système</span>
+                <span style="font-size:10px;font-weight:600;color:#94a3b8;padding:2px 8px;border-radius:6px;background:#f1f5f9;" x-text="systemModules.length + ' modules'"></span>
+              </div>
+              <iconify-icon :icon="openModules ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="16" style="color:#94a3b8;"></iconify-icon>
+            </button>
+            <div x-show="openModules" x-transition.duration.200ms style="border-top:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
+              <template x-for="mod in systemModules" :key="mod.key">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #f8fafc;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <div :style="'width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:' + mod.color + '12'">
+                      <iconify-icon :icon="mod.icon" width="16" :style="'color:' + mod.color"></iconify-icon>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:600;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="mod.label"></div>
+                      <div style="font-size:10px;color:#94a3b8;" x-text="mod.desc"></div>
+                    </div>
+                  </div>
+                  <label style="display:inline-flex;cursor:pointer;position:relative;">
+                    <input type="checkbox" :checked="getModuleAccess(mod.key)" @change="toggleModule(mod.key)" style="display:none;" />
+                    <div :style="'width:38px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getModuleAccess(mod.key) ? 'background:' + mod.color : 'background:#e0e6ed')">
+                      <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getModuleAccess(mod.key) ? 'left:20px' : 'left:2px')"></div>
+                    </div>
+                  </label>
+                </div>
+              </template>
+            </div>
           </div>
 
-          <!-- Entity CRUD Matrix Table -->
+          <!-- ═══ ACCORDION 2: Entités ═══ -->
           <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
-            <table style="width:100%;border-collapse:collapse;">
-              <thead>
-                <tr style="border-bottom:1px solid #e0e6ed;" class="dark:!border-[#253b5c]">
-                  <th style="text-align:left;padding:14px 18px;font-size:12px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.04em;" class="dark:!text-[#e0e6ed]">Entité</th>
-                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                      <iconify-icon icon="solar:eye-bold" width="15" style="color:#3b82f6;"></iconify-icon>
-                      Voir
-                    </div>
-                  </th>
-                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                      <iconify-icon icon="solar:add-square-bold" width="15" style="color:#22c55e;"></iconify-icon>
-                      Créer
-                    </div>
-                  </th>
-                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                      <iconify-icon icon="solar:pen-bold" width="15" style="color:#f59e0b;"></iconify-icon>
-                      Modifier
-                    </div>
-                  </th>
-                  <th style="text-align:center;padding:14px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;width:90px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                      <iconify-icon icon="solar:trash-bin-trash-bold" width="15" style="color:#ef4444;"></iconify-icon>
-                      Supprimer
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="entity in allEntities" :key="entity._id">
-                  <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                    <td style="padding:12px 18px;">
-                      <div style="display:flex;align-items:center;gap:10px;">
-                        <div :style="'width:32px;min-width:32px;max-width:32px;height:32px;min-height:32px;max-height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (entity.color || '#4361ee') + '15'">
-                          <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="16" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
-                        </div>
-                        <div>
-                          <div style="font-size:13px;font-weight:600;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="entity.name"></div>
-                          <div style="font-size:10px;color:#94a3b8;" x-text="entity.slug"></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style="text-align:center;padding:12px;">
-                      <label style="display:inline-flex;cursor:pointer;position:relative;">
-                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'read')" @change="togglePerm(entity._id, 'read')" style="display:none;" />
-                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'read') ? 'background:#3b82f6' : 'background:#e0e6ed')">
-                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'read') ? 'left:18px' : 'left:2px')"></div>
-                        </div>
-                      </label>
-                    </td>
-                    <td style="text-align:center;padding:12px;">
-                      <label style="display:inline-flex;cursor:pointer;position:relative;">
-                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'create')" @change="togglePerm(entity._id, 'create')" style="display:none;" />
-                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'create') ? 'background:#22c55e' : 'background:#e0e6ed')">
-                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'create') ? 'left:18px' : 'left:2px')"></div>
-                        </div>
-                      </label>
-                    </td>
-                    <td style="text-align:center;padding:12px;">
-                      <label style="display:inline-flex;cursor:pointer;position:relative;">
-                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'update')" @change="togglePerm(entity._id, 'update')" style="display:none;" />
-                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'update') ? 'background:#f59e0b' : 'background:#e0e6ed')">
-                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'update') ? 'left:18px' : 'left:2px')"></div>
-                        </div>
-                      </label>
-                    </td>
-                    <td style="text-align:center;padding:12px;">
-                      <label style="display:inline-flex;cursor:pointer;position:relative;">
-                        <input type="checkbox" :checked="getEntityPerm(entity._id, 'delete')" @change="togglePerm(entity._id, 'delete')" style="display:none;" />
-                        <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, 'delete') ? 'background:#ef4444' : 'background:#e0e6ed')">
-                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, 'delete') ? 'left:18px' : 'left:2px')"></div>
-                        </div>
-                      </label>
-                    </td>
+            <button @click="openEntities = !openEntities" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border:none;background:none;cursor:pointer;font-family:inherit;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <iconify-icon icon="solar:folder-with-files-bold-duotone" width="18" style="color:#4361ee;"></iconify-icon>
+                <span style="font-size:14px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.03em;" class="dark:!text-[#e0e6ed]">Entités</span>
+                <span style="font-size:10px;font-weight:600;color:#94a3b8;padding:2px 8px;border-radius:6px;background:#f1f5f9;" x-text="allEntities.length + ' entités'"></span>
+              </div>
+              <iconify-icon :icon="openEntities ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="16" style="color:#94a3b8;"></iconify-icon>
+            </button>
+            <div x-show="openEntities" x-transition.duration.200ms style="border-top:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
+              <!-- Info Banner -->
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 20px;background:rgba(67,97,238,.03);border-bottom:1px solid #f1f5f9;">
+                <iconify-icon icon="solar:info-circle-bold" width="14" style="color:#4361ee;flex-shrink:0;"></iconify-icon>
+                <span style="font-size:11px;color:#4361ee;font-weight:500;">Aucune entité configurée = accès complet. Cochez uniquement les entités auxquelles ce membre doit avoir accès.</span>
+              </div>
+              <!-- Quick Actions -->
+              <div style="display:flex;gap:6px;padding:10px 20px;border-bottom:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
+                <button @click="setAllPermissions(true)" style="display:flex;align-items:center;gap:4px;padding:4px 12px;border:1px solid #e0e6ed;border-radius:6px;font-size:10px;font-weight:600;color:#22c55e;cursor:pointer;background:#fff;font-family:inherit;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]">
+                  <iconify-icon icon="solar:check-circle-bold" width="11"></iconify-icon> Accès complet
+                </button>
+                <button @click="setReadOnly()" style="display:flex;align-items:center;gap:4px;padding:4px 12px;border:1px solid #e0e6ed;border-radius:6px;font-size:10px;font-weight:600;color:#3b82f6;cursor:pointer;background:#fff;font-family:inherit;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]">
+                  <iconify-icon icon="solar:eye-bold" width="11"></iconify-icon> Lecture seule
+                </button>
+                <button @click="clearAllPermissions()" style="display:flex;align-items:center;gap:4px;padding:4px 12px;border:1px solid #e0e6ed;border-radius:6px;font-size:10px;font-weight:600;color:#ef4444;cursor:pointer;background:#fff;font-family:inherit;" class="dark:!bg-[#1b2e4b] dark:!border-[#253b5c]">
+                  <iconify-icon icon="solar:close-circle-bold" width="11"></iconify-icon> Aucun accès
+                </button>
+              </div>
+              <!-- CRUD Table -->
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="border-bottom:1px solid #e0e6ed;" class="dark:!border-[#253b5c]">
+                    <th style="text-align:left;padding:12px 20px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Entité</th>
+                    <th style="text-align:center;padding:12px 8px;width:80px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">
+                      <iconify-icon icon="solar:eye-bold" width="13" style="color:#3b82f6;"></iconify-icon> Voir
+                    </th>
+                    <th style="text-align:center;padding:12px 8px;width:80px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">
+                      <iconify-icon icon="solar:add-square-bold" width="13" style="color:#22c55e;"></iconify-icon> Créer
+                    </th>
+                    <th style="text-align:center;padding:12px 8px;width:80px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">
+                      <iconify-icon icon="solar:pen-bold" width="13" style="color:#f59e0b;"></iconify-icon> Modifier
+                    </th>
+                    <th style="text-align:center;padding:12px 8px;width:80px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">
+                      <iconify-icon icon="solar:trash-bin-trash-bold" width="13" style="color:#ef4444;"></iconify-icon> Supprimer
+                    </th>
                   </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Save Status -->
-          <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:14px;gap:10px;">
-            <template x-if="saveStatus === 'saving'">
-              <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;">
-                <div class="animate-spin" style="width:14px;height:14px;border:2px solid #e0e6ed;border-top-color:#4361ee;border-radius:50%;"></div>
-                Enregistrement...
-              </span>
-            </template>
-            <template x-if="saveStatus === 'saved'">
-              <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#22c55e;font-weight:600;">
-                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                Enregistré
-              </span>
-            </template>
-            <template x-if="saveStatus === 'error'">
-              <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#ef4444;font-weight:600;">
-                <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
-                Erreur
-              </span>
-            </template>
+                </thead>
+                <tbody>
+                  <template x-for="entity in allEntities" :key="entity._id">
+                    <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                      <td style="padding:10px 20px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div :style="'width:30px;min-width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:' + (entity.color || '#4361ee') + '15'">
+                            <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="14" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
+                          </div>
+                          <span style="font-size:12px;font-weight:600;color:#0e1726;" class="dark:!text-[#e0e6ed]" x-text="entity.name"></span>
+                        </div>
+                      </td>
+                      <template x-for="action in ['read','create','update','delete']" :key="action">
+                        <td style="text-align:center;padding:10px 8px;">
+                          <label style="display:inline-flex;cursor:pointer;">
+                            <input type="checkbox" :checked="getEntityPerm(entity._id, action)" @change="togglePerm(entity._id, action)" style="display:none;" />
+                            <div :style="'width:36px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getEntityPerm(entity._id, action) ? 'background:' + {read:'#3b82f6',create:'#22c55e',update:'#f59e0b','delete':'#ef4444'}[action] : 'background:#e0e6ed')">
+                              <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getEntityPerm(entity._id, action) ? 'left:18px' : 'left:2px')"></div>
+                            </div>
+                          </label>
+                        </td>
+                      </template>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </template>
@@ -201,7 +197,7 @@
       <template x-if="editableMembers.length === 0 && !loading">
         <div style="text-align:center;padding:60px 20px;">
           <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="48" style="color:#e0e6ed;"></iconify-icon>
-          <p style="font-size:14px;color:#94a3b8;margin-top:12px;">Aucun membre à configurer. Seuls les membres non-owner peuvent avoir des permissions personnalisées.</p>
+          <p style="font-size:14px;color:#94a3b8;margin-top:12px;">Aucun membre à configurer.</p>
         </div>
       </template>
     </div>
@@ -216,28 +212,38 @@ document.addEventListener('alpine:init', () => {
     members: [],
     allEntities: [],
     selectedMember: null,
-    permMap: {}, // { entityId: { create, read, update, delete } }
-    saveStatus: '', // 'saving' | 'saved' | 'error'
+    permMap: {},
+    moduleMap: {},
+    saveStatus: '',
     saveTimeout: null,
+    openModules: true,
+    openEntities: true,
     apiBase: '/account/<%= account_number %>/api/team',
 
+    systemModules: [
+      { key: 'chat',      label: 'Chat',       desc: 'Messagerie instantanée',    icon: 'solar:chat-round-dots-bold-duotone', color: '#4361ee' },
+      { key: 'tasks',     label: 'Tâches',     desc: 'Gestion des tâches',        icon: 'solar:checklist-minimalistic-bold-duotone', color: '#22c55e' },
+      { key: 'agenda',    label: 'Agenda',      desc: 'Calendrier & événements',  icon: 'solar:calendar-bold-duotone', color: '#f59e0b' },
+      { key: 'documents', label: 'Documents',   desc: 'Éditeur de documents',     icon: 'solar:document-bold-duotone', color: '#7c3aed' },
+      { key: 'drive',     label: 'Drive',       desc: 'Stockage de fichiers',     icon: 'solar:folder-bold-duotone', color: '#06b6d4' },
+      { key: 'notes',     label: 'Notes',       desc: 'Notes & mémos',            icon: 'solar:notebook-bold-duotone', color: '#ec4899' },
+      { key: 'email',     label: 'Email',       desc: 'Messagerie email',         icon: 'solar:letter-bold-duotone', color: '#64748b' },
+      { key: 'automations', label: 'Automations', desc: 'Workflows automatisés', icon: 'solar:magic-stick-bold-duotone', color: '#ef4444' },
+    ],
+
+    get editableMembers() {
+      return this.members.filter(m => m.role !== 'owner');
+    },
+
     async init() {
-      // Check URL param for preselected user
       const params = new URLSearchParams(window.location.search);
       const preselectedUserId = params.get('user');
-
       await Promise.all([this.fetchMembers(), this.fetchEntities()]);
       this.loading = false;
-
-      // Auto-select if user param provided
       if (preselectedUserId) {
         const member = this.editableMembers.find(m => String(m._id) === preselectedUserId);
         if (member) this.selectMember(member);
       }
-    },
-
-    get editableMembers() {
-      return this.members.filter(m => m.role !== 'owner');
     },
 
     async fetchMembers() {
@@ -259,20 +265,34 @@ document.addEventListener('alpine:init', () => {
     selectMember(member) {
       this.selectedMember = member;
       this.saveStatus = '';
-      // Build permMap from member's entityPermissions
+      // Build permMap from entityPermissions
       this.permMap = {};
       (member.entityPermissions || []).forEach(ep => {
         this.permMap[ep.entityId] = {
-          create: ep.create !== false,
-          read: ep.read !== false,
-          update: ep.update !== false,
-          delete: ep.delete !== false,
+          create: ep.create !== false, read: ep.read !== false,
+          update: ep.update !== false, delete: ep.delete !== false,
         };
       });
+      // Build moduleMap from moduleAccess
+      this.moduleMap = {};
+      const ma = member.moduleAccess || {};
+      for (const mod of this.systemModules) {
+        // null = inherit (default true), true = enabled, false = disabled
+        this.moduleMap[mod.key] = ma[mod.key] !== false;
+      }
     },
 
     getEntityPerm(entityId, action) {
       return !!this.permMap[entityId]?.[action];
+    },
+
+    getModuleAccess(key) {
+      return this.moduleMap[key] !== false;
+    },
+
+    toggleModule(key) {
+      this.moduleMap[key] = !this.moduleMap[key];
+      this.autoSave();
     },
 
     togglePerm(entityId, action) {
@@ -280,35 +300,26 @@ document.addEventListener('alpine:init', () => {
         this.permMap[entityId] = { create: false, read: false, update: false, delete: false };
       }
       this.permMap[entityId][action] = !this.permMap[entityId][action];
-
-      // If enabling create/update/delete, also enable read
       if (action !== 'read' && this.permMap[entityId][action]) {
         this.permMap[entityId].read = true;
       }
-
-      // Clean up: remove entity from map if all permissions are false
       const ep = this.permMap[entityId];
       if (!ep.create && !ep.read && !ep.update && !ep.delete) {
         delete this.permMap[entityId];
       }
-
       this.autoSave();
     },
 
     setAllPermissions(enable) {
       this.allEntities.forEach(entity => {
-        this.permMap[entity._id] = {
-          create: enable, read: enable, update: enable, delete: enable
-        };
+        this.permMap[entity._id] = { create: enable, read: enable, update: enable, delete: enable };
       });
       this.autoSave();
     },
 
     setReadOnly() {
       this.allEntities.forEach(entity => {
-        this.permMap[entity._id] = {
-          create: false, read: true, update: false, delete: false
-        };
+        this.permMap[entity._id] = { create: false, read: true, update: false, delete: false };
       });
       this.autoSave();
     },
@@ -327,14 +338,15 @@ document.addEventListener('alpine:init', () => {
     async savePermissions() {
       if (!this.selectedMember) return;
       try {
-        // Build entityPermissions array from permMap
         const entityPermissions = Object.entries(this.permMap).map(([entityId, perms]) => ({
-          entityId,
-          create: perms.create,
-          read: perms.read,
-          update: perms.update,
-          delete: perms.delete,
+          entityId, create: perms.create, read: perms.read, update: perms.update, delete: perms.delete,
         }));
+
+        // Build moduleAccess (false = disabled, null = inherit default)
+        const moduleAccess = {};
+        for (const mod of this.systemModules) {
+          moduleAccess[mod.key] = this.moduleMap[mod.key] ? null : false;
+        }
 
         const res = await fetch(this.apiBase + '/update-permissions', {
           method: 'POST',
@@ -343,16 +355,17 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({
             userId: String(this.selectedMember._id),
             entityPermissions,
+            moduleAccess,
           }),
         });
         const data = await res.json();
         if (data.success) {
           this.saveStatus = 'saved';
-          // Update local member data
           const member = this.members.find(m => String(m._id) === String(this.selectedMember._id));
           if (member) {
             member.entityPermissions = entityPermissions;
             member.entityAccess = data.entityAccess;
+            member.moduleAccess = data.moduleAccess;
           }
           setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
         } else {
@@ -372,7 +385,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     roleColor(role) {
-      const map = { owner:'#7c3aed', admin:'#4361ee', manager:'#f59e0b', member:'#22c55e', viewer:'#94a3b8' };
+      const map = { owner:'#7c3aed', admin:'#4361ee', manager:'#f59e0b', member:'#22c55e', external:'#64748b', guest:'#94a3b8' };
       return map[role] || '#94a3b8';
     },
   }));

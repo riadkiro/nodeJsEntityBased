@@ -15,9 +15,9 @@ router.get('/members', async (req, res) => {
         const account = await Account.findOne({ account_number: req.account_number }).lean();
         if (!account) return res.status(404).json({ error: 'Account not found' });
 
-        // Lookup full user data for each member
+        // Lookup full user data for each member (exclude removed)
         const members = [];
-        for (const member of (account.users || [])) {
+        for (const member of (account.users || []).filter(u => u.status !== 'removed')) {
             const user = member.userId
                 ? await User.findById(member.userId).select('name email avatar status lastLogin created_on').lean()
                 : await User.findOne({ email: member.email }).select('name email avatar status lastLogin created_on').lean();
@@ -30,6 +30,7 @@ router.get('/members', async (req, res) => {
                 role: member.role || 'member',
                 entityAccess: member.entityAccess || [],
                 entityPermissions: member.entityPermissions || [],
+                moduleAccess: member.moduleAccess || {},
                 status: member.status || 'active',
                 joinedAt: member.joinedAt,
                 lastLogin: user?.lastLogin || null,
@@ -470,7 +471,7 @@ router.get('/entities', async (req, res) => {
 // ── POST /api/team/update-permissions ────────────────
 router.post('/update-permissions', requirePerm('members.changeRole'), async (req, res) => {
     try {
-        const { userId, entityAccess, entityPermissions } = req.body;
+        const { userId, entityAccess, entityPermissions, moduleAccess } = req.body;
         if (!userId) return res.status(400).json({ error: 'userId required' });
 
         const callerRole = req.workspaceRole;
@@ -506,12 +507,24 @@ router.post('/update-permissions', requirePerm('members.changeRole'), async (req
             }));
         }
 
+        // Handle module access overrides
+        if (moduleAccess !== undefined && typeof moduleAccess === 'object') {
+            if (!member.moduleAccess) member.moduleAccess = {};
+            const validModules = ['chat', 'tasks', 'documents', 'agenda', 'drive', 'email', 'notes', 'automations'];
+            for (const mod of validModules) {
+                if (moduleAccess[mod] !== undefined) {
+                    member.moduleAccess[mod] = moduleAccess[mod]; // true, false, or null (inherit)
+                }
+            }
+        }
+
         await account.save();
 
         res.json({
             success: true,
             entityAccess: member.entityAccess,
             entityPermissions: member.entityPermissions,
+            moduleAccess: member.moduleAccess,
         });
     } catch (error) {
         console.error('[Team API] update-permissions error:', error);

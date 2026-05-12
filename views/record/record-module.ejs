@@ -145,6 +145,47 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .dark .ov-rel-option{color:#e0e6ed;}
 .dark .ov-rel-option:hover{background:#1b2e4b;}
 
+/* ═══ Fiche Config Mode ═══ */
+.fiche-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:4px 8px 12px;margin-bottom:4px;}
+.fiche-config-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#888da8;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;}
+.fiche-config-btn:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.04);}
+.fiche-config-btn.active{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.06);}
+.fiche-config-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:10px;border-radius:10px;background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.12);animation:rmFadeIn .25s ease both;}
+.fiche-config-bar-label{font-size:12px;font-weight:700;color:#4361ee;display:flex;align-items:center;gap:5px;}
+.fiche-config-bar-actions{margin-left:auto;display:flex;gap:6px;}
+.fiche-config-bar-btn{padding:4px 12px;border-radius:6px;border:1px solid rgba(67,97,238,.2);background:#fff;color:#4361ee;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;}
+.fiche-config-bar-btn:hover{background:rgba(67,97,238,.06);}
+.fiche-config-bar-btn--primary{background:#4361ee;color:#fff;border-color:#4361ee;}
+.fiche-config-bar-btn--primary:hover{background:#3651d4;}
+.fiche-config-bar-btn--muted{color:#888da8;border-color:#e2e8f0;}
+.fiche-config-bar-btn--muted:hover{color:#4361ee;border-color:rgba(67,97,238,.2);}
+.fiche-configuring{user-select:none;-webkit-user-select:none;}
+.fiche-configuring .ov-ef{cursor:default;}
+.fiche-configuring .ov-ef .ov-ef-body{pointer-events:none;opacity:.7;}
+.fiche-configuring .ov-ef .fiche-drag-handle,.fiche-configuring .ov-ef .fiche-vis-toggle,.fiche-configuring .ov-ef .fiche-req-badge{pointer-events:auto;}
+.ov-ef .fiche-drag-handle{display:none;width:18px;height:18px;align-items:center;justify-content:center;cursor:grab;color:#bfc9d4;font-size:13px;flex-shrink:0;border-radius:4px;transition:color .15s,background .15s;margin-right:2px;}
+.fiche-configuring .ov-ef .fiche-drag-handle{display:flex;}
+.ov-ef .fiche-drag-handle:hover{color:#4361ee;background:rgba(67,97,238,.06);}
+.ov-ef .fiche-drag-handle:active{cursor:grabbing;}
+.ov-ef .fiche-vis-toggle{display:none;margin-left:auto;padding:3px;border:none;background:none;cursor:pointer;color:#bfc9d4;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;line-height:0;}
+.fiche-configuring .ov-ef .fiche-vis-toggle{display:block;}
+.ov-ef .fiche-vis-toggle:hover{color:#4361ee;background:rgba(67,97,238,.06);}
+.ov-ef--hidden{opacity:.35;background:#f8fafc;}
+.ov-ef--hidden .ov-ef-val,.ov-ef--hidden .ov-ef-text,.ov-ef--hidden .ov-placeholder{text-decoration:line-through;}
+.ov-ef .fiche-req-badge{display:none;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:rgba(67,97,238,.08);color:#4361ee;flex-shrink:0;margin-left:auto;}
+.fiche-configuring .ov-ef .fiche-req-badge{display:inline-block;}
+.ov-ef.sortable-ghost{opacity:.3;background:rgba(67,97,238,.05);border:1px dashed rgba(67,97,238,.3);border-radius:8px;}
+.ov-ef.sortable-chosen{box-shadow:0 4px 20px rgba(67,97,238,.12);background:#fff;border-radius:8px;z-index:10;}
+/* Dark mode — fiche config */
+.dark .fiche-config-btn{background:#0e1726;border-color:#253b5c;color:#506690;}
+.dark .fiche-config-btn:hover,.dark .fiche-config-btn.active{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.1);}
+.dark .fiche-config-bar{background:linear-gradient(135deg,rgba(67,97,238,.12),rgba(67,97,238,.04));border-color:rgba(67,97,238,.2);}
+.dark .fiche-config-bar-btn{background:#0e1726;border-color:#253b5c;color:#4361ee;}
+.dark .fiche-config-bar-btn--primary{background:#4361ee;color:#fff;}
+.dark .fiche-config-bar-btn--muted{color:#506690;border-color:#253b5c;}
+.dark .ov-ef--hidden{background:#1b2e4b;}
+.dark .ov-ef.sortable-chosen{background:#0e1726;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+
 @keyframes rmFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 /* ═══ Dark Mode — Record Module ═══ */
 .dark .rm-page { background:transparent; }
@@ -1628,7 +1669,38 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <!-- ═══ FICHE MODULE ═══ -->
     <% if (moduleName === 'fiche') { %>
-    <div class="ov-card ov-card-fields" x-data="ovInlineEdit()" style="border:none;box-shadow:none;padding:0;">
+    <%
+        var _fichePrefs = (typeof fichePreferences !== 'undefined') ? fichePreferences : {};
+        var _hiddenFields = (_fichePrefs && _fichePrefs.hiddenFields) ? _fichePrefs.hiddenFields : [];
+    %>
+    <div x-data="ficheConfig()" style="border:none;box-shadow:none;padding:0;">
+        <!-- Config toolbar -->
+        <div class="fiche-toolbar">
+            <button type="button" class="fiche-config-btn" :class="configMode ? 'active' : ''" @click="toggleConfig()">
+                <iconify-icon :icon="configMode ? 'solar:check-circle-bold' : 'solar:settings-bold-duotone'" width="14"></iconify-icon>
+                <span x-text="configMode ? 'Terminé' : 'Configurer'"></span>
+            </button>
+        </div>
+
+        <!-- Config bar (visible in config mode) -->
+        <template x-if="configMode">
+            <div class="fiche-config-bar">
+                <div class="fiche-config-bar-label">
+                    <iconify-icon icon="solar:tuning-2-bold-duotone" width="15"></iconify-icon>
+                    Mode configuration
+                </div>
+                <div class="fiche-config-bar-actions">
+                    <button type="button" class="fiche-config-bar-btn fiche-config-bar-btn--muted" @click="resetLayout()">
+                        <iconify-icon icon="solar:restart-bold" width="13" style="vertical-align:-2px;"></iconify-icon>
+                        Réinitialiser
+                    </button>
+                    <button type="button" class="fiche-config-bar-btn fiche-config-bar-btn--primary" @click="toggleConfig()">
+                        Terminé
+                    </button>
+                </div>
+            </div>
+        </template>
+
         <% if (_ficheFields.length === 0) { %>
             <div class="fiche-empty-state" style="padding:60px 20px;text-align:center;">
                 <iconify-icon icon="solar:card-bold-duotone" width="48" style="color:#bfc9d4"></iconify-icon>
@@ -1636,8 +1708,120 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 <p>Configurez les champs de cette entité pour commencer</p>
             </div>
         <% } else { %>
-            <% var _showHeader = false; var _ovFields = _ficheFields; %>
-            <%- include('partials/ov-widget-fields', { _ovFields: _ficheFields, _recBase: _recBase, _showHeader: false }) %>
+        <div class="ov-card ov-card-fields" :class="configMode ? 'fiche-configuring' : ''" style="border:none;box-shadow:none;padding:0;">
+            <div class="ov-fields-list" x-ref="ficheFieldsList">
+                <% _ficheFields.forEach(function(f, i){ %>
+                <div class="ov-ef"
+                     data-key="<%= f.key %>"
+                     data-field-key="<%= f.key %>"
+                     data-required="<%= f.required ? 'true' : 'false' %>"
+                     :class="{ 'ov-ef--hidden': isFieldHidden('<%= f.key %>') }"
+                     <% if (!_hiddenFields.includes(f.key)) { %>
+                     @click="!configMode && startEdit('<%= f.key %>',$event)"
+                     <% if (f.type !== 'relation') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>
+                     <% } %>
+                     x-show="configMode || !isFieldHidden('<%= f.key %>')">
+                    <!-- Drag handle (config mode only) -->
+                    <div class="fiche-drag-handle" title="Déplacer">⠿</div>
+                    <div class="ov-ef-head">
+                        <div class="ov-ef-icon" style="background:linear-gradient(135deg,<%= f.color||'#4361ee' %>12,<%= f.color||'#4361ee' %>06)">
+                            <iconify-icon icon="<%= f.icon %>" width="13" style="color:<%= f.color||'#4361ee' %>"></iconify-icon>
+                        </div>
+                        <span class="ov-ef-label"><%= f.label %></span>
+                    </div>
+                    <div class="ov-ef-body">
+                        <!-- VIEW state -->
+                        <div class="ov-ef-view" x-show="editingKey !== '<%= f.key %>'">
+                            <% if (f.type === 'relation') { %>
+                                <% if (f.rawValue && Array.isArray(f.rawValue) && f.rawValue.length > 0) { %>
+                                    <div class="ov-tags"><% f.rawValue.forEach(function(rv){ %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= rv.title %></span><% }); %></div>
+                                <% } else { %>
+                                    <span class="ov-placeholder">Sélectionner...</span>
+                                <% } %>
+                            <% } else if (f.type === 'select') { %>
+                                <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else if (f.type === 'multiselect') { %>
+                                <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else if (f.type === 'boolean' || f.type === 'checkbox') { %>
+                                <span class="ov-ef-val"><%= f.value ? '✓ Oui' : '✗ Non' %></span>
+                            <% } else if (f.inputType === 'textarea') { %>
+                                <% if (f.value) { %><span class="ov-ef-text"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else { %>
+                                <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } %>
+                        </div>
+                        <!-- EDIT state -->
+                        <div class="ov-ef-edit" x-show="editingKey === '<%= f.key %>'" x-cloak>
+                            <% if (f.type === 'relation') { %>
+                                <div x-data="ovRelEditor({ key: '<%= f.key %>', targetEntityId: '<%= f.targetEntityId || '' %>', targetEntitySlug: '<%= f.targetEntitySlug || '' %>', isMulti: <%= f.isMulti ? 'true' : 'false' %>, color: '<%= f.color || '#4361ee' %>', initial: <%- JSON.stringify(f.rawValue || []) %> })">
+                                    <div class="ov-rel-editor">
+                                        <div class="ov-rel-tags">
+                                            <template x-for="tag in tags" :key="tag._id">
+                                                <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
+                                                    <span x-text="tag.title"></span>
+                                                    <button type="button" class="ov-tag-x" @click.stop="removeTag(tag._id)">×</button>
+                                                </span>
+                                            </template>
+                                            <input type="text" class="ov-rel-search" x-ref="relSearchInput" x-model="searchQ" @input.debounce.250ms="search()" @focus="search()" @keydown.escape="closeAndSave()" placeholder="Rechercher...">
+                                        </div>
+                                        <div class="ov-rel-dropdown" x-show="showDropdown && (results.length > 0 || searchQ.trim())" x-cloak @click.outside="closeAndSave()">
+                                            <template x-for="r in results" :key="r._id">
+                                                <div class="ov-rel-option" @click="addTag(r)">
+                                                    <iconify-icon icon="solar:user-bold-duotone" width="14" :style="'color:'+color"></iconify-icon>
+                                                    <span x-text="r.title"></span>
+                                                </div>
+                                            </template>
+                                            <div class="ov-rel-create" x-show="searchQ.trim() && results.length === 0" @click="createNew()">
+                                                <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                                                Créer « <span x-text="searchQ.trim()"></span> »
+                                            </div>
+                                            <div class="ov-rel-empty" x-show="!searchQ.trim() && results.length === 0">Aucun résultat</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } else if (f.inputType === 'select') { %>
+                                <select class="ov-input" x-ref="input_<%= f.key %>" @change="autoSave('<%= f.key %>')">
+                                    <option value="">— Choisir —</option>
+                                    <% (f.options || []).forEach(function(opt){ var optVal = (typeof opt === 'object' && opt !== null) ? (opt.value || opt.label || '') : opt; var optLabel = (typeof opt === 'object' && opt !== null) ? (opt.label || opt.value || '') : opt; %><option value="<%= optVal %>" <%= f.rawValue === optVal ? 'selected' : '' %>><%= optLabel %></option><% }); %>
+                                </select>
+                            <% } else if (f.inputType === 'multiselect') { %>
+                                <div class="ov-ms-pills">
+                                    <% (f.options || []).forEach(function(opt){ var optVal = (typeof opt === 'object' && opt !== null) ? (opt.value || opt.label || '') : opt; var optLabel = (typeof opt === 'object' && opt !== null) ? (opt.label || opt.value || '') : opt; var optSafe = String(optVal).replace(/[^a-zA-Z0-9]/g,'_'); %>
+                                    <label class="ov-ms-pill" :class="$refs.ms_<%= f.key %>_<%= optSafe %> && $refs.ms_<%= f.key %>_<%= optSafe %>.checked ? 'active' : ''">
+                                        <input type="checkbox" x-ref="ms_<%= f.key %>_<%= optSafe %>" value="<%= optVal %>" style="display:none" <%= (f.rawValue || '').includes(optVal) ? 'checked' : '' %>>
+                                        <iconify-icon class="ov-ms-check" :icon="$refs.ms_<%= f.key %>_<%= optSafe %> && $refs.ms_<%= f.key %>_<%= optSafe %>.checked ? 'solar:check-circle-bold' : 'solar:circle-linear'" width="13"></iconify-icon>
+                                        <%= optLabel %>
+                                    </label>
+                                    <% }); %>
+                                </div>
+                            <% } else if (f.inputType === 'checkbox') { %>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                                    <input type="checkbox" x-ref="input_<%= f.key %>" <%= f.rawValue ? 'checked' : '' %> @change="autoSave('<%= f.key %>')">
+                                    <span style="font-size:12.5px;color:#0e1726;"><%= f.label %></span>
+                                </label>
+                            <% } else if (f.inputType === 'textarea') { %>
+                                <textarea class="ov-input ov-textarea" x-ref="input_<%= f.key %>" rows="<%= f.uiRows || 3 %>" @keydown.escape="cancelEdit()"><%= f.rawValue %></textarea>
+                                <div class="ov-ef-btns">
+                                    <button type="button" class="ov-ef-ok" @click="autoSave('<%= f.key %>')" title="Enregistrer"><iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon></button>
+                                    <button type="button" class="ov-ef-cancel" @click="cancelEdit()" title="Annuler"><iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon></button>
+                                </div>
+                            <% } else { %>
+                                <input type="<%= f.inputType === 'number' ? 'number' : f.inputType === 'date' ? 'date' : 'text' %>" class="ov-input" x-ref="input_<%= f.key %>" value="<%= f.rawValue %>" @keydown.enter="autoSave('<%= f.key %>')" @keydown.escape="cancelEdit()">
+                            <% } %>
+                        </div>
+                    </div>
+                    <!-- Required badge OR visibility toggle (config mode only) -->
+                    <% if (f.required) { %>
+                        <span class="fiche-req-badge">Obligatoire</span>
+                    <% } else { %>
+                        <button type="button" class="fiche-vis-toggle" @click.stop="toggleFieldVisibility('<%= f.key %>')" :title="isFieldHidden('<%= f.key %>') ? 'Afficher' : 'Masquer'">
+                            <iconify-icon :icon="isFieldHidden('<%= f.key %>') ? 'solar:eye-closed-bold' : 'solar:eye-bold'" width="16"></iconify-icon>
+                        </button>
+                    <% } %>
+                </div>
+                <% }); %>
+            </div>
+        </div>
         <% } %>
     </div>
     <% } %>
@@ -2792,11 +2976,114 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <script>
     document.addEventListener('alpine:init', () => {
         const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
+        const _prefsUrl = '/account/<%= account_number %>/api/user/view-preferences';
+        const _ficheViewId = 'fiche-<%= entity.slug %>';
+        const _initialHidden = <%- JSON.stringify((typeof fichePreferences !== 'undefined' && fichePreferences.hiddenFields) ? fichePreferences.hiddenFields : []) %>;
 
-        Alpine.data('ovInlineEdit', () => ({
+        // Fiche config component (root-level)
+        Alpine.data('ficheConfig', () => ({
+            configMode: false,
+            hiddenFields: [..._initialHidden],
+            _sortableInstance: null,
+
+            toggleConfig() {
+                this.configMode = !this.configMode;
+                if (this.configMode) {
+                    this.$nextTick(() => this._initSortable());
+                } else {
+                    this._destroySortable();
+                    this._savePreferences();
+                }
+            },
+
+            isFieldHidden(key) {
+                return this.hiddenFields.includes(key);
+            },
+
+            toggleFieldVisibility(key) {
+                if (this.hiddenFields.includes(key)) {
+                    this.hiddenFields = this.hiddenFields.filter(k => k !== key);
+                } else {
+                    this.hiddenFields.push(key);
+                }
+            },
+
+            resetLayout() {
+                this.hiddenFields = [];
+                // Reset DOM order to original
+                const list = this.$el.querySelector('.ov-fields-list');
+                if (list) {
+                    const items = [...list.children];
+                    // Sort by original data-index (if exists) — just let server return default next reload
+                }
+                // Save empty preferences (reset)
+                this._savePreferences(true);
+            },
+
+            _getFieldOrder() {
+                const list = this.$refs.ficheFieldsList;
+                if (!list) return [];
+                return [...list.querySelectorAll('.ov-ef[data-field-key]')].map(el => el.dataset.fieldKey);
+            },
+
+            _initSortable() {
+                const list = this.$refs.ficheFieldsList;
+                if (!list) {
+                    console.warn('[FicheConfig] ficheFieldsList ref not found');
+                    return;
+                }
+                if (this._sortableInstance) return;
+                if (typeof Sortable === 'undefined') {
+                    console.warn('[FicheConfig] SortableJS not loaded');
+                    return;
+                }
+                this._sortableInstance = Sortable.create(list, {
+                    animation: 200,
+                    handle: '.fiche-drag-handle',
+                    draggable: '.ov-ef',
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    direction: 'vertical',
+                    forceFallback: true,
+                    fallbackTolerance: 3,
+                    onEnd: (evt) => {
+                        // DOM is already reordered by SortableJS
+                    }
+                });
+                console.log('[FicheConfig] SortableJS initialized on', list.children.length, 'fields');
+            },
+
+            _destroySortable() {
+                if (this._sortableInstance) {
+                    this._sortableInstance.destroy();
+                    this._sortableInstance = null;
+                }
+            },
+
+            async _savePreferences(isReset) {
+                const fieldOrder = isReset ? [] : this._getFieldOrder();
+                const hiddenFields = isReset ? [] : [...this.hiddenFields];
+                try {
+                    await fetch(_prefsUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            viewId: _ficheViewId,
+                            preferences: {
+                                ficheLayout: { fieldOrder, hiddenFields }
+                            }
+                        })
+                    });
+                } catch (e) { console.error('[FicheConfig] Save error:', e); }
+            },
+
+            // ── Inline Edit (merged from ovInlineEdit) ──
             editingKey: '',
             saving: false,
             startEdit(key, e) {
+                if (this.configMode) return;
                 if (this.editingKey === key) return;
                 if (this.editingKey) this._doSave(this.editingKey);
                 this.editingKey = key;

@@ -1536,7 +1536,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Overview layout builder
             'rows',
             // Record Agenda
-            'agendaPrefs'
+            'agendaPrefs',
+            // Fiche field layout (order + hidden fields)
+            'ficheLayout'
         ]
 
         prefKeys.forEach(key => {

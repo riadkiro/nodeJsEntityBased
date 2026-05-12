@@ -95,6 +95,16 @@ const userPreferencesSchema = new mongoose.Schema({
         rows: {
             type: mongoose.Schema.Types.Mixed,
             default: undefined
+        },
+        // Record Agenda preferences
+        agendaPrefs: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        // Fiche field layout (order + hidden fields)
+        ficheLayout: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
         }
     },
     updatedAt: {

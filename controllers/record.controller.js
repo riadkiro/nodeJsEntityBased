@@ -2552,9 +2552,9 @@ module.exports = {
 
                 // Standard fields
                 const standardFields = [
-                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '', rawValue: record.title || '', fieldType: 'standard', inputType: 'text', uiRows: 1, uiWidth: 'full' },
-                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '', rawValue: record.description || '', fieldType: 'standard', inputType: 'textarea', uiRows: 3, uiWidth: 'full' },
-                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '', rawValue: record.date ? new Date(record.date).toISOString().split('T')[0] : '', fieldType: 'standard', inputType: 'date', uiRows: 1, uiWidth: 'half' },
+                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '', rawValue: record.title || '', fieldType: 'standard', inputType: 'text', uiRows: 1, uiWidth: 'full', required: true },
+                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '', rawValue: record.description || '', fieldType: 'standard', inputType: 'textarea', uiRows: 3, uiWidth: 'full', required: false },
+                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '', rawValue: record.date ? new Date(record.date).toISOString().split('T')[0] : '', fieldType: 'standard', inputType: 'date', uiRows: 1, uiWidth: 'half', required: false },
                 ];
                 ficheFields = moduleName === 'fiche' ? [...standardFields] : standardFields.filter(f => f.value);
 
@@ -2626,6 +2626,19 @@ module.exports = {
                     if (Array.isArray(val)) {
                         displayVal = val.join(', ');
                     }
+                    // Resolve select/multiselect display labels from {label,value} options
+                    const options = (cf.type_config && cf.type_config.options) || [];
+                    if ((cf.type === 'select' || cf.type === 'multiselect') && val && options.length > 0 && typeof options[0] === 'object') {
+                        if (Array.isArray(val)) {
+                            displayVal = val.map(v => {
+                                const match = options.find(o => o.value === v || o.label === v);
+                                return match ? match.label : v;
+                            }).join(', ');
+                        } else {
+                            const match = options.find(o => o.value === val || o.label === val);
+                            if (match) displayVal = match.label;
+                        }
+                    }
                     const uiRows = (cf.ui && cf.ui.rows) ? parseInt(cf.ui.rows) : 1;
                     const uiWidth = (cf.ui && cf.ui.width) || 'full';
                     let inputType = 'text';
@@ -2648,6 +2661,7 @@ module.exports = {
                         uiRows,
                         uiWidth,
                         fieldType: 'custom',
+                        required: cf.required || false,
                         options: (cf.type_config && cf.type_config.options) || []
                     });
                 }
@@ -2683,6 +2697,7 @@ module.exports = {
                         uiRows: 1,
                         uiWidth: isMulti ? 'full' : 'third',
                         fieldType: 'relation',
+                        required: false,
                         targetEntityId: (targetEntity._id || '').toString(),
                         targetEntitySlug: targetEntity.slug || '',
                         isMulti
@@ -2709,12 +2724,45 @@ module.exports = {
                 }
             }
 
+            // Load user fiche preferences (field order + hidden fields)
+            let fichePreferences = null;
+            if (moduleName === 'fiche') {
+                try {
+                    const UserPreferences = await tenantCollection(req, "UserPreferences");
+                    const viewId = `fiche-${entity.slug}`;
+                    const prefs = await UserPreferences.findOne({
+                        userId: req.user?._id,
+                        viewId
+                    }).lean();
+                    fichePreferences = prefs?.preferences?.ficheLayout || null;
+
+                    // Apply field order from preferences
+                    if (fichePreferences && fichePreferences.fieldOrder && fichePreferences.fieldOrder.length > 0) {
+                        const orderedFields = [];
+                        fichePreferences.fieldOrder.forEach(key => {
+                            const field = ficheFields.find(f => f.key === key);
+                            if (field) orderedFields.push(field);
+                        });
+                        // Append any new fields not in preferences (added after preferences were saved)
+                        ficheFields.forEach(f => {
+                            if (!orderedFields.find(o => o.key === f.key)) {
+                                orderedFields.push(f);
+                            }
+                        });
+                        ficheFields = orderedFields;
+                    }
+                } catch (e) {
+                    console.error('[FichePrefs]', e);
+                }
+            }
+
             res.render("record/record-module", {
                 entity,
                 record,
                 moduleName,
                 ficheFields,
                 overviewFields,
+                fichePreferences: fichePreferences || {},
                 isDraft: record.isDraft || false,
                 account_number: req.account_number,
                 user: req.user,

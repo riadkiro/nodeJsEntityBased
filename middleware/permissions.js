@@ -339,6 +339,20 @@ async function hydrateWorkspaceRole(req, res, next) {
             return checkEntityPermission(req.workspaceMember, account, entityId, action);
         };
 
+        // Module-level access helper (new simplified system)
+        req.canModule = (moduleName) => {
+            if (!req.workspaceRole) return false;
+            if (req.user.role === 'superadmin') return true;
+            return canAccessModule(req.workspaceRole, moduleName, req._customRoles);
+        };
+
+        // Action-level helper (canCreate, canDelete, etc.)
+        req.canAction = (action) => {
+            if (!req.workspaceRole) return false;
+            if (req.user.role === 'superadmin') return true;
+            return canPerformAction(req.workspaceRole, action, req._customRoles);
+        };
+
         next();
     } catch (err) {
         console.error('[Permissions] Hydration error:', err.message);
@@ -429,17 +443,200 @@ function getAssignableRoles(callerRole) {
         .sort((a, b) => ROLE_HIERARCHY[b] - ROLE_HIERARCHY[a]);
 }
 
+// ═══════════════════════════════════════════
+// Module Access Matrix — Rôle = accès aux apps
+// ═══════════════════════════════════════════
+// Each role defines which modules/apps the user can access.
+// true = full access, false = no access, 'read' = read-only
+const ROLE_MODULES = {
+    owner:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
+    admin:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
+    manager:  { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: false, billing: false, automations: false, ai: false },
+    member:   { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: false, settings: false, billing: false, automations: false, ai: false },
+    external: { chat: true, tasks: true, agenda: false, documents: true, drive: true, notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
+    guest:    { chat: false, tasks: false, agenda: false, documents: 'read', drive: 'read', notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
+};
+
+// Module metadata for UI
+const MODULE_META = {
+    chat:        { name: 'Chat',         icon: 'solar:chat-round-dots-bold-duotone', color: '#4361ee' },
+    tasks:       { name: 'Tâches',       icon: 'solar:checklist-minimalistic-bold-duotone', color: '#22c55e' },
+    agenda:      { name: 'Agenda',       icon: 'solar:calendar-bold-duotone', color: '#f59e0b' },
+    documents:   { name: 'Documents',    icon: 'solar:document-bold-duotone', color: '#7c3aed' },
+    drive:       { name: 'Drive',        icon: 'solar:folder-bold-duotone', color: '#06b6d4' },
+    notes:       { name: 'Notes',        icon: 'solar:notebook-bold-duotone', color: '#ec4899' },
+    email:       { name: 'Email',        icon: 'solar:letter-bold-duotone', color: '#64748b' },
+    settings:    { name: 'Paramètres',   icon: 'solar:settings-bold-duotone', color: '#334155' },
+    billing:     { name: 'Facturation',  icon: 'solar:card-bold-duotone', color: '#0891b2' },
+    automations: { name: 'Automations',  icon: 'solar:magic-stick-bold-duotone', color: '#ef4444' },
+    ai:          { name: 'IA',           icon: 'solar:stars-bold-duotone', color: '#8b5cf6' },
+};
+
+// ═══════════════════════════════════════════
+// Role Actions — what CRUD actions the role permits
+// ═══════════════════════════════════════════
+const ROLE_ACTIONS = {
+    owner:    { canCreate: true, canEdit: true, canDelete: true, canExport: true, canShare: true, canManageTeam: true },
+    admin:    { canCreate: true, canEdit: true, canDelete: true, canExport: true, canShare: true, canManageTeam: true },
+    manager:  { canCreate: true, canEdit: true, canDelete: true, canExport: true, canShare: true, canManageTeam: false },
+    member:   { canCreate: true, canEdit: true, canDelete: false, canExport: false, canShare: true, canManageTeam: false },
+    external: { canCreate: false, canEdit: true, canDelete: false, canExport: false, canShare: false, canManageTeam: false },
+    guest:    { canCreate: false, canEdit: false, canDelete: false, canExport: false, canShare: false, canManageTeam: false },
+};
+
+// ═══════════════════════════════════════════
+// Check if role has access to a specific module
+// Supports custom roles via baseRole inheritance
+// ═══════════════════════════════════════════
+function canAccessModule(role, moduleName, customRoles) {
+    // Owner always has all
+    if (role === 'owner') return true;
+
+    // Check custom role overrides first
+    if (customRoles && customRoles.length > 0) {
+        const custom = customRoles.find(r => r.slug === role);
+        if (custom && custom.permissions) {
+            const perms = custom.permissions instanceof Map
+                ? Object.fromEntries(custom.permissions)
+                : custom.permissions;
+            // Check module-level override (e.g. 'module.chat' = true/false)
+            const moduleKey = `module.${moduleName}`;
+            if (moduleKey in perms) return !!perms[moduleKey];
+            // Fallback to baseRole
+            if (custom.isCustom && custom.baseRole) {
+                return !!(ROLE_MODULES[custom.baseRole] || {})[moduleName];
+            }
+        }
+    }
+
+    // Standard role lookup
+    const modules = ROLE_MODULES[role];
+    if (!modules) return false;
+    return !!modules[moduleName];
+}
+
+// ═══════════════════════════════════════════
+// Check if role can perform a specific action
+// ═══════════════════════════════════════════
+function canPerformAction(role, action, customRoles) {
+    if (role === 'owner') return true;
+    // Custom role → fallback to baseRole
+    if (customRoles && customRoles.length > 0) {
+        const custom = customRoles.find(r => r.slug === role);
+        if (custom && custom.isCustom && custom.baseRole) {
+            return !!(ROLE_ACTIONS[custom.baseRole] || {})[action];
+        }
+    }
+    return !!(ROLE_ACTIONS[role] || {})[action];
+}
+
+// ═══════════════════════════════════════════
+// Resolve data access for a user via their teams
+// Returns { read, create, update, delete } for a given entity
+// Logic: UNION of all team permissions (additive)
+// ═══════════════════════════════════════════
+function resolveDataAccess(userId, account, entityId) {
+    const member = (account.users || []).find(u => String(u.userId) === String(userId) && u.status !== 'removed');
+    if (!member) return { read: false, create: false, update: false, delete: false };
+
+    const role = member.role;
+
+    // Owner/Admin = bypass
+    if (['owner', 'admin'].includes(role)) {
+        return { read: true, create: true, update: true, delete: true };
+    }
+
+    // Find all teams the user belongs to
+    const userTeams = (account.teams || []).filter(t =>
+        (t.memberIds || []).map(String).includes(String(userId))
+    );
+
+    // If user is in NO teams → check legacy entityPermissions on member
+    if (userTeams.length === 0) {
+        // Legacy: member-level entityPermissions (backward compat)
+        if (member.entityPermissions && member.entityPermissions.length > 0) {
+            const perm = member.entityPermissions.find(ep => String(ep.entityId) === String(entityId));
+            if (perm) return { read: perm.read !== false, create: perm.create !== false, update: perm.update !== false, delete: perm.delete !== false };
+            // Entity not listed but entityPermissions exist → depends on role
+            if (['external', 'guest'].includes(role)) return { read: false, create: false, update: false, delete: false };
+            return { read: true, create: true, update: true, delete: true };
+        }
+        // No teams, no entityPermissions → external/guest get nothing, others get all
+        if (['external', 'guest'].includes(role)) return { read: false, create: false, update: false, delete: false };
+        return { read: true, create: true, update: true, delete: true };
+    }
+
+    // Union of all team dataAccess
+    let result = { read: false, create: false, update: false, delete: false };
+    let hasAnyRestriction = false;
+
+    for (const team of userTeams) {
+        const entities = (team.dataAccess && team.dataAccess.entities) || (team.entityPermissions) || [];
+        if (entities.length === 0) {
+            // Team with no entity restrictions = full access
+            return { read: true, create: true, update: true, delete: true };
+        }
+        hasAnyRestriction = true;
+        const entityPerm = entities.find(ep => String(ep.entityId) === String(entityId));
+        if (entityPerm) {
+            if (entityPerm.read !== false) result.read = true;
+            if (entityPerm.create !== false) result.create = true;
+            if (entityPerm.update !== false) result.update = true;
+            if (entityPerm.delete !== false) result.delete = true;
+        }
+    }
+
+    // Cap by role actions
+    const roleActions = ROLE_ACTIONS[role] || ROLE_ACTIONS['member'];
+    if (!roleActions.canCreate) result.create = false;
+    if (!roleActions.canEdit) result.update = false;
+    if (!roleActions.canDelete) result.delete = false;
+
+    return result;
+}
+
+// ═══════════════════════════════════════════
+// Route guard: requireModule('moduleName')
+// Simpler alternative to requirePerm for module-level checks
+// ═══════════════════════════════════════════
+function requireModule(moduleName) {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Non authentifié' });
+        }
+        if (!req.workspaceRole) {
+            return res.status(403).json({ error: 'Vous n\'êtes pas membre de cet espace' });
+        }
+        if (req.user.role === 'superadmin') return next();
+        if (!canAccessModule(req.workspaceRole, moduleName, req._customRoles)) {
+            return res.status(403).json({
+                error: 'Module non accessible avec votre rôle',
+                module: moduleName,
+                role: req.workspaceRole,
+            });
+        }
+        next();
+    };
+}
+
 module.exports = {
     PERMISSIONS,
     PERMISSION_CATEGORIES,
     PERMISSION_LABELS,
     ROLE_HIERARCHY,
     ROLE_META,
+    ROLE_MODULES,
+    ROLE_ACTIONS,
+    MODULE_META,
     getRoleLevel,
     hasPermission,
+    canAccessModule,
+    canPerformAction,
+    resolveDataAccess,
     checkEntityPermission,
     hydrateWorkspaceRole,
     requirePerm,
+    requireModule,
     requireEntityPerm,
     buildCanObject,
     canManageRole,

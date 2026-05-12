@@ -115,36 +115,55 @@
             </div>
           </template>
 
-          <!-- Permission Categories -->
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <template x-for="cat in categories" :key="cat.key">
-              <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
-                <!-- Category Header -->
-                <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
-                  <iconify-icon :icon="cat.icon" width="16" style="color:#4361ee;"></iconify-icon>
-                  <span style="font-size:13px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.04em;" class="dark:!text-[#e0e6ed]" x-text="cat.name"></span>
-                  <span style="font-size:10px;color:#94a3b8;font-weight:600;" x-text="cat.permissions.length + ' permissions'"></span>
-                </div>
-                <!-- Permission Rows -->
-                <template x-for="perm in cat.permissions" :key="perm">
-                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid #f8fafc;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                      <span style="font-size:12.5px;font-weight:500;color:#334155;" class="dark:!text-[#cbd5e1]" x-text="labels[perm] || perm"></span>
-                      <template x-if="currentRole.overrides[perm] !== undefined">
-                        <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(249,115,22,.08);color:#f97316;text-transform:uppercase;">Modifié</span>
-                      </template>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="font-size:9px;color:#cbd5e1;font-family:monospace;" x-text="perm"></span>
-                      <label :style="'display:inline-flex;position:relative;' + (currentRole.editable ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:.5;')">
-                        <input type="checkbox" :checked="currentRole.effectivePermissions[perm]" @change="togglePermission(perm)" :disabled="!currentRole.editable" style="display:none;" />
-                        <div :style="'width:38px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (currentRole.effectivePermissions[perm] ? 'background:' + currentRole.color : 'background:#e0e6ed')">
-                          <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (currentRole.effectivePermissions[perm] ? 'left:20px' : 'left:2px')"></div>
-                        </div>
-                      </label>
-                    </div>
+          <!-- ═══ Section 1: Module Access ═══ -->
+          <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;margin-bottom:12px;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+            <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
+              <iconify-icon icon="solar:widget-bold-duotone" width="16" style="color:#7c3aed;"></iconify-icon>
+              <span style="font-size:13px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.04em;" class="dark:!text-[#e0e6ed]">Accès aux modules</span>
+              <span style="font-size:10px;color:#94a3b8;font-weight:600;">Quelles apps ce rôle peut utiliser</span>
+            </div>
+            <template x-for="mod in moduleList" :key="mod.key">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid #f8fafc;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div :style="'width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:' + mod.color + '12'">
+                    <iconify-icon :icon="mod.icon" width="14" :style="'color:' + mod.color"></iconify-icon>
                   </div>
-                </template>
+                  <span style="font-size:12.5px;font-weight:600;color:#334155;" class="dark:!text-[#cbd5e1]" x-text="mod.name"></span>
+                </div>
+                <label :style="'display:inline-flex;position:relative;' + (currentRole.editable ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:.5;')">
+                  <input type="checkbox" :checked="getModuleAccess(mod.key)" @change="toggleModule(mod.key)" :disabled="!currentRole.editable" style="display:none;" />
+                  <div :style="'width:38px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getModuleAccess(mod.key) ? 'background:' + mod.color : 'background:#e0e6ed')">
+                    <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getModuleAccess(mod.key) ? 'left:20px' : 'left:2px')"></div>
+                  </div>
+                </label>
+              </div>
+            </template>
+          </div>
+
+          <!-- ═══ Section 2: Actions ═══ -->
+          <div style="background:#fff;border:1px solid #e0e6ed;border-radius:14px;overflow:hidden;" class="dark:!bg-[#0e1726] dark:!border-[#253b5c]">
+            <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #f1f5f9;" class="dark:!border-[#1b2e4b]">
+              <iconify-icon icon="solar:shield-check-bold-duotone" width="16" style="color:#4361ee;"></iconify-icon>
+              <span style="font-size:13px;font-weight:700;color:#0e1726;text-transform:uppercase;letter-spacing:.04em;" class="dark:!text-[#e0e6ed]">Actions autorisées</span>
+              <span style="font-size:10px;color:#94a3b8;font-weight:600;">Ce que ce rôle peut faire sur les données</span>
+            </div>
+            <template x-for="act in actionList" :key="act.key">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid #f8fafc;transition:background .15s;" class="dark:!border-[#1b2e4b]" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div :style="'width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:' + act.color + '12'">
+                    <iconify-icon :icon="act.icon" width="14" :style="'color:' + act.color"></iconify-icon>
+                  </div>
+                  <div>
+                    <div style="font-size:12.5px;font-weight:600;color:#334155;" class="dark:!text-[#cbd5e1]" x-text="act.name"></div>
+                    <div style="font-size:10px;color:#94a3b8;" x-text="act.desc"></div>
+                  </div>
+                </div>
+                <label :style="'display:inline-flex;position:relative;' + (currentRole.editable ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:.5;')">
+                  <input type="checkbox" :checked="getAction(act.key)" @change="toggleAction(act.key)" :disabled="!currentRole.editable" style="display:none;" />
+                  <div :style="'width:38px;height:20px;border-radius:12px;transition:all .2s;position:relative;' + (getAction(act.key) ? 'background:' + act.color : 'background:#e0e6ed')">
+                    <div :style="'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);' + (getAction(act.key) ? 'left:20px' : 'left:2px')"></div>
+                  </div>
+                </label>
               </div>
             </template>
           </div>
@@ -246,6 +265,50 @@ document.addEventListener('alpine:init', () => {
     newRole: { name: '', baseRole: 'member', description: '' },
     apiBase: '/account/<%= account_number %>/api/team',
 
+    // Module list for the simplified grid
+    moduleList: [
+      { key: 'chat',        name: 'Chat',         icon: 'solar:chat-round-dots-bold-duotone', color: '#4361ee' },
+      { key: 'tasks',       name: 'Tâches',       icon: 'solar:checklist-minimalistic-bold-duotone', color: '#22c55e' },
+      { key: 'agenda',      name: 'Agenda',       icon: 'solar:calendar-bold-duotone', color: '#f59e0b' },
+      { key: 'documents',   name: 'Documents',    icon: 'solar:document-bold-duotone', color: '#7c3aed' },
+      { key: 'drive',       name: 'Drive',        icon: 'solar:folder-bold-duotone', color: '#06b6d4' },
+      { key: 'notes',       name: 'Notes',        icon: 'solar:notebook-bold-duotone', color: '#ec4899' },
+      { key: 'email',       name: 'Email',        icon: 'solar:letter-bold-duotone', color: '#64748b' },
+      { key: 'settings',    name: 'Paramètres',   icon: 'solar:settings-bold-duotone', color: '#334155' },
+      { key: 'billing',     name: 'Facturation',  icon: 'solar:card-bold-duotone', color: '#0891b2' },
+      { key: 'automations', name: 'Automations',  icon: 'solar:magic-stick-bold-duotone', color: '#ef4444' },
+      { key: 'ai',          name: 'IA',           icon: 'solar:stars-bold-duotone', color: '#8b5cf6' },
+    ],
+
+    // Action list for the simplified grid
+    actionList: [
+      { key: 'canCreate',     name: 'Créer',        desc: 'Créer de nouveaux records',     icon: 'solar:add-square-bold-duotone', color: '#22c55e' },
+      { key: 'canEdit',       name: 'Modifier',     desc: 'Modifier les records existants', icon: 'solar:pen-bold-duotone', color: '#f59e0b' },
+      { key: 'canDelete',     name: 'Supprimer',    desc: 'Supprimer des records',          icon: 'solar:trash-bin-trash-bold-duotone', color: '#ef4444' },
+      { key: 'canExport',     name: 'Exporter',     desc: 'Exporter les données',           icon: 'solar:export-bold-duotone', color: '#4361ee' },
+      { key: 'canShare',      name: 'Partager',     desc: 'Partager des records',           icon: 'solar:share-bold-duotone', color: '#7c3aed' },
+      { key: 'canManageTeam', name: 'Gérer l\'équipe', desc: 'Gérer les membres et rôles', icon: 'solar:users-group-rounded-bold-duotone', color: '#0891b2' },
+    ],
+
+    // Default modules/actions per role (from ROLE_MODULES/ROLE_ACTIONS)
+    defaultModules: {
+      owner:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
+      admin:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
+      manager:  { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: false, billing: false, automations: false, ai: false },
+      member:   { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: false, settings: false, billing: false, automations: false, ai: false },
+      external: { chat: true, tasks: true, agenda: false, documents: true, drive: true, notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
+      guest:    { chat: false, tasks: false, agenda: false, documents: false, drive: false, notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
+    },
+
+    defaultActions: {
+      owner:    { canCreate: true, canEdit: true, canDelete: true, canExport: true, canShare: true, canManageTeam: true },
+      admin:    { canCreate: true, canEdit: true, canDelete: true, canExport: true, canShare: true, canManageTeam: true },
+      manager:  { canCreate: true, canEdit: true, canDelete: true, canExport: true, canShare: true, canManageTeam: false },
+      member:   { canCreate: true, canEdit: true, canDelete: false, canExport: false, canShare: true, canManageTeam: false },
+      external: { canCreate: false, canEdit: true, canDelete: false, canExport: false, canShare: false, canManageTeam: false },
+      guest:    { canCreate: false, canEdit: false, canDelete: false, canExport: false, canShare: false, canManageTeam: false },
+    },
+
     get currentRole() {
       return this.roles.find(r => r.slug === this.selectedRole) || null;
     },
@@ -278,20 +341,63 @@ document.addEventListener('alpine:init', () => {
       this.confirmDeleteRole = false;
     },
 
+    // ── Module Access ──
+    getModuleAccess(moduleKey) {
+      const role = this.currentRole;
+      if (!role) return false;
+      // Check overrides first
+      const overrideKey = `module.${moduleKey}`;
+      if (role.overrides && role.overrides[overrideKey] !== undefined) {
+        return !!role.overrides[overrideKey];
+      }
+      // Fallback to defaults
+      const baseSlug = role.isCustom ? (role.baseRole || 'member') : role.slug;
+      return !!(this.defaultModules[baseSlug] || {})[moduleKey];
+    },
+
+    toggleModule(moduleKey) {
+      const role = this.currentRole;
+      if (!role || !role.editable) return;
+      const overrideKey = `module.${moduleKey}`;
+      const current = this.getModuleAccess(moduleKey);
+      if (!role.overrides) role.overrides = {};
+      role.overrides[overrideKey] = !current;
+      this.autoSave();
+    },
+
+    // ── Role Actions ──
+    getAction(actionKey) {
+      const role = this.currentRole;
+      if (!role) return false;
+      const overrideKey = `action.${actionKey}`;
+      if (role.overrides && role.overrides[overrideKey] !== undefined) {
+        return !!role.overrides[overrideKey];
+      }
+      const baseSlug = role.isCustom ? (role.baseRole || 'member') : role.slug;
+      return !!(this.defaultActions[baseSlug] || {})[actionKey];
+    },
+
+    toggleAction(actionKey) {
+      const role = this.currentRole;
+      if (!role || !role.editable) return;
+      const overrideKey = `action.${actionKey}`;
+      const current = this.getAction(actionKey);
+      if (!role.overrides) role.overrides = {};
+      role.overrides[overrideKey] = !current;
+      this.autoSave();
+    },
+
+    // Legacy — kept for backward compat
     togglePermission(perm) {
       const role = this.currentRole;
       if (!role || !role.editable) return;
-
       role.effectivePermissions[perm] = !role.effectivePermissions[perm];
-
-      // Track override
       const defaultPerms = this.getDefaultPermissions(role.slug);
       if (role.effectivePermissions[perm] !== defaultPerms[perm]) {
         role.overrides[perm] = role.effectivePermissions[perm];
       } else {
         delete role.overrides[perm];
       }
-
       this.autoSave();
     },
 
@@ -310,7 +416,9 @@ document.addEventListener('alpine:init', () => {
       clearTimeout(this.saveTimeout);
       this.saveStatus = 'saving';
       this.saveTimeout = setTimeout(() => {
-        this.savePermissions(this.currentRole.effectivePermissions);
+        // Merge overrides for save
+        const perms = { ...this.currentRole.overrides };
+        this.savePermissions(perms);
       }, 600);
     },
 

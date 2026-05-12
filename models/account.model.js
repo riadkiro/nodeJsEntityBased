@@ -81,7 +81,7 @@ const AccountSchema = new mongoose.Schema({
     icon: { type: String, default: 'solar:users-group-rounded-bold-duotone' },
     memberIds: [{ type: String }],
     leaderId: { type: String },
-    // Team-wide entity permissions (inherited by members)
+    // Legacy: team-wide entity permissions (kept for backward compat)
     entityPermissions: [{
       entityId: { type: String },
       create: { type: Boolean, default: true },
@@ -89,6 +89,17 @@ const AccountSchema = new mongoose.Schema({
       update: { type: Boolean, default: true },
       delete: { type: Boolean, default: true },
     }],
+    // New: structured data access (used by resolveDataAccess)
+    // Empty entities array = unrestricted access to all entities
+    dataAccess: {
+      entities: [{
+        entityId: { type: String },
+        create: { type: Boolean, default: true },
+        read:   { type: Boolean, default: true },
+        update: { type: Boolean, default: true },
+        delete: { type: Boolean, default: true },
+      }],
+    },
     createdBy: { type: String },
     createdAt: { type: Date, default: Date.now },
   }],

@@ -2851,6 +2851,119 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 this.saving = false;
             }
         }));
+
+        // Relation editor sub-component (for fiche)
+        Alpine.data('ovRelEditor', (cfg) => ({
+            key: cfg.key,
+            targetEntityId: cfg.targetEntityId,
+            targetEntitySlug: cfg.targetEntitySlug || '',
+            isMulti: cfg.isMulti,
+            color: cfg.color || '#4361ee',
+            tags: [...(cfg.initial || [])],
+            searchQ: '',
+            results: [],
+            showDropdown: false,
+            dirty: false,
+            init() {
+                this.$nextTick(() => {
+                    const inp = this.$refs.relSearchInput;
+                    if (inp) inp.focus();
+                });
+            },
+            async search() {
+                if (!this.targetEntityId) return;
+                const q = this.searchQ.trim();
+                try {
+                    const url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&q=' + encodeURIComponent(q) + '&limit=8';
+                    const res = await fetch(url, { credentials: 'include' });
+                    const data = await res.json();
+                    const tagIds = this.tags.map(t => t._id);
+                    this.results = (data.data || []).filter(r => !tagIds.includes(r.id)).map(r => ({
+                        _id: r.id,
+                        title: r.label || 'Sans titre'
+                    }));
+                    this.showDropdown = true;
+                } catch (e) { console.error('[RelSearch]', e); }
+            },
+            async addTag(record) {
+                if (!this.isMulti) this.tags = [];
+                this.tags.push({ _id: record._id, title: record.title });
+                this.searchQ = '';
+                this.results = [];
+                this.showDropdown = false;
+                this.dirty = true;
+                if (this.isMulti) {
+                    await this._persist('add', record._id);
+                } else {
+                    await this._persistSet([record._id]);
+                    this.closeAndSave();
+                }
+            },
+            async removeTag(id) {
+                this.tags = this.tags.filter(t => t._id !== id);
+                this.dirty = true;
+                await this._persist('remove', id);
+            },
+            async _persist(action, targetId) {
+                try {
+                    await fetch(_recUrl + '/update-relation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ relationKey: this.key, action, targetId })
+                    });
+                } catch (e) { console.error('[RelPersist]', e); }
+            },
+            async _persistSet(ids) {
+                try {
+                    await fetch(_recUrl + '/update-relation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ relationKey: this.key, action: 'set', targetIds: ids })
+                    });
+                } catch (e) { console.error('[RelPersist]', e); }
+            },
+            async createNew() {
+                const title = this.searchQ.trim();
+                if (!title || !this.targetEntityId) return;
+                try {
+                    const res = await fetch('/account/<%= account_number %>/record/api/quick-create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ entityId: this.targetEntityId, title })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.record) {
+                        await this.addTag({ _id: data.record._id, title: data.record.title });
+                    }
+                } catch (e) { console.error('[QuickCreate]', e); }
+            },
+            closeAndSave() {
+                this.results = [];
+                this.searchQ = '';
+                this.showDropdown = false;
+                const parent = this.$el.closest('.ov-ef');
+                if (parent) {
+                    const viewEl = parent.querySelector('.ov-ef-view');
+                    if (viewEl) {
+                        if (this.tags.length > 0) {
+                            viewEl.innerHTML = '<div class="ov-tags">' + this.tags.map(t =>
+                                '<span class="ov-tag" style="background:' + this.color + '10;border-color:' + this.color + '30;color:' + this.color + '">' + t.title.replace(/</g,'&lt;') + '</span>'
+                            ).join('') + '</div>';
+                        } else {
+                            viewEl.innerHTML = '<span class="ov-placeholder">Sélectionner...</span>';
+                        }
+                    }
+                }
+                const grid = this.$el.closest('[x-data]');
+                if (grid && grid._x_dataStack) {
+                    const root = grid._x_dataStack.find(d => d.editingKey !== undefined);
+                    if (root) root.editingKey = '';
+                }
+            }
+        }));
     });
     </script>
     <% } %>

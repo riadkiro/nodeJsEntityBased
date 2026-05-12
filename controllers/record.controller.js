@@ -2559,8 +2559,62 @@ module.exports = {
                 ficheFields = moduleName === 'fiche' ? [...standardFields] : standardFields.filter(f => f.value);
 
                 // Custom fields
-                (entity.customFields || []).forEach(cf => {
+                for (const cf of (entity.customFields || [])) {
                     const val = recordValues[cf._id.toString()];
+                    const typeConfig = cf.type_config || {};
+
+                    // Handle relation-type custom fields specially
+                    if (cf.type === 'relation') {
+                        const targetEntityId = typeConfig.refEntity || '';
+                        const isMulti = typeConfig.multiple || false;
+                        let displayVal = '';
+                        let relRecords = [];
+                        let targetEntitySlug = '';
+                        let targetEntityIcon = '';
+                        let targetEntityColor = '';
+
+                        // Resolve target entity slug/icon/color
+                        if (targetEntityId) {
+                            try {
+                                const targetEnt = await EntityModel.findById(targetEntityId).select('slug icon color name').lean();
+                                if (targetEnt) {
+                                    targetEntitySlug = targetEnt.slug || '';
+                                    targetEntityIcon = targetEnt.icon || '';
+                                    targetEntityColor = targetEnt.color || '';
+                                }
+                            } catch(e) { /* target entity may not exist */ }
+                        }
+
+                        if (val) {
+                            const ids = Array.isArray(val) ? val : [val];
+                            const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+                            if (validIds.length > 0) {
+                                const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
+                                relRecords = relRecs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
+                                displayVal = relRecords.map(r => r.title).join(', ');
+                            }
+                        }
+
+                        ficheFields.push({
+                            key: cf._id.toString(),
+                            label: cf.label || cf.name || '',
+                            icon: targetEntityIcon || (cf.ui && cf.ui.icon) || 'solar:link-round-bold-duotone',
+                            value: displayVal,
+                            rawValue: relRecords,
+                            type: 'relation',
+                            inputType: 'relation',
+                            color: targetEntityColor || cf.color || (cf.ui && cf.ui.couleur) || '#4361ee',
+                            uiRows: 1,
+                            uiWidth: isMulti ? 'full' : ((cf.ui && cf.ui.width) || 'third'),
+                            fieldType: 'relation',
+                            targetEntityId: targetEntityId.toString(),
+                            targetEntitySlug,
+                            isMulti,
+                            options: []
+                        });
+                        continue;
+                    }
+
                     let displayVal = val || '';
                     let rawVal = val || '';
                     if (cf.type === 'date' && val) {
@@ -2596,46 +2650,46 @@ module.exports = {
                         fieldType: 'custom',
                         options: (cf.type_config && cf.type_config.options) || []
                     });
-                });
+                }
 
-                // For overview: also include relation fields with resolved titles
-                if (moduleName === 'overview') {
-                    const relations = entity.relations || [];
-                    for (const rel of relations) {
-                        if (rel.showInForm === false) continue;
-                        const relVal = (record.relations || []).find(r => r.relationKey === rel.key);
-                        const targetEntity = rel.targetEntity || {};
-                        let displayVal = '';
-                        let relRecords = [];
-                        if (relVal && relVal.value) {
-                            const ids = Array.isArray(relVal.value) ? relVal.value : [relVal.value];
-                            const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
-                            if (validIds.length > 0) {
-                                const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
-                                relRecords = relRecs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
-                                displayVal = relRecords.map(r => r.title).join(', ');
-                            }
+                // Include relation fields with resolved titles (for both overview and fiche)
+                const relations = entity.relations || [];
+                for (const rel of relations) {
+                    if (rel.showInForm === false) continue;
+                    const relVal = (record.relations || []).find(r => r.relationKey === rel.key);
+                    const targetEntity = rel.targetEntity || {};
+                    let displayVal = '';
+                    let relRecords = [];
+                    if (relVal && relVal.value) {
+                        const ids = Array.isArray(relVal.value) ? relVal.value : [relVal.value];
+                        const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+                        if (validIds.length > 0) {
+                            const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
+                            relRecords = relRecs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
+                            displayVal = relRecords.map(r => r.title).join(', ');
                         }
-                        const card = rel.cardinality || 'many-to-one';
-                        const isMulti = card.includes('many-to-many') || card.includes('one-to-many');
-                        ficheFields.push({
-                            key: rel.key,
-                            label: rel.label || targetEntity.name || 'Relation',
-                            icon: targetEntity.icon || 'solar:link-round-bold-duotone',
-                            value: displayVal,
-                            rawValue: relRecords,
-                            type: 'relation',
-                            inputType: 'relation',
-                            color: targetEntity.color || '#4361ee',
-                            uiRows: 1,
-                            uiWidth: isMulti ? 'full' : 'third',
-                            fieldType: 'relation',
-                            targetEntityId: (targetEntity._id || '').toString(),
-                            targetEntitySlug: targetEntity.slug || '',
-                            isMulti
-                        });
                     }
+                    const card = rel.cardinality || 'many-to-one';
+                    const isMulti = card.includes('many-to-many') || card.includes('one-to-many');
+                    ficheFields.push({
+                        key: rel.key,
+                        label: rel.label || targetEntity.name || 'Relation',
+                        icon: targetEntity.icon || 'solar:link-round-bold-duotone',
+                        value: displayVal,
+                        rawValue: relRecords,
+                        type: 'relation',
+                        inputType: 'relation',
+                        color: targetEntity.color || '#4361ee',
+                        uiRows: 1,
+                        uiWidth: isMulti ? 'full' : 'third',
+                        fieldType: 'relation',
+                        targetEntityId: (targetEntity._id || '').toString(),
+                        targetEntitySlug: targetEntity.slug || '',
+                        isMulti
+                    });
+                }
 
+                if (moduleName === 'overview') {
                     // Build ordered overviewFields from entity formLayout
                     const layout = entity.formLayout || entity.layout;
                     if (layout && layout.fields && layout.fields.length > 0) {

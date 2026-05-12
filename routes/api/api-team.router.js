@@ -565,7 +565,7 @@ router.get('/teams', async (req, res) => {
 // ── POST /api/team/teams ────────────────────────────
 router.post('/teams', requirePerm('members.invite'), async (req, res) => {
     try {
-        const { name, description, color, icon, memberIds } = req.body;
+        const { name, description, color, icon, memberIds, dataAccess } = req.body;
         if (!name?.trim()) return res.status(400).json({ error: 'Nom de team requis' });
 
         const account = await Account.findOne({ account_number: req.account_number });
@@ -577,6 +577,7 @@ router.post('/teams', requirePerm('members.invite'), async (req, res) => {
             color: color || '#4361ee',
             icon: icon || 'solar:users-group-rounded-bold-duotone',
             memberIds: memberIds || [],
+            dataAccess: dataAccess || { entities: [] },
             createdBy: String(req.user._id),
             createdAt: new Date(),
         };
@@ -595,7 +596,7 @@ router.post('/teams', requirePerm('members.invite'), async (req, res) => {
 // ── PUT /api/team/teams/:teamId ─────────────────────
 router.put('/teams/:teamId', requirePerm('members.invite'), async (req, res) => {
     try {
-        const { name, description, color, icon, memberIds } = req.body;
+        const { name, description, color, icon, memberIds, dataAccess } = req.body;
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).json({ error: 'Account not found' });
 
@@ -607,6 +608,9 @@ router.put('/teams/:teamId', requirePerm('members.invite'), async (req, res) => 
         if (color !== undefined) team.color = color;
         if (icon !== undefined) team.icon = icon;
         if (memberIds !== undefined) team.memberIds = memberIds;
+        if (dataAccess !== undefined) {
+            team.dataAccess = dataAccess;
+        }
 
         await account.save();
         res.json({ success: true, team });

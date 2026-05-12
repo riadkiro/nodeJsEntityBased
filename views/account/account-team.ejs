@@ -403,60 +403,132 @@
   <template x-if="showTeamModal">
     <div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;" @click.self="showTeamModal = false">
       <div style="position:absolute;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(3px);"></div>
-      <div style="position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:480px;max-width:calc(100vw - 40px);max-height:85vh;overflow-y:auto;animation:nhSlideUp .3s ease;" x-transition @click.stop>
+      <div style="position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:560px;max-width:calc(100vw - 40px);max-height:85vh;overflow-y:auto;animation:nhSlideUp .3s ease;" x-transition @click.stop>
         <div style="padding:20px 24px;border-bottom:1px solid #e0e6ed;display:flex;align-items:center;gap:12px;">
           <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;" :style="'background:' + teamForm.color + '15'">
             <iconify-icon :icon="teamForm.icon" width="20" :style="'color:' + teamForm.color"></iconify-icon>
           </div>
           <div style="flex:1;">
             <div style="font-size:16px;font-weight:700;color:#0e1726;" x-text="teamForm._id ? 'Modifier la team' : 'Nouvelle team'"></div>
-            <div style="font-size:12px;color:#94a3b8;">Organisez vos membres en groupes</div>
+            <div style="font-size:12px;color:#94a3b8;">Organisez vos membres et leur accès aux données</div>
           </div>
           <button @click="showTeamModal = false" style="border:none;background:#f1f5f9;cursor:pointer;padding:6px;border-radius:8px;color:#64748b;">
             <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
           </button>
         </div>
+        <!-- Tabs -->
+        <div style="display:flex;border-bottom:1px solid #e0e6ed;padding:0 24px;">
+          <button @click="teamModalTab = 'members'" style="padding:10px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;transition:all .15s;position:relative;" :style="teamModalTab === 'members' ? 'color:#7c3aed;' : 'color:#94a3b8;'">
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="14" style="vertical-align:-2px;margin-right:4px;"></iconify-icon> Membres
+            <div :style="'position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:2px;transition:all .2s;background:' + (teamModalTab === 'members' ? '#7c3aed' : 'transparent')"></div>
+          </button>
+          <button @click="teamModalTab = 'data'" style="padding:10px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;transition:all .15s;position:relative;" :style="teamModalTab === 'data' ? 'color:#4361ee;' : 'color:#94a3b8;'">
+            <iconify-icon icon="solar:database-bold-duotone" width="14" style="vertical-align:-2px;margin-right:4px;"></iconify-icon> Accès données
+            <template x-if="teamForm.dataAccess && teamForm.dataAccess.entities && teamForm.dataAccess.entities.length > 0">
+              <span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(67,97,238,.08);color:#4361ee;margin-left:4px;" x-text="teamForm.dataAccess.entities.length"></span>
+            </template>
+            <div :style="'position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:2px;transition:all .2s;background:' + (teamModalTab === 'data' ? '#4361ee' : 'transparent')"></div>
+          </button>
+        </div>
         <div style="padding:20px 24px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;">Nom de la team *</label>
-            <input type="text" x-model="teamForm.name" placeholder="ex: Développement" style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
-          </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;">Description</label>
-            <input type="text" x-model="teamForm.description" placeholder="Description optionnelle..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
-          </div>
-          <div style="margin-bottom:16px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Couleur</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <template x-for="c in teamColors" :key="c">
-                <button @click="teamForm.color = c" style="width:28px;height:28px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all .15s;" :style="'background:' + c + (teamForm.color === c ? ';border-color:#0e1726;transform:scale(1.15)' : '')">
-                </button>
-              </template>
+          <!-- Tab: Membres -->
+          <div x-show="teamModalTab === 'members'">
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;">Nom de la team *</label>
+              <input type="text" x-model="teamForm.name" placeholder="ex: Développement" style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
             </div>
-          </div>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Membres <span style="color:#94a3b8;font-weight:400;" x-text="'(' + teamForm.memberIds.length + ' sélectionné(s))'"></span></label>
-            <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;">
-              <template x-for="m in members" :key="m._id">
-                <div :style="'display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;' + (teamForm.memberIds.includes(String(m._id)) ? 'background:rgba(124,58,237,.04)' : '')" @click="toggleTeamMember(m._id)">
-                  <input type="checkbox" :checked="teamForm.memberIds.includes(String(m._id))" style="accent-color:#7c3aed;width:16px;min-width:16px;max-width:16px;height:16px;min-height:16px;max-height:16px;cursor:pointer;flex-shrink:0;margin:0;pointer-events:none;" />
-                  <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;line-height:1;background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
-                  <div style="flex:1;min-width:0;overflow:hidden;">
-                    <div style="font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" x-text="m.name"></div>
-                    <div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" x-text="m.email"></div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;">Description</label>
+              <input type="text" x-model="teamForm.description" placeholder="Description optionnelle..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e6ed;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e0e6ed'" />
+            </div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Couleur</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <template x-for="c in teamColors" :key="c">
+                  <button @click="teamForm.color = c" style="width:28px;height:28px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all .15s;" :style="'background:' + c + (teamForm.color === c ? ';border-color:#0e1726;transform:scale(1.15)' : '')"></button>
+                </template>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;">Membres <span style="color:#94a3b8;font-weight:400;" x-text="'(' + teamForm.memberIds.length + ' sélectionné(s))'"></span></label>
+              <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e6ed;border-radius:10px;padding:4px;">
+                <template x-for="m in members" :key="m._id">
+                  <div :style="'display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;' + (teamForm.memberIds.includes(String(m._id)) ? 'background:rgba(124,58,237,.04)' : '')" @click="toggleTeamMember(m._id)">
+                    <input type="checkbox" :checked="teamForm.memberIds.includes(String(m._id))" style="accent-color:#7c3aed;width:16px;min-width:16px;max-width:16px;height:16px;min-height:16px;max-height:16px;cursor:pointer;flex-shrink:0;margin:0;pointer-events:none;" />
+                    <div :style="'width:28px;min-width:28px;max-width:28px;height:28px;min-height:28px;max-height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;line-height:1;background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
+                    <div style="flex:1;min-width:0;overflow:hidden;">
+                      <div style="font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" x-text="m.name"></div>
+                      <div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" x-text="m.email"></div>
+                    </div>
+                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;flex-shrink:0;white-space:nowrap;" x-text="roleLabel(m.role)"></span>
                   </div>
-                  <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;flex-shrink:0;white-space:nowrap;" x-text="roleLabel(m.role)"></span>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
+          </div>
+          <!-- Tab: Accès données -->
+          <div x-show="teamModalTab === 'data'">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(67,97,238,.04);border:1px solid rgba(67,97,238,.12);border-radius:10px;margin-bottom:14px;">
+              <iconify-icon icon="solar:info-circle-bold" width="16" style="color:#4361ee;flex-shrink:0;"></iconify-icon>
+              <span style="font-size:11.5px;color:#4361ee;font-weight:500;line-height:1.4;">Cochez les entités accessibles. <strong>Aucune sélection = accès à toutes les entités.</strong></span>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:12px;">
+              <button @click="teamForm.dataAccess = { entities: [] }" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;" :style="(!teamForm.dataAccess || !teamForm.dataAccess.entities || teamForm.dataAccess.entities.length === 0) ? 'border:1.5px solid #22c55e;background:rgba(34,197,94,.06);color:#22c55e;' : 'border:1.5px solid #e0e6ed;background:#fff;color:#64748b;'">
+                <iconify-icon icon="solar:check-circle-bold" width="11" style="vertical-align:-1px;"></iconify-icon> Accès complet
+              </button>
+            </div>
+            <template x-if="allEntities.length > 0">
+              <div style="border:1px solid #e0e6ed;border-radius:12px;overflow:hidden;">
+                <div style="display:grid;grid-template-columns:1fr 52px 52px 52px 52px;gap:0;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e0e6ed;">
+                  <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Entité</span>
+                  <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;text-align:center;">Voir</span>
+                  <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;text-align:center;">Créer</span>
+                  <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;text-align:center;">Éditer</span>
+                  <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;text-align:center;">Supp.</span>
+                </div>
+                <div style="max-height:280px;overflow-y:auto;">
+                  <template x-for="entity in allEntities" :key="'da-'+entity._id">
+                    <div style="display:grid;grid-template-columns:1fr 52px 52px 52px 52px;gap:0;padding:8px 12px;border-bottom:1px solid #f1f5f9;transition:background .1s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                      <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" @click="toggleTeamEntity(entity._id)">
+                        <input type="checkbox" :checked="!!getTeamEntityPerm(entity._id)" style="accent-color:#4361ee;width:14px;min-width:14px;height:14px;cursor:pointer;margin:0;pointer-events:none;" />
+                        <div :style="'width:24px;min-width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:' + (entity.color || '#4361ee') + '12'">
+                          <iconify-icon :icon="entity.icon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (entity.color || '#4361ee')"></iconify-icon>
+                        </div>
+                        <span style="font-size:12px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="entity.name"></span>
+                      </div>
+                      <div style="display:flex;align-items:center;justify-content:center;">
+                        <button @click="toggleTeamEntityCrud(entity._id, 'read')" style="width:22px;height:22px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" :style="getTeamEntityCrud(entity._id, 'read') ? 'background:#22c55e;color:#fff;' : 'background:#f1f5f9;color:#cbd5e1;'" :disabled="!getTeamEntityPerm(entity._id)">
+                          <iconify-icon icon="solar:eye-bold" width="11"></iconify-icon>
+                        </button>
+                      </div>
+                      <div style="display:flex;align-items:center;justify-content:center;">
+                        <button @click="toggleTeamEntityCrud(entity._id, 'create')" style="width:22px;height:22px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" :style="getTeamEntityCrud(entity._id, 'create') ? 'background:#4361ee;color:#fff;' : 'background:#f1f5f9;color:#cbd5e1;'" :disabled="!getTeamEntityPerm(entity._id)">
+                          <iconify-icon icon="solar:add-circle-bold" width="11"></iconify-icon>
+                        </button>
+                      </div>
+                      <div style="display:flex;align-items:center;justify-content:center;">
+                        <button @click="toggleTeamEntityCrud(entity._id, 'update')" style="width:22px;height:22px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" :style="getTeamEntityCrud(entity._id, 'update') ? 'background:#f59e0b;color:#fff;' : 'background:#f1f5f9;color:#cbd5e1;'" :disabled="!getTeamEntityPerm(entity._id)">
+                          <iconify-icon icon="solar:pen-bold" width="11"></iconify-icon>
+                        </button>
+                      </div>
+                      <div style="display:flex;align-items:center;justify-content:center;">
+                        <button @click="toggleTeamEntityCrud(entity._id, 'delete')" style="width:22px;height:22px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" :style="getTeamEntityCrud(entity._id, 'delete') ? 'background:#ef4444;color:#fff;' : 'background:#f1f5f9;color:#cbd5e1;'" :disabled="!getTeamEntityPerm(entity._id)">
+                          <iconify-icon icon="solar:trash-bin-trash-bold" width="11"></iconify-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
         <div style="padding:14px 24px 20px;display:flex;align-items:center;gap:8px;justify-content:space-between;">
           <div>
             <template x-if="teamForm._id">
-              <button @click="confirmDeleteTeam ? deleteTeam(teamForm._id) : (confirmDeleteTeam = true)" :style="confirmDeleteTeam ? 'padding:8px 16px;border:1px solid #ef4444;background:#ef4444;border-radius:8px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all .15s;' : 'padding:8px 16px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;font-family:inherit;transition:all .15s;'">
+              <button @click="confirmDeleteTeam ? deleteTeam(teamForm._id) : (confirmDeleteTeam = true)" :style="confirmDeleteTeam ? 'padding:8px 16px;border:1px solid #ef4444;background:#ef4444;border-radius:8px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all .15s;' : 'padding:8px 16px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;font-size:12px;font-weight:600;color:#ef4444;cursor:pointer;font-family:inherit;transition:all .15s;'" @click.away="confirmDeleteTeam = false">
                 <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12" style="vertical-align:-2px;"></iconify-icon>
-                <span x-text="confirmDeleteTeam ? 'Confirmer la suppression' : 'Supprimer'"></span>
+                <span x-text="confirmDeleteTeam ? 'Confirmer la suppression' : 'Supprimer'" @click="if(confirmDeleteTeam) deleteTeam()"></span>
               </button>
             </template>
           </div>
@@ -541,7 +613,8 @@ document.addEventListener('alpine:init', () => {
     // Team modal
     showTeamModal: false,
     confirmDeleteTeam: false,
-    teamForm: { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [] },
+    teamModalTab: 'members',
+    teamForm: { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [], dataAccess: { entities: [] } },
     teamColors: ['#4361ee','#7c3aed','#f97316','#10b981','#ec4899','#06b6d4','#ef4444','#8b5cf6','#eab308','#14b8a6'],
     showInviteModal: false,
     inviteEmail: '',
@@ -784,10 +857,20 @@ document.addEventListener('alpine:init', () => {
 
     openTeamModal(team) {
       if (team) {
-        this.teamForm = { _id: team._id, name: team.name, description: team.description || '', color: team.color, icon: team.icon, memberIds: [...(team.memberIds || [])] };
+        const da = team.dataAccess || { entities: [] };
+        this.teamForm = {
+          _id: team._id,
+          name: team.name,
+          description: team.description || '',
+          color: team.color,
+          icon: team.icon,
+          memberIds: [...(team.memberIds || [])],
+          dataAccess: { entities: JSON.parse(JSON.stringify(da.entities || [])) },
+        };
       } else {
-        this.teamForm = { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [] };
+        this.teamForm = { _id: null, name: '', description: '', color: '#4361ee', icon: 'solar:users-group-rounded-bold-duotone', memberIds: [], dataAccess: { entities: [] } };
       }
+      this.teamModalTab = 'members';
       this.confirmDeleteTeam = false;
       this.showTeamModal = true;
     },
@@ -796,6 +879,35 @@ document.addEventListener('alpine:init', () => {
       const idx = this.teamForm.memberIds.indexOf(String(userId));
       if (idx === -1) this.teamForm.memberIds.push(String(userId));
       else this.teamForm.memberIds.splice(idx, 1);
+    },
+
+    // ── Data Access helpers ──
+    getTeamEntityPerm(entityId) {
+      if (!this.teamForm.dataAccess || !this.teamForm.dataAccess.entities) return null;
+      return this.teamForm.dataAccess.entities.find(e => String(e.entityId) === String(entityId)) || null;
+    },
+
+    toggleTeamEntity(entityId) {
+      if (!this.teamForm.dataAccess) this.teamForm.dataAccess = { entities: [] };
+      const id = String(entityId);
+      const idx = this.teamForm.dataAccess.entities.findIndex(e => String(e.entityId) === id);
+      if (idx !== -1) {
+        this.teamForm.dataAccess.entities.splice(idx, 1);
+      } else {
+        this.teamForm.dataAccess.entities.push({ entityId: id, read: true, create: true, update: true, delete: true });
+      }
+    },
+
+    getTeamEntityCrud(entityId, action) {
+      const perm = this.getTeamEntityPerm(entityId);
+      if (!perm) return false;
+      return perm[action] !== false;
+    },
+
+    toggleTeamEntityCrud(entityId, action) {
+      const perm = this.getTeamEntityPerm(entityId);
+      if (!perm) return;
+      perm[action] = !perm[action];
     },
 
     async saveTeam() {

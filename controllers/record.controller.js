@@ -6,6 +6,8 @@ const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
 const denormService = require("../services/record-denorm.service");
+const Account = require("../models/account.model");
+const User = require("../models/user.model");
 
 /**
  * Get inverse relations for an entity.
@@ -2495,7 +2497,7 @@ module.exports = {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
             const moduleName = req.params.moduleName;
-            const validModules = ['overview', 'fiche', 'docs', 'drive', 'tasks', 'notes', 'chat', 'emails', 'agenda'];
+            const validModules = ['overview', 'fiche', 'docs', 'drive', 'tasks', 'notes', 'chat', 'emails', 'agenda', 'team'];
             if (!validModules.includes(moduleName)) {
                 return res.status(404).render("errors/404", {
                     message: "Module not found",
@@ -2756,6 +2758,78 @@ module.exports = {
                 }
             }
 
+            // ═══ Load Team Data for Team Module ═══
+            let teamModuleData = null;
+            if (moduleName === 'team') {
+                try {
+                    const account = await Account.findOne({ account_number: req.account_number }).lean();
+                    const workspaceTeams = (account?.teams || []).map(t => ({
+                        _id: t._id.toString(),
+                        name: t.name,
+                        description: t.description || '',
+                        color: t.color || '#4361ee',
+                        icon: t.icon || 'solar:users-group-rounded-bold-duotone',
+                        memberIds: (t.memberIds || []),
+                        memberCount: (t.memberIds || []).length,
+                    }));
+
+                    // Load workspace members
+                    const workspaceMembers = [];
+                    for (const member of (account?.users || []).filter(u => u.status !== 'removed')) {
+                        const user = member.userId
+                            ? await User.findById(member.userId).select('name email avatar').lean()
+                            : await User.findOne({ email: member.email }).select('name email avatar').lean();
+                        workspaceMembers.push({
+                            _id: (user?._id || member.userId || '').toString(),
+                            name: user?.name || member.email?.split('@')[0] || 'Utilisateur',
+                            email: member.email || user?.email || '',
+                            avatar: user?.avatar || null,
+                            role: member.role || 'member',
+                        });
+                    }
+
+                    // Load RecordAccess grants for this record
+                    let recordGrants = [];
+                    try {
+                        const RecordAccess = await tenantCollection(req, 'RecordAccess');
+                        const access = await RecordAccess.findOne({ recordId: record._id }).lean();
+                        if (access && access.grants) {
+                            const now = new Date();
+                            recordGrants = access.grants
+                                .filter(g => !g.expiresAt || g.expiresAt > now)
+                                .map(g => ({
+                                    granteeType: g.granteeType,
+                                    granteeId: g.granteeId,
+                                    permissions: g.permissions || {},
+                                    grantedAt: g.grantedAt,
+                                    note: g.note || '',
+                                }));
+                        }
+                    } catch (e) { /* RecordAccess may not exist yet */ }
+
+                    // Build assigned teams (teams that have a grant on this record)
+                    const assignedTeamIds = recordGrants
+                        .filter(g => g.granteeType === 'team')
+                        .map(g => g.granteeId);
+
+                    // Build assigned individual users
+                    const assignedUserIds = recordGrants
+                        .filter(g => g.granteeType === 'user')
+                        .map(g => g.granteeId);
+
+                    teamModuleData = {
+                        workspaceTeams,
+                        workspaceMembers,
+                        recordGrants,
+                        assignedTeamIds,
+                        assignedUserIds,
+                    };
+                } catch (e) {
+                    console.error('[TeamModule]', e);
+                    teamModuleData = { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [] };
+                }
+            }
+
             res.render("record/record-module", {
                 entity,
                 record,
@@ -2764,6 +2838,7 @@ module.exports = {
                 overviewFields,
                 fichePreferences: fichePreferences || {},
                 isDraft: record.isDraft || false,
+                teamModuleData: teamModuleData || null,
                 account_number: req.account_number,
                 user: req.user,
                 layout: "layout-app"

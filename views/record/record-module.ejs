@@ -9,7 +9,8 @@ const _modulesDef = {
   agenda: { icon: 'solar:calendar-bold-duotone', color: '#14b8a6', label: 'Agenda', desc: 'Rendez-vous et événements' },
   chat:   { icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316', label: 'Chat', desc: 'Conversations et échanges' },
   emails: { icon: 'solar:letter-bold-duotone', color: '#0ea5e9', label: 'Emails', desc: 'Correspondance liée' },
-  notes:  { icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', label: 'Notes', desc: 'Notes et observations' }
+  notes:  { icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', label: 'Notes', desc: 'Notes et observations' },
+  team:   { icon: 'solar:users-group-rounded-bold-duotone', color: '#7c3aed', label: 'Équipe', desc: 'Gestion des accès équipe' }
 };
 const _mod = _modulesDef[moduleName];
 const _modColor = _mod.color;
@@ -231,6 +232,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <h1><%= record.title || 'Sans titre' %></h1>
             <p><%= entity.nameSingular || entity.name %></p>
         </div>
+        <% if (moduleName !== 'team') { %>
         <div class="rm-hero-actions" style="display:flex;align-items:center;gap:8px;z-index:1;">
             <button type="button" onclick="createDraftRecord()" class="rm-btn-primary" style="background:linear-gradient(135deg,<%= entity.color || '#4361ee' %>,<%= entity.color || '#4361ee' %>dd);font-size:12px;padding:7px 14px;border:none;cursor:pointer;">
                 <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
@@ -243,6 +245,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 </button>
             </form>
         </div>
+        <% } %>
     </div>
     <% } %>
 
@@ -256,7 +259,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             { key:'agenda', icon:'solar:calendar-bold-duotone', color:'#14b8a6', label:'Agenda' },
             { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
             { key:'emails', icon:'solar:letter-bold-duotone', color:'#0ea5e9', label:'Emails' },
-            { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' }
+            { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
+            { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Équipe' }
         ]; %>
         <% _allMods.forEach(function(m) { %>
         <a href="<%= _recBase %>/<%= m.key %>" class="<%= moduleName === m.key ? 'active' : '' %>"
@@ -1827,7 +1831,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <% } %>
 
     <!-- ═══ OTHER MODULES (non-docs) ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda') { %>
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda' && moduleName !== 'team') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -2231,6 +2235,343 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
         <% if (moduleName === 'notes') { %>
         <%- include('../record/partials/record-notes-module') %>
+        <% } %>
+
+        <% if (moduleName === 'team') { %>
+        <%- include('../record/partials/ov-widget-team') %>
+        <script>
+        document.addEventListener('alpine:init', () => {
+            const _teamData = <%- JSON.stringify(teamModuleData || { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [] }) %>;
+            const _accountNumber = '<%= account_number %>';
+            const _recordId = '<%= record._id %>';
+            const _entityId = '<%= entity._id || '' %>';
+            const _recordTitle = '<%= (record.title || "Sans titre").replace(/'/g, "\\'") %>';
+
+            Alpine.data('recordTeam', () => ({
+                allTeams: _teamData.workspaceTeams || [],
+                allMembers: _teamData.workspaceMembers || [],
+                recordGrants: _teamData.recordGrants || [],
+                assignedTeamIds: [...(_teamData.assignedTeamIds || [])],
+                assignedUserIds: [...(_teamData.assignedUserIds || [])],
+                recordTitle: _recordTitle,
+                assignPerms: { read: true, update: true, delete: false, share: false },
+                showCreateModal: false,
+                showAddModal: false,
+                modalSearch: '',
+                newTeam: { name: '', description: '', color: '#7c3aed', memberIds: [] },
+                teamColors: ['#4361ee','#7c3aed','#f97316','#10b981','#ec4899','#06b6d4','#ef4444','#8b5cf6','#eab308','#14b8a6'],
+                inviteEmail: '',
+                inviting: false,
+                creating: false,
+                toast: '',
+                toastType: 'success',
+                searchQuery: '',
+
+                init() {},
+
+                // ─── Computed: assigned teams with permissions ───
+                get assignedTeams() {
+                    return this.allTeams
+                        .filter(t => this.assignedTeamIds.includes(t._id))
+                        .map(t => {
+                            const grant = this.recordGrants.find(g => g.granteeType === 'team' && g.granteeId === t._id);
+                            return {
+                                ...t,
+                                permissions: grant?.permissions || {},
+                                grantedAt: grant?.grantedAt || null,
+                            };
+                        });
+                },
+
+                // ─── Computed: individually assigned users with permissions ───
+                get assignedUsers() {
+                    return this.assignedUserIds.map(uid => {
+                        const member = this.allMembers.find(m => m._id === uid);
+                        const grant = this.recordGrants.find(g => g.granteeType === 'user' && g.granteeId === uid);
+                        return {
+                            _id: uid,
+                            name: member?.name || 'Utilisateur',
+                            email: member?.email || '',
+                            avatar: member?.avatar || null,
+                            role: member?.role || 'member',
+                            permissions: grant?.permissions || {},
+                            grantedAt: grant?.grantedAt || null,
+                        };
+                    }).filter(u => u.name);
+                },
+
+                // ─── Computed: teams not yet assigned ───
+                get availableTeams() {
+                    return this.allTeams.filter(t => !this.assignedTeamIds.includes(t._id));
+                },
+
+                // ─── Computed: users not individually assigned (and not in an assigned team) ───
+                get availableUsers() {
+                    // Get all member IDs that are in already-assigned teams
+                    const teamMemberIds = new Set();
+                    this.assignedTeams.forEach(t => {
+                        (t.memberIds || []).forEach(mid => teamMemberIds.add(String(mid)));
+                    });
+                    return this.allMembers.filter(m =>
+                        !this.assignedUserIds.includes(m._id) &&
+                        !teamMemberIds.has(m._id)
+                    );
+                },
+
+                // ─── Computed: filtered add items ───
+                get filteredAddItems() {
+                    const q = (this.searchQuery || '').toLowerCase().trim();
+                    const teams = this.availableTeams.filter(t => !q || t.name.toLowerCase().includes(q));
+                    const users = this.availableUsers.filter(u => !q || u.name.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+                    return { teams, users };
+                },
+
+                // ─── Computed: modal filtered users (all non-assigned) ───
+                get modalFilteredUsers() {
+                    const q = (this.modalSearch || '').toLowerCase().trim();
+                    return this.allMembers.filter(m => {
+                        if (this.assignedUserIds.includes(m._id)) return false;
+                        if (!q) return true;
+                        return m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q);
+                    });
+                },
+
+                // ─── Helpers ───
+                getTeamMembers(team) {
+                    return (team.memberIds || []).map(mid => {
+                        const m = this.allMembers.find(m => m._id === String(mid));
+                        return m || { _id: mid, name: 'Utilisateur', email: '', role: 'member' };
+                    });
+                },
+
+                getMemberName(memberId) {
+                    const m = this.allMembers.find(m => m._id === String(memberId));
+                    return m?.name || 'Utilisateur';
+                },
+
+                avatarColor(name) {
+                    const colors = ['#4361ee','#e7515a','#00ab55','#e2a03f','#805dca','#2196f3','#3b3f5c','#009688','#e91e63','#ff5722'];
+                    let hash = 0;
+                    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                    return colors[Math.abs(hash) % colors.length];
+                },
+
+                formatDate(d) {
+                    if (!d) return '';
+                    const dt = new Date(d);
+                    return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+                },
+
+                // ─── Team actions ───
+                async assignTeam(teamId) {
+                    try {
+                        const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/grant`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                granteeType: 'team',
+                                granteeId: teamId,
+                                entityId: _entityId,
+                                permissions: { ...this.assignPerms },
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.assignedTeamIds.push(teamId);
+                            this.recordGrants.push({
+                                granteeType: 'team',
+                                granteeId: teamId,
+                                permissions: { ...this.assignPerms },
+                                grantedAt: new Date().toISOString(),
+                            });
+                            this.showToast('Équipe assignée', 'success');
+                        } else {
+                            this.showToast(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] assign error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
+                },
+
+                async revokeTeam(teamId) {
+                    if (!confirm('Retirer l\'accès de cette équipe ?')) return;
+                    try {
+                        const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/revoke`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ granteeType: 'team', granteeId: teamId })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.assignedTeamIds = this.assignedTeamIds.filter(id => id !== teamId);
+                            this.recordGrants = this.recordGrants.filter(g => !(g.granteeType === 'team' && g.granteeId === teamId));
+                            this.showToast('Accès retiré', 'success');
+                        } else {
+                            this.showToast(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] revoke error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
+                },
+
+                // ─── User actions ───
+                async assignUser(userId) {
+                    try {
+                        const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/grant`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                granteeType: 'user',
+                                granteeId: userId,
+                                entityId: _entityId,
+                                permissions: { ...this.assignPerms },
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.assignedUserIds.push(userId);
+                            this.recordGrants.push({
+                                granteeType: 'user',
+                                granteeId: userId,
+                                permissions: { ...this.assignPerms },
+                                grantedAt: new Date().toISOString(),
+                            });
+                            this.showToast('Utilisateur ajouté', 'success');
+                        } else {
+                            this.showToast(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] assignUser error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
+                },
+
+                async assignUserFromModal(userId) {
+                    await this.assignUser(userId);
+                },
+
+                async revokeUser(userId) {
+                    if (!confirm('Retirer l\'accès de cet utilisateur ?')) return;
+                    try {
+                        const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/revoke`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ granteeType: 'user', granteeId: userId })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.assignedUserIds = this.assignedUserIds.filter(id => id !== userId);
+                            this.recordGrants = this.recordGrants.filter(g => !(g.granteeType === 'user' && g.granteeId === userId));
+                            this.showToast('Accès retiré', 'success');
+                        } else {
+                            this.showToast(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] revokeUser error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
+                },
+
+                // ─── Team creation ───
+                toggleNewTeamMember(memberId) {
+                    const idx = this.newTeam.memberIds.indexOf(memberId);
+                    if (idx >= 0) {
+                        this.newTeam.memberIds.splice(idx, 1);
+                    } else {
+                        this.newTeam.memberIds.push(memberId);
+                    }
+                },
+
+                async createTeamAndAssign() {
+                    if (!this.newTeam.name.trim()) {
+                        this.showToast('Le nom de l\'équipe est requis', 'error');
+                        return;
+                    }
+                    this.creating = true;
+                    try {
+                        const createRes = await fetch(`/account/${_accountNumber}/api/team/teams`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                name: this.newTeam.name.trim(),
+                                description: this.newTeam.description,
+                                color: this.newTeam.color,
+                                icon: 'solar:users-group-rounded-bold-duotone',
+                                memberIds: this.newTeam.memberIds,
+                            })
+                        });
+                        const createData = await createRes.json();
+                        if (createData.success && createData.team) {
+                            const newTeamId = createData.team._id;
+                            this.allTeams.push({
+                                _id: newTeamId,
+                                name: this.newTeam.name.trim(),
+                                description: this.newTeam.description,
+                                color: this.newTeam.color,
+                                icon: 'solar:users-group-rounded-bold-duotone',
+                                memberIds: [...this.newTeam.memberIds],
+                                memberCount: this.newTeam.memberIds.length,
+                            });
+                            await this.assignTeam(newTeamId);
+                            this.newTeam = { name: '', description: '', color: '#7c3aed', memberIds: [] };
+                            this.showCreateModal = false;
+                            this.showToast('Équipe créée et assignée !', 'success');
+                        } else {
+                            this.showToast(createData.error || 'Erreur lors de la création', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] create error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
+                    this.creating = false;
+                },
+
+                async inviteMember() {
+                    const email = this.inviteEmail.trim();
+                    if (!email || !email.includes('@')) {
+                        this.showToast('Email invalide', 'error');
+                        return;
+                    }
+                    this.inviting = true;
+                    try {
+                        const res = await fetch(`/account/${_accountNumber}/api/team/invite`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ email, role: 'member' })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.inviteEmail = '';
+                            this.showToast(data.message || 'Invitation envoyée', 'success');
+                            if (data.addedDirectly) {
+                                setTimeout(() => window.location.reload(), 800);
+                            }
+                        } else {
+                            this.showToast(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] invite error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
+                    this.inviting = false;
+                },
+
+                showToast(msg, type) {
+                    this.toast = msg;
+                    this.toastType = type;
+                    setTimeout(() => { this.toast = ''; }, 3000);
+                }
+            }));
+        });
+        </script>
         <% } %>
 
     <% if (moduleName === 'chat') { %>

@@ -1,0 +1,385 @@
+<!-- ═══ TEAM MODULE ═══ -->
+<style>
+.rt-section{margin-bottom:24px;}
+.rt-section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.rt-section-title{font-size:14px;font-weight:700;color:#0e1726;display:flex;align-items:center;gap:8px;}
+.rt-section-title iconify-icon{flex-shrink:0;}
+.rt-section-count{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:rgba(124,58,237,.08);color:#7c3aed;}
+.rt-card{background:#fff;border:1px solid #e8ecf1;border-radius:14px;padding:18px;transition:all .25s;}
+.rt-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.04);}
+.rt-team-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:10px;transition:all .2s;border:1px solid transparent;}
+.rt-team-row:hover{background:#f8fafc;border-color:#e8ecf1;}
+.rt-team-row + .rt-team-row{border-top:1px solid #f1f3f5;}
+.rt-team-row:hover + .rt-team-row{border-top-color:transparent;}
+.rt-team-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rt-team-info{flex:1;min-width:0;}
+.rt-team-name{font-size:13.5px;font-weight:700;color:#0e1726;}
+.rt-team-meta{font-size:11.5px;color:#888da8;margin-top:1px;display:flex;align-items:center;gap:6px;}
+.rt-perm-badges{display:flex;gap:4px;flex-wrap:wrap;}
+.rt-perm-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;white-space:nowrap;}
+.rt-perm-on{background:rgba(34,197,94,.08);color:#22c55e;}
+.rt-perm-off{background:#f1f5f9;color:#bfc9d4;}
+.rt-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;border:none;}
+.rt-btn-assign{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;}
+.rt-btn-assign:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.3);}
+.rt-btn-create{background:rgba(67,97,238,.06);color:#4361ee;border:1.5px dashed rgba(67,97,238,.3);}
+.rt-btn-create:hover{background:rgba(67,97,238,.1);border-color:#4361ee;}
+.rt-btn-danger{background:rgba(239,68,68,.06);color:#ef4444;border:1px solid rgba(239,68,68,.15);}
+.rt-btn-danger:hover{background:rgba(239,68,68,.12);}
+.rt-btn-sm{padding:4px 10px;font-size:11px;}
+.rt-empty{text-align:center;padding:32px 20px;color:#94a3b8;}
+.rt-empty iconify-icon{display:block;margin:0 auto 8px;}
+.rt-assign-dropdown{margin-top:10px;border:1.5px solid #e2e8f0;border-radius:12px;padding:6px;background:#fff;max-height:280px;overflow-y:auto;}
+.rt-assign-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;}
+.rt-assign-option:hover{background:#f8fafc;}
+.rt-assign-check{width:16px;height:16px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0;}
+/* ── Inline switch toggles ── */
+.rt-perms-inline{display:flex;gap:8px;flex-wrap:wrap;}
+.rt-perm-switch{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;border:1.5px solid #e8ecf1;background:#fff;cursor:pointer;transition:all .2s;user-select:none;}
+.rt-perm-switch:hover{border-color:#7c3aed30;background:#faf8ff;}
+.rt-perm-switch.active{border-color:#7c3aed;background:rgba(124,58,237,.04);}
+.rt-perm-switch-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rt-perm-switch-label{font-size:12px;font-weight:600;white-space:nowrap;}
+.rt-switch{position:relative;width:36px;height:20px;flex-shrink:0;}
+.rt-switch input{opacity:0;width:0;height:0;position:absolute;}
+.rt-switch-slider{position:absolute;inset:0;background:#d1d5db;border-radius:10px;cursor:pointer;transition:all .25s;}
+.rt-switch-slider::before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;left:3px;top:3px;transition:all .25s;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.rt-switch input:checked + .rt-switch-slider{background:#7c3aed;}
+.rt-switch input:checked + .rt-switch-slider::before{transform:translateX(16px);}
+/* ── Create modal ── */
+.rt-modal-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;}
+.rt-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(3px);}
+.rt-modal{position:relative;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:560px;max-width:calc(100vw - 40px);max-height:85vh;overflow-y:auto;animation:rtSlideUp .3s ease;}
+@keyframes rtSlideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.rt-modal-header{padding:20px 24px;border-bottom:1px solid #e0e6ed;display:flex;align-items:center;gap:12px;}
+.rt-modal-header-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rt-modal-body{padding:20px 24px;}
+.rt-modal-footer{padding:14px 24px 20px;display:flex;align-items:center;gap:8px;justify-content:flex-end;border-top:1px solid #f1f5f9;}
+.rt-create-input{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;box-sizing:border-box;transition:border-color .2s;}
+.rt-create-input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.06);}
+.rt-member-option{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;}
+.rt-member-option:hover{background:rgba(124,58,237,.04);}
+.rt-member-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.rt-members-avatars{display:flex;margin-top:2px;}
+.rt-members-avatars > div{width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;}
+.rt-members-avatars > div + div{margin-left:-4px;}
+.rt-color-pick{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.rt-color-dot{width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;transition:all .15s;}
+.rt-color-dot.active{border-color:#0e1726;transform:scale(1.15);}
+/* Dark mode */
+.dark .rt-card{background:#0e1726;border-color:#253b5c;}
+.dark .rt-section-title{color:#e0e6ed;}
+.dark .rt-team-row:hover{background:#1b2e4b;border-color:#253b5c;}
+.dark .rt-team-row + .rt-team-row{border-top-color:#1b2e4b;}
+.dark .rt-team-name{color:#e0e6ed;}
+.dark .rt-assign-dropdown{background:#0e1726;border-color:#253b5c;}
+.dark .rt-assign-option:hover{background:#1b2e4b;}
+.dark .rt-switch-label{color:#e0e6ed;}
+.dark .rt-switch-row{border-bottom-color:#1b2e4b;}
+.dark .rt-switch-slider{background:#506690;}
+.dark .rt-modal{background:#0e1726;}
+.dark .rt-modal-header{border-bottom-color:#253b5c;}
+.dark .rt-modal-footer{border-top-color:#253b5c;}
+.dark .rt-create-input{background:#1b2e4b;border-color:#253b5c;color:#e0e6ed;}
+.dark .rt-member-option:hover{background:rgba(124,58,237,.08);}
+.dark .rt-perm-off{background:#1b2e4b;color:#506690;}
+</style>
+
+<div x-data="recordTeam()" x-init="init()" @open-create-team.window="showCreateModal = true">
+    <!-- Assigned Teams -->
+    <div class="rt-section">
+        <div class="rt-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="rt-section-title">
+                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
+                Accès assignés
+                <span class="rt-section-count" x-text="assignedTeams.length + assignedUsers.length + ' accès'" x-show="assignedTeams.length + assignedUsers.length > 0"></span>
+            </div>
+            <button type="button" @click="showAddModal = true" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(124,58,237,.25);">
+                <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                Ajouter
+            </button>
+        </div>
+
+        <div class="rt-card">
+            <!-- Parent record header -->
+            <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;margin-bottom:10px;border-bottom:1.5px solid #f1f5f9;">
+                <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,.08);flex-shrink:0;">
+                    <iconify-icon icon="solar:folder-with-files-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:14px;font-weight:700;color:#0e1726;" x-text="recordTitle"></div>
+                    <div style="font-size:11px;color:#94a3b8;" x-text="assignedTeams.length + ' équipe(s) · ' + assignedUsers.length + ' utilisateur(s)'"></div>
+                </div>
+            </div>
+
+            <template x-for="team in assignedTeams" :key="team._id">
+                <div class="rt-team-row">
+                    <div class="rt-team-icon" :style="'background:' + team.color + '18'">
+                        <iconify-icon :icon="team.icon" width="18" :style="'color:' + team.color"></iconify-icon>
+                    </div>
+                    <div class="rt-team-info">
+                        <div class="rt-team-name" x-text="team.name"></div>
+                        <div class="rt-team-meta">
+                            <span x-text="team.memberCount + ' membre(s)'"></span>
+                            <span style="color:#d1d5db">·</span>
+                            <span x-text="formatDate(team.grantedAt)"></span>
+                        </div>
+                        <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;">
+                            <template x-for="(mid, idx) in (team.memberIds || []).slice(0, 6)" :key="mid">
+                                <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;transition:background .15s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'">
+                                    <span :style="'width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(getMemberName(mid))" x-text="getMemberName(mid).charAt(0).toUpperCase()"></span>
+                                    <span style="font-size:12px;font-weight:500;color:#334155;" x-text="getMemberName(mid)"></span>
+                                </div>
+                            </template>
+                            <template x-if="(team.memberIds || []).length > 6">
+                                <div style="padding:4px 8px;font-size:11px;font-weight:600;color:#64748b;">
+                                    <span x-text="'+' + ((team.memberIds || []).length - 6) + ' autres'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="rt-perm-badges">
+                        <span class="rt-perm-badge" :class="team.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'">Lire</span>
+                        <span class="rt-perm-badge" :class="team.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'">Éditer</span>
+                        <span class="rt-perm-badge" :class="team.permissions?.delete ? 'rt-perm-on' : 'rt-perm-off'">Supp.</span>
+                        <span class="rt-perm-badge" :class="team.permissions?.share ? 'rt-perm-on' : 'rt-perm-off'">Partager</span>
+                    </div>
+                    <button class="rt-btn rt-btn-danger rt-btn-sm" @click="revokeTeam(team._id)" title="Retirer l'accès">
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="13"></iconify-icon>
+                    </button>
+                </div>
+            </template>
+
+            <!-- Individually assigned users -->
+            <template x-for="user in assignedUsers" :key="'u-' + user._id">
+                <div class="rt-team-row">
+                    <div :style="'width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(user.name)" x-text="user.name.charAt(0).toUpperCase()"></div>
+                    <div class="rt-team-info">
+                        <div class="rt-team-name" x-text="user.name"></div>
+                        <div class="rt-team-meta">
+                            <span x-text="user.email"></span>
+                            <span style="color:#d1d5db">·</span>
+                            <span x-text="formatDate(user.grantedAt)"></span>
+                        </div>
+                    </div>
+                    <div class="rt-perm-badges">
+                        <span class="rt-perm-badge" :class="user.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'">Lire</span>
+                        <span class="rt-perm-badge" :class="user.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'">Éditer</span>
+                        <span class="rt-perm-badge" :class="user.permissions?.delete ? 'rt-perm-on' : 'rt-perm-off'">Supp.</span>
+                        <span class="rt-perm-badge" :class="user.permissions?.share ? 'rt-perm-on' : 'rt-perm-off'">Partager</span>
+                    </div>
+                    <button class="rt-btn rt-btn-danger rt-btn-sm" @click="revokeUser(user._id)" title="Retirer l'accès">
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="13"></iconify-icon>
+                    </button>
+                </div>
+            </template>
+
+            <template x-if="assignedTeams.length === 0 && assignedUsers.length === 0">
+                <div style="text-align:center;padding:24px 20px;color:#94a3b8;">
+                    <iconify-icon icon="solar:shield-user-bold-duotone" width="36" style="color:#d1d5db;display:block;margin:0 auto 8px;"></iconify-icon>
+                    <p style="font-size:13px;margin:4px 0 0;color:#64748b;">Aucun accès configuré</p>
+                    <p style="font-size:11.5px;margin:4px 0 0;">Utilisez le bouton "Ajouter" pour donner accès</p>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Assign team or user -->
+    <div class="rt-section">
+        <div class="rt-section-header">
+            <div class="rt-section-title">
+                <iconify-icon icon="solar:add-circle-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
+                Ajouter un accès
+            </div>
+        </div>
+
+        <div class="rt-card">
+            <!-- Permission switches (inline) -->
+            <div style="margin-bottom:14px;font-size:12px;font-weight:600;color:#64748b;display:flex;align-items:center;gap:6px;">
+                <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="14" style="color:#7c3aed"></iconify-icon>
+                Permissions à accorder
+            </div>
+            <div class="rt-perms-inline">
+                <label class="rt-perm-switch" :class="assignPerms.read && 'active'" @click="assignPerms.read = !assignPerms.read">
+                    <div class="rt-perm-switch-icon" style="background:rgba(34,197,94,.1);"><iconify-icon icon="solar:eye-bold" width="14" style="color:#22c55e"></iconify-icon></div>
+                    <span class="rt-perm-switch-label" style="color:#22c55e;">Lire</span>
+                    <div class="rt-switch"><input type="checkbox" :checked="assignPerms.read"><span class="rt-switch-slider"></span></div>
+                </label>
+                <label class="rt-perm-switch" :class="assignPerms.update && 'active'" @click="assignPerms.update = !assignPerms.update">
+                    <div class="rt-perm-switch-icon" style="background:rgba(249,115,22,.1);"><iconify-icon icon="solar:pen-bold" width="14" style="color:#f97316"></iconify-icon></div>
+                    <span class="rt-perm-switch-label" style="color:#f97316;">Éditer</span>
+                    <div class="rt-switch"><input type="checkbox" :checked="assignPerms.update"><span class="rt-switch-slider"></span></div>
+                </label>
+                <label class="rt-perm-switch" :class="assignPerms.delete && 'active'" @click="assignPerms.delete = !assignPerms.delete">
+                    <div class="rt-perm-switch-icon" style="background:rgba(239,68,68,.1);"><iconify-icon icon="solar:trash-bin-trash-bold" width="14" style="color:#ef4444"></iconify-icon></div>
+                    <span class="rt-perm-switch-label" style="color:#ef4444;">Supprimer</span>
+                    <div class="rt-switch"><input type="checkbox" :checked="assignPerms.delete"><span class="rt-switch-slider"></span></div>
+                </label>
+                <label class="rt-perm-switch" :class="assignPerms.share && 'active'" @click="assignPerms.share = !assignPerms.share">
+                    <div class="rt-perm-switch-icon" style="background:rgba(67,97,238,.1);"><iconify-icon icon="solar:share-bold" width="14" style="color:#4361ee"></iconify-icon></div>
+                    <span class="rt-perm-switch-label" style="color:#4361ee;">Partager</span>
+                    <div class="rt-switch"><input type="checkbox" :checked="assignPerms.share"><span class="rt-switch-slider"></span></div>
+                </label>
+            </div>
+
+            <!-- Search -->
+            <div style="margin-top:14px;">
+                <input type="text" class="rt-create-input" x-model="searchQuery" placeholder="Rechercher une équipe ou un utilisateur..." style="padding-left:32px;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22><path fill=%22%2394a3b8%22 d=%22M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14z%22/></svg>');background-repeat:no-repeat;background-position:10px center;" />
+            </div>
+
+            <!-- Unified dropdown -->
+            <div class="rt-assign-dropdown" style="margin-top:10px;">
+                <!-- Teams -->
+                <template x-if="filteredAddItems.teams.length > 0">
+                    <div>
+                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;padding:6px 12px;">Équipes</div>
+                        <template x-for="team in filteredAddItems.teams" :key="'at-' + team._id">
+                            <div class="rt-assign-option" @click="assignTeam(team._id)">
+                                <div class="rt-team-icon" :style="'background:' + team.color + '12;width:34px;height:34px;border-radius:10px;'" style="min-width:34px;">
+                                    <iconify-icon :icon="team.icon" width="16" :style="'color:' + team.color"></iconify-icon>
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="team.name"></div>
+                                    <div style="font-size:11px;color:#94a3b8;" x-text="team.memberCount + ' membre(s)'"></div>
+                                </div>
+                                <button class="rt-btn rt-btn-assign rt-btn-sm" @click.stop="assignTeam(team._id)">
+                                    <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+                                    Assigner
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Individual users -->
+                <template x-if="filteredAddItems.users.length > 0">
+                    <div>
+                        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;padding:6px 12px;margin-top:4px;">Utilisateurs</div>
+                        <template x-for="user in filteredAddItems.users" :key="'au-' + user._id">
+                            <div class="rt-assign-option" @click="assignUser(user._id)">
+                                <div :style="'width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(user.name)" x-text="user.name.charAt(0).toUpperCase()"></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="user.name"></div>
+                                    <div style="font-size:11px;color:#94a3b8;" x-text="user.email"></div>
+                                </div>
+                                <button class="rt-btn rt-btn-assign rt-btn-sm" @click.stop="assignUser(user._id)">
+                                    <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+                                    Ajouter
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Empty -->
+                <template x-if="filteredAddItems.teams.length === 0 && filteredAddItems.users.length === 0">
+                    <div class="rt-empty" style="padding:20px;">
+                        <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="28" style="opacity:.35"></iconify-icon>
+                        <p style="font-size:12.5px;margin:6px 0 0;" x-text="searchQuery ? 'Aucun résultat pour \"' + searchQuery + '\"' : 'Tous les accès sont déjà assignés'"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Add User Modal ═══ -->
+    <template x-if="showAddModal">
+        <div class="rt-modal-overlay" @click.self="showAddModal = false">
+            <div class="rt-modal-backdrop"></div>
+            <div class="rt-modal" @click.stop>
+                <div class="rt-modal-header">
+                    <div class="rt-modal-header-icon" style="background:rgba(124,58,237,.1);">
+                        <iconify-icon icon="solar:user-plus-bold-duotone" width="20" style="color:#7c3aed"></iconify-icon>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:16px;font-weight:700;color:#0e1726;">Ajouter un accès</div>
+                        <div style="font-size:12px;color:#94a3b8;">Ajouter un utilisateur du compte ou inviter quelqu'un</div>
+                    </div>
+                    <button @click="showAddModal = false" style="border:none;background:#f1f5f9;cursor:pointer;padding:6px;border-radius:8px;color:#64748b;">
+                        <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                    </button>
+                </div>
+                <div class="rt-modal-body">
+                    <!-- Permission switches -->
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                            <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="13" style="color:#7c3aed"></iconify-icon>
+                            Permissions
+                        </div>
+                        <div class="rt-perms-inline">
+                            <label class="rt-perm-switch" :class="assignPerms.read && 'active'" @click="assignPerms.read = !assignPerms.read" style="padding:6px 10px;">
+                                <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(34,197,94,.1);"><iconify-icon icon="solar:eye-bold" width="12" style="color:#22c55e"></iconify-icon></div>
+                                <span style="font-size:11px;font-weight:600;color:#22c55e;">Lire</span>
+                                <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.read"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                            </label>
+                            <label class="rt-perm-switch" :class="assignPerms.update && 'active'" @click="assignPerms.update = !assignPerms.update" style="padding:6px 10px;">
+                                <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(249,115,22,.1);"><iconify-icon icon="solar:pen-bold" width="12" style="color:#f97316"></iconify-icon></div>
+                                <span style="font-size:11px;font-weight:600;color:#f97316;">Éditer</span>
+                                <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.update"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                            </label>
+                            <label class="rt-perm-switch" :class="assignPerms.delete && 'active'" @click="assignPerms.delete = !assignPerms.delete" style="padding:6px 10px;">
+                                <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.1);"><iconify-icon icon="solar:trash-bin-trash-bold" width="12" style="color:#ef4444"></iconify-icon></div>
+                                <span style="font-size:11px;font-weight:600;color:#ef4444;">Supp.</span>
+                                <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.delete"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                            </label>
+                            <label class="rt-perm-switch" :class="assignPerms.share && 'active'" @click="assignPerms.share = !assignPerms.share" style="padding:6px 10px;">
+                                <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(67,97,238,.1);"><iconify-icon icon="solar:share-bold" width="12" style="color:#4361ee"></iconify-icon></div>
+                                <span style="font-size:11px;font-weight:600;color:#4361ee;">Partager</span>
+                                <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.share"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Search -->
+                    <div style="margin-bottom:14px;">
+                        <input type="text" class="rt-create-input" x-model="modalSearch" placeholder="Rechercher un utilisateur..." />
+                    </div>
+
+                    <!-- Users list -->
+                    <div style="max-height:320px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;padding:4px;">
+                        <template x-for="m in modalFilteredUsers" :key="'mu-' + m._id">
+                            <div class="rt-member-option" style="justify-content:space-between;">
+                                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                                    <div :style="'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="m.name"></div>
+                                        <div style="font-size:11px;color:#94a3b8;" x-text="m.email"></div>
+                                    </div>
+                                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;flex-shrink:0;" x-text="m.role"></span>
+                                </div>
+                                <button class="rt-btn rt-btn-assign rt-btn-sm" style="margin-left:8px;" @click="assignUserFromModal(m._id)">
+                                    <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+                                    Ajouter
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="modalFilteredUsers.length === 0">
+                            <div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px;">Aucun utilisateur disponible</div>
+                        </template>
+                    </div>
+
+                    <!-- Invite new member -->
+                    <div style="margin-top:14px;padding:14px;background:rgba(124,58,237,.03);border:1.5px solid rgba(124,58,237,.1);border-radius:10px;">
+                        <div style="font-size:12px;font-weight:600;color:#7c3aed;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                            <iconify-icon icon="solar:user-plus-bold" width="13"></iconify-icon>
+                            Inviter un nouveau membre par email
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <input type="email" class="rt-create-input" x-model="inviteEmail" placeholder="email@example.com" style="flex:1;" />
+                            <button class="rt-btn rt-btn-assign" style="white-space:nowrap;" @click="inviteMember()" :disabled="inviting">
+                                <iconify-icon icon="solar:plain-bold" width="12"></iconify-icon>
+                                <span x-text="inviting ? 'Envoi...' : 'Inviter'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="rt-modal-footer">
+                    <button class="rt-btn" style="background:#f1f5f9;color:#64748b;" @click="showAddModal = false">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Toast -->
+    <div x-show="toast" x-transition :style="'position:fixed;bottom:24px;right:24px;z-index:1000;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.15);background:' + (toastType === 'success' ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#ef4444,#dc2626)')" x-text="toast"></div>
+</div>

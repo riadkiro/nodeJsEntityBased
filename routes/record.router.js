@@ -33,7 +33,7 @@ router.post("/:entityName/:id/update-relation", requirePerm('records.update'), r
 router.post("/:entityName/:id/update-field", requirePerm('records.update'), recordController.updateField);
 
 // Contextual module pages (overview, fiche, docs, drive, tasks, notes, chat, emails, agenda)
-router.get("/:entityName/:id/:moduleName(overview|fiche|docs|drive|tasks|notes|chat|emails|agenda)", recordController.modulePage);
+router.get("/:entityName/:id/:moduleName(overview|fiche|docs|drive|tasks|notes|chat|emails|agenda|team)", recordController.modulePage);
 
 // Record detail page (fiche) — must be AFTER all specific routes
 router.get("/:entityName/:id", recordController.detailPage);

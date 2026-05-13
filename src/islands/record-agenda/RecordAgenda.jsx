@@ -154,7 +154,11 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     const calendarViewTypeRef = useRef(calendarViewType)
     calendarViewTypeRef.current = calendarViewType
 
-    // ── Init FullCalendar ──
+    // Keep a ref to calendarEvents so callbacks always read the latest
+    const calendarEventsRef = useRef(calendarEvents)
+    calendarEventsRef.current = calendarEvents
+
+    // ── Init FullCalendar (only on view/loading change, NOT on events change) ──
     useEffect(() => {
         if (viewMode !== 'calendar' || loading || !prefsLoaded || !calendarRef.current) return
         if (typeof FullCalendar === 'undefined') {
@@ -205,7 +209,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 meridiem: false,
                 hour12: false,
             },
-            events: calendarEvents,
+            events: calendarEventsRef.current,
             // Save view type on change (fires when user clicks Month/Week/Day)
             datesSet: (info) => {
                 // Skip the initial datesSet fired by FullCalendar on render
@@ -294,9 +298,18 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 calendarInstance.current = null
             }
         }
-    // Note: calendarViewType intentionally NOT in deps — we use the ref to avoid recreating on view switch
+    // calendarEvents intentionally NOT in deps — events are updated via the separate effect below
+    // calendarViewType intentionally NOT in deps — we use the ref to avoid recreating on view switch
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [viewMode, loading, prefsLoaded, calendarEvents, baseUrl, fetchEvents, prefsUrl, prefsViewId])
+    }, [viewMode, loading, prefsLoaded, baseUrl, fetchEvents, prefsUrl, prefsViewId])
+
+    // ── Update events on existing calendar without destroying it ──
+    useEffect(() => {
+        if (!calendarInstance.current) return
+        const cal = calendarInstance.current
+        cal.removeAllEvents()
+        cal.addEventSource(calendarEvents)
+    }, [calendarEvents])
 
     // ── CRUD handlers ──
     const handleCreateEvent = useCallback(async (eventData) => {

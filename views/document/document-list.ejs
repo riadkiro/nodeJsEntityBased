@@ -62,7 +62,8 @@
         </div>
         <!-- Template items -->
         <template x-for="(doc, idx) in filteredTemplateDocs()" :key="doc._id">
-          <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'" style="text-decoration:none;color:inherit;">
+          <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'" style="cursor:pointer;"
+               @click="window.location.href = '/account/<%= account_number %>/documents/' + doc._id + '/edit-react'">
             <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
               <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
             </div>
@@ -80,11 +81,19 @@
                 </template>
               </div>
             </div>
-            <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Template</span>
-            <button @click.prevent="confirmDelete(doc)" class="rm-item-action" title="Supprimer" style="color:#e74c3c;">
+            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/generate'" 
+               class="rm-docs-generate-btn" @click.stop title="Générer un document">
+              <iconify-icon icon="solar:play-bold" width="11"></iconify-icon>
+              Générer
+            </a>
+            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+               class="rm-item-action" @click.stop title="Modifier" style="color:#4361ee;">
+              <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+            </a>
+            <button @click.stop="confirmDelete(doc)" class="rm-item-action" title="Supprimer" style="color:#e74c3c;">
               <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16"></iconify-icon>
             </button>
-          </a>
+          </div>
         </template>
       </div>
     </template>

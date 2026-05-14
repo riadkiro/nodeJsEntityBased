@@ -161,8 +161,9 @@
         fnEl.textContent = filename || url.split('/').pop();
         iconEl.setAttribute('icon', getIcon(cat));
         iconEl.style.color = getColor(cat);
-        dlEl.href = url;
-        dlEl.download = filename || url.split('/').pop();
+        var dlName = filename || url.split('/').pop();
+        dlEl.href = url + '?dl=' + encodeURIComponent(dlName);
+        dlEl.download = dlName;
         ntEl.href = url;
 
         // Badge

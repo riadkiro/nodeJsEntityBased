@@ -224,6 +224,10 @@ router.get("/uploads/attachments/:filename", (req, res) => {
     }
     const filePath = path.join(__dirname, "../public/uploads/attachments", String(req.account_number), req.params.filename);
     if (fs.existsSync(filePath)) {
+        // If ?dl=filename is present, force download with the original name
+        if (req.query.dl) {
+            res.setHeader('Content-Disposition', 'attachment; filename="' + req.query.dl.replace(/"/g, '\\"') + '"');
+        }
         res.sendFile(filePath);
     } else {
         res.status(404).send("Document introuvable.");

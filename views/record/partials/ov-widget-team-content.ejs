@@ -1,0 +1,143 @@
+<!-- ═══ TEAM MODULE: Card content ═══ -->
+<div class="rt-section">
+    <div class="rt-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="rt-section-title">
+            <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
+            Accès assignés
+            <span class="rt-section-count" x-text="assignedTeams.length + assignedUsers.length + ' accès'" x-show="assignedTeams.length + assignedUsers.length > 0"></span>
+        </div>
+        <button type="button" @click="showAddModal = true" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(124,58,237,.25);">
+            <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+            Ajouter un accès
+        </button>
+    </div>
+
+    <div class="rt-card">
+        <!-- Parent record header -->
+        <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;margin-bottom:10px;border-bottom:1.5px solid #f1f5f9;">
+            <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,.08);flex-shrink:0;">
+                <iconify-icon icon="solar:folder-with-files-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:700;color:#0e1726;" x-text="recordTitle"></div>
+                <div style="font-size:11px;color:#94a3b8;" x-text="assignedTeams.length + ' équipe(s) · ' + assignedUsers.length + ' utilisateur(s)'"></div>
+            </div>
+        </div>
+
+        <!-- ── Équipes section ── -->
+        <template x-if="assignedTeams.length > 0">
+            <div>
+                <div class="rt-group-header">
+                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="14" style="color:#7c3aed"></iconify-icon>
+                    <span class="rt-group-header-label">Équipes</span>
+                    <span class="rt-group-header-line"></span>
+                </div>
+                <template x-for="team in assignedTeams" :key="team._id">
+                    <div>
+                        <div class="rt-team-row">
+                            <div class="rt-team-icon" :style="'background:' + team.color + '18'">
+                                <iconify-icon :icon="team.icon" width="18" :style="'color:' + team.color"></iconify-icon>
+                            </div>
+                            <div class="rt-team-info">
+                                <div class="rt-team-name" x-text="team.name"></div>
+                                <div class="rt-team-meta">
+                                    <span x-text="team.memberCount + ' membre(s)'"></span>
+                                    <span style="color:#d1d5db">·</span>
+                                    <span x-text="formatDate(team.grantedAt)"></span>
+                                </div>
+                                <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;">
+                                    <template x-for="(mid, idx) in (team.memberIds || []).slice(0, 6)" :key="mid">
+                                        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;transition:background .15s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'">
+                                            <span :style="'width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(getMemberName(mid))" x-text="getMemberName(mid).charAt(0).toUpperCase()"></span>
+                                            <span style="font-size:12px;font-weight:500;color:#334155;" x-text="getMemberName(mid)"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="(team.memberIds || []).length > 6">
+                                        <div style="padding:4px 8px;font-size:11px;font-weight:600;color:#64748b;">
+                                            <span x-text="'+' + ((team.memberIds || []).length - 6) + ' autres'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            <button class="rt-btn rt-btn-sm" @click="showPermsId = showPermsId === 'team-' + team._id ? null : 'team-' + team._id" :style="showPermsId === 'team-' + team._id ? 'background:rgba(124,58,237,.08);color:#7c3aed;border:1px solid rgba(124,58,237,.2);' : 'background:#f8fafc;color:#64748b;border:1px solid #e8ecf1;'" style="gap:5px;">
+                                <iconify-icon x-show="team.permissions?.read" icon="solar:eye-bold" width="13" style="color:#22c55e;pointer-events:none"></iconify-icon>
+                                <iconify-icon x-show="team.permissions?.update" icon="solar:pen-bold" width="13" style="color:#f97316;pointer-events:none"></iconify-icon>
+                                <iconify-icon x-show="team.permissions?.delete" icon="solar:trash-bin-trash-bold" width="13" style="color:#ef4444;pointer-events:none"></iconify-icon>
+                                <iconify-icon x-show="team.permissions?.share" icon="solar:share-bold" width="13" style="color:#4361ee;pointer-events:none"></iconify-icon>
+                                <span style="pointer-events:none;margin-left:2px;border-left:1px solid #e2e8f0;padding-left:6px;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="12" style="pointer-events:none"></iconify-icon>Permissions</span>
+                            </button>
+                            <button class="rt-btn rt-btn-danger rt-btn-sm" @click="revokeTeam(team._id)" title="Retirer l'accès" :style="confirmRevokeId === 'team-' + team._id ? 'background:rgba(239,68,68,.15);border-color:#ef4444;' : ''">
+                                <iconify-icon icon="solar:trash-bin-trash-bold" width="13" style="pointer-events:none"></iconify-icon>
+                                <span x-show="confirmRevokeId === 'team-' + team._id" style="pointer-events:none">Confirmer ?</span>
+                            </button>
+                        </div>
+                        <!-- Permissions panel -->
+                        <div x-show="showPermsId === 'team-' + team._id" x-transition style="padding:8px 14px 12px 68px;">
+                            <div class="rt-perm-badges" style="gap:6px;">
+                                <span class="rt-perm-badge" :class="team.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'read')" style="cursor:pointer;padding:4px 12px;">Lire</span>
+                                <span class="rt-perm-badge" :class="team.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'update')" style="cursor:pointer;padding:4px 12px;">Éditer</span>
+                                <span class="rt-perm-badge" :class="team.permissions?.delete ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'delete')" style="cursor:pointer;padding:4px 12px;">Supp.</span>
+                                <span class="rt-perm-badge" :class="team.permissions?.share ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'share')" style="cursor:pointer;padding:4px 12px;">Partager</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- ── Utilisateurs section ── -->
+        <template x-if="assignedUsers.length > 0">
+            <div>
+                <div class="rt-group-header">
+                    <iconify-icon icon="solar:user-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
+                    <span class="rt-group-header-label">Utilisateurs</span>
+                    <span class="rt-group-header-line"></span>
+                </div>
+                <template x-for="user in assignedUsers" :key="'u-' + user._id">
+                    <div>
+                        <div class="rt-team-row">
+                            <div :style="'width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(user.name)" x-text="user.name.charAt(0).toUpperCase()"></div>
+                            <div class="rt-team-info">
+                                <div class="rt-team-name" x-text="user.name"></div>
+                                <div class="rt-team-meta">
+                                    <span x-text="user.email"></span>
+                                    <span style="color:#d1d5db">·</span>
+                                    <span x-text="formatDate(user.grantedAt)"></span>
+                                </div>
+                            </div>
+                            <button class="rt-btn rt-btn-sm" @click="showPermsId = showPermsId === 'user-' + user._id ? null : 'user-' + user._id" :style="showPermsId === 'user-' + user._id ? 'background:rgba(124,58,237,.08);color:#7c3aed;border:1px solid rgba(124,58,237,.2);' : 'background:#f8fafc;color:#64748b;border:1px solid #e8ecf1;'" style="gap:5px;">
+                                <iconify-icon x-show="user.permissions?.read" icon="solar:eye-bold" width="13" style="color:#22c55e;pointer-events:none"></iconify-icon>
+                                <iconify-icon x-show="user.permissions?.update" icon="solar:pen-bold" width="13" style="color:#f97316;pointer-events:none"></iconify-icon>
+                                <iconify-icon x-show="user.permissions?.delete" icon="solar:trash-bin-trash-bold" width="13" style="color:#ef4444;pointer-events:none"></iconify-icon>
+                                <iconify-icon x-show="user.permissions?.share" icon="solar:share-bold" width="13" style="color:#4361ee;pointer-events:none"></iconify-icon>
+                                <span style="pointer-events:none;margin-left:2px;border-left:1px solid #e2e8f0;padding-left:6px;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="12" style="pointer-events:none"></iconify-icon>Permissions</span>
+                            </button>
+                            <button class="rt-btn rt-btn-danger rt-btn-sm" @click="revokeUser(user._id)" title="Retirer l'accès" :style="confirmRevokeId === 'user-' + user._id ? 'background:rgba(239,68,68,.15);border-color:#ef4444;' : ''">
+                                <iconify-icon icon="solar:trash-bin-trash-bold" width="13" style="pointer-events:none"></iconify-icon>
+                                <span x-show="confirmRevokeId === 'user-' + user._id" style="pointer-events:none">Confirmer ?</span>
+                            </button>
+                        </div>
+                        <!-- Permissions panel -->
+                        <div x-show="showPermsId === 'user-' + user._id" x-transition style="padding:8px 14px 12px 68px;">
+                            <div class="rt-perm-badges" style="gap:6px;">
+                                <span class="rt-perm-badge" :class="user.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'read')" style="cursor:pointer;padding:4px 12px;">Lire</span>
+                                <span class="rt-perm-badge" :class="user.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'update')" style="cursor:pointer;padding:4px 12px;">Éditer</span>
+                                <span class="rt-perm-badge" :class="user.permissions?.delete ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'delete')" style="cursor:pointer;padding:4px 12px;">Supp.</span>
+                                <span class="rt-perm-badge" :class="user.permissions?.share ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'share')" style="cursor:pointer;padding:4px 12px;">Partager</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Empty state -->
+        <template x-if="assignedTeams.length === 0 && assignedUsers.length === 0">
+            <div style="text-align:center;padding:24px 20px;color:#94a3b8;">
+                <iconify-icon icon="solar:shield-user-bold-duotone" width="36" style="color:#d1d5db;display:block;margin:0 auto 8px;"></iconify-icon>
+                <p style="font-size:13px;margin:4px 0 0;color:#64748b;">Aucun accès configuré</p>
+                <p style="font-size:11.5px;margin:4px 0 0;">Utilisez le bouton "Ajouter un accès" pour donner accès</p>
+            </div>
+        </template>
+    </div>
+</div>

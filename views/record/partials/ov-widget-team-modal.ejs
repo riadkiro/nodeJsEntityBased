@@ -1,0 +1,139 @@
+<!-- ═══ TEAM MODULE: Add Access Modal ═══ -->
+<template x-if="showAddModal">
+    <div class="rt-modal-overlay" @click.self="showAddModal = false">
+        <div class="rt-modal-backdrop"></div>
+        <div class="rt-modal" @click.stop>
+            <div class="rt-modal-header">
+                <div class="rt-modal-header-icon" style="background:rgba(124,58,237,.1);">
+                    <iconify-icon icon="solar:user-plus-bold-duotone" width="20" style="color:#7c3aed"></iconify-icon>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:16px;font-weight:700;color:#0e1726;">Ajouter un accès</div>
+                    <div style="font-size:12px;color:#94a3b8;">Assigner une équipe ou un utilisateur</div>
+                </div>
+                <button @click="showAddModal = false" style="border:none;background:#f1f5f9;cursor:pointer;padding:6px;border-radius:8px;color:#64748b;">
+                    <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="rt-modal-tabs">
+                <div class="rt-modal-tab" :class="modalTab === 'teams' && 'active'" @click="modalTab = 'teams'">
+                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="15"></iconify-icon>
+                    Équipes
+                </div>
+                <div class="rt-modal-tab" :class="modalTab === 'users' && 'active'" @click="modalTab = 'users'">
+                    <iconify-icon icon="solar:user-bold-duotone" width="15"></iconify-icon>
+                    Utilisateurs
+                </div>
+            </div>
+
+            <div class="rt-modal-body">
+                <!-- Permission switches -->
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                        <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="13" style="color:#7c3aed"></iconify-icon>
+                        Permissions
+                    </div>
+                    <div class="rt-perms-inline">
+                        <label class="rt-perm-switch" :class="assignPerms.read && 'active'" @click="assignPerms.read = !assignPerms.read" style="padding:6px 10px;">
+                            <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(34,197,94,.1);"><iconify-icon icon="solar:eye-bold" width="12" style="color:#22c55e"></iconify-icon></div>
+                            <span style="font-size:11px;font-weight:600;color:#22c55e;">Lire</span>
+                            <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.read"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                        </label>
+                        <label class="rt-perm-switch" :class="assignPerms.update && 'active'" @click="assignPerms.update = !assignPerms.update" style="padding:6px 10px;">
+                            <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(249,115,22,.1);"><iconify-icon icon="solar:pen-bold" width="12" style="color:#f97316"></iconify-icon></div>
+                            <span style="font-size:11px;font-weight:600;color:#f97316;">Éditer</span>
+                            <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.update"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                        </label>
+                        <label class="rt-perm-switch" :class="assignPerms.delete && 'active'" @click="assignPerms.delete = !assignPerms.delete" style="padding:6px 10px;">
+                            <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.1);"><iconify-icon icon="solar:trash-bin-trash-bold" width="12" style="color:#ef4444"></iconify-icon></div>
+                            <span style="font-size:11px;font-weight:600;color:#ef4444;">Supp.</span>
+                            <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.delete"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                        </label>
+                        <label class="rt-perm-switch" :class="assignPerms.share && 'active'" @click="assignPerms.share = !assignPerms.share" style="padding:6px 10px;">
+                            <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(67,97,238,.1);"><iconify-icon icon="solar:share-bold" width="12" style="color:#4361ee"></iconify-icon></div>
+                            <span style="font-size:11px;font-weight:600;color:#4361ee;">Partager</span>
+                            <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.share"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div style="margin-bottom:14px;">
+                    <input type="text" class="rt-create-input" x-model="modalSearch" :placeholder="modalTab === 'teams' ? 'Rechercher une équipe...' : 'Rechercher un utilisateur...'" />
+                </div>
+
+                <!-- ═══ Teams Tab ═══ -->
+                <div x-show="modalTab === 'teams'">
+                    <div style="max-height:320px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;padding:4px;">
+                        <template x-for="team in modalFilteredTeams" :key="'mt-' + team._id">
+                            <div class="rt-assign-option" @click="assignTeam(team._id)">
+                                <div class="rt-team-icon" :style="'background:' + team.color + '12;width:34px;height:34px;border-radius:10px;'" style="min-width:34px;margin-top:0;">
+                                    <iconify-icon :icon="team.icon" width="16" :style="'color:' + team.color"></iconify-icon>
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="team.name"></div>
+                                    <div style="font-size:11px;color:#94a3b8;" x-text="team.memberCount + ' membre(s)'"></div>
+                                </div>
+                                <button class="rt-btn rt-btn-assign rt-btn-sm" @click.stop="assignTeam(team._id)">
+                                    <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+                                    Assigner
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="modalFilteredTeams.length === 0">
+                            <div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px;">
+                                <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="24" style="opacity:.3;display:block;margin:0 auto 6px;"></iconify-icon>
+                                <span x-text="modalSearch ? 'Aucune équipe trouvée' : 'Toutes les équipes sont assignées'"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ═══ Users Tab ═══ -->
+                <div x-show="modalTab === 'users'">
+                    <div style="max-height:320px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;padding:4px;">
+                        <template x-for="m in modalFilteredUsers" :key="'mu-' + m._id">
+                            <div class="rt-member-option" style="justify-content:space-between;">
+                                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                                    <div :style="'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;background:' + avatarColor(m.name)" x-text="m.name.charAt(0).toUpperCase()"></div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;font-weight:600;color:#0e1726;" x-text="m.name"></div>
+                                        <div style="font-size:11px;color:#94a3b8;" x-text="m.email"></div>
+                                    </div>
+                                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;flex-shrink:0;" x-text="m.role"></span>
+                                </div>
+                                <button class="rt-btn rt-btn-assign rt-btn-sm" style="margin-left:8px;" @click="assignUserFromModal(m._id)">
+                                    <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+                                    Ajouter
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="modalFilteredUsers.length === 0">
+                            <div style="text-align:center;padding:20px;color:#94a3b8;font-size:12px;">Aucun utilisateur disponible</div>
+                        </template>
+                    </div>
+
+                    <!-- Invite new member -->
+                    <div style="margin-top:14px;padding:14px;background:rgba(124,58,237,.03);border:1.5px solid rgba(124,58,237,.1);border-radius:10px;">
+                        <div style="font-size:12px;font-weight:600;color:#7c3aed;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                            <iconify-icon icon="solar:user-plus-bold" width="13"></iconify-icon>
+                            Inviter un nouveau membre par email
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <input type="email" class="rt-create-input" x-model="inviteEmail" placeholder="email@example.com" style="flex:1;" />
+                            <button class="rt-btn rt-btn-assign" style="white-space:nowrap;" @click="inviteMember()" :disabled="inviting">
+                                <iconify-icon icon="solar:plain-bold" width="12"></iconify-icon>
+                                <span x-text="inviting ? 'Envoi...' : 'Inviter'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rt-modal-footer">
+                <button class="rt-btn" style="background:#f1f5f9;color:#64748b;" @click="showAddModal = false">Fermer</button>
+            </div>
+        </div>
+    </div>
+</template>

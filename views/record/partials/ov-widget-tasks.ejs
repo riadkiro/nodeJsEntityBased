@@ -3,48 +3,97 @@
     <span>Tâches</span>
     <a href="<%= _recBase %>/tasks" class="ov-card-link">Voir tout →</a>
 </div>
+<style>
+.ov-tasks-widget { padding:0 4px; }
+/* Donut chart */
+.ov-donut-wrap { display:flex; align-items:center; gap:20px; padding:4px 0 10px; }
+.ov-donut { position:relative; width:80px; height:80px; border-radius:50%; flex-shrink:0; }
+.ov-donut-center { position:absolute; inset:12px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ov-donut-count { font-size:20px; font-weight:800; color:#1e293b; line-height:1; }
+.ov-donut-label { font-size:8.5px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; margin-top:1px; }
+.ov-donut-legend { display:flex; flex-direction:column; gap:5px; flex:1; }
+.ov-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:500; color:#475569; }
+.ov-legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.ov-legend-count { font-weight:700; color:#1e293b; margin-left:auto; font-size:12px; }
+/* Task list */
+.ov-task-list { display:flex; flex-direction:column; gap:2px; border-top:1px solid #f1f5f9; padding-top:10px; }
+.ov-task-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; transition:background .15s; min-height:32px; }
+.ov-task-row:hover { background:#f8fafc; }
+.ov-task-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.ov-task-title { font-size:12.5px; font-weight:600; color:#1e293b; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ov-task-title--done { text-decoration:line-through; color:#94a3b8; font-weight:500; }
+.ov-task-meta { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.ov-task-badge { font-size:9px; font-weight:700; padding:3px 8px; border-radius:20px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap; letter-spacing:.2px; }
+.ov-task-due { font-size:9px; font-weight:700; padding:3px 8px; border-radius:20px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+.ov-task-due--overdue { background:#fef2f2; color:#ef4444; }
+.ov-task-due--soon { background:#fffbeb; color:#f59e0b; }
+.ov-task-due--normal { background:#f1f5f9; color:#64748b; }
+.ov-task-priority { font-size:9px; font-weight:700; padding:3px 7px; border-radius:20px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+/* Empty */
+.ov-tasks-empty { text-align:center; padding:28px 16px; color:#94a3b8; }
+.ov-tasks-empty iconify-icon { display:block; margin:0 auto 8px; opacity:.2; }
+</style>
 <div x-data="ovTasks()" x-init="load()">
-    <!-- Loading -->
     <template x-if="loading">
         <div style="text-align:center;padding:24px 0;color:#bfc9d4;font-size:12px;">Chargement...</div>
     </template>
-    <!-- Content -->
     <template x-if="!loading">
-        <div>
-            <!-- Stats bars -->
+        <div class="ov-tasks-widget">
+            <!-- Donut chart + legend -->
             <template x-if="totalTasks > 0">
-                <div class="ov-tasks-chart">
-                    <div class="ov-chart-bars">
-                        <template x-for="s in stats" :key="s.label">
-                            <div class="ov-bar" :style="'--bar-h:' + (s.count > 0 ? Math.max(15, (s.count/maxCount)*100) : 0) + '%;background:' + s.color" :title="s.label + ': ' + s.count">
-                                <span x-text="s.count"></span>
-                            </div>
-                        </template>
+                <div class="ov-donut-wrap">
+                    <div class="ov-donut" :style="'background:conic-gradient(' + conicGradient + ')'">
+                        <div class="ov-donut-center">
+                            <span class="ov-donut-count" x-text="totalTasks"></span>
+                            <span class="ov-donut-label">tâches</span>
+                        </div>
                     </div>
-                    <div class="ov-chart-labels">
-                        <template x-for="s in stats" :key="'l-' + s.label">
-                            <span :style="'color:' + s.color" x-text="s.label"></span>
+                    <div class="ov-donut-legend">
+                        <template x-for="s in stats" :key="s.label">
+                            <div class="ov-legend-item">
+                                <span class="ov-legend-dot" :style="'background:' + s.color"></span>
+                                <span x-text="s.label"></span>
+                                <span class="ov-legend-count" x-text="s.count"></span>
+                            </div>
                         </template>
                     </div>
                 </div>
             </template>
-            <!-- Recent tasks list -->
+            <!-- Task list (max 5) -->
             <template x-if="recentTasks.length > 0">
-                <div style="margin-top:12px;display:flex;flex-direction:column;gap:2px;">
+                <div class="ov-task-list">
                     <template x-for="task in recentTasks" :key="task._id">
-                        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;transition:background .15s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'">
-                            <div :style="'width:6px;height:6px;border-radius:50%;flex-shrink:0;background:' + (task.statusColor || '#94a3b8')"></div>
-                            <span style="font-size:12px;font-weight:500;color:#334155;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="task.title" :style="task.done ? 'text-decoration:line-through;color:#94a3b8' : ''"></span>
-                            <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;" :style="'background:' + (task.statusColor || '#94a3b8') + '15;color:' + (task.statusColor || '#94a3b8')" x-text="task.statusLabel"></span>
+                        <div class="ov-task-row">
+                            <span class="ov-task-dot" :style="'background:' + (task.statusColor || '#94a3b8')"></span>
+                            <span class="ov-task-title" :class="task.statusLabel === 'Terminé' ? 'ov-task-title--done' : ''" x-text="task.title"></span>
+                            <div class="ov-task-meta">
+                                <!-- Status badge -->
+                                <span class="ov-task-badge" :style="'background:' + (task.statusColor || '#94a3b8') + '12;color:' + (task.statusColor || '#94a3b8')" x-text="task.statusLabel"></span>
+                                <!-- Priority badge -->
+                                <template x-if="task.priority && task.priority !== 'Aucune'">
+                                    <span class="ov-task-priority" :style="'background:' + (task.priorityColor || '#6b7280') + '12;color:' + (task.priorityColor || '#6b7280')">
+                                        <iconify-icon :icon="priorityIcon(task.priority)" width="9"></iconify-icon>
+                                        <span x-text="task.priority"></span>
+                                    </span>
+                                </template>
+                                <!-- Due date -->
+                                <template x-if="task.dueDate">
+                                    <span class="ov-task-due" :class="dueClass(task.dueDate)">
+                                        <iconify-icon :icon="isOverdue(task.dueDate) ? 'solar:alarm-bold' : 'solar:calendar-minimalistic-bold'" width="9"></iconify-icon>
+                                        <span x-text="fmtDate(task.dueDate)"></span>
+                                    </span>
+                                </template>
+                            </div>
                         </div>
                     </template>
                 </div>
             </template>
             <!-- Empty state -->
             <template x-if="totalTasks === 0">
-                <div style="text-align:center;padding:24px 16px;color:#94a3b8;">
-                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="32" style="display:block;margin:0 auto 8px;opacity:.3;"></iconify-icon>
-                    <div style="font-size:12px;">Aucune tâche pour le moment</div>
+                <div class="ov-tasks-empty">
+                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="36"></iconify-icon>
+                    <div style="font-size:12.5px;font-weight:600;color:#64748b;">Aucune tâche</div>
+                    <div style="font-size:11px;margin-top:2px;">Les tâches ajoutées apparaîtront ici</div>
                 </div>
             </template>
         </div>
@@ -57,14 +106,14 @@ function ovTasks() {
         stats: [],
         recentTasks: [],
         totalTasks: 0,
-        maxCount: 1,
+        doneCount: 0,
+        conicGradient: '',
         async load() {
             try {
                 const res = await fetch('/account/<%= account_number %>/api/record/<%= record._id %>/task-lists', { credentials: 'include' });
                 const data = await res.json();
                 if (!data.success) { this.loading = false; return; }
                 const lists = data.lists || [];
-                // Collect all tasks across all lists (tasks are embedded in each list)
                 let allTasks = [];
                 for (const list of lists) {
                     (list.tasks || []).forEach(t => {
@@ -73,11 +122,15 @@ function ovTasks() {
                             title: t.title,
                             statusLabel: t.status || 'À faire',
                             statusColor: t.statusColor || '#94a3b8',
-                            updatedAt: t.createdAt
+                            priority: t.priority || 'Aucune',
+                            priorityColor: t.priorityColor || '',
+                            dueDate: t.dueDate || null,
+                            createdAt: t.createdAt
                         });
                     });
                 }
                 this.totalTasks = allTasks.length;
+                this.doneCount = allTasks.filter(t => t.statusLabel === 'Terminé').length;
                 // Group by status
                 const statusMap = {};
                 allTasks.forEach(t => {
@@ -86,14 +139,60 @@ function ovTasks() {
                     statusMap[key].count++;
                 });
                 this.stats = Object.values(statusMap);
-                this.maxCount = Math.max(1, ...this.stats.map(s => s.count));
-                // Recent tasks (last 5)
-                allTasks.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+                // Build conic-gradient
+                this.conicGradient = this.buildConic(this.stats, this.totalTasks);
+                // Sort: non-done first, then by dueDate, then by creation
+                allTasks.sort((a, b) => {
+                    if (a.statusLabel === 'Terminé' && b.statusLabel !== 'Terminé') return 1;
+                    if (a.statusLabel !== 'Terminé' && b.statusLabel === 'Terminé') return -1;
+                    if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
+                    if (a.dueDate) return -1;
+                    if (b.dueDate) return 1;
+                    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                });
                 this.recentTasks = allTasks.slice(0, 5);
             } catch (e) {
                 console.error('[ovTasks] Error:', e);
             }
             this.loading = false;
+        },
+        buildConic(stats, total) {
+            if (!total) return '#f1f5f9 0deg 360deg';
+            let parts = [];
+            let angle = 0;
+            stats.forEach(s => {
+                const deg = (s.count / total) * 360;
+                parts.push(s.color + ' ' + angle + 'deg ' + (angle + deg) + 'deg');
+                angle += deg;
+            });
+            return parts.join(', ');
+        },
+        priorityIcon(p) {
+            const map = { 'Urgente': 'solar:danger-triangle-bold', 'Haute': 'solar:arrow-up-bold', 'Moyenne': 'solar:minus-circle-bold', 'Basse': 'solar:arrow-down-bold' };
+            return map[p] || 'solar:flag-bold';
+        },
+        isOverdue(d) {
+            if (!d) return false;
+            return new Date(d) < new Date() && new Date(d).toDateString() !== new Date().toDateString();
+        },
+        dueClass(d) {
+            if (!d) return 'ov-task-due--normal';
+            if (this.isOverdue(d)) return 'ov-task-due--overdue';
+            const diff = Math.ceil((new Date(d) - new Date()) / 86400000);
+            if (diff <= 2) return 'ov-task-due--soon';
+            return 'ov-task-due--normal';
+        },
+        fmtDate(d) {
+            if (!d) return '';
+            const dt = new Date(d);
+            const today = new Date();
+            const diffDays = Math.ceil((dt - today) / 86400000);
+            if (dt.toDateString() === today.toDateString()) return "Aujourd'hui";
+            if (diffDays === 1 || diffDays === 0) return 'Demain';
+            if (diffDays === -1) return 'Hier';
+            if (diffDays < -1) return 'Il y a ' + Math.abs(diffDays) + 'j';
+            if (diffDays <= 7) return 'Dans ' + diffDays + 'j';
+            return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
         }
     };
 }

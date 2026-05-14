@@ -2178,8 +2178,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
                 <!-- Files -->
                 <template x-for="(file, idx) in displayFiles" :key="file._id">
-                    <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'"
-                         :draggable="!file.isGenerated && renamingFileId !== file._id" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()">
+                    <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'" style="cursor:pointer;"
+                         :draggable="!file.isGenerated && renamingFileId !== file._id" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()"
+                         @click="if(renamingFileId !== file._id) window.openFileViewer(file.url, file.originalName, file.category)">
                         <template x-if="file.category === 'image'">
                             <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" />
                         </template>
@@ -2211,9 +2212,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         </div>
                         <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
                         <div class="drive-file-actions">
+                            <button @click.stop="window.openFileViewer(file.url, file.originalName, file.category)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
                             <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="!file.isGenerated && renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
-                            <a :href="file.url" download class="rm-item-action" title="Télécharger" style="color:#4361ee;"><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
-                            <button @click="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;" x-show="!file.isGenerated"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
+                            <a :href="file.url" download class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
+                            <button @click.stop="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;" x-show="!file.isGenerated"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
                         </div>
                     </div>
                 </template>

@@ -1,0 +1,298 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     FILE VIEWER MODAL — Reusable across all pages
+     Usage: window.openFileViewer(url, filename, category)
+     category: 'image', 'pdf', or other
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── File Viewer Modal ── */
+.fv-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .25s ease; pointer-events:none; }
+.fv-overlay.fv-open { opacity:1; pointer-events:auto; }
+.fv-container { position:relative; width:90vw; height:90vh; max-width:1200px; display:flex; flex-direction:column; border-radius:16px; overflow:hidden; background:#111827; box-shadow:0 25px 60px rgba(0,0,0,.5); }
+/* Header bar */
+.fv-header { display:flex; align-items:center; gap:10px; padding:12px 20px; background:#1f2937; border-bottom:1px solid #374151; flex-shrink:0; }
+.fv-filename { flex:1; font-size:13px; font-weight:600; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fv-badge { font-size:9px; font-weight:800; text-transform:uppercase; padding:3px 10px; border-radius:20px; letter-spacing:.5px; flex-shrink:0; }
+.fv-badge--pdf { background:#ef4444; color:#fff; }
+.fv-badge--image { background:#8b5cf6; color:#fff; }
+.fv-badge--other { background:#6b7280; color:#fff; }
+.fv-actions { display:flex; align-items:center; gap:4px; }
+.fv-btn { width:34px; height:34px; border-radius:8px; border:none; background:transparent; color:#9ca3af; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.fv-btn:hover { background:#374151; color:#fff; }
+.fv-btn--close { color:#ef4444; }
+.fv-btn--close:hover { background:#ef444420; color:#ef4444; }
+/* Content area */
+.fv-body { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; position:relative; }
+/* Image viewer */
+.fv-image { max-width:100%; max-height:100%; object-fit:contain; transition:transform .2s ease; cursor:grab; user-select:none; }
+.fv-image:active { cursor:grabbing; }
+/* PDF viewer */
+.fv-pdf-wrap { width:100%; height:100%; overflow:auto; display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px; }
+.fv-pdf-page { background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.3); border-radius:4px; }
+.fv-pdf-loading { color:#9ca3af; font-size:12px; font-weight:500; display:flex; align-items:center; gap:8px; }
+/* Unsupported */
+.fv-unsupported { display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; padding:40px; }
+.fv-unsupported-icon { opacity:.3; }
+.fv-unsupported-title { font-size:14px; font-weight:600; color:#e5e7eb; }
+.fv-unsupported-msg { font-size:12px; color:#6b7280; max-width:260px; }
+/* Zoom controls */
+.fv-zoom-bar { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; padding:4px; background:#1f2937; border-radius:10px; border:1px solid #374151; z-index:2; }
+.fv-zoom-label { font-size:10px; font-weight:700; color:#9ca3af; min-width:44px; text-align:center; }
+/* PDF page indicator */
+.fv-page-info { position:absolute; bottom:16px; right:20px; font-size:11px; font-weight:600; color:#9ca3af; background:#1f2937; padding:4px 12px; border-radius:20px; border:1px solid #374151; z-index:2; }
+</style>
+
+<div id="fileViewerModal" class="fv-overlay" onclick="if(event.target===this)window.closeFileViewer()">
+    <div class="fv-container">
+        <!-- Header -->
+        <div class="fv-header">
+            <iconify-icon id="fvTypeIcon" icon="solar:file-bold-duotone" width="18" style="color:#9ca3af;flex-shrink:0;"></iconify-icon>
+            <span id="fvFilename" class="fv-filename"></span>
+            <span id="fvBadge" class="fv-badge"></span>
+            <div class="fv-actions">
+                <a id="fvDownload" class="fv-btn" title="Télécharger" download>
+                    <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
+                </a>
+                <a id="fvNewTab" class="fv-btn" title="Ouvrir dans un nouvel onglet" target="_blank">
+                    <iconify-icon icon="solar:square-arrow-right-up-bold" width="16"></iconify-icon>
+                </a>
+                <button class="fv-btn fv-btn--close" onclick="window.closeFileViewer()" title="Fermer">
+                    <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <!-- Body -->
+        <div id="fvBody" class="fv-body"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var modal = document.getElementById('fileViewerModal');
+    var body = document.getElementById('fvBody');
+    var fnEl = document.getElementById('fvFilename');
+    var badgeEl = document.getElementById('fvBadge');
+    var iconEl = document.getElementById('fvTypeIcon');
+    var dlEl = document.getElementById('fvDownload');
+    var ntEl = document.getElementById('fvNewTab');
+    var currentZoom = 1;
+
+    function getCat(url, filename) {
+        var ext = (filename || url || '').split('.').pop().toLowerCase();
+        if (['jpg','jpeg','png','gif','webp','svg','bmp','ico'].indexOf(ext) >= 0) return 'image';
+        if (ext === 'pdf') return 'pdf';
+        if (['doc','docx'].indexOf(ext) >= 0) return 'word';
+        if (['xls','xlsx','csv'].indexOf(ext) >= 0) return 'excel';
+        if (['mp4','webm','mov','avi'].indexOf(ext) >= 0) return 'video';
+        return 'other';
+    }
+
+    function getIcon(cat) {
+        var m = { image:'solar:gallery-bold-duotone', pdf:'solar:file-text-bold-duotone', word:'solar:document-bold-duotone', excel:'solar:chart-square-bold-duotone', video:'solar:videocamera-record-bold-duotone' };
+        return m[cat] || 'solar:file-bold-duotone';
+    }
+
+    function getColor(cat) {
+        var m = { image:'#8b5cf6', pdf:'#ef4444', word:'#3b82f6', excel:'#10b981', video:'#f59e0b' };
+        return m[cat] || '#6b7280';
+    }
+
+    window.openFileViewer = function(url, filename, category) {
+        var cat = category || getCat(url, filename);
+        fnEl.textContent = filename || url.split('/').pop();
+        iconEl.setAttribute('icon', getIcon(cat));
+        iconEl.style.color = getColor(cat);
+        dlEl.href = url;
+        ntEl.href = url;
+
+        // Badge
+        var badgeMap = { image:'Image', pdf:'PDF', word:'Word', excel:'Excel', video:'Vidéo' };
+        badgeEl.textContent = badgeMap[cat] || 'Fichier';
+        badgeEl.className = 'fv-badge fv-badge--' + (cat === 'image' ? 'image' : cat === 'pdf' ? 'pdf' : 'other');
+
+        // Clear body
+        body.innerHTML = '';
+        currentZoom = 1;
+
+        if (cat === 'image') {
+            renderImage(url);
+        } else if (cat === 'pdf') {
+            renderPdf(url);
+        } else if (cat === 'video') {
+            renderVideo(url);
+        } else {
+            renderUnsupported(filename || url, cat);
+        }
+
+        modal.classList.add('fv-open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeFileViewer = function() {
+        modal.classList.remove('fv-open');
+        document.body.style.overflow = '';
+        body.innerHTML = '';
+    };
+
+    // ESC to close
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('fv-open')) {
+            window.closeFileViewer();
+        }
+    });
+
+    // ── Image Renderer ──
+    function renderImage(url) {
+        var img = document.createElement('img');
+        img.className = 'fv-image';
+        img.src = url;
+        img.id = 'fvImg';
+        body.appendChild(img);
+
+        // Zoom bar
+        var zoomBar = createZoomBar(function(zoom) {
+            img.style.transform = 'scale(' + zoom + ')';
+        });
+        body.appendChild(zoomBar);
+    }
+
+    // ── Video Renderer ──
+    function renderVideo(url) {
+        var video = document.createElement('video');
+        video.controls = true;
+        video.autoplay = true;
+        video.style.cssText = 'max-width:100%;max-height:100%;border-radius:8px;';
+        video.src = url;
+        body.appendChild(video);
+    }
+
+    // ── PDF Renderer ──
+    function renderPdf(url) {
+        var wrap = document.createElement('div');
+        wrap.className = 'fv-pdf-wrap';
+        wrap.id = 'fvPdfWrap';
+
+        var loading = document.createElement('div');
+        loading.className = 'fv-pdf-loading';
+        loading.innerHTML = '<iconify-icon icon="svg-spinners:ring-resize" width="18"></iconify-icon> Chargement du PDF...';
+        wrap.appendChild(loading);
+        body.appendChild(wrap);
+
+        // Page info
+        var pageInfo = document.createElement('div');
+        pageInfo.className = 'fv-page-info';
+        pageInfo.id = 'fvPageInfo';
+        pageInfo.textContent = '';
+        body.appendChild(pageInfo);
+
+        // Zoom bar
+        var zoomBar = createZoomBar(function(zoom) {
+            var canvases = wrap.querySelectorAll('canvas');
+            canvases.forEach(function(c) {
+                c.style.width = (c._origWidth * zoom) + 'px';
+                c.style.height = (c._origHeight * zoom) + 'px';
+            });
+        });
+        body.appendChild(zoomBar);
+
+        // Load PDF.js if not loaded
+        ensurePdfJs(function() {
+            var pdfjsLib = window.pdfjsLib;
+            pdfjsLib.getDocument(url).promise.then(function(pdf) {
+                loading.remove();
+                var totalPages = pdf.numPages;
+                pageInfo.textContent = totalPages + ' page' + (totalPages > 1 ? 's' : '');
+
+                // Render pages sequentially
+                var renderPage = function(num) {
+                    if (num > totalPages) return;
+                    pdf.getPage(num).then(function(page) {
+                        var scale = 1.5;
+                        var viewport = page.getViewport({ scale: scale });
+                        var canvas = document.createElement('canvas');
+                        canvas.className = 'fv-pdf-page';
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        canvas._origWidth = viewport.width / scale;
+                        canvas._origHeight = viewport.height / scale;
+                        canvas.style.width = canvas._origWidth + 'px';
+                        canvas.style.height = canvas._origHeight + 'px';
+                        var ctx = canvas.getContext('2d');
+                        wrap.appendChild(canvas);
+                        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
+                            renderPage(num + 1);
+                        });
+                    });
+                };
+                renderPage(1);
+            }).catch(function(err) {
+                loading.innerHTML = '<iconify-icon icon="solar:danger-triangle-bold" width="18" style="color:#ef4444"></iconify-icon> Impossible de charger le PDF';
+            });
+        });
+    }
+
+    // ── Unsupported ──
+    function renderUnsupported(filename, cat) {
+        var div = document.createElement('div');
+        div.className = 'fv-unsupported';
+        div.innerHTML =
+            '<iconify-icon class="fv-unsupported-icon" icon="' + getIcon(cat) + '" width="64" style="color:' + getColor(cat) + '"></iconify-icon>' +
+            '<div class="fv-unsupported-title">' + (filename || 'Fichier') + '</div>' +
+            '<div class="fv-unsupported-msg">L\'aperçu n\'est pas disponible pour ce type de fichier. Vous pouvez le télécharger pour le consulter.</div>' +
+            '<a href="' + dlEl.href + '" download style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;background:#4361ee;color:#fff;font-size:12px;font-weight:600;text-decoration:none;transition:background .15s;" onmouseenter="this.style.background=\'#3451db\'" onmouseleave="this.style.background=\'#4361ee\'">' +
+            '<iconify-icon icon="solar:download-bold" width="14"></iconify-icon> Télécharger</a>';
+        body.appendChild(div);
+    }
+
+    // ── Zoom Bar ──
+    function createZoomBar(onZoom) {
+        currentZoom = 1;
+        var bar = document.createElement('div');
+        bar.className = 'fv-zoom-bar';
+
+        var btnMinus = document.createElement('button');
+        btnMinus.className = 'fv-btn';
+        btnMinus.innerHTML = '<iconify-icon icon="solar:minus-circle-bold" width="16"></iconify-icon>';
+
+        var label = document.createElement('span');
+        label.className = 'fv-zoom-label';
+        label.textContent = '100%';
+
+        var btnPlus = document.createElement('button');
+        btnPlus.className = 'fv-btn';
+        btnPlus.innerHTML = '<iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>';
+
+        var btnReset = document.createElement('button');
+        btnReset.className = 'fv-btn';
+        btnReset.innerHTML = '<iconify-icon icon="solar:maximize-square-bold" width="14"></iconify-icon>';
+        btnReset.title = 'Réinitialiser';
+
+        function updateZoom(z) {
+            currentZoom = Math.max(0.25, Math.min(3, z));
+            label.textContent = Math.round(currentZoom * 100) + '%';
+            onZoom(currentZoom);
+        }
+
+        btnMinus.onclick = function() { updateZoom(currentZoom - 0.25); };
+        btnPlus.onclick = function() { updateZoom(currentZoom + 0.25); };
+        btnReset.onclick = function() { updateZoom(1); };
+
+        bar.appendChild(btnMinus);
+        bar.appendChild(label);
+        bar.appendChild(btnPlus);
+        bar.appendChild(btnReset);
+        return bar;
+    }
+
+    // ── Ensure PDF.js loaded ──
+    function ensurePdfJs(cb) {
+        if (window.pdfjsLib) return cb();
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        script.onload = function() {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            cb();
+        };
+        document.head.appendChild(script);
+    }
+})();
+</script>

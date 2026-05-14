@@ -3,17 +3,104 @@
     <span>Tâches</span>
     <a href="<%= _recBase %>/tasks" class="ov-card-link">Voir tout →</a>
 </div>
-<div class="ov-tasks-chart">
-    <div class="ov-chart-bars">
-        <div class="ov-bar" style="--bar-h:60%;background:#10b981" title="Terminées: 3"><span>3</span></div>
-        <div class="ov-bar" style="--bar-h:40%;background:#f59e0b" title="En cours: 2"><span>2</span></div>
-        <div class="ov-bar" style="--bar-h:20%;background:#ef4444" title="Urgent: 1"><span>1</span></div>
-        <div class="ov-bar" style="--bar-h:30%;background:#0ea5e9" title="Planifié: 1"><span>1</span></div>
-    </div>
-    <div class="ov-chart-labels">
-        <span style="color:#10b981">Terminées</span>
-        <span style="color:#f59e0b">En cours</span>
-        <span style="color:#ef4444">Urgent</span>
-        <span style="color:#0ea5e9">Planifié</span>
-    </div>
+<div x-data="ovTasks()" x-init="load()">
+    <!-- Loading -->
+    <template x-if="loading">
+        <div style="text-align:center;padding:24px 0;color:#bfc9d4;font-size:12px;">Chargement...</div>
+    </template>
+    <!-- Content -->
+    <template x-if="!loading">
+        <div>
+            <!-- Stats bars -->
+            <template x-if="totalTasks > 0">
+                <div class="ov-tasks-chart">
+                    <div class="ov-chart-bars">
+                        <template x-for="s in stats" :key="s.label">
+                            <div class="ov-bar" :style="'--bar-h:' + (s.count > 0 ? Math.max(15, (s.count/maxCount)*100) : 0) + '%;background:' + s.color" :title="s.label + ': ' + s.count">
+                                <span x-text="s.count"></span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="ov-chart-labels">
+                        <template x-for="s in stats" :key="'l-' + s.label">
+                            <span :style="'color:' + s.color" x-text="s.label"></span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <!-- Recent tasks list -->
+            <template x-if="recentTasks.length > 0">
+                <div style="margin-top:12px;display:flex;flex-direction:column;gap:2px;">
+                    <template x-for="task in recentTasks" :key="task._id">
+                        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;transition:background .15s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'">
+                            <div :style="'width:6px;height:6px;border-radius:50%;flex-shrink:0;background:' + (task.statusColor || '#94a3b8')"></div>
+                            <span style="font-size:12px;font-weight:500;color:#334155;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="task.title" :style="task.done ? 'text-decoration:line-through;color:#94a3b8' : ''"></span>
+                            <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;" :style="'background:' + (task.statusColor || '#94a3b8') + '15;color:' + (task.statusColor || '#94a3b8')" x-text="task.statusLabel"></span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <!-- Empty state -->
+            <template x-if="totalTasks === 0">
+                <div style="text-align:center;padding:24px 16px;color:#94a3b8;">
+                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="32" style="display:block;margin:0 auto 8px;opacity:.3;"></iconify-icon>
+                    <div style="font-size:12px;">Aucune tâche pour le moment</div>
+                </div>
+            </template>
+        </div>
+    </template>
 </div>
+<script>
+function ovTasks() {
+    return {
+        loading: true,
+        stats: [],
+        recentTasks: [],
+        totalTasks: 0,
+        maxCount: 1,
+        async load() {
+            try {
+                const res = await fetch('/account/<%= account_number %>/api/record/<%= record._id %>/task-lists', { credentials: 'include' });
+                const data = await res.json();
+                if (!data.success) { this.loading = false; return; }
+                const lists = data.taskLists || [];
+                // Collect all tasks across all lists
+                let allTasks = [];
+                for (const list of lists) {
+                    const r = await fetch('/account/<%= account_number %>/api/task-lists/' + list._id + '/tasks', { credentials: 'include' });
+                    const td = await r.json();
+                    if (td.success && td.tasks) {
+                        td.tasks.forEach(t => {
+                            const st = (list.statuses || []).find(s => s._id === t.statusId);
+                            allTasks.push({
+                                _id: t._id,
+                                title: t.title,
+                                done: t.done,
+                                statusLabel: st ? st.label : (t.done ? 'Terminée' : 'À faire'),
+                                statusColor: st ? st.color : (t.done ? '#10b981' : '#94a3b8'),
+                                updatedAt: t.updatedAt || t.createdAt
+                            });
+                        });
+                    }
+                }
+                this.totalTasks = allTasks.length;
+                // Group by status
+                const statusMap = {};
+                allTasks.forEach(t => {
+                    const key = t.statusLabel;
+                    if (!statusMap[key]) statusMap[key] = { label: key, color: t.statusColor, count: 0 };
+                    statusMap[key].count++;
+                });
+                this.stats = Object.values(statusMap);
+                this.maxCount = Math.max(1, ...this.stats.map(s => s.count));
+                // Recent tasks (last 5)
+                allTasks.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+                this.recentTasks = allTasks.slice(0, 5);
+            } catch (e) {
+                console.error('[ovTasks] Error:', e);
+            }
+            this.loading = false;
+        }
+    };
+}
+</script>

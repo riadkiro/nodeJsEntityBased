@@ -3,33 +3,111 @@
     <span>Fichiers récents</span>
     <a href="<%= _recBase %>/drive" class="ov-card-link">Voir tout →</a>
 </div>
-<div class="ov-drive-grid">
-    <div class="ov-drive-file">
-        <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#ec489910,#ec489905)">
-            <iconify-icon icon="solar:gallery-bold-duotone" width="28" style="color:#ec4899"></iconify-icon>
+<div x-data="ovDrive()" x-init="load()">
+    <!-- Loading -->
+    <template x-if="loading">
+        <div style="text-align:center;padding:24px 0;color:#bfc9d4;font-size:12px;">Chargement...</div>
+    </template>
+    <!-- Content -->
+    <template x-if="!loading">
+        <div>
+            <template x-if="files.length > 0">
+                <div class="ov-drive-grid">
+                    <template x-for="file in files" :key="file._id">
+                        <a :href="file.url" target="_blank" class="ov-drive-file" style="text-decoration:none;cursor:pointer;">
+                            <div class="ov-drive-thumb" :style="'background:linear-gradient(135deg,' + fileColor(file.category) + '10,' + fileColor(file.category) + '05)'">
+                                <iconify-icon :icon="fileIcon(file.category)" width="28" :style="'color:' + fileColor(file.category)"></iconify-icon>
+                            </div>
+                            <div class="ov-drive-name" x-text="file.originalName"></div>
+                            <div class="ov-drive-meta" x-text="file.sizeFormatted + ' · ' + formatDate(file.uploadedAt)"></div>
+                        </a>
+                    </template>
+                </div>
+            </template>
+            <!-- Empty state -->
+            <template x-if="files.length === 0">
+                <div style="text-align:center;padding:24px 16px;color:#94a3b8;">
+                    <iconify-icon icon="solar:cloud-storage-bold-duotone" width="32" style="display:block;margin:0 auto 8px;opacity:.3;"></iconify-icon>
+                    <div style="font-size:12px;">Aucun fichier pour le moment</div>
+                </div>
+            </template>
         </div>
-        <div class="ov-drive-name">Radio thorax.jpg</div>
-        <div class="ov-drive-meta">2.4 MB · 15/04</div>
-    </div>
-    <div class="ov-drive-file">
-        <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#0ea5e910,#0ea5e905)">
-            <iconify-icon icon="solar:document-bold-duotone" width="28" style="color:#0ea5e9"></iconify-icon>
-        </div>
-        <div class="ov-drive-name">Bilan sanguin.pdf</div>
-        <div class="ov-drive-meta">540 KB · 12/04</div>
-    </div>
-    <div class="ov-drive-file">
-        <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#8b5cf610,#8b5cf605)">
-            <iconify-icon icon="solar:document-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
-        </div>
-        <div class="ov-drive-name">Compte-rendu IRM.pdf</div>
-        <div class="ov-drive-meta">1.2 MB · 05/04</div>
-    </div>
-    <div class="ov-drive-file">
-        <div class="ov-drive-thumb" style="background:linear-gradient(135deg,#10b98110,#10b98105)">
-            <iconify-icon icon="solar:document-bold-duotone" width="28" style="color:#10b981"></iconify-icon>
-        </div>
-        <div class="ov-drive-name">Ordonnance.pdf</div>
-        <div class="ov-drive-meta">120 KB · 01/04</div>
-    </div>
+    </template>
 </div>
+<script>
+function ovDrive() {
+    return {
+        loading: true,
+        files: [],
+        async load() {
+            try {
+                // Fetch record attachments directly from record data
+                const res = await fetch('/account/<%= account_number %>/api/records/<%= record._id %>/attachments', { credentials: 'include' });
+                const data = await res.json();
+                if (data.success && data.attachments) {
+                    const attachments = data.attachments || [];
+                    this.files = attachments
+                        .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
+                        .slice(0, 4)
+                        .map(a => ({
+                            _id: a._id || Math.random(),
+                            originalName: a.originalName || a.filename,
+                            filename: a.filename,
+                            mimeType: a.mimeType || '',
+                            size: a.size || 0,
+                            sizeFormatted: this.fmtSize(a.size),
+                            category: a.category || this.guessCategory(a.mimeType || '', a.originalName || ''),
+                            uploadedAt: a.uploadedAt,
+                            url: '/account/<%= account_number %>/uploads/attachments/' + a.filename
+                        }));
+                }
+            } catch (e) {
+                console.error('[ovDrive] Error:', e);
+            }
+            this.loading = false;
+        },
+        fmtSize(b) {
+            if (!b) return '0 o';
+            if (b < 1024) return b + ' o';
+            if (b < 1048576) return (b / 1024).toFixed(1) + ' Ko';
+            return (b / 1048576).toFixed(1) + ' Mo';
+        },
+        guessCategory(mime, name) {
+            if (mime.startsWith('image/')) return 'image';
+            if (mime === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+            if (mime.includes('word') || name.endsWith('.docx') || name.endsWith('.doc')) return 'word';
+            if (mime.includes('sheet') || mime.includes('excel') || name.endsWith('.xlsx')) return 'excel';
+            if (mime.startsWith('video/')) return 'video';
+            if (mime.startsWith('audio/')) return 'audio';
+            return 'other';
+        },
+        fileIcon(cat) {
+            const m = {
+                image: 'solar:gallery-bold-duotone',
+                pdf: 'solar:document-bold-duotone',
+                word: 'solar:document-text-bold-duotone',
+                excel: 'solar:chart-square-bold-duotone',
+                video: 'solar:video-frame-bold-duotone',
+                audio: 'solar:music-note-slider-bold-duotone'
+            };
+            return m[cat] || 'solar:file-bold-duotone';
+        },
+        fileColor(cat) {
+            const m = {
+                image: '#ec4899',
+                pdf: '#ef4444',
+                word: '#0ea5e9',
+                excel: '#10b981',
+                video: '#8b5cf6',
+                audio: '#f97316'
+            };
+            return m[cat] || '#64748b';
+        },
+        formatDate(d) {
+            if (!d) return '';
+            const dt = new Date(d);
+            return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        }
+    };
+}
+</script>

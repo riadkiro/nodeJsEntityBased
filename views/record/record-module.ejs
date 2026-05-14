@@ -403,10 +403,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-doc-gen:hover{background:#f59e0b;color:#fff;}
     /* Drive */
     .ov-drive-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-    .ov-drive-file{text-align:center;cursor:pointer;transition:transform .2s;}
+    .ov-drive-file{text-align:center;cursor:pointer;transition:transform .2s;min-width:0;}
     .ov-drive-file:hover{transform:translateY(-2px);}
-    .ov-drive-thumb{height:80px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
-    .ov-drive-name{font-size:12px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ov-drive-thumb{aspect-ratio:4/3;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;background:#f8fafc;}
+    .ov-drive-name{font-size:12px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;}
     .ov-drive-meta{font-size:11px;color:#888da8;margin-top:2px;}
     /* ── Dynamic Tables (Lignes) ── */
     .ov-card-lines{overflow:visible;}
@@ -1378,6 +1378,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         .drive-empty { text-align:center; padding:40px 20px; color:#94a3b8; }
         .rm-item[draggable='true'] { cursor:grab; }
         .rm-item[draggable='true']:active { cursor:grabbing; opacity:0.6; }
+        .drive-img-thumb { width:40px; height:40px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+        .drive-rename-input { border:1.5px solid #4361ee; outline:none; border-radius:6px; padding:2px 8px; font-size:13px; font-weight:600; font-family:inherit; color:#1e293b; background:#fff; width:100%; box-sizing:border-box; }
+        .drive-rename-input:focus { box-shadow:0 0 0 3px #4361ee15; }
     </style>
     <script>
     document.addEventListener('alpine:init', () => {
@@ -1650,6 +1653,40 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 } catch (e) {
                     console.error('[Drive] Delete error:', e);
                 }
+            },
+
+            renamingFileId: null,
+            renameValue: '',
+
+            startRename(file) {
+                this.renamingFileId = file._id;
+                this.renameValue = file.originalName;
+            },
+
+            cancelRename() {
+                this.renamingFileId = null;
+                this.renameValue = '';
+            },
+
+            async confirmRename(file) {
+                const newName = this.renameValue.trim();
+                if (!newName || newName === file.originalName) { this.cancelRename(); return; }
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${file._id}`, {
+                        method: 'PATCH', credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ originalName: newName })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const f = this.allFiles.find(f => f._id === file._id);
+                        if (f) f.originalName = newName;
+                        if (window.showMessage) window.showMessage('Fichier renommé', 'success');
+                    }
+                } catch (e) {
+                    console.error('[Drive] Rename error:', e);
+                }
+                this.cancelRename();
             },
 
             formatDate(dateStr) {
@@ -2121,11 +2158,21 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 <template x-for="(file, idx) in displayFiles" :key="file._id">
                     <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'"
                          :draggable="!file.isGenerated" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()">
-                        <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + getCategoryColor(file.category) + '15,' + getCategoryColor(file.category) + '08)'">
-                            <iconify-icon :icon="getCategoryIcon(file.category)" width="20" :style="'color:' + getCategoryColor(file.category)"></iconify-icon>
-                        </div>
-                        <div class="rm-item-body">
-                            <div class="rm-item-title" x-text="file.originalName"></div>
+                        <template x-if="file.category === 'image'">
+                            <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" />
+                        </template>
+                        <template x-if="file.category !== 'image'">
+                            <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + getCategoryColor(file.category) + '15,' + getCategoryColor(file.category) + '08)'">
+                                <iconify-icon :icon="getCategoryIcon(file.category)" width="20" :style="'color:' + getCategoryColor(file.category)"></iconify-icon>
+                            </div>
+                        </template>
+                        <div class="rm-item-body" style="min-width:0;">
+                            <template x-if="renamingFileId !== file._id">
+                                <div class="rm-item-title" x-text="file.originalName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                            </template>
+                            <template x-if="renamingFileId === file._id">
+                                <input type="text" class="drive-rename-input" x-model="renameValue" @keydown.enter="confirmRename(file)" @keydown.escape="cancelRename()" x-init="$nextTick(() => $el.focus())" @blur="confirmRename(file)" />
+                            </template>
                             <div class="rm-item-date">
                                 <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
                                 <span x-text="formatDate(file.uploadedAt)"></span>
@@ -2136,6 +2183,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         </div>
                         <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
                         <div class="drive-file-actions">
+                            <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="!file.isGenerated && renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
                             <a :href="file.url" download class="rm-item-action" title="Télécharger" style="color:#4361ee;"><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
                             <button @click="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;" x-show="!file.isGenerated"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
                         </div>

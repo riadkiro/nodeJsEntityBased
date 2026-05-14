@@ -205,16 +205,20 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
 router.patch('/records/:recordId/attachments/:attachmentId', async (req, res) => {
     try {
         const Record = await tenantCollection(req, 'Record');
-        const { folder } = req.body;
+        const { folder, originalName } = req.body;
 
-        if (folder === undefined) {
+        if (folder === undefined && originalName === undefined) {
             return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
         }
 
         const mongoose = require('mongoose');
+        const update = {};
+        if (folder !== undefined) update['attachments.$.folder'] = folder || '';
+        if (originalName !== undefined) update['attachments.$.originalName'] = originalName.trim();
+
         await Record.updateOne(
             { _id: req.params.recordId, 'attachments._id': new mongoose.Types.ObjectId(req.params.attachmentId) },
-            { $set: { 'attachments.$.folder': folder || '' } }
+            { $set: update }
         );
 
         res.json({ success: true });

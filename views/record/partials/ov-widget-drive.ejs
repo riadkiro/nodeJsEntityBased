@@ -15,9 +15,16 @@
                 <div class="ov-drive-grid">
                     <template x-for="file in files" :key="file._id">
                         <a :href="file.url" target="_blank" class="ov-drive-file" style="text-decoration:none;cursor:pointer;">
-                            <div class="ov-drive-thumb" :style="'background:linear-gradient(135deg,' + fileColor(file.category) + '10,' + fileColor(file.category) + '05)'">
-                                <iconify-icon :icon="fileIcon(file.category)" width="28" :style="'color:' + fileColor(file.category)"></iconify-icon>
-                            </div>
+                            <template x-if="file.category === 'image'">
+                                <div class="ov-drive-thumb" style="overflow:hidden;padding:0;">
+                                    <img :src="file.url" :alt="file.originalName" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />
+                                </div>
+                            </template>
+                            <template x-if="file.category !== 'image'">
+                                <div class="ov-drive-thumb" :style="'background:linear-gradient(135deg,' + fileColor(file.category) + '10,' + fileColor(file.category) + '05)'">
+                                    <iconify-icon :icon="fileIcon(file.category)" width="28" :style="'color:' + fileColor(file.category)"></iconify-icon>
+                                </div>
+                            </template>
                             <div class="ov-drive-name" x-text="file.originalName"></div>
                             <div class="ov-drive-meta" x-text="file.sizeFormatted + ' · ' + formatDate(file.uploadedAt)"></div>
                         </a>

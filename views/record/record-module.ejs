@@ -2157,7 +2157,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 <!-- Files -->
                 <template x-for="(file, idx) in displayFiles" :key="file._id">
                     <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'"
-                         :draggable="!file.isGenerated" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()">
+                         :draggable="!file.isGenerated && renamingFileId !== file._id" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()">
                         <template x-if="file.category === 'image'">
                             <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" />
                         </template>

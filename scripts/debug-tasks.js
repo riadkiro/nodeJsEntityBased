@@ -1,23 +1,56 @@
-const mongoose = require('mongoose');
-const conn = mongoose.createConnection('mongodb://127.0.0.1:27017/saas_app_rb_5001');
-conn.once('open', async () => {
-    // Show task_priority classification
-    const cls = await conn.db.collection('classifications').findOne({ key: 'task_priority' });
-    if (cls) {
-        console.log('task_priority Classification:', cls._id.toString());
-        (cls.options || []).forEach(o => console.log('  -', o._id.toString(), o.label, o.color));
-    }
+const http = require('http');
 
-    // Check what optionId format records use
-    const entity = await conn.db.collection('entities').findOne({ slug: 'tache' });
-    const recs = await conn.db.collection('records').find({ entityId: entity._id }).limit(2).toArray();
-    recs.forEach(r => {
-        console.log('\n' + r.title);
-        (r.classificationValues || []).forEach(cv => {
-            console.log('  cls:', typeof cv.classificationId, cv.classificationId?.toString());
-            console.log('  opt:', typeof cv.optionId, cv.optionId?.toString());
+// First login to get cookie
+const loginData = JSON.stringify({ email: 'boukirou6@hotmail.com', password: 'test' });
+const loginOpts = {
+    hostname: 'localhost', port: 3000, path: '/auth/login',
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': loginData.length }
+};
+
+const loginReq = http.request(loginOpts, (res) => {
+    const cookies = res.headers['set-cookie']?.map(c => c.split(';')[0]).join('; ') || '';
+    console.log('Login status:', res.statusCode);
+    
+    // Fetch task-lists for the record
+    const recordId = '6a04e0f67b394b4558fdb6e3';
+    const opts = {
+        hostname: 'localhost', port: 3000,
+        path: `/account/9194/api/record/${recordId}/task-lists`,
+        method: 'GET',
+        headers: { 'Cookie': cookies }
+    };
+    
+    http.get(opts, (r) => {
+        let data = '';
+        r.on('data', c => data += c);
+        r.on('end', () => {
+            console.log('Task-lists status:', r.statusCode);
+            try {
+                const json = JSON.parse(data);
+                console.log('Task-lists response:', JSON.stringify(json, null, 2).substring(0, 2000));
+                
+                if (json.taskLists && json.taskLists.length > 0) {
+                    // Fetch tasks for first list
+                    const listId = json.taskLists[0]._id;
+                    const tOpts = {
+                        hostname: 'localhost', port: 3000,
+                        path: `/account/9194/api/task-lists/${listId}/tasks`,
+                        method: 'GET',
+                        headers: { 'Cookie': cookies }
+                    };
+                    http.get(tOpts, (tr) => {
+                        let td = '';
+                        tr.on('data', c => td += c);
+                        tr.on('end', () => {
+                            console.log('\nTasks for list', listId, ':', td.substring(0, 2000));
+                        });
+                    });
+                }
+            } catch(e) {
+                console.log('Raw response:', data.substring(0, 500));
+            }
         });
     });
-
-    conn.close();
 });
+loginReq.write(loginData);
+loginReq.end();

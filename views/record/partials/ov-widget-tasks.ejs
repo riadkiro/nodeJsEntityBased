@@ -63,25 +63,19 @@ function ovTasks() {
                 const res = await fetch('/account/<%= account_number %>/api/record/<%= record._id %>/task-lists', { credentials: 'include' });
                 const data = await res.json();
                 if (!data.success) { this.loading = false; return; }
-                const lists = data.taskLists || [];
-                // Collect all tasks across all lists
+                const lists = data.lists || [];
+                // Collect all tasks across all lists (tasks are embedded in each list)
                 let allTasks = [];
                 for (const list of lists) {
-                    const r = await fetch('/account/<%= account_number %>/api/task-lists/' + list._id + '/tasks', { credentials: 'include' });
-                    const td = await r.json();
-                    if (td.success && td.tasks) {
-                        td.tasks.forEach(t => {
-                            const st = (list.statuses || []).find(s => s._id === t.statusId);
-                            allTasks.push({
-                                _id: t._id,
-                                title: t.title,
-                                done: t.done,
-                                statusLabel: st ? st.label : (t.done ? 'Terminée' : 'À faire'),
-                                statusColor: st ? st.color : (t.done ? '#10b981' : '#94a3b8'),
-                                updatedAt: t.updatedAt || t.createdAt
-                            });
+                    (list.tasks || []).forEach(t => {
+                        allTasks.push({
+                            _id: t._id,
+                            title: t.title,
+                            statusLabel: t.status || 'À faire',
+                            statusColor: t.statusColor || '#94a3b8',
+                            updatedAt: t.createdAt
                         });
-                    }
+                    });
                 }
                 this.totalTasks = allTasks.length;
                 // Group by status

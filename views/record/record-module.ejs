@@ -1176,9 +1176,20 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         }
         .rm-docs-generate-btn:hover { background:#f59e0b20; border-color:#f59e0b50; }
         .rm-docs-generate-btn:disabled { opacity:0.5; cursor:wait; }
-        .docs-tpl-section { border-bottom:1px solid #f1f5f9; }
-        .docs-tpl-section:last-child { border-bottom:none; }
-        .docs-tpl-section .rm-item:hover { background:#fafbfc; }
+        .docs-tpl-section { border-radius:10px; margin-bottom:4px; overflow:hidden; background:#fff; border:1px solid #f0f2f5; transition:border-color .2s; }
+        .docs-tpl-section:hover { border-color:#e5e8ec; }
+        .docs-tpl-section > .rm-item { border:none; border-radius:0; }
+        .docs-tpl-section > .rm-item:hover { border:none; box-shadow:none; transform:none; background:#fafbfd; }
+        .docs-tpl-file { display:flex; align-items:center; gap:10px; padding:8px 16px 8px 52px; cursor:pointer; transition:background .15s; border-top:1px solid #f5f6f8; }
+        .docs-tpl-file:hover { background:#f8f9fb; }
+        .docs-tpl-file-icon { width:26px; height:26px; min-width:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#10b98112,#10b98106); }
+        .docs-tpl-file-name { flex:1; min-width:0; font-size:12px; font-weight:500; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .docs-tpl-file-date { font-size:10px; color:#94a3b8; white-space:nowrap; display:flex; align-items:center; gap:3px; }
+        .docs-tpl-file-size { font-size:9px; font-weight:600; color:#10b981; background:#10b98110; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+        .docs-tpl-file-dl { width:24px; height:24px; border:none; background:none; border-radius:6px; color:#94a3b8; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; text-decoration:none; }
+        .docs-tpl-file-dl:hover { background:#4361ee10; color:#4361ee; }
+        .docs-tpl-load-more { display:flex; align-items:center; justify-content:center; gap:5px; width:100%; padding:6px 16px; border:none; border-top:1px solid #f5f6f8; background:#fafbfc; color:#64748b; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; }
+        .docs-tpl-load-more:hover { background:#f1f5f9; color:#4361ee; }
     </style>
     <script>
     document.addEventListener('alpine:init', () => {
@@ -1188,6 +1199,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             generatedDocs: [],
             templates: [],
             openTemplates: [],
+            expandedTemplates: [],
             generatingId: null,
             showPreview: false,
             previewName: '',
@@ -1214,6 +1226,16 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 return this.generatedDocs.filter(d => d.generatedFromName === tplName);
             },
 
+            getVisibleDocs(tplName, tplId) {
+                const all = this.getDocsForTemplate(tplName);
+                if (this.expandedTemplates.includes(tplId) || all.length <= 5) return all;
+                return all.slice(0, 5);
+            },
+
+            expandTemplate(tplId) {
+                if (!this.expandedTemplates.includes(tplId)) this.expandedTemplates.push(tplId);
+            },
+
             toggleTemplate(tplId) {
                 const idx = this.openTemplates.indexOf(tplId);
                 if (idx >= 0) {
@@ -1225,10 +1247,12 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             async init() {
                 await Promise.all([this.loadGeneratedDocs(), this.loadTemplates()]);
-                // Auto-open the first template (most recent generation)
-                if (this.sortedTemplates.length > 0) {
-                    this.openTemplates.push(this.sortedTemplates[0]._id);
-                }
+                // Auto-open all templates that have generated docs
+                this.sortedTemplates.forEach(tpl => {
+                    if (this.getDocsForTemplate(tpl.name).length > 0) {
+                        this.openTemplates.push(tpl._id);
+                    }
+                });
                 // Listen for cancel from iframe
                 window.addEventListener('message', (e) => {
                     if (e.data && e.data.type === 'smartdoc-cancel') {
@@ -2001,25 +2025,30 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                     Aucun document généré pour ce modèle
                                 </div>
                             </template>
-                            <template x-for="(doc, dIdx) in getDocsForTemplate(tpl.name)" :key="doc._id || dIdx">
-                                <div class="rm-item" style="padding-left:56px; border-top:1px solid #f1f5f9; margin:0; cursor:pointer;"
+                            <template x-for="(doc, dIdx) in getVisibleDocs(tpl.name, tpl._id)" :key="doc._id || dIdx">
+                                <div class="docs-tpl-file"
                                      @click="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf')">
-                                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108); width:30px; height:30px; min-width:30px;">
-                                        <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" width="16" style="color:#10b981"></iconify-icon>
+                                    <div class="docs-tpl-file-icon">
+                                        <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" width="14" style="color:#10b981"></iconify-icon>
                                     </div>
-                                    <div class="rm-item-body" style="min-width:0;">
-                                        <div class="rm-item-title" x-text="doc.originalName || 'Document'" style="font-size:12px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                                        <div class="rm-item-date">
-                                            <iconify-icon icon="solar:calendar-linear" width="11"></iconify-icon>
-                                            <span x-text="formatDate(doc.uploadedAt)"></span>
-                                        </div>
-                                    </div>
-                                    <span class="rm-item-badge" style="background:#10b98115;color:#10b981; font-size:9px;" x-text="doc.sizeFormatted || ''"></span>
+                                    <span class="docs-tpl-file-name" x-text="doc.originalName || 'Document'"></span>
+                                    <span class="docs-tpl-file-date">
+                                        <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
+                                        <span x-text="formatDate(doc.uploadedAt)"></span>
+                                    </span>
+                                    <span class="docs-tpl-file-size" x-text="doc.sizeFormatted || ''"></span>
                                     <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename + '?dl=' + encodeURIComponent(doc.originalName || 'document')" 
-                                       download class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop>
-                                        <iconify-icon icon="solar:download-bold" width="14"></iconify-icon>
+                                       download class="docs-tpl-file-dl" title="Télécharger" @click.stop>
+                                        <iconify-icon icon="solar:download-bold" width="13"></iconify-icon>
                                     </a>
                                 </div>
+                            </template>
+                            <!-- Load more button -->
+                            <template x-if="getDocsForTemplate(tpl.name).length > 5 && !expandedTemplates.includes(tpl._id)">
+                                <button @click.stop="expandTemplate(tpl._id)" class="docs-tpl-load-more">
+                                    <iconify-icon icon="solar:add-circle-linear" width="13"></iconify-icon>
+                                    Voir tout (<span x-text="getDocsForTemplate(tpl.name).length"></span>)
+                                </button>
                             </template>
                         </div>
                     </div>

@@ -162,6 +162,7 @@
         iconEl.setAttribute('icon', getIcon(cat));
         iconEl.style.color = getColor(cat);
         dlEl.href = url;
+        dlEl.download = filename || url.split('/').pop();
         ntEl.href = url;
 
         // Badge

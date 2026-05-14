@@ -2214,7 +2214,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         <div class="drive-file-actions">
                             <button @click.stop="window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
                             <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="!file.isGenerated && renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
-                            <a :href="file.url" download class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
+                            <a :href="file.url" :download="file.originalName" class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
                             <button @click.stop="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;" x-show="!file.isGenerated"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
                         </div>
                     </div>

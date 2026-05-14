@@ -1176,15 +1176,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         }
         .rm-docs-generate-btn:hover { background:#f59e0b20; border-color:#f59e0b50; }
         .rm-docs-generate-btn:disabled { opacity:0.5; cursor:wait; }
+        .docs-tpl-section { border-bottom:1px solid #f1f5f9; }
+        .docs-tpl-section:last-child { border-bottom:none; }
+        .docs-tpl-section .rm-item:hover { background:#fafbfc; }
     </style>
     <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('docsModule', () => ({
-            activeTab: 'generated',
             loading: true,
             loadingTemplates: true,
             generatedDocs: [],
             templates: [],
+            openTemplates: [],
             generatingId: null,
             showPreview: false,
             previewName: '',
@@ -1196,9 +1199,36 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             _entityId: '<%= entity._id %>',
             _recordId: '<%= record._id %>',
 
-            init() {
-                this.loadGeneratedDocs();
-                this.loadTemplates();
+            // Templates sorted by most recent generation (template with latest doc first)
+            get sortedTemplates() {
+                return [...this.templates].sort((a, b) => {
+                    const aDocs = this.getDocsForTemplate(a.name);
+                    const bDocs = this.getDocsForTemplate(b.name);
+                    const aDate = aDocs.length > 0 ? new Date(aDocs[0].uploadedAt) : new Date(0);
+                    const bDate = bDocs.length > 0 ? new Date(bDocs[0].uploadedAt) : new Date(0);
+                    return bDate - aDate;
+                });
+            },
+
+            getDocsForTemplate(tplName) {
+                return this.generatedDocs.filter(d => d.generatedFromName === tplName);
+            },
+
+            toggleTemplate(tplId) {
+                const idx = this.openTemplates.indexOf(tplId);
+                if (idx >= 0) {
+                    this.openTemplates.splice(idx, 1);
+                } else {
+                    this.openTemplates.push(tplId);
+                }
+            },
+
+            async init() {
+                await Promise.all([this.loadGeneratedDocs(), this.loadTemplates()]);
+                // Auto-open the first template (most recent generation)
+                if (this.sortedTemplates.length > 0) {
+                    this.openTemplates.push(this.sortedTemplates[0]._id);
+                }
                 // Listen for cancel from iframe
                 window.addEventListener('message', (e) => {
                     if (e.data && e.data.type === 'smartdoc-cancel') {
@@ -1397,7 +1427,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             draggedFileId: null,
             dropTargetFolder: null,
             currentFolder: '',
-            viewingGenerated: false,
+            viewingGenerated: '',
             showNewFolderInput: false,
             newFolderName: '',
             customFolders: [],
@@ -1406,6 +1436,20 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             get generatedCount() {
                 return this.allFiles.filter(f => f.isGenerated).length;
+            },
+
+            // Group generated files by template name
+            get generatedTemplateFolders() {
+                if (this.currentFolder || this.viewingGenerated) return [];
+                const map = {};
+                this.allFiles.filter(f => f.isGenerated).forEach(f => {
+                    const tplName = f.generatedFromName || 'Autres documents';
+                    if (!map[tplName]) map[tplName] = { name: tplName, count: 0, lastDate: null };
+                    map[tplName].count++;
+                    const d = new Date(f.uploadedAt);
+                    if (!map[tplName].lastDate || d > map[tplName].lastDate) map[tplName].lastDate = d;
+                });
+                return Object.values(map).sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
             },
 
             get displayFolders() {
@@ -1426,7 +1470,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             get displayFiles() {
                 if (this.viewingGenerated) {
-                    return this.allFiles.filter(f => f.isGenerated).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+                    return this.allFiles.filter(f => f.isGenerated && (f.generatedFromName || 'Autres documents') === this.viewingGenerated)
+                        .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
                 }
                 return this.allFiles
                     .filter(f => !f.isGenerated && (f.folder || '') === this.currentFolder)
@@ -1457,7 +1502,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             navigateTo(folder) {
                 this.currentFolder = folder;
-                this.viewingGenerated = false;
+                this.viewingGenerated = '';
             },
 
             async createFolder() {
@@ -1906,94 +1951,77 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     
         <% if (moduleName === 'docs') { %>
         <div x-data="docsModule" x-cloak>
-            <!-- Tabs -->
-            <div class="rm-toolbar" style="flex-direction:column; gap:0; padding-bottom:0;">
-                <div style="display:flex; align-items:center; gap:0; border-bottom:2px solid #f1f3f5; width:100%;">
-                    <button @click="activeTab = 'generated'"
-                        :class="activeTab === 'generated' ? 'rm-docs-tab--active' : ''"
-                        class="rm-docs-tab">
-                        <iconify-icon icon="solar:file-check-bold-duotone" width="15"></iconify-icon>
-                        Générés
-                        <span class="rm-docs-tab-count" x-text="generatedDocs.length" x-show="generatedDocs.length > 0"></span>
-                    </button>
-                    <button @click="activeTab = 'templates'"
-                        :class="activeTab === 'templates' ? 'rm-docs-tab--active' : ''"
-                        class="rm-docs-tab">
-                        <iconify-icon icon="solar:file-text-bold-duotone" width="15"></iconify-icon>
-                        Templates
-                        <span class="rm-docs-tab-count" x-text="templates.length" x-show="templates.length > 0"></span>
-                    </button>
-                </div>
+            <!-- Loading state -->
+            <div x-show="loading && loadingTemplates" style="text-align:center; padding:32px 0; color:#94a3b8;">
+                <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+                <p style="font-size:12px; margin-top:8px;">Chargement...</p>
             </div>
 
-            <!-- Tab: Générés -->
-            <div x-show="activeTab === 'generated'" class="rm-items-list">
-                <!-- Loading state -->
-                <div x-show="loading" style="text-align:center; padding:32px 0; color:#94a3b8;">
-                    <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
-                    <p style="font-size:12px; margin-top:8px;">Chargement...</p>
-                </div>
-                <!-- Empty state -->
-                <div x-show="!loading && generatedDocs.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
-                    <iconify-icon icon="solar:file-check-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
-                    <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun document généré</p>
-                    <p style="font-size:11px; margin-top:4px;">Les documents apparaîtront ici après génération</p>
-                </div>
-                <!-- Generated docs list -->
-                <template x-for="(doc, idx) in generatedDocs" :key="doc._id || idx">
-                    <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'">
-                        <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108)">
-                            <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" width="20" style="color:#10b981"></iconify-icon>
-                        </div>
-                        <div class="rm-item-body">
-                            <div class="rm-item-title" x-text="doc.originalName || doc.generatedFromName || 'Document'"></div>
-                            <div class="rm-item-date">
-                                <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
-                                <span x-text="formatDate(doc.uploadedAt)"></span>
-                                <span x-show="doc.generatedFromName" style="margin-left:6px; color:#94a3b8;">·</span>
-                                <span x-show="doc.generatedFromName" x-text="doc.generatedFromName" style="color:#f59e0b; font-weight:500;"></span>
-                            </div>
-                        </div>
-                        <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Généré</span>
-                        <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename" 
-                           download class="rm-item-action" title="Télécharger" style="color:#4361ee;">
-                            <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
-                        </a>
-                    </div>
-                </template>
+            <!-- Empty state: no templates at all -->
+            <div x-show="!loading && !loadingTemplates && templates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+                <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
+                <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle disponible</p>
+                <p style="font-size:11px; margin-top:4px;">Créez des templates dans le module Documents</p>
             </div>
 
-            <!-- Tab: Templates -->
-            <div x-show="activeTab === 'templates'" class="rm-items-list">
-                <!-- Loading state -->
-                <div x-show="loadingTemplates" style="text-align:center; padding:32px 0; color:#94a3b8;">
-                    <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
-                    <p style="font-size:12px; margin-top:8px;">Chargement...</p>
-                </div>
-                <!-- Empty state -->
-                <div x-show="!loadingTemplates && templates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
-                    <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
-                    <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle disponible</p>
-                    <p style="font-size:11px; margin-top:4px;">Créez des templates dans le module Documents</p>
-                </div>
-                <!-- Templates list -->
-                <template x-for="(tpl, idx) in templates" :key="tpl._id">
-                    <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'">
-                        <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                            <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
-                        </div>
-                        <div class="rm-item-body">
-                            <div class="rm-item-title" x-text="tpl.name"></div>
-                            <div class="rm-item-date" style="color:#94a3b8;">
-                                <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
-                                Modèle de document
+            <!-- Template accordion list -->
+            <div x-show="!loadingTemplates && templates.length > 0" class="rm-items-list">
+                <template x-for="(tpl, tIdx) in sortedTemplates" :key="tpl._id">
+                    <div class="docs-tpl-section" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
+                        <!-- Template header row -->
+                        <div class="rm-item" style="cursor:pointer; border-bottom:none; margin-bottom:0;"
+                             @click="toggleTemplate(tpl._id)">
+                            <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
+                                <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                                <iconify-icon icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
                             </div>
+                            <div class="rm-item-body" style="min-width:0;">
+                                <div class="rm-item-title" x-text="tpl.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                                <div class="rm-item-date" style="color:#94a3b8;">
+                                    <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
+                                    <span x-text="getDocsForTemplate(tpl.name).length + ' document(s) généré(s)'"></span>
+                                    <template x-if="getDocsForTemplate(tpl.name).length > 0">
+                                        <span style="margin-left:4px;">· <span x-text="formatDate(getDocsForTemplate(tpl.name)[0]?.uploadedAt)" style="color:#10b981;font-weight:500;"></span></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <button @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
+                                class="rm-docs-generate-btn" style="flex-shrink:0;">
+                                <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
+                                <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
+                            </button>
+                            <span class="rm-item-action" style="color:#94a3b8; transition:transform .2s;" :style="openTemplates.includes(tpl._id) ? 'transform:rotate(90deg)' : ''">
+                                <iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon>
+                            </span>
                         </div>
-                        <button @click="generateDoc(tpl)" :disabled="generatingId === tpl._id"
-                            class="rm-docs-generate-btn">
-                            <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
-                            <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
-                        </button>
+                        <!-- Expanded: generated files for this template -->
+                        <div x-show="openTemplates.includes(tpl._id)" x-transition.duration.200ms>
+                            <template x-if="getDocsForTemplate(tpl.name).length === 0">
+                                <div style="padding:12px 16px 16px 56px; font-size:11px; color:#94a3b8; font-style:italic;">
+                                    Aucun document généré pour ce modèle
+                                </div>
+                            </template>
+                            <template x-for="(doc, dIdx) in getDocsForTemplate(tpl.name)" :key="doc._id || dIdx">
+                                <div class="rm-item" style="padding-left:56px; border-top:1px solid #f1f5f9; margin:0; cursor:pointer;"
+                                     @click="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf')">
+                                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#10b98115,#10b98108); width:30px; height:30px; min-width:30px;">
+                                        <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" width="16" style="color:#10b981"></iconify-icon>
+                                    </div>
+                                    <div class="rm-item-body" style="min-width:0;">
+                                        <div class="rm-item-title" x-text="doc.originalName || 'Document'" style="font-size:12px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                                        <div class="rm-item-date">
+                                            <iconify-icon icon="solar:calendar-linear" width="11"></iconify-icon>
+                                            <span x-text="formatDate(doc.uploadedAt)"></span>
+                                        </div>
+                                    </div>
+                                    <span class="rm-item-badge" style="background:#10b98115;color:#10b981; font-size:9px;" x-text="doc.sizeFormatted || ''"></span>
+                                    <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename + '?dl=' + encodeURIComponent(doc.originalName || 'document')" 
+                                       download class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop>
+                                        <iconify-icon icon="solar:download-bold" width="14"></iconify-icon>
+                                    </a>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -2089,8 +2117,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     <span class="drive-breadcrumb-sep">
                         <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
                         <span class="drive-breadcrumb-item drive-breadcrumb-item--active">
-                            <iconify-icon icon="solar:star-bold" width="13" style="color:#f59e0b"></iconify-icon>
-                            Fichiers générés
+                            <iconify-icon icon="solar:magic-stick-3-bold" width="13" style="color:#f59e0b"></iconify-icon>
+                            <span x-text="viewingGenerated"></span>
                         </span>
                     </span>
                 </template>
@@ -2144,19 +2172,21 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             <!-- Content -->
             <div x-show="!loading" class="rm-items-list">
-                <!-- "Fichiers générés" virtual folder (root only) -->
-                <div x-show="!currentFolder && !viewingGenerated && generatedCount > 0"
-                     class="rm-item drive-folder-item" @click="viewingGenerated = true" style="cursor:pointer;">
-                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
-                        <iconify-icon icon="solar:star-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                <!-- Generated template folders (root only) -->
+                <template x-for="(tplFolder, tIdx) in generatedTemplateFolders" :key="tplFolder.name">
+                    <div class="rm-item drive-folder-item" @click="viewingGenerated = tplFolder.name" style="cursor:pointer;" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
+                        <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
+                            <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                            <iconify-icon icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
+                        </div>
+                        <div class="rm-item-body">
+                            <div class="rm-item-title" x-text="tplFolder.name"></div>
+                            <div class="rm-item-date"><iconify-icon icon="solar:magic-stick-3-bold" width="12" style="color:#f59e0b"></iconify-icon> <span x-text="tplFolder.count + ' fichier(s)'"></span></div>
+                        </div>
+                        <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Auto</span>
+                        <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
                     </div>
-                    <div class="rm-item-body">
-                        <div class="rm-item-title">Fichiers générés</div>
-                        <div class="rm-item-date"><iconify-icon icon="solar:magic-stick-3-bold" width="12" style="color:#f59e0b"></iconify-icon> <span x-text="generatedCount + ' fichier(s)'"></span></div>
-                    </div>
-                    <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Auto</span>
-                    <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
-                </div>
+                </template>
 
                 <!-- Custom folders (root only) -->
                 <template x-for="(folder, idx) in displayFolders" :key="folder.name">

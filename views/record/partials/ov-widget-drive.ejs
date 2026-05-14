@@ -13,8 +13,8 @@
         <div>
             <template x-if="files.length > 0">
                 <div class="ov-drive-grid">
-                    <template x-for="file in files" :key="file._id">
-                        <div @click="window.openFileViewer(file.url, file.originalName, file.category)" class="ov-drive-file" style="cursor:pointer;">
+                    <template x-for="(file, idx) in files" :key="file._id">
+                        <div @click="window.openFileViewer(file.url, file.originalName, file.category, files.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="ov-drive-file" style="cursor:pointer;">
                             <template x-if="file.category === 'image'">
                                 <div class="ov-drive-thumb" style="overflow:hidden;padding:0;">
                                     <img :src="file.url" :alt="file.originalName" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />

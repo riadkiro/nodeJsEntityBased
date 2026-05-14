@@ -1,29 +1,41 @@
 <!-- ═══════════════════════════════════════════════════════════════
      FILE VIEWER MODAL — Reusable across all pages
-     Usage: window.openFileViewer(url, filename, category)
-     category: 'image', 'pdf', or other
+     Usage:
+       window.openFileViewer(url, filename, category, fileList, currentIndex)
+       fileList = [{url, name, category}, ...]  (optional — enables prev/next)
      ═══════════════════════════════════════════════════════════════ -->
 <style>
 /* ── File Viewer Modal ── */
 .fv-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .25s ease; pointer-events:none; }
 .fv-overlay.fv-open { opacity:1; pointer-events:auto; }
-.fv-container { position:relative; width:90vw; height:90vh; max-width:1200px; display:flex; flex-direction:column; border-radius:16px; overflow:hidden; background:#111827; box-shadow:0 25px 60px rgba(0,0,0,.5); }
+.fv-container { position:relative; width:92vw; height:92vh; max-width:1200px; display:flex; flex-direction:column; border-radius:16px; overflow:hidden; background:#111827; box-shadow:0 25px 60px rgba(0,0,0,.5); }
 /* Header bar */
-.fv-header { display:flex; align-items:center; gap:10px; padding:12px 20px; background:#1f2937; border-bottom:1px solid #374151; flex-shrink:0; }
+.fv-header { display:flex; align-items:center; gap:10px; padding:10px 16px; background:#1f2937; border-bottom:1px solid #374151; flex-shrink:0; }
 .fv-filename { flex:1; font-size:13px; font-weight:600; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fv-badge { font-size:9px; font-weight:800; text-transform:uppercase; padding:3px 10px; border-radius:20px; letter-spacing:.5px; flex-shrink:0; }
 .fv-badge--pdf { background:#ef4444; color:#fff; }
 .fv-badge--image { background:#8b5cf6; color:#fff; }
+.fv-badge--video { background:#f59e0b; color:#fff; }
 .fv-badge--other { background:#6b7280; color:#fff; }
-.fv-actions { display:flex; align-items:center; gap:4px; }
-.fv-btn { width:34px; height:34px; border-radius:8px; border:none; background:transparent; color:#9ca3af; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.fv-actions { display:flex; align-items:center; gap:2px; }
+.fv-btn { width:32px; height:32px; border-radius:8px; border:none; background:transparent; color:#9ca3af; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; font-size:0; }
 .fv-btn:hover { background:#374151; color:#fff; }
-.fv-btn--close { color:#ef4444; }
 .fv-btn--close:hover { background:#ef444420; color:#ef4444; }
+.fv-sep { width:1px; height:20px; background:#374151; margin:0 4px; flex-shrink:0; }
+/* Navigation arrows */
+.fv-nav { position:absolute; top:50%; z-index:5; width:40px; height:40px; border-radius:50%; border:none; background:rgba(31,41,55,.85); color:#e5e7eb; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; backdrop-filter:blur(4px); }
+.fv-nav:hover { background:rgba(67,97,238,.8); color:#fff; transform:scale(1.1); }
+.fv-nav--prev { left:12px; transform:translateY(-50%); }
+.fv-nav--prev:hover { transform:translateY(-50%) scale(1.1); }
+.fv-nav--next { right:12px; transform:translateY(-50%); }
+.fv-nav--next:hover { transform:translateY(-50%) scale(1.1); }
+.fv-nav[disabled] { opacity:.2; pointer-events:none; }
+/* Counter */
+.fv-counter { font-size:10px; font-weight:700; color:#6b7280; flex-shrink:0; padding:0 6px; }
 /* Content area */
 .fv-body { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; position:relative; }
 /* Image viewer */
-.fv-image { max-width:100%; max-height:100%; object-fit:contain; transition:transform .2s ease; cursor:grab; user-select:none; }
+.fv-image { max-width:100%; max-height:100%; object-fit:contain; transition:transform .15s ease; cursor:grab; user-select:none; transform-origin:center center; }
 .fv-image:active { cursor:grabbing; }
 /* PDF viewer */
 .fv-pdf-wrap { width:100%; height:100%; overflow:auto; display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px; }
@@ -34,11 +46,13 @@
 .fv-unsupported-icon { opacity:.3; }
 .fv-unsupported-title { font-size:14px; font-weight:600; color:#e5e7eb; }
 .fv-unsupported-msg { font-size:12px; color:#6b7280; max-width:260px; }
+.fv-download-btn { margin-top:8px; display:inline-flex; align-items:center; gap:6px; padding:8px 20px; border-radius:8px; background:#4361ee; color:#fff; font-size:12px; font-weight:600; text-decoration:none; transition:background .15s; border:none; cursor:pointer; }
+.fv-download-btn:hover { background:#3451db; }
 /* Zoom controls */
-.fv-zoom-bar { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; padding:4px; background:#1f2937; border-radius:10px; border:1px solid #374151; z-index:2; }
+.fv-zoom-bar { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; padding:4px 6px; background:#1f2937ee; border-radius:10px; border:1px solid #374151; z-index:2; backdrop-filter:blur(8px); }
 .fv-zoom-label { font-size:10px; font-weight:700; color:#9ca3af; min-width:44px; text-align:center; }
 /* PDF page indicator */
-.fv-page-info { position:absolute; bottom:16px; right:20px; font-size:11px; font-weight:600; color:#9ca3af; background:#1f2937; padding:4px 12px; border-radius:20px; border:1px solid #374151; z-index:2; }
+.fv-page-info { position:absolute; bottom:16px; right:16px; font-size:11px; font-weight:600; color:#9ca3af; background:#1f2937ee; padding:4px 12px; border-radius:20px; border:1px solid #374151; z-index:2; backdrop-filter:blur(8px); }
 </style>
 
 <div id="fileViewerModal" class="fv-overlay" onclick="if(event.target===this)window.closeFileViewer()">
@@ -48,20 +62,36 @@
             <iconify-icon id="fvTypeIcon" icon="solar:file-bold-duotone" width="18" style="color:#9ca3af;flex-shrink:0;"></iconify-icon>
             <span id="fvFilename" class="fv-filename"></span>
             <span id="fvBadge" class="fv-badge"></span>
+            <span id="fvCounter" class="fv-counter" style="display:none;"></span>
             <div class="fv-actions">
+                <button id="fvPrevBtn" class="fv-btn" title="Précédent" style="display:none;" onclick="window._fvNav(-1)">
+                    <iconify-icon icon="solar:alt-arrow-left-bold" width="16"></iconify-icon>
+                </button>
+                <button id="fvNextBtn" class="fv-btn" title="Suivant" style="display:none;" onclick="window._fvNav(1)">
+                    <iconify-icon icon="solar:alt-arrow-right-bold" width="16"></iconify-icon>
+                </button>
+                <span id="fvNavSep" class="fv-sep" style="display:none;"></span>
                 <a id="fvDownload" class="fv-btn" title="Télécharger" download>
                     <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
                 </a>
                 <a id="fvNewTab" class="fv-btn" title="Ouvrir dans un nouvel onglet" target="_blank">
                     <iconify-icon icon="solar:square-arrow-right-up-bold" width="16"></iconify-icon>
                 </a>
-                <button class="fv-btn fv-btn--close" onclick="window.closeFileViewer()" title="Fermer">
+                <span class="fv-sep"></span>
+                <button class="fv-btn fv-btn--close" onclick="window.closeFileViewer()" title="Fermer (Esc)">
                     <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
                 </button>
             </div>
         </div>
         <!-- Body -->
         <div id="fvBody" class="fv-body"></div>
+        <!-- Floating prev/next arrows -->
+        <button id="fvArrowPrev" class="fv-nav fv-nav--prev" style="display:none;" onclick="window._fvNav(-1)">
+            <iconify-icon icon="solar:alt-arrow-left-bold" width="20"></iconify-icon>
+        </button>
+        <button id="fvArrowNext" class="fv-nav fv-nav--next" style="display:none;" onclick="window._fvNav(1)">
+            <iconify-icon icon="solar:alt-arrow-right-bold" width="20"></iconify-icon>
+        </button>
     </div>
 </div>
 
@@ -74,10 +104,20 @@
     var iconEl = document.getElementById('fvTypeIcon');
     var dlEl = document.getElementById('fvDownload');
     var ntEl = document.getElementById('fvNewTab');
+    var counterEl = document.getElementById('fvCounter');
+    var prevBtn = document.getElementById('fvPrevBtn');
+    var nextBtn = document.getElementById('fvNextBtn');
+    var navSep = document.getElementById('fvNavSep');
+    var arrowPrev = document.getElementById('fvArrowPrev');
+    var arrowNext = document.getElementById('fvArrowNext');
+
     var currentZoom = 1;
+    var _zoomCallback = null;
+    var _fileList = [];
+    var _currentIdx = -1;
 
     function getCat(url, filename) {
-        var ext = (filename || url || '').split('.').pop().toLowerCase();
+        var ext = (filename || url || '').split('.').pop().split('?')[0].toLowerCase();
         if (['jpg','jpeg','png','gif','webp','svg','bmp','ico'].indexOf(ext) >= 0) return 'image';
         if (ext === 'pdf') return 'pdf';
         if (['doc','docx'].indexOf(ext) >= 0) return 'word';
@@ -96,7 +136,27 @@
         return m[cat] || '#6b7280';
     }
 
-    window.openFileViewer = function(url, filename, category) {
+    // ── Public API ──
+    // openFileViewer(url, filename, category, fileList?, currentIndex?)
+    // fileList: [{url, name, category}, ...]
+    window.openFileViewer = function(url, filename, category, fileList, currentIndex) {
+        _fileList = fileList || [];
+        _currentIdx = (typeof currentIndex === 'number') ? currentIndex : -1;
+
+        // If fileList provided but no currentIndex, find it
+        if (_fileList.length > 0 && _currentIdx < 0) {
+            for (var i = 0; i < _fileList.length; i++) {
+                if (_fileList[i].url === url) { _currentIdx = i; break; }
+            }
+            if (_currentIdx < 0) _currentIdx = 0;
+        }
+
+        _renderFile(url, filename, category);
+        modal.classList.add('fv-open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    function _renderFile(url, filename, category) {
         var cat = category || getCat(url, filename);
         fnEl.textContent = filename || url.split('/').pop();
         iconEl.setAttribute('icon', getIcon(cat));
@@ -107,11 +167,29 @@
         // Badge
         var badgeMap = { image:'Image', pdf:'PDF', word:'Word', excel:'Excel', video:'Vidéo' };
         badgeEl.textContent = badgeMap[cat] || 'Fichier';
-        badgeEl.className = 'fv-badge fv-badge--' + (cat === 'image' ? 'image' : cat === 'pdf' ? 'pdf' : 'other');
+        badgeEl.className = 'fv-badge fv-badge--' + (['image','pdf','video'].indexOf(cat) >= 0 ? cat : 'other');
 
-        // Clear body
+        // Navigation UI
+        var hasNav = _fileList.length > 1;
+        prevBtn.style.display = hasNav ? '' : 'none';
+        nextBtn.style.display = hasNav ? '' : 'none';
+        navSep.style.display = hasNav ? '' : 'none';
+        arrowPrev.style.display = hasNav ? '' : 'none';
+        arrowNext.style.display = hasNav ? '' : 'none';
+        counterEl.style.display = hasNav ? '' : 'none';
+
+        if (hasNav) {
+            counterEl.textContent = (_currentIdx + 1) + ' / ' + _fileList.length;
+            prevBtn.disabled = _currentIdx <= 0;
+            nextBtn.disabled = _currentIdx >= _fileList.length - 1;
+            arrowPrev.disabled = _currentIdx <= 0;
+            arrowNext.disabled = _currentIdx >= _fileList.length - 1;
+        }
+
+        // Clear body & zoom
         body.innerHTML = '';
         currentZoom = 1;
+        _zoomCallback = null;
 
         if (cat === 'image') {
             renderImage(url);
@@ -122,36 +200,62 @@
         } else {
             renderUnsupported(filename || url, cat);
         }
+    }
 
-        modal.classList.add('fv-open');
-        document.body.style.overflow = 'hidden';
+    // ── Navigation ──
+    window._fvNav = function(dir) {
+        if (_fileList.length < 2) return;
+        var next = _currentIdx + dir;
+        if (next < 0 || next >= _fileList.length) return;
+        _currentIdx = next;
+        var f = _fileList[_currentIdx];
+        _renderFile(f.url, f.name, f.category);
     };
 
     window.closeFileViewer = function() {
         modal.classList.remove('fv-open');
         document.body.style.overflow = '';
         body.innerHTML = '';
+        _fileList = [];
+        _currentIdx = -1;
+        _zoomCallback = null;
     };
 
-    // ESC to close
+    // ── Keyboard: ESC, Left/Right arrows ──
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.classList.contains('fv-open')) {
-            window.closeFileViewer();
-        }
+        if (!modal.classList.contains('fv-open')) return;
+        if (e.key === 'Escape') { window.closeFileViewer(); return; }
+        if (e.key === 'ArrowLeft') { window._fvNav(-1); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { window._fvNav(1); e.preventDefault(); }
     });
+
+    // ── Ctrl + Mouse Wheel Zoom (inside modal only) ──
+    modal.addEventListener('wheel', function(e) {
+        if (!e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (!_zoomCallback) return;
+        var delta = e.deltaY > 0 ? -0.15 : 0.15;
+        var newZoom = Math.max(0.1, Math.min(5, currentZoom + delta));
+        currentZoom = newZoom;
+        _zoomCallback(currentZoom);
+        // Update zoom label if exists
+        var label = modal.querySelector('.fv-zoom-label');
+        if (label) label.textContent = Math.round(currentZoom * 100) + '%';
+    }, { passive: false });
 
     // ── Image Renderer ──
     function renderImage(url) {
         var img = document.createElement('img');
         img.className = 'fv-image';
         img.src = url;
-        img.id = 'fvImg';
         body.appendChild(img);
 
-        // Zoom bar
-        var zoomBar = createZoomBar(function(zoom) {
+        _zoomCallback = function(zoom) {
             img.style.transform = 'scale(' + zoom + ')';
-        });
+        };
+
+        var zoomBar = createZoomBar(_zoomCallback);
         body.appendChild(zoomBar);
     }
 
@@ -169,7 +273,6 @@
     function renderPdf(url) {
         var wrap = document.createElement('div');
         wrap.className = 'fv-pdf-wrap';
-        wrap.id = 'fvPdfWrap';
 
         var loading = document.createElement('div');
         loading.className = 'fv-pdf-loading';
@@ -177,24 +280,22 @@
         wrap.appendChild(loading);
         body.appendChild(wrap);
 
-        // Page info
         var pageInfo = document.createElement('div');
         pageInfo.className = 'fv-page-info';
-        pageInfo.id = 'fvPageInfo';
         pageInfo.textContent = '';
         body.appendChild(pageInfo);
 
-        // Zoom bar
-        var zoomBar = createZoomBar(function(zoom) {
+        _zoomCallback = function(zoom) {
             var canvases = wrap.querySelectorAll('canvas');
             canvases.forEach(function(c) {
                 c.style.width = (c._origWidth * zoom) + 'px';
                 c.style.height = (c._origHeight * zoom) + 'px';
             });
-        });
+        };
+
+        var zoomBar = createZoomBar(_zoomCallback);
         body.appendChild(zoomBar);
 
-        // Load PDF.js if not loaded
         ensurePdfJs(function() {
             var pdfjsLib = window.pdfjsLib;
             pdfjsLib.getDocument(url).promise.then(function(pdf) {
@@ -202,7 +303,6 @@
                 var totalPages = pdf.numPages;
                 pageInfo.textContent = totalPages + ' page' + (totalPages > 1 ? 's' : '');
 
-                // Render pages sequentially
                 var renderPage = function(num) {
                     if (num > totalPages) return;
                     pdf.getPage(num).then(function(page) {
@@ -224,7 +324,7 @@
                     });
                 };
                 renderPage(1);
-            }).catch(function(err) {
+            }).catch(function() {
                 loading.innerHTML = '<iconify-icon icon="solar:danger-triangle-bold" width="18" style="color:#ef4444"></iconify-icon> Impossible de charger le PDF';
             });
         });
@@ -238,7 +338,7 @@
             '<iconify-icon class="fv-unsupported-icon" icon="' + getIcon(cat) + '" width="64" style="color:' + getColor(cat) + '"></iconify-icon>' +
             '<div class="fv-unsupported-title">' + (filename || 'Fichier') + '</div>' +
             '<div class="fv-unsupported-msg">L\'aperçu n\'est pas disponible pour ce type de fichier. Vous pouvez le télécharger pour le consulter.</div>' +
-            '<a href="' + dlEl.href + '" download style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:8px;background:#4361ee;color:#fff;font-size:12px;font-weight:600;text-decoration:none;transition:background .15s;" onmouseenter="this.style.background=\'#3451db\'" onmouseleave="this.style.background=\'#4361ee\'">' +
+            '<a href="' + dlEl.href + '" download class="fv-download-btn">' +
             '<iconify-icon icon="solar:download-bold" width="14"></iconify-icon> Télécharger</a>';
         body.appendChild(div);
     }
@@ -263,11 +363,11 @@
 
         var btnReset = document.createElement('button');
         btnReset.className = 'fv-btn';
-        btnReset.innerHTML = '<iconify-icon icon="solar:maximize-square-bold" width="14"></iconify-icon>';
         btnReset.title = 'Réinitialiser';
+        btnReset.innerHTML = '<iconify-icon icon="solar:maximize-square-bold" width="14"></iconify-icon>';
 
         function updateZoom(z) {
-            currentZoom = Math.max(0.25, Math.min(3, z));
+            currentZoom = Math.max(0.1, Math.min(5, z));
             label.textContent = Math.round(currentZoom * 100) + '%';
             onZoom(currentZoom);
         }

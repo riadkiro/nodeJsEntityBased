@@ -11,6 +11,58 @@
  */
 const User = require("../models/user.model");
 const Account = require("../models/account.model");
+const mongoose = require('mongoose');
+const dbConfig = require('../config/db');
+
+/**
+ * Convert all RecordAccess pendingInvites for an email into proper grants.
+ * Called when a user accepts a workspace invitation.
+ */
+async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
+    let tenantConn;
+    try {
+        const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+        tenantConn = await mongoose.createConnection(tenantDbUrl, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        const RecordAccessSchema = require('../models/record-access.model').schema;
+        const RecordAccess = tenantConn.model('RecordAccess', RecordAccessSchema);
+
+        const pendingDocs = await RecordAccess.find({
+            'pendingInvites.email': userEmail,
+        });
+
+        for (const doc of pendingDocs) {
+            const pending = doc.pendingInvites.find(p => p.email === userEmail);
+            if (!pending) continue;
+
+            // Check if grant already exists
+            const alreadyGranted = doc.grants.some(
+                g => g.granteeType === 'user' && g.granteeId === userId.toString()
+            );
+            if (!alreadyGranted) {
+                doc.grants.push({
+                    granteeType: 'user',
+                    granteeId: userId.toString(),
+                    permissions: pending.permissions || { read: true },
+                    grantedBy: pending.invitedBy,
+                    grantedAt: new Date(),
+                });
+            }
+
+            doc.pendingInvites = doc.pendingInvites.filter(p => p.email !== userEmail);
+            await doc.save();
+            console.log(`[Invitation] Converted pending invite to grant for record ${doc.recordId}`);
+        }
+    } catch (err) {
+        console.error('[Invitation] Error converting RecordAccess pendingInvites:', err.message);
+    } finally {
+        if (tenantConn) {
+            try { await tenantConn.close(); } catch (e) { /* ignore */ }
+        }
+    }
+}
 
 module.exports = {
 
@@ -488,6 +540,8 @@ module.exports = {
                     });
                     await user.save();
                 }
+                // Convert any pending record invites → grants
+                await convertPendingInvitesToGrants(account.account_number, userEmail, req.user._id);
                 return res.redirect("/user/accounts");
             }
 
@@ -522,6 +576,10 @@ module.exports = {
             }
 
             console.log(`[Invitation] ${req.user.email} accepted invite via link to account ${account.account_number}`);
+
+            // Convert any pending record invites → grants
+            await convertPendingInvitesToGrants(account.account_number, userEmail, req.user._id);
+
             res.redirect("/user/accounts");
         } catch (error) {
             console.error("[SuperAdmin] Accept invite error:", error);

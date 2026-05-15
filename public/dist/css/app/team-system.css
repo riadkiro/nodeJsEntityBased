@@ -259,9 +259,9 @@
 .ts-team-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600; white-space:nowrap; transition:all .15s; }
 
 /* ── Members Section Container ── */
-.ts-members-section { background:#fff; border:1px solid #e0e6ed; border-radius:16px; padding:0; overflow:hidden; }
+.ts-members-section { background:#fff; border:1px solid #e0e6ed; border-radius:16px; padding:0; overflow:visible; }
 .dark .ts-members-section { background:#0e1726; border-color:#253b5c; }
-.ts-members-toolbar { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
+.ts-members-toolbar { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; border-radius:16px 16px 0 0; }
 .dark .ts-members-toolbar { border-color:#253b5c; }
 .ts-members-toolbar-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; }
 .ts-members-toolbar-right { display:flex; align-items:center; gap:8px; }
@@ -275,7 +275,7 @@
 
 /* ── Member Row v2 (inside container) ── */
 .ts-members-section .ts-member-row { border:none; border-radius:0; border-bottom:1px solid #f1f5f9; }
-.ts-members-section .ts-member-row:last-child { border-bottom:none; }
+.ts-members-section .ts-member-row:last-child { border-bottom:none; border-radius:0 0 16px 16px; }
 .ts-members-section .ts-member-row:hover { background:#f8fafc; }
 .dark .ts-members-section .ts-member-row { border-color:#1b2e4b; }
 .dark .ts-members-section .ts-member-row:hover { background:#1b2e4b; }

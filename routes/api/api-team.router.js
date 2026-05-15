@@ -164,9 +164,74 @@ router.post('/invite', async (req, res) => {
         const account = await Account.findOne({ account_number: req.account_number });
         if (!account) return res.status(404).json({ error: 'Account not found' });
 
-        // Check if already a member
-        const alreadyMember = account.users?.some(u => u.email === email.toLowerCase().trim());
+        // Check if already a member (ignore removed users)
+        const existingMember = account.users?.find(u => u.email === email.toLowerCase().trim());
+        const alreadyMember = existingMember && existingMember.status !== 'removed';
         if (alreadyMember) return res.status(400).json({ error: 'Cet utilisateur est déjà membre' });
+
+        // If previously removed, re-activate them
+        if (existingMember && existingMember.status === 'removed') {
+            existingMember.status = 'active';
+            existingMember.role = targetRole;
+            existingMember.joinedAt = new Date();
+            existingMember.invitedBy = req.user._id;
+            await account.save();
+
+            // Re-add account to user's accounts if needed
+            const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+            if (existingUser) {
+                const alreadyLinked = existingUser.accounts?.some(
+                    a => a.account_number === req.account_number
+                );
+                if (!alreadyLinked) {
+                    existingUser.accounts.push({
+                        account_number: req.account_number,
+                        name: account.name,
+                        icon: account.icon,
+                        role: targetRole,
+                        joinedAt: new Date(),
+                    });
+                    await existingUser.save();
+                }
+            }
+
+            // Notify re-added user by email
+            if (existingUser) {
+                const loginUrl = `${req.protocol}://${req.get('host')}/auth/login`;
+                try {
+                    await mailer.send({
+                        to: existingUser.email,
+                        subject: `Vous avez été réajouté(e) à ${account.name || 'un espace'} — Cyberbox`,
+                        html: `
+                        <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                          <div style="background:linear-gradient(135deg,#4361ee,#7c3aed);padding:32px 30px;text-align:center;">
+                            <div style="font-size:28px;font-weight:800;color:#fff;">Cyberbox</div>
+                          </div>
+                          <div style="padding:32px 30px;">
+                            <h2 style="font-size:18px;font-weight:700;color:#0e1726;margin:0 0 12px;">Accès restauré 🎉</h2>
+                            <p style="font-size:14px;line-height:1.6;color:#64748b;margin:0 0 20px;">
+                              Votre accès à <strong style="color:#0e1726;">${account.name}</strong> a été restauré en tant que <strong style="color:#4361ee;">${targetRole}</strong>.
+                            </p>
+                            <div style="text-align:center;margin:28px 0;">
+                              <a href="${loginUrl}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#4361ee,#7c3aed);color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;">Accéder à l'espace</a>
+                            </div>
+                          </div>
+                        </div>`,
+                    });
+                    console.log(`[Team API] Re-add notification sent to ${existingUser.email}`);
+                } catch (mailErr) {
+                    console.error('[Team API] Re-add notification email failed:', mailErr.message);
+                }
+            }
+
+            return res.json({
+                success: true,
+                type: 'added',
+                userId: existingMember.userId,
+                userName: existingUser?.name || email.split('@')[0],
+                message: `${existingUser?.name || email} a été réajouté comme ${targetRole}`,
+            });
+        }
 
         // Check if already invited
         const alreadyInvited = account.invitations?.some(
@@ -206,9 +271,46 @@ router.post('/invite', async (req, res) => {
                 await existingUser.save();
             }
 
+            // Notify the user by email
+            const loginUrl = `${req.protocol}://${req.get('host')}/auth/login`;
+            try {
+                await mailer.send({
+                    to: existingUser.email,
+                    subject: `Vous avez été ajouté(e) à ${account.name || 'un espace'} — Cyberbox`,
+                    html: `
+                    <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                      <div style="background:linear-gradient(135deg,#4361ee,#7c3aed);padding:32px 30px;text-align:center;">
+                        <div style="font-size:28px;font-weight:800;color:#fff;">Cyberbox</div>
+                        <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Nouvel accès à un espace</div>
+                      </div>
+                      <div style="padding:32px 30px;">
+                        <h2 style="font-size:18px;font-weight:700;color:#0e1726;margin:0 0 12px;">Bienvenue dans ${account.name || 'un nouvel espace'} 🎉</h2>
+                        <p style="font-size:14px;line-height:1.6;color:#64748b;margin:0 0 20px;">
+                          <strong style="color:#0e1726;">${req.user?.name || req.user?.email || 'Un administrateur'}</strong> vous a ajouté(e) à l'espace
+                          <strong style="color:#0e1726;">${account.name}</strong> en tant que <strong style="color:#4361ee;">${targetRole}</strong>.
+                        </p>
+                        <div style="text-align:center;margin:28px 0;">
+                          <a href="${loginUrl}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#4361ee,#7c3aed);color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;box-shadow:0 4px 16px rgba(67,97,238,.35);">
+                            Accéder à l'espace
+                          </a>
+                        </div>
+                      </div>
+                      <div style="padding:16px 30px;border-top:1px solid #f1f5f9;text-align:center;">
+                        <p style="font-size:11px;color:#94a3b8;margin:0;">© ${new Date().getFullYear()} Cyberbox</p>
+                      </div>
+                    </div>`,
+                    text: `${req.user?.name || 'Un administrateur'} vous a ajouté(e) à ${account.name} en tant que ${targetRole}. Connectez-vous : ${loginUrl}`,
+                });
+                console.log(`[Team API] Notification sent to ${existingUser.email}`);
+            } catch (mailErr) {
+                console.error('[Team API] Notification email failed:', mailErr.message);
+            }
+
             return res.json({
                 success: true,
                 type: 'added',
+                userId: existingUser._id.toString(),
+                userName: existingUser.name || existingUser.email.split('@')[0],
                 message: `${existingUser.name || existingUser.email} a été ajouté comme ${targetRole}`,
             });
         } else {

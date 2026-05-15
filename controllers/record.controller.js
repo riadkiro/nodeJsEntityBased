@@ -117,8 +117,14 @@ module.exports = {
                 layout: "layout-app"
             });
 
-            // Get total count for mode decision
-            const totalRecords = await RecordModel.countDocuments({ entityId: entity._id });
+            // Get total count for mode decision (restricted for guest/external)
+            const { getSharedRecordFilter } = require('../middleware/shared-records-helper');
+            const countQuery = { entityId: entity._id };
+            const sharedFilter = await getSharedRecordFilter(req, entity._id.toString());
+            if (sharedFilter) {
+                countQuery._id = sharedFilter._id;
+            }
+            const totalRecords = await RecordModel.countDocuments(countQuery);
 
             // viewType from query param (table by default — RecordsGrid handles switching internally)
             const viewType = req.query.viewType || 'table';
@@ -187,7 +193,16 @@ module.exports = {
                 return res.status(404).json({ error: "Entity not found" });
             }
 
-            const records = await RecordModel.find({ entityId: entity._id })
+            const query = { entityId: entity._id };
+
+            // Guest/External: restrict to shared records only
+            const { getSharedRecordFilter } = require('../middleware/shared-records-helper');
+            const sharedFilter = await getSharedRecordFilter(req, entity._id.toString());
+            if (sharedFilter) {
+                query._id = sharedFilter._id;
+            }
+
+            const records = await RecordModel.find(query)
                 .populate('customFields')
                 .sort({ createdAt: -1 });
 
@@ -2055,6 +2070,17 @@ module.exports = {
                 layout: "layout-app"
             });
 
+            // Guest/External: verify access via RecordAccess grants
+            const { canAccessRecord } = require('../middleware/shared-records-helper');
+            const hasAccess = await canAccessRecord(req, record._id, entity._id.toString());
+            if (!hasAccess) {
+                return res.status(403).render("errors/404", {
+                    message: "Vous n'avez pas accès à cette fiche",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
             // Build record values map for display
             const recordValues = {};
             (record.customFields || []).forEach(cv => {
@@ -2542,6 +2568,17 @@ module.exports = {
                 layout: "layout-app"
             });
 
+            // Guest/External: verify access via RecordAccess grants
+            const { canAccessRecord } = require('../middleware/shared-records-helper');
+            const hasAccess = await canAccessRecord(req, record._id, entity._id.toString());
+            if (!hasAccess) {
+                return res.status(403).render("errors/404", {
+                    message: "Vous n'avez pas accès à cette fiche",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
             // Build field values map for fiche
             let ficheFields = [];
             let overviewFields = []; // ordered layout fields for overview edit mode
@@ -2790,20 +2827,31 @@ module.exports = {
 
                     // Load RecordAccess grants for this record
                     let recordGrants = [];
+                    let pendingInvites = [];
                     try {
                         const RecordAccess = await tenantCollection(req, 'RecordAccess');
                         const access = await RecordAccess.findOne({ recordId: record._id }).lean();
-                        if (access && access.grants) {
-                            const now = new Date();
-                            recordGrants = access.grants
-                                .filter(g => !g.expiresAt || g.expiresAt > now)
-                                .map(g => ({
-                                    granteeType: g.granteeType,
-                                    granteeId: g.granteeId,
-                                    permissions: g.permissions || {},
-                                    grantedAt: g.grantedAt,
-                                    note: g.note || '',
+                        if (access) {
+                            if (access.grants) {
+                                const now = new Date();
+                                recordGrants = access.grants
+                                    .filter(g => !g.expiresAt || g.expiresAt > now)
+                                    .map(g => ({
+                                        granteeType: g.granteeType,
+                                        granteeId: g.granteeId,
+                                        permissions: g.permissions || {},
+                                        grantedAt: g.grantedAt,
+                                        note: g.note || '',
+                                    }));
+                            }
+                            if (access.pendingInvites) {
+                                pendingInvites = access.pendingInvites.map(p => ({
+                                    _id: p._id?.toString() || '',
+                                    email: p.email,
+                                    permissions: p.permissions || {},
+                                    invitedAt: p.invitedAt,
                                 }));
+                            }
                         }
                     } catch (e) { /* RecordAccess may not exist yet */ }
 
@@ -2823,10 +2871,11 @@ module.exports = {
                         recordGrants,
                         assignedTeamIds,
                         assignedUserIds,
+                        pendingInvites,
                     };
                 } catch (e) {
                     console.error('[TeamModule]', e);
-                    teamModuleData = { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [] };
+                    teamModuleData = { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [], pendingInvites: [] };
                 }
             }
 

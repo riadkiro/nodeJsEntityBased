@@ -42,6 +42,13 @@ router.get('/entity/:entityId/views/:viewId/table', async (req, res) => {
         // Build query
         const query = { entityId };
 
+        // Guest/External: restrict to shared records only
+        const { getSharedRecordFilter } = require('../middleware/shared-records-helper');
+        const sharedFilter = await getSharedRecordFilter(req, entityId);
+        if (sharedFilter) {
+            query._id = sharedFilter._id;
+        }
+
         // Add search if provided
         if (q && q.trim()) {
             query.$or = [

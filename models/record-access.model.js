@@ -31,6 +31,19 @@ const RecordAccessSchema = new mongoose.Schema({
         note: { type: String },    // "Accès temporaire pour le labo"
     }],
 
+    // Pending email invitations (user not yet in the system)
+    pendingInvites: [{
+        email: { type: String, required: true },
+        permissions: {
+            read:   { type: Boolean, default: true },
+            update: { type: Boolean, default: false },
+            delete: { type: Boolean, default: false },
+            share:  { type: Boolean, default: false },
+        },
+        invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        invitedAt: { type: Date, default: Date.now },
+    }],
+
     // Public sharing
     isPublic: { type: Boolean, default: false },
     publicLink: { type: String, unique: true, sparse: true },

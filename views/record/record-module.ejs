@@ -2378,7 +2378,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         <%- include('../record/partials/ov-widget-team') %>
         <script>
         document.addEventListener('alpine:init', () => {
-            const _teamData = <%- JSON.stringify(teamModuleData || { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [] }) %>;
+            const _teamData = <%- JSON.stringify(teamModuleData || { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [], pendingInvites: [] }) %>;
             const _accountNumber = '<%= account_number %>';
             const _recordId = '<%= record._id %>';
             const _entityId = '<%= entity._id || '' %>';
@@ -2390,6 +2390,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 recordGrants: _teamData.recordGrants || [],
                 assignedTeamIds: [...(_teamData.assignedTeamIds || [])],
                 assignedUserIds: [...(_teamData.assignedUserIds || [])],
+                pendingInvites: [...(_teamData.pendingInvites || [])],
                 recordTitle: _recordTitle,
                 assignPerms: { read: true, update: true, delete: false, share: false },
                 showCreateModal: false,
@@ -2716,26 +2717,51 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 },
 
                 async inviteMember() {
-                    const email = this.inviteEmail.trim();
+                    const email = this.inviteEmail.trim().toLowerCase();
                     if (!email || !email.includes('@')) {
                         this.showToast('Email invalide', 'error');
                         return;
                     }
+
+                    // Check if already pending
+                    if (this.pendingInvites.some(p => p.email === email)) {
+                        this.showToast('Une invitation est déjà en attente pour cet email', 'error');
+                        return;
+                    }
+
+                    // Check if this email belongs to an existing workspace member
+                    const existingMember = this.allMembers.find(m => (m.email || '').toLowerCase() === email);
+                    if (existingMember) {
+                        if (this.assignedUserIds.includes(existingMember._id)) {
+                            this.showToast('Cet utilisateur a déjà accès à cette fiche', 'error');
+                            return;
+                        }
+                        await this.assignUser(existingMember._id);
+                        this.inviteEmail = '';
+                        return;
+                    }
+
+                    // Not a workspace member — create pending invite + workspace invite + send email
                     this.inviting = true;
                     try {
-                        const res = await fetch(`/account/${_accountNumber}/api/team/invite`, {
+                        const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/pending-invite`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ email, role: 'member' })
+                            body: JSON.stringify({
+                                email,
+                                entityId: _entityId,
+                                permissions: this.assignPerms,
+                                recordTitle: _recordTitle,
+                            })
                         });
                         const data = await res.json();
                         if (data.success) {
                             this.inviteEmail = '';
-                            this.showToast(data.message || 'Invitation envoyée', 'success');
-                            if (data.addedDirectly) {
-                                setTimeout(() => window.location.reload(), 800);
+                            if (data.pendingInvite) {
+                                this.pendingInvites.push(data.pendingInvite);
                             }
+                            this.showToast(data.message || 'Invitation en attente', 'success');
                         } else {
                             this.showToast(data.error || 'Erreur', 'error');
                         }
@@ -2744,6 +2770,35 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         this.showToast('Erreur réseau', 'error');
                     }
                     this.inviting = false;
+                },
+
+                confirmCancelEmail: null,
+
+                async cancelPendingInvite(email) {
+                    if (this.confirmCancelEmail !== email) {
+                        this.confirmCancelEmail = email;
+                        setTimeout(() => { if (this.confirmCancelEmail === email) this.confirmCancelEmail = null; }, 3000);
+                        return;
+                    }
+                    this.confirmCancelEmail = null;
+                    try {
+                        const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/cancel-pending`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ email })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.pendingInvites = this.pendingInvites.filter(p => p.email !== email);
+                            this.showToast('Invitation annulée', 'success');
+                        } else {
+                            this.showToast(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[RecordTeam] cancel pending error:', e);
+                        this.showToast('Erreur réseau', 'error');
+                    }
                 },
 
                 showToast(msg, type) {

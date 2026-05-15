@@ -229,7 +229,22 @@ module.exports = {
       if (alreadyMember) {
         invitation.status = 'accepted';
         await account.save();
-        return res.redirect("/user/accounts?error=Vous \u00eates d\u00e9j\u00e0 membre de cet espace");
+        // Still sync user.accounts in case it's out of date
+        const user = await User.findById(req.user._id);
+        const alreadyLinked = user?.accounts?.some(
+          a => a.account_number === account.account_number
+        );
+        if (user && !alreadyLinked) {
+          user.accounts.push({
+            account_number: account.account_number,
+            name: account.name,
+            icon: account.icon || 'solar:home-2-bold-duotone',
+            role: alreadyMember.role || invitation.role,
+            joinedAt: new Date(),
+          });
+          await user.save();
+        }
+        return res.redirect("/user/accounts");
       }
 
       // Add user to account

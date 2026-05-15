@@ -4,7 +4,7 @@
         <div class="rt-section-title">
             <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" width="18" style="color:#7c3aed"></iconify-icon>
             Accès assignés
-            <span class="rt-section-count" x-text="assignedTeams.length + assignedUsers.length + ' accès'" x-show="assignedTeams.length + assignedUsers.length > 0"></span>
+            <span class="rt-section-count" x-text="assignedTeams.length + assignedUsers.length + pendingInvites.length + ' accès'" x-show="assignedTeams.length + assignedUsers.length + pendingInvites.length > 0"></span>
         </div>
         <button type="button" @click="showAddModal = true" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(124,58,237,.25);">
             <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
@@ -20,7 +20,7 @@
             </div>
             <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:700;color:#0e1726;" x-text="recordTitle"></div>
-                <div style="font-size:11px;color:#94a3b8;" x-text="assignedTeams.length + ' équipe(s) · ' + assignedUsers.length + ' utilisateur(s)'"></div>
+                <div style="font-size:11px;color:#94a3b8;" x-text="assignedTeams.length + ' équipe(s) · ' + assignedUsers.length + ' utilisateur(s)' + (pendingInvites.length > 0 ? ' · ' + pendingInvites.length + ' en attente' : '')"></div>
             </div>
         </div>
 
@@ -135,8 +135,52 @@
             </div>
         </template>
 
+        <!-- ── Invitations en attente section ── -->
+        <template x-if="pendingInvites.length > 0">
+            <div>
+                <div class="rt-group-header">
+                    <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
+                    <span class="rt-group-header-label">Invitations en attente</span>
+                    <span class="rt-group-header-line"></span>
+                </div>
+                <template x-for="invite in pendingInvites" :key="'p-' + invite.email">
+                    <div>
+                        <div class="rt-team-row" style="background:rgba(245,158,11,.04);border:1px dashed rgba(245,158,11,.2);border-radius:10px;margin-bottom:6px;">
+                            <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#f59e0b;flex-shrink:0;background:rgba(245,158,11,.1);">
+                                <iconify-icon icon="solar:letter-bold-duotone" width="18"></iconify-icon>
+                            </div>
+                            <div class="rt-team-info" style="flex:1;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="rt-team-name" x-text="invite.email" style="font-size:13px;"></span>
+                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#d97706;letter-spacing:.3px;text-transform:uppercase;">
+                                        <iconify-icon icon="solar:clock-circle-bold" width="10"></iconify-icon>
+                                        En attente
+                                    </span>
+                                </div>
+                                <div class="rt-team-meta">
+                                    <span>Invitation envoyée</span>
+                                    <span style="color:#d1d5db">·</span>
+                                    <span x-text="formatDate(invite.invitedAt)"></span>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <iconify-icon x-show="invite.permissions?.read" icon="solar:eye-bold" width="13" style="color:#22c55e"></iconify-icon>
+                                <iconify-icon x-show="invite.permissions?.update" icon="solar:pen-bold" width="13" style="color:#f97316"></iconify-icon>
+                                <iconify-icon x-show="invite.permissions?.delete" icon="solar:trash-bin-trash-bold" width="13" style="color:#ef4444"></iconify-icon>
+                            </div>
+                            <button class="rt-btn rt-btn-sm" @click="cancelPendingInvite(invite.email)" title="Annuler l'invitation" style="gap:4px;transition:all .2s;"
+                                :style="confirmCancelEmail === invite.email ? 'background:#ef4444;color:#fff;border-color:#ef4444;' : ''">
+                                <iconify-icon :icon="confirmCancelEmail === invite.email ? 'solar:trash-bin-trash-bold' : 'solar:close-circle-bold'" width="13" style="pointer-events:none"></iconify-icon>
+                                <span style="pointer-events:none;font-size:11px;" x-text="confirmCancelEmail === invite.email ? 'Confirmer ?' : 'Annuler'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
         <!-- Empty state -->
-        <template x-if="assignedTeams.length === 0 && assignedUsers.length === 0">
+        <template x-if="assignedTeams.length === 0 && assignedUsers.length === 0 && pendingInvites.length === 0">
             <div style="text-align:center;padding:24px 20px;color:#94a3b8;">
                 <iconify-icon icon="solar:shield-user-bold-duotone" width="36" style="color:#d1d5db;display:block;margin:0 auto 8px;"></iconify-icon>
                 <p style="font-size:13px;margin:4px 0 0;color:#64748b;">Aucun accès configuré</p>

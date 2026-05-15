@@ -49,10 +49,19 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 
         // Build query - use entityId field name as in Record model
         let query = { entityId: entityId }
+
+        // Guest/External: restrict to shared records only
+        const { getSharedRecordFilter } = require('../middleware/shared-records-helper')
+        const sharedFilter = await getSharedRecordFilter(req, entityId)
+        if (sharedFilter) {
+            query._id = sharedFilter._id
+        }
+
         if (q && q.trim()) {
             query = {
                 $and: [
                     { entityId: entityId },
+                    ...(sharedFilter ? [{ _id: sharedFilter._id }] : []),
                     {
                         $or: [
                             { title: { $regex: q, $options: 'i' } },
@@ -244,8 +253,10 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         // Build filter groups from entity classifications (for sidebar filtering)
         // allClassifications already defined above (deduplicated)
 
-        // Get ALL records for counting (we already have them if limit was high enough, otherwise count separately)
-        const allRecordsForCounts = await Record.find({ entityId }).select('classificationValues').lean()
+        // Get ALL records for counting (restricted for guest/external)
+        const countQuery = { entityId }
+        if (sharedFilter) countQuery._id = sharedFilter._id
+        const allRecordsForCounts = await Record.find(countQuery).select('classificationValues').lean()
 
         const filterGroups = allClassifications.map(cls => {
             // Count records per option

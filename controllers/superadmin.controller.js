@@ -456,13 +456,38 @@ module.exports = {
                 return res.redirect(`/auth/register?invite=${token}&account=${account.account_number}`);
             }
 
-            // User is logged in — check if already a member
+            // User is logged in — verify this invite is for them
+            const inviteEmail = invitation.email.toLowerCase().trim();
+            const userEmail = req.user.email.toLowerCase().trim();
+
+            if (inviteEmail !== userEmail) {
+                // Wrong user is logged in — don't consume the invite
+                return res.redirect(`/auth/login?error=Cette invitation est destinée à ${invitation.email}. Connectez-vous avec ce compte.&invite=${token}`);
+            }
+
+            // Check if already a member
             const alreadyMember = account.users?.some(
-                u => u.userId === req.user._id.toString() || u.email === req.user.email.toLowerCase()
+                u => u.userId === req.user._id.toString() || u.email === userEmail
             );
             if (alreadyMember) {
                 invitation.status = 'accepted';
                 await account.save();
+                // Sync user.accounts in case it's out of date
+                const User = require("../models/user.model");
+                const user = await User.findById(req.user._id);
+                const alreadyLinked = user?.accounts?.some(
+                    a => a.account_number === account.account_number
+                );
+                if (user && !alreadyLinked) {
+                    user.accounts.push({
+                        account_number: account.account_number,
+                        name: account.name,
+                        icon: account.icon,
+                        role: invitation.role,
+                        joinedAt: new Date(),
+                    });
+                    await user.save();
+                }
                 return res.redirect("/user/accounts");
             }
 

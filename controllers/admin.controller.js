@@ -314,6 +314,35 @@ module.exports = {
                 { $pull: { accounts: { account_number: req.account_number } } }
             );
 
+            // ═══ Clean up RecordAccess grants for this user ═══
+            try {
+                const { tenantCollection } = require('../middleware/tenant');
+                const RecordAccess = await tenantCollection(req, 'RecordAccess');
+                if (RecordAccess) {
+                    const userIdStr = String(userId);
+
+                    // Remove all grants for this user
+                    await RecordAccess.updateMany(
+                        { 'grants.granteeId': userIdStr, 'grants.granteeType': 'user' },
+                        { $pull: { grants: { granteeId: userIdStr, granteeType: 'user' } } }
+                    );
+
+                    // Also remove any pending invites by email
+                    const removedUser = await User.findById(userId).select('email').lean();
+                    if (removedUser?.email) {
+                        await RecordAccess.updateMany(
+                            { 'pendingInvites.email': removedUser.email.toLowerCase() },
+                            { $pull: { pendingInvites: { email: removedUser.email.toLowerCase() } } }
+                        );
+                    }
+
+                    console.log(`[TenantAdmin] Cleaned RecordAccess grants for user ${userIdStr}`);
+                }
+            } catch (raErr) {
+                console.error('[TenantAdmin] Error cleaning RecordAccess:', raErr.message);
+                // Non-blocking — member removal still succeeds
+            }
+
             res.json({ success: true });
         } catch (error) {
             console.error("[TenantAdmin] Remove member error:", error);

@@ -2873,6 +2873,25 @@ module.exports = {
                         assignedUserIds,
                         pendingInvites,
                     };
+
+                    // Enrich: if a user has a grant but isn't in workspaceMembers, look them up
+                    const knownIds = new Set(workspaceMembers.map(m => m._id));
+                    for (const uid of assignedUserIds) {
+                        if (!knownIds.has(uid)) {
+                            try {
+                                const grantedUser = await User.findById(uid).select('name email avatar').lean();
+                                if (grantedUser) {
+                                    workspaceMembers.push({
+                                        _id: grantedUser._id.toString(),
+                                        name: grantedUser.name || grantedUser.email?.split('@')[0] || 'Utilisateur',
+                                        email: grantedUser.email || '',
+                                        avatar: grantedUser.avatar || null,
+                                        role: 'guest',
+                                    });
+                                }
+                            } catch (e) { /* ignore lookup errors */ }
+                        }
+                    }
                 } catch (e) {
                     console.error('[TeamModule]', e);
                     teamModuleData = { workspaceTeams: [], workspaceMembers: [], recordGrants: [], assignedTeamIds: [], assignedUserIds: [], pendingInvites: [] };

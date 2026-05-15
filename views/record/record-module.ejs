@@ -2028,14 +2028,14 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             <template x-for="(doc, dIdx) in getVisibleDocs(tpl.name, tpl._id)" :key="doc._id || dIdx">
                                 <div class="docs-tpl-file"
                                      @click="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf')">
-                                    <div class="docs-tpl-file-icon">
-                                        <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" width="14" style="color:#10b981"></iconify-icon>
-                                    </div>
-                                    <span class="docs-tpl-file-name" x-text="doc.originalName || 'Document'"></span>
-                                    <span class="docs-tpl-file-date">
+                                    <span class="docs-tpl-file-date" style="margin-right:8px;">
                                         <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
                                         <span x-text="formatDate(doc.uploadedAt)"></span>
                                     </span>
+                                    <div class="docs-tpl-file-icon">
+                                        <iconify-icon icon="solar:file-check-bold-duotone" width="14" style="color:#ef4444"></iconify-icon>
+                                    </div>
+                                    <span class="docs-tpl-file-name" x-text="doc.originalName || 'Document'"></span>
                                     <span class="docs-tpl-file-size" x-text="doc.sizeFormatted || ''"></span>
                                     <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename + '?dl=' + encodeURIComponent(doc.originalName || 'document')" 
                                        download class="docs-tpl-file-dl" title="Télécharger" @click.stop>

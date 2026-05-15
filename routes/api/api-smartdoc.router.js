@@ -1759,14 +1759,16 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
 <head>
     <meta charset="UTF-8">
     <style>
-        @page { margin: 20mm; size: A4; }
+        @page { margin: 0; size: A4; }
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             font-size: 12pt; 
             line-height: 1.5;
             color: #1a1a1a;
             margin: 0;
-            padding: 20mm;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         table { width: 100%; border-collapse: collapse; margin: 10px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -1981,12 +1983,19 @@ async function generatePDF(html, outputPath, docTemplate) {
         const format = docTemplate.format || 'A4';
         const landscape = docTemplate.orientation === 'landscape';
 
+        // Use document margins if available, otherwise sensible defaults
+        const margins = docTemplate.margins || {};
+        const pxToMm = (px) => Math.round((px || 0) * 0.2646) + 'mm';
+        const pdfMargin = margins.top !== undefined
+            ? { top: pxToMm(margins.top), right: pxToMm(margins.right), bottom: pxToMm(margins.bottom), left: pxToMm(margins.left) }
+            : { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' };
+
         await page.pdf({
             path: outputPath,
             format: format,
             landscape: landscape,
             printBackground: true,
-            margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
+            margin: pdfMargin
         });
     } finally {
         if (browser) await browser.close();

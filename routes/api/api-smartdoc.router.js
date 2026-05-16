@@ -901,6 +901,8 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             footerHtml: resolvedFooterHtml,
             format: docTemplate.format || 'A4',
             orientation: docTemplate.orientation || 'portrait',
+            margins: docTemplate.margins || { top: 40, right: 40, bottom: 40, left: 40 },
+            dimensions: docTemplate.dimensions || { width: 794, height: 1123 },
             isTemplate: false,
             isDraft: true,               // Legacy flag
             draftSourceTemplateId: smartDocTemplate._id,
@@ -1010,22 +1012,41 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             console.warn('[SmartDoc] Finalize: Could not load draft lines:', e.message);
         }
 
-        // 3b. Build HTML from draft pages - resolve dynamic tables NOW for PDF
-        let html = '';
+        // 3b. Build per-page HTML matching editor layout pixel-perfectly
+        const docMargins = draftDoc.margins || { top: 40, right: 40, bottom: 40, left: 40 };
+        const docDims = draftDoc.dimensions || { width: 794, height: 1123 };
+        const hasHeader = !!(draftDoc.headerHtml && draftDoc.headerHtml.trim());
+        const hasFooter = !!(draftDoc.footerHtml && draftDoc.footerHtml.trim());
+        // Match editor: reduce content padding when header/footer present
+        const contentPaddingTop = hasHeader ? 8 : docMargins.top;
+        const contentPaddingBottom = hasFooter ? 8 : docMargins.bottom;
+
+        let pagesHtml = '';
         if (draftDoc.pages && draftDoc.pages.length > 0) {
-            for (const page of draftDoc.pages) {
+            for (let i = 0; i < draftDoc.pages.length; i++) {
+                const page = draftDoc.pages[i];
+                let pageContent = '';
                 if (page.content) {
-                    // Resolve dynamic tables to static HTML for the final PDF output
-                    html += resolveDynamicTables(page.content, draftLines, lineSchemas);
+                    pageContent = resolveDynamicTables(page.content, draftLines, lineSchemas);
                 }
                 if (page.elements) {
                     for (const el of page.elements) {
                         if (el.content && typeof el.content === 'object') {
-                            if (el.content.text) html += el.content.text;
-                            if (el.content.html) html += el.content.html;
+                            if (el.content.text) pageContent += el.content.text;
+                            if (el.content.html) pageContent += el.content.html;
                         }
                     }
                 }
+                const isLastPage = i === draftDoc.pages.length - 1;
+                pagesHtml += `<div class="doc-page" ${!isLastPage ? 'style="page-break-after: always;"' : ''}>`;
+                if (hasHeader) {
+                    pagesHtml += `<div class="doc-header" style="padding: ${docMargins.top}px ${docMargins.right}px 0 ${docMargins.left}px;">${draftDoc.headerHtml}</div>`;
+                }
+                pagesHtml += `<div class="doc-content" style="padding: ${contentPaddingTop}px ${docMargins.right}px ${contentPaddingBottom}px ${docMargins.left}px;">${pageContent}</div>`;
+                if (hasFooter) {
+                    pagesHtml += `<div class="doc-footer" style="padding: 0 ${docMargins.right}px ${docMargins.bottom}px ${docMargins.left}px;">${draftDoc.footerHtml}</div>`;
+                }
+                pagesHtml += `</div>`;
             }
         }
 
@@ -1034,27 +1055,40 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
 <head>
     <meta charset="UTF-8">
     <style>
-        @page { margin: 20mm; size: ${draftDoc.format || 'A4'}${draftDoc.orientation === 'landscape' ? ' landscape' : ''}; }
+        @page { margin: 0; size: ${draftDoc.format || 'A4'}${draftDoc.orientation === 'landscape' ? ' landscape' : ''}; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             font-size: 12pt; 
-            line-height: 1.5;
-            color: #1a1a1a;
+            line-height: 1.6;
+            color: #000000;
             margin: 0;
-            padding: 20mm;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        /* Tailwind Preflight resets — match editor environment */
+        p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
+        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; color: #333; }
+        ul, ol { list-style: none; padding: 0; }
+        img, svg { display: block; max-width: 100%; }
+        .doc-page {
+            width: 100%;
+            min-height: ${docDims.height}px;
+            background: #ffffff;
+            position: relative;
+        }
+        .doc-content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f5f5f5; font-weight: 600; }
-        h1, h2, h3 { color: #333; }
-        .header-block { text-align: center; margin-bottom: 30px; }
-        .footer-block { text-align: center; margin-top: 30px; font-size: 10pt; color: #888; }
     </style>
 </head>
 <body>
-${draftDoc.headerHtml || ''}
-${html}
-${draftDoc.footerHtml || ''}
+${pagesHtml}
 </body>
 </html>`;
 
@@ -1724,33 +1758,53 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
     }
 
     // Resolve in content blocks, pages, etc.
-    let html = '';
+    // Build per-page HTML with embedded margins matching editor layout
+    const docMargins = docTemplate.margins || { top: 40, right: 40, bottom: 40, left: 40 };
+    const docDims = docTemplate.dimensions || { width: 794, height: 1123 };
+    const hasHeader = !!(docTemplate.headerHtml && docTemplate.headerHtml.trim());
+    const hasFooter = !!(docTemplate.footerHtml && docTemplate.footerHtml.trim());
+    const contentPaddingTop = hasHeader ? 8 : docMargins.top;
+    const contentPaddingBottom = hasFooter ? 8 : docMargins.bottom;
+    const resolvedHeader = hasHeader ? resolveTokensInString(docTemplate.headerHtml, context) : '';
+    const resolvedFooter = hasFooter ? resolveTokensInString(docTemplate.footerHtml, context) : '';
+
+    let pagesHtml = '';
 
     if (docTemplate.contentBlocks && docTemplate.contentBlocks.length > 0) {
+        let blockHtml = '';
         for (const block of docTemplate.contentBlocks) {
             if (block.type === 'text' && block.html) {
-                html += resolveTokensInString(block.html, context);
+                blockHtml += resolveTokensInString(block.html, context);
             } else if (block.type === 'divider') {
-                html += '<hr style="margin: 10px 0; border-color: #e5e7eb; border-width: 1px 0 0;">';
+                blockHtml += '<hr style="margin: 10px 0; border-color: #e5e7eb; border-width: 1px 0 0;">';
             }
         }
+        pagesHtml = `<div class="doc-page">`;
+        if (hasHeader) pagesHtml += `<div class="doc-header" style="padding: ${docMargins.top}px ${docMargins.right}px 0 ${docMargins.left}px;">${resolvedHeader}</div>`;
+        pagesHtml += `<div class="doc-content" style="padding: ${contentPaddingTop}px ${docMargins.right}px ${contentPaddingBottom}px ${docMargins.left}px;">${blockHtml}</div>`;
+        if (hasFooter) pagesHtml += `<div class="doc-footer" style="padding: 0 ${docMargins.right}px ${docMargins.bottom}px ${docMargins.left}px;">${resolvedFooter}</div>`;
+        pagesHtml += `</div>`;
     } else if (docTemplate.pages && docTemplate.pages.length > 0) {
-        for (const page of docTemplate.pages) {
+        for (let i = 0; i < docTemplate.pages.length; i++) {
+            const page = docTemplate.pages[i];
+            let pageContent = '';
             if (page.content) {
-                html += resolveTokensInString(page.content, context);
+                pageContent += resolveTokensInString(page.content, context);
             }
             if (page.elements) {
                 for (const el of page.elements) {
                     if (el.content && typeof el.content === 'object') {
-                        if (el.content.text) {
-                            html += resolveTokensInString(el.content.text, context);
-                        }
-                        if (el.content.html) {
-                            html += resolveTokensInString(el.content.html, context);
-                        }
+                        if (el.content.text) pageContent += resolveTokensInString(el.content.text, context);
+                        if (el.content.html) pageContent += resolveTokensInString(el.content.html, context);
                     }
                 }
             }
+            const isLastPage = i === docTemplate.pages.length - 1;
+            pagesHtml += `<div class="doc-page" ${!isLastPage ? 'style="page-break-after: always;"' : ''}>`;
+            if (hasHeader) pagesHtml += `<div class="doc-header" style="padding: ${docMargins.top}px ${docMargins.right}px 0 ${docMargins.left}px;">${resolvedHeader}</div>`;
+            pagesHtml += `<div class="doc-content" style="padding: ${contentPaddingTop}px ${docMargins.right}px ${contentPaddingBottom}px ${docMargins.left}px;">${pageContent}</div>`;
+            if (hasFooter) pagesHtml += `<div class="doc-footer" style="padding: 0 ${docMargins.right}px ${docMargins.bottom}px ${docMargins.left}px;">${resolvedFooter}</div>`;
+            pagesHtml += `</div>`;
         }
     }
 
@@ -1760,28 +1814,39 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
     <meta charset="UTF-8">
     <style>
         @page { margin: 0; size: A4; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             font-size: 12pt; 
-            line-height: 1.5;
-            color: #1a1a1a;
+            line-height: 1.6;
+            color: #000000;
             margin: 0;
             padding: 0;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        /* Tailwind Preflight resets — match editor environment */
+        p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
+        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; color: #333; }
+        ul, ol { list-style: none; padding: 0; }
+        img, svg { display: block; max-width: 100%; }
+        .doc-page {
+            width: 100%;
+            min-height: ${docDims.height}px;
+            background: #ffffff;
+            position: relative;
+        }
+        .doc-content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f5f5f5; font-weight: 600; }
-        h1, h2, h3 { color: #333; }
-        .header-block { text-align: center; margin-bottom: 30px; }
-        .footer-block { text-align: center; margin-top: 30px; font-size: 10pt; color: #888; }
     </style>
 </head>
 <body>
-${docTemplate.headerHtml ? resolveTokensInString(docTemplate.headerHtml, context) : ''}
-${html}
-${docTemplate.footerHtml ? resolveTokensInString(docTemplate.footerHtml, context) : ''}
+${pagesHtml}
 </body>
 </html>`;
 
@@ -1969,6 +2034,8 @@ function formatSize(bytes) {
 
 /**
  * Generate a PDF from HTML using Puppeteer
+ * Margins are expected to be embedded as CSS padding in the HTML content
+ * (matching the editor's layout), so Puppeteer uses margin: 0.
  */
 async function generatePDF(html, outputPath, docTemplate) {
     let browser;
@@ -1978,24 +2045,24 @@ async function generatePDF(html, outputPath, docTemplate) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
+
+        // Set viewport to exactly match editor page dimensions
+        // This ensures 1:1 pixel rendering with the editor canvas
+        const dims = docTemplate.dimensions || { width: 794, height: 1123 };
+        await page.setViewport({ width: dims.width, height: dims.height });
+
         await page.setContent(html, { waitUntil: 'networkidle0' });
 
         const format = docTemplate.format || 'A4';
         const landscape = docTemplate.orientation === 'landscape';
-
-        // Use document margins if available, otherwise sensible defaults
-        const margins = docTemplate.margins || {};
-        const pxToMm = (px) => Math.round((px || 0) * 0.2646) + 'mm';
-        const pdfMargin = margins.top !== undefined
-            ? { top: pxToMm(margins.top), right: pxToMm(margins.right), bottom: pxToMm(margins.bottom), left: pxToMm(margins.left) }
-            : { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' };
 
         await page.pdf({
             path: outputPath,
             format: format,
             landscape: landscape,
             printBackground: true,
-            margin: pdfMargin
+            margin: { top: 0, bottom: 0, left: 0, right: 0 },
+            preferCSSPageSize: true
         });
     } finally {
         if (browser) await browser.close();

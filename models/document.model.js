@@ -160,6 +160,12 @@ const DocumentSchema = new mongoose.Schema({
         width: { type: Number, default: 794 },
         height: { type: Number, default: 1123 }
     },
+    margins: {
+        top: { type: Number, default: 40 },
+        right: { type: Number, default: 40 },
+        bottom: { type: Number, default: 40 },
+        left: { type: Number, default: 40 }
+    },
     // Global header/footer HTML applied to all pages
     headerHtml: { type: String, default: '' },
     footerHtml: { type: String, default: '' },

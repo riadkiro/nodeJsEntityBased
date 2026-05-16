@@ -144,6 +144,20 @@ export default function LeftSidebar({
                     <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
                 </button>
 
+                <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
+
+                {/* Page Settings */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'page-settings'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Paramètres de page"
+                    onClick={() => toggleTab('page-settings')}
+                >
+                    <iconify-icon icon="solar:settings-minimalistic-bold-duotone" width="18"></iconify-icon>
+                </button>
+
                 {/* Spacer to push settings to bottom */}
                 <div className="flex-1"></div>
 
@@ -171,6 +185,7 @@ export default function LeftSidebar({
                             {activeTab === 'blocks' && 'Blocs de contenu'}
                             {activeTab === 'layouts' && 'Mises en page'}
                             {activeTab === 'dynamic-nav' && 'Contenu Dynamique'}
+                            {activeTab === 'page-settings' && 'Paramètres de page'}
                         </h3>
                         <button
                             onClick={() => setActiveTab(null)}
@@ -196,6 +211,9 @@ export default function LeftSidebar({
                         )}
                         {activeTab === 'dynamic-nav' && (
                             <DynamicNavPanel insertVariableToken={insertVariableToken} insertDynamicTable={insertDynamicTable} accountNumber={accountNumber} doc={doc} />
+                        )}
+                        {activeTab === 'page-settings' && (
+                            <PageSettingsPanel doc={doc} setDoc={setDoc} triggerSave={triggerSave} settingsPanelProps={settingsPanelProps} />
                         )}
                     </div>
                 </div>
@@ -767,6 +785,401 @@ function LayoutsPanel({ doc, setDoc, triggerSave }) {
                 </div>`}
                 plainText="CGV"
             />
+        </div>
+    )
+}
+
+// Page Settings Panel - Format, Margins, Dimensions, Background
+function PageSettingsPanel({ doc, setDoc, triggerSave, settingsPanelProps }) {
+    const isDark = useDarkMode()
+    const [showWarning, setShowWarning] = useState(false)
+    const labelColor = isDark ? '#9ca3af' : '#6b7280'
+    const inputBg = isDark ? '#1f2937' : '#f9fafb'
+    const inputBorder = isDark ? '#374151' : '#e5e7eb'
+    const cardBg = isDark ? '#111827' : '#f3f4f6'
+
+    // Detect if we're in a record/draft context (not the Docs Hub)
+    const isDraftContext = /\/record\//.test(window.location.pathname)
+
+    const FORMAT_DIMENSIONS = {
+        A4: { portrait: { width: 794, height: 1123 }, landscape: { width: 1123, height: 794 } },
+        A5: { portrait: { width: 559, height: 794 }, landscape: { width: 794, height: 559 } },
+        A3: { portrait: { width: 1123, height: 1587 }, landscape: { width: 1587, height: 1123 } },
+        Letter: { portrait: { width: 816, height: 1056 }, landscape: { width: 1056, height: 816 } },
+        Legal: { portrait: { width: 816, height: 1344 }, landscape: { width: 1344, height: 816 } }
+    }
+
+    const handleFormatChange = (format) => {
+        const dim = FORMAT_DIMENSIONS[format]?.[doc.orientation || 'portrait'] || FORMAT_DIMENSIONS.A4.portrait
+        setDoc(prev => ({ ...prev, format, dimensions: dim }))
+        triggerSave?.()
+    }
+
+    const handleOrientationChange = (orientation) => {
+        const dim = FORMAT_DIMENSIONS[doc.format || 'A4']?.[orientation] || FORMAT_DIMENSIONS.A4.portrait
+        setDoc(prev => ({ ...prev, orientation, dimensions: dim }))
+        triggerSave?.()
+    }
+
+    const handleMarginChange = (side, value) => {
+        const numValue = Math.max(0, Math.min(200, parseInt(value) || 0))
+        setDoc(prev => ({
+            ...prev,
+            margins: { ...(prev.margins || { top: 40, right: 40, bottom: 40, left: 40 }), [side]: numValue }
+        }))
+    }
+
+    const handleMarginBlur = () => {
+        triggerSave?.()
+    }
+
+    const margins = doc.margins || { top: 40, right: 40, bottom: 40, left: 40 }
+    const dims = doc.dimensions || { width: 794, height: 1123 }
+
+    // Margin presets
+    const MARGIN_PRESETS = [
+        { label: 'Normal', values: { top: 40, right: 40, bottom: 40, left: 40 } },
+        { label: 'Étroit', values: { top: 20, right: 20, bottom: 20, left: 20 } },
+        { label: 'Large', values: { top: 60, right: 60, bottom: 60, left: 60 } },
+        { label: 'Aucune', values: { top: 0, right: 0, bottom: 0, left: 0 } },
+    ]
+
+    const applyMarginPreset = (preset) => {
+        setDoc(prev => ({ ...prev, margins: { ...preset.values } }))
+        triggerSave?.()
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Format Section */}
+            <div>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: labelColor, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Format de page
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    {['A4', 'A5', 'A3', 'Letter', 'Legal'].map(fmt => (
+                        <button
+                            key={fmt}
+                            onClick={() => handleFormatChange(fmt)}
+                            style={{
+                                padding: '8px 12px',
+                                border: `1.5px solid ${doc.format === fmt ? '#4361ee' : inputBorder}`,
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                background: doc.format === fmt ? 'rgba(67,97,238,0.08)' : 'transparent',
+                                textAlign: 'center',
+                                fontSize: '12px',
+                                fontWeight: doc.format === fmt ? 600 : 400,
+                                color: doc.format === fmt ? '#4361ee' : (isDark ? '#e5e7eb' : '#374151'),
+                            }}
+                        >
+                            {fmt}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Orientation */}
+            <div>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: labelColor, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Orientation
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    <button
+                        onClick={() => handleOrientationChange('portrait')}
+                        style={{
+                            padding: '10px 12px',
+                            border: `1.5px solid ${doc.orientation === 'portrait' ? '#4361ee' : inputBorder}`,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            background: doc.orientation === 'portrait' ? 'rgba(67,97,238,0.08)' : 'transparent',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                        }}
+                    >
+                        <div style={{ width: '16px', height: '22px', border: `2px solid ${doc.orientation === 'portrait' ? '#4361ee' : (isDark ? '#6b7280' : '#9ca3af')}`, borderRadius: '2px' }} />
+                        <span style={{ fontSize: '11px', fontWeight: doc.orientation === 'portrait' ? 600 : 400, color: doc.orientation === 'portrait' ? '#4361ee' : (isDark ? '#e5e7eb' : '#374151') }}>Portrait</span>
+                    </button>
+                    <button
+                        onClick={() => handleOrientationChange('landscape')}
+                        style={{
+                            padding: '10px 12px',
+                            border: `1.5px solid ${doc.orientation === 'landscape' ? '#4361ee' : inputBorder}`,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            background: doc.orientation === 'landscape' ? 'rgba(67,97,238,0.08)' : 'transparent',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                        }}
+                    >
+                        <div style={{ width: '22px', height: '16px', border: `2px solid ${doc.orientation === 'landscape' ? '#4361ee' : (isDark ? '#6b7280' : '#9ca3af')}`, borderRadius: '2px' }} />
+                        <span style={{ fontSize: '11px', fontWeight: doc.orientation === 'landscape' ? 600 : 400, color: doc.orientation === 'landscape' ? '#4361ee' : (isDark ? '#e5e7eb' : '#374151') }}>Paysage</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Separator */}
+            <div style={{ height: '1px', background: isDark ? '#1f2937' : '#e5e7eb' }} />
+
+            {/* Margins */}
+            <div>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: labelColor, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Marges de page
+                </p>
+
+                {/* Visual margin preview */}
+                <div style={{
+                    width: '100%',
+                    aspectRatio: doc.orientation === 'landscape' ? '1.414/1' : '1/1.414',
+                    border: `1px solid ${inputBorder}`,
+                    borderRadius: '8px',
+                    position: 'relative',
+                    background: isDark ? '#0d1321' : '#ffffff',
+                    marginBottom: '10px',
+                    maxHeight: '120px',
+                    overflow: 'hidden',
+                }}>
+                    {/* Inner content area showing margins */}
+                    <div style={{
+                        position: 'absolute',
+                        top: `${Math.min(margins.top / 4, 20)}px`,
+                        left: `${Math.min(margins.left / 4, 20)}px`,
+                        right: `${Math.min(margins.right / 4, 20)}px`,
+                        bottom: `${Math.min(margins.bottom / 4, 20)}px`,
+                        border: '1px dashed #4361ee',
+                        borderRadius: '2px',
+                        opacity: 0.5,
+                    }} />
+                    {/* Fake content lines */}
+                    <div style={{
+                        position: 'absolute',
+                        top: `${Math.min(margins.top / 4, 20) + 6}px`,
+                        left: `${Math.min(margins.left / 4, 20) + 6}px`,
+                        right: `${Math.min(margins.right / 4, 20) + 6}px`,
+                        display: 'flex', flexDirection: 'column', gap: '3px',
+                    }}>
+                        {[100, 80, 95, 60, 90, 70].map((w, i) => (
+                            <div key={i} style={{ width: `${w}%`, height: '2px', background: isDark ? '#374151' : '#d1d5db', borderRadius: '1px' }} />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Margin Presets */}
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                    {MARGIN_PRESETS.map(preset => {
+                        const isActive = margins.top === preset.values.top && margins.right === preset.values.right &&
+                                         margins.bottom === preset.values.bottom && margins.left === preset.values.left
+                        return (
+                            <button
+                                key={preset.label}
+                                onClick={() => applyMarginPreset(preset)}
+                                style={{
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    border: `1px solid ${isActive ? '#4361ee' : inputBorder}`,
+                                    background: isActive ? 'rgba(67,97,238,0.08)' : 'transparent',
+                                    fontSize: '10px',
+                                    fontWeight: isActive ? 600 : 400,
+                                    color: isActive ? '#4361ee' : (isDark ? '#9ca3af' : '#6b7280'),
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                {preset.label}
+                            </button>
+                        )
+                    })}
+                </div>
+
+                {/* Margin inputs */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    {[
+                        { key: 'top', label: 'Haut', icon: 'tabler:arrow-bar-up' },
+                        { key: 'bottom', label: 'Bas', icon: 'tabler:arrow-bar-down' },
+                        { key: 'left', label: 'Gauche', icon: 'tabler:arrow-bar-left' },
+                        { key: 'right', label: 'Droite', icon: 'tabler:arrow-bar-right' },
+                    ].map(({ key, label, icon }) => (
+                        <div key={key}>
+                            <label style={{ fontSize: '10px', color: labelColor, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
+                                <iconify-icon icon={icon} width="12"></iconify-icon>
+                                {label}
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type="number"
+                                    value={margins[key]}
+                                    onChange={(e) => handleMarginChange(key, e.target.value)}
+                                    onBlur={handleMarginBlur}
+                                    min="0"
+                                    max="200"
+                                    style={{
+                                        width: '100%',
+                                        padding: '6px 24px 6px 8px',
+                                        border: `1px solid ${inputBorder}`,
+                                        borderRadius: '6px',
+                                        background: inputBg,
+                                        color: isDark ? '#e5e7eb' : '#1f2937',
+                                        fontSize: '12px',
+                                        outline: 'none',
+                                    }}
+                                />
+                                <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '9px', color: labelColor }}>px</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Separator */}
+            <div style={{ height: '1px', background: isDark ? '#1f2937' : '#e5e7eb' }} />
+
+            {/* Page Info */}
+            <div>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: labelColor, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Dimensions
+                </p>
+                <div style={{
+                    padding: '10px 12px',
+                    background: cardBg,
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: labelColor }}>Largeur</span>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#e5e7eb' : '#374151' }}>{dims.width}px <span style={{ fontSize: '9px', color: labelColor }}>({(dims.width / 96 * 25.4).toFixed(0)}mm)</span></span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: labelColor }}>Hauteur</span>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#e5e7eb' : '#374151' }}>{dims.height}px <span style={{ fontSize: '9px', color: labelColor }}>({(dims.height / 96 * 25.4).toFixed(0)}mm)</span></span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: labelColor }}>Zone contenu</span>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#e5e7eb' : '#374151' }}>{dims.width - margins.left - margins.right} × {dims.height - margins.top - margins.bottom}px</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Background Color */}
+            <div>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: labelColor, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Arrière-plan
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                        type="color"
+                        value={doc.pages?.[0]?.background?.color || doc.pages?.[0]?.background || '#ffffff'}
+                        onChange={(e) => {
+                            setDoc(prev => ({
+                                ...prev,
+                                pages: prev.pages.map(p => ({ ...p, background: { ...(typeof p.background === 'object' ? p.background : { color: p.background }), color: e.target.value } }))
+                            }))
+                            triggerSave?.()
+                        }}
+                        style={{
+                            width: '32px', height: '32px', border: `1px solid ${inputBorder}`, borderRadius: '6px',
+                            cursor: 'pointer', padding: '2px',
+                        }}
+                    />
+                    <span style={{ fontSize: '11px', color: isDark ? '#e5e7eb' : '#374151' }}>
+                        {doc.pages?.[0]?.background?.color || doc.pages?.[0]?.background || '#ffffff'}
+                    </span>
+                </div>
+            </div>
+
+            {/* Pages count info */}
+            <div style={{
+                padding: '10px 12px',
+                background: cardBg,
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+            }}>
+                <iconify-icon icon="solar:documents-bold-duotone" width="18" style={{ color: '#4361ee' }}></iconify-icon>
+                <span style={{ fontSize: '11px', color: isDark ? '#e5e7eb' : '#374151' }}>
+                    {doc.pages?.length || 1} page{(doc.pages?.length || 1) > 1 ? 's' : ''}
+                </span>
+            </div>
+
+            {/* Separator */}
+            <div style={{ height: '1px', background: isDark ? '#1f2937' : '#e5e7eb' }} />
+
+            {/* Save Button */}
+            <button
+                onClick={() => {
+                    if (isDraftContext) {
+                        setShowWarning(true)
+                    } else {
+                        triggerSave?.()
+                    }
+                }}
+                style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: isDraftContext ? (isDark ? '#1f2937' : '#f3f4f6') : '#4361ee',
+                    color: isDraftContext ? (isDark ? '#e5e7eb' : '#374151') : '#ffffff',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                }}
+            >
+                <iconify-icon icon={isDraftContext ? 'solar:shield-warning-bold-duotone' : 'solar:diskette-bold-duotone'} width="16"></iconify-icon>
+                {isDraftContext ? 'Sauvegarder le template' : 'Sauvegarder'}
+            </button>
+
+            {/* Warning Banner */}
+            {showWarning && (
+                <div style={{
+                    padding: '12px',
+                    background: isDark ? '#1c1917' : '#fffbeb',
+                    border: `1px solid ${isDark ? '#854d0e' : '#fbbf24'}`,
+                    borderRadius: '8px',
+                    position: 'relative',
+                }}>
+                    <button
+                        onClick={() => setShowWarning(false)}
+                        style={{
+                            position: 'absolute', top: '6px', right: '6px',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: isDark ? '#a16207' : '#92400e', padding: '2px',
+                        }}
+                    >
+                        <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <iconify-icon icon="solar:danger-triangle-bold-duotone" width="20" style={{ color: '#f59e0b', flexShrink: 0, marginTop: '1px' }}></iconify-icon>
+                        <div>
+                            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 700, color: isDark ? '#fbbf24' : '#92400e' }}>
+                                Modification non autorisée
+                            </p>
+                            <p style={{ margin: '0 0 8px', fontSize: '10px', lineHeight: 1.5, color: isDark ? '#d97706' : '#78350f' }}>
+                                Vous ne pouvez pas modifier le template global depuis cette vue. Rendez-vous dans la section <strong>Documents Hub</strong> pour apporter des modifications au template.
+                            </p>
+                            <a
+                                href={window.location.pathname.replace(/\/record\/.*/, '/documents')}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                    fontSize: '10px', fontWeight: 600, color: '#4361ee',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                                <iconify-icon icon="solar:arrow-right-bold" width="12"></iconify-icon>
+                                Aller au Documents Hub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

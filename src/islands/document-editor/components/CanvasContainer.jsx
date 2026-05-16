@@ -355,6 +355,69 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                 documentId={doc._id}
                                 sourceRecordId={doc.draftRecordId}
                             />
+
+                            {/* Lock Overlay — visible on edition pages when layout/designer is active on ANY page */}
+                            {page.mode === 'edition' && doc.pages.some((p, i) => i !== pageIndex && (p.mode === 'layout' || p.mode === 'designer')) && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        zIndex: 100,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '32px',
+                                        textAlign: 'center',
+                                        backgroundColor: 'rgba(243, 244, 246, 0.75)',
+                                        backdropFilter: 'blur(2px)',
+                                        WebkitBackdropFilter: 'blur(2px)',
+                                    }}
+                                >
+                                    <div style={{
+                                        backgroundColor: '#fff',
+                                        padding: '24px',
+                                        borderRadius: '16px',
+                                        boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)',
+                                        border: '1px solid rgba(229, 231, 235, 0.8)',
+                                        maxWidth: '320px',
+                                    }}>
+                                        <div style={{
+                                            width: '48px', height: '48px',
+                                            backgroundColor: '#fef3c7',
+                                            color: '#d97706',
+                                            borderRadius: '50%',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            margin: '0 auto 16px',
+                                        }}>
+                                            <iconify-icon icon="solar:lock-bold-duotone" width="28"></iconify-icon>
+                                        </div>
+                                        <h4 style={{
+                                            fontSize: '13px', fontWeight: 700,
+                                            color: '#111827', marginBottom: '8px',
+                                            textTransform: 'uppercase', letterSpacing: '0.05em',
+                                        }}>
+                                            Édition verrouillée
+                                        </h4>
+                                        <p style={{
+                                            fontSize: '12px', color: '#6b7280',
+                                            lineHeight: 1.6, margin: 0,
+                                        }}>
+                                            L'édition est désactivée car les pages{' '}
+                                            <span style={{ fontWeight: 900, color: '#d97706' }}>
+                                                [{doc.pages.map((p, i) => (p.mode === 'layout' || p.mode === 'designer') ? (i + 1) : null).filter(Boolean).join(', ')}]
+                                            </span>{' '}
+                                            sont en mode Layout.
+                                        </p>
+                                        <div style={{
+                                            marginTop: '12px', fontSize: '10px',
+                                            color: '#9ca3af', fontWeight: 500,
+                                        }}>
+                                            Repassez ces pages en mode Édition pour modifier ce contenu.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
 

@@ -14,6 +14,7 @@ import GridBuilder from '../../shared/GridBuilder'
 import TableToolbar, { useTableToolbar } from './TableToolbar'
 import { useDynamicTableOverlay, DynamicTableOverlay } from './DynamicTableModal'
 import DynamicTableModal from './DynamicTableModalReact'
+import DesignerCanvas from './DesignerCanvas'
 
 export default function EditorPage({
     page,
@@ -722,10 +723,11 @@ export default function EditorPage({
             {/* Designer Mode */}
             {page.mode === 'designer' && (
                 <div
-                    className="min-h-full relative"
+                    className="relative"
                     style={{
-                        padding: `${top}px ${right}px ${bottom}px ${left}px`,
-                        minHeight: `${height}px`
+                        minHeight: `${height}px`,
+                        height: `${height}px`,
+                        overflow: 'hidden'
                     }}
                 >
                     <DesignerModeContent
@@ -1236,14 +1238,14 @@ function LayoutModeContent({ page, pageIndex, doc, setDoc, panelMode }) {
     )
 }
 
-// Designer Mode Content
+// Designer Mode Content — Canva-like free-form canvas
 function DesignerModeContent({ page, pageIndex, doc, setDoc }) {
     return (
-        <div className="relative w-full h-full">
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                Mode Designer - Glissez des éléments ici
-            </div>
-            {/* Free-positioned elements would go here */}
-        </div>
+        <DesignerCanvas
+            page={page}
+            pageIndex={pageIndex}
+            doc={doc}
+            setDoc={setDoc}
+        />
     )
 }

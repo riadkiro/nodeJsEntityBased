@@ -133,10 +133,15 @@ export function checkOverflow(element, pageIndex, doc, setDoc, pageRefs) {
 
     if (!overflowContent) return false
 
-    // Get next page ref for DOM injection
-    let nextPageRef = pageRefs.current[pageIndex + 1]
+    // BARRIER: If next page exists but is NOT in 'edition' mode, we must insert a new edition page
+    // This prevents overflow content from being pushed into layout/designer pages
+    const nextPage = doc?.pages?.[pageIndex + 1]
+    const nextIsNonEdition = nextPage && nextPage.mode !== 'edition'
 
-    // If next page exists, inject content directly into DOM (uncontrolled contenteditable)
+    // Get next page ref for DOM injection (only if it's an edition page)
+    let nextPageRef = nextIsNonEdition ? null : pageRefs.current[pageIndex + 1]
+
+    // If next page exists AND is edition mode, inject content directly into DOM
     if (nextPageRef) {
         nextPageRef.innerHTML = overflowContent + nextPageRef.innerHTML
     }
@@ -154,7 +159,17 @@ export function checkOverflow(element, pageIndex, doc, setDoc, pageRefs) {
         const current = { ...newDoc.pages[pageIndex], content: element.innerHTML }
         newDoc.pages[pageIndex] = current
 
-        if (pageIndex === newDoc.pages.length - 1) {
+        if (nextIsNonEdition) {
+            // INSERT a new edition page BEFORE the non-edition page
+            newDoc.pages.splice(pageIndex + 1, 0, {
+                content: overflowContent,
+                elements: [],
+                rows: [],
+                mode: 'edition',
+                background: '#ffffff',
+                order: pageIndex + 1
+            })
+        } else if (pageIndex === newDoc.pages.length - 1) {
             // Create new page with overflow content
             newDoc.pages.push({
                 content: overflowContent,
@@ -221,6 +236,9 @@ export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComp
 
         // Process all pages that currently have refs
         for (let i = 0; i < d.pages.length; i++) {
+            // BARRIER: Only process edition pages for overflow
+            if (d.pages[i].mode !== 'edition') continue
+
             const el = pageRefs.current[i]
             if (!el) {
                 console.log(`  Page ${i}: NO REF (skipped)`)
@@ -229,6 +247,10 @@ export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComp
 
             const overflows = doesContentOverflow(el)
             if (!overflows) continue
+
+            // BARRIER: If next page is NOT edition mode, insert a new edition page
+            const nextPage = d.pages[i + 1]
+            const nextIsNonEdition = nextPage && nextPage.mode !== 'edition'
 
             console.log(`  Page ${i}: OVERFLOWS (scrollH=${el.scrollHeight}, clientH=${el.clientHeight}, children=${el.childNodes.length})`)
 
@@ -242,20 +264,21 @@ export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComp
             const overflowLen = overflowContent.length
             console.log(`  Page ${i}: extracted ${overflowLen} chars of overflow`)
 
-            // Inject into next page DOM if it exists
-            const nextEl = pageRefs.current[i + 1]
+            // Inject into next page DOM if it exists AND is edition mode
+            const nextEl = nextIsNonEdition ? null : pageRefs.current[i + 1]
             if (nextEl) {
                 const beforeLen = nextEl.innerHTML.length
                 nextEl.innerHTML = overflowContent + nextEl.innerHTML
                 console.log(`  Page ${i}: injected into page ${i + 1} DOM (before: ${beforeLen} chars, after: ${nextEl.innerHTML.length} chars)`)
             } else {
-                console.log(`  Page ${i}: next page ${i + 1} has no ref, will create via setDoc`)
+                console.log(`  Page ${i}: next page ${i + 1} ${nextIsNonEdition ? 'is non-edition, inserting new page' : 'has no ref, will create via setDoc'}`)
             }
 
             // Update state
             const capturedIndex = i
             const capturedEl = el
             const capturedOverflow = overflowContent
+            const capturedNextIsNonEdition = nextIsNonEdition
             setDoc(prevDoc => {
                 if (pageRefs.current[capturedIndex] !== capturedEl) return prevDoc
 
@@ -268,7 +291,18 @@ export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComp
                     content: capturedEl.innerHTML
                 }
 
-                if (capturedIndex === newDoc.pages.length - 1) {
+                if (capturedNextIsNonEdition) {
+                    // INSERT a new edition page BEFORE the non-edition page
+                    newDoc.pages.splice(capturedIndex + 1, 0, {
+                        content: capturedOverflow,
+                        elements: [],
+                        rows: [],
+                        mode: 'edition',
+                        background: '#ffffff',
+                        order: capturedIndex + 1
+                    })
+                    console.log(`  [setDoc] Inserted new edition page at ${capturedIndex + 1} (before non-edition page)`)
+                } else if (capturedIndex === newDoc.pages.length - 1) {
                     // Create new page
                     newDoc.pages.push({
                         content: capturedOverflow,

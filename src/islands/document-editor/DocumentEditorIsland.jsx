@@ -250,6 +250,39 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                         return page
                     }
                 }
+                // Layout mode: sync content backup from rows
+                if (page.mode === 'layout' && page.rows && page.rows.length > 0) {
+                    let html = ''
+                    page.rows.forEach(row => {
+                        if (row.columns) {
+                            row.columns.forEach(col => {
+                                if (col.blocks) {
+                                    col.blocks.forEach(block => {
+                                        if (block.type === 'text' || block.type === 'html' || !block.type) {
+                                            html += (block.content || '')
+                                        } else if (block.type === 'image' && block.src) {
+                                            html += `<div style="text-align:center; margin: 10px 0;"><img src="${block.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                    })
+                    return { ...page, content: html }
+                }
+                // Designer mode: sync content backup from elements
+                if (page.mode === 'designer' && page.elements && page.elements.length > 0) {
+                    const sorted = [...page.elements].sort((a, b) => (a.y - b.y) || (a.x - b.x))
+                    let html = ''
+                    sorted.forEach(el => {
+                        if (el.type === 'text') {
+                            html += (el.content || '')
+                        } else if (el.type === 'image' && el.src) {
+                            html += `<div style="text-align:center; margin: 10px 0;"><img src="${el.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
+                        }
+                    })
+                    return { ...page, content: html }
+                }
                 return page
             })
 
@@ -1312,21 +1345,230 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [doc.pages.length, selectedPageIndex, triggerSave])
 
     const setPageMode = useCallback((index, mode) => {
-        // Sync content before mode change
-        const pageRef = pageRefs.current[index]
-        if (pageRef) {
-            setDoc(prev => {
-                const pages = [...prev.pages]
-                pages[index] = { ...pages[index], content: pageRef.innerHTML, mode }
-                return { ...prev, pages }
-            })
-        } else {
-            setDoc(prev => {
-                const pages = [...prev.pages]
-                pages[index] = { ...pages[index], mode }
-                return { ...prev, pages }
-            })
-        }
+        setDoc(prev => {
+            const pages = [...prev.pages]
+            const page = { ...pages[index] }
+            const oldMode = page.mode
+
+            // If same mode, no-op
+            if (oldMode === mode) return prev
+
+            // Helper: generate unique ID
+            const uid = () => `el_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+
+            // ===== EDITION → LAYOUT: wrap content into GridBuilder rows =====
+            if (oldMode === 'edition' && mode === 'layout') {
+                const pageRef = pageRefs.current[index]
+                const content = pageRef ? pageRef.innerHTML : (page.content || '')
+
+                if (content && content.trim()) {
+                    page.rows = [{
+                        id: `row_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                        equalHeight: true,
+                        columns: [{
+                            id: `col_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                            width: 12,
+                            blocks: [{
+                                id: `block_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                type: 'html',
+                                content: content
+                            }]
+                        }]
+                    }]
+                } else if (!page.rows || page.rows.length === 0) {
+                    page.rows = []
+                }
+                page.content = content
+            }
+
+            // ===== EDITION → DESIGNER: convert HTML into positioned elements =====
+            if (oldMode === 'edition' && mode === 'designer') {
+                const pageRef = pageRefs.current[index]
+                const content = pageRef ? pageRef.innerHTML : (page.content || '')
+                const margins = prev.margins || { top: 40, bottom: 40, left: 40, right: 40 }
+                const dims = prev.dimensions || { width: 794, height: 1123 }
+
+                if (content && content.trim()) {
+                    page.elements = [{
+                        id: uid(),
+                        type: 'text',
+                        x: margins.left,
+                        y: margins.top,
+                        width: dims.width - margins.left - margins.right,
+                        height: 'auto',
+                        rotation: 0,
+                        content: content,
+                        fill: '#000000',
+                        fontSize: 16,
+                        fontFamily: 'Arial',
+                        opacity: 1,
+                        zIndex: 1,
+                        locked: false
+                    }]
+                } else if (!page.elements || page.elements.length === 0) {
+                    page.elements = []
+                }
+                page.content = content
+            }
+
+            // ===== LAYOUT → EDITION: extract blocks back into content =====
+            if (oldMode === 'layout' && mode === 'edition') {
+                if (page.rows && page.rows.length > 0) {
+                    let html = ''
+                    page.rows.forEach(row => {
+                        if (row.columns) {
+                            row.columns.forEach(col => {
+                                if (col.blocks) {
+                                    col.blocks.forEach(block => {
+                                        if (block.type === 'text' || block.type === 'html' || !block.type) {
+                                            html += (block.content || '')
+                                        } else if (block.type === 'image' && block.src) {
+                                            html += `<div style="text-align:center; margin: 10px 0;"><img src="${block.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                    })
+                    page.content = html
+                }
+            }
+
+            // ===== DESIGNER → EDITION: extract elements back into content =====
+            if (oldMode === 'designer' && mode === 'edition') {
+                if (page.elements && page.elements.length > 0) {
+                    // Sort by y then x for natural reading order
+                    const sorted = [...page.elements].sort((a, b) => (a.y - b.y) || (a.x - b.x))
+                    let html = ''
+                    sorted.forEach(el => {
+                        if (el.type === 'text') {
+                            html += (el.content || '')
+                        } else if (el.type === 'image' && el.src) {
+                            html += `<div style="text-align:center; margin: 10px 0;"><img src="${el.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
+                        } else if (el.type === 'shape') {
+                            // Shapes become decorative divs
+                            const bg = el.fill || '#4361ee'
+                            const w = el.width || 200
+                            const h = el.height || 150
+                            const radius = el.shape === 'circle' ? '50%' : `${el.borderRadius || 0}px`
+                            html += `<div style="width:${w}px; height:${h}px; background:${bg}; border-radius:${radius}; margin: 10px auto;"></div>`
+                        } else if (el.type === 'line') {
+                            const color = el.fill || '#000'
+                            html += `<hr style="border: none; height: ${el.strokeWidth || 2}px; background: ${color}; margin: 10px 0;">`
+                        }
+                    })
+                    page.content = html
+                }
+            }
+
+            // ===== LAYOUT → DESIGNER: convert rows/blocks into positioned elements =====
+            if (oldMode === 'layout' && mode === 'designer') {
+                const margins = prev.margins || { top: 40, bottom: 40, left: 40, right: 40 }
+                const dims = prev.dimensions || { width: 794, height: 1123 }
+                const elems = []
+                let yOffset = margins.top
+
+                if (page.rows && page.rows.length > 0) {
+                    page.rows.forEach(row => {
+                        if (row.columns) {
+                            let xOffset = margins.left
+                            const availableWidth = dims.width - margins.left - margins.right
+                            row.columns.forEach(col => {
+                                const colWidth = Math.round((col.width / 12) * availableWidth)
+                                if (col.blocks) {
+                                    col.blocks.forEach(block => {
+                                        if (block.type === 'text' || block.type === 'html' || !block.type) {
+                                            elems.push({
+                                                id: uid(),
+                                                type: 'text',
+                                                x: xOffset,
+                                                y: yOffset,
+                                                width: colWidth,
+                                                height: 'auto',
+                                                rotation: 0,
+                                                content: block.content || '',
+                                                fill: '#000000',
+                                                fontSize: 16,
+                                                fontFamily: 'Arial',
+                                                opacity: 1,
+                                                zIndex: elems.length + 1,
+                                                locked: false
+                                            })
+                                        } else if (block.type === 'image') {
+                                            elems.push({
+                                                id: uid(),
+                                                type: 'image',
+                                                x: xOffset,
+                                                y: yOffset,
+                                                width: Math.min(colWidth, block.width || 300),
+                                                height: block.height || 200,
+                                                rotation: 0,
+                                                src: block.src || '',
+                                                alt: block.alt || '',
+                                                borderRadius: 8,
+                                                opacity: 1,
+                                                zIndex: elems.length + 1,
+                                                locked: false
+                                            })
+                                        }
+                                        yOffset += 80 // estimated block height
+                                    })
+                                }
+                                xOffset += colWidth
+                            })
+                        }
+                        yOffset += 20 // row gap
+                    })
+                }
+                page.elements = elems
+            }
+
+            // ===== DESIGNER → LAYOUT: convert elements into a single row/col =====
+            if (oldMode === 'designer' && mode === 'layout') {
+                const blocks = []
+                if (page.elements && page.elements.length > 0) {
+                    const sorted = [...page.elements].sort((a, b) => (a.y - b.y) || (a.x - b.x))
+                    sorted.forEach(el => {
+                        if (el.type === 'text') {
+                            blocks.push({
+                                id: `block_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                type: 'html',
+                                content: el.content || ''
+                            })
+                        } else if (el.type === 'image') {
+                            blocks.push({
+                                id: `block_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                                type: 'image',
+                                src: el.src || '',
+                                alt: el.alt || '',
+                                width: el.width
+                            })
+                        }
+                    })
+                }
+                page.rows = [{
+                    id: `row_${Date.now()}`,
+                    equalHeight: true,
+                    columns: [{
+                        id: `col_${Date.now()}`,
+                        width: 12,
+                        blocks: blocks
+                    }]
+                }]
+            }
+
+            // Sync edition content from DOM if switching away from edition
+            if (oldMode === 'edition') {
+                const pageRef = pageRefs.current[index]
+                if (pageRef) {
+                    page.content = pageRef.innerHTML
+                }
+            }
+
+            page.mode = mode
+            pages[index] = page
+            return { ...prev, pages }
+        })
         triggerSave()
     }, [triggerSave])
 

@@ -395,4 +395,58 @@ module.exports = {
             res.status(500).json({ error: "Server Error" });
         }
     },
+
+    // ═══════════════════════════════════════════════════════════
+    // API: Delete Account (Workspace) — Owner Only
+    // ═══════════════════════════════════════════════════════════
+    deleteAccount: async (req, res) => {
+        try {
+            const callerRole = req.workspaceRole;
+
+            // Only owner can delete the workspace
+            if (callerRole !== 'owner') {
+                return res.status(403).json({ error: 'Seul le propriétaire peut supprimer le compte' });
+            }
+
+            const account = await Account.findOne({ account_number: req.account_number });
+            if (!account) {
+                return res.status(404).json({ error: 'Compte introuvable' });
+            }
+
+            const accountNumber = req.account_number;
+
+            // 1. Remove this account from all users' accounts arrays
+            await User.updateMany(
+                { 'accounts.account_number': accountNumber },
+                { $pull: { accounts: { account_number: accountNumber } } }
+            );
+            console.log(`[TenantAdmin] Removed account ${accountNumber} from all users`);
+
+            // 2. Drop the tenant database
+            const mongoose = require('mongoose');
+            const dbConfig = require('../config/db');
+            try {
+                const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+                const tenantConn = await mongoose.createConnection(tenantDbUrl, {
+                    useNewUrlParser: true,
+                    useUnifiedTopology: true,
+                });
+                await tenantConn.db.dropDatabase();
+                await tenantConn.close();
+                console.log(`[TenantAdmin] Dropped tenant database saas_app_rb_${accountNumber}`);
+            } catch (dbErr) {
+                // Non-blocking: DB may not exist or may already be dropped
+                console.error(`[TenantAdmin] Error dropping tenant DB (non-blocking):`, dbErr.message);
+            }
+
+            // 3. Delete the Account document
+            await Account.findByIdAndDelete(account._id);
+            console.log(`[TenantAdmin] Deleted account document ${accountNumber}`);
+
+            res.json({ success: true, redirect: '/user/accounts' });
+        } catch (error) {
+            console.error("[TenantAdmin] Delete account error:", error);
+            res.status(500).json({ error: "Server Error" });
+        }
+    },
 };

@@ -83,7 +83,7 @@ const EntitySchema = new mongoose.Schema(
       displayFields: [String],                          // fieldIds to show in dropdown
       bidirectional: { type: Boolean, default: false },
       required: { type: Boolean, default: false },
-      showInForm: { type: Boolean, default: false }
+      showInForm: { type: Boolean, default: true }
     }],
     // Legacy: flat field layout (deprecated, kept for migration)
     layout: {

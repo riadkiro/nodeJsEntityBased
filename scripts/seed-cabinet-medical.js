@@ -212,7 +212,7 @@ async function install(conn, userId, presetSlug) {
 
     ids.fields = {};
     for (const f of fieldDefs) {
-        const doc = await upsertDoc(db.FieldTemplate, { name: f.name, 'meta.createdByPreset': PRESET }, {
+        const doc = await upsertDoc(db.FieldTemplate, { name: f.name }, {
             ...f, isCustom: true, isSystem: false, category: f.category || 'other'
         });
         ids.fields[f.name] = doc._id;
@@ -293,7 +293,7 @@ async function install(conn, userId, presetSlug) {
 
     ids.classifications = {};
     for (const c of classDefs) {
-        const doc = await upsertDoc(db.Classification, { key: c.key, 'meta.createdByPreset': PRESET }, {
+        const doc = await upsertDoc(db.Classification, { key: c.key }, {
             ...c, isShared: true, type: 'simple'
         });
         ids.classifications[c.key] = doc._id;
@@ -673,7 +673,7 @@ async function install(conn, userId, presetSlug) {
     for (const ct of cardTemplates) {
         const entityId = E[ct.entitySlug];
         if (!entityId) continue;
-        await upsertDoc(db.CardTemplate, { entityId, context: ct.context, 'meta.createdByPreset': PRESET }, {
+        await upsertDoc(db.CardTemplate, { entityId, context: ct.context }, {
             name: ct.name, entityId, context: ct.context, isDefault: ct.isDefault,
             presetSlug: PRESET, layout: ct.layout, createdBy: uid,
         });
@@ -742,12 +742,12 @@ async function install(conn, userId, presetSlug) {
     let viewCount = 0;
     for (let ei = 0; ei < envDefs.length; ei++) {
         const ed = envDefs[ei];
-        const env = await upsertDoc(db.Environment, { slug: ed.env.slug, 'meta.createdByPreset': PRESET }, {
+        const env = await upsertDoc(db.Environment, { slug: ed.env.slug }, {
             ...ed.env, order: ei, isDefault: ei === 0
         });
         for (let si = 0; si < ed.spaces.length; si++) {
             const sd = ed.spaces[si];
-            const space = await upsertDoc(db.Space, { slug: slug(sd.name), 'meta.createdByPreset': PRESET }, {
+            const space = await upsertDoc(db.Space, { slug: slug(sd.name) }, {
                 name: sd.name, slug: slug(sd.name), icon: sd.icon, color: sd.color, order: si,
                 environmentId: env._id, owner: new mongoose.Types.ObjectId(userId)
             });
@@ -756,7 +756,7 @@ async function install(conn, userId, presetSlug) {
                 const entityId = E[vd.entitySlug];
                 if (!entityId) continue;
                 const viewSlug = `view-${vd.entitySlug}-${space._id.toString().slice(-6)}-${vi}`;
-                await upsertDoc(db.View, { slug: viewSlug, 'meta.createdByPreset': PRESET }, {
+                await upsertDoc(db.View, { slug: viewSlug }, {
                     name: vd.name, slug: viewSlug, entity: entityId,
                     icon: vd.icon, color: vd.color, viewType: 'list', order: vi,
                     spaces: [space._id], folders: [],
@@ -767,11 +767,11 @@ async function install(conn, userId, presetSlug) {
         }
     }
     // Clean up the old single "cabinet-medical" environment if it still exists
-    const oldEnv = await db.Environment.findOne({ slug: 'cabinet-medical', 'meta.createdByPreset': PRESET });
+    const oldEnv = await db.Environment.findOne({ slug: 'cabinet-medical' });
     if (oldEnv) {
         // Reassign any spaces still pointing to the old env
         await db.Space.updateMany(
-            { environmentId: oldEnv._id, 'meta.createdByPreset': PRESET },
+            { environmentId: oldEnv._id },
             { $unset: { environmentId: '' } }
         );
         await db.Environment.deleteOne({ _id: oldEnv._id });
@@ -783,7 +783,7 @@ async function install(conn, userId, presetSlug) {
     console.log('\n📋 Creating line schemas...');
 
     // Single shared Traitement schema — used by consultations, prescriptions, patients, and documents
-    const traitementSchema = await upsertDoc(db.LineSchema, { slug: 'traitement', 'meta.createdByPreset': PRESET }, {
+    const traitementSchema = await upsertDoc(db.LineSchema, { slug: 'traitement' }, {
         name: 'Traitement', slug: 'traitement',
         description: 'Lignes de traitement (partagé entre ordonnances, consultations et suivi patient)',
         appliesTo: { entityIds: [E['prescriptions'], E['consultations'], E['patients']], documentType: 'treatment' },
@@ -846,7 +846,7 @@ async function install(conn, userId, presetSlug) {
     console.log(`   ✅ LineSchema: Traitement (${traitementSchema._id})`);
 
     // Consultation Prestations schema (catalog + auto pricing)
-    const consultationPrestationSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_billing_v1', 'meta.createdByPreset': PRESET }, {
+    const consultationPrestationSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_billing_v1' }, {
         name: 'Prestations Consultation', slug: 'consultation_billing_v1',
         description: 'Prestations médicales utilisées pendant la consultation',
         appliesTo: { entityIds: [E['consultations']], documentType: 'consultation' },
@@ -884,7 +884,7 @@ async function install(conn, userId, presetSlug) {
     console.log(`   ✅ LineSchema: Prestations Consultation (${consultationPrestationSchema._id})`);
 
     // Exam request schema (catalog of exams to do)
-    const consultationExamSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_exams_v1', 'meta.createdByPreset': PRESET }, {
+    const consultationExamSchema = await upsertDoc(db.LineSchema, { slug: 'consultation_exams_v1' }, {
         name: 'Examens à réaliser', slug: 'consultation_exams_v1',
         description: 'Liste des examens demandés pendant une consultation',
         appliesTo: { entityIds: [E['consultations']], documentType: 'consultation' },
@@ -929,7 +929,7 @@ async function install(conn, userId, presetSlug) {
 
     // (Patient treatment follow-up now uses the shared 'traitement' schema above)
 
-    const patientExamSchema = await upsertDoc(db.LineSchema, { slug: 'patient_exam_followup_v1', 'meta.createdByPreset': PRESET }, {
+    const patientExamSchema = await upsertDoc(db.LineSchema, { slug: 'patient_exam_followup_v1' }, {
         name: 'Examens Patient', slug: 'patient_exam_followup_v1',
         description: 'Historique des examens du patient',
         appliesTo: { entityIds: [E['patients']], documentType: 'medical-followup' },
@@ -942,7 +942,7 @@ async function install(conn, userId, presetSlug) {
     console.log(`   ✅ LineSchema: Examens Patient (${patientExamSchema._id})`);
 
     // Facture Standard schema
-    const invoiceLineSchema = await upsertDoc(db.LineSchema, { slug: 'invoice_v1', 'meta.createdByPreset': PRESET }, {
+    const invoiceLineSchema = await upsertDoc(db.LineSchema, { slug: 'invoice_v1' }, {
         name: 'Facture Standard', slug: 'invoice_v1',
         description: 'Lignes de facturation pour factures et devis',
         appliesTo: { entityIds: [E['factures']], documentType: 'invoice' },
@@ -1036,16 +1036,16 @@ async function createDemoRecords(db, ids, userId) {
     const uid = new mongoose.Types.ObjectId(userId);
     const cls = ids.classifications;
     const rk = ids.relationKeys; // relation UUID keys
-    const traitementSchema = await db.LineSchema.findOne({ slug: 'traitement', 'meta.createdByPreset': PRESET }).lean();
-    const consultationPrestationSchema = await db.LineSchema.findOne({ slug: 'consultation_billing_v1', 'meta.createdByPreset': PRESET }).lean();
-    const consultationExamSchema = await db.LineSchema.findOne({ slug: 'consultation_exams_v1', 'meta.createdByPreset': PRESET }).lean();
-    const patientExamSchema = await db.LineSchema.findOne({ slug: 'patient_exam_followup_v1', 'meta.createdByPreset': PRESET }).lean();
-    const invoiceSchema = await db.LineSchema.findOne({ slug: 'invoice_v1', 'meta.createdByPreset': PRESET }).lean();
+    const traitementSchema = await db.LineSchema.findOne({ slug: 'traitement' }).lean();
+    const consultationPrestationSchema = await db.LineSchema.findOne({ slug: 'consultation_billing_v1' }).lean();
+    const consultationExamSchema = await db.LineSchema.findOne({ slug: 'consultation_exams_v1' }).lean();
+    const patientExamSchema = await db.LineSchema.findOne({ slug: 'patient_exam_followup_v1' }).lean();
+    const invoiceSchema = await db.LineSchema.findOne({ slug: 'invoice_v1' }).lean();
 
     // Helper
     const rec = async (entitySlug, title, customs = {}, extras = {}) => {
         const cf = Object.entries(customs).map(([name, value]) => ({ field_id: f[name], value }));
-        return upsertDoc(db.Record, { entityId: E[entitySlug], title, 'meta.createdByPreset': PRESET }, {
+        return upsertDoc(db.Record, { entityId: E[entitySlug], title }, {
             entityId: E[entitySlug], title, computedTitle: title, customFields: cf, createdBy: uid, ...extras
         });
     };
@@ -1700,9 +1700,9 @@ async function createDocumentTemplates(db, ids, userId) {
     const E = ids.entities;
 
     // Get the Traitement LineSchema ID for dynamic tables
-    const traitementSchemaDoc = await db.LineSchema.findOne({ slug: 'traitement', 'meta.createdByPreset': PRESET });
+    const traitementSchemaDoc = await db.LineSchema.findOne({ slug: 'traitement' });
     const traitementSchemaId = traitementSchemaDoc ? traitementSchemaDoc._id.toString() : '';
-    const invoiceSchemaDoc = await db.LineSchema.findOne({ slug: 'invoice_v1', 'meta.createdByPreset': PRESET });
+    const invoiceSchemaDoc = await db.LineSchema.findOne({ slug: 'invoice_v1' });
     const invoiceSchemaId = invoiceSchemaDoc ? invoiceSchemaDoc._id.toString() : '';
 
     // Build Ordonnance template with proper tokens and dynamic treatment table
@@ -1980,14 +1980,14 @@ async function createDocumentTemplates(db, ids, userId) {
         // Use custom HTML if provided, otherwise use generic placeholder
         const htmlContent = t.customHtml || `<div style="font-family:Arial,sans-serif;padding:40px;"><h1 style="color:${t.color};border-bottom:2px solid ${t.color};padding-bottom:8px;">${t.name}</h1><p style="color:#666;margin-top:24px;">Ce document est un modèle. Personnalisez-le avec les variables disponibles.</p><p><strong>Date:</strong> {{today}}</p><p><strong>Patient:</strong> {{${t.entitySlug}.patients.prenom}} {{${t.entitySlug}.patients.nom}}</p></div>`;
 
-        const doc = await upsertDoc(db.Document, { name: t.name, 'meta.createdByPreset': PRESET }, {
+        const doc = await upsertDoc(db.Document, { name: t.name }, {
             name: t.name, format: 'A4', orientation: 'portrait', isTemplate: true,
             entityId, entityIds: [entityId], createdBy: uid, status: 'published', tags: ['médical', 'template'],
             pages: [{ content: htmlContent, mode: 'edition', order: 0, elements: [], background: { color: '#ffffff' } }]
         });
 
         // SmartDocTemplate link
-        await upsertDoc(db.SmartDocTemplate, { name: t.name, entityId, 'meta.createdByPreset': PRESET }, {
+        await upsertDoc(db.SmartDocTemplate, { name: t.name, entityId }, {
             name: t.name, description: `Modèle ${t.name}`, icon: t.icon, color: t.color,
             documentId: doc._id, entityId, outputFormat: 'pdf', order: i, active: true, createdBy: uid,
             inputFields: []

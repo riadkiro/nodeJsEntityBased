@@ -1,0 +1,509 @@
+/**
+ * seed-crm.js
+ * Complete CRM Salesforce-like preset
+ */
+const mongoose = require('mongoose');
+const crypto = require('crypto');
+const uuidv4 = () => crypto.randomUUID();
+
+const PRESET = 'crm';
+const meta = { createdByPreset: PRESET, isDemo: true };
+
+// ============================================
+// Helpers
+// ============================================
+function slug(name) {
+    return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function upsertDoc(Model, filter, data) {
+    return Model.findOneAndUpdate(filter, { ...data, meta }, { upsert: true, new: true, setDefaultsOnInsert: true });
+}
+
+// ============================================
+// Schema registration helper
+// ============================================
+function registerModels(conn) {
+    const s = (def, opts) => new mongoose.Schema(def, { timestamps: true, strict: false, ...opts });
+    const M = (name, schema, coll) => {
+        try { return conn.model(name); } catch (e) { return conn.model(name, schema, coll); }
+    };
+
+    return {
+        FieldTemplate: M('FieldTemplate', s({ name: String, label: String, type: String, subtype: String, description: String, required: Boolean, type_config: Object, ui: Object, isSystem: Boolean, isCustom: Boolean, category: String, meta: Object }), 'fieldtemplates'),
+        Classification: M('Classification', s({ name: String, key: String, description: String, isShared: Boolean, type: String, allowMultiple: Boolean, entities: [mongoose.Schema.Types.ObjectId], options: [new mongoose.Schema({ label: String, color: String, icon: String, badgeStyle: String, type: String, order: Number }, { _id: true })], meta: Object }), 'classifications'),
+        Entity: M('Entity', s({ name: String, slug: String, description: String, icon: String, color: String, order: Number, enabledStandardFields: [String], customFields: [mongoose.Schema.Types.ObjectId], statusClassification: mongoose.Schema.Types.ObjectId, classifications: [mongoose.Schema.Types.ObjectId], relations: Array, formLayout: Object, layout: Object, enableAttachments: Boolean, spaces: [mongoose.Schema.Types.ObjectId], folders: [mongoose.Schema.Types.ObjectId], meta: Object }), 'entities'),
+        Environment: M('Environment', s({ name: String, slug: String, icon: String, color: String, order: Number, isDefault: Boolean, meta: Object }), 'environments'),
+        Space: M('Space', s({ name: String, slug: String, icon: String, color: String, order: Number, environmentId: mongoose.Schema.Types.ObjectId, owner: mongoose.Schema.Types.ObjectId, members: Array, meta: Object }), 'spaces'),
+        Folder: M('Folder', s({ name: String, slug: String, type: String, icon: String, color: String, order: Number, spaces: [mongoose.Schema.Types.ObjectId], parentFolders: [mongoose.Schema.Types.ObjectId], meta: Object }), 'folders'),
+        Record: M('Record', s({ entityId: mongoose.Schema.Types.ObjectId, title: String, computedTitle: String, description: String, status: String, customFields: [{ field_id: mongoose.Schema.Types.ObjectId, value: mongoose.Schema.Types.Mixed }], relations: [{ relationKey: String, value: mongoose.Schema.Types.Mixed }], classificationValues: Array, date: Date, meta: Object }), 'records'),
+        Document: M('Document', s({ name: String, format: String, orientation: String, pages: Array, isTemplate: Boolean, entityId: mongoose.Schema.Types.ObjectId, entityIds: [mongoose.Schema.Types.ObjectId], createdBy: mongoose.Schema.Types.ObjectId, status: String, tags: [String], collections: Array, contentBlocks: Array, meta: Object }), 'documents'),
+        SmartDocTemplate: M('SmartDocTemplate', s({ name: String, description: String, icon: String, color: String, documentId: mongoose.Schema.Types.ObjectId, entityId: mongoose.Schema.Types.ObjectId, inputFields: Array, outputFormat: String, order: Number, active: Boolean, meta: Object }), 'smartdoctemplates'),
+        LineSchema: M('LineSchema', s({ name: String, slug: String, description: String, appliesTo: Object, sourceEntityId: mongoose.Schema.Types.ObjectId, lineTypes: [String], columns: Array, totals: Object, defaultLineType: String, meta: Object }), 'lineschemas'),
+        View: M('View', s({ name: String, slug: String, entity: mongoose.Schema.Types.ObjectId, cockpitId: mongoose.Schema.Types.ObjectId, icon: String, color: String, order: Number, viewType: String, spaces: [mongoose.Schema.Types.ObjectId], folders: [mongoose.Schema.Types.ObjectId], filters: Array, settings: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'views'),
+        CardTemplate: M('CardTemplate', s({ name: String, entityId: mongoose.Schema.Types.ObjectId, context: String, isDefault: Boolean, presetSlug: String, layout: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'cardtemplates')
+    };
+}
+
+async function install(conn, userId, presetSlug) {
+    const db = registerModels(conn);
+    const ids = {};
+    const uid = userId ? new mongoose.Types.ObjectId(userId) : null;
+
+    console.log('\n🧹 Cleaning up orphaned data...');
+    const existingEntities = await db.Entity.find({}).select('_id').lean();
+    const existingEntityIds = new Set(existingEntities.map(e => e._id.toString()));
+    const allViews = await db.View.find({ entity: { $exists: true, $ne: null } }).lean();
+    const orphanedViewIds = allViews.filter(v => v.entity && !existingEntityIds.has(v.entity.toString())).map(v => v._id);
+    if (orphanedViewIds.length > 0) await db.View.deleteMany({ _id: { $in: orphanedViewIds } });
+    
+    const remainingViews = await db.View.find({}).select('spaces folders').lean();
+    const usedSpaceIds = new Set();
+    remainingViews.forEach(v => (v.spaces || []).forEach(s => usedSpaceIds.add(s.toString())));
+    const orphanedSpaces = (await db.Space.find({}).lean()).filter(s => !usedSpaceIds.has(s._id.toString()));
+    if (orphanedSpaces.length > 0) await db.Space.deleteMany({ _id: { $in: orphanedSpaces.map(s => s._id) } });
+
+    const orphanedRecords = await db.Record.countDocuments({ entityId: { $nin: [...existingEntityIds].map(id => new mongoose.Types.ObjectId(id)) } });
+    if (orphanedRecords > 0) await db.Record.deleteMany({ entityId: { $nin: [...existingEntityIds].map(id => new mongoose.Types.ObjectId(id)) } });
+    console.log('   ✅ Cleanup complete');
+
+    // =========== 1. FIELD TEMPLATES ===========
+    console.log('\n📋 Creating field templates...');
+    const fieldDefs = [
+        // Contact
+        { name: 'nom', label: 'Nom', type: 'string', ui: { icon: 'solar:user-bold-duotone', width: 'half' } },
+        { name: 'prenom', label: 'Prénom', type: 'string', ui: { icon: 'solar:user-bold-duotone', width: 'half' } },
+        { name: 'email', label: 'Email', type: 'string', subtype: 'email', ui: { icon: 'solar:letter-bold-duotone', width: 'half' } },
+        { name: 'telephone', label: 'Téléphone', type: 'string', subtype: 'tel', ui: { icon: 'solar:phone-bold-duotone', width: 'half' } },
+        { name: 'fonction', label: 'Fonction', type: 'string', ui: { icon: 'solar:user-id-bold-duotone', width: 'half' } },
+        { name: 'linkedin', label: 'Profil LinkedIn', type: 'string', ui: { icon: 'solar:link-bold-duotone', width: 'half' } },
+        // Entreprise
+        { name: 'siret', label: 'SIRET', type: 'string', ui: { icon: 'solar:buildings-bold-duotone', width: 'half' } },
+        { name: 'site_web', label: 'Site Web', type: 'string', ui: { icon: 'solar:global-bold-duotone', width: 'half' } },
+        { name: 'adresse', label: 'Adresse complète', type: 'text', ui: { icon: 'solar:map-point-bold-duotone', width: 'full', rows: 2 } },
+        // Opportunité
+        { name: 'montant', label: 'Montant estimé', type: 'number', ui: { icon: 'solar:dollar-bold-duotone', width: 'half' } },
+        { name: 'date_cloture', label: 'Date de clôture prévue', type: 'date', ui: { icon: 'solar:calendar-bold-duotone', width: 'half' } },
+        { name: 'probabilite', label: 'Probabilité (%)', type: 'number', ui: { icon: 'solar:chart-bold-duotone', width: 'half' } },
+        // Activité
+        { name: 'date_activite', label: 'Date de l\'activité', type: 'date', type_config: { includeTime: true }, ui: { icon: 'solar:calendar-bold-duotone', width: 'half' } },
+        { name: 'compte_rendu', label: 'Compte rendu', type: 'text', ui: { icon: 'solar:document-text-bold-duotone', width: 'full', rows: 4 } },
+        // Produit / Service
+        { name: 'reference', label: 'Référence', type: 'string', ui: { icon: 'solar:hashtag-bold-duotone', width: 'half' } },
+        { name: 'prix_unitaire', label: 'Prix Unitaire HT', type: 'number', ui: { icon: 'solar:tag-price-bold-duotone', width: 'half' } },
+        { name: 'tva_rate', label: 'Taux TVA (%)', type: 'number', ui: { icon: 'solar:calculator-bold-duotone', width: 'half' } },
+        // Contrat
+        { name: 'date_debut', label: 'Date de début', type: 'date', ui: { icon: 'solar:calendar-bold-duotone', width: 'half' } },
+        { name: 'date_fin', label: 'Date de fin', type: 'date', ui: { icon: 'solar:calendar-bold-duotone', width: 'half' } },
+        { name: 'mrr', label: 'MRR (Revenu Récurrent Mensuel)', type: 'number', ui: { icon: 'solar:dollar-bold-duotone', width: 'half' } },
+        // Facture / Paiement
+        { name: 'montant_total', label: 'Montant total TTC', type: 'number', ui: { icon: 'solar:dollar-bold-duotone', width: 'half' } },
+        { name: 'montant_paye', label: 'Montant payé', type: 'number', ui: { icon: 'solar:wallet-bold-duotone', width: 'half' } },
+        { name: 'date_echeance', label: 'Date d\'échéance', type: 'date', ui: { icon: 'solar:calendar-bold-duotone', width: 'half' } },
+        { name: 'notes_generales', label: 'Notes internes', type: 'text', ui: { icon: 'solar:notes-bold-duotone', width: 'full', rows: 3 } },
+        // Computed
+        {
+            name: 'reste_a_payer', label: 'Reste à payer', type: 'number', category: 'computed', ui: { icon: 'solar:wallet-bold-duotone', width: 'half' }, color: '#ef4444',
+            formula: { fromFunction: 'expression', expression: '%montant_total% - %montant_paye%', sourceFields: {}, dependsOn: ['montant_total', 'montant_paye'] },
+            render: { display: { table: 'currency', card: 'currency' } }
+        }
+    ];
+
+    ids.fields = {};
+    for (const f of fieldDefs) {
+        const doc = await upsertDoc(db.FieldTemplate, { name: f.name }, {
+            ...f, isCustom: true, isSystem: false, category: f.category || 'other'
+        });
+        ids.fields[f.name] = doc._id;
+    }
+    console.log(`   ✅ ${Object.keys(ids.fields).length} field templates`);
+
+    // =========== 2. CLASSIFICATIONS ===========
+    console.log('\n🏷️  Creating classifications...');
+    const classDefs = [
+        {
+            name: 'Pipeline Commercial', key: 'crm_pipeline', options: [
+                { label: 'Prospection', color: '#94a3b8', type: 'start', order: 0 },
+                { label: 'Qualification', color: '#3b82f6', type: 'active', order: 1 },
+                { label: 'Proposition', color: '#f59e0b', type: 'active', order: 2 },
+                { label: 'Négociation', color: '#8b5cf6', type: 'active', order: 3 },
+                { label: 'Gagné', color: '#22c55e', type: 'completed', order: 4 },
+                { label: 'Perdu', color: '#ef4444', type: 'normal', order: 5 }
+            ]
+        },
+        {
+            name: 'Priorité', key: 'crm_priority', options: [
+                { label: 'Basse', color: '#94a3b8', order: 0 },
+                { label: 'Moyenne', color: '#f59e0b', order: 1 },
+                { label: 'Haute', color: '#ef4444', order: 2 }
+            ]
+        },
+        {
+            name: 'Type Activité', key: 'crm_activity_type', options: [
+                { label: 'Appel', color: '#3b82f6', icon: 'solar:phone-calling-bold', order: 0 },
+                { label: 'Email', color: '#8b5cf6', icon: 'solar:letter-bold', order: 1 },
+                { label: 'Réunion', color: '#22c55e', icon: 'solar:users-group-rounded-bold', order: 2 },
+                { label: 'Démo', color: '#f59e0b', icon: 'solar:monitor-camera-bold', order: 3 },
+                { label: 'Déjeuner', color: '#ec4899', icon: 'solar:cup-bold', order: 4 }
+            ]
+        },
+        {
+            name: 'Statut Devis', key: 'crm_quote_status', options: [
+                { label: 'Brouillon', color: '#94a3b8', type: 'start', order: 0 },
+                { label: 'Envoyé', color: '#3b82f6', type: 'active', order: 1 },
+                { label: 'Accepté', color: '#22c55e', type: 'completed', order: 2 },
+                { label: 'Refusé', color: '#ef4444', type: 'normal', order: 3 },
+                { label: 'Expiré', color: '#f97316', type: 'normal', order: 4 }
+            ]
+        },
+        {
+            name: 'Statut Contrat', key: 'crm_contract_status', options: [
+                { label: 'En rédaction', color: '#94a3b8', type: 'start', order: 0 },
+                { label: 'Actif', color: '#22c55e', type: 'active', order: 1 },
+                { label: 'Expiré', color: '#f59e0b', type: 'completed', order: 2 },
+                { label: 'Résilié', color: '#ef4444', type: 'normal', order: 3 }
+            ]
+        },
+        {
+            name: 'Statut Facture', key: 'crm_invoice_status', options: [
+                { label: 'Brouillon', color: '#94a3b8', type: 'start', order: 0 },
+                { label: 'Envoyée', color: '#3b82f6', type: 'active', order: 1 },
+                { label: 'Payée', color: '#22c55e', type: 'completed', order: 2 },
+                { label: 'En retard', color: '#ef4444', type: 'normal', order: 3 }
+            ]
+        },
+        {
+            name: 'Secteur d\'activité', key: 'crm_industry', options: [
+                { label: 'Tech & Logiciels', color: '#3b82f6', order: 0 },
+                { label: 'Finance & Assurances', color: '#8b5cf6', order: 1 },
+                { label: 'Santé & Médical', color: '#22c55e', order: 2 },
+                { label: 'Retail & E-commerce', color: '#f59e0b', order: 3 },
+                { label: 'Industrie & Manufacturing', color: '#64748b', order: 4 },
+                { label: 'Services Professionnels', color: '#0ea5e9', order: 5 }
+            ]
+        },
+        {
+            name: 'Source Lead', key: 'crm_lead_source', options: [
+                { label: 'Site Web (Inbound)', color: '#3b82f6', order: 0 },
+                { label: 'Prospection (Outbound)', color: '#8b5cf6', order: 1 },
+                { label: 'LinkedIn', color: '#0ea5e9', order: 2 },
+                { label: 'Recommandation', color: '#22c55e', order: 3 },
+                { label: 'Événement / Salon', color: '#f59e0b', order: 4 }
+            ]
+        }
+    ];
+
+    ids.classifications = {};
+    for (const c of classDefs) {
+        const doc = await upsertDoc(db.Classification, { key: c.key }, {
+            ...c, isShared: true, type: 'simple'
+        });
+        ids.classifications[c.key] = doc._id;
+        ids.classifications[`${c.key}_opts`] = doc.options;
+    }
+    console.log(`   ✅ ${Object.keys(classDefs).length} classifications`);
+
+    // =========== 3. ENTITIES ===========
+    console.log('\n🗂️  Creating entities...');
+    const f = ids.fields;
+    const entityDefs = [
+        {
+            name: 'Contact', nameSingular: 'Contact', namePlural: 'Contacts', slug: 'contacts', icon: 'solar:user-bold-duotone', color: '#3b82f6',
+            fields: ['nom', 'prenom', 'email', 'telephone', 'fonction', 'linkedin', 'notes_generales'], statusClassification: null, classifications: ['crm_lead_source'],
+            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }],
+            sidebarWidgets: [
+                { type: 'note', label: 'Note CRM', icon: 'solar:notes-bold-duotone', color: '#3b82f6', order: 0, visible: true, config: { content: '' } },
+                { type: 'tasks', label: 'Suivi', icon: 'solar:checklist-bold-duotone', color: '#f59e0b', order: 1, visible: true, config: { tasks: [{ label: 'Appel de découverte', done: false }, { label: 'Envoyer plaquette commerciale', done: false }] } }
+            ]
+        },
+        {
+            name: 'Entreprise', nameSingular: 'Entreprise', namePlural: 'Entreprises', slug: 'entreprises', icon: 'solar:buildings-bold-duotone', color: '#64748b',
+            fields: ['siret', 'site_web', 'adresse', 'notes_generales'], statusClassification: null, classifications: ['crm_industry'],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }],
+            sidebarWidgets: [
+                { type: 'note', label: 'Stratégie de compte', icon: 'solar:target-bold-duotone', color: '#64748b', order: 0, visible: true, config: { content: '' } }
+            ]
+        },
+        {
+            name: 'Opportunité', nameSingular: 'Opportunité', namePlural: 'Opportunités', slug: 'opportunites', icon: 'solar:chart-bold-duotone', color: '#22c55e',
+            fields: ['montant', 'date_cloture', 'probabilite', 'notes_generales'], statusClassification: 'crm_pipeline', classifications: ['crm_priority'],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }],
+            sidebarWidgets: [
+                { type: 'note', label: 'Next steps', icon: 'solar:arrow-right-bold-duotone', color: '#22c55e', order: 0, visible: true, config: { content: '' } },
+                { type: 'tasks', label: 'Checklist Deal', icon: 'solar:checklist-bold-duotone', color: '#8b5cf6', order: 1, visible: true, config: { tasks: [{ label: 'Identifier le décideur', done: false }, { label: 'Valider le budget', done: false }, { label: 'Démonstration produit', done: false }] } }
+            ]
+        },
+        {
+            name: 'Activité', nameSingular: 'Activité', namePlural: 'Activités', slug: 'activites', icon: 'solar:phone-calling-bold-duotone', color: '#8b5cf6',
+            fields: ['date_activite', 'compte_rendu'], statusClassification: null, classifications: ['crm_activity_type'],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Devis', nameSingular: 'Devis', namePlural: 'Devis', slug: 'devis', icon: 'solar:document-text-bold-duotone', color: '#f59e0b',
+            fields: ['montant_total', 'date_echeance', 'notes_generales'], statusClassification: 'crm_quote_status', classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }],
+            sidebarWidgets: [{ type: 'note', label: 'Notes de proposition', icon: 'solar:notes-bold-duotone', color: '#f59e0b', order: 0, visible: true, config: { content: '' } }]
+        },
+        {
+            name: 'Contrat', nameSingular: 'Contrat', namePlural: 'Contrats', slug: 'contrats', icon: 'solar:diploma-bold-duotone', color: '#ec4899',
+            fields: ['date_debut', 'date_fin', 'mrr', 'notes_generales'], statusClassification: 'crm_contract_status', classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Produit', nameSingular: 'Produit', namePlural: 'Produits', slug: 'produits', icon: 'solar:box-bold-duotone', color: '#0ea5e9',
+            fields: ['reference', 'prix_unitaire', 'tva_rate', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Service', nameSingular: 'Service', namePlural: 'Services', slug: 'services', icon: 'solar:settings-bold-duotone', color: '#0ea5e9',
+            fields: ['reference', 'prix_unitaire', 'tva_rate', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures-crm', icon: 'solar:bill-list-bold-duotone', color: '#ef4444',
+            fields: ['montant_total', 'montant_paye', 'date_echeance', 'reste_a_payer', 'notes_generales'], statusClassification: 'crm_invoice_status', classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Paiement', nameSingular: 'Paiement', namePlural: 'Paiements', slug: 'paiements-crm', icon: 'solar:wallet-bold-duotone', color: '#10b981',
+            fields: ['montant_total', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        }
+    ];
+
+    ids.entities = {};
+    for (let i = 0; i < entityDefs.length; i++) {
+        const e = entityDefs[i];
+        const customFieldIds = e.fields.map(fn => f[fn]).filter(Boolean);
+        const classIds = e.classifications.map(k => ids.classifications[k]).filter(Boolean);
+        const statusCls = e.statusClassification ? ids.classifications[e.statusClassification] : undefined;
+
+        let resolvedTokens = undefined;
+        if (e.referenceTitleTokens) {
+            resolvedTokens = e.referenceTitleTokens.map(tok => ({
+                t: tok.t,
+                ...(tok.t === 'field' ? { id: typeof tok.id === 'function' ? tok.id().toString() : tok.id } : {}),
+                ...(tok.t === 'text' ? { v: tok.v } : {})
+            }));
+        }
+
+        const entityData = {
+            name: e.name, nameSingular: e.nameSingular, namePlural: e.namePlural,
+            slug: e.slug, description: '', icon: e.icon, color: e.color, order: i,
+            enabledStandardFields: ['title', 'description', 'date'],
+            customFields: customFieldIds,
+            statusClassification: statusCls,
+            classifications: classIds,
+            enableAttachments: true,
+            relations: []
+        };
+        if (resolvedTokens) entityData.referenceTitleTokens = resolvedTokens;
+        if (e.sidebarWidgets) entityData.sidebarWidgets = e.sidebarWidgets;
+
+        const doc = await upsertDoc(db.Entity, { slug: e.slug }, entityData);
+        ids.entities[e.slug] = doc._id;
+    }
+    console.log(`   ✅ ${Object.keys(ids.entities).length} entities`);
+
+    // =========== 4. RELATIONS ===========
+    console.log('\n🔗 Adding relations...');
+    const E = ids.entities;
+    ids.relationKeys = {};
+    const relationDefs = [
+        { src: 'contacts', target: 'entreprises', label: 'Entreprise', inverse: 'Contacts', card: 'many-to-one' },
+        { src: 'opportunites', target: 'contacts', label: 'Contact principal', inverse: 'Opportunités', card: 'many-to-one' },
+        { src: 'opportunites', target: 'entreprises', label: 'Entreprise', inverse: 'Opportunités', card: 'many-to-one' },
+        { src: 'devis', target: 'opportunites', label: 'Opportunité', inverse: 'Devis', card: 'many-to-one' },
+        { src: 'devis', target: 'contacts', label: 'Contact facturation', inverse: 'Devis', card: 'many-to-one' },
+        { src: 'contrats', target: 'entreprises', label: 'Entreprise', inverse: 'Contrats', card: 'many-to-one' },
+        { src: 'contrats', target: 'opportunites', label: 'Opportunité liée', inverse: 'Contrat', card: 'one-to-one' },
+        { src: 'activites', target: 'contacts', label: 'Contact', inverse: 'Activités', card: 'many-to-one' },
+        { src: 'activites', target: 'opportunites', label: 'Opportunité', inverse: 'Activités', card: 'many-to-one' },
+        { src: 'factures-crm', target: 'contrats', label: 'Contrat', inverse: 'Factures', card: 'many-to-one' },
+        { src: 'factures-crm', target: 'entreprises', label: 'Entreprise', inverse: 'Factures', card: 'many-to-one' },
+        { src: 'paiements-crm', target: 'factures-crm', label: 'Facture', inverse: 'Paiements', card: 'many-to-one' }
+    ];
+
+    for (const r of relationDefs) {
+        const key = uuidv4();
+        ids.relationKeys[`${r.src}__${r.target}`] = key;
+        await db.Entity.findByIdAndUpdate(E[r.src], {
+            $push: {
+                relations: {
+                    key, targetEntity: E[r.target], label: r.label, inverseLabel: r.inverse,
+                    cardinality: r.card, inputMode: 'modal-picker', storage: 'on-source', bidirectional: true, required: false, showInForm: true
+                }
+            }
+        });
+    }
+    console.log(`   ✅ ${relationDefs.length} relations`);
+
+    // Rel tokens for devis, contrats, factures, paiements
+    const rk = ids.relationKeys;
+    const relTokenDefs = [
+        { slug: 'devis', tokens: [{ t: 'text', v: 'Devis - ' }, { t: 'field', id: `rel:${rk['devis__entreprises'] || rk['devis__contacts']}.title` }] },
+        { slug: 'contrats', tokens: [{ t: 'text', v: 'Contrat - ' }, { t: 'field', id: `rel:${rk['contrats__entreprises']}.title` }] },
+        { slug: 'factures-crm', tokens: [{ t: 'field', id: 'title' }, { t: 'text', v: ' - ' }, { t: 'field', id: `rel:${rk['factures-crm__entreprises']}.title` }] },
+        { slug: 'paiements-crm', tokens: [{ t: 'field', id: 'title' }, { t: 'text', v: ' - ' }, { t: 'field', id: `rel:${rk['paiements-crm__factures-crm']}.title` }] }
+    ];
+    for (const rt of relTokenDefs) {
+        if (!E[rt.slug]) continue;
+        await db.Entity.findByIdAndUpdate(E[rt.slug], { $set: { referenceTitleTokens: rt.tokens } });
+    }
+
+    // =========== 5. NAVIGATION ===========
+    console.log('\n🧭 Creating navigation...');
+    const envDefs = [
+        {
+            env: { name: 'Pipeline Commercial', slug: 'pipeline', icon: 'solar:chart-bold-duotone', color: '#22c55e' },
+            spaces: [{
+                name: 'Pipeline Commercial', icon: 'solar:chart-bold-duotone', color: '#22c55e', views: [
+                    { entitySlug: 'opportunites', name: 'Opportunités', icon: 'solar:chart-bold-duotone', color: '#22c55e' },
+                    { entitySlug: 'contacts', name: 'Contacts', icon: 'solar:user-bold-duotone', color: '#3b82f6' },
+                    { entitySlug: 'entreprises', name: 'Entreprises', icon: 'solar:buildings-bold-duotone', color: '#64748b' },
+                    { entitySlug: 'devis', name: 'Devis', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
+                    { entitySlug: 'contrats', name: 'Contrats', icon: 'solar:diploma-bold-duotone', color: '#ec4899' }
+                ]
+            }]
+        },
+        {
+            env: { name: 'Activités & Suivi', slug: 'activites', icon: 'solar:phone-calling-bold-duotone', color: '#8b5cf6' },
+            spaces: [{
+                name: 'Activités & Suivi', icon: 'solar:phone-calling-bold-duotone', color: '#8b5cf6', views: [
+                    { entitySlug: 'activites', name: 'Activités', icon: 'solar:phone-calling-bold-duotone', color: '#8b5cf6' }
+                ]
+            }]
+        },
+        {
+            env: { name: 'Catalogue', slug: 'catalogue', icon: 'solar:box-bold-duotone', color: '#0ea5e9' },
+            spaces: [{
+                name: 'Catalogue', icon: 'solar:box-bold-duotone', color: '#0ea5e9', views: [
+                    { entitySlug: 'produits', name: 'Produits', icon: 'solar:box-bold-duotone', color: '#0ea5e9' },
+                    { entitySlug: 'services', name: 'Services', icon: 'solar:settings-bold-duotone', color: '#0ea5e9' }
+                ]
+            }]
+        },
+        {
+            env: { name: 'Facturation', slug: 'facturation', icon: 'solar:bill-list-bold-duotone', color: '#ef4444' },
+            spaces: [{
+                name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#ef4444', views: [
+                    { entitySlug: 'factures-crm', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#ef4444' },
+                    { entitySlug: 'paiements-crm', name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#10b981' }
+                ]
+            }]
+        }
+    ];
+
+    let viewCount = 0;
+    for (let ei = 0; ei < envDefs.length; ei++) {
+        const ed = envDefs[ei];
+        const env = await upsertDoc(db.Environment, { slug: ed.env.slug }, { ...ed.env, order: ei, isDefault: ei === 0 });
+        for (let si = 0; si < ed.spaces.length; si++) {
+            const sd = ed.spaces[si];
+            const space = await upsertDoc(db.Space, { slug: slug(sd.name) }, {
+                name: sd.name, slug: slug(sd.name), icon: sd.icon, color: sd.color, order: si, environmentId: env._id, owner: uid
+            });
+            for (let vi = 0; vi < sd.views.length; vi++) {
+                const vd = sd.views[vi];
+                const entityId = E[vd.entitySlug];
+                if (!entityId) continue;
+                const viewSlug = `view-${vd.entitySlug}-${space._id.toString().slice(-6)}-${vi}`;
+                await upsertDoc(db.View, { slug: viewSlug }, {
+                    name: vd.name, slug: viewSlug, entity: entityId, icon: vd.icon, color: vd.color, viewType: 'list', order: vi,
+                    spaces: [space._id], folders: [], createdBy: uid,
+                    settings: vd.entitySlug === 'opportunites' ? { kanbanField: ids.classifications['crm_pipeline']?.toString() } : {}
+                });
+                viewCount++;
+            }
+        }
+    }
+    console.log(`   ✅ ${envDefs.length} environments + ${viewCount} views`);
+
+    // =========== 6. LINE SCHEMAS ===========
+    console.log('\n📋 Creating line schemas...');
+    const invoiceSchema = await upsertDoc(db.LineSchema, { slug: 'crm_invoice_lines' }, {
+        name: 'Lignes de Facture/Devis', slug: 'crm_invoice_lines',
+        appliesTo: { entityIds: [E['devis'], E['factures-crm']], documentType: 'invoice' },
+        lineTypes: ['product', 'service', 'note'], defaultLineType: 'service',
+        columns: [
+            { key: 'description', label: 'Description', type: 'text', required: true, visible: true, width: 'L', order: 0, config: {} },
+            { key: 'qty', label: 'Qté', type: 'number', required: true, visible: true, width: 'XS', order: 1, showWhen: { lineType: ['product', 'service'] }, config: {} },
+            { key: 'unitPrice', label: 'P.U. HT', type: 'money', required: true, visible: true, width: 'S', order: 2, showWhen: { lineType: ['product', 'service'] }, config: { currency: 'EUR', decimals: 2 } },
+            { key: 'discount', label: 'Remise %', type: 'number', required: false, visible: true, width: 'XS', order: 3, showWhen: { lineType: ['product', 'service'] }, config: {} },
+            { key: 'vatRate', label: 'TVA %', type: 'number', required: false, visible: true, width: 'XS', order: 4, showWhen: { lineType: ['product', 'service'] }, config: {} },
+            { key: 'lineTotal', label: 'Total HT', type: 'formula', required: false, visible: true, width: 'S', order: 5, showWhen: { lineType: ['product', 'service'] }, config: { expression: 'qty * unitPrice * (1 - discount / 100)', dependencies: ['qty', 'unitPrice', 'discount'] } },
+            { key: 'lineVat', label: 'TVA', type: 'formula', required: false, visible: true, width: 'S', order: 6, showWhen: { lineType: ['product', 'service'] }, config: { expression: 'lineTotal * vatRate / 100', dependencies: ['lineTotal', 'vatRate'] } }
+        ],
+        totals: { subtotalKey: 'lineTotal', vatKey: 'lineVat', totalFormula: 'subtotal + vat' }
+    });
+    
+    if (E['devis']) await db.Entity.findByIdAndUpdate(E['devis'], { $set: { enableDynamicTable: true, gridSchemas: [{ schemaId: invoiceSchema._id, position: 'main', order: 0, label: 'Lignes' }] } });
+    if (E['factures-crm']) await db.Entity.findByIdAndUpdate(E['factures-crm'], { $set: { enableDynamicTable: true, gridSchemas: [{ schemaId: invoiceSchema._id, position: 'main', order: 0, label: 'Lignes' }] } });
+
+    // =========== 7. DEMO RECORDS (Part 1) ===========
+    console.log('\n📊 Creating demo records...');
+    const rec = async (entitySlug, title, customs = {}, extras = {}) => {
+        const cf = Object.entries(customs).map(([name, value]) => ({ field_id: f[name], value }));
+        return upsertDoc(db.Record, { entityId: E[entitySlug], title }, {
+            entityId: E[entitySlug], title, computedTitle: title, customFields: cf, createdBy: uid, ...extras
+        });
+    };
+
+    // Contacts
+    const contactsData = [
+        { nom: 'Dupont', prenom: 'Jean', email: 'jean.dupont@acme.com', telephone: '0612345678', fonction: 'Directeur Général' },
+        { nom: 'Martin', prenom: 'Sophie', email: 'smartin@techcorp.fr', telephone: '0623456789', fonction: 'CTO' },
+        { nom: 'Bernard', prenom: 'Luc', email: 'lbernard@innovate.io', telephone: '0634567890', fonction: 'Lead Dev' },
+        { nom: 'Dubois', prenom: 'Marie', email: 'mdubois@globalcorp.net', telephone: '0645678901', fonction: 'Acheteuse IT' }
+    ];
+    const contacts = [];
+    for (const c of contactsData) {
+        contacts.push(await rec('contacts', `${c.prenom} ${c.nom}`, c));
+    }
+
+    // Entreprises
+    const entreprisesData = [
+        { siret: '12345678900010', site_web: 'acme.com', adresse: '1 rue de Paris\n75001 Paris' },
+        { siret: '98765432100021', site_web: 'techcorp.fr', adresse: '15 avenue Jean Jaurès\n69007 Lyon' }
+    ];
+    const entreprises = [];
+    for (let i = 0; i < entreprisesData.length; i++) {
+        entreprises.push(await rec('entreprises', ['Acme Corp', 'TechCorp France'][i], entreprisesData[i]));
+    }
+
+    // =========== 8. DEMO RECORDS (Part 2) ===========
+    const pipelineOpts = ids.classifications['crm_pipeline_opts'] || [];
+    
+    // Opportunités
+    const oppsData = [
+        { title: 'Refonte Site Web Acme', montant: 15000, prob: 20, stage: 0, cIdx: 0, eIdx: 0 },
+        { title: 'Déploiement ERP TechCorp', montant: 45000, prob: 60, stage: 2, cIdx: 1, eIdx: 1 },
+        { title: 'Licences SaaS GlobalCorp', montant: 8000, prob: 90, stage: 3, cIdx: 3, eIdx: 0 }
+    ];
+    const opps = [];
+    for (const o of oppsData) {
+        const stageOpt = pipelineOpts[o.stage];
+        opps.push(await rec('opportunites', o.title, { montant: o.montant, probabilite: o.prob, date_cloture: new Date(Date.now() + 30 * 86400000) }, {
+            relations: [
+                { relationKey: rk['opportunites__contacts'], value: contacts[o.cIdx]._id },
+                { relationKey: rk['opportunites__entreprises'], value: entreprises[o.eIdx]._id }
+            ],
+            classificationValues: stageOpt ? [{ classificationId: ids.classifications['crm_pipeline'], optionId: stageOpt._id, label: stageOpt.label, color: stageOpt.color }] : []
+        }));
+    }
+
+    // Connect contacts and entreprises
+    await db.Record.findByIdAndUpdate(contacts[0]._id, { $push: { relations: { relationKey: rk['contacts__entreprises'], value: entreprises[0]._id } } });
+    await db.Record.findByIdAndUpdate(contacts[1]._id, { $push: { relations: { relationKey: rk['contacts__entreprises'], value: entreprises[1]._id } } });
+
+    // Activités
+    await rec('activites', 'Appel découverte - Jean Dupont', { date_activite: new Date(), compte_rendu: 'Bon échange, budget validé pour Q3.' }, {
+        relations: [{ relationKey: rk['activites__contacts'], value: contacts[0]._id }, { relationKey: rk['activites__opportunites'], value: opps[0]._id }]
+    });
+
+    console.log('   ✅ Demo records created');
+    console.log('\n🎉 CRM Preset installed successfully!');
+}
+
+module.exports = { PRESET, meta, install };

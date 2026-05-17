@@ -591,16 +591,46 @@ document.addEventListener('alpine:init', () => {
             if (window.Swal) {
                 Swal.fire({
                     title: 'Êtes-vous sûr?',
-                    text: "Cette action est irréversible.",
+                    text: "Cette action est irréversible. Toutes les données du compte seront supprimées.",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#e7515a',
                     cancelButtonColor: '#888ea8',
                     confirmButtonText: 'Oui, supprimer',
                     cancelButtonText: 'Annuler'
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        try {
+                            const res = await fetch('/account/<%= account_number %>/admin/api/account', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include'
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                Swal.fire('Supprimé!', 'Le compte a été supprimé.', 'success').then(() => {
+                                    window.location.href = data.redirect || '/user/accounts';
+                                });
+                            } else {
+                                Swal.fire('Erreur', data.error || 'Impossible de supprimer le compte', 'error');
+                            }
+                        } catch (e) {
+                            console.error('Delete account error:', e);
+                            Swal.fire('Erreur', 'Une erreur est survenue', 'error');
+                        }
+                    }
                 });
             } else {
-                confirm('Êtes-vous sûr de vouloir supprimer ce compte?');
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce compte? Cette action est irréversible.')) {
+                    fetch('/account/<%= account_number %>/admin/api/account', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    }).then(r => r.json()).then(data => {
+                        if (data.success) window.location.href = data.redirect || '/user/accounts';
+                        else alert(data.error || 'Erreur');
+                    }).catch(() => alert('Erreur'));
+                }
             }
         }
     }));

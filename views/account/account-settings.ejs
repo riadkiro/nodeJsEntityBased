@@ -338,15 +338,38 @@ document.addEventListener('alpine:init', () => {
                     cancelButtonColor: '#888ea8',
                     confirmButtonText: 'Oui, supprimer',
                     cancelButtonText: 'Annuler'
-                }).then((result) => {
+                }).then(async (result) => {
                     if (result.isConfirmed) {
-                        // TODO: Implement account deletion
-                        console.log('Account deletion requested');
+                        try {
+                            const res = await fetch('/account/<%= account_number %>/admin/api/account', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include'
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                Swal.fire('Supprimé!', 'Le compte a été supprimé.', 'success').then(() => {
+                                    window.location.href = data.redirect || '/user/accounts';
+                                });
+                            } else {
+                                Swal.fire('Erreur', data.error || 'Impossible de supprimer le compte', 'error');
+                            }
+                        } catch (e) {
+                            console.error('Delete account error:', e);
+                            Swal.fire('Erreur', 'Une erreur est survenue', 'error');
+                        }
                     }
                 });
             } else {
                 if (confirm('Êtes-vous sûr de vouloir supprimer ce compte? Cette action est irréversible.')) {
-                    console.log('Account deletion requested');
+                    fetch('/account/<%= account_number %>/admin/api/account', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    }).then(r => r.json()).then(data => {
+                        if (data.success) window.location.href = data.redirect || '/user/accounts';
+                        else alert(data.error || 'Erreur');
+                    }).catch(() => alert('Erreur'));
                 }
             }
         },

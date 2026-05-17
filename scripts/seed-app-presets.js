@@ -31,6 +31,23 @@ const PRESETS = [
         isComplete: true
     },
     {
+        slug: 'crm',
+        name: 'CRM Commercial',
+        description: 'Configuration complète type Salesforce : Pipeline, Contacts, Entreprises, Devis, Factures, et suivi d\'activité.',
+        icon: 'solar:chart-bold-duotone',
+        color: '#22c55e',
+        category: 'Business',
+        features: [
+            'Pipeline Kanban des opportunités',
+            '10 entités métier (Contact, Entreprise, Contrat...)',
+            'Données de démonstration réalistes',
+            'Génération de devis et factures',
+            'Vue 360° du client et suivi des interactions'
+        ],
+        seedModule: './seed-crm',
+        isComplete: true
+    },
+    {
         slug: 'cabinet-dentiste',
         name: 'Cabinet Dentiste',
         description: 'Configuration dentaire avec nomenclature des actes, catalogue tarife et TD unique Traitements lie aux consultations.',
@@ -190,7 +207,11 @@ async function installPreset({ tenantDbName, presetSlug, userId, mode = 'factory
             await factoryReset(tenantConn);
         }
 
-        // Step 2: Run the seed module (clear require cache to pick up latest code)
+        // Step 2: Re-provision system entities after reset (Tâches, Notes)
+        const { ensureSystemEntities } = require('../utils/system-entities');
+        await ensureSystemEntities(tenantConn);
+
+        // Step 3: Run the seed module (clear require cache to pick up latest code)
         const seedModulePath = require.resolve(preset.seedModule);
         delete require.cache[seedModulePath];
         const seedFn = require(preset.seedModule);

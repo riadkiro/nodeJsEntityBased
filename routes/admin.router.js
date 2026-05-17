@@ -22,5 +22,6 @@ router.post("/api/members/role",    requirePerm('members.changeRole'),  adminCon
 router.post("/api/members/remove",  requirePerm('members.remove'),      adminController.removeMember);
 router.post("/api/invites/cancel",  requirePerm('invites.cancel'),      adminController.cancelInvite);
 router.post("/api/settings",        requirePerm('settings.update'),     adminController.updateSettings);
+router.delete("/api/account",        requirePerm('account.delete'),      adminController.deleteAccount);
 
 module.exports = router;

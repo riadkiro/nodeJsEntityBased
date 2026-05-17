@@ -1663,14 +1663,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             startRenameFolder(folderName) {
                 this.renamingFolderOldName = folderName;
                 this.renameFolderValue = folderName;
-                this.showRenameFolderModal = true;
             },
             
+            cancelRenameFolder() {
+                this.renamingFolderOldName = null;
+                this.renameFolderValue = '';
+            },
+
             async confirmRenameFolder() {
                 const oldName = this.renamingFolderOldName;
                 const newName = this.renameFolderValue.trim();
                 if (!newName || newName === oldName) {
-                    this.showRenameFolderModal = false;
+                    this.renamingFolderOldName = null;
                     return;
                 }
                 
@@ -1699,7 +1703,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     console.error('[Drive] Rename folder error:', e);
                     alert('Erreur réseau');
                 }
-                this.showRenameFolderModal = false;
+                this.renamingFolderOldName = null;
             },
 
             startDeleteFolder(folderName) {
@@ -3039,7 +3043,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
                 <!-- Custom folders (root only) -->
                 <template x-for="(folder, idx) in displayFolders" :key="folder.name">
-                    <div class="rm-item drive-folder-item" @click="navigateTo(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
+                    <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : navigateTo(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
                          :class="dropTargetFolder === folder.name ? 'drive-folder-item--drop-target' : ''"
                          @dragover.prevent @dragenter.prevent="onFolderDragEnter($event, folder.name)"
                          @dragleave="onFolderDragLeave($event, folder.name)" @drop="onFolderDrop($event, folder.name)"
@@ -3047,12 +3051,21 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
                             <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                         </div>
-                        <div class="rm-item-body">
-                            <div class="rm-item-title" x-text="folder.name"></div>
+                        <div class="rm-item-body" style="min-width:0;">
+                            <template x-if="renamingFolderOldName !== folder.name">
+                                <div class="rm-item-title" x-text="folder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                            </template>
+                            <template x-if="renamingFolderOldName === folder.name">
+                                <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameFolder()" @click.stop />
+                            </template>
                             <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
                         </div>
-                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
-                        <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                        <template x-if="renamingFolderOldName !== folder.name">
+                            <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                        </template>
+                        <template x-if="renamingFolderOldName !== folder.name">
+                            <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                        </template>
                     </div>
                 </template>
 
@@ -3208,33 +3221,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 </div>
             </template>
 
-            <!-- Rename Folder Modal -->
-            <template x-teleport="body">
-                <div x-show="showRenameFolderModal" 
-                     style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:99999;" 
-                     x-cloak 
-                     @click.self="showRenameFolderModal = false">
-                    <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;width:100%;max-width:400px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);display:flex;flex-direction:column;overflow:hidden;">
-                        <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
-                            <span style="font-weight:700;color:#0f172a;font-size:15px;display:flex;align-items:center;gap:8px;">
-                                <iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b" width="20"></iconify-icon>
-                                Renommer le dossier
-                            </span>
-                            <button @click="showRenameFolderModal = false" style="background:none;border:none;cursor:pointer;color:#94a3b8;display:flex;padding:2px;">
-                                <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
-                            </button>
-                        </div>
-                        <div style="padding:20px;">
-                            <label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;">Nouveau nom du dossier</label>
-                            <input type="text" x-model="renameFolderValue" style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;color:#1e293b;" onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#cbd5e1'" @keydown.enter="confirmRenameFolder()" @keydown.escape="showRenameFolderModal = false" />
-                        </div>
-                        <div style="padding:12px 20px;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;justify-content:end;gap:10px;">
-                            <button @click="showRenameFolderModal = false" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:#fff;border:1px solid #e2e8f0;color:#64748b;cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Annuler</button>
-                            <button @click="confirmRenameFolder()" :disabled="!renameFolderValue.trim() || renameFolderValue.trim() === renamingFolderOldName" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:#4361ee;border:none;color:#fff;cursor:pointer;" :style="(!renameFolderValue.trim() || renameFolderValue.trim() === renamingFolderOldName) ? 'opacity:0.5;cursor:not-allowed;' : ''" onmouseover="this.style.background='#3b82f6'" onmouseout="this.style.background='#4361ee'">Enregistrer</button>
-                        </div>
-                    </div>
-                </div>
-            </template>
+
 
             <!-- Delete Folder Modal -->
             <template x-teleport="body">

@@ -603,10 +603,13 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             results: [],
             showDropdown: false,
             dirty: false,
+            _ready: false,
             init() {
                 this.$nextTick(() => {
                     const inp = this.$refs.relSearchInput;
                     if (inp) inp.focus();
+                    // Delay _ready to survive the full mousedown→mouseup→click cycle
+                    setTimeout(() => { this._ready = true; }, 300);
                 });
             },
             async search() {
@@ -683,6 +686,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 } catch (e) { console.error('[QuickCreate]', e); }
             },
             closeAndSave() {
+                if (!this._ready) return;
                 this.results = [];
                 this.searchQ = '';
                 this.showDropdown = false;
@@ -1883,9 +1887,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             <% } %>
                         </div>
                         <!-- EDIT state -->
-                        <div class="ov-ef-edit" x-show="editingKey === '<%= f.key %>'" x-cloak>
+                        <div class="ov-ef-edit" x-show="editingKey === '<%= f.key %>'" x-cloak @click.stop>
                             <% if (f.type === 'relation') { %>
-                                <div x-data="ovRelEditor({ key: '<%= f.key %>', targetEntityId: '<%= f.targetEntityId || '' %>', targetEntitySlug: '<%= f.targetEntitySlug || '' %>', isMulti: <%= f.isMulti ? 'true' : 'false' %>, color: '<%= f.color || '#4361ee' %>', initial: <%- JSON.stringify(f.rawValue || []) %> })">
+                                <div x-data="ovRelEditor({ key: '<%= f.key %>', targetEntityId: '<%= f.targetEntityId || '' %>', targetEntitySlug: '<%= f.targetEntitySlug || '' %>', isMulti: <%= f.isMulti ? 'true' : 'false' %>, color: '<%= f.color || '#4361ee' %>', initial: <%- JSON.stringify(f.rawValue || []) %> })" @click.outside="closeAndSave()">
                                     <div class="ov-rel-editor">
                                         <div class="ov-rel-tags">
                                             <template x-for="tag in tags" :key="tag._id">
@@ -1896,7 +1900,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                             </template>
                                             <input type="text" class="ov-rel-search" x-ref="relSearchInput" x-model="searchQ" @input.debounce.250ms="search()" @focus="search()" @keydown.escape="closeAndSave()" placeholder="Rechercher...">
                                         </div>
-                                        <div class="ov-rel-dropdown" x-show="showDropdown && (results.length > 0 || searchQ.trim())" x-cloak @click.outside="closeAndSave()">
+                                        <div class="ov-rel-dropdown" x-show="showDropdown && (results.length > 0 || searchQ.trim())" x-cloak>
                                             <template x-for="r in results" :key="r._id">
                                                 <div class="ov-rel-option" @click="addTag(r)">
                                                     <iconify-icon icon="solar:user-bold-duotone" width="14" :style="'color:'+color"></iconify-icon>

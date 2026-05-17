@@ -1032,9 +1032,9 @@
                             <!-- Quick add -->
                             <div class="tl-preview-add">
                                 <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
-                                <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask"
+                                <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask[list._id]"
                                        @keydown.enter="previewAddTask(list)"
-                                       @keydown.escape="previewNewTask = ''">
+                                       @keydown.escape="previewNewTask[list._id] = ''">
                             </div>
                         </div>
 
@@ -1571,7 +1571,7 @@ document.addEventListener('alpine:init', () => {
         editTaskTitle: '',
         ctxMenu: null,
         expandedListIds: [],
-        previewNewTask: '',
+        previewNewTask: {},
         previewStatusMenu: null,
         previewStatusListId: null,
         previewStatusFlip: false,
@@ -1860,20 +1860,21 @@ document.addEventListener('alpine:init', () => {
         },
 
         async previewAddTask(list) {
-            if (!this.previewNewTask.trim()) return;
+            const title = (this.previewNewTask[list._id] || '').trim();
+            if (!title) return;
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ title: this.previewNewTask.trim() })
+                    body: JSON.stringify({ title })
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
                     if (!list.tasks) list.tasks = [];
                     list.tasks.unshift(data.task);
                     list.count = (list.count || 0) + 1;
-                    this.previewNewTask = '';
+                    this.previewNewTask[list._id] = '';
                 }
             } catch (e) { console.error('[TaskLists] Preview add error:', e); }
         },

@@ -41,6 +41,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             .populate('customFields')
             .populate('statusClassification')
             .populate('classifications')
+            .populate({ path: 'relations.targetEntity', select: 'slug' })
             .lean()
 
         if (!entity) {
@@ -230,7 +231,8 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             id: `rel:${rel.key}`,
             name: rel.label || rel.key,
             type: 'relation',
-            sortable: false
+            sortable: false,
+            targetEntitySlug: rel.targetEntity?.slug || ''
         }))
 
         // Classification columns (use allClassifications for deduplication)

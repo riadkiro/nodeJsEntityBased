@@ -345,7 +345,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                             {denormRel.records.map((r, i) => (
                                 <a
                                     key={i}
-                                    href={`/account/${accountNumber}/record/${r.entitySlug || entitySlug}/${r._id}`}
+                                    href={`/account/${accountNumber}/record/${r.entitySlug || col.targetEntitySlug || entitySlug}/${r._id}`}
                                     className="text-primary hover:underline text-xs"
                                 >
                                     {r.title || 'Sans titre'}

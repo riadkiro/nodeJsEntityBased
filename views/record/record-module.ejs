@@ -3134,8 +3134,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <template x-teleport="body">
                 <div x-show="contextMenu.show"
                      x-cloak
-                     style="position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);z-index:999999;width:190px;padding:6px 0;animation:contextMenuEnter 0.12s ease-out;"
-                     :style="'left:' + contextMenu.x + 'px;top:' + contextMenu.y + 'px;'"
+                     :style="'position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);z-index:999999;width:190px;padding:6px 0;animation:contextMenuEnter 0.12s ease-out;left:' + contextMenu.x + 'px;top:' + contextMenu.y + 'px;'"
                      @click.outside="contextMenu.show = false">
                     
                     <!-- Folder Options -->

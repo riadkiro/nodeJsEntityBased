@@ -4408,6 +4408,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     if (root) root.editingKey = '';
                 }
             }
+        }));
+
         // Media editor sub-component (for fiche: file, image, gallery)
         Alpine.data('ovMediaEditor', (cfg) => ({
             key: cfg.key,

@@ -370,4 +370,59 @@ router.delete('/records/:recordId/drive-folders/:folderName', async (req, res) =
     }
 });
 
+/**
+ * PATCH /api/records/:recordId/drive-folders/:folderName
+ * Rename a custom Drive folder (including all files inside)
+ */
+router.patch('/records/:recordId/drive-folders/:folderName', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const oldName = decodeURIComponent(req.params.folderName);
+        const { newName } = req.body;
+        if (!newName || !newName.trim()) {
+            return res.status(400).json({ error: 'Nouveau nom requis' });
+        }
+        const cleanNewName = newName.trim();
+        const record = await Record.findById(req.params.recordId).select('driveFolders attachments');
+        if (!record) return res.status(404).json({ error: 'Record introuvable' });
+
+        // Check for duplicates
+        const existingFolders = record.driveFolders || [];
+        const attachmentFolders = [...new Set((record.attachments || []).filter(a => a.folder).map(a => a.folder))];
+        if (existingFolders.includes(cleanNewName) || attachmentFolders.includes(cleanNewName)) {
+            return res.status(409).json({ error: 'Ce dossier existe déjà' });
+        }
+
+        // Update name in driveFolders list
+        let found = false;
+        record.driveFolders = (record.driveFolders || []).map(f => {
+            if (f === oldName) {
+                found = true;
+                return cleanNewName;
+            }
+            return f;
+        });
+
+        // Also update any files inside this folder
+        let updatedCount = 0;
+        (record.attachments || []).forEach(att => {
+            if (att.folder === oldName) {
+                att.folder = cleanNewName;
+                updatedCount++;
+            }
+        });
+
+        if (updatedCount > 0 || found) {
+            record.markModified('driveFolders');
+            if (updatedCount > 0) record.markModified('attachments');
+            await record.save();
+        }
+
+        res.json({ success: true, folder: cleanNewName, updatedCount });
+    } catch (error) {
+        console.error('[Drive] Rename folder error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;

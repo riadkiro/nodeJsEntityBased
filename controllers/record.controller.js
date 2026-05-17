@@ -2680,6 +2680,7 @@ module.exports = {
                 teamModuleData: teamModuleData || null,
                 account_number: req.account_number,
                 user: req.user,
+                workspaceRole: req.workspaceRole,
                 layout: "layout-app"
             });
         } catch (error) {

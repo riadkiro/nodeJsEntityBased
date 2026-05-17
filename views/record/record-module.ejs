@@ -2037,6 +2037,20 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                 <span class="ov-ef-val"><%= f.value ? '✓ Oui' : '✗ Non' %></span>
                             <% } else if (f.inputType === 'textarea') { %>
                                 <% if (f.value) { %><span class="ov-ef-text"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else if (f.type === 'image') { %>
+                                <% if (f.rawValue) { %><img src="/account/<%= account_number %>/uploads/attachments/<%= f.rawValue %>" style="max-height:40px;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display='none'"><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else if (f.type === 'file') { %>
+                                <% if (f.rawValue) { %>
+                                    <a href="/account/<%= account_number %>/uploads/attachments/<%= f.rawValue %>" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;" @click.stop><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> <%= f.rawValue %></a>
+                                <% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
+                            <% } else if (f.type === 'gallery') { %>
+                                <% if (f.rawValue && Array.isArray(f.rawValue) && f.rawValue.length > 0) { %>
+                                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                        <% f.rawValue.forEach(function(img){ %>
+                                            <img src="/account/<%= account_number %>/uploads/attachments/<%= img %>" style="height:36px;width:36px;object-fit:cover;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display='none'">
+                                        <% }); %>
+                                    </div>
+                                <% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
                             <% } else { %>
                                 <% if (f.value) { %><span class="ov-ef-val"><%= f.value %></span><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
                             <% } %>
@@ -2095,6 +2109,67 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                 <div class="ov-ef-btns">
                                     <button type="button" class="ov-ef-ok" @click="autoSave('<%= f.key %>')" title="Enregistrer"><iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon></button>
                                     <button type="button" class="ov-ef-cancel" @click="cancelEdit()" title="Annuler"><iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon></button>
+                                </div>
+                            <% } else if (f.type === 'file' || f.type === 'image' || f.type === 'gallery') { %>
+                                <div x-data="ovMediaEditor({ key: '<%= f.key %>', type: '<%= f.type %>', initial: <%- JSON.stringify(f.rawValue || (f.type === 'gallery' ? [] : '')) %> })" @click.outside="closeAndSave()">
+                                    <div class="ov-rel-editor">
+                                        <!-- Selected Files -->
+                                        <div class="ov-rel-tags" style="padding:6px;gap:8px;">
+                                            <template x-for="(file, idx) in selectedFiles" :key="idx">
+                                                <div style="position:relative;display:inline-block;">
+                                                    <template x-if="isImage(file)">
+                                                        <img :src="'/account/<%= account_number %>/uploads/attachments/' + file" style="height:40px;width:40px;object-fit:cover;border-radius:6px;border:1px solid #e0e6ed;">
+                                                    </template>
+                                                    <template x-if="!isImage(file)">
+                                                        <div style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e0e6ed;border-radius:6px;padding:4px 8px;font-size:12px;color:#475569;height:40px;max-width:150px;">
+                                                            <iconify-icon icon="solar:document-bold-duotone" width="16" style="color:#64748b;flex-shrink:0;"></iconify-icon>
+                                                            <span x-text="file" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+                                                        </div>
+                                                    </template>
+                                                    <button type="button" class="ov-tag-x" style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;line-height:16px;text-align:center;cursor:pointer;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);" @click.stop="removeFile(idx)">×</button>
+                                                </div>
+                                            </template>
+                                            
+                                            <!-- Action Buttons -->
+                                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                                <button type="button" @click.stop="openDrivePicker()" style="background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:6px;padding:6px 12px;font-size:12px;color:#475569;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s;">
+                                                    <iconify-icon icon="solar:folder-with-files-bold-duotone" width="16" style="color:#4361ee"></iconify-icon> Choisir
+                                                </button>
+                                                <button type="button" @click.stop="$refs.fileInput.click()" style="background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:6px;padding:6px 12px;font-size:12px;color:#475569;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s;">
+                                                    <iconify-icon icon="solar:upload-minimalistic-bold-duotone" width="16" style="color:#10b981"></iconify-icon> Uploader
+                                                </button>
+                                                <input type="file" x-ref="fileInput" @change="uploadFiles($event)" style="display:none" :multiple="type === 'gallery'">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Upload Progress -->
+                                        <div x-show="uploading" style="padding:8px 12px;background:#f8fafc;border-top:1px solid #f1f5f9;font-size:12px;color:#4361ee;display:flex;align-items:center;gap:8px;">
+                                            <iconify-icon icon="line-md:uploading-loop" width="16"></iconify-icon> Upload en cours... (<span x-text="uploadProgress"></span>%)
+                                        </div>
+
+                                        <!-- Drive Picker Dropdown -->
+                                        <div class="ov-rel-dropdown" x-show="showDrivePicker" x-cloak style="max-height:250px;overflow-y:auto;padding:4px;border-top:1px solid #f1f5f9;">
+                                            <div style="padding:6px 8px;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
+                                                <span>Fichiers du dossier</span>
+                                                <button type="button" @click.stop="showDrivePicker=false" style="background:none;border:none;cursor:pointer;color:#94a3b8;"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
+                                            </div>
+                                            <div x-show="loadingDrive" style="padding:12px;text-align:center;color:#94a3b8;"><iconify-icon icon="line-md:loading-twotone-loop" width="24"></iconify-icon></div>
+                                            <div x-show="!loadingDrive && driveFiles.length === 0" style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;">Aucun fichier</div>
+                                            <template x-for="df in driveFiles" :key="df._id">
+                                                <div class="ov-rel-option" @click.stop="selectDriveFile(df)" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;">
+                                                    <template x-if="isImage(df.filename)">
+                                                        <img :src="'/account/<%= account_number %>/uploads/attachments/' + df.filename" style="width:24px;height:24px;object-fit:cover;border-radius:4px;">
+                                                    </template>
+                                                    <template x-if="!isImage(df.filename)">
+                                                        <div style="width:24px;height:24px;background:#f1f5f9;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                                                            <iconify-icon icon="solar:document-bold-duotone" width="14" style="color:#64748b"></iconify-icon>
+                                                        </div>
+                                                    </template>
+                                                    <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#334155;" x-text="df.originalName || df.filename"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </div>
                             <% } else { %>
                                 <input type="<%= f.inputType === 'number' ? 'number' : f.inputType === 'date' ? 'date' : 'text' %>" class="ov-input" x-ref="input_<%= f.key %>" value="<%= f.rawValue %>" @keydown.enter="autoSave('<%= f.key %>')" @keydown.escape="cancelEdit()">
@@ -4040,6 +4115,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 { key: 'url',         label: 'URL / Lien',     desc: 'Site web, LinkedIn',              icon: 'solar:global-bold-duotone',                  color: '#f97316', type: 'string', subtype: 'url' },
                 { key: 'boolean',     label: 'Case à cocher',  desc: 'Oui / Non, Actif / Inactif',     icon: 'solar:check-circle-bold-duotone',            color: '#22c55e', type: 'boolean' },
                 { key: 'image',       label: 'Image',          desc: 'Photo, avatar, logo',             icon: 'solar:camera-bold-duotone',                  color: '#e11d48', type: 'image' },
+                { key: 'gallery',     label: 'Galerie',        desc: 'Plusieurs images',                icon: 'solar:gallery-wide-bold-duotone',            color: '#db2777', type: 'gallery' },
                 { key: 'file',        label: 'Fichier',        desc: 'Document, PDF, pièce jointe',     icon: 'solar:file-bold-duotone',                    color: '#64748b', type: 'file' },
                 { key: 'relation',    label: 'Relation',       desc: 'Lien vers une autre entité',      icon: 'solar:link-round-angle-bold-duotone',        color: '#7c3aed', type: 'relation' },
                 { key: 'monetary',    label: 'Monétaire',      desc: 'Prix, coût, budget',              icon: 'solar:dollar-bold-duotone',                  color: '#059669', type: 'number', subtype: 'currency' },
@@ -4323,6 +4399,148 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             ).join('') + '</div>';
                         } else {
                             viewEl.innerHTML = '<span class="ov-placeholder">Sélectionner...</span>';
+                        }
+                    }
+                }
+                const grid = this.$el.closest('[x-data]');
+                if (grid && grid._x_dataStack) {
+                    const root = grid._x_dataStack.find(d => d.editingKey !== undefined);
+                    if (root) root.editingKey = '';
+                }
+            }
+        // Media editor sub-component (for fiche: file, image, gallery)
+        Alpine.data('ovMediaEditor', (cfg) => ({
+            key: cfg.key,
+            type: cfg.type,
+            selectedFiles: Array.isArray(cfg.initial) ? cfg.initial : (cfg.initial ? [cfg.initial] : []),
+            showDrivePicker: false,
+            loadingDrive: false,
+            driveFiles: [],
+            uploading: false,
+            uploadProgress: 0,
+            
+            init() {
+                if (!Array.isArray(this.selectedFiles)) {
+                    this.selectedFiles = this.selectedFiles ? [this.selectedFiles] : [];
+                }
+            },
+            isImage(filename) {
+                if (!filename) return false;
+                const ext = filename.split('.').pop().toLowerCase();
+                return ['jpg','jpeg','png','gif','webp','svg'].includes(ext);
+            },
+            async openDrivePicker() {
+                this.showDrivePicker = true;
+                if (this.driveFiles.length === 0) {
+                    this.loadingDrive = true;
+                    try {
+                        const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments`, { credentials: 'include' });
+                        const data = await res.json();
+                        this.driveFiles = data.data || [];
+                    } catch (e) {
+                        console.error('[MediaEditor] Fetch drive error:', e);
+                    } finally {
+                        this.loadingDrive = false;
+                    }
+                }
+            },
+            async selectDriveFile(df) {
+                this._addFile(df.filename);
+                this.showDrivePicker = false;
+            },
+            async removeFile(idx) {
+                this.selectedFiles.splice(idx, 1);
+                await this._persist();
+            },
+            async uploadFiles(event) {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+                
+                this.uploading = true;
+                this.uploadProgress = 0;
+                
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
+                
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `/account/<%= account_number %>/api/records/<%= record._id %>/attachments`, true);
+                    xhr.withCredentials = true;
+                    
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                        }
+                    });
+                    
+                    const uploadPromise = new Promise((resolve, reject) => {
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve(JSON.parse(xhr.responseText));
+                            } else {
+                                reject(new Error('Upload failed'));
+                            }
+                        };
+                        xhr.onerror = () => reject(new Error('Network error'));
+                        xhr.send(formData);
+                    });
+                    
+                    const res = await uploadPromise;
+                    if (res.success && res.data) {
+                        for (const f of res.data) {
+                            this._addFile(f.filename);
+                        }
+                    }
+                } catch (e) {
+                    console.error('[MediaEditor] Upload error:', e);
+                    alert('Erreur lors de l\'upload');
+                } finally {
+                    this.uploading = false;
+                    this.uploadProgress = 0;
+                    if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+                }
+            },
+            _addFile(filename) {
+                if (this.type === 'gallery') {
+                    if (!this.selectedFiles.includes(filename)) {
+                        this.selectedFiles.push(filename);
+                        this._persist();
+                    }
+                } else {
+                    this.selectedFiles = [filename];
+                    this._persist();
+                    this.closeAndSave();
+                }
+            },
+            async _persist() {
+                try {
+                    const value = this.type === 'gallery' ? this.selectedFiles : (this.selectedFiles[0] || '');
+                    await fetch('/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>/update-field', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ key: this.key, value })
+                    });
+                } catch (e) { console.error('[MediaPersist]', e); }
+            },
+            closeAndSave() {
+                this.showDrivePicker = false;
+                const parent = this.$el.closest('.ov-ef');
+                if (parent) {
+                    const viewEl = parent.querySelector('.ov-ef-view');
+                    if (viewEl) {
+                        if (this.selectedFiles.length === 0) {
+                            viewEl.innerHTML = '<span class="ov-placeholder">Vide</span>';
+                        } else if (this.type === 'gallery') {
+                            viewEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + this.selectedFiles.map(img => 
+                                '<img src="/account/<%= account_number %>/uploads/attachments/' + img + '" style="height:36px;width:36px;object-fit:cover;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display=\'none\'">'
+                            ).join('') + '</div>';
+                        } else if (this.type === 'image') {
+                            viewEl.innerHTML = '<img src="/account/<%= account_number %>/uploads/attachments/' + this.selectedFiles[0] + '" style="max-height:40px;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display=\'none\'">';
+                        } else {
+                            viewEl.innerHTML = '<a href="/account/<%= account_number %>/uploads/attachments/' + this.selectedFiles[0] + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;" @click.stop><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> ' + this.selectedFiles[0] + '</a>';
                         }
                     }
                 }

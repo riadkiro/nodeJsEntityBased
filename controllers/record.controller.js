@@ -2457,6 +2457,7 @@ module.exports = {
                     else if (cf.type === 'select') inputType = 'select';
                     else if (cf.type === 'multiselect') inputType = 'multiselect';
                     else if (cf.type === 'boolean' || cf.type === 'checkbox') inputType = 'checkbox';
+                    else if (cf.type === 'file' || cf.type === 'image' || cf.type === 'gallery') inputType = cf.type;
 
                     ficheFields.push({
                         key: cf._id.toString(),

@@ -5344,7 +5344,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 } else if (this.type === 'image') {
                     viewEl.innerHTML = `<img src="/account/${acct}/uploads/attachments/${this.selectedFiles[0]}" style="max-height:40px;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display='none'">`;
                 } else {
-                    viewEl.innerHTML = `<a href="/account/${acct}/uploads/attachments/${this.selectedFiles[0]}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;"><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> ${this.selectedFiles[0]}</a>`;
+                    const fullPath = this.selectedFiles[0];
+                    const displayName = fullPath ? fullPath.split('/').pop() : fullPath;
+                    viewEl.innerHTML = `<a href="/account/${acct}/uploads/attachments/${fullPath}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;"><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> ${displayName}</a>`;
                 }
             },
             closeAndSave() {

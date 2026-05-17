@@ -30,11 +30,11 @@
                     <% if (f.rawValue) { %>
                         <div class="ov-ef-val" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
                             <% var files = Array.isArray(f.rawValue) ? f.rawValue : [f.rawValue]; %>
-                            <% files.forEach(function(img){ %>
+                            <% files.forEach(function(img){ var imgName = img ? img.split('/').pop() : img; %>
                                 <% if (f.type === 'image' || f.type === 'gallery') { %>
                                     <img src="/account/<%= account_number %>/uploads/attachments/<%= img %>" style="height:36px;width:36px;object-fit:cover;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display='none'">
                                 <% } else { %>
-                                    <a href="/account/<%= account_number %>/uploads/attachments/<%= img %>" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;" @click.stop><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> <%= img %></a>
+                                    <a href="/account/<%= account_number %>/uploads/attachments/<%= img %>" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;" @click.stop><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> <%= imgName %></a>
                                 <% } %>
                             <% }); %>
                         </div>
@@ -113,7 +113,7 @@
                                         <template x-if="!isImage(file)">
                                             <div style="display:inline-flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e0e6ed;border-radius:6px;padding:4px 8px;font-size:12px;color:#475569;height:40px;max-width:150px;">
                                                 <iconify-icon icon="solar:document-bold-duotone" width="16" style="color:#64748b;flex-shrink:0;"></iconify-icon>
-                                                <span x-text="file" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+                                                <span x-text="file.split('/').pop()" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
                                             </div>
                                         </template>
                                         <button type="button" class="ov-tag-x" style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;line-height:16px;text-align:center;cursor:pointer;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);" @click.stop="removeFile(idx)">×</button>

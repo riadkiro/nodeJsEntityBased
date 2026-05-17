@@ -56,6 +56,10 @@ mongoose
 
 //CSS and static files
 //Maintenant tous les fichiers du répertoire www.domaine.com/public/monfichier.xx seront accéssibles
+// SECURITY: Block direct static access to attachment files — force auth via /account/:id route
+app.use('/uploads/attachments', (req, res) => {
+    return res.status(403).send('Accès interdit. Utilisez la route authentifiée.');
+});
 app.use(express.static(__dirname + "/public"));
 
 // EJS

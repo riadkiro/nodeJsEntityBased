@@ -2,7 +2,16 @@
  * Attachment API Router
  * 
  * Handles file upload, deletion and listing for record attachments.
- * Files are stored in /public/uploads/attachments/<accountNumber>/
+ * Files are stored in /private_uploads/attachments/<accountNumber>/<uuid>/
+ * and are NOT accessible via direct URL. Downloads require authentication
+ * through the /account/:id/uploads/attachments/* route.
+ * 
+ * Security:
+ *   - MIME whitelist + extension blacklist (forbidden executables)
+ *   - Magic number validation via file-type (binary signature check)
+ *   - Double-extension detection (e.g. file.pdf.exe)
+ *   - Filename sanitization (null bytes, path traversal)
+ *   - Fail-closed on validation errors
  * 
  * Routes:
  *   POST   /api/records/:recordId/attachments       - Upload file(s)
@@ -21,16 +30,18 @@ const { tenantCollection } = require('../../middleware/tenant');
 // Multer Configuration
 // ============================================================================
 
+const crypto = require('crypto');
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const dir = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number));
+        const uuid = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.round(Math.random() * 1E9));
+        const dir = path.join(__dirname, '../../private_uploads/attachments', String(req.account_number), uuid);
         fs.mkdirSync(dir, { recursive: true });
         cb(null, dir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, uniqueSuffix + ext);
+        // Keep exact original filename
+        cb(null, file.originalname);
     }
 });
 
@@ -61,10 +72,64 @@ const allowedMimeTypes = [
     'application/json', 'application/xml'
 ];
 
+// Strict extension blocklist for executables and malicious scripts
+const forbiddenExts = [
+    // Windows executables
+    '.exe', '.bat', '.cmd', '.com', '.scr', '.pif', '.msi', '.msp', '.mst',
+    // Script files
+    '.js', '.jse', '.vbs', '.vbe', '.wsf', '.wsh', '.ps1', '.psm1', '.psd1',
+    // Server-side scripts
+    '.php', '.php3', '.php4', '.php5', '.phtml', '.py', '.rb', '.pl', '.cgi', '.asp', '.aspx', '.jsp',
+    // Java / .NET
+    '.jar', '.war', '.class',
+    // Shell scripts
+    '.sh', '.bash', '.zsh', '.ksh',
+    // Dynamic libraries
+    '.dll', '.so', '.dylib',
+    // Windows special
+    '.hta', '.inf', '.reg', '.rgs', '.sct', '.url', '.lnk',
+    // macOS
+    '.app', '.command', '.action',
+];
+
+/**
+ * Sanitize a filename to remove dangerous characters
+ */
+function sanitizeFilename(name) {
+    // Remove null bytes, path separators, and control characters
+    return name
+        .replace(/[\x00-\x1f]/g, '')  // control chars
+        .replace(/[/\\]/g, '_')        // path separators
+        .replace(/\.\./g, '_')         // double dots
+        .trim();
+}
+
 const upload = multer({
     storage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
     fileFilter: (req, file, cb) => {
+        // Sanitize the original filename
+        file.originalname = sanitizeFilename(file.originalname);
+        
+        const ext = path.extname(file.originalname).toLowerCase();
+        
+        // Block forbidden extensions
+        if (forbiddenExts.includes(ext)) {
+            return cb(new Error(`Extension de fichier interdite pour des raisons de sécurité: ${ext}`), false);
+        }
+        
+        // Block double extensions (e.g. file.pdf.exe, image.jpg.php)
+        const parts = file.originalname.split('.');
+        if (parts.length > 2) {
+            for (let i = 1; i < parts.length; i++) {
+                const possibleExt = '.' + parts[i].toLowerCase();
+                if (forbiddenExts.includes(possibleExt)) {
+                    return cb(new Error(`Extension cachée détectée (double extension): ${file.originalname}`), false);
+                }
+            }
+        }
+        
+        // Check MIME whitelist
         if (allowedMimeTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
@@ -108,7 +173,16 @@ function formatSize(bytes) {
  * POST /api/records/:recordId/attachments
  * Upload one or more files
  */
-router.post('/records/:recordId/attachments', upload.array('files', 10), async (req, res) => {
+router.post('/records/:recordId/attachments', (req, res, next) => {
+    // Run Multer manually so we can catch fileFilter errors as JSON
+    upload.array('files', 10)(req, res, (err) => {
+        if (err) {
+            // Multer rejected the file (extension, MIME, size, etc.)
+            return res.status(400).json({ error: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
     try {
         const Record = await tenantCollection(req, 'Record');
         const record = await Record.findById(req.params.recordId);
@@ -121,10 +195,52 @@ router.post('/records/:recordId/attachments', upload.array('files', 10), async (
             return res.status(400).json({ error: 'Aucun fichier fourni' });
         }
 
+        // Validation stricte du contenu (Magic Numbers) avec file-type
+        const fileType = require('file-type');
+        for (const file of req.files) {
+            try {
+                const type = await fileType.fromFile(file.path);
+                
+                // Si le type binaire est détecté mais non autorisé
+                if (type && !allowedMimeTypes.includes(type.mime)) {
+                    req.files.forEach(f => {
+                        const dir = path.dirname(f.path);
+                        fs.rmSync(dir, { recursive: true, force: true });
+                    });
+                    return res.status(400).json({ error: `Contenu de fichier non autorisé ou falsifié: ${file.originalname} (détecté: ${type.mime})` });
+                }
+                
+                // Si file-type ne trouve RIEN (undefined) ça veut dire que c'est souvent un fichier texte (script, txt, csv)
+                // Si l'extension prétend être un binaire (pdf, png, jpg, docx...), c'est une falsification !
+                if (!type) {
+                    const ext = path.extname(file.originalname).toLowerCase();
+                    const textExtensions = ['.txt', '.csv', '.json', '.xml', '.svg']; // Les seuls sans signature binaire "stricte"
+                    if (!textExtensions.includes(ext)) {
+                        req.files.forEach(f => {
+                            const dir = path.dirname(f.path);
+                            fs.rmSync(dir, { recursive: true, force: true });
+                        });
+                        return res.status(400).json({ error: `Fichier corrompu ou falsifié (signature invalide): ${file.originalname}` });
+                    }
+                }
+                // Extraire le UUID du path parent
+                const uuid = path.basename(path.dirname(file.path));
+                file.dbFilename = `${uuid}/${file.filename}`;
+            } catch (err) {
+                console.warn('[Attachment] file-type validation error:', err.message);
+                // Fail-closed pour la sécurité !
+                req.files.forEach(f => {
+                    const dir = path.dirname(f.path);
+                    fs.rmSync(dir, { recursive: true, force: true });
+                });
+                return res.status(500).json({ error: `Erreur interne lors de l'analyse de sécurité du fichier: ${file.originalname}` });
+            }
+        }
+
         const folder = req.body.folder !== undefined ? req.body.folder : 'uploads';
 
         const newAttachments = req.files.map(file => ({
-            filename: file.filename,
+            filename: file.dbFilename || file.filename,
             originalName: file.originalname,
             mimeType: file.mimetype,
             size: file.size,
@@ -171,14 +287,26 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
             return res.status(404).json({ error: 'Attachement introuvable' });
         }
 
-        // Delete file from disk
-        const filePath = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number), attachment.filename);
+        // Delete file from disk (and its UUID folder)
+        let filePath = path.join(__dirname, '../../private_uploads/attachments', String(req.account_number), attachment.filename);
+        if (!fs.existsSync(filePath)) {
+            // Fallback for older files stored in public
+            filePath = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number), attachment.filename);
+        }
+        
         try {
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
+                // Try to delete the parent UUID folder if it is empty and inside private_uploads
+                if (filePath.includes('private_uploads')) {
+                    const dirPath = path.dirname(filePath);
+                    if (fs.readdirSync(dirPath).length === 0) {
+                        fs.rmdirSync(dirPath);
+                    }
+                }
             }
         } catch (e) {
-            console.warn('[Attachment] Could not delete file:', filePath, e.message);
+            console.warn('[Attachment] Could not delete file/folder:', filePath, e.message);
         }
 
         // Remove from record using updateOne to bypass schema validations
@@ -220,8 +348,19 @@ router.post('/records/:recordId/attachments/bulk-delete', async (req, res) => {
         for (const id of validIds) {
             const att = record.attachments?.id(id);
             if (att) {
-                const filePath = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number), att.filename);
-                try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
+                let filePath = path.join(__dirname, '../../private_uploads/attachments', String(req.account_number), att.filename);
+                if (!fs.existsSync(filePath)) {
+                    filePath = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number), att.filename);
+                }
+                try { 
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                        if (filePath.includes('private_uploads')) {
+                            const dirPath = path.dirname(filePath);
+                            if (fs.readdirSync(dirPath).length === 0) fs.rmdirSync(dirPath);
+                        }
+                    } 
+                } catch (e) { /* ignore */ }
             }
         }
 

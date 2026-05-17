@@ -215,18 +215,43 @@ require('./api/api-record-notes.router')(router);
 router.use("/", require("./api.routes.js"));
 
 // Secure Attachment Download API (Simple Tenant Verification)
-router.get("/uploads/attachments/:filename", (req, res) => {
+router.get("/uploads/attachments/*", (req, res) => {
     const path = require("path");
     const fs = require("fs");
     // Verify user is connected to THIS account
     if (!req.user || req.account_number !== String(req.params.accountNumber || req.account_number)) {
         return res.status(403).send("Accès refusé. Ce document appartient à un autre compte.");
     }
-    const filePath = path.join(__dirname, "../public/uploads/attachments", String(req.account_number), req.params.filename);
+    
+    // The * capture group is available in req.params[0]
+    const relativePath = req.params[0];
+    if (!relativePath || relativePath.includes('..')) {
+        return res.status(400).send("Requête invalide.");
+    }
+
+    // Try private_uploads first (new secure storage)
+    let filePath = path.join(__dirname, "../private_uploads/attachments", String(req.account_number), relativePath);
+    
+    // Fallback to public/uploads for backwards compatibility
+    if (!fs.existsSync(filePath)) {
+        filePath = path.join(__dirname, "../public/uploads/attachments", String(req.account_number), relativePath);
+    }
+
     if (fs.existsSync(filePath)) {
+        // Security: Prevent MIME sniffing attacks
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        
         // If ?dl=filename is present, force download with the original name
         if (req.query.dl) {
             res.setHeader('Content-Disposition', 'attachment; filename="' + req.query.dl.replace(/"/g, '\\"') + '"');
+        } else {
+            // For potentially dangerous content types, force download instead of inline display
+            const dangerousMimes = ['text/html', 'application/xhtml+xml', 'image/svg+xml', 'application/xml', 'text/xml'];
+            const ext = path.extname(relativePath).toLowerCase();
+            if (dangerousMimes.some(m => ext === '.html' || ext === '.htm' || ext === '.svg' || ext === '.xml')) {
+                const basename = path.basename(relativePath);
+                res.setHeader('Content-Disposition', 'attachment; filename="' + basename.replace(/"/g, '\\"') + '"');
+            }
         }
         res.sendFile(filePath);
     } else {

@@ -577,7 +577,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         // 8. Generate PDF if requested
         let savedFilename;
         let savedSize;
-        const outputDir = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number));
+        const outputDir = path.join(__dirname, '../../private_uploads/attachments', String(req.account_number));
         fs.mkdirSync(outputDir, { recursive: true });
 
         if (smartDocTemplate.outputFormat === 'pdf' || smartDocTemplate.outputFormat === 'both') {
@@ -1097,7 +1097,7 @@ ${pagesHtml}
         const outputFormat = draftDoc.draftOutputFormat || 'pdf';
         let savedFilename;
         let savedSize;
-        const outputDir = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number));
+        const outputDir = path.join(__dirname, '../../private_uploads/attachments', String(req.account_number));
         fs.mkdirSync(outputDir, { recursive: true });
 
         if (outputFormat === 'pdf' || outputFormat === 'both') {

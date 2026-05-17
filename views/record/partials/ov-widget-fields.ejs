@@ -143,7 +143,7 @@
                                      class="ov-modal-overlay fixed inset-0 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" 
                                      style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:99999;" 
                                      x-cloak 
-                                     @click.self="showDrivePicker = false">
+                                     @click.self="closeAndSave()">
                                     <div class="ov-modal-content relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden border border-slate-100" 
                                          style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;width:100%;max-width:550px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);display:flex;flex-direction:column;max-height:80vh;overflow:hidden;animation:modalEnter 0.2s ease-out;">
                                         
@@ -200,12 +200,12 @@
                                             </div>
                                             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
                                                 <template x-if="type === 'gallery' && selectedFiles.length > 0">
-                                                    <button type="button" @click="showDrivePicker = false" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                                    <button type="button" @click="closeAndSave()" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
                                                         <iconify-icon icon="solar:check-circle-bold" width="15"></iconify-icon>
                                                         <span x-text="'Terminer (' + selectedFiles.length + ')'"></span>
                                                     </button>
                                                 </template>
-                                                <button type="button" @click="showDrivePicker = false" style="background:#f1f5f9;border:none;cursor:pointer;color:#64748b;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;" class="hover:bg-slate-200">
+                                                <button type="button" @click="closeAndSave()" style="background:#f1f5f9;border:none;cursor:pointer;color:#64748b;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;" class="hover:bg-slate-200">
                                                     <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
                                                 </button>
                                             </div>

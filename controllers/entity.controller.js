@@ -786,4 +786,72 @@ module.exports = {
       });
     }
   },
+
+  // ===== INLINE FIELD MANAGEMENT (from record Fiche) =====
+
+  /**
+   * Add a single field to an entity's customFields array.
+   * POST /entity/api/:id/add-field  body: { fieldId }
+   */
+  addFieldToEntity_Api: async (req, res) => {
+    try {
+      const Entity = await tenantCollection(req, "Entity");
+      const entityId = req.params.id;
+      const { fieldId } = req.body;
+
+      if (!fieldId || !mongoose.Types.ObjectId.isValid(fieldId)) {
+        return res.status(400).json({ error: "fieldId invalide" });
+      }
+
+      const entity = await Entity.findById(entityId);
+      if (!entity) return res.status(404).json({ error: "Entity not found" });
+
+      // Check if field is already on this entity
+      const alreadyExists = entity.customFields.some(
+        (id) => id.toString() === fieldId.toString()
+      );
+      if (alreadyExists) {
+        return res.json({ success: true, message: "Field already on entity", alreadyExists: true });
+      }
+
+      entity.customFields.push(fieldId);
+      await entity.save();
+
+      console.log(`✅ Field ${fieldId} added to entity ${entity.slug}`);
+      res.json({ success: true, entity });
+    } catch (err) {
+      console.error("❌ addFieldToEntity error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  /**
+   * Remove a single field from an entity's customFields array.
+   * POST /entity/api/:id/remove-field  body: { fieldId }
+   */
+  removeFieldFromEntity_Api: async (req, res) => {
+    try {
+      const Entity = await tenantCollection(req, "Entity");
+      const entityId = req.params.id;
+      const { fieldId } = req.body;
+
+      if (!fieldId || !mongoose.Types.ObjectId.isValid(fieldId)) {
+        return res.status(400).json({ error: "fieldId invalide" });
+      }
+
+      const entity = await Entity.findById(entityId);
+      if (!entity) return res.status(404).json({ error: "Entity not found" });
+
+      entity.customFields = entity.customFields.filter(
+        (id) => id.toString() !== fieldId.toString()
+      );
+      await entity.save();
+
+      console.log(`✅ Field ${fieldId} removed from entity ${entity.slug}`);
+      res.json({ success: true, entity });
+    } catch (err) {
+      console.error("❌ removeFieldFromEntity error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
 };

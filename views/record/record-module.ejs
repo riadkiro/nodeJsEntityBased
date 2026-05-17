@@ -211,6 +211,161 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .rm-page { padding:16px; }
     .rm-hero { flex-direction:column; text-align:center; padding:20px; }
 }
+
+/* ═══ Field Picker Modal ═══ */
+.fiche-add-field-btn{
+    display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:10px;
+    border:1.5px dashed #d1d5db;background:transparent;color:#94a3b8;font-size:12.5px;
+    font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;
+}
+.fiche-add-field-btn:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.03);}
+.fp-overlay{
+    position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(4px);
+    z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.fp-overlay.fp-open{opacity:1;pointer-events:auto;}
+.fp-modal{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.96);
+    width:560px;max-width:92vw;max-height:82vh;background:#fff;border-radius:18px;
+    box-shadow:0 24px 80px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.04);
+    z-index:1001;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1);
+    display:flex;flex-direction:column;overflow:hidden;
+}
+.fp-modal.fp-open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+.fp-header{
+    display:flex;align-items:center;gap:10px;padding:18px 22px 14px;
+    border-bottom:1px solid #f1f3f5;flex-shrink:0;
+}
+.fp-header-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#0e1726;flex:1;}
+.fp-back{
+    width:30px;height:30px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;
+    transition:all .15s;flex-shrink:0;
+}
+.fp-back:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.04);}
+.fp-close{
+    width:30px;height:30px;border-radius:8px;border:none;background:none;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#bfc9d4;
+    transition:all .15s;flex-shrink:0;
+}
+.fp-close:hover{color:#e7515a;background:rgba(231,81,90,.06);}
+.fp-body{padding:18px 22px 22px;overflow-y:auto;flex:1;}
+/* Type grid */
+.fp-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.fp-type-card{
+    display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 10px 14px;
+    border-radius:12px;border:1.5px solid #f1f3f5;background:#fff;cursor:pointer;
+    transition:all .2s;font-family:inherit;text-align:center;
+}
+.fp-type-card:hover{border-color:#4361ee;background:rgba(67,97,238,.02);transform:translateY(-2px);box-shadow:0 4px 16px rgba(67,97,238,.08);}
+.fp-type-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fp-type-label{font-size:12.5px;font-weight:700;color:#0e1726;line-height:1.2;}
+.fp-type-desc{font-size:10.5px;color:#94a3b8;line-height:1.3;}
+/* Search */
+.fp-search-wrap{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;
+    border:1.5px solid #e8ecf1;background:#fafbfc;margin-bottom:14px;transition:border-color .2s;
+}
+.fp-search-wrap:focus-within{border-color:#4361ee;background:#fff;}
+.fp-search{flex:1;border:none;outline:none;background:transparent;font-size:12.5px;font-family:inherit;color:#0e1726;}
+.fp-search::placeholder{color:#bfc9d4;}
+/* Sections */
+.fp-section{margin-bottom:12px;}
+.fp-section-title{
+    display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;margin-bottom:8px;
+}
+.fp-section-count{
+    padding:1px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;
+    font-size:10px;font-weight:700;margin-left:2px;
+}
+/* Field rows */
+.fp-fields-list{display:flex;flex-direction:column;gap:4px;}
+.fp-field-row{
+    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;
+    transition:background .15s;
+}
+.fp-field-row:hover{background:#f8fafc;}
+.fp-field-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fp-field-info{flex:1;min-width:0;}
+.fp-field-name{font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fp-field-meta{font-size:10.5px;color:#94a3b8;margin-top:1px;}
+.fp-field-add-btn{
+    padding:5px 12px;border-radius:7px;border:1px solid #e2e8f0;background:#fff;
+    font-size:11px;font-weight:600;color:#4361ee;cursor:pointer;transition:all .15s;
+    font-family:inherit;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
+}
+.fp-field-add-btn:hover{border-color:#4361ee;background:rgba(67,97,238,.04);}
+.fp-field-add-btn:disabled{opacity:.5;cursor:default;}
+/* Empty hint */
+.fp-empty-hint{
+    display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px;
+    text-align:center;color:#bfc9d4;font-size:12px;
+}
+/* Create form */
+.fp-create-form{
+    padding:14px;border-radius:12px;border:1.5px solid #f1f3f5;background:#fafbfc;
+}
+.fp-create-row{margin-bottom:10px;}
+.fp-create-row:last-child{margin-bottom:0;}
+.fp-create-label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+.fp-create-input{
+    width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #e8ecf1;
+    background:#fff;font-size:13px;font-family:inherit;color:#0e1726;
+    transition:border-color .2s;box-sizing:border-box;
+}
+.fp-create-input:focus{outline:none;border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+.fp-create-textarea{
+    width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #e8ecf1;
+    background:#fff;font-size:13px;font-family:inherit;color:#0e1726;resize:vertical;
+    transition:border-color .2s;box-sizing:border-box;min-height:60px;
+}
+.fp-create-textarea:focus{outline:none;border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+.fp-create-btn{
+    width:100%;padding:10px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,#4361ee,#6366f1);color:#fff;font-size:13px;
+    font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;
+}
+.fp-create-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(67,97,238,.3);}
+.fp-create-btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}
+
+/* Dark mode — Field Picker */
+.dark .fiche-add-field-btn{border-color:#253b5c;color:#506690;background:transparent;}
+.dark .fiche-add-field-btn:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.06);}
+.dark .fp-overlay{background:rgba(0,0,0,.55);}
+.dark .fp-modal{background:#0e1726;box-shadow:0 24px 80px rgba(0,0,0,.4),0 0 0 1px #253b5c;}
+.dark .fp-header{border-color:#253b5c;}
+.dark .fp-header-title{color:#e0e6ed;}
+.dark .fp-back{background:#1b2e4b;border-color:#253b5c;color:#94a3b8;}
+.dark .fp-back:hover{border-color:#4361ee;color:#4361ee;}
+.dark .fp-close{color:#506690;}
+.dark .fp-close:hover{color:#e7515a;}
+.dark .fp-type-card{border-color:#253b5c;background:#1b2e4b;}
+.dark .fp-type-card:hover{border-color:#4361ee;background:rgba(67,97,238,.08);box-shadow:0 4px 16px rgba(67,97,238,.12);}
+.dark .fp-type-label{color:#e0e6ed;}
+.dark .fp-type-desc{color:#506690;}
+.dark .fp-search-wrap{background:#1b2e4b;border-color:#253b5c;}
+.dark .fp-search-wrap:focus-within{border-color:#4361ee;background:#0e1726;}
+.dark .fp-search{color:#e0e6ed;}
+.dark .fp-section-count{background:rgba(67,97,238,.15);color:#818cf8;}
+.dark .fp-field-row:hover{background:#1b2e4b;}
+.dark .fp-field-name{color:#e0e6ed;}
+.dark .fp-field-meta{color:#506690;}
+.dark .fp-field-add-btn{background:#1b2e4b;border-color:#253b5c;color:#818cf8;}
+.dark .fp-field-add-btn:hover{border-color:#4361ee;}
+.dark .fp-create-form{background:#1b2e4b;border-color:#253b5c;}
+.dark .fp-create-label{color:#94a3b8;}
+.dark .fp-create-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .fp-create-input:focus{border-color:#4361ee;}
+.dark .fp-create-textarea{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .fp-create-textarea:focus{border-color:#4361ee;}
+.dark .fp-empty-hint{color:#506690;}
+
+@media (max-width:600px) {
+    .fp-type-grid{grid-template-columns:repeat(2,1fr);}
+    .fp-modal{width:96vw;max-height:90vh;border-radius:14px;}
+}
 </style>
 
 <div class="rm-page" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } %>>
@@ -1959,6 +2114,138 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             </div>
         </div>
         <% } %>
+
+        <!-- ═══ ADD FIELD BUTTON ═══ -->
+        <div style="display:flex;justify-content:center;padding:16px 0 8px;">
+            <button type="button" class="fiche-add-field-btn" @click="$dispatch('open-field-picker')">
+                <iconify-icon icon="solar:add-circle-bold-duotone" width="16"></iconify-icon>
+                Ajouter un champ
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══ FIELD PICKER MODAL ═══ -->
+    <div x-data="ficheFieldPicker()" @open-field-picker.window="openModal()">
+        <!-- Overlay -->
+        <div class="fp-overlay" :class="{'fp-open': isOpen}" @click="closeModal()"></div>
+        <!-- Modal -->
+        <div class="fp-modal" :class="{'fp-open': isOpen}">
+            <!-- Header -->
+            <div class="fp-header">
+                <template x-if="step === 2">
+                    <button type="button" class="fp-back" @click="step = 1; searchQ = ''">
+                        <iconify-icon icon="solar:alt-arrow-left-linear" width="16"></iconify-icon>
+                    </button>
+                </template>
+                <div class="fp-header-title">
+                    <iconify-icon :icon="step === 1 ? 'solar:widget-add-bold-duotone' : selectedType.icon" width="20" :style="'color:' + (step === 2 ? selectedType.color : '#4361ee')"></iconify-icon>
+                    <span x-text="step === 1 ? 'Ajouter un champ' : selectedType.label"></span>
+                </div>
+                <button type="button" class="fp-close" @click="closeModal()">
+                    <iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Step 1: Type Picker -->
+            <div class="fp-body" x-show="step === 1">
+                <div class="fp-type-grid">
+                    <template x-for="t in fieldTypes" :key="t.key">
+                        <button type="button" class="fp-type-card" @click="selectType(t)">
+                            <div class="fp-type-icon" :style="'background:' + t.color + '12'">
+                                <iconify-icon :icon="t.icon" width="22" :style="'color:' + t.color"></iconify-icon>
+                            </div>
+                            <div class="fp-type-label" x-text="t.label"></div>
+                            <div class="fp-type-desc" x-text="t.desc"></div>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Step 2: Field Selector / Creator -->
+            <div class="fp-body" x-show="step === 2" x-cloak>
+                <!-- Search -->
+                <div class="fp-search-wrap">
+                    <iconify-icon icon="solar:magnifer-linear" width="15" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                    <input type="text" class="fp-search" placeholder="Rechercher un champ existant..." x-model="searchQ">
+                </div>
+
+                <!-- Loading -->
+                <div x-show="loadingFields" style="text-align:center;padding:24px;">
+                    <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
+                </div>
+
+                <!-- Existing fields -->
+                <div x-show="!loadingFields && filteredExisting.length > 0" class="fp-section">
+                    <div class="fp-section-title">
+                        <iconify-icon icon="solar:layers-bold-duotone" width="14" style="color:#94a3b8"></iconify-icon>
+                        Champs existants
+                        <span class="fp-section-count" x-text="filteredExisting.length"></span>
+                    </div>
+                    <div class="fp-fields-list">
+                        <template x-for="f in filteredExisting" :key="f._id">
+                            <div class="fp-field-row">
+                                <div class="fp-field-icon" :style="'background:' + (selectedType.color || '#4361ee') + '10'">
+                                    <iconify-icon :icon="f.icon || 'solar:widget-bold-duotone'" width="15" :style="'color:' + (selectedType.color || '#4361ee')"></iconify-icon>
+                                </div>
+                                <div class="fp-field-info">
+                                    <div class="fp-field-name" x-text="f.label"></div>
+                                    <div class="fp-field-meta" x-text="f.name"></div>
+                                </div>
+                                <button type="button" class="fp-field-add-btn" @click="addExistingField(f._id)" :disabled="addingId === f._id">
+                                    <template x-if="addingId !== f._id">
+                                        <span><iconify-icon icon="solar:add-circle-bold" width="14" style="vertical-align:-2px"></iconify-icon> Ajouter</span>
+                                    </template>
+                                    <template x-if="addingId === f._id">
+                                        <iconify-icon icon="line-md:loading-twotone-loop" width="14"></iconify-icon>
+                                    </template>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- No existing fields -->
+                <div x-show="!loadingFields && filteredExisting.length === 0 && searchQ.trim()" class="fp-empty-hint">
+                    <iconify-icon icon="solar:magnifer-zoom-in-linear" width="20" style="color:#bfc9d4"></iconify-icon>
+                    <span>Aucun champ existant trouvé</span>
+                </div>
+
+                <!-- Create new field -->
+                <div class="fp-section" x-show="!loadingFields" style="margin-top:8px;">
+                    <div class="fp-section-title">
+                        <iconify-icon icon="solar:add-square-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
+                        Créer un nouveau champ
+                    </div>
+                    <div class="fp-create-form">
+                        <div class="fp-create-row">
+                            <label class="fp-create-label">Libellé *</label>
+                            <input type="text" class="fp-create-input" placeholder="Ex: Numéro de téléphone..." x-model="newFieldLabel" @keydown.enter="createAndAdd()">
+                        </div>
+                        <div class="fp-create-row" x-show="selectedType.key === 'select' || selectedType.key === 'multiselect'">
+                            <label class="fp-create-label">Options (une par ligne)</label>
+                            <textarea class="fp-create-textarea" placeholder="Option 1&#10;Option 2&#10;Option 3" x-model="newFieldOptions" rows="3"></textarea>
+                        </div>
+                        <div class="fp-create-row" x-show="selectedType.key === 'relation'">
+                            <label class="fp-create-label">Entité cible</label>
+                            <select class="fp-create-input" x-model="newFieldTargetEntity">
+                                <option value="">— Choisir une entité —</option>
+                                <template x-for="ent in allEntities" :key="ent._id">
+                                    <option :value="ent._id" x-text="ent.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <button type="button" class="fp-create-btn" :disabled="!newFieldLabel.trim() || creating" @click="createAndAdd()">
+                            <template x-if="!creating">
+                                <span><iconify-icon icon="solar:add-circle-bold" width="15" style="vertical-align:-2px"></iconify-icon> Créer et ajouter</span>
+                            </template>
+                            <template x-if="creating">
+                                <span><iconify-icon icon="line-md:loading-twotone-loop" width="15"></iconify-icon> Création...</span>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <% } %>
 
@@ -3718,6 +4005,219 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     }
                 } catch (e) { console.error('[Fiche save]', e); }
                 this.saving = false;
+            }
+        }));
+
+        // ─── Field Picker Modal (inline add field from fiche) ───
+        const _entityId = '<%= entity._id %>';
+        const _acn = '<%= account_number %>';
+        const _entityCustomFieldIds = <%- JSON.stringify((entity.customFields || []).map(f => (f._id || f).toString())) %>;
+
+        Alpine.data('ficheFieldPicker', () => ({
+            isOpen: false,
+            step: 1,
+            selectedType: {},
+            allSystemFields: [],
+            existingFields: [],
+            allEntities: [],
+            loadingFields: false,
+            searchQ: '',
+            addingId: null,
+            creating: false,
+            newFieldLabel: '',
+            newFieldOptions: '',
+            newFieldTargetEntity: '',
+
+            fieldTypes: [
+                { key: 'string',      label: 'Texte court',    desc: 'Nom, titre, référence',           icon: 'solar:text-bold-duotone',                    color: '#3b82f6', type: 'string' },
+                { key: 'text',        label: 'Texte long',     desc: 'Description, notes',              icon: 'solar:document-text-bold-duotone',           color: '#6366f1', type: 'text' },
+                { key: 'number',      label: 'Nombre',         desc: 'Quantité, montant, prix',         icon: 'solar:calculator-bold-duotone',              color: '#f59e0b', type: 'number' },
+                { key: 'date',        label: 'Date',           desc: 'Date, échéance, rappel',          icon: 'solar:calendar-bold-duotone',                color: '#14b8a6', type: 'date' },
+                { key: 'select',      label: 'Liste déroulante', desc: 'Statut, catégorie, priorité',   icon: 'solar:list-check-bold-duotone',              color: '#8b5cf6', type: 'select' },
+                { key: 'multiselect', label: 'Multi-sélection',  desc: 'Tags, compétences',             icon: 'solar:checklist-minimalistic-bold-duotone',  color: '#ec4899', type: 'select', subtype: 'multi' },
+                { key: 'email',       label: 'Email',          desc: 'Adresse email',                   icon: 'solar:letter-bold-duotone',                  color: '#0ea5e9', type: 'string', subtype: 'email' },
+                { key: 'tel',         label: 'Téléphone',      desc: 'Numéro de téléphone',             icon: 'solar:phone-bold-duotone',                   color: '#10b981', type: 'string', subtype: 'tel' },
+                { key: 'url',         label: 'URL / Lien',     desc: 'Site web, LinkedIn',              icon: 'solar:global-bold-duotone',                  color: '#f97316', type: 'string', subtype: 'url' },
+                { key: 'boolean',     label: 'Case à cocher',  desc: 'Oui / Non, Actif / Inactif',     icon: 'solar:check-circle-bold-duotone',            color: '#22c55e', type: 'boolean' },
+                { key: 'image',       label: 'Image',          desc: 'Photo, avatar, logo',             icon: 'solar:camera-bold-duotone',                  color: '#e11d48', type: 'image' },
+                { key: 'file',        label: 'Fichier',        desc: 'Document, PDF, pièce jointe',     icon: 'solar:file-bold-duotone',                    color: '#64748b', type: 'file' },
+                { key: 'relation',    label: 'Relation',       desc: 'Lien vers une autre entité',      icon: 'solar:link-round-angle-bold-duotone',        color: '#7c3aed', type: 'relation' },
+                { key: 'monetary',    label: 'Monétaire',      desc: 'Prix, coût, budget',              icon: 'solar:dollar-bold-duotone',                  color: '#059669', type: 'number', subtype: 'currency' },
+                { key: 'map',         label: 'Adresse / Map',  desc: 'Localisation, adresse',           icon: 'solar:map-point-bold-duotone',               color: '#dc2626', type: 'map' },
+            ],
+
+            get filteredExisting() {
+                if (!this.searchQ.trim()) return this.existingFields;
+                const q = this.searchQ.toLowerCase();
+                return this.existingFields.filter(f =>
+                    (f.label || '').toLowerCase().includes(q) ||
+                    (f.name || '').toLowerCase().includes(q)
+                );
+            },
+
+            openModal() {
+                this.isOpen = true;
+                this.step = 1;
+                this.selectedType = {};
+                this.searchQ = '';
+                this.newFieldLabel = '';
+                this.newFieldOptions = '';
+                this.newFieldTargetEntity = '';
+                document.body.style.overflow = 'hidden';
+                // Fetch all entities for relation picker
+                this._fetchEntities();
+            },
+
+            closeModal() {
+                this.isOpen = false;
+                document.body.style.overflow = '';
+            },
+
+            async selectType(t) {
+                this.selectedType = t;
+                this.step = 2;
+                this.searchQ = '';
+                this.newFieldLabel = '';
+                this.newFieldOptions = '';
+                this.newFieldTargetEntity = '';
+                await this._fetchFieldsForType(t);
+            },
+
+            async _fetchFieldsForType(t) {
+                this.loadingFields = true;
+                this.existingFields = [];
+                try {
+                    // Use the system fields API
+                    if (this.allSystemFields.length === 0) {
+                        const res = await fetch(`/account/${_acn}/field-template/api/system`, { credentials: 'include' });
+                        const groups = await res.json();
+                        // Flatten all groups into a single array
+                        this.allSystemFields = groups.flatMap(g => g.fields || []);
+                    }
+
+                    // Filter fields matching the selected type that are NOT already on this entity
+                    this.existingFields = this.allSystemFields.filter(f => {
+                        // Match by type
+                        const typeMatch = f.type === t.type;
+                        // Match by subtype if specified
+                        const subtypeMatch = !t.subtype || f.subtype === t.subtype;
+                        // Not already on entity
+                        const notOnEntity = !_entityCustomFieldIds.includes(f._id);
+                        return typeMatch && subtypeMatch && notOnEntity;
+                    });
+                } catch (e) {
+                    console.error('[FieldPicker] Fetch error:', e);
+                } finally {
+                    this.loadingFields = false;
+                }
+            },
+
+            async _fetchEntities() {
+                if (this.allEntities.length > 0) return;
+                try {
+                    const res = await fetch(`/account/${_acn}/entity/api/list`, { credentials: 'include' });
+                    this.allEntities = await res.json();
+                } catch (e) { console.error('[FieldPicker] Entities fetch error:', e); }
+            },
+
+            async addExistingField(fieldId) {
+                this.addingId = fieldId;
+                try {
+                    const res = await fetch(`/account/${_acn}/entity/api/${_entityId}/add-field`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ fieldId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        // Reload page to show new field
+                        this.closeModal();
+                        window.location.reload();
+                    } else {
+                        alert(data.error || 'Erreur lors de l\'ajout');
+                    }
+                } catch (e) {
+                    console.error('[FieldPicker] Add field error:', e);
+                    alert('Erreur réseau');
+                } finally {
+                    this.addingId = null;
+                }
+            },
+
+            async createAndAdd() {
+                if (!this.newFieldLabel.trim()) return;
+                this.creating = true;
+
+                try {
+                    // Build field data
+                    const slug = this.newFieldLabel.trim()
+                        .toLowerCase()
+                        .replace(/[àáâãäå]/g, 'a').replace(/[èéêë]/g, 'e')
+                        .replace(/[ìíîï]/g, 'i').replace(/[òóôõö]/g, 'o')
+                        .replace(/[ùúûü]/g, 'u').replace(/[ýÿ]/g, 'y')
+                        .replace(/[ç]/g, 'c').replace(/[ñ]/g, 'n')
+                        .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+                    const fieldData = {
+                        name: slug,
+                        label: this.newFieldLabel.trim(),
+                        type: this.selectedType.type || 'string',
+                        subtype: this.selectedType.subtype || undefined,
+                        icon: this.selectedType.icon || 'solar:widget-bold-duotone',
+                        category: 'custom',
+                    };
+
+                    // Handle select/multiselect options
+                    if ((this.selectedType.key === 'select' || this.selectedType.key === 'multiselect') && this.newFieldOptions.trim()) {
+                        const options = this.newFieldOptions.trim().split('\n')
+                            .map(o => o.trim()).filter(Boolean)
+                            .map(o => ({ label: o, value: o }));
+                        fieldData.typeConfig = { options };
+                        if (this.selectedType.key === 'multiselect') {
+                            fieldData.typeConfig.multiple = true;
+                        }
+                    }
+
+                    // Handle relation target entity
+                    if (this.selectedType.key === 'relation' && this.newFieldTargetEntity) {
+                        fieldData.typeConfig = { refEntity: this.newFieldTargetEntity };
+                    }
+
+                    // Step 1: Create the field template
+                    const createRes = await fetch(`/account/${_acn}/field-template/api/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(fieldData)
+                    });
+                    const createData = await createRes.json();
+
+                    if (!createData.success || !createData.field?._id) {
+                        throw new Error(createData.error || 'Création échouée');
+                    }
+
+                    // Step 2: Add to entity
+                    const addRes = await fetch(`/account/${_acn}/entity/api/${_entityId}/add-field`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ fieldId: createData.field._id })
+                    });
+                    const addData = await addRes.json();
+
+                    if (addData.success) {
+                        this.closeModal();
+                        window.location.reload();
+                    } else {
+                        throw new Error(addData.error || 'Ajout échoué');
+                    }
+                } catch (e) {
+                    console.error('[FieldPicker] Create error:', e);
+                    alert('Erreur: ' + e.message);
+                } finally {
+                    this.creating = false;
+                }
             }
         }));
 

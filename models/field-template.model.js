@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const FieldTemplateSchema = new mongoose.Schema({
   // 🧾 Identification
@@ -93,7 +93,7 @@ const FieldTemplateSchema = new mongoose.Schema({
   isSystem: { type: Boolean, default: false },
   category: {
     type: String,
-    enum: ['popular', 'text', 'numeric', 'date', 'dates', 'choice', 'relation', 'media', 'computed', 'advanced', 'content', 'finance', 'pro', 'workflow', 'other'],
+    enum: ['popular', 'text', 'numeric', 'date', 'dates', 'choice', 'relation', 'media', 'computed', 'advanced', 'content', 'finance', 'pro', 'workflow', 'other', 'custom'],
     default: 'text'
   },
 

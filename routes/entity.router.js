@@ -47,6 +47,9 @@ router.post("/edit/:id", requirePerm('entities.manage'), upload.single("image"),
 router.post("/updatecf/:id", requirePerm('entities.manage'), entityController.updateCustomFields);
 //Delete bulk
 router.post("/api/bulk-delete", requirePerm('entities.manage'), entityController.bulkDelete);
+//Inline field management (from record Fiche)
+router.post("/api/:id/add-field", requirePerm('entities.manage'), entityController.addFieldToEntity_Api);
+router.post("/api/:id/remove-field", requirePerm('entities.manage'), entityController.removeFieldFromEntity_Api);
 //Delete
 router.delete("/:id", requirePerm('entities.manage'), entityController.delete);
 

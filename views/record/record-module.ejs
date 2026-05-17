@@ -2058,7 +2058,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         <!-- EDIT state -->
                         <div class="ov-ef-edit" x-show="editingKey === '<%= f.key %>'" x-cloak @click.stop>
                             <% if (f.type === 'relation') { %>
-                                <div x-data="ovRelEditor({ key: '<%= f.key %>', targetEntityId: '<%= f.targetEntityId || '' %>', targetEntitySlug: '<%= f.targetEntitySlug || '' %>', isMulti: <%= f.isMulti ? 'true' : 'false' %>, color: '<%= f.color || '#4361ee' %>', initial: <%- JSON.stringify(f.rawValue || []) %> })" @click.outside="closeAndSave()">
+                                <div x-data="ovRelEditor({ key: '<%= f.key %>', targetEntityId: '<%= f.targetEntityId || '' %>', targetEntitySlug: '<%= f.targetEntitySlug || '' %>', isMulti: <%= f.isMulti ? 'true' : 'false' %>, color: '<%= f.color || '#4361ee' %>', initial: <%- JSON.stringify(f.rawValue || []).replace(/"/g, '&quot;') %> })" @click.outside="closeAndSave()">
                                     <div class="ov-rel-editor">
                                         <div class="ov-rel-tags">
                                             <template x-for="tag in tags" :key="tag._id">
@@ -2111,7 +2111,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                     <button type="button" class="ov-ef-cancel" @click="cancelEdit()" title="Annuler"><iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon></button>
                                 </div>
                             <% } else if (f.type === 'file' || f.type === 'image' || f.type === 'gallery') { %>
-                                <div x-data="ovMediaEditor({ key: '<%= f.key %>', type: '<%= f.type %>', initial: <%- JSON.stringify(f.rawValue || (f.type === 'gallery' ? [] : '')) %> })" @click.outside="closeAndSave()">
+                                <div x-data="ovMediaEditor({ key: '<%= f.key %>', type: '<%= f.type %>', initial: <%- JSON.stringify(f.rawValue || (f.type === 'gallery' ? [] : '')).replace(/"/g, '&quot;') %> })" @click.outside="closeAndSave()">
                                     <div class="ov-rel-editor">
                                         <!-- Selected Files -->
                                         <div class="ov-rel-tags" style="padding:6px;gap:8px;">

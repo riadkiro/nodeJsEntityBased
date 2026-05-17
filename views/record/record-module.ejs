@@ -1616,6 +1616,71 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             customFolders: [],
             _accountNumber: '<%= account_number %>',
             _recordId: '<%= record._id %>',
+            selectedIds: [],
+            selectMode: false,
+            confirmingBulkDelete: false,
+            confirmDeleteFileId: null,
+
+            toggleSelectMode() {
+                this.selectMode = !this.selectMode;
+                if (!this.selectMode) this.selectedIds = [];
+            },
+
+            toggleSelect(id) {
+                const idx = this.selectedIds.indexOf(id);
+                if (idx >= 0) this.selectedIds.splice(idx, 1);
+                else this.selectedIds.push(id);
+            },
+
+            isSelected(id) {
+                return this.selectedIds.includes(id);
+            },
+
+            selectAll() {
+                if (this.selectedIds.length === this.displayFiles.length) {
+                    this.selectedIds = [];
+                } else {
+                    this.selectedIds = this.displayFiles.filter(f => !f.isGenerated).map(f => f._id);
+                }
+            },
+
+            async bulkDelete() {
+                const count = this.selectedIds.length;
+                if (count === 0) return;
+                this.confirmingBulkDelete = true;
+            },
+
+            async executeBulkDelete() {
+                const count = this.selectedIds.length;
+                this.confirmingBulkDelete = false;
+                if (count === 0) return;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/bulk-delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ ids: [...this.selectedIds] })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const deletedSet = new Set(this.selectedIds);
+                        // Splice in-place to preserve Alpine DOM nodes for unaffected files
+                        for (let i = this.allFiles.length - 1; i >= 0; i--) {
+                            if (deletedSet.has(this.allFiles[i]._id)) {
+                                this.allFiles.splice(i, 1);
+                            }
+                        }
+                        this.selectedIds = [];
+                        this.selectMode = false;
+                        if (window.showMessage) window.showMessage(data.deletedCount + ' fichier(s) supprimé(s)', 'success');
+                    } else {
+                        alert(data.error || 'Erreur lors de la suppression');
+                    }
+                } catch (e) {
+                    console.error('[Drive] Bulk delete error:', e);
+                    alert('Erreur réseau');
+                }
+            },
 
             get generatedCount() {
                 return this.allFiles.filter(f => f.isGenerated).length;
@@ -1871,18 +1936,30 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             },
 
             async deleteFile(file) {
-                if (!confirm('Supprimer "' + file.originalName + '" ?')) return;
+                // Use inline confirm state to avoid browser dialog issues
+                if (this.confirmDeleteFileId !== file._id) {
+                    this.confirmDeleteFileId = file._id;
+                    setTimeout(() => { if (this.confirmDeleteFileId === file._id) this.confirmDeleteFileId = null; }, 3000);
+                    return;
+                }
+                this.confirmDeleteFileId = null;
                 try {
                     const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${file._id}`, {
                         method: 'DELETE', credentials: 'include'
                     });
                     const data = await res.json();
                     if (data.success) {
-                        this.allFiles = this.allFiles.filter(f => f._id !== file._id);
+                        // Splice in-place to preserve Alpine DOM nodes for unaffected files
+                        const idx = this.allFiles.findIndex(f => f._id === file._id);
+                        if (idx !== -1) this.allFiles.splice(idx, 1);
+                        this.selectedIds = this.selectedIds.filter(id => id !== file._id);
                         if (window.showMessage) window.showMessage('Fichier supprimé', 'success');
+                    } else {
+                        alert(data.error || 'Erreur lors de la suppression');
                     }
                 } catch (e) {
                     console.error('[Drive] Delete error:', e);
+                    alert('Erreur réseau');
                 }
             },
 
@@ -2111,7 +2188,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                     <button type="button" class="ov-ef-cancel" @click="cancelEdit()" title="Annuler"><iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon></button>
                                 </div>
                             <% } else if (f.type === 'file' || f.type === 'image' || f.type === 'gallery') { %>
-                                <div x-data="ovMediaEditor({ key: '<%= f.key %>', type: '<%= f.type %>', initial: <%- JSON.stringify(f.rawValue || (f.type === 'gallery' ? [] : '')).replace(/"/g, '&quot;') %> })" @click.outside="closeAndSave()">
+                                <div x-data="ovMediaEditor({ key: '<%= f.key %>', type: '<%= f.type %>', initial: <%- JSON.stringify(f.rawValue || (f.type === 'gallery' ? [] : '')).replace(/"/g, '&quot;') %> })" @click.outside="if (!showDrivePicker) closeAndSave()">
                                     <div class="ov-rel-editor">
                                         <!-- Selected Files -->
                                         <div class="ov-rel-tags" style="padding:6px;gap:8px;">
@@ -2147,28 +2224,257 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                             <iconify-icon icon="line-md:uploading-loop" width="16"></iconify-icon> Upload en cours... (<span x-text="uploadProgress"></span>%)
                                         </div>
 
-                                        <!-- Drive Picker Dropdown -->
-                                        <div class="ov-rel-dropdown" x-show="showDrivePicker" x-cloak style="max-height:250px;overflow-y:auto;padding:4px;border-top:1px solid #f1f5f9;">
-                                            <div style="padding:6px 8px;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;">
-                                                <span>Fichiers du dossier</span>
-                                                <button type="button" @click.stop="showDrivePicker=false" style="background:none;border:none;cursor:pointer;color:#94a3b8;"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
-                                            </div>
-                                            <div x-show="loadingDrive" style="padding:12px;text-align:center;color:#94a3b8;"><iconify-icon icon="line-md:loading-twotone-loop" width="24"></iconify-icon></div>
-                                            <div x-show="!loadingDrive && driveFiles.length === 0" style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;">Aucun fichier</div>
-                                            <template x-for="df in driveFiles" :key="df._id">
-                                                <div class="ov-rel-option" @click.stop="selectDriveFile(df)" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;">
-                                                    <template x-if="isImage(df.filename)">
-                                                        <img :src="'/account/<%= account_number %>/uploads/attachments/' + df.filename" style="width:24px;height:24px;object-fit:cover;border-radius:4px;">
-                                                    </template>
-                                                    <template x-if="!isImage(df.filename)">
-                                                        <div style="width:24px;height:24px;background:#f1f5f9;border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                                                            <iconify-icon icon="solar:document-bold-duotone" width="14" style="color:#64748b"></iconify-icon>
+                                        <!-- Drive Picker Modal -->
+                                        <template x-teleport="body">
+                                            <div x-show="showDrivePicker" 
+                                                 class="ov-modal-overlay fixed inset-0 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" 
+                                                 style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:99999;" 
+                                                 x-cloak 
+                                                 @click.self="closeAndSave()">
+                                                <div class="ov-modal-content relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden border border-slate-100" 
+                                                     style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;width:100%;max-width:550px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);display:flex;flex-direction:column;max-height:80vh;overflow:hidden;animation:modalEnter 0.2s ease-out;">
+                                                    
+                                                    <!-- Header / Breadcrumbs -->
+                                                    <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;background:#fff;">
+                                                        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                                                            <!-- Back Button -->
+                                                            <button type="button" x-show="currentView !== 'hub' && modalSearchQ.trim().length === 0" @click="goBack()" style="background:#f1f5f9;border:none;cursor:pointer;color:#4361ee;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;" class="hover:bg-slate-200">
+                                                                <iconify-icon icon="solar:arrow-left-bold" width="16"></iconify-icon>
+                                                            </button>
+                                                            <div style="min-width:0;">
+                                                                <!-- Breadcrumbs -->
+                                                                <div style="display:flex;align-items:center;gap:6px;font-size:14px;color:#64748b;flex-wrap:wrap;min-width:0;line-height:1.2;">
+                                                                    <template x-if="currentView === 'hub'">
+                                                                        <span style="font-weight:700;color:#0f172a;">📁 Drive Hub</span>
+                                                                    </template>
+                                                                    <template x-if="currentView !== 'hub'">
+                                                                        <span @click="setView('hub')" style="cursor:pointer;color:#4361ee;font-weight:600;" class="hover:underline">📁 Hub</span>
+                                                                    </template>
+                                                                    
+                                                                    <template x-if="selectedEntity && currentView !== 'hub'">
+                                                                        <div style="display:inline-flex;align-items:center;gap:6px;min-width:0;">
+                                                                            <span style="color:#cbd5e1;">/</span>
+                                                                            <template x-if="currentView === 'entity'">
+                                                                                <span style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="selectedEntity.entityName"></span>
+                                                                            </template>
+                                                                            <template x-if="currentView !== 'entity'">
+                                                                                <span @click="setView('entity')" style="cursor:pointer;color:#4361ee;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="hover:underline" x-text="selectedEntity.entityName"></span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <template x-if="selectedRecord && currentView !== 'hub' && currentView !== 'entity'">
+                                                                        <div style="display:inline-flex;align-items:center;gap:6px;min-width:0;">
+                                                                            <span style="color:#cbd5e1;">/</span>
+                                                                            <template x-if="currentView === 'record'">
+                                                                                <span style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="selectedRecord.recordTitle"></span>
+                                                                            </template>
+                                                                            <template x-if="currentView !== 'record'">
+                                                                                <span @click="setView('record')" style="cursor:pointer;color:#4361ee;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="hover:underline" x-text="selectedRecord.recordTitle"></span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <template x-if="selectedFolder && currentView === 'folder'">
+                                                                        <div style="display:inline-flex;align-items:center;gap:6px;min-width:0;">
+                                                                            <span style="color:#cbd5e1;">/</span>
+                                                                            <span style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="selectedFolder.name"></span>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                                <span style="font-size:11px;color:#94a3b8;display:block;margin-top:2px;">Explorer et sélectionner un fichier</span>
+                                                            </div>
                                                         </div>
-                                                    </template>
-                                                    <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#334155;" x-text="df.originalName || df.filename"></span>
+                                                        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                                                            <template x-if="type === 'gallery' && selectedFiles.length > 0">
+                                                                <button type="button" @click="closeAndSave()" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                                                    <iconify-icon icon="solar:check-circle-bold" width="15"></iconify-icon>
+                                                                    <span x-text="'Terminer (' + selectedFiles.length + ')'"></span>
+                                                                </button>
+                                                            </template>
+                                                            <button type="button" @click="closeAndSave()" style="background:#f1f5f9;border:none;cursor:pointer;color:#64748b;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;" class="hover:bg-slate-200">
+                                                                <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Search Input -->
+                                                    <div style="padding:12px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc;display:flex;align-items:center;position:relative;">
+                                                        <iconify-icon icon="solar:magnifer-linear" width="16" style="position:absolute;left:32px;color:#94a3b8;"></iconify-icon>
+                                                        <input type="text" placeholder="Rechercher un fichier..." x-model="modalSearchQ" style="width:100%;padding:10px 12px 10px 36px;font-size:13px;border:1px solid #e2e8f0;border-radius:10px;outline:none;background:#fff;transition:all 0.2s;" class="focus:border-primary">
+                                                    </div>
+
+                                                    <!-- Files List -->
+                                                    <div style="padding:16px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;background:#fff;">
+                                                        <div x-show="loadingDrive" style="padding:40px;text-align:center;color:#94a3b8;">
+                                                            <iconify-icon icon="line-md:loading-twotone-loop" width="28" style="color:#4361ee;"></iconify-icon>
+                                                            <div style="margin-top:8px;font-size:12px;">Chargement des fichiers...</div>
+                                                        </div>
+                                                        
+                                                        <div x-show="!loadingDrive && filteredDriveFiles.length === 0" style="padding:40px;text-align:center;color:#94a3b8;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+                                                            <iconify-icon icon="solar:cloud-storage-broken" width="36" style="color:#cbd5e1;"></iconify-icon>
+                                                            <span>Aucun fichier trouvé</span>
+                                                        </div>
+                                                        
+                                                        <div x-show="!loadingDrive">
+                                                            <!-- FLAT SEARCH RESULTS -->
+                                                            <template x-if="modalSearchQ.trim().length > 0">
+                                                                <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+                                                                    <template x-for="df in filteredDriveFiles" :key="df._id">
+                                                                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #f1f5f9;border-radius:10px;transition:all 0.2s;background:#fff;cursor:pointer;" @click="selectDriveFile(df)" class="hover:border-slate-200 hover:bg-slate-50">
+                                                                            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                                                                                <template x-if="isImage(df.filename)">
+                                                                                    <img :src="'/account/<%= account_number %>/uploads/attachments/' + df.filename" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid #f1f5f9;flex-shrink:0;">
+                                                                                </template>
+                                                                                <template x-if="!isImage(df.filename)">
+                                                                                    <div style="width:36px;height:36px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                                                        <iconify-icon icon="solar:document-bold-duotone" width="18" style="color:#64748b"></iconify-icon>
+                                                                                    </div>
+                                                                                </template>
+                                                                                <div style="min-width:0;display:flex;flex-direction:column;gap:1px;">
+                                                                                    <span style="font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="df.originalName || df.filename"></span>
+                                                                                    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                                                                        <span x-text="df.entityName + ' • ' + df.recordTitle"></span>
+                                                                                        <span>•</span>
+                                                                                        <span x-text="(df.sizeFormatted || (df.size ? (df.size/1024).toFixed(1)+' Ko' : ''))"></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <button type="button" :style="selectedFiles.includes(df.filename) ? 'background:#10b98115;color:#10b981;' : 'background:#4361ee10;color:#4361ee;'" style="border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;" class="hover:bg-primary hover:text-white" x-text="selectedFiles.includes(df.filename) ? '✓ Ajouté' : 'Choisir'"></button>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+
+                                                            <!-- EXPLORER NAVIGATION VIEW -->
+                                                            <template x-if="modalSearchQ.trim().length === 0">
+                                                                <div>
+                                                                    <!-- Drive Hub Level -->
+                                                                    <template x-if="currentView === 'hub' && driveData">
+                                                                        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+                                                                            <template x-for="ent in driveData.entities" :key="ent.entityId">
+                                                                                <div @click="selectEntity(ent)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid #f1f5f9;border-radius:12px;background:#fff;cursor:pointer;transition:all 0.2s;" class="hover:border-slate-200 hover:bg-slate-50">
+                                                                                    <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                                                                                        <div :style="'width:38px;height:38px;background:' + ent.entityColor + '10;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'">
+                                                                                            <iconify-icon :icon="ent.entityIcon || 'solar:folder-with-files-bold-duotone'" width="20" :style="'color:' + ent.entityColor"></iconify-icon>
+                                                                                        </div>
+                                                                                        <div style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;">
+                                                                                            <span style="font-size:14px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="ent.entityName"></span>
+                                                                                            <span style="font-size:11px;color:#64748b;" x-text="ent.records.length + ' dossiers • ' + ent.fileCount + ' fichiers'"></span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <iconify-icon icon="solar:alt-arrow-right-linear" width="16" style="color:#94a3b8;flex-shrink:0;"></iconify-icon>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Entity Level -->
+                                                                    <template x-if="currentView === 'entity' && selectedEntity">
+                                                                        <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+                                                                            <template x-for="rec in selectedEntity.records" :key="rec.recordId">
+                                                                                <div @click="selectRecord(rec)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid #f1f5f9;border-radius:12px;background:#fff;cursor:pointer;transition:all 0.2s;" class="hover:border-slate-200 hover:bg-slate-50">
+                                                                                    <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                                                                                        <div style="width:38px;height:38px;background:#4361ee10;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                                                            <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee;"></iconify-icon>
+                                                                                        </div>
+                                                                                        <div style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;">
+                                                                                            <span style="font-size:14px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="rec.recordTitle"></span>
+                                                                                            <span style="font-size:11px;color:#64748b;" x-text="(rec.folders.length || 0) + ' dossiers • ' + (rec.fileCount || 0) + ' fichiers'"></span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <iconify-icon icon="solar:alt-arrow-right-linear" width="16" style="color:#94a3b8;flex-shrink:0;"></iconify-icon>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Record Level -->
+                                                                    <template x-if="currentView === 'record' && selectedRecord">
+                                                                        <div style="display:flex;flex-direction:column;gap:14px;">
+                                                                            <!-- Folders -->
+                                                                            <template x-if="selectedRecord.folders && selectedRecord.folders.length > 0">
+                                                                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                                                                    <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Dossiers</span>
+                                                                                    <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+                                                                                        <template x-for="fld in selectedRecord.folders" :key="fld.name">
+                                                                                            <div @click="selectFolder(fld)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #f1f5f9;border-radius:10px;background:#f8fafc;cursor:pointer;transition:all 0.2s;" class="hover:border-slate-200 hover:bg-slate-50">
+                                                                                                <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+                                                                                                    <iconify-icon icon="solar:folder-with-files-bold-duotone" width="18" style="color:#4361ee;flex-shrink:0;"></iconify-icon>
+                                                                                                    <span style="font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="fld.name"></span>
+                                                                                                </div>
+                                                                                                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                                                                                                    <span style="font-size:11px;color:#64748b;" x-text="fld.fileCount + ' fichiers'"></span>
+                                                                                                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14" style="color:#94a3b8;"></iconify-icon>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </template>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </template>
+                                                                            
+                                                                            <!-- Files -->
+                                                                            <div style="display:flex;flex-direction:column;gap:8px;">
+                                                                                <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Fichiers</span>
+                                                                                <template x-if="!selectedRecord.rootFiles || selectedRecord.rootFiles.length === 0">
+                                                                                    <div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px;background:#f8fafc;border-radius:10px;border:1px dashed #cbd5e1;">Aucun fichier à la racine</div>
+                                                                                </template>
+                                                                                <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+                                                                                    <template x-for="df in selectedRecord.rootFiles" :key="df._id">
+                                                                                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #f1f5f9;border-radius:10px;transition:all 0.2s;background:#fff;cursor:pointer;" @click="selectDriveFile(df)" class="hover:border-slate-200 hover:bg-slate-50">
+                                                                                            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                                                                                                <template x-if="isImage(df.filename)">
+                                                                                                    <img :src="'/account/<%= account_number %>/uploads/attachments/' + df.filename" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid #f1f5f9;flex-shrink:0;">
+                                                                                                </template>
+                                                                                                <template x-if="!isImage(df.filename)">
+                                                                                                    <div style="width:36px;height:36px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                                                                        <iconify-icon icon="solar:document-bold-duotone" width="18" style="color:#64748b"></iconify-icon>
+                                                                                                    </div>
+                                                                                                </template>
+                                                                                                <div style="min-width:0;display:flex;flex-direction:column;gap:1px;">
+                                                                                                    <span style="font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="df.originalName || df.filename"></span>
+                                                                                                    <span style="font-size:11px;color:#64748b;" x-text="(df.sizeFormatted || (df.size ? (df.size/1024).toFixed(1)+' Ko' : '')) + ' • ' + new Date(df.uploadedAt).toLocaleDateString('fr-FR')"></span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <button type="button" :style="selectedFiles.includes(df.filename) ? 'background:#10b98115;color:#10b981;' : 'background:#4361ee10;color:#4361ee;'" style="border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;" class="hover:bg-primary hover:text-white" x-text="selectedFiles.includes(df.filename) ? '✓ Ajouté' : 'Choisir'"></button>
+                                                                                        </div>
+                                                                                    </template>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <!-- Folder Level -->
+                                                                    <template x-if="currentView === 'folder' && selectedFolder">
+                                                                        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+                                                                            <template x-for="df in selectedFolder.files" :key="df._id">
+                                                                                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #f1f5f9;border-radius:10px;transition:all 0.2s;background:#fff;cursor:pointer;" @click="selectDriveFile(df)" class="hover:border-slate-200 hover:bg-slate-50">
+                                                                                    <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                                                                                        <template x-if="isImage(df.filename)">
+                                                                                            <img :src="'/account/<%= account_number %>/uploads/attachments/' + df.filename" style="width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid #f1f5f9;flex-shrink:0;">
+                                                                                        </template>
+                                                                                        <template x-if="!isImage(df.filename)">
+                                                                                            <div style="width:36px;height:36px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                                                                <iconify-icon icon="solar:document-bold-duotone" width="18" style="color:#64748b"></iconify-icon>
+                                                                                            </div>
+                                                                                        </template>
+                                                                                        <div style="min-width:0;display:flex;flex-direction:column;gap:1px;">
+                                                                                            <span style="font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="df.originalName || df.filename"></span>
+                                                                                            <span style="font-size:11px;color:#64748b;" x-text="(df.sizeFormatted || (df.size ? (df.size/1024).toFixed(1)+' Ko' : '')) + ' • ' + new Date(df.uploadedAt).toLocaleDateString('fr-FR')"></span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <button type="button" :style="selectedFiles.includes(df.filename) ? 'background:#10b98115;color:#10b981;' : 'background:#4361ee10;color:#4361ee;'" style="border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;" class="hover:bg-primary hover:text-white" x-text="selectedFiles.includes(df.filename) ? '✓ Ajouté' : 'Choisir'"></button>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </template>
-                                        </div>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                             <% } else { %>
@@ -2528,16 +2834,58 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <!-- Toolbar -->
             <div class="drive-toolbar">
                 <div style="display:flex;gap:8px;">
-                    <button @click="showNewFolderInput = !showNewFolderInput; $nextTick(() => $refs.folderInput?.focus())" class="drive-btn-secondary" x-show="!viewingGenerated && !currentFolder">
+                    <button @click="showNewFolderInput = !showNewFolderInput; $nextTick(() => $refs.folderInput?.focus())" class="drive-btn-secondary" x-show="!viewingGenerated && !currentFolder && !selectMode">
                         <iconify-icon icon="solar:folder-add-bold" width="15"></iconify-icon>
                         Nouveau dossier
                     </button>
+                    <!-- Select mode toggle -->
+                    <button @click="toggleSelectMode()" class="drive-btn-secondary" x-show="displayFiles.length > 0"
+                        :style="selectMode ? 'background:#4361ee10;color:#4361ee;border-color:#4361ee30;' : ''">
+                        <iconify-icon :icon="selectMode ? 'solar:check-square-bold' : 'solar:checkbox-minimalistic-bold-duotone'" width="15"></iconify-icon>
+                        <span x-text="selectMode ? 'Annuler' : 'Sélectionner'"></span>
+                    </button>
                 </div>
-                <label class="drive-btn-primary" x-show="!viewingGenerated">
+                <label class="drive-btn-primary" x-show="!viewingGenerated && !selectMode">
                     <iconify-icon icon="solar:upload-bold" width="15"></iconify-icon>
                     Ajouter
                     <input type="file" multiple @change="handleFileSelect($event)" style="display:none;">
                 </label>
+            </div>
+
+            <!-- Bulk action bar (visible in select mode) -->
+            <div x-show="selectMode" x-transition style="display:flex;flex-direction:column;gap:8px;padding:10px 14px;margin-bottom:12px;background:#4361ee08;border:1px solid #4361ee20;border-radius:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#4361ee;">
+                            <input type="checkbox" @click="selectAll()"
+                                :checked="selectedIds.length > 0 && selectedIds.length === displayFiles.filter(f => !f.isGenerated).length"
+                                :indeterminate="selectedIds.length > 0 && selectedIds.length < displayFiles.filter(f => !f.isGenerated).length"
+                                style="width:14px;height:14px;accent-color:#4361ee;cursor:pointer;">
+                            Tout sélectionner
+                        </label>
+                        <span x-show="selectedIds.length > 0" style="font-size:12px;color:#64748b;" x-text="selectedIds.length + ' sélectionné(s)'"></span>
+                    </div>
+                    <!-- Normal delete button -->
+                    <button @click="bulkDelete()" x-show="selectedIds.length > 0 && !confirmingBulkDelete"
+                        style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;background:#ef444415;color:#ef4444;border:1px solid #ef444430;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">
+                        <iconify-icon icon="solar:trash-bin-2-bold" width="14"></iconify-icon>
+                        <span x-text="'Supprimer (' + selectedIds.length + ')'"></span>
+                    </button>
+                </div>
+                <!-- Confirmation row -->
+                <div x-show="confirmingBulkDelete" x-transition style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#ef44440d;border:1px solid #ef444430;border-radius:8px;">
+                    <span style="font-size:12px;font-weight:600;color:#ef4444;display:flex;align-items:center;gap:6px;">
+                        <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
+                        <span x-text="'Supprimer définitivement ' + selectedIds.length + ' fichier(s) ?'"></span>
+                    </span>
+                    <div style="display:flex;gap:6px;">
+                        <button @click="confirmingBulkDelete = false" style="padding:4px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;">Annuler</button>
+                        <button @click="executeBulkDelete()" style="padding:4px 12px;border-radius:6px;border:none;background:#ef4444;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                            <iconify-icon icon="solar:trash-bin-2-bold" width="12"></iconify-icon>
+                            Oui, supprimer
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- New folder input -->
@@ -2603,11 +2951,24 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
                 <!-- Files -->
                 <template x-for="(file, idx) in displayFiles" :key="file._id">
-                    <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms'" style="cursor:pointer;"
-                         :draggable="!file.isGenerated && renamingFileId !== file._id" @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()"
-                         @click="if(renamingFileId !== file._id) window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)">
-                        <template x-if="file.category === 'image'">
+                    <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms;' + (isSelected(file._id) ? 'background:#4361ee06;border-left:3px solid #4361ee40;' : '')"
+                         style="cursor:pointer;"
+                         :draggable="!file.isGenerated && !selectMode && renamingFileId !== file._id"
+                         @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()"
+                         @click="selectMode && !file.isGenerated ? toggleSelect(file._id) : (renamingFileId !== file._id && !selectMode ? window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx) : null)">
+                        <!-- Checkbox in select mode -->
+                        <template x-if="selectMode && !file.isGenerated">
+                            <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" @click.stop="toggleSelect(file._id)">
+                                <input type="checkbox" :checked="isSelected(file._id)"
+                                    style="width:16px;height:16px;accent-color:#4361ee;cursor:pointer;"
+                                    @click.stop="toggleSelect(file._id)">
+                            </div>
+                        </template>
+                        <template x-if="file.category === 'image' && !selectMode">
                             <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" />
+                        </template>
+                        <template x-if="file.category === 'image' && selectMode">
+                            <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" style="opacity:0.8;" />
                         </template>
                         <template x-if="file.category === 'pdf'">
                             <div class="drive-pdf-wrap">
@@ -2636,11 +2997,15 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             </div>
                         </div>
                         <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
-                        <div class="drive-file-actions">
+                        <div class="drive-file-actions" x-show="!selectMode">
                             <button @click.stop="window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
                             <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="!file.isGenerated && renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
                             <a :href="file.url + '?dl=' + encodeURIComponent(file.originalName)" :download="file.originalName" class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
-                            <button @click.stop="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;" x-show="!file.isGenerated"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
+                            <!-- Delete with 2-step inline confirmation -->
+                            <button @click.stop="deleteFile(file)" class="rm-item-action" x-show="!file.isGenerated && confirmDeleteFileId !== file._id"
+                                title="Supprimer" style="color:#ef4444;"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
+                            <button @click.stop="deleteFile(file)" class="rm-item-action" x-show="!file.isGenerated && confirmDeleteFileId === file._id"
+                                style="color:#fff;background:#ef4444;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;">Confirmer ?</button>
                         </div>
                     </div>
                 </template>
@@ -3916,7 +4281,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     </script>
     <% } %>
 
-    <% if (moduleName === 'fiche') { %>
+    <% if (moduleName === 'fiche' || moduleName === 'overview') { %>
     <script>
     document.addEventListener('alpine:init', () => {
         const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
@@ -4417,10 +4782,43 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             selectedFiles: Array.isArray(cfg.initial) ? cfg.initial : (cfg.initial ? [cfg.initial] : []),
             showDrivePicker: false,
             loadingDrive: false,
-            driveFiles: [],
+            driveData: null,
+            currentView: 'record', // 'hub', 'entity', 'record', 'folder'
+            selectedEntity: null,
+            selectedRecord: null,
+            selectedFolder: null,
+            modalSearchQ: '',
             uploading: false,
             uploadProgress: 0,
             
+            get filteredDriveFiles() {
+                let files = [];
+                if (this.currentView === 'folder' && this.selectedFolder) {
+                    files = this.selectedFolder.files || [];
+                } else if (this.currentView === 'record' && this.selectedRecord) {
+                    files = [
+                        ...(this.selectedRecord.rootFiles || []),
+                        ...(this.selectedRecord.folders || []).flatMap(f => f.files || [])
+                    ];
+                } else if (this.currentView === 'entity' && this.selectedEntity) {
+                    files = this.selectedEntity.records.flatMap(r => [
+                        ...(r.rootFiles || []),
+                        ...(r.folders || []).flatMap(f => f.files || [])
+                    ]);
+                } else if (this.currentView === 'hub' && this.driveData && this.driveData.entities) {
+                    files = this.driveData.entities.flatMap(e => 
+                        e.records.flatMap(r => [
+                            ...(r.rootFiles || []),
+                            ...(r.folders || []).flatMap(f => f.files || [])
+                        ])
+                    );
+                }
+                if (!this.modalSearchQ || !this.modalSearchQ.trim()) return files;
+                const q = this.modalSearchQ.toLowerCase();
+                return files.filter(df => 
+                    (df.originalName || df.filename || '').toLowerCase().includes(q)
+                );
+            },
             init() {
                 if (!Array.isArray(this.selectedFiles)) {
                     this.selectedFiles = this.selectedFiles ? [this.selectedFiles] : [];
@@ -4433,27 +4831,101 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             },
             async openDrivePicker() {
                 this.showDrivePicker = true;
-                if (this.driveFiles.length === 0) {
+                this.modalSearchQ = '';
+                if (!this.driveData) {
                     this.loadingDrive = true;
                     try {
-                        const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments`, { credentials: 'include' });
+                        const res = await fetch(`/account/${cfg.num || '<%= account_number %>'}/api/drive`, { credentials: 'include' });
                         const data = await res.json();
-                        this.driveFiles = data.attachments || [];
+                        if (data.success) {
+                            this.driveData = data;
+                            
+                            // Traverse directly to current record's folder
+                            let ent = data.entities.find(e => String(e.entityId) === '<%= entity._id %>');
+                            if (!ent) {
+                                ent = data.entities.find(e => e.entitySlug === '<%= entity.slug %>');
+                            }
+                            if (ent) {
+                                this.selectedEntity = ent;
+                                let rec = ent.records.find(r => String(r.recordId) === '<%= record._id %>');
+                                if (!rec) {
+                                    rec = {
+                                        recordId: '<%= record._id %>',
+                                        recordTitle: '<%= (record.computedTitle || record.title || "Sans titre").replace(/"/g, "&quot;").replace(/'/g, "\\'") %>',
+                                        folders: [],
+                                        rootFiles: [],
+                                        fileCount: 0,
+                                        totalSize: 0
+                                    };
+                                    ent.records.push(rec);
+                                }
+                                this.selectedRecord = rec;
+                                this.currentView = 'record';
+                            } else {
+                                this.currentView = 'hub';
+                            }
+                        }
                     } catch (e) {
                         console.error('[MediaEditor] Fetch drive error:', e);
                     } finally {
                         this.loadingDrive = false;
                     }
+                } else {
+                    // Reset view to current record when re-opening
+                    this.currentView = 'record';
+                    this.selectedFolder = null;
+                }
+            },
+            setView(v) {
+                this.currentView = v;
+                if (v === 'hub') {
+                    this.selectedEntity = null;
+                    this.selectedRecord = null;
+                    this.selectedFolder = null;
+                } else if (v === 'entity') {
+                    this.selectedRecord = null;
+                    this.selectedFolder = null;
+                } else if (v === 'record') {
+                    this.selectedFolder = null;
+                }
+            },
+            selectEntity(ent) {
+                this.selectedEntity = ent;
+                this.currentView = 'entity';
+            },
+            selectRecord(rec) {
+                this.selectedRecord = rec;
+                this.currentView = 'record';
+            },
+            selectFolder(fld) {
+                this.selectedFolder = fld;
+                this.currentView = 'folder';
+            },
+            goBack() {
+                if (this.currentView === 'folder') {
+                    this.currentView = 'record';
+                    this.selectedFolder = null;
+                } else if (this.currentView === 'record') {
+                    this.currentView = 'entity';
+                    this.selectedRecord = null;
+                } else if (this.currentView === 'entity') {
+                    this.currentView = 'hub';
+                    this.selectedEntity = null;
                 }
             },
             async selectDriveFile(df) {
                 this._addFile(df.filename);
-                this.showDrivePicker = false;
+                // For gallery: keep modal open so user can pick multiple files
+                if (this.type !== 'gallery') {
+                    this.showDrivePicker = false;
+                }
             },
             async removeFile(idx) {
                 this.selectedFiles.splice(idx, 1);
                 await this._persist();
+                this._updateView(); // sync read-mode immediately
             },
+
             async uploadFiles(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
@@ -4491,8 +4963,22 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     
                     const res = await uploadPromise;
                     if (res.success && res.attachments) {
-                        for (const f of res.attachments) {
-                            this._addFile(f.filename);
+                        if (this.type === 'gallery') {
+                            let addedAny = false;
+                            for (const f of res.attachments) {
+                                if (!this.selectedFiles.includes(f.filename)) {
+                                    this.selectedFiles.push(f.filename);
+                                    addedAny = true;
+                                }
+                            }
+                            if (addedAny) {
+                                await this._persist();
+                                this._updateView();
+                            }
+                        } else {
+                            if (res.attachments.length > 0) {
+                                this._addFile(res.attachments[0].filename);
+                            }
                         }
                     }
                 } catch (e) {
@@ -4509,6 +4995,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     if (!this.selectedFiles.includes(filename)) {
                         this.selectedFiles.push(filename);
                         this._persist();
+                        this._updateView(); // sync read-mode immediately
                     }
                 } else {
                     this.selectedFiles = [filename];
@@ -4523,35 +5010,40 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
-                        body: JSON.stringify({ key: this.key, value })
+                        body: JSON.stringify({ fieldKey: this.key, value })
                     });
                 } catch (e) { console.error('[MediaPersist]', e); }
             },
+            // Update read-mode view (.ov-ef-view) immediately with current selectedFiles
+            _updateView() {
+                const parent = this.$el.closest('.ov-ef');
+                if (!parent) return;
+                const viewEl = parent.querySelector('.ov-ef-view');
+                if (!viewEl) return;
+                const acct = '<%= account_number %>';
+                if (this.selectedFiles.length === 0) {
+                    viewEl.innerHTML = '<span class="ov-placeholder">Vide</span>';
+                } else if (this.type === 'gallery') {
+                    viewEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+                        this.selectedFiles.map(img =>
+                            `<img src="/account/${acct}/uploads/attachments/${img}" style="height:36px;width:36px;object-fit:cover;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display='none'">`
+                        ).join('') + '</div>';
+                } else if (this.type === 'image') {
+                    viewEl.innerHTML = `<img src="/account/${acct}/uploads/attachments/${this.selectedFiles[0]}" style="max-height:40px;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display='none'">`;
+                } else {
+                    viewEl.innerHTML = `<a href="/account/${acct}/uploads/attachments/${this.selectedFiles[0]}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;"><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> ${this.selectedFiles[0]}</a>`;
+                }
+            },
             closeAndSave() {
                 this.showDrivePicker = false;
-                const parent = this.$el.closest('.ov-ef');
-                if (parent) {
-                    const viewEl = parent.querySelector('.ov-ef-view');
-                    if (viewEl) {
-                        if (this.selectedFiles.length === 0) {
-                            viewEl.innerHTML = '<span class="ov-placeholder">Vide</span>';
-                        } else if (this.type === 'gallery') {
-                            viewEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + this.selectedFiles.map(img => 
-                                '<img src="/account/<%= account_number %>/uploads/attachments/' + img + '" style="height:36px;width:36px;object-fit:cover;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display=\'none\'">'
-                            ).join('') + '</div>';
-                        } else if (this.type === 'image') {
-                            viewEl.innerHTML = '<img src="/account/<%= account_number %>/uploads/attachments/' + this.selectedFiles[0] + '" style="max-height:40px;border-radius:6px;border:1px solid #e0e6ed;" onerror="this.style.display=\'none\'">';
-                        } else {
-                            viewEl.innerHTML = '<a href="/account/<%= account_number %>/uploads/attachments/' + this.selectedFiles[0] + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;color:#4361ee;font-size:13px;font-weight:500;background:#4361ee10;padding:4px 10px;border-radius:6px;text-decoration:none;" @click.stop><iconify-icon icon="solar:document-bold-duotone" width="16"></iconify-icon> ' + this.selectedFiles[0] + '</a>';
-                        }
-                    }
-                }
+                this._updateView();
                 const grid = this.$el.closest('[x-data]');
                 if (grid && grid._x_dataStack) {
                     const root = grid._x_dataStack.find(d => d.editingKey !== undefined);
                     if (root) root.editingKey = '';
                 }
             }
+
         }));
     });
     </script>

@@ -1256,6 +1256,8 @@
               hasMore: true,
               isLoadingIcons: false,
               searchTimeout: null,
+              isLoadingHierarchy: false,
+              lastFetchTime: 0,
 
               availableColors: [
                 '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f',
@@ -1377,6 +1379,18 @@
               tempViewType: 'list',
 
               async fetchHierarchy() {
+                const now = Date.now();
+                if (this.isLoadingHierarchy) {
+                  console.warn("[Sidebar] fetchHierarchy skipped: already fetching");
+                  return;
+                }
+                if (now - this.lastFetchTime < 300) {
+                  console.warn("[Sidebar] fetchHierarchy skipped: rate limit cooldown");
+                  return;
+                }
+                this.isLoadingHierarchy = true;
+                this.lastFetchTime = now;
+
                 // Initialize Sidebar Store
                 if (!Alpine.store('sidebar')) {
                   Alpine.store('sidebar', {
@@ -1417,6 +1431,8 @@
 
                 } catch (e) {
                   console.error("[Sidebar] Failed to load hierarchy", e);
+                } finally {
+                  this.isLoadingHierarchy = false;
                 }
               },
 
@@ -2039,6 +2055,8 @@
             return {
               environments: [],
               activeEnvId: null,
+              isLoadingEnvironments: false,
+              lastRefreshTime: 0,
 
               // Context menus
               railMenuOpen: false,
@@ -2132,6 +2150,18 @@
               },
 
               async refreshEnvironments() {
+                const now = Date.now();
+                if (this.isLoadingEnvironments) {
+                  console.warn('[EnvironmentRail] refreshEnvironments skipped: already loading');
+                  return;
+                }
+                if (now - this.lastRefreshTime < 300) {
+                  console.warn('[EnvironmentRail] refreshEnvironments skipped: rate limit cooldown');
+                  return;
+                }
+                this.isLoadingEnvironments = true;
+                this.lastRefreshTime = now;
+
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 try {
                   const res = await fetch(`/account/${accountNum}/api/hierarchy/environments?t=${Date.now()}`);
@@ -2154,6 +2184,8 @@
                   }
                 } catch (err) {
                   console.error('[EnvironmentRail] Error:', err);
+                } finally {
+                  this.isLoadingEnvironments = false;
                 }
               },
 
@@ -2178,6 +2210,9 @@
               },
 
               selectEnvironment(env, skipSidebarToggle) {
+                if (this.activeEnvId === env.id) {
+                  return; // Avoid redundant selections to prevent infinite loops
+                }
                 this.activeEnvId = env.id;
                 // If sidebar is closed, open it to show the selected environment
                 // (skip when called from modal save to avoid breaking modal reactivity)

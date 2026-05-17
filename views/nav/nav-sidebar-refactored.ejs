@@ -742,6 +742,8 @@
                 hasMore: true,
                 isLoadingIcons: false,
                 searchTimeout: null,
+                isLoadingHierarchy: false,
+                lastFetchTime: 0,
 
                 availableColors: [
                   '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f', 
@@ -835,6 +837,18 @@
                 tempViewType: 'list',
 
                 async fetchHierarchy() {
+                  const now = Date.now();
+                  if (this.isLoadingHierarchy) {
+                    console.warn("[Sidebar] fetchHierarchy skipped: already fetching");
+                    return;
+                  }
+                  if (now - this.lastFetchTime < 300) {
+                    console.warn("[Sidebar] fetchHierarchy skipped: rate limit cooldown");
+                    return;
+                  }
+                  this.isLoadingHierarchy = true;
+                  this.lastFetchTime = now;
+
                   // Initialize Sidebar Store
                   if (!Alpine.store('sidebar')) {
                     Alpine.store('sidebar', {
@@ -863,13 +877,15 @@
 
                     this.detectActiveItem();
                     
-                    // Initialize D&D after render
-                    this.$nextTick(() => {
-                        this.initDragAndDrop();
-                    });
+                     // Initialize D&D after render
+                     this.$nextTick(() => {
+                         this.initDragAndDrop();
+                     });
 
                   } catch (e) {
                     console.error("[Sidebar] Failed to load hierarchy", e);
+                  } finally {
+                    this.isLoadingHierarchy = false;
                   }
                 },
                 

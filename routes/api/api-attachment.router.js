@@ -121,7 +121,7 @@ router.post('/records/:recordId/attachments', upload.array('files', 10), async (
             return res.status(400).json({ error: 'Aucun fichier fourni' });
         }
 
-        const folder = req.body.folder || '';
+        const folder = req.body.folder !== undefined ? req.body.folder : 'uploads';
 
         const newAttachments = req.files.map(file => ({
             filename: file.filename,
@@ -197,6 +197,47 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
         res.status(500).json({ error: error.message || 'Erreur lors de la suppression' });
     }
 });
+
+/**
+ * POST /api/records/:recordId/attachments/bulk-delete
+ * Delete multiple attachments at once
+ */
+router.post('/records/:recordId/attachments/bulk-delete', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const { ids } = req.body; // array of attachment IDs
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'ids requis' });
+        }
+
+        const record = await Record.findById(req.params.recordId).select('attachments');
+        if (!record) return res.status(404).json({ error: 'Record introuvable' });
+
+        const mongoose = require('mongoose');
+        const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+
+        // Delete physical files
+        for (const id of validIds) {
+            const att = record.attachments?.id(id);
+            if (att) {
+                const filePath = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number), att.filename);
+                try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
+            }
+        }
+
+        // Remove from DB
+        await Record.updateOne(
+            { _id: req.params.recordId },
+            { $pull: { attachments: { _id: { $in: validIds.map(id => new mongoose.Types.ObjectId(id)) } } } }
+        );
+
+        res.json({ success: true, deletedCount: validIds.length });
+    } catch (error) {
+        console.error('[Attachment] Bulk delete error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 /**
  * PATCH /api/records/:recordId/attachments/:attachmentId

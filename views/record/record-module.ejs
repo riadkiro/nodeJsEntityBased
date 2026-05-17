@@ -4438,7 +4438,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     try {
                         const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments`, { credentials: 'include' });
                         const data = await res.json();
-                        this.driveFiles = data.data || [];
+                        this.driveFiles = data.attachments || [];
                     } catch (e) {
                         console.error('[MediaEditor] Fetch drive error:', e);
                     } finally {
@@ -4490,8 +4490,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     });
                     
                     const res = await uploadPromise;
-                    if (res.success && res.data) {
-                        for (const f of res.data) {
+                    if (res.success && res.attachments) {
+                        for (const f of res.attachments) {
                             this._addFile(f.filename);
                         }
                     }

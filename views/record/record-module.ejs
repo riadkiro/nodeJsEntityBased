@@ -3133,12 +3133,12 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <!-- Context Menu -->
             <div x-show="contextMenu.show"
                  x-cloak
-                 style="position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);z-index:999999;width:190px;padding:6px 0;animation:contextMenuEnter 0.12s ease-out;display:none;"
+                 style="position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);z-index:999999;width:190px;padding:6px 0;animation:contextMenuEnter 0.12s ease-out;"
                  :style="'left:' + contextMenu.x + 'px;top:' + contextMenu.y + 'px;'"
                  @click.outside="contextMenu.show = false">
                 
                 <!-- Folder Options -->
-                <template x-if="contextMenu.type === 'folder'">
+                <template x-if="contextMenu.type === 'folder' && contextMenu.item">
                     <div>
                         <button @click="navigateTo(contextMenu.item.name); contextMenu.show = false;"
                                 style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
@@ -3166,7 +3166,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 </template>
 
                 <!-- File Options -->
-                <template x-if="contextMenu.type === 'file'">
+                <template x-if="contextMenu.type === 'file' && contextMenu.item">
                     <div>
                         <button @click="window.openFileViewer(contextMenu.item.url, contextMenu.item.originalName, contextMenu.item.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), displayFiles.findIndex(f=>f._id===contextMenu.item._id)); contextMenu.show = false;"
                                 style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
@@ -3175,7 +3175,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             <iconify-icon icon="solar:eye-bold-duotone" style="color:#10b981" width="18"></iconify-icon>
                             Aperçu
                         </button>
-                        <a :href="contextMenu.item.url + '?dl=' + encodeURIComponent(contextMenu.item.originalName)" :download="contextMenu.item.originalName"
+                        <a :href="contextMenu.item ? contextMenu.item.url + '?dl=' + encodeURIComponent(contextMenu.item.originalName) : '#'" :download="contextMenu.item ? contextMenu.item.originalName : ''"
                            @click="contextMenu.show = false"
                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;text-decoration:none;box-sizing:border-box;display:flex;"
                            onmouseover="this.style.background='#f8fafc';this.style.color='#4361ee';"
@@ -3184,7 +3184,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             Télécharger
                         </a>
                         
-                        <template x-if="!contextMenu.item.isGenerated">
+                        <template x-if="contextMenu.item && !contextMenu.item.isGenerated">
                             <div>
                                 <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
                                 <button @click="startRename(contextMenu.item); contextMenu.show = false;"

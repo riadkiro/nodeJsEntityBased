@@ -85,7 +85,7 @@ const createDefaultDoc = () => ({
     format: 'A4',
     orientation: 'portrait',
     status: 'draft',
-    isTemplate: false,
+    isTemplate: true,
     entityId: null,
     entityIds: [],
     dimensions: { width: 794, height: 1123 },

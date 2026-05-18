@@ -1,44 +1,34 @@
+/**
+ * Check why documents created via React editor don't show in listing
+ */
 const mongoose = require('mongoose');
-const fs = require('fs');
 
-async function check() {
-    const conn = mongoose.createConnection('mongodb://127.0.0.1:27017/saas_app_rb_7846');
+(async () => {
+    const conn = mongoose.createConnection('mongodb://127.0.0.1:27017/saas_app_rb_5096');
     await new Promise(r => conn.once('open', r));
     
-    const doc = await conn.db.collection('documents').findOne({ _id: new mongoose.Types.ObjectId('69ce60dd52c96f71dd936af3') });
+    // Find the recently created documents
+    const docs = await conn.db.collection('documents').find({}).sort({createdAt: -1}).limit(10).toArray();
     
-    const result = {
-        name: doc.name,
-        entityId: doc.entityId?.toString(),
-        entityIds: (doc.entityIds || []).map(String)
-    };
-    
-    const allContent = JSON.stringify(doc.pages || []);
-    const tokenRegex = /\{\{([^}]+)\}\}/g;
-    const tokens = [];
-    let match;
-    while ((match = tokenRegex.exec(allContent)) !== null) {
-        tokens.push(match[1]);
+    console.log('=== Last 10 documents ===');
+    docs.forEach(d => {
+        console.log({
+            _id: d._id.toString(),
+            name: d.name,
+            isTemplate: d.isTemplate,
+            createdBy: d.createdBy?.toString(),
+            hasUploadedFile: !!d.uploadedFile?.path,
+            createdAt: d.createdAt,
+            updatedAt: d.updatedAt
+        });
+    });
+
+    // Check the specific doc we created in the test
+    const testDoc = await conn.db.collection('documents').findOne({_id: new mongoose.Types.ObjectId('6a0b884e29ee91cf5b219ea4')});
+    if (testDoc) {
+        console.log('\n=== Test document details ===');
+        console.log(JSON.stringify(testDoc, null, 2));
     }
-    result.tokens = tokens;
-    
-    if (doc.entityId) {
-        const entity = await conn.db.collection('entities').findOne({ _id: doc.entityId });
-        if (entity) {
-            result.entityName = entity.name;
-            result.entitySlug = entity.slug;
-            result.entityIcon = entity.icon;
-            result.entityColor = entity.color;
-            result.relations = (entity.relations || []).map(r => ({
-                key: r.key,
-                label: r.label,
-                targetEntity: r.targetEntity?.toString()
-            }));
-        }
-    }
-    
-    fs.writeFileSync('scripts/docs-output.json', JSON.stringify(result, null, 2), 'utf8');
-    console.log('Done, check scripts/docs-output.json');
+
     await conn.close();
-}
-check().catch(console.error);
+})();

@@ -715,29 +715,6 @@ export default function EditorHeader({
                             </>
                         ) : (
                             <>
-                                {/* Template Toggle Button - config shows in right sidebar */}
-                                <button
-                                    onClick={() => window.dispatchEvent(new CustomEvent('toggle-template-panel'))}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${doc.isTemplate
-                                        ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
-                                        : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-500 dark:border-gray-700 dark:hover:border-amber-600'
-                                        }`}
-                                >
-                                    <iconify-icon icon={doc.isTemplate ? 'solar:magic-stick-3-bold-duotone' : 'solar:magic-stick-3-line-duotone'} width="16"></iconify-icon>
-                                    <span>{doc.isTemplate ? 'Template ✓' : 'Template'}</span>
-                                </button>
-
-                                {/* Generate Button - only for templates */}
-                                {doc.isTemplate && doc._id && (
-                                    <a
-                                        href={`/account/${accountNumber}/documents/${doc._id}/generate`}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700 ml-1.5"
-                                    >
-                                        <iconify-icon icon="solar:play-bold-duotone" width="15"></iconify-icon>
-                                        <span>Générer</span>
-                                    </a>
-                                )}
-
                                 {/* PDF Button */}
                                 <button
                                     onClick={handlePdfExport}

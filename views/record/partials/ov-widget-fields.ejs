@@ -1,4 +1,9 @@
-<% var _showHeader = (typeof _showHeader !== 'undefined') ? _showHeader : true; %>
+<% 
+var _showHeader = (typeof _showHeader !== 'undefined') ? _showHeader : true;
+var _isFiche = (typeof _isFiche !== 'undefined') ? _isFiche : false;
+var _fieldsToRender = (typeof _ovFields !== 'undefined') ? _ovFields : (typeof _ficheFields !== 'undefined' ? _ficheFields : []);
+var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
+%>
 <% if (_showHeader) { %>
 <div class="ov-card-header">
     <iconify-icon icon="solar:card-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
@@ -6,11 +11,27 @@
     <a href="<%= _recBase %>/fiche" class="ov-card-link">Voir tout →</a>
 </div>
 <% } %>
-<div class="ov-fields-list">
-    <% _ovFields.forEach(function(f,i){ %>
+<div class="ov-fields-list" <%- _isFiche ? 'x-ref="ficheFieldsList"' : '' %>>
+    <% _fieldsToRender.forEach(function(f,i){ %>
     <div class="ov-ef" data-key="<%= f.key %>"
+         <% if (_isFiche) { %>
+         data-field-key="<%= f.key %>"
+         data-required="<%= f.required ? 'true' : 'false' %>"
+         :class="{ 'ov-ef--hidden': isFieldHidden('<%= f.key %>') }"
+         x-show="configMode || !isFieldHidden('<%= f.key %>')"
+         <% if (!_hiddenList.includes(f.key)) { %>
+         @click="!configMode && startEdit('<%= f.key %>',$event)"
+         <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>
+         <% } %>
+         <% } else { %>
          @click="startEdit('<%= f.key %>',$event)"
-         <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>>
+         <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>
+         <% } %>
+    >
+        <% if (_isFiche) { %>
+        <!-- Drag handle (config mode only) -->
+        <div class="fiche-drag-handle" title="Déplacer">⠿</div>
+        <% } %>
         <div class="ov-ef-head">
             <div class="ov-ef-icon" style="background:linear-gradient(135deg,<%= f.color||'#4361ee' %>12,<%= f.color||'#4361ee' %>06)">
                 <iconify-icon icon="<%= f.icon %>" width="13" style="color:<%= f.color||'#4361ee' %>"></iconify-icon>
@@ -275,7 +296,7 @@
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                                                                                                <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;pointer-events:none;" :style="selectedFiles.includes(df.filename) ? 'background:#10b981;border:2px solid #10b981;' : 'background:#fff;border:2px solid #cbd5e1;'">
+                                                                                                                                <div :style="'width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;pointer-events:none;' + (selectedFiles.includes(df.filename) ? 'background:#10b981;border:2px solid #10b981;' : 'background:#fff;border:2px solid #cbd5e1;')">
                                                                     <template x-if="selectedFiles.includes(df.filename)"><svg viewBox="0 0 12 10" fill="none" style="width:10px;height:8px;display:block;"><path d="M1 5l3.5 3.5L11 1" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
                                                                 </div>
                                                             </div>
@@ -373,7 +394,7 @@
                                                                                         <span style="font-size:11px;color:#64748b;" x-text="(df.sizeFormatted || (df.size ? (df.size/1024).toFixed(1)+' Ko' : '')) + ' • ' + new Date(df.uploadedAt).toLocaleDateString('fr-FR')"></span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;pointer-events:none;" :style="selectedFiles.includes(df.filename) ? 'background:#10b981;border:2px solid #10b981;' : 'background:#fff;border:2px solid #cbd5e1;'">
+                                                                                <div :style="'width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;pointer-events:none;' + (selectedFiles.includes(df.filename) ? 'background:#10b981;border:2px solid #10b981;' : 'background:#fff;border:2px solid #cbd5e1;')">
     <template x-if="selectedFiles.includes(df.filename)"><svg viewBox="0 0 12 10" fill="none" style="width:10px;height:8px;display:block;"><path d="M1 5l3.5 3.5L11 1" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
 </div>
                                                                             </div>
@@ -402,7 +423,7 @@
                                                                                 <span style="font-size:11px;color:#64748b;" x-text="(df.sizeFormatted || (df.size ? (df.size/1024).toFixed(1)+' Ko' : '')) + ' • ' + new Date(df.uploadedAt).toLocaleDateString('fr-FR')"></span>
                                                                             </div>
                                                                         </div>
-                                                                        <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;pointer-events:none;" :style="selectedFiles.includes(df.filename) ? 'background:#10b981;border:2px solid #10b981;' : 'background:#fff;border:2px solid #cbd5e1;'">
+                                                                        <div :style="'width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;pointer-events:none;' + (selectedFiles.includes(df.filename) ? 'background:#10b981;border:2px solid #10b981;' : 'background:#fff;border:2px solid #cbd5e1;')">
                                                                      <template x-if="selectedFiles.includes(df.filename)"><svg viewBox="0 0 12 10" fill="none" style="width:10px;height:8px;display:block;"><path d="M1 5l3.5 3.5L11 1" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
                                                                  </div>
                                                                     </div>

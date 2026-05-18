@@ -208,21 +208,14 @@ const CanvasContainer = forwardRef(function CanvasContainer({
             {/* Template Watermark Background */}
             {doc.isTemplate && (
                 <div 
-                    className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
-                    style={{ opacity: 0.03 }}
-                >
-                    <div style={{
-                        fontSize: '12vw',
-                        fontWeight: 900,
-                        color: isDark ? '#ffffff' : '#000000',
-                        transform: 'rotate(-35deg)',
-                        whiteSpace: 'nowrap',
-                        userSelect: 'none',
-                        letterSpacing: '0.15em'
-                    }}>
-                        TEMPLATE
-                    </div>
-                </div>
+                    className="absolute inset-0 pointer-events-none z-0"
+                    style={{
+                        opacity: isDark ? 0.04 : 0.03,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250' viewBox='0 0 250 250'%3E%3Ctext x='50%25' y='50%25' font-family='Inter, sans-serif' font-size='24' font-weight='bold' fill='${isDark ? '%23ffffff' : '%23000000'}' text-anchor='middle' dominant-baseline='middle' transform='rotate(-35 125 125)' letter-spacing='4'%3ETEMPLATE%3C/text%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'repeat',
+                        backgroundSize: '250px 250px'
+                    }}
+                />
             )}
             
             {/* Canvas Area */}

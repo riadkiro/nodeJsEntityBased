@@ -655,15 +655,29 @@ router.post('/api/:id/pdf', async (req, res) => {
             <html>
             <head>
                 <meta charset="UTF-8">
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
                 <script src="https://cdn.tailwindcss.com"></script>
                 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
                 <style>
-                    body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    body { 
+                        margin: 0; 
+                        padding: 0; 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                    }
                     /* Ensure pages start on new sheets */
                     .page-break-after { page-break-after: always; }
                     /* Resets specific to the editor viewer structure */
                     .bg-white.shadow-2xl { box-shadow: none !important; margin: 0 auto !important; }
-                    p { margin-bottom: 0.5em; }
+                    /* Base typography to match editor */
+                    h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; }
+                    h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; }
+                    h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; }
+                    p { margin-top: 0; margin-bottom: 1em; line-height: 1.5; }
+                    ul { list-style-type: disc; margin: 1em 0; padding-left: 40px; }
+                    ol { list-style-type: decimal; margin: 1em 0; padding-left: 40px; }
+                    blockquote { border-left: 4px solid #cbd5e1; margin: 1em 40px; padding-left: 1em; color: #475569; }
                 </style>
             </head>
             <body>

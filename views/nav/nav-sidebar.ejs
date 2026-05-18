@@ -425,7 +425,7 @@
       <!-- BOTTOM: Réglages (toggles admin panel) -->
       <a href="javascript:;"
          @click="$dispatch('toggle-admin')"
-         x-data="{ adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }"
+         x-data="{ adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }"
          @toggle-admin.window="adminActive = !adminActive"
          @show-spaces.window="adminActive = false"
          :data-active="adminActive"
@@ -462,7 +462,7 @@
 
 
         <!-- ═══ SIDEBAR MODE WRAPPER (Admin vs Spaces toggle) ═══ -->
-        <div x-data="{ showAdmin: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }" @toggle-admin.window="showAdmin = !showAdmin" @show-spaces.window="showAdmin = false">
+        <div x-data="{ showAdmin: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }" @toggle-admin.window="showAdmin = !showAdmin" @show-spaces.window="showAdmin = false">
 
         <!-- ═══ ADMIN SECTION (hidden by default, toggle with settings icon) ═══ -->
         <div x-show="showAdmin" x-collapse x-cloak>

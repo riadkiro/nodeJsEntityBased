@@ -210,8 +210,8 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                 <div
                     className="absolute inset-0 pointer-events-none z-0"
                     style={{
-                        opacity: isDark ? 0.08 : 0.06,
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250' viewBox='0 0 250 250'%3E%3Ctext x='50%25' y='50%25' font-family='Inter, sans-serif' font-size='24' font-weight='bold' fill='${isDark ? '%2394a3b8' : '%23475569'}' text-anchor='middle' dominant-baseline='middle' transform='rotate(-35 125 125)' letter-spacing='4'%3ETEMPLATE%3C/text%3E%3C/svg%3E")`,
+                        opacity: isDark ? 0.15 : 0.12,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250' viewBox='0 0 250 250'%3E%3Ctext x='50%25' y='50%25' font-family='Inter, sans-serif' font-size='24' font-weight='bold' fill='${isDark ? '%23cbd5e1' : '%231e293b'}' text-anchor='middle' dominant-baseline='middle' transform='rotate(-35 125 125)' letter-spacing='4'%3ETEMPLATE%3C/text%3E%3C/svg%3E")`,
                         backgroundRepeat: 'repeat',
                         backgroundSize: '250px 250px'
                     }}

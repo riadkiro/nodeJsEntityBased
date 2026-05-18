@@ -345,6 +345,10 @@ module.exports = {
                             // Regular entity view
                             const entity = entities.find(e => e.id === v.entity.toString());
                             const entitySlug = entity ? entity.slug : v.slug;
+                            // Doc-listing views get a special link with viewId
+                            const viewLink = v.viewType === 'doc-listing'
+                                ? `/account/${req.account_number}/record/${entitySlug}/list?viewType=doc-listing&viewId=${v.id}`
+                                : `/account/${req.account_number}/record/${entitySlug}/list`;
                             results.push({
                                 type: 'entity',
                                 id: v.id,
@@ -352,7 +356,7 @@ module.exports = {
                                 icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
                                 color: v.color,
                                 order: v.order,
-                                link: `/account/${req.account_number}/record/${entitySlug}/list`,
+                                link: viewLink,
                                 entityId: v.entity,
                                 entitySlug: entitySlug,
                                 viewType: v.viewType || 'list',

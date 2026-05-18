@@ -33,15 +33,15 @@ const PRESETS = [
     {
         slug: 'crm',
         name: 'CRM Commercial',
-        description: 'Configuration complète type Salesforce : Pipeline, Contacts, Entreprises, Devis, Factures, et suivi d\'activité.',
+        description: 'Configuration complète type Salesforce : Pipeline, Contacts, Entreprises, et suivi d\'activité. Templates de documents (Devis, Contrats, Factures) générables depuis les fiches.',
         icon: 'solar:chart-bold-duotone',
         color: '#22c55e',
         category: 'Business',
         features: [
             'Pipeline Kanban des opportunités',
-            '10 entités métier (Contact, Entreprise, Contrat...)',
-            'Données de démonstration réalistes',
-            'Génération de devis et factures',
+            '6 entités métier (Contact, Entreprise, Opportunité, Activité, Produit, Service)',
+            'Templates de documents : Devis, Contrats, Factures (liés aux Entreprises)',
+            'Génération de documents depuis les fiches Entreprise',
             'Vue 360° du client et suivi des interactions'
         ],
         seedModule: './seed-crm',

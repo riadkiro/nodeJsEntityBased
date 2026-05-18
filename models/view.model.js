@@ -25,7 +25,7 @@ const ViewSchema = new mongoose.Schema({
     // Type of display
     viewType: {
         type: String,
-        enum: ['list', 'kanban', 'checklist', 'calendar', 'table', 'cockpit'],
+        enum: ['list', 'kanban', 'checklist', 'calendar', 'table', 'cockpit', 'doc-listing'],
         default: 'list'
     },
 
@@ -54,7 +54,9 @@ const ViewSchema = new mongoose.Schema({
         sortBy: {
             field: String,
             direction: { type: String, enum: ['asc', 'desc'], default: 'asc' }
-        }
+        },
+        // For doc-listing views: references the SmartDocTemplate to list docs from
+        smartDocTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'SmartDocTemplate', default: null }
     },
 
     createdBy: {

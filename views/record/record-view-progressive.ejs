@@ -4,6 +4,8 @@
 %>
 <% if (view.viewType === 'kanban') { %>
     <%- include('partials/view-kanban-progressive') %>
+<% } else if (view.viewType === 'doc-listing') { %>
+    <%- include('partials/view-doc-listing') %>
 <% } else { %>
     <%- include('partials/view-table-progressive') %>
 <% } %>

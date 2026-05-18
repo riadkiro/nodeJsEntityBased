@@ -1,0 +1,271 @@
+<%#
+  view-doc-listing.ejs
+  Lists documents generated via a specific SmartDoc template.
+  Uses the record-module design system (rm-hero, ov-card, rm-item).
+  Data: smartDocTemplate, entity, view
+%>
+<%
+  const _dlColor = (typeof smartDocTemplate !== 'undefined' && smartDocTemplate && smartDocTemplate.color) ? smartDocTemplate.color : '#f59e0b';
+  const _dlIcon = (typeof smartDocTemplate !== 'undefined' && smartDocTemplate && smartDocTemplate.icon) ? smartDocTemplate.icon : 'solar:document-text-bold-duotone';
+  const _dlName = (typeof smartDocTemplate !== 'undefined' && smartDocTemplate && smartDocTemplate.name) ? smartDocTemplate.name : view.name || 'Documents';
+  const _dlId = (typeof smartDocTemplate !== 'undefined' && smartDocTemplate && smartDocTemplate._id) ? smartDocTemplate._id : '';
+  const _docTplId = (typeof smartDocTemplate !== 'undefined' && smartDocTemplate && smartDocTemplate.documentId) ? smartDocTemplate.documentId : '';
+%>
+
+<style>
+.dl-page { max-width:1200px; margin:0 auto; padding:24px 32px; }
+.dl-hero {
+    display:flex; align-items:center; gap:20px; padding:28px 32px;
+    background:linear-gradient(135deg, <%= _dlColor %>08, <%= _dlColor %>04);
+    border:1px solid <%= _dlColor %>20; border-radius:16px; margin-bottom:24px;
+    position:relative; overflow:hidden;
+}
+.dl-hero::before {
+    content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px;
+    background:radial-gradient(circle, <%= _dlColor %>12, transparent 70%);
+    border-radius:50%; pointer-events:none;
+}
+.dl-hero-icon {
+    width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, <%= _dlColor %>20, <%= _dlColor %>10); flex-shrink:0; position:relative; z-index:1;
+}
+.dl-hero-info { flex:1; z-index:1; }
+.dl-hero-info h1 { font-size:20px; font-weight:700; color:#0e1726; margin:0 0 4px; }
+.dl-hero-info p { font-size:13px; color:#888da8; margin:0; }
+.dl-hero-meta { text-align:center; z-index:1; }
+.dl-hero-count { font-size:28px; font-weight:800; color:<%= _dlColor %>; line-height:1; }
+.dl-hero-count-label { font-size:11px; color:#888da8; text-transform:uppercase; letter-spacing:.5px; }
+.dl-hero-actions { display:flex; align-items:center; gap:8px; z-index:1; }
+.dl-btn-primary {
+    display:inline-flex; align-items:center; gap:6px; padding:8px 18px;
+    background:linear-gradient(135deg, <%= _dlColor %>, <%= _dlColor %>dd);
+    color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:600;
+    cursor:pointer; transition:all .2s; font-family:inherit; text-decoration:none;
+}
+.dl-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px <%= _dlColor %>40; color:#fff; }
+.dl-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:12px; }
+.dl-search { display:flex; align-items:center; gap:8px; padding:8px 14px; background:#f8fafc; border:1px solid #e0e6ed; border-radius:10px; flex:1; max-width:360px; }
+.dl-search input { border:none; background:none; outline:none; font-size:13px; color:#0e1726; width:100%; font-family:inherit; }
+.dl-search input::placeholder { color:#bfc9d4; }
+.dl-stats { display:flex; gap:8px; }
+.dl-stat-badge { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:8px; font-size:12px; font-weight:600; }
+.dl-items-list { display:flex; flex-direction:column; gap:2px; }
+.dl-item {
+    display:flex; align-items:center; gap:14px; padding:14px 16px;
+    background:#fff; border-radius:10px; border:1px solid transparent;
+    transition:all .25s; cursor:pointer; animation:dlFadeIn .4s ease both;
+}
+.dl-item:hover { border-color:#e0e6ed; box-shadow:0 2px 8px rgba(0,0,0,.04); transform:translateX(2px); }
+.dl-item-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.dl-item-body { flex:1; min-width:0; }
+.dl-item-title { font-size:13.5px; font-weight:600; color:#0e1726; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dl-item-meta { font-size:11.5px; color:#888da8; display:flex; align-items:center; gap:8px; margin-top:2px; }
+.dl-item-meta span { display:inline-flex; align-items:center; gap:3px; }
+.dl-item-badge { padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; white-space:nowrap; }
+.dl-item-actions { display:flex; align-items:center; gap:4px; opacity:0; transition:opacity .2s; }
+.dl-item:hover .dl-item-actions { opacity:1; }
+.dl-item-action { width:28px; height:28px; border:none; background:none; border-radius:6px; color:#bfc9d4; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.dl-item-action:hover { background:#f1f5f9; color:#0e1726; }
+/* Empty state */
+.dl-empty { text-align:center; padding:60px 20px; }
+.dl-empty-icon { width:80px; height:80px; border-radius:20px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; background:linear-gradient(135deg, <%= _dlColor %>10, <%= _dlColor %>05); }
+.dl-empty h3 { font-size:16px; font-weight:700; color:#0e1726; margin:0 0 8px; }
+.dl-empty p { font-size:13px; color:#888da8; margin:0 0 20px; max-width:360px; margin-left:auto; margin-right:auto; }
+/* Dark mode */
+.dark .dl-hero { background:linear-gradient(135deg, <%= _dlColor %>10, <%= _dlColor %>05); border-color:<%= _dlColor %>30; }
+.dark .dl-hero-info h1 { color:#e0e6ed; }
+.dark .dl-hero-info p { color:#888da8; }
+.dark .dl-search { background:#1b2e4b; border-color:#253b5c; }
+.dark .dl-search input { color:#e0e6ed; }
+.dark .dl-item { background:transparent; border-color:transparent; }
+.dark .dl-item:hover { border-color:#253b5c; background:#1b2e4b; }
+.dark .dl-item-title { color:#e0e6ed; }
+.dark .dl-item-action:hover { background:#253b5c; color:#e0e6ed; }
+.dark .dl-empty h3 { color:#e0e6ed; }
+.dark .dl-empty p { color:#506690; }
+@keyframes dlFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@media (max-width:768px) { .dl-page { padding:16px; } .dl-hero { flex-direction:column; text-align:center; padding:20px; } }
+</style>
+
+<div class="dl-page" x-data="docListingModule()" x-init="init()">
+
+    <!-- Hero -->
+    <div class="dl-hero">
+        <div class="dl-hero-icon">
+            <iconify-icon icon="<%= _dlIcon %>" width="28" style="color:<%= _dlColor %>"></iconify-icon>
+        </div>
+        <div class="dl-hero-info">
+            <h1><%= _dlName %></h1>
+            <p><%= entity.name %> · Documents générés</p>
+        </div>
+        <div class="dl-hero-meta" x-show="docs.length > 0">
+            <div class="dl-hero-count" x-text="docs.length"></div>
+            <div class="dl-hero-count-label">documents</div>
+        </div>
+        <div class="dl-hero-actions">
+            <a href="/account/<%= account_number %>/documents/<%= _docTplId %>/generate" class="dl-btn-primary">
+                <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                Nouveau
+            </a>
+            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list" class="dl-btn-primary" style="background:linear-gradient(135deg,<%= entity.color || '#4361ee' %>,<%= entity.color || '#4361ee' %>dd);font-size:12px;padding:7px 14px;">
+                <iconify-icon icon="solar:list-bold" width="15"></iconify-icon>
+                Voir les fiches
+            </a>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="dl-toolbar">
+        <div class="dl-search">
+            <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4;flex-shrink:0;"></iconify-icon>
+            <input type="text" x-model="search" placeholder="Rechercher un document...">
+        </div>
+        <div class="dl-stats" x-show="docs.length > 0">
+            <span class="dl-stat-badge" style="background:<%= _dlColor %>10;color:<%= _dlColor %>;">
+                <iconify-icon icon="solar:file-check-bold" width="14"></iconify-icon>
+                <span x-text="docs.length + ' fichier(s)'"></span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <template x-if="loading">
+        <div style="display:flex;align-items:center;justify-content:center;padding:60px 0;">
+            <div style="width:32px;height:32px;border:3px solid <%= _dlColor %>30;border-top-color:<%= _dlColor %>;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        </div>
+    </template>
+
+    <!-- Empty State -->
+    <template x-if="!loading && docs.length === 0">
+        <div class="ov-card" style="border:1px solid #e8ecf1;">
+            <div class="dl-empty">
+                <div class="dl-empty-icon">
+                    <iconify-icon icon="<%= _dlIcon %>" width="36" style="color:<%= _dlColor %>;"></iconify-icon>
+                </div>
+                <h3>Aucun document généré</h3>
+                <p>Ouvrez une fiche <%= entity.name %> et utilisez l'onglet Docs pour générer un <%= _dlName.toLowerCase() %>.</p>
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list" class="dl-btn-primary">
+                    <iconify-icon icon="solar:arrow-right-bold" width="15"></iconify-icon>
+                    Accéder aux fiches
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <!-- Document List -->
+    <template x-if="!loading && docs.length > 0">
+        <div class="ov-card" style="padding:8px 0; border:1px solid #e8ecf1;">
+            <div style="padding:0 18px 8px; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:#0e1726;">
+                <iconify-icon icon="<%= _dlIcon %>" width="18" style="color:<%= _dlColor %>;"></iconify-icon>
+                <span><%= _dlName %></span>
+                <span style="margin-left:auto;font-size:12px;font-weight:500;color:#888da8;" x-text="filteredDocs().length + ' résultat(s)'"></span>
+            </div>
+            <div class="dl-items-list" style="padding:0 8px;">
+                <template x-for="(doc, i) in filteredDocs()" :key="doc.filename || i">
+                    <div class="dl-item" @click="openDoc(doc)" :style="'animation-delay:' + (i * 0.04) + 's'">
+                        <div class="dl-item-icon" :style="'background:' + (doc.mimeType === 'application/pdf' ? '#ef444415' : '<%= _dlColor %>15') + ';'">
+                            <iconify-icon :icon="doc.mimeType === 'application/pdf' ? 'solar:file-text-bold-duotone' : 'solar:document-bold-duotone'" 
+                                          width="20" :style="'color:' + (doc.mimeType === 'application/pdf' ? '#ef4444' : '<%= _dlColor %>')"></iconify-icon>
+                        </div>
+                        <div class="dl-item-body">
+                            <div class="dl-item-title" x-text="doc.originalName || doc.filename"></div>
+                            <div class="dl-item-meta">
+                                <span x-show="doc.recordTitle">
+                                    <iconify-icon icon="solar:user-bold" width="12" style="color:#888da8;"></iconify-icon>
+                                    <span x-text="doc.recordTitle"></span>
+                                </span>
+                                <span>
+                                    <iconify-icon icon="solar:calendar-linear" width="12" style="color:#888da8;"></iconify-icon>
+                                    <span x-text="formatDate(doc.uploadedAt || doc.createdAt)"></span>
+                                </span>
+                                <span x-show="doc.size">
+                                    <iconify-icon icon="solar:file-linear" width="12" style="color:#888da8;"></iconify-icon>
+                                    <span x-text="formatSize(doc.size)"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <span class="dl-item-badge" :style="'background:<%= _dlColor %>10;color:<%= _dlColor %>;'" x-text="doc.mimeType === 'application/pdf' ? 'PDF' : 'DOC'"></span>
+                        <div class="dl-item-actions">
+                            <a :href="doc.downloadUrl" @click.stop download class="dl-item-action" title="Télécharger">
+                                <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
+                            </a>
+                            <button @click.stop="openDoc(doc)" class="dl-item-action" title="Ouvrir">
+                                <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+</div>
+
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('docListingModule', () => ({
+    docs: [],
+    search: '',
+    loading: true,
+    _accountNumber: '<%= account_number %>',
+    _smartDocTemplateId: '<%= _dlId %>',
+    _entityId: '<%= entity._id %>',
+
+    async init() {
+      await this.fetchDocs();
+    },
+
+    async fetchDocs() {
+      this.loading = true;
+      try {
+        const url = `/account/${this._accountNumber}/api/smartdoc/generated-docs?entityId=${this._entityId}&smartDocTemplateId=${this._smartDocTemplateId}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          this.docs = data.docs || [];
+        }
+      } catch (e) {
+        console.error('[DocListing] fetch error:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    filteredDocs() {
+      if (!this.search) return this.docs;
+      const s = this.search.toLowerCase();
+      return this.docs.filter(d =>
+        (d.originalName || d.filename || '').toLowerCase().includes(s) ||
+        (d.recordTitle || '').toLowerCase().includes(s)
+      );
+    },
+
+    openDoc(doc) {
+      const url = doc.downloadUrl || doc.viewUrl;
+      if (!url) return;
+      const filename = doc.originalName || doc.filename || 'Document';
+      const category = doc.mimeType === 'application/pdf' ? 'pdf' : 'document';
+      
+      if (typeof window.openFileViewer === 'function') {
+        window.openFileViewer(url, filename, category);
+      } else {
+        window.open(url, '_blank');
+      }
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    },
+
+    formatSize(bytes) {
+      if (!bytes) return '';
+      if (bytes < 1024) return bytes + ' o';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko';
+      return (bytes / 1048576).toFixed(1) + ' Mo';
+    }
+  }));
+});
+</script>

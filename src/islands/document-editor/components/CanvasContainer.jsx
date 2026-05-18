@@ -205,6 +205,26 @@ const CanvasContainer = forwardRef(function CanvasContainer({
 
     return (
         <div className="flex-1 flex flex-col min-w-0 dark:bg-gray-800 overflow-hidden" style={{ position: 'relative' }}>
+            {/* Template Watermark Background */}
+            {doc.isTemplate && (
+                <div 
+                    className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0"
+                    style={{ opacity: 0.03 }}
+                >
+                    <div style={{
+                        fontSize: '12vw',
+                        fontWeight: 900,
+                        color: isDark ? '#ffffff' : '#000000',
+                        transform: 'rotate(-35deg)',
+                        whiteSpace: 'nowrap',
+                        userSelect: 'none',
+                        letterSpacing: '0.15em'
+                    }}>
+                        TEMPLATE
+                    </div>
+                </div>
+            )}
+            
             {/* Canvas Area */}
             <div
                 ref={(el) => {

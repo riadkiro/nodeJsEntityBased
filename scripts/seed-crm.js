@@ -148,31 +148,7 @@ async function install(conn, userId, presetSlug) {
                 { label: 'Déjeuner', color: '#ec4899', icon: 'solar:cup-bold', order: 4 }
             ]
         },
-        {
-            name: 'Statut Devis', key: 'crm_quote_status', options: [
-                { label: 'Brouillon', color: '#94a3b8', type: 'start', order: 0 },
-                { label: 'Envoyé', color: '#3b82f6', type: 'active', order: 1 },
-                { label: 'Accepté', color: '#22c55e', type: 'completed', order: 2 },
-                { label: 'Refusé', color: '#ef4444', type: 'normal', order: 3 },
-                { label: 'Expiré', color: '#f97316', type: 'normal', order: 4 }
-            ]
-        },
-        {
-            name: 'Statut Contrat', key: 'crm_contract_status', options: [
-                { label: 'En rédaction', color: '#94a3b8', type: 'start', order: 0 },
-                { label: 'Actif', color: '#22c55e', type: 'active', order: 1 },
-                { label: 'Expiré', color: '#f59e0b', type: 'completed', order: 2 },
-                { label: 'Résilié', color: '#ef4444', type: 'normal', order: 3 }
-            ]
-        },
-        {
-            name: 'Statut Facture', key: 'crm_invoice_status', options: [
-                { label: 'Brouillon', color: '#94a3b8', type: 'start', order: 0 },
-                { label: 'Envoyée', color: '#3b82f6', type: 'active', order: 1 },
-                { label: 'Payée', color: '#22c55e', type: 'completed', order: 2 },
-                { label: 'En retard', color: '#ef4444', type: 'normal', order: 3 }
-            ]
-        },
+
         {
             name: 'Secteur d\'activité', key: 'crm_industry', options: [
                 { label: 'Tech & Logiciels', color: '#3b82f6', order: 0 },
@@ -240,17 +216,6 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
         {
-            name: 'Devis', nameSingular: 'Devis', namePlural: 'Devis', slug: 'devis', icon: 'solar:document-text-bold-duotone', color: '#f59e0b',
-            fields: ['montant_total', 'date_echeance', 'notes_generales'], statusClassification: 'crm_quote_status', classifications: [],
-            referenceTitleTokens: [{ t: 'field', id: 'title' }],
-            sidebarWidgets: [{ type: 'note', label: 'Notes de proposition', icon: 'solar:notes-bold-duotone', color: '#f59e0b', order: 0, visible: true, config: { content: '' } }]
-        },
-        {
-            name: 'Contrat', nameSingular: 'Contrat', namePlural: 'Contrats', slug: 'contrats', icon: 'solar:diploma-bold-duotone', color: '#ec4899',
-            fields: ['date_debut', 'date_fin', 'mrr', 'notes_generales'], statusClassification: 'crm_contract_status', classifications: [],
-            referenceTitleTokens: [{ t: 'field', id: 'title' }]
-        },
-        {
             name: 'Produit', nameSingular: 'Produit', namePlural: 'Produits', slug: 'produits', icon: 'solar:box-bold-duotone', color: '#0ea5e9',
             fields: ['reference', 'prix_unitaire', 'tva_rate', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
@@ -258,16 +223,6 @@ async function install(conn, userId, presetSlug) {
         {
             name: 'Service', nameSingular: 'Service', namePlural: 'Services', slug: 'services', icon: 'solar:settings-bold-duotone', color: '#0ea5e9',
             fields: ['reference', 'prix_unitaire', 'tva_rate', 'notes_generales'], statusClassification: null, classifications: [],
-            referenceTitleTokens: [{ t: 'field', id: 'title' }]
-        },
-        {
-            name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures-crm', icon: 'solar:bill-list-bold-duotone', color: '#ef4444',
-            fields: ['montant_total', 'montant_paye', 'date_echeance', 'reste_a_payer', 'notes_generales'], statusClassification: 'crm_invoice_status', classifications: [],
-            referenceTitleTokens: [{ t: 'field', id: 'title' }]
-        },
-        {
-            name: 'Paiement', nameSingular: 'Paiement', namePlural: 'Paiements', slug: 'paiements-crm', icon: 'solar:wallet-bold-duotone', color: '#10b981',
-            fields: ['montant_total', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         }
     ];
@@ -314,15 +269,8 @@ async function install(conn, userId, presetSlug) {
         { src: 'contacts', target: 'entreprises', label: 'Entreprise', inverse: 'Contacts', card: 'many-to-one' },
         { src: 'opportunites', target: 'contacts', label: 'Contact principal', inverse: 'Opportunités', card: 'many-to-one' },
         { src: 'opportunites', target: 'entreprises', label: 'Entreprise', inverse: 'Opportunités', card: 'many-to-one' },
-        { src: 'devis', target: 'opportunites', label: 'Opportunité', inverse: 'Devis', card: 'many-to-one' },
-        { src: 'devis', target: 'contacts', label: 'Contact facturation', inverse: 'Devis', card: 'many-to-one' },
-        { src: 'contrats', target: 'entreprises', label: 'Entreprise', inverse: 'Contrats', card: 'many-to-one' },
-        { src: 'contrats', target: 'opportunites', label: 'Opportunité liée', inverse: 'Contrat', card: 'one-to-one' },
         { src: 'activites', target: 'contacts', label: 'Contact', inverse: 'Activités', card: 'many-to-one' },
-        { src: 'activites', target: 'opportunites', label: 'Opportunité', inverse: 'Activités', card: 'many-to-one' },
-        { src: 'factures-crm', target: 'contrats', label: 'Contrat', inverse: 'Factures', card: 'many-to-one' },
-        { src: 'factures-crm', target: 'entreprises', label: 'Entreprise', inverse: 'Factures', card: 'many-to-one' },
-        { src: 'paiements-crm', target: 'factures-crm', label: 'Facture', inverse: 'Paiements', card: 'many-to-one' }
+        { src: 'activites', target: 'opportunites', label: 'Opportunité', inverse: 'Activités', card: 'many-to-one' }
     ];
 
     for (const r of relationDefs) {
@@ -339,18 +287,7 @@ async function install(conn, userId, presetSlug) {
     }
     console.log(`   ✅ ${relationDefs.length} relations`);
 
-    // Rel tokens for devis, contrats, factures, paiements
     const rk = ids.relationKeys;
-    const relTokenDefs = [
-        { slug: 'devis', tokens: [{ t: 'text', v: 'Devis - ' }, { t: 'field', id: `rel:${rk['devis__entreprises'] || rk['devis__contacts']}.title` }] },
-        { slug: 'contrats', tokens: [{ t: 'text', v: 'Contrat - ' }, { t: 'field', id: `rel:${rk['contrats__entreprises']}.title` }] },
-        { slug: 'factures-crm', tokens: [{ t: 'field', id: 'title' }, { t: 'text', v: ' - ' }, { t: 'field', id: `rel:${rk['factures-crm__entreprises']}.title` }] },
-        { slug: 'paiements-crm', tokens: [{ t: 'field', id: 'title' }, { t: 'text', v: ' - ' }, { t: 'field', id: `rel:${rk['paiements-crm__factures-crm']}.title` }] }
-    ];
-    for (const rt of relTokenDefs) {
-        if (!E[rt.slug]) continue;
-        await db.Entity.findByIdAndUpdate(E[rt.slug], { $set: { referenceTitleTokens: rt.tokens } });
-    }
 
     // =========== 5. NAVIGATION ===========
     console.log('\n🧭 Creating navigation...');
@@ -361,9 +298,7 @@ async function install(conn, userId, presetSlug) {
                 name: 'Pipeline Commercial', icon: 'solar:chart-bold-duotone', color: '#22c55e', views: [
                     { entitySlug: 'opportunites', name: 'Opportunités', icon: 'solar:chart-bold-duotone', color: '#22c55e' },
                     { entitySlug: 'contacts', name: 'Contacts', icon: 'solar:user-bold-duotone', color: '#3b82f6' },
-                    { entitySlug: 'entreprises', name: 'Entreprises', icon: 'solar:buildings-bold-duotone', color: '#64748b' },
-                    { entitySlug: 'devis', name: 'Devis', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
-                    { entitySlug: 'contrats', name: 'Contrats', icon: 'solar:diploma-bold-duotone', color: '#ec4899' }
+                    { entitySlug: 'entreprises', name: 'Entreprises', icon: 'solar:buildings-bold-duotone', color: '#64748b' }
                 ]
             }]
         },
@@ -381,15 +316,6 @@ async function install(conn, userId, presetSlug) {
                 name: 'Catalogue', icon: 'solar:box-bold-duotone', color: '#0ea5e9', views: [
                     { entitySlug: 'produits', name: 'Produits', icon: 'solar:box-bold-duotone', color: '#0ea5e9' },
                     { entitySlug: 'services', name: 'Services', icon: 'solar:settings-bold-duotone', color: '#0ea5e9' }
-                ]
-            }]
-        },
-        {
-            env: { name: 'Facturation', slug: 'facturation', icon: 'solar:bill-list-bold-duotone', color: '#ef4444' },
-            spaces: [{
-                name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#ef4444', views: [
-                    { entitySlug: 'factures-crm', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#ef4444' },
-                    { entitySlug: 'paiements-crm', name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#10b981' }
                 ]
             }]
         }
@@ -420,26 +346,7 @@ async function install(conn, userId, presetSlug) {
     }
     console.log(`   ✅ ${envDefs.length} environments + ${viewCount} views`);
 
-    // =========== 6. LINE SCHEMAS ===========
-    console.log('\n📋 Creating line schemas...');
-    const invoiceSchema = await upsertDoc(db.LineSchema, { slug: 'crm_invoice_lines' }, {
-        name: 'Lignes de Facture/Devis', slug: 'crm_invoice_lines',
-        appliesTo: { entityIds: [E['devis'], E['factures-crm']], documentType: 'invoice' },
-        lineTypes: ['product', 'service', 'note'], defaultLineType: 'service',
-        columns: [
-            { key: 'description', label: 'Description', type: 'text', required: true, visible: true, width: 'L', order: 0, config: {} },
-            { key: 'qty', label: 'Qté', type: 'number', required: true, visible: true, width: 'XS', order: 1, showWhen: { lineType: ['product', 'service'] }, config: {} },
-            { key: 'unitPrice', label: 'P.U. HT', type: 'money', required: true, visible: true, width: 'S', order: 2, showWhen: { lineType: ['product', 'service'] }, config: { currency: 'EUR', decimals: 2 } },
-            { key: 'discount', label: 'Remise %', type: 'number', required: false, visible: true, width: 'XS', order: 3, showWhen: { lineType: ['product', 'service'] }, config: {} },
-            { key: 'vatRate', label: 'TVA %', type: 'number', required: false, visible: true, width: 'XS', order: 4, showWhen: { lineType: ['product', 'service'] }, config: {} },
-            { key: 'lineTotal', label: 'Total HT', type: 'formula', required: false, visible: true, width: 'S', order: 5, showWhen: { lineType: ['product', 'service'] }, config: { expression: 'qty * unitPrice * (1 - discount / 100)', dependencies: ['qty', 'unitPrice', 'discount'] } },
-            { key: 'lineVat', label: 'TVA', type: 'formula', required: false, visible: true, width: 'S', order: 6, showWhen: { lineType: ['product', 'service'] }, config: { expression: 'lineTotal * vatRate / 100', dependencies: ['lineTotal', 'vatRate'] } }
-        ],
-        totals: { subtotalKey: 'lineTotal', vatKey: 'lineVat', totalFormula: 'subtotal + vat' }
-    });
-    
-    if (E['devis']) await db.Entity.findByIdAndUpdate(E['devis'], { $set: { enableDynamicTable: true, gridSchemas: [{ schemaId: invoiceSchema._id, position: 'main', order: 0, label: 'Lignes' }] } });
-    if (E['factures-crm']) await db.Entity.findByIdAndUpdate(E['factures-crm'], { $set: { enableDynamicTable: true, gridSchemas: [{ schemaId: invoiceSchema._id, position: 'main', order: 0, label: 'Lignes' }] } });
+    console.log('   (Line schemas skipped — no invoice entities)');
 
     // =========== 7. DEMO RECORDS (Part 1) ===========
     console.log('\n📊 Creating demo records...');
@@ -503,6 +410,139 @@ async function install(conn, userId, presetSlug) {
     });
 
     console.log('   ✅ Demo records created');
+
+    // =========== 9. DOCUMENT TEMPLATES + SMART DOC TEMPLATES + DOC-LISTING VIEWS ===========
+    // Devis/Contrats/Factures are DOCUMENT TEMPLATES linked to Entreprises/Opportunités
+    // (like ordonnances for patients — NOT standalone entities)
+    console.log('\n📄 Creating document templates & SmartDoc configs...');
+
+    // -- 9a. Document Templates (isTemplate: true) --
+    const devisDocTpl = await upsertDoc(db.Document, { name: 'Devis Commercial', isTemplate: true }, {
+        name: 'Devis Commercial', isTemplate: true, format: 'A4', orientation: 'portrait', status: 'published',
+        entityIds: [E['entreprises'], E['opportunites']].filter(Boolean),
+        pages: [{
+            order: 0,
+            content: `<div style="font-family:Inter,sans-serif;padding:40px;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:40px;">
+    <div><h1 style="font-size:28px;color:#1e293b;margin:0;">DEVIS</h1><p style="color:#64748b;margin:4px 0;">{{entreprises.titre}}</p></div>
+    <div style="text-align:right;"><p style="margin:0;font-weight:600;">Date : {{today}}</p></div>
+  </div>
+  <hr style="border:1px solid #e2e8f0;margin:20px 0;">
+  <table style="width:100%;border-collapse:collapse;margin-top:20px;"><thead><tr style="background:#f1f5f9;"><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;">Description</th><th style="padding:10px;border:1px solid #e2e8f0;">Qté</th><th style="padding:10px;border:1px solid #e2e8f0;">P.U. HT</th><th style="padding:10px;border:1px solid #e2e8f0;">Total HT</th></tr></thead><tbody><tr><td style="padding:10px;border:1px solid #e2e8f0;">Prestation</td><td style="padding:10px;border:1px solid #e2e8f0;text-align:center;">1</td><td style="padding:10px;border:1px solid #e2e8f0;text-align:right;">0,00 €</td><td style="padding:10px;border:1px solid #e2e8f0;text-align:right;">0,00 €</td></tr></tbody></table>
+</div>`
+        }],
+        createdBy: uid
+    });
+
+    const contratDocTpl = await upsertDoc(db.Document, { name: 'Contrat de Service', isTemplate: true }, {
+        name: 'Contrat de Service', isTemplate: true, format: 'A4', orientation: 'portrait', status: 'published',
+        entityIds: [E['entreprises']].filter(Boolean),
+        pages: [{
+            order: 0,
+            content: `<div style="font-family:Inter,sans-serif;padding:40px;">
+  <h1 style="text-align:center;color:#1e293b;font-size:24px;margin-bottom:30px;">CONTRAT DE PRESTATION DE SERVICES</h1>
+  <p style="text-align:center;color:#64748b;margin-bottom:40px;">Client: {{entreprises.titre}} — Date: {{today}}</p>
+  <hr style="border:1px solid #e2e8f0;margin:20px 0;">
+  <h2 style="color:#ec4899;font-size:16px;">Article 1 — Objet</h2>
+  <p>Le présent contrat a pour objet de définir les conditions de la prestation décrite ci-après.</p>
+</div>`
+        }],
+        createdBy: uid
+    });
+
+    const factureDocTpl = await upsertDoc(db.Document, { name: 'Facture', isTemplate: true }, {
+        name: 'Facture', isTemplate: true, format: 'A4', orientation: 'portrait', status: 'published',
+        entityIds: [E['entreprises']].filter(Boolean),
+        pages: [{
+            order: 0,
+            content: `<div style="font-family:Inter,sans-serif;padding:40px;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:40px;">
+    <div><h1 style="font-size:28px;color:#ef4444;margin:0;">FACTURE</h1><p style="color:#64748b;margin:4px 0;">{{entreprises.titre}}</p></div>
+    <div style="text-align:right;"><p style="margin:0;font-weight:600;">Date : {{today}}</p></div>
+  </div>
+  <hr style="border:1px solid #e2e8f0;margin:20px 0;">
+  <table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#fef2f2;"><th style="text-align:left;padding:10px;border:1px solid #e2e8f0;">Description</th><th style="padding:10px;border:1px solid #e2e8f0;">Total HT</th></tr></thead><tbody><tr><td style="padding:10px;border:1px solid #e2e8f0;">Prestation</td><td style="text-align:right;padding:10px;border:1px solid #e2e8f0;">0,00 €</td></tr></tbody></table>
+</div>`
+        }],
+        createdBy: uid
+    });
+
+    // -- 9b. SmartDoc Templates (linked to Entreprises / Opportunités) --
+    const smartDocDefs = [
+        { name: 'Devis Commercial', entitySlug: 'entreprises', docTpl: devisDocTpl, icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
+        { name: 'Contrat de Service', entitySlug: 'entreprises', docTpl: contratDocTpl, icon: 'solar:diploma-bold-duotone', color: '#ec4899' },
+        { name: 'Facture', entitySlug: 'entreprises', docTpl: factureDocTpl, icon: 'solar:bill-list-bold-duotone', color: '#ef4444' }
+    ];
+
+    const smartDocIds = {};
+    for (const sd of smartDocDefs) {
+        if (!E[sd.entitySlug] || !sd.docTpl) continue;
+        const smartDoc = await upsertDoc(db.SmartDocTemplate, { name: sd.name, entityId: E[sd.entitySlug] }, {
+            name: sd.name, description: `Génération de ${sd.name.toLowerCase()}`,
+            icon: sd.icon, color: sd.color,
+            documentId: sd.docTpl._id, entityId: E[sd.entitySlug],
+            outputFormat: 'pdf', active: true, order: 0,
+            inputFields: []
+        });
+        smartDocIds[sd.name] = smartDoc._id;
+    }
+    console.log(`   ✅ ${Object.keys(smartDocIds).length} SmartDoc templates`);
+
+    // -- 9c. Demo generated doc attachments on Entreprise records --
+    // Attach generated PDFs to entreprise records (like ordonnances on patient records)
+    const demoAtts = [
+        { record: entreprises[0], tplName: 'Devis Commercial', files: ['Devis_Refonte_Web_Acme.pdf', 'Devis_Maintenance_Annuelle.pdf'] },
+        { record: entreprises[1], tplName: 'Devis Commercial', files: ['Devis_Deploiement_ERP.pdf'] },
+        { record: entreprises[0], tplName: 'Contrat de Service', files: ['Contrat_Prestation_2026_Acme.pdf'] },
+        { record: entreprises[1], tplName: 'Contrat de Service', files: ['Contrat_Support_TechCorp.pdf'] },
+        { record: entreprises[0], tplName: 'Facture', files: ['Facture_FAC-2026-001.pdf'] },
+        { record: entreprises[1], tplName: 'Facture', files: ['Facture_FAC-2026-002.pdf', 'Facture_FAC-2026-003.pdf'] }
+    ];
+    for (const da of demoAtts) {
+        const tplId = smartDocIds[da.tplName];
+        if (!tplId || !da.record) continue;
+        for (let i = 0; i < da.files.length; i++) {
+            const att = {
+                filename: `demo_gen_${Date.now()}_${i}.pdf`,
+                originalName: da.files[i],
+                mimeType: 'application/pdf',
+                size: 45000 + Math.floor(Math.random() * 80000),
+                category: 'pdf',
+                isGenerated: true,
+                generatedFrom: tplId.toString(),
+                generatedFromName: da.tplName,
+                uploadedAt: new Date(Date.now() - (da.files.length - i) * 5 * 86400000),
+                uploadedBy: uid
+            };
+            await db.Record.findByIdAndUpdate(da.record._id, { $push: { attachments: att } });
+        }
+    }
+    console.log('   ✅ Demo generated docs attached to Entreprise records');
+
+    // -- 9d. Doc-listing Views in Pipeline Commercial sidebar --
+    const pipelineSpace = await db.Space.findOne({ slug: 'pipeline-commercial' }).lean();
+    if (pipelineSpace) {
+        const docListingDefs = [
+            { tplName: 'Devis Commercial', name: 'Devis', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
+            { tplName: 'Contrat de Service', name: 'Contrats', icon: 'solar:diploma-bold-duotone', color: '#ec4899' },
+            { tplName: 'Facture', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#ef4444' }
+        ];
+        for (let di = 0; di < docListingDefs.length; di++) {
+            const dl = docListingDefs[di];
+            const tplId = smartDocIds[dl.tplName];
+            if (!tplId || !E['entreprises']) continue;
+            const dlSlug = `doc-listing-${dl.tplName.toLowerCase().replace(/\s+/g, '-')}-${pipelineSpace._id.toString().slice(-6)}`;
+            await upsertDoc(db.View, { slug: dlSlug }, {
+                name: dl.name, slug: dlSlug, entity: E['entreprises'],
+                icon: dl.icon, color: dl.color, viewType: 'doc-listing',
+                order: 10 + di, spaces: [pipelineSpace._id], folders: [],
+                settings: { smartDocTemplateId: tplId },
+                createdBy: uid
+            });
+        }
+        console.log('   ✅ Doc-listing views created in Pipeline');
+    }
+
     console.log('\n🎉 CRM Preset installed successfully!');
 }
 

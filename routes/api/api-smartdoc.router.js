@@ -237,6 +237,68 @@ router.get('/smartdoc/documents', async (req, res) => {
 });
 
 /**
+ * GET /api/smartdoc/generated-docs?entityId=xxx&smartDocTemplateId=yyy
+ * List all documents generated via a specific SmartDoc template.
+ * Aggregates from record attachments where isGenerated=true and generatedFrom matches.
+ */
+router.get('/smartdoc/generated-docs', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const { entityId, smartDocTemplateId } = req.query;
+
+        if (!smartDocTemplateId) {
+            return res.status(400).json({ error: 'smartDocTemplateId requis' });
+        }
+
+        // Find records with generated attachments from this template
+        const query = {
+            'attachments.isGenerated': true,
+            'attachments.generatedFrom': smartDocTemplateId
+        };
+        if (entityId) {
+            query.entityId = entityId;
+        }
+
+        const records = await Record.find(query)
+            .select('title computedTitle attachments entityId')
+            .sort({ updatedAt: -1 })
+            .lean();
+
+        // Flatten: extract matching attachments with record context
+        const docs = [];
+        for (const record of records) {
+            const matchingAtts = (record.attachments || []).filter(
+                att => att.isGenerated && att.generatedFrom === smartDocTemplateId
+            );
+            for (const att of matchingAtts) {
+                docs.push({
+                    _id: att._id,
+                    filename: att.filename,
+                    originalName: att.originalName,
+                    mimeType: att.mimeType,
+                    size: att.size,
+                    category: att.category,
+                    uploadedAt: att.uploadedAt,
+                    createdAt: att.uploadedAt || record.createdAt,
+                    recordId: record._id,
+                    recordTitle: record.computedTitle || record.title || 'Sans titre',
+                    downloadUrl: `/account/${req.account_number}/uploads/attachments/${att.filename}`,
+                    viewUrl: `/account/${req.account_number}/uploads/attachments/${att.filename}`
+                });
+            }
+        }
+
+        // Sort by most recent first
+        docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        res.json({ success: true, docs });
+    } catch (error) {
+        console.error('[SmartDoc] Generated docs listing error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/smartdoc/variables/:documentId
  * Get available variables for a document based on its linked entities
  * Returns: system vars, user vars, entity fields, related entity fields, classifications

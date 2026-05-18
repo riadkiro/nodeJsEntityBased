@@ -129,9 +129,24 @@ module.exports = {
             // viewType from query param (table by default — RecordsGrid handles switching internally)
             const viewType = req.query.viewType || 'table';
 
+            // === Doc-listing special handling ===
+            let smartDocTemplate = null;
+            if (viewType === 'doc-listing' && req.query.viewId) {
+                try {
+                    const ViewModel = await tenantCollection(req, "View");
+                    const SmartDocTemplate = await tenantCollection(req, "SmartDocTemplate");
+                    const viewDoc = await ViewModel.findById(req.query.viewId).lean();
+                    if (viewDoc && viewDoc.settings && viewDoc.settings.smartDocTemplateId) {
+                        smartDocTemplate = await SmartDocTemplate.findById(viewDoc.settings.smartDocTemplateId).lean();
+                    }
+                } catch (e) {
+                    console.warn('[Record list] doc-listing SmartDocTemplate load error:', e.message);
+                }
+            }
+
             // Create view object for progressive template compatibility
             const view = {
-                _id: entity._id,
+                _id: req.query.viewId || entity._id,
                 viewType: viewType,
                 entity: entity._id,
                 virtualize: totalRecords > 5000
@@ -143,6 +158,7 @@ module.exports = {
                 view,
                 totalRecords,
                 limit: 0,
+                smartDocTemplate,
                 pagination: {
                     page: 1,
                     limit: 25,

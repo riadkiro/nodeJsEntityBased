@@ -377,6 +377,8 @@ export default function EditorHeader({
     lastSaved,
     triggerSave,
     handlePdfExport,
+    isContextFree = false,
+    isGeneratingPdf = false,
     // Template props
     availableEntities,
     isTemplateMode,
@@ -402,6 +404,14 @@ export default function EditorHeader({
 }) {
     const [textColor, setTextColor] = useState('#000000')
     const [highlightColor, setHighlightColor] = useState('transparent')
+
+    const handleClose = () => {
+        if (window.self !== window.top) {
+            window.parent.postMessage({ type: 'smartdoc-cancel' }, '*');
+        } else {
+            window.location.href = `/account/${accountNumber}/documents`;
+        }
+    };
 
     const handleNameChange = (e) => {
         setDoc(prev => ({ ...prev, name: e.target.value }))
@@ -677,38 +687,68 @@ export default function EditorHeader({
                 ) : (
                     /* === NORMAL MODE ACTIONS === */
                     <div className="flex items-center gap-2">
-                        {/* Template Toggle Button - config shows in right sidebar */}
-                        <button
-                            onClick={() => window.dispatchEvent(new CustomEvent('toggle-template-panel'))}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${doc.isTemplate
-                                ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
-                                : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-500 dark:border-gray-700 dark:hover:border-amber-600'
-                                }`}
-                        >
-                            <iconify-icon icon={doc.isTemplate ? 'solar:magic-stick-3-bold-duotone' : 'solar:magic-stick-3-line-duotone'} width="16"></iconify-icon>
-                            <span>{doc.isTemplate ? 'Template ✓' : 'Template'}</span>
-                        </button>
+                        {isContextFree ? (
+                            <>
+                                {/* Annuler Button */}
+                                <button
+                                    onClick={handleClose}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all text-sm font-medium bg-white"
+                                >
+                                    <iconify-icon icon="tabler:circle-x" width="18"></iconify-icon>
+                                    <span>Annuler</span>
+                                </button>
 
-                        {/* Generate Button - only for templates */}
-                        {doc.isTemplate && doc._id && (
-                            <a
-                                href={`/account/${accountNumber}/documents/${doc._id}/generate`}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700 ml-1.5"
-                            >
-                                <iconify-icon icon="solar:play-bold-duotone" width="15"></iconify-icon>
-                                <span>Générer</span>
-                            </a>
+                                {/* Finaliser Button */}
+                                <button
+                                    onClick={handlePdfExport}
+                                    disabled={!doc._id || isGeneratingPdf}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    style={{ backgroundColor: '#10b981' }}
+                                >
+                                    {isGeneratingPdf ? (
+                                        <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                    ) : (
+                                        <iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon>
+                                    )}
+                                    <span>{isGeneratingPdf ? 'Génération en cours...' : 'Finaliser et générer le PDF'}</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                {/* Template Toggle Button - config shows in right sidebar */}
+                                <button
+                                    onClick={() => window.dispatchEvent(new CustomEvent('toggle-template-panel'))}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${doc.isTemplate
+                                        ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
+                                        : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-500 dark:border-gray-700 dark:hover:border-amber-600'
+                                        }`}
+                                >
+                                    <iconify-icon icon={doc.isTemplate ? 'solar:magic-stick-3-bold-duotone' : 'solar:magic-stick-3-line-duotone'} width="16"></iconify-icon>
+                                    <span>{doc.isTemplate ? 'Template ✓' : 'Template'}</span>
+                                </button>
+
+                                {/* Generate Button - only for templates */}
+                                {doc.isTemplate && doc._id && (
+                                    <a
+                                        href={`/account/${accountNumber}/documents/${doc._id}/generate`}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700 ml-1.5"
+                                    >
+                                        <iconify-icon icon="solar:play-bold-duotone" width="15"></iconify-icon>
+                                        <span>Générer</span>
+                                    </a>
+                                )}
+
+                                {/* PDF Button */}
+                                <button
+                                    onClick={handlePdfExport}
+                                    disabled={!doc._id}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
+                                    <span>PDF</span>
+                                </button>
+                            </>
                         )}
-
-                        {/* PDF Button */}
-                        <button
-                            onClick={handlePdfExport}
-                            disabled={!doc._id}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
-                            <span>PDF</span>
-                        </button>
                     </div>
                 )}
             </div>

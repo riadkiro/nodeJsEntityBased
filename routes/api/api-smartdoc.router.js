@@ -2145,13 +2145,13 @@ async function generatePDF(html, outputPath, docTemplate) {
                         /* Resets specific to the editor viewer structure */
                         .bg-white.shadow-2xl { box-shadow: none !important; margin: 0 auto !important; }
                         /* Base typography to match editor */
-                        h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; }
-                        h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; }
-                        h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; }
-                        p { margin-top: 0; margin-bottom: 1em; line-height: 1.5; }
-                        ul { list-style-type: disc; margin: 1em 0; padding-left: 40px; }
-                        ol { list-style-type: decimal; margin: 1em 0; padding-left: 40px; }
-                        blockquote { border-left: 4px solid #cbd5e1; margin: 1em 40px; padding-left: 1em; color: #475569; }
+                        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; }
+                        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; }
+                        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; }
+                        p { margin-top: 0 !important; margin-bottom: 1em !important; line-height: 1.5 !important; }
+                        ul { list-style-type: disc !important; margin: 1em 0 !important; padding-left: 40px !important; }
+                        ol { list-style-type: decimal !important; margin: 1em 0 !important; padding-left: 40px !important; }
+                        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 40px !important; padding-left: 1em !important; color: #475569 !important; }
                     </style>
                 </head>
                 <body>

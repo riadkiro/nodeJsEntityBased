@@ -7,7 +7,7 @@
  * - Selection/Range stored in refs to survive re-renders
  * - Autosave timeout stored in ref
  */
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
@@ -132,6 +132,11 @@ const mergeWithDefaults = (initialDoc) => {
 }
 
 export default function DocumentEditorIsland({ accountNumber, initialDocument, isNew, contextFreeBindings, isTemplateMode }) {
+    const isContextFree = useMemo(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        return urlParams.get('contextFree') === '1'
+    }, [])
+
     // ========== STATE (UI only, NOT contenteditable content) ==========
     const [doc, setDoc] = useState(() => mergeWithDefaults(initialDocument))
     const [selectedPageIndex, setSelectedPageIndex] = useState(0)
@@ -157,6 +162,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [currentAlignment, setCurrentAlignment] = useState('left')
     const [currentLineHeight, setCurrentLineHeight] = useState(1.5)
     const [currentLetterSpacing, setCurrentLetterSpacing] = useState(0)
+
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
     // HTML Editor Modal
     const [editingHtml, setEditingHtml] = useState(false)
@@ -1579,22 +1586,95 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             return
         }
 
-        // Get canvas HTML and clean it
-        const canvas = editorRootRef.current
-        if (!canvas) return
+        // Build clean HTML matching EXACTLY the SmartDoc format (resolveDocumentTokens output)
+        // Instead of sending raw editor DOM, we extract page content and wrap it properly
+        const docMargins = doc.margins || { top: 40, right: 40, bottom: 40, left: 40 }
+        const docDims = doc.dimensions || { width: 794, height: 1123 }
+        const hasHeader = !!(doc.headerHtml && doc.headerHtml.trim())
+        const hasFooter = !!(doc.footerHtml && doc.footerHtml.trim())
+        const contentPaddingTop = hasHeader ? 8 : docMargins.top
+        const contentPaddingBottom = hasFooter ? 8 : docMargins.bottom
 
-        // Clone and clean for print
-        const clone = canvas.cloneNode(true)
+        let pagesHtml = ''
+        const pages = doc.pages || []
 
-        // Remove controls
-        clone.querySelectorAll('[data-print-hide]').forEach(el => el.remove())
-        clone.querySelectorAll('button').forEach(el => el.remove())
-        clone.querySelectorAll('.mode-switcher').forEach(el => el.remove())
+        for (let i = 0; i < pages.length; i++) {
+            const pageEl = pageRefs.current[i]
+            // Get content from DOM (source of truth for contenteditable)
+            const pageContent = pageEl ? pageEl.innerHTML : (pages[i].content || '')
+            const isLastPage = i === pages.length - 1
 
-        const html = clone.innerHTML
+            pagesHtml += `<div class="doc-page" ${!isLastPage ? 'style="page-break-after: always;"' : ''}>`
+            if (hasHeader) {
+                pagesHtml += `<div class="doc-header" style="padding: ${docMargins.top}px ${docMargins.right}px 0 ${docMargins.left}px;">${doc.headerHtml}</div>`
+            }
+            pagesHtml += `<div class="doc-content" style="padding: ${contentPaddingTop}px ${docMargins.right}px ${contentPaddingBottom}px ${docMargins.left}px;">${pageContent}</div>`
+            if (hasFooter) {
+                pagesHtml += `<div class="doc-footer" style="padding: 0 ${docMargins.right}px ${docMargins.bottom}px ${docMargins.left}px;">${doc.footerHtml}</div>`
+            }
+            pagesHtml += `</div>`
+        }
 
-        await exportPdf(doc._id, doc.name, html, accountNumber)
-    }, [doc._id, doc.name, accountNumber])
+        // Build the full HTML document — exact same structure as SmartDoc's resolveDocumentTokens
+        const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { margin: 0; size: A4; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 12pt; 
+            line-height: 1.6;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        /* Tailwind Preflight resets — zero out margins only */
+        p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
+        ul, ol { list-style: none; padding: 0; }
+        img, svg { display: block; max-width: 100%; }
+        /* Restore heading sizes to match editor preview */
+        h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; color: #000; }
+        h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; color: #000; }
+        h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; color: #000; }
+        h4 { font-size: 1em; font-weight: bold; margin-top: 1.33em; margin-bottom: 1.33em; color: #000; }
+        p { margin-top: 0; margin-bottom: 0; line-height: 1.6; }
+        ul { list-style-type: disc; padding-left: 40px; }
+        ol { list-style-type: decimal; padding-left: 40px; }
+        blockquote { border-left: 4px solid #cbd5e1; margin: 1em 0; padding-left: 1em; color: #475569; }
+        strong, b { font-weight: bold; }
+        em, i { font-style: italic; }
+        .doc-page {
+            width: 100%;
+            min-height: ${docDims.height}px;
+            background: #ffffff;
+            position: relative;
+        }
+        .doc-content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; font-weight: 600; }
+    </style>
+</head>
+<body>
+${pagesHtml}
+</body>
+</html>`
+
+        setIsGeneratingPdf(true)
+        try {
+            await exportPdf(doc._id, doc.name, fullHtml, accountNumber)
+        } finally {
+            setIsGeneratingPdf(false)
+        }
+    }, [doc._id, doc.name, doc.pages, doc.margins, doc.dimensions, doc.headerHtml, doc.footerHtml, accountNumber])
 
     // ========== DIMENSION UPDATES ==========
     const updateDimensions = useCallback(() => {
@@ -2349,6 +2429,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 lastSaved={lastSaved}
                 triggerSave={triggerSave}
                 handlePdfExport={handlePdfExport}
+                isContextFree={isContextFree}
+                isGeneratingPdf={isGeneratingPdf}
                 // Template props
                 availableEntities={availableEntities}
                 isTemplateMode={isTemplateMode}

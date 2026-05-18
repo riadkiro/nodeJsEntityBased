@@ -143,19 +143,21 @@ router.get('/', async (req, res) => {
                     { $match: { 'attachments.isGenerated': true } },
                     { $sort: { 'attachments.uploadedAt': -1 } },
                     { $limit: 50 },
-                    { $project: {
-                        _id: '$attachments._id',
-                        filename: '$attachments.filename',
-                        originalName: '$attachments.originalName',
-                        mimeType: '$attachments.mimeType',
-                        size: '$attachments.size',
-                        generatedFromName: '$attachments.generatedFromName',
-                        uploadedAt: '$attachments.uploadedAt',
-                        uploadedBy: '$attachments.uploadedBy',
-                        recordId: '$_id',
-                        recordTitle: '$title',
-                        entityId: '$entityId'
-                    }}
+                    {
+                        $project: {
+                            _id: '$attachments._id',
+                            filename: '$attachments.filename',
+                            originalName: '$attachments.originalName',
+                            mimeType: '$attachments.mimeType',
+                            size: '$attachments.size',
+                            generatedFromName: '$attachments.generatedFromName',
+                            uploadedAt: '$attachments.uploadedAt',
+                            uploadedBy: '$attachments.uploadedBy',
+                            recordId: '$_id',
+                            recordTitle: '$title',
+                            entityId: '$entityId'
+                        }
+                    }
                 ]);
 
                 // Enrich with entity names
@@ -648,43 +650,54 @@ router.post('/api/:id/pdf', async (req, res) => {
 
         const page = await browser.newPage();
 
-        // Optimize for print: Set content and wait for load
-        // We inject Tailwind via CDN to ensure styles are present in the PDF renderer
-        const wrappedHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-                <script src="https://cdn.tailwindcss.com"></script>
-                <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-                <style>
-                    body { 
-                        margin: 0; 
-                        padding: 0; 
-                        -webkit-print-color-adjust: exact; 
-                        print-color-adjust: exact; 
-                        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-                    }
-                    /* Ensure pages start on new sheets */
-                    .page-break-after { page-break-after: always; }
-                    /* Resets specific to the editor viewer structure */
-                    .bg-white.shadow-2xl { box-shadow: none !important; margin: 0 auto !important; }
-                    /* Base typography to match editor */
-                    h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; }
-                    h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; }
-                    h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; }
-                    p { margin-top: 0; margin-bottom: 1em; line-height: 1.5; }
-                    ul { list-style-type: disc; margin: 1em 0; padding-left: 40px; }
-                    ol { list-style-type: decimal; margin: 1em 0; padding-left: 40px; }
-                    blockquote { border-left: 4px solid #cbd5e1; margin: 1em 40px; padding-left: 1em; color: #475569; }
-                </style>
-            </head>
-            <body>
-                ${htmlContent}
-            </body>
-            </html>
-        `;
+        // Set viewport to exactly match editor page dimensions (same as SmartDoc generatePDF)
+        await page.setViewport({ width: 794, height: 1123 });
+
+        // If HTML already contains a full document (built client-side matching SmartDoc format),
+        // use it directly. This mirrors generatePDF() in api-smartdoc.router.js
+        let wrappedHtml = htmlContent;
+        if (!htmlContent.includes('<html') && !htmlContent.includes('<HTML')) {
+            // Fallback wrapper for legacy callers that send raw HTML fragments
+            wrappedHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { margin: 0; size: A4; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 12pt; 
+            line-height: 1.6;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
+        ul, ol { list-style: none; padding: 0; }
+        img, svg { display: block; max-width: 100%; }
+        h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; color: #000; }
+        h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; color: #000; }
+        h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; color: #000; }
+        h4 { font-size: 1em; font-weight: bold; margin-top: 1.33em; margin-bottom: 1.33em; color: #000; }
+        p { margin-top: 0; margin-bottom: 0; line-height: 1.6; }
+        ul { list-style-type: disc; padding-left: 40px; }
+        ol { list-style-type: decimal; padding-left: 40px; }
+        blockquote { border-left: 4px solid #cbd5e1; margin: 1em 0; padding-left: 1em; color: #475569; }
+        strong, b { font-weight: bold; }
+        em, i { font-style: italic; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; font-weight: 600; }
+    </style>
+</head>
+<body>
+    ${htmlContent}
+</body>
+</html>`;
+        }
 
         await page.setContent(wrappedHtml, {
             waitUntil: ['networkidle0', 'load'],
@@ -694,7 +707,8 @@ router.post('/api/:id/pdf', async (req, res) => {
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
-            margin: { top: 0, bottom: 0, left: 0, right: 0 }
+            margin: { top: 0, bottom: 0, left: 0, right: 0 },
+            preferCSSPageSize: true
         });
 
         if (!pdfBuffer || pdfBuffer.length === 0) {
@@ -1182,8 +1196,8 @@ router.post('/api/:documentId/resolve-bindings', async (req, res) => {
         let fieldDefs = entity.customFields || [];
         const needsManualLoad = fieldDefs.length > 0 && typeof fieldDefs[0] !== 'object';
         if (needsManualLoad) {
-            fieldDefs = await FieldTemplate.find({ 
-                _id: { $in: entity.customFields } 
+            fieldDefs = await FieldTemplate.find({
+                _id: { $in: entity.customFields }
             }).lean();
         }
 
@@ -1201,7 +1215,7 @@ router.post('/api/:documentId/resolve-bindings', async (req, res) => {
             for (const cf of record.customFields) {
                 if (!cf.field_id) continue;
                 const fieldId = cf.field_id.toString();
-                const fieldDef = fieldDefs.find(fd => 
+                const fieldDef = fieldDefs.find(fd =>
                     fd._id && fd._id.toString() === fieldId
                 );
                 const value = cf.value !== undefined && cf.value !== null ? cf.value : '';

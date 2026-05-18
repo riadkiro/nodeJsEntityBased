@@ -1552,6 +1552,33 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 this.downloadUrl = '';
                 const iframe = document.getElementById('docs-smartdoc-preview-iframe');
                 if (iframe) iframe.src = 'about:blank';
+            },
+
+            confirmingDocDelete: null,
+
+            async deleteDoc(doc) {
+                if (this.confirmingDocDelete !== doc._id) {
+                    this.confirmingDocDelete = doc._id;
+                    setTimeout(() => { if (this.confirmingDocDelete === doc._id) this.confirmingDocDelete = null; }, 3000);
+                    return;
+                }
+                this.confirmingDocDelete = null;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
+                        method: 'DELETE', credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const idx = this.generatedDocs.findIndex(d => d._id === doc._id);
+                        if (idx !== -1) this.generatedDocs.splice(idx, 1);
+                        if (window.showMessage) window.showMessage('Document supprimé', 'success');
+                    } else {
+                        alert(data.error || 'Erreur lors de la suppression');
+                    }
+                } catch (e) {
+                    console.error('[DocsModule] Delete error:', e);
+                    alert('Erreur réseau');
+                }
             }
         }));
     });
@@ -1752,7 +1779,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 if (this.selectedIds.length === this.displayFiles.length) {
                     this.selectedIds = [];
                 } else {
-                    this.selectedIds = this.displayFiles.filter(f => !f.isGenerated).map(f => f._id);
+                    this.selectedIds = this.displayFiles.map(f => f._id);
                 }
             },
 
@@ -2432,6 +2459,14 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                        download class="docs-tpl-file-dl" title="Télécharger" @click.stop>
                                         <iconify-icon icon="solar:download-bold" width="13"></iconify-icon>
                                     </a>
+                                    <button @click.stop="deleteDoc(doc)" class="docs-tpl-file-dl" x-show="confirmingDocDelete !== doc._id"
+                                        title="Supprimer" style="color:#ef4444;">
+                                        <iconify-icon icon="solar:trash-bin-2-bold" width="13"></iconify-icon>
+                                    </button>
+                                    <button @click.stop="deleteDoc(doc)" class="docs-tpl-file-dl" x-show="confirmingDocDelete === doc._id"
+                                        style="color:#fff;background:#ef4444;border-radius:6px;padding:2px 7px;font-size:9px;font-weight:700;width:auto;height:auto;white-space:nowrap;">
+                                        Supprimer ?
+                                    </button>
                                 </div>
                             </template>
                             <!-- Load more button -->
@@ -2577,8 +2612,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     <div style="display:flex;align-items:center;gap:10px;">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#4361ee;">
                             <input type="checkbox" @click="selectAll()"
-                                :checked="selectedIds.length > 0 && selectedIds.length === displayFiles.filter(f => !f.isGenerated).length"
-                                :indeterminate="selectedIds.length > 0 && selectedIds.length < displayFiles.filter(f => !f.isGenerated).length"
+                                :checked="selectedIds.length > 0 && selectedIds.length === displayFiles.length"
+                                :indeterminate="selectedIds.length > 0 && selectedIds.length < displayFiles.length"
                                 style="width:14px;height:14px;accent-color:#4361ee;cursor:pointer;">
                             Tout sélectionner
                         </label>
@@ -2684,10 +2719,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                          style="cursor:pointer;"
                          :draggable="!file.isGenerated && !selectMode && renamingFileId !== file._id"
                          @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()"
-                         @click="selectMode && !file.isGenerated ? toggleSelect(file._id) : (renamingFileId !== file._id && !selectMode ? window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx) : null)"
+                         @click="selectMode ? toggleSelect(file._id) : (renamingFileId !== file._id && !selectMode ? window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx) : null)"
                          @contextmenu.prevent="openContextMenu($event, file, 'file')">
                         <!-- Checkbox in select mode -->
-                        <template x-if="selectMode && !file.isGenerated">
+                        <template x-if="selectMode">
                             <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" @click.stop="toggleSelect(file._id)">
                                 <input type="checkbox" :checked="isSelected(file._id)"
                                     style="width:16px;height:16px;accent-color:#4361ee;cursor:pointer;"
@@ -2729,12 +2764,12 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
                         <div class="drive-file-actions" x-show="!selectMode">
                             <button @click.stop="window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
-                            <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="!file.isGenerated && renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
+                            <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
                             <a :href="file.url + '?dl=' + encodeURIComponent(file.originalName)" :download="file.originalName" class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
                             <!-- Delete with 2-step inline confirmation -->
-                            <button @click.stop="deleteFile(file)" class="rm-item-action" x-show="!file.isGenerated && confirmDeleteFileId !== file._id"
+                            <button @click.stop="deleteFile(file)" class="rm-item-action" x-show="confirmDeleteFileId !== file._id"
                                 title="Supprimer" style="color:#ef4444;"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
-                            <button @click.stop="deleteFile(file)" class="rm-item-action" x-show="!file.isGenerated && confirmDeleteFileId === file._id"
+                            <button @click.stop="deleteFile(file)" class="rm-item-action" x-show="confirmDeleteFileId === file._id"
                                 style="color:#fff;background:#ef4444;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;">Confirmer ?</button>
                         </div>
                     </div>
@@ -2806,7 +2841,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                 Télécharger
                             </a>
                             
-                            <template x-if="contextMenu.item && !contextMenu.item.isGenerated">
+                            <template x-if="contextMenu.item">
                                 <div>
                                     <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
                                     <button @click="startRename(contextMenu.item); contextMenu.show = false;"

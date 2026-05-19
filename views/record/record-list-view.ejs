@@ -228,7 +228,7 @@ document.addEventListener('alpine:init', () => {
                 });
             } catch (e) {
                 console.error('Init error:', e);
-                alert('Erreur lors du chargement');
+                window.showMessage ? window.showMessage('Erreur lors du chargement', 'danger') : alert('Erreur lors du chargement');
             }
         },
 
@@ -352,7 +352,7 @@ document.addEventListener('alpine:init', () => {
                     showConfirmButton: false 
                 });
             } catch (e) {
-                alert("Erreur: " + e.message);
+                window.showMessage ? window.showMessage("Erreur: " + e.message, 'danger') : alert("Erreur: " + e.message);
             } finally {
                 this.isSubmitting = false;
             }

@@ -151,6 +151,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [showTemplatePanel, setShowTemplatePanel] = useState(false) // Right sidebar template config
     const [zoomLevel, setZoomLevel] = useState(1) // Zoom level for document canvas (0.25 to 3)
     const [availableEntities, setAvailableEntities] = useState([])
+    const [autoSave, setAutoSave] = useState(true) // Auto-save toggle for template mode
+    const [autoSaveLoaded, setAutoSaveLoaded] = useState(false) // Prevents flash before pref is loaded
+
+    // Effective template mode: server prop OR document flag
+    const effectiveTemplateMode = isTemplateMode || !!doc.isTemplate
 
     // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
@@ -183,11 +188,18 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const isGlobalSelectionRef = useRef(false) // Ref mirror for stale-closure-safe access
     const isPastingRef = useRef(false) // Prevents double-reflow during paste (insertHTML triggers onInput)
     const reflowInProgressRef = useRef(false) // Prevents concurrent reflow execution
+    const autoSaveRef = useRef(true) // Ref mirror of autoSave for stale-closure-safe access
+    const hasUnsavedChangesRef = useRef(false) // Tracks unsaved edits when auto-save is OFF
 
     // Keep docRef in sync
     useEffect(() => {
         docRef.current = doc
     })
+
+    // Keep autoSaveRef in sync
+    useEffect(() => {
+        autoSaveRef.current = autoSave
+    }, [autoSave])
 
     // ========== WORD-LIKE: Force <p> tags on Enter ==========
     // Without this, Chrome creates <div> on Enter. With it, Enter always creates <p><br></p>.
@@ -215,6 +227,62 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             .catch(e => console.warn('[DocumentEditor] Could not load entities:', e))
     }, [accountNumber])
 
+    // ========== LOAD PERSISTED AUTO-SAVE PREFERENCE ==========
+    useEffect(() => {
+        fetch(`/account/${accountNumber}/api/user/view-preferences/document-editor`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data?.preferences?.editorAutoSave !== undefined) {
+                    const val = data.preferences.editorAutoSave
+                    setAutoSave(val)
+                    autoSaveRef.current = val
+                }
+                setAutoSaveLoaded(true)
+            })
+            .catch(e => {
+                console.warn('[DocumentEditor] Could not load editor preferences:', e)
+                setAutoSaveLoaded(true)
+            })
+    }, [accountNumber])
+
+    // ========== PERSIST AUTO-SAVE TOGGLE ==========
+    const pendingFlushRef = useRef(false) // Flag: flush unsaved changes after auto-save re-enabled
+    const handleSetAutoSave = useCallback((value) => {
+        setAutoSave(value)
+        autoSaveRef.current = value
+        // Persist to server
+        fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                viewId: 'document-editor',
+                preferences: { editorAutoSave: value }
+            })
+        }).catch(e => console.warn('[DocumentEditor] Could not save auto-save preference:', e))
+
+        // If turning auto-save ON and there are pending changes, schedule flush
+        if (value && hasUnsavedChangesRef.current) {
+            hasUnsavedChangesRef.current = false
+            pendingFlushRef.current = true
+        }
+    }, [accountNumber])
+
+    // ========== UNSAVED CHANGES WARNING (manual save mode) ==========
+    useEffect(() => {
+        const handler = (e) => {
+            if (!autoSaveRef.current && hasUnsavedChangesRef.current) {
+                // Modern browsers require preventDefault and returnValue
+                e.preventDefault()
+                const msg = 'Vous avez des modifications non enregistrées. Voulez-vous quitter ?'
+                e.returnValue = msg
+                return msg
+            }
+        }
+        window.addEventListener('beforeunload', handler)
+        return () => window.removeEventListener('beforeunload', handler)
+    }, [])
+
     // Listen for template panel toggle from header button
     useEffect(() => {
         const handler = () => setShowTemplatePanel(prev => !prev)
@@ -224,93 +292,120 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
 
     // ========== AUTOSAVE ==========
+    // Core save logic — extracted so both triggerSave and forceSave share it
+    const executeSave = useCallback(async () => {
+        // Read current content from page refs
+        const currentDoc = { ...docRef.current }
+
+        // Safety check: verify all edition pages have valid refs
+        // This prevents saving empty content when DOM refs aren't available
+        let hasInvalidRef = false
+        currentDoc.pages = currentDoc.pages.map((page, i) => {
+            const pageRef = pageRefs.current[i]
+            if (page.mode === 'edition') {
+                if (pageRef) {
+                    // Clean any temporary markers before saving
+                    let content = pageRef.innerHTML
+                    content = content.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
+                    content = content.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+                    return { ...page, content }
+                } else {
+                    // CRITICAL: pageRef is null but page is in edition mode
+                    // If state content is also empty, we might lose data
+                    console.warn(`[triggerSave] Page ${i} has no ref, using state content:`, page.content?.substring(0, 50))
+                    if (!page.content && i === 0) {
+                        // For page 0 with no ref and no content, this is likely a timing issue
+                        // Skip save to prevent data loss
+                        hasInvalidRef = true
+                    }
+                    return page
+                }
+            }
+            // Layout mode: sync content backup from rows
+            if (page.mode === 'layout' && page.rows && page.rows.length > 0) {
+                let html = ''
+                page.rows.forEach(row => {
+                    if (row.columns) {
+                        row.columns.forEach(col => {
+                            if (col.blocks) {
+                                col.blocks.forEach(block => {
+                                    if (block.type === 'text' || block.type === 'html' || !block.type) {
+                                        html += (block.content || '')
+                                    } else if (block.type === 'image' && block.src) {
+                                        html += `<div style="text-align:center; margin: 10px 0;"><img src="${block.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
+                                    }
+                                })
+                            }
+                        })
+                    }
+                })
+                return { ...page, content: html }
+            }
+            // Designer mode: sync content backup from elements
+            if (page.mode === 'designer' && page.elements && page.elements.length > 0) {
+                const sorted = [...page.elements].sort((a, b) => (a.y - b.y) || (a.x - b.x))
+                let html = ''
+                sorted.forEach(el => {
+                    if (el.type === 'text') {
+                        html += (el.content || '')
+                    } else if (el.type === 'image' && el.src) {
+                        html += `<div style="text-align:center; margin: 10px 0;"><img src="${el.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
+                    }
+                })
+                return { ...page, content: html }
+            }
+            return page
+        })
+
+        // Abort save if we detected a potentially dangerous state
+        if (hasInvalidRef) {
+            console.warn('[triggerSave] Aborting save: detected edition pages without valid refs')
+            return
+        }
+
+        const result = await saveDocument(currentDoc, accountNumber)
+        if (result.success && result.document) {
+            // Update URL if this was a new document
+            if (!docRef.current._id && result.document._id) {
+                const newUrl = `/account/${accountNumber}/documents/${result.document._id}/edit-react`
+                window.history.replaceState({}, '', newUrl)
+            }
+            setDoc(prev => ({ ...prev, _id: result.document._id }))
+            setLastSaved(new Date())
+            hasUnsavedChangesRef.current = false
+        }
+    }, [accountNumber])
+
+    // triggerSave — debounced auto-save, respects the autoSave toggle
     const triggerSave = useCallback(() => {
+        // If auto-save is disabled, we just track that there are unsaved changes
+        if (!autoSaveRef.current) {
+            hasUnsavedChangesRef.current = true
+            return
+        }
+
         // Clear existing timeout
         clearTimeout(saveTimeoutRef.current)
 
         // Set new timeout (1 second debounce)
-        saveTimeoutRef.current = setTimeout(async () => {
-            // Read current content from page refs
-            const currentDoc = { ...docRef.current }
+        saveTimeoutRef.current = setTimeout(() => executeSave(), 1000)
+    }, [executeSave])
 
-            // Safety check: verify all edition pages have valid refs
-            // This prevents saving empty content when DOM refs aren't available
-            let hasInvalidRef = false
-            currentDoc.pages = currentDoc.pages.map((page, i) => {
-                const pageRef = pageRefs.current[i]
-                if (page.mode === 'edition') {
-                    if (pageRef) {
-                        // Clean any temporary markers before saving
-                        let content = pageRef.innerHTML
-                        content = content.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
-                        content = content.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
-                        return { ...page, content }
-                    } else {
-                        // CRITICAL: pageRef is null but page is in edition mode
-                        // If state content is also empty, we might lose data
-                        console.warn(`[triggerSave] Page ${i} has no ref, using state content:`, page.content?.substring(0, 50))
-                        if (!page.content && i === 0) {
-                            // For page 0 with no ref and no content, this is likely a timing issue
-                            // Skip save to prevent data loss
-                            hasInvalidRef = true
-                        }
-                        return page
-                    }
-                }
-                // Layout mode: sync content backup from rows
-                if (page.mode === 'layout' && page.rows && page.rows.length > 0) {
-                    let html = ''
-                    page.rows.forEach(row => {
-                        if (row.columns) {
-                            row.columns.forEach(col => {
-                                if (col.blocks) {
-                                    col.blocks.forEach(block => {
-                                        if (block.type === 'text' || block.type === 'html' || !block.type) {
-                                            html += (block.content || '')
-                                        } else if (block.type === 'image' && block.src) {
-                                            html += `<div style="text-align:center; margin: 10px 0;"><img src="${block.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
-                                        }
-                                    })
-                                }
-                            })
-                        }
-                    })
-                    return { ...page, content: html }
-                }
-                // Designer mode: sync content backup from elements
-                if (page.mode === 'designer' && page.elements && page.elements.length > 0) {
-                    const sorted = [...page.elements].sort((a, b) => (a.y - b.y) || (a.x - b.x))
-                    let html = ''
-                    sorted.forEach(el => {
-                        if (el.type === 'text') {
-                            html += (el.content || '')
-                        } else if (el.type === 'image' && el.src) {
-                            html += `<div style="text-align:center; margin: 10px 0;"><img src="${el.src}" style="max-width:100%; height:auto; border-radius: 8px;"></div>`
-                        }
-                    })
-                    return { ...page, content: html }
-                }
-                return page
-            })
+    // forceSave — always saves immediately, ignores auto-save toggle
+    // Used by: Enregistrer button, Ctrl+S, entity linking, binding resolution
+    const forceSave = useCallback(async () => {
+        clearTimeout(saveTimeoutRef.current)
+        return await executeSave()
+    }, [executeSave])
 
-            // Abort save if we detected a potentially dangerous state
-            if (hasInvalidRef) {
-                console.warn('[triggerSave] Aborting save: detected edition pages without valid refs')
-                return
-            }
-
-            const result = await saveDocument(currentDoc, accountNumber)
-            if (result.success && result.document) {
-                // Update URL if this was a new document
-                if (!docRef.current._id && result.document._id) {
-                    const newUrl = `/account/${accountNumber}/documents/${result.document._id}/edit-react`
-                    window.history.replaceState({}, '', newUrl)
-                }
-                setDoc(prev => ({ ...prev, _id: result.document._id }))
-                setLastSaved(new Date())
-            }
-        }, 1000)
-    }, [accountNumber])
+    // Flush pending changes when auto-save is re-enabled
+    useEffect(() => {
+        if (autoSave && pendingFlushRef.current) {
+            pendingFlushRef.current = false
+            clearTimeout(saveTimeoutRef.current)
+            saveTimeoutRef.current = setTimeout(() => executeSave(), 300)
+        }
+    }, [autoSave, executeSave])
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -630,6 +725,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const handlePageInput = useCallback((e, pageIndex) => {
         saveSelection()
 
+        // Track unsaved changes when auto-save is disabled
+        if (!autoSaveRef.current) {
+            hasUnsavedChangesRef.current = true
+        }
+
         // CRITICAL: Skip reflow if we're in the middle of a paste operation
         // insertHTML triggers onInput, but handlePaste already calls reflowDocument
         // Running two concurrent reflows causes content loss!
@@ -754,10 +854,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const handleGlobalKeyDown = useCallback((e) => {
         const key = e.key?.toLowerCase()
 
-        // Ctrl+S - Save
+        // Ctrl+S - Save (always saves, regardless of auto-save toggle)
         if (isMod(e) && key === 's' && !e.shiftKey && !e.altKey) {
             e.preventDefault()
-            triggerSave()
+            forceSave()
             return
         }
 
@@ -766,7 +866,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             e.preventDefault()
             return
         }
-    }, [triggerSave])
+    }, [forceSave])
 
     // ========== CARET HELPERS ==========
     function isCaretAtStart(el) {
@@ -2428,12 +2528,16 @@ ${pagesHtml}
                 accountNumber={accountNumber}
                 lastSaved={lastSaved}
                 triggerSave={triggerSave}
+                forceSave={forceSave}
+                autoSave={autoSave}
+                setAutoSave={handleSetAutoSave}
                 handlePdfExport={handlePdfExport}
                 isContextFree={isContextFree}
                 isGeneratingPdf={isGeneratingPdf}
+                hasUnsavedChanges={() => hasUnsavedChangesRef.current}
                 // Template props
                 availableEntities={availableEntities}
-                isTemplateMode={isTemplateMode}
+                isTemplateMode={effectiveTemplateMode}
                 // Paste mode props
                 pasteMode={pasteMode}
                 setPasteMode={setPasteMode}

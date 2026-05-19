@@ -2185,11 +2185,11 @@
                             // Reload page to show the new widget
                             window.location.reload();
                         } else {
-                            alert(data.error || 'Erreur lors de la sauvegarde');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                         }
                     } catch (e) {
                         console.error('Widget create error:', e);
-                        alert('Erreur lors de la création du widget');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     } finally {
                         this.widgetSaving = false;
                     }
@@ -2550,7 +2550,7 @@
                 async handleFiles(files) {
                     if (!files || files.length === 0) return;
                     if (!this.recordId) {
-                        alert('Veuillez d\'abord enregistrer le record avant d\'ajouter des pièces jointes.');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                         return;
                     }
                     this.uploading = true;
@@ -2574,11 +2574,11 @@
                                 }
                             }
                         } else {
-                            alert(data.error || 'Erreur lors de l\'upload');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                         }
                     } catch (e) {
                         console.error('Upload error:', e);
-                        alert('Erreur lors de l\'upload');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     } finally {
                         this.uploading = false;
                         // Reset file input
@@ -2602,7 +2602,7 @@
                 },
 
                 getFileUrl(att) {
-                    return `/uploads/attachments/${this.accountNumber}/${att.filename}`;
+                    return `/account/${this.accountNumber}/uploads/attachments/${att.filename}`;
                 },
 
                 formatSize(bytes) {
@@ -2812,7 +2812,7 @@
                         }
                     }
                     if (missing.length > 0) {
-                        alert('Veuillez remplir : ' + missing.join(', '));
+                        window.showMessage ? window.showMessage(, 'danger') : alert());
                         return;
                     }
                     this._executeGeneration(
@@ -2852,11 +2852,11 @@
                                 }
                             });
                         } else {
-                            alert(data.error || 'Erreur lors de la génération');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Generation error:', e);
-                        alert('Erreur lors de la génération du document');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     } finally {
                         this.generatingDocId = null;
                     }
@@ -2885,11 +2885,11 @@
                                 window.showMessage('Document généré avec succès !', 'success');
                             }
                         } else {
-                            alert(data.error || 'Erreur lors de la finalisation');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Finalize error:', e);
-                        alert('Erreur lors de la finalisation du document');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     } finally {
                         this.finalizingDraft = false;
                         this.showSmartDocPreview = false;
@@ -2941,14 +2941,14 @@
                 async createTemplateFromWizard() {
                     if (this.creatingTemplate) return;
                     if (!this.entityId) {
-                        alert('Entity introuvable pour ce record');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                         return;
                     }
 
                     const isLibrary = this.newTemplateMode === 'library';
                     const preset = isLibrary ? this.getSelectedLibraryPreset() : null;
                     if (isLibrary && !preset) {
-                        alert('Choisissez un template de la bibliothèque');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                         return;
                     }
 
@@ -2960,7 +2960,7 @@
 
                     if (scopeType === 'record') {
                         if (!this.recordId) {
-                            alert('Aucun record actif');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                             return;
                         }
                         scopeRecordId = this.recordId;
@@ -2971,7 +2971,7 @@
                         const token = this.selectedRelationTarget || '';
                         const rel = this.linkedRecords.find(r => `${r.relationKey}::${r.recordId}` === token);
                         if (!rel) {
-                            alert('Choisissez une liaison valide');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                             return;
                         }
                         scopeRecordId = rel.recordId;
@@ -2983,7 +2983,7 @@
                     let docName = (this.newTemplateName || '').trim();
                     if (!docName && preset) docName = preset.name;
                     if (!docName) {
-                        alert('Veuillez saisir un nom de template');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                         return;
                     }
 
@@ -3007,7 +3007,7 @@
                         this.selectedRelationTarget = '';
                     } catch (e) {
                         console.error('[SmartDoc] Wizard create error:', e);
-                        alert(e.message || 'Erreur lors de la création du template');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     } finally {
                         this.creatingTemplate = false;
                     }
@@ -3037,18 +3037,32 @@
                     };
 
                     try {
+                        const isRecordScope = options.scopeType === 'record';
+                        const documentPayload = {
+                            name,
+                            isTemplate: true,
+                            entityId: this.entityId,
+                            // If record-scoped, do NOT make it globally visible via entityIds
+                            entityIds: isRecordScope ? [] : [this.entityId],
+                            status: 'draft',
+                            pages: [{ content: initialContent, elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
+                        };
+
+                        if (isRecordScope && options.scopeRecordId) {
+                            documentPayload.linkedRecords = [{
+                                recordId: options.scopeRecordId,
+                                recordTitle: options.scopeRecordLabel || '',
+                                entityId: this.entityId,
+                                entityName: this.entityName || '',
+                                alias: ''
+                            }];
+                        }
+
                         const res = await fetch(`/account/${this.accountNumber}/documents/api`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({
-                                name,
-                                isTemplate: true,
-                                entityId: this.entityId,
-                                entityIds: [this.entityId],
-                                status: 'draft',
-                                pages: [{ content: initialContent, elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
-                            })
+                            body: JSON.stringify(documentPayload)
                         });
                         const data = await res.json();
                         if (!data.success || !data.document) {
@@ -3202,11 +3216,11 @@
                         if (data.success && data.document) {
                             window.open(`/account/${this.accountNumber}/documents/${data.document._id}/edit-react`, '_blank');
                         } else {
-                            alert('Erreur lors de la création du document');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Create simple doc error:', e);
-                        alert('Erreur lors de la création du document');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     }
                 },
 
@@ -3233,11 +3247,11 @@
                                 window.showMessage('Document délié avec succès', 'success');
                             }
                         } else {
-                            alert(data.error || 'Erreur lors de la suppression du lien');
+                            window.showMessage ? window.showMessage(, 'danger') : alert();
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Unlink error:', e);
-                        alert('Erreur lors de la suppression du lien');
+                        window.showMessage ? window.showMessage(, 'danger') : alert();
                     } finally {
                         this.unlinking = false;
                         this.showUnlinkConfirm = false;

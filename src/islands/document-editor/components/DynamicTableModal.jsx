@@ -279,6 +279,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
     const [lines, setLines] = useState([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [modalConfig, setModalConfig] = useState(null)
 
     // Search
     const [searchQuery, setSearchQuery] = useState('')
@@ -739,7 +740,13 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
     // Save all lines
     const handleSave = useCallback(async () => {
         if (!documentId || !accountNumber) {
-            alert('Veuillez d\'abord sauvegarder le document.')
+            setModalConfig({
+                title: "Attention",
+                message: "Veuillez d'abord sauvegarder le document avant d'ajouter des lignes dynamiques.",
+                confirmText: "Compris",
+                confirmStyle: { background: "#4f46e5", color: "#fff", border: "none" },
+                onConfirm: () => setModalConfig(null)
+            })
             return
         }
         setSaving(true)
@@ -792,7 +799,13 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
             onClose()
         } catch (err) {
             console.error('[DynamicTable] Save error:', err)
-            alert('Erreur lors de la sauvegarde.')
+            setModalConfig({
+                title: "Erreur",
+                message: "Une erreur est survenue lors de la sauvegarde.",
+                confirmText: "Fermer",
+                confirmStyle: { background: "#ef4444", color: "#fff", border: "none" },
+                onConfirm: () => setModalConfig(null)
+            })
         } finally {
             setSaving(false)
         }
@@ -1620,6 +1633,39 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                     }
                 `
             }} />
+
+            {/* Custom Branded Notification Modal */}
+            {modalConfig && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '16px', background: 'rgba(17, 24, 39, 0.5)', backdropFilter: 'blur(4px)', animation: 'dt-modal-fade 0.15s ease-out'
+                }}>
+                    <div style={{
+                        background: '#ffffff', borderRadius: '12px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        maxWidth: '500px', width: '100%', overflow: 'hidden', border: '1px solid #e5e7eb', animation: 'dt-modal-scale 0.15s ease-out'
+                    }}>
+                        <div style={{ padding: '20px' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#111827', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <iconify-icon icon="solar:danger-triangle-bold" width="24" style={{ color: '#6b7280' }}></iconify-icon>
+                                {modalConfig.title}
+                            </h3>
+                            <p style={{ fontSize: '14px', color: '#4b5563', margin: '0 0 0 32px' }}>
+                                {modalConfig.message}
+                            </p>
+                        </div>
+                        <div style={{ padding: '16px', background: '#f9fafb', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button
+                                onClick={modalConfig.onConfirm}
+                                style={{
+                                    padding: '8px 16px', fontSize: '14px', fontWeight: 500, borderRadius: '8px', cursor: 'pointer', ...modalConfig.confirmStyle
+                                }}
+                            >
+                                {modalConfig.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

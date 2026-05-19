@@ -21,6 +21,100 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 
 // ============================================================================
+// SHARED HELPER: Load entity with all related fields (tenant-safe)
+// ============================================================================
+
+/**
+ * Load an entity by ID with customFields, classifications, statusClassification populated,
+ * plus targetEntity for each relation — all using tenant-aware models.
+ * This avoids the "Schema hasn't been registered for model 'FieldTemplate'" error
+ * that occurs when using model:'FieldTemplate' strings in nested populate on a
+ * multi-tenant Mongoose connection.
+ */
+async function loadEntityWithFields(req, entityId) {
+    const Entity = await tenantCollection(req, 'Entity');
+    const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+    const Classification = await tenantCollection(req, 'Classification');
+
+    if (!Entity || !entityId) return null;
+
+    // Load entity with only refs (no nested populate) — lean for perf
+    const entity = await Entity.findById(entityId).lean();
+    if (!entity) return null;
+
+    // Manually resolve customFields
+    if (entity.customFields && entity.customFields.length > 0) {
+        const ids = entity.customFields.map(f => (typeof f === 'object' ? f._id || f : f)).filter(Boolean);
+        if (FieldTemplate && ids.length > 0) {
+            entity.customFields = await FieldTemplate.find({ _id: { $in: ids } }).lean();
+        }
+    }
+
+    // Manually resolve classifications
+    if (Classification) {
+        if (entity.classifications && entity.classifications.length > 0) {
+            const ids = entity.classifications.map(c => (typeof c === 'object' ? c._id || c : c)).filter(Boolean);
+            if (ids.length > 0) {
+                entity.classifications = await Classification.find({ _id: { $in: ids } }).lean();
+            }
+        }
+        if (entity.statusClassification) {
+            const scId = typeof entity.statusClassification === 'object'
+                ? entity.statusClassification._id || entity.statusClassification
+                : entity.statusClassification;
+            const sc = await Classification.findById(scId).lean();
+            entity.statusClassification = sc || null;
+        }
+    }
+
+    // Manually resolve relations.targetEntity and their fields
+    if (entity.relations && entity.relations.length > 0) {
+        for (const rel of entity.relations) {
+            if (!rel.targetEntity) continue;
+            const teId = typeof rel.targetEntity === 'object'
+                ? rel.targetEntity._id || rel.targetEntity
+                : rel.targetEntity;
+            if (!teId) continue;
+
+            const te = await Entity.findById(teId).select('name icon slug customFields classifications statusClassification').lean();
+            if (!te) { rel.targetEntity = null; continue; }
+
+            // Resolve targetEntity.customFields
+            if (te.customFields && te.customFields.length > 0 && FieldTemplate) {
+                const ids = te.customFields.map(f => (typeof f === 'object' ? f._id || f : f)).filter(Boolean);
+                te.customFields = ids.length > 0 ? await FieldTemplate.find({ _id: { $in: ids } }).lean() : [];
+            }
+
+            // Resolve targetEntity.classifications
+            if (te.classifications && te.classifications.length > 0 && Classification) {
+                const ids = te.classifications.map(c => (typeof c === 'object' ? c._id || c : c)).filter(Boolean);
+                te.classifications = ids.length > 0 ? await Classification.find({ _id: { $in: ids } }).lean() : [];
+            }
+            if (te.statusClassification && Classification) {
+                const scId = typeof te.statusClassification === 'object'
+                    ? te.statusClassification._id || te.statusClassification
+                    : te.statusClassification;
+                const sc = await Classification.findById(scId).lean();
+                te.statusClassification = sc || null;
+            }
+
+            rel.targetEntity = te;
+        }
+    }
+
+    return entity;
+}
+
+/**
+ * Load multiple entities by IDs with full field resolution (tenant-safe)
+ */
+async function loadEntitiesWithFields(req, entityIds) {
+    if (!entityIds || entityIds.length === 0) return [];
+    const results = await Promise.all(entityIds.map(id => loadEntityWithFields(req, id)));
+    return results.filter(Boolean);
+}
+
+// ============================================================================
 // TEMPLATE MANAGEMENT
 // ============================================================================
 
@@ -186,13 +280,18 @@ router.post('/smartdoc/templates/:id/unlink', async (req, res) => {
         // Remove from SmartDocTemplate
         await SmartDocTemplate.findByIdAndUpdate(req.params.id, { active: false });
 
-        // Also remove entityId from the linked Document's entityIds array
-        // only for pure entity-scoped templates (legacy behavior).
+        // Also remove association from the linked Document
         const scopeType = template.scopeType || 'entity';
-        if (scopeType === 'entity' && template.documentId && entityId) {
-            await Document.findByIdAndUpdate(template.documentId, {
-                $pull: { entityIds: entityId }
-            });
+        if (template.documentId) {
+            if (scopeType === 'entity' && entityId) {
+                await Document.findByIdAndUpdate(template.documentId, {
+                    $pull: { entityIds: entityId }
+                });
+            } else if (scopeType === 'record' && template.scopeRecordId) {
+                await Document.findByIdAndUpdate(template.documentId, {
+                    $pull: { linkedRecords: { recordId: String(template.scopeRecordId) } }
+                });
+            }
         }
 
         res.json({ success: true });
@@ -211,12 +310,16 @@ router.get('/smartdoc/documents', async (req, res) => {
     try {
         const Document = await tenantCollection(req, 'Document');
         const filter = { isTemplate: true };
-        if (req.query.entityId) {
-            // Search in both legacy entityId and new entityIds array
-            filter.$or = [
-                { entityId: req.query.entityId },
-                { entityIds: req.query.entityId }
-            ];
+        if (req.query.entityId || req.query.recordId) {
+            // Search in legacy entityId, new entityIds array, and record-specific scopes
+            filter.$or = [];
+            if (req.query.entityId) {
+                filter.$or.push({ entityId: req.query.entityId });
+                filter.$or.push({ entityIds: req.query.entityId });
+            }
+            if (req.query.recordId) {
+                filter.$or.push({ 'linkedRecords.recordId': req.query.recordId });
+            }
         }
         const documents = await Document.find(filter)
             .select('name entityId entityIds format pages createdAt')
@@ -334,27 +437,28 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
         ];
 
         // 3. Entity variables from linked entities
-        const entityIds = [...(doc.entityIds || [])];
+        const entityIds = [...(doc.entityIds || [])].map(id => id.toString());
         if (doc.entityId && !entityIds.includes(doc.entityId.toString())) {
-            entityIds.push(doc.entityId);
+            entityIds.push(doc.entityId.toString());
         }
+        
+        // Also include entities from linked records
+        if (doc.linkedRecords && doc.linkedRecords.length > 0) {
+            doc.linkedRecords.forEach(lr => {
+                if (lr.entityId && !entityIds.includes(lr.entityId.toString())) {
+                    entityIds.push(lr.entityId.toString());
+                }
+            });
+        }
+
+        console.log(`[SmartDoc Variables] doc.entityId: ${doc.entityId}, entityIds:`, entityIds);
 
         if (entityIds.length > 0 && Entity && FieldTemplate) {
             // Fetch all linked entities with their customFields populated
-            const entities = await Entity.find({ _id: { $in: entityIds } })
-                .populate('customFields')
-                .populate('classifications')
-                .populate('statusClassification')
-                .populate({
-                    path: 'relations.targetEntity',
-                    select: 'name icon slug customFields classifications statusClassification',
-                    populate: [
-                        { path: 'customFields', model: 'FieldTemplate' },
-                        { path: 'classifications', model: 'Classification' },
-                        { path: 'statusClassification', model: 'Classification' }
-                    ]
-                })
-                .lean();
+            // Using tenant-safe helper to avoid "Schema hasn't been registered" errors
+            const entities = await loadEntitiesWithFields(req, entityIds);
+
+            console.log(`[SmartDoc Variables] Found ${entities.length} entities from Entity.find()`);
 
             for (const entity of entities) {
                 const entityVar = {
@@ -536,20 +640,8 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         }
 
         // 3. Load the entity with full population (custom fields, relations, classifications)
-        const entity = await Entity.findById(smartDocTemplate.entityId)
-            .populate('customFields')
-            .populate('classifications')
-            .populate('statusClassification')
-            .populate({
-                path: 'relations.targetEntity',
-                select: 'name icon slug customFields classifications statusClassification',
-                populate: [
-                    { path: 'customFields', model: 'FieldTemplate' },
-                    { path: 'classifications', model: 'Classification' },
-                    { path: 'statusClassification', model: 'Classification' }
-                ]
-            })
-            .lean();
+        // Using tenant-safe helper to avoid "Schema hasn't been registered" errors
+        const entity = await loadEntityWithFields(req, smartDocTemplate.entityId);
 
         // 3b. Load related records for relations
         const relatedRecordsMap = {};
@@ -747,20 +839,8 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         }
 
         // 3. Load the entity with full population
-        const entity = await Entity.findById(smartDocTemplate.entityId)
-            .populate('customFields')
-            .populate('classifications')
-            .populate('statusClassification')
-            .populate({
-                path: 'relations.targetEntity',
-                select: 'name icon slug customFields classifications statusClassification',
-                populate: [
-                    { path: 'customFields', model: 'FieldTemplate' },
-                    { path: 'classifications', model: 'Classification' },
-                    { path: 'statusClassification', model: 'Classification' }
-                ]
-            })
-            .lean();
+        // Using tenant-safe helper to avoid "Schema hasn't been registered" errors
+        const entity = await loadEntityWithFields(req, smartDocTemplate.entityId);
 
         // 3b. Load related records
         const relatedRecordsMap = {};
@@ -826,6 +906,30 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
 
         // 6. Build token context (same as resolveDocumentTokens)
         const context = buildTokenContext(record, entity, inputs, relatedRecordsMap, req.user);
+
+        // 6b. Inject variables for any OTHER records specifically linked to this template
+        if (docTemplate.linkedRecords && docTemplate.linkedRecords.length > 0) {
+            for (const lr of docTemplate.linkedRecords) {
+                if (!lr.recordId || !lr.entityId) continue;
+                // Skip if this is the primary record we just loaded
+                if (lr.recordId.toString() === record._id.toString()) continue;
+                
+                try {
+                    const lrRecord = await Record.findById(lr.recordId).lean();
+                    const lrEntity = await loadEntityWithFields(req, lr.entityId);
+                    
+                    if (lrRecord && lrEntity && lrEntity.slug) {
+                        const lrContext = buildTokenContext(lrRecord, lrEntity, {}, {}, req.user);
+                        // Merge the entity-specific context into the main context
+                        if (lrContext[lrEntity.slug]) {
+                            context[lrEntity.slug] = lrContext[lrEntity.slug];
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[SmartDoc] Could not load linked record ${lr.recordId} for context:`, err.message);
+                }
+            }
+        }
 
         // 7. Create a COPY of the document with tokens resolved in pages
         //    NOTE: Dynamic tables are NOT resolved to static HTML here.

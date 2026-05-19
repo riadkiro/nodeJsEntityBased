@@ -427,7 +427,7 @@
                     }
                 } catch (e) {
                     console.error('Widget saving error:', e);
-                    alert('Erreur lors de l\'ajout du widget');
+                    window.showMessage ? window.showMessage('Erreur lors de l\'ajout du widget', 'danger') : alert('Erreur lors de l\'ajout du widget');
                 } finally {
                     this.saving = false;
                 }
@@ -516,7 +516,7 @@
                     }
                 } catch (e) {
                     console.error('[widgetPicker] Delete error:', e);
-                    alert('Erreur lors de la suppression: ' + e.message);
+                    window.showMessage ? window.showMessage('Erreur lors de la suppression: ' + e.message, 'danger') : alert('Erreur lors de la suppression: ' + e.message);
                 }
             }
         });

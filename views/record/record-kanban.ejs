@@ -106,7 +106,7 @@
             },
 
             openConfig() {
-                alert("Configuration des colonnes bientôt disponible");
+                window.showMessage ? window.showMessage("Configuration des colonnes bientôt disponible", 'danger') : alert("Configuration des colonnes bientôt disponible");
             }
         }));
     });

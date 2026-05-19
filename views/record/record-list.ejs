@@ -229,11 +229,11 @@ async function createDraftRecord() {
         if (data.success && data._id) {
             window.location.href = '/account/<%= account_number %>/record/<%= entity.slug %>/' + data._id + '/fiche';
         } else {
-            alert('Erreur lors de la création');
+            window.showMessage ? window.showMessage('Erreur lors de la création', 'danger') : alert('Erreur lors de la création');
         }
     } catch (e) {
         console.error('[CreateDraft]', e);
-        alert('Erreur réseau');
+        window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
     }
 }
 </script>

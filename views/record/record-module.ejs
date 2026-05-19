@@ -929,11 +929,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             }
                         });
                     } else {
-                        alert(data.error || 'Erreur lors de la génération');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de la génération', 'danger') : alert(data.error || 'Erreur lors de la génération');
                     }
                 } catch (e) {
                     console.error('[OvSmartDocs] Generate error:', e);
-                    alert('Erreur de connexion');
+                    window.showMessage ? window.showMessage('Erreur de connexion', 'danger') : alert('Erreur de connexion');
                 }
                 this.generatingId = null;
             },
@@ -950,19 +950,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     });
                     const data = await res.json();
                     if (data.success) {
-                        // Switch to finalized state — show Télécharger + Fermer
-                        this.downloadUrl = data.attachment?.url || '';
+                        this.downloadUrl = data.attachment?.url ? (data.attachment.url + '?dl=' + encodeURIComponent(data.attachment.originalName || 'document.pdf')) : '';
                         this.finalized = true;
                         this.draftDocId = null;
                         if (window.showMessage) {
                             window.showMessage('Document généré avec succès !', 'success');
                         }
                     } else {
-                        alert(data.error || 'Erreur de finalisation');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur de finalisation', 'danger') : alert(data.error || 'Erreur de finalisation');
                     }
                 } catch (e) {
                     console.error('[OvSmartDocs] Finalize error:', e);
-                    alert('Erreur de connexion');
+                    window.showMessage ? window.showMessage('Erreur de connexion', 'danger') : alert('Erreur de connexion');
                 }
                 this.finalizing = false;
             },
@@ -1366,9 +1365,73 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             finalizing: false,
             finalized: false,
             downloadUrl: '',
+            creatingTemplate: false,
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
+            _entityName: '<%= (entity.name || "").replace(/'/g, "\\'") %>',
+            _entityIcon: '<%= entity.icon || "solar:layers-bold-duotone" %>',
+            _entitySlug: '<%= entity.slug || "" %>',
+            _entityColor: '<%= entity.color || "" %>',
             _recordId: '<%= record._id %>',
+            _recordTitle: '<%= ((record.computedTitle || record.title || "")).replace(/'/g, "\\'") %>',
+
+            async createRecordTemplate() {
+                if (this.creatingTemplate) return;
+                this.creatingTemplate = true;
+                try {
+                    // 1. Create the Document
+                    const docRes = await fetch(`/account/${this._accountNumber}/documents/api`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            name: 'Nouveau modèle',
+                            isTemplate: true,
+                            entityId: this._entityId, // Keep for legacy
+                            entityIds: [this._entityId], // New structure for data binding
+                            linkedRecords: [{
+                                recordId: this._recordId,
+                                recordTitle: this._recordTitle,
+                                entityId: this._entityId,
+                                entityName: this._entityName,
+                                entityIcon: this._entityIcon,
+                                entitySlug: this._entitySlug,
+                                entityColor: this._entityColor,
+                                alias: this._entitySlug
+                            }],
+                            format: 'A4',
+                            orientation: 'portrait'
+                        })
+                    });
+                    const docData = await docRes.json();
+                    if (!docData.success) throw new Error('Erreur creation doc');
+                    
+                    // 2. Create the SmartDocTemplate linked to this record
+                    const smartRes = await fetch(`/account/${this._accountNumber}/api/smartdoc/templates`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            name: docData.document.name,
+                            documentId: docData.document._id,
+                            entityId: this._entityId,
+                            scopeType: 'record',
+                            scopeRecordId: this._recordId,
+                            outputFormat: 'pdf',
+                            active: true
+                        })
+                    });
+                    const smartData = await smartRes.json();
+                    if (!smartData.success) throw new Error('Erreur creation smart doc');
+                    
+                    // 3. Redirect to the editor
+                    window.location.href = `/account/${this._accountNumber}/documents/${docData.document._id}/edit-react?isTemplate=true`;
+                } catch (err) {
+                    console.error(err);
+                    window.showMessage ? window.showMessage("Erreur lors de la création du modèle", 'danger') : alert("Erreur lors de la création du modèle");
+                    this.creatingTemplate = false;
+                }
+            },
 
             // Templates sorted by most recent generation (template with latest doc first)
             get sortedTemplates() {
@@ -1488,11 +1551,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                             }
                         });
                     } else {
-                        alert(data.error || 'Erreur de génération');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur de génération', 'danger') : alert(data.error || 'Erreur de génération');
                     }
                 } catch (e) {
                     console.error('[DocsModule] Generate error:', e);
-                    alert('Erreur de connexion');
+                    window.showMessage ? window.showMessage('Erreur de connexion', 'danger') : alert('Erreur de connexion');
                 }
                 this.generatingId = null;
             },
@@ -1509,18 +1572,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     });
                     const data = await res.json();
                     if (data.success) {
-                        this.downloadUrl = data.attachment?.url || '';
+                        this.downloadUrl = data.attachment?.url ? (data.attachment.url + '?dl=' + encodeURIComponent(data.attachment.originalName || 'document.pdf')) : '';
                         this.finalized = true;
                         this.draftDocId = null;
                         if (window.showMessage) {
                             window.showMessage('Document généré avec succès !', 'success');
                         }
                     } else {
-                        alert(data.error || 'Erreur de finalisation');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur de finalisation', 'danger') : alert(data.error || 'Erreur de finalisation');
                     }
                 } catch (e) {
                     console.error('[DocsModule] Finalize error:', e);
-                    alert('Erreur de connexion');
+                    window.showMessage ? window.showMessage('Erreur de connexion', 'danger') : alert('Erreur de connexion');
                 }
                 this.finalizing = false;
             },
@@ -1573,11 +1636,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         if (idx !== -1) this.generatedDocs.splice(idx, 1);
                         if (window.showMessage) window.showMessage('Document supprimé', 'success');
                     } else {
-                        alert(data.error || 'Erreur lors de la suppression');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
                     }
                 } catch (e) {
                     console.error('[DocsModule] Delete error:', e);
-                    alert('Erreur réseau');
+                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
                 }
             }
         }));
@@ -1726,11 +1789,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         
                         if (window.showMessage) window.showMessage('Dossier renommé', 'success');
                     } else {
-                        alert(data.error || 'Erreur lors du renommage');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors du renommage', 'danger') : alert(data.error || 'Erreur lors du renommage');
                     }
                 } catch (e) {
                     console.error('[Drive] Rename folder error:', e);
-                    alert('Erreur réseau');
+                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
                 }
                 this.renamingFolderOldName = null;
             },
@@ -1756,11 +1819,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         });
                         if (window.showMessage) window.showMessage('Dossier supprimé', 'success');
                     } else {
-                        alert(data.error || 'Erreur lors de la suppression');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
                     }
                 } catch (e) {
                     console.error('[Drive] Delete folder error:', e);
-                    alert('Erreur réseau');
+                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
                 }
                 this.showDeleteFolderModal = false;
             },
@@ -1813,11 +1876,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         this.selectMode = false;
                         if (window.showMessage) window.showMessage(data.deletedCount + ' fichier(s) supprimé(s)', 'success');
                     } else {
-                        alert(data.error || 'Erreur lors de la suppression');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
                     }
                 } catch (e) {
                     console.error('[Drive] Bulk delete error:', e);
-                    alert('Erreur réseau');
+                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
                 }
             },
 
@@ -1896,7 +1959,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 const name = this.newFolderName.trim();
                 if (!name) return;
                 if (this.customFolders.includes(name) || this.allFiles.some(f => f.folder === name)) {
-                    alert('Ce dossier existe déjà');
+                    window.showMessage ? window.showMessage('Ce dossier existe déjà', 'danger') : alert('Ce dossier existe déjà');
                     return;
                 }
                 // Persist via API
@@ -1912,11 +1975,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         this.customFolders.push(name);
                         if (window.showMessage) window.showMessage('Dossier créé', 'success');
                     } else {
-                        alert(data.error || 'Erreur');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur', 'danger') : alert(data.error || 'Erreur');
                     }
                 } catch (e) {
                     console.error('[Drive] Create folder error:', e);
-                    alert('Erreur lors de la création');
+                    window.showMessage ? window.showMessage('Erreur lors de la création', 'danger') : alert('Erreur lors de la création');
                 }
                 this.newFolderName = '';
                 this.showNewFolderInput = false;
@@ -2098,7 +2161,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
             async deleteFile(file) {
                 if (!file._id) {
-                    alert('Ce fichier ne peut pas être supprimé (ID manquant). Rechargez la page.');
+                    window.showMessage ? window.showMessage('Ce fichier ne peut pas être supprimé (ID manquant, 'danger') : alert('Ce fichier ne peut pas être supprimé (ID manquant). Rechargez la page.');
                     return;
                 }
                 // Use inline confirm state to avoid browser dialog issues
@@ -2120,11 +2183,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         this.selectedIds = this.selectedIds.filter(id => id !== file._id);
                         if (window.showMessage) window.showMessage('Fichier supprimé', 'success');
                     } else {
-                        alert(data.error || 'Erreur lors de la suppression');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
                     }
                 } catch (e) {
                     console.error('[Drive] Delete error:', e);
-                    alert('Erreur réseau');
+                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
                 }
             },
 
@@ -2397,6 +2460,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     
         <% if (moduleName === 'docs') { %>
         <div x-data="docsModule" x-cloak>
+            
+            <div class="rm-toolbar" style="margin-bottom: 16px;">
+                <div class="rm-search">
+                    <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
+                    <input type="text" placeholder="Rechercher un modèle...">
+                </div>
+                <button type="button" @click="createRecordTemplate()" :disabled="creatingTemplate" class="rm-btn-primary" style="background:linear-gradient(135deg, #f59e0b, #f59e0bdd); border:none; box-shadow:0 2px 8px rgba(245, 158, 11, 0.25);">
+                    <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="16"></iconify-icon>
+                    <span x-text="creatingTemplate ? 'Création...' : 'Nouveau template'"></span>
+                </button>
+            </div>
+
             <!-- Loading state -->
             <div x-show="loading && loadingTemplates" style="text-align:center; padding:32px 0; color:#94a3b8;">
                 <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
@@ -2407,7 +2482,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <div x-show="!loading && !loadingTemplates && templates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
                 <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
                 <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle disponible</p>
-                <p style="font-size:11px; margin-top:4px;">Créez des templates dans le module Documents</p>
+                <p style="font-size:11px; margin-top:4px;">Vous pouvez créer un template spécifique pour cet enregistrement.</p>
             </div>
 
             <!-- Template accordion list -->
@@ -4510,11 +4585,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                         this.closeModal();
                         window.location.reload();
                     } else {
-                        alert(data.error || 'Erreur lors de l\'ajout');
+                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de l\'ajout', 'danger') : alert(data.error || 'Erreur lors de l\'ajout');
                     }
                 } catch (e) {
                     console.error('[FieldPicker] Add field error:', e);
-                    alert('Erreur réseau');
+                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
                 } finally {
                     this.addingId = null;
                 }
@@ -4589,7 +4664,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     }
                 } catch (e) {
                     console.error('[FieldPicker] Create error:', e);
-                    alert('Erreur: ' + e.message);
+                    window.showMessage ? window.showMessage('Erreur: ' + e.message, 'danger') : alert('Erreur: ' + e.message);
                 } finally {
                     this.creating = false;
                 }
@@ -5025,11 +5100,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 window.location.href = '/account/<%= account_number %>/record/<%= entity.slug %>/' + data._id + '/fiche';
             } else {
                 console.error('[CreateDraft] Failed:', data);
-                alert('Erreur lors de la création');
+                window.showMessage ? window.showMessage('Erreur lors de la création', 'danger') : alert('Erreur lors de la création');
             }
         } catch (e) {
             console.error('[CreateDraft]', e);
-            alert('Erreur réseau');
+            window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
         }
     }
     </script>

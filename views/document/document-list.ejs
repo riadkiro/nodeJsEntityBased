@@ -824,7 +824,14 @@ document.addEventListener('alpine:init', () => {
       if (!this.deleteTarget || this.deleting) return;
       this.deleting = true;
       try {
-        const res = await fetch('/account/<%= account_number %>/documents/api/documents/' + this.deleteTarget._id, {
+        let apiUrl = '/account/<%= account_number %>/documents/api/documents/' + this.deleteTarget._id;
+        
+        // If it's a generated document, it's an attachment on a record
+        if (this.deleteTarget.downloadUrl && this.deleteTarget.recordId) {
+          apiUrl = '/account/<%= account_number %>/api/records/' + this.deleteTarget.recordId + '/attachments/' + this.deleteTarget._id;
+        }
+
+        const res = await fetch(apiUrl, {
           method: 'DELETE',
           credentials: 'include'
         });
@@ -833,6 +840,7 @@ document.addEventListener('alpine:init', () => {
           const id = this.deleteTarget._id;
           this.documents = this.documents.filter(d => d._id !== id);
           this.templateDocs = this.templateDocs.filter(d => d._id !== id);
+          this.generatedDocs = this.generatedDocs.filter(d => d._id !== id);
           this.deleteTarget = null;
         } else {
           alert('Erreur: ' + (data.error || 'Impossible de supprimer'));

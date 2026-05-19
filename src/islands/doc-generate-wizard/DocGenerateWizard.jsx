@@ -35,6 +35,42 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
 
     const baseUrl = `/account/${accountNumber}/documents`
 
+    // ─── Auto-generate for record-scoped templates ───────────────────
+    // When the SmartDocTemplate is scoped to a specific record (scopeType === 'record'),
+    // skip the record picker and generate directly using that record's data.
+    useEffect(() => {
+        if (
+            smartDocTemplate &&
+            smartDocTemplate.scopeType === 'record' &&
+            smartDocTemplate.scopeRecordId &&
+            smartDocTemplate._id
+        ) {
+            setStep(3)
+            setGenerating(true)
+            setError(null)
+
+            fetch(`/account/${accountNumber}/api/smartdoc/generate-draft/${smartDocTemplate._id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ recordId: smartDocTemplate.scopeRecordId })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        setError(data.error || 'Erreur lors de la génération')
+                        setGenerating(false)
+                        return
+                    }
+                    window.location.href = `${baseUrl}/${data.draftDocumentId}/edit-react`
+                })
+                .catch(err => {
+                    setError('Erreur réseau: ' + err.message)
+                    setGenerating(false)
+                })
+        }
+    }, []) // Only run once on mount
+
     // ─── Analyze the entity graph to determine entry points ─────────
     const entryPoints = useMemo(() => {
         if (!entities || entities.length === 0) return []

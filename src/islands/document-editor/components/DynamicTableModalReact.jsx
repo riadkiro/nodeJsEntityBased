@@ -89,6 +89,9 @@ export default function DynamicTableModalReact({ open, onClose, config, accountN
     const schemaId = config?.schemaId
     const { searchState, openSearch, closeSearch, search, resolveLineDefaults, resolveApplyDefaults } = useCatalog({ accountNumber })
 
+    const [modalConfig, setModalConfig] = useState(null)
+    const [promptConfig, setPromptConfig] = useState(null)
+
     const relationCol = useMemo(() => (schema?.columns || []).find(c => c?.type === 'relation') || null, [schema])
     const canOpenCatalog = !!(schema?.sourceEntityId || relationCol?.config?.targetEntity)
     const lineCount = getFilledLines(lines).length
@@ -348,34 +351,56 @@ export default function DynamicTableModalReact({ open, onClose, config, accountN
                                         }))
                                         setLines(newLines)
                                     }}
-                                    onDeletePreset={async (preset) => {
-                                        if (!window.confirm('Supprimer ce preset ?')) return
-                                        await fetch(`/account/${accountNumber}/api/grid-templates/${preset._id}`, { method: 'DELETE', credentials: 'include' })
-                                        setPresets(prev => prev.filter(p => String(p?._id || '') !== String(preset?._id || '')))
+                                    onDeletePreset={(preset) => {
+                                        setModalConfig({
+                                            title: "Supprimer le preset",
+                                            message: `Êtes-vous sûr de vouloir supprimer le preset "${preset?.name || ''}" ?`,
+                                            confirmText: "Supprimer",
+                                            confirmStyle: { background: "#ef4444", color: "#fff", border: "none" },
+                                            onConfirm: async () => {
+                                                setModalConfig(null)
+                                                try {
+                                                    await fetch(`/account/${accountNumber}/api/grid-templates/${preset._id}`, { method: 'DELETE', credentials: 'include' })
+                                                    setPresets(prev => prev.filter(p => String(p?._id || '') !== String(preset?._id || '')))
+                                                } catch (e) {
+                                                    console.error('Erreur:', e)
+                                                }
+                                            },
+                                            onCancel: () => setModalConfig(null)
+                                        })
                                     }}
-                                    onSavePreset={async () => {
-                                        const name = (window.prompt('Nom du preset', `${config?.schemaName || 'Preset'} ${Date.now()}`) || '').trim()
-                                        if (!name) return
-                                        try {
-                                            setSavingPreset(true)
-                                            await saveLines(false)
-                                            await fetch(`/account/${accountNumber}/api/grid-templates/save-from-record`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                credentials: 'include',
-                                                body: JSON.stringify({
-                                                    name,
-                                                    schemaId,
-                                                    documentId,
-                                                    scope: sourceRecordId ? 'record' : 'workspace',
-                                                    ...(sourceRecordId ? { recordId: sourceRecordId } : {})
-                                                })
-                                            })
-                                            const preRes = await fetch(`/account/${accountNumber}/api/grid-templates?schemaId=${schemaId}${sourceRecordId ? `&includeRecord=${sourceRecordId}` : ''}`, { credentials: 'include' }).then(r => r.json())
-                                            setPresets(preRes?.templates || [])
-                                        } finally {
-                                            setSavingPreset(false)
-                                        }
+                                    onSavePreset={() => {
+                                        setPromptConfig({
+                                            title: "Nouveau preset",
+                                            message: "Entrez un nom pour sauvegarder la configuration actuelle :",
+                                            defaultValue: `${config?.schemaName || 'Preset'} ${Date.now()}`,
+                                            confirmText: "Sauvegarder",
+                                            onConfirm: async (name) => {
+                                                setPromptConfig(null)
+                                                if (!name) return
+                                                try {
+                                                    setSavingPreset(true)
+                                                    await saveLines(false)
+                                                    await fetch(`/account/${accountNumber}/api/grid-templates/save-from-record`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        credentials: 'include',
+                                                        body: JSON.stringify({
+                                                            name,
+                                                            schemaId,
+                                                            documentId,
+                                                            scope: sourceRecordId ? 'record' : 'workspace',
+                                                            ...(sourceRecordId ? { recordId: sourceRecordId } : {})
+                                                        })
+                                                    })
+                                                    const preRes = await fetch(`/account/${accountNumber}/api/grid-templates?schemaId=${schemaId}${sourceRecordId ? `&includeRecord=${sourceRecordId}` : ''}`, { credentials: 'include' }).then(r => r.json())
+                                                    setPresets(preRes?.templates || [])
+                                                } finally {
+                                                    setSavingPreset(false)
+                                                }
+                                            },
+                                            onCancel: () => setPromptConfig(null)
+                                        })
                                     }}
                                     onOpenCatalog={() => setCatalogPicker({ open: true, query: '', loading: false, results: [], selectedIds: [] })}
                                 />
@@ -505,6 +530,59 @@ export default function DynamicTableModalReact({ open, onClose, config, accountN
                                     Ajouter la selection
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Custom UI Modals (Prompt & Confirm) */}
+            {promptConfig && createPortal(
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }} onClick={() => promptConfig.onCancel?.()}>
+                    <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', animation: 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '24px 24px 16px' }}>
+                            <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: '#0f172a' }}>{promptConfig.title}</h3>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>{promptConfig.message}</p>
+                            <input 
+                                type="text"
+                                defaultValue={promptConfig.defaultValue}
+                                id="dt-prompt-input-react"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        promptConfig.onConfirm?.(e.currentTarget.value)
+                                    } else if (e.key === 'Escape') {
+                                        promptConfig.onCancel?.()
+                                    }
+                                }}
+                                style={{ width: '100%', marginTop: '16px', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', color: '#0f172a', outline: 'none', transition: 'border-color 0.15s' }}
+                                onFocus={e => e.currentTarget.style.borderColor = '#4f46e5'}
+                                onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                            />
+                        </div>
+                        <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button onClick={() => promptConfig.onCancel?.()} style={{ border: 'none', background: 'transparent', padding: '8px 16px', fontSize: '14px', fontWeight: 500, color: '#64748b', cursor: 'pointer', borderRadius: '8px' }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Annuler</button>
+                            <button onClick={() => promptConfig.onConfirm?.(document.getElementById('dt-prompt-input-react')?.value)} style={{ border: 'none', background: '#4f46e5', color: '#fff', padding: '8px 16px', fontSize: '14px', fontWeight: 500, borderRadius: '8px', cursor: 'pointer' }}>{promptConfig.confirmText || 'Confirmer'}</button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {modalConfig && createPortal(
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }} onClick={() => modalConfig.onCancel ? modalConfig.onCancel() : setModalConfig(null)}>
+                    <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', animation: 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '24px 24px 16px' }}>
+                            <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: '#0f172a' }}>{modalConfig.title}</h3>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>{modalConfig.message}</p>
+                        </div>
+                        <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            {modalConfig.onCancel && (
+                                <button onClick={() => modalConfig.onCancel()} style={{ border: 'none', background: 'transparent', padding: '8px 16px', fontSize: '14px', fontWeight: 500, color: '#64748b', cursor: 'pointer', borderRadius: '8px' }} onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Annuler</button>
+                            )}
+                            <button onClick={() => modalConfig.onConfirm()} style={{ border: 'none', padding: '8px 16px', fontSize: '14px', fontWeight: 500, borderRadius: '8px', cursor: 'pointer', ...modalConfig.confirmStyle }}>
+                                {modalConfig.confirmText}
+                            </button>
                         </div>
                     </div>
                 </div>,

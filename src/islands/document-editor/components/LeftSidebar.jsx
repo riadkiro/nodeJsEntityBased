@@ -399,7 +399,7 @@ function BlocksPanel({ insertDynamicTable, accountNumber, doc }) {
             }
         };
         fetchSchemas();
-    }, [doc?._id, accountNumber]);
+    }, [doc?._id, accountNumber, JSON.stringify(doc?.entityIds || []), JSON.stringify((doc?.linkedRecords || []).map(r => r.entityId))]);
 
     return (
         <div>
@@ -1485,7 +1485,9 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
             }
         };
         fetchVariables();
-    }, [doc?._id, accountNumber]);
+    // Also re-fetch when entityIds or linkedRecords change (user links/unlinks entities)
+    // Using JSON.stringify to create stable dependency values from arrays
+    }, [doc?._id, accountNumber, JSON.stringify(doc?.entityIds || []), JSON.stringify((doc?.linkedRecords || []).map(r => r.entityId))]);
 
     const toggleSection = (key) => {
         setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));

@@ -287,9 +287,16 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
 }
 
 // Linked-To dropdown for template mode header
-function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, triggerSave }) {
+function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, triggerSave, accountNumber }) {
     const [open, setOpen] = useState(false)
+    const [activeTab, setActiveTab] = useState('collections') // 'collections' | 'records'
     const ref = useRef(null)
+
+    // Records search state
+    const [selectedEntityId, setSelectedEntityId] = useState('')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchResults, setSearchResults] = useState([])
+    const [isSearching, setIsSearching] = useState(false)
 
     useEffect(() => {
         const handleClick = (e) => {
@@ -298,6 +305,41 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
         if (open) document.addEventListener('mousedown', handleClick)
         return () => document.removeEventListener('mousedown', handleClick)
     }, [open])
+
+    useEffect(() => {
+        if (!open) {
+            // Reset search when closing
+            setSearchQuery('')
+            setSearchResults([])
+        }
+    }, [open])
+
+    // Search records when query or entity changes
+    useEffect(() => {
+        if (activeTab !== 'records' || !selectedEntityId) return
+        
+        const delayDebounceFn = setTimeout(async () => {
+            if (!searchQuery.trim()) {
+                setSearchResults([])
+                return
+            }
+            
+            setIsSearching(true)
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/entity/${selectedEntityId}/views/all/records?q=${encodeURIComponent(searchQuery)}&limit=10`)
+                const data = await res.json()
+                if (data && data.records) {
+                    setSearchResults(data.records)
+                }
+            } catch (err) {
+                console.error('Error searching records:', err)
+            } finally {
+                setIsSearching(false)
+            }
+        }, 300)
+
+        return () => clearTimeout(delayDebounceFn)
+    }, [searchQuery, selectedEntityId, activeTab, accountNumber])
 
     const toggleEntity = (entityId) => {
         setDoc(prev => {
@@ -311,58 +353,248 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
         triggerSave()
     }
 
+    const toggleRecord = (record, entity) => {
+        setDoc(prev => {
+            const currentRecords = prev.linkedRecords || []
+            const isLinked = currentRecords.some(r => r.recordId === record._id)
+            
+            let newRecords
+            if (isLinked) {
+                newRecords = currentRecords.filter(r => r.recordId !== record._id)
+            } else {
+                newRecords = [...currentRecords, {
+                    recordId: record._id,
+                    recordTitle: record.computedTitle || record.title || 'Sans titre',
+                    entityId: entity.id,
+                    entityName: entity.name,
+                    entityIcon: entity.icon,
+                    entityColor: entity.color,
+                    entitySlug: entity.slug
+                }]
+            }
+            return { ...prev, linkedRecords: newRecords }
+        })
+        triggerSave()
+    }
+
+    const unassignedRecords = (doc.linkedRecords || []).length
+
     return (
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen(!open)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all border ${
-                    linkedEntities.length > 0
+                    linkedEntities.length > 0 || unassignedRecords > 0
                         ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
                         : 'text-gray-500 border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600'
                 }`}
             >
                 <iconify-icon icon="solar:link-round-bold-duotone" width="16"></iconify-icon>
                 <span>Lié à</span>
-                {linkedEntities.length > 0 && (
+                {(linkedEntities.length > 0 || unassignedRecords > 0) && (
                     <span className="ml-0.5 px-1.5 py-0 rounded-full text-[10px] font-bold bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200">
-                        {linkedEntities.length}
+                        {linkedEntities.length + unassignedRecords}
                     </span>
                 )}
                 <iconify-icon icon="tabler:chevron-down" width="12" style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}></iconify-icon>
             </button>
             {open && (
-                <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-xl z-50" style={{ width: '260px', animation: 'bindingPickerIn 0.15s ease-out' }}>
-                    <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Collections liées</span>
+                <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-xl z-50 flex flex-col" style={{ width: '320px', animation: 'bindingPickerIn 0.15s ease-out', maxHeight: '400px' }}>
+                    {/* Tabs */}
+                    <div className="flex px-3 pt-3 pb-0 border-b border-gray-100 dark:border-gray-700 gap-4">
+                        <button 
+                            className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'collections' ? 'border-amber-500 text-amber-600 dark:text-amber-500' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                            onClick={() => setActiveTab('collections')}
+                        >
+                            Collections
+                        </button>
+                        <button 
+                            className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'records' ? 'border-amber-500 text-amber-600 dark:text-amber-500' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                            onClick={() => setActiveTab('records')}
+                        >
+                            Enregistrements
+                        </button>
                     </div>
-                    <div className="max-h-60 overflow-y-auto py-1">
-                        {(availableEntities || []).length === 0 ? (
-                            <p className="text-xs text-gray-400 py-3 text-center italic">Aucune collection disponible</p>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto py-1 min-h-[200px]">
+                        {activeTab === 'collections' ? (
+                            <>
+                                {(() => {
+                                    const entityIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
+                                    const linkedEnts = (availableEntities || []).filter(e => entityIds.includes(e.id))
+                                    const unlinkedEnts = (availableEntities || []).filter(e => !entityIds.includes(e.id))
+                                    const linkedRecs = doc.linkedRecords || []
+                                    
+                                    const hasLinks = linkedEnts.length > 0 || linkedRecs.length > 0
+                                    
+                                    return (
+                                        <>
+                                            {hasLinks && (
+                                                <div className="mb-2">
+                                                    <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-y border-gray-100 dark:border-gray-700">Déjà liés</div>
+                                                    {linkedEnts.map(entity => (
+                                                        <label
+                                                            key={`linked_ent_${entity.id}`}
+                                                            className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={true}
+                                                                onChange={() => toggleEntity(entity.id)}
+                                                                className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                                                            />
+                                                            <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" style={{ color: '#f59e0b' }}></iconify-icon>
+                                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{entity.name}</span>
+                                                        </label>
+                                                    ))}
+                                                    {linkedRecs.map(rec => (
+                                                        <div key={`linked_rec_${rec.recordId}`} className="flex items-center gap-2.5 px-3 py-2 bg-amber-50/50 dark:bg-amber-900/10 group">
+                                                            <iconify-icon icon="solar:document-text-bold" width="14" style={{ color: '#f59e0b' }}></iconify-icon>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">{rec.recordTitle}</div>
+                                                                <div className="text-[10px] text-gray-500 truncate">{rec.entityName}</div>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => toggleRecord({ _id: rec.recordId }, { id: rec.entityId, name: rec.entityName })}
+                                                                className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all"
+                                                                title="Détacher"
+                                                            >
+                                                                <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-y border-gray-100 dark:border-gray-700">
+                                                Collections disponibles
+                                            </div>
+                                            
+                                            {unlinkedEnts.length === 0 ? (
+                                                <p className="text-xs text-gray-400 py-3 text-center italic">Aucune collection disponible</p>
+                                            ) : (
+                                                unlinkedEnts.map(entity => (
+                                                    <label
+                                                        key={`unlinked_ent_${entity.id}`}
+                                                        className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => toggleEntity(entity.id)}
+                                                            className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                                                        />
+                                                        <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" style={{ color: '#9ca3af' }}></iconify-icon>
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">{entity.name}</span>
+                                                    </label>
+                                                ))
+                                            )}
+                                        </>
+                                    )
+                                })()}
+                            </>
                         ) : (
-                            (availableEntities || []).map(entity => {
-                                const entityIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
-                                const isLinked = entityIds.includes(entity.id)
-                                return (
-                                    <label
-                                        key={entity.id}
-                                        className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${isLinked ? 'bg-amber-50/50 dark:bg-amber-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={isLinked}
-                                            onChange={() => toggleEntity(entity.id)}
-                                            className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                            <div className="px-3 py-2 flex flex-col gap-3">
+                                <select 
+                                    className="form-select text-xs py-1.5"
+                                    value={selectedEntityId}
+                                    onChange={(e) => {
+                                        setSelectedEntityId(e.target.value)
+                                        setSearchQuery('')
+                                        setSearchResults([])
+                                    }}
+                                >
+                                    <option value="">-- Choisir une collection --</option>
+                                    {(availableEntities || []).map(e => (
+                                        <option key={e.id} value={e.id}>{e.name}</option>
+                                    ))}
+                                </select>
+
+                                {selectedEntityId && (
+                                    <div className="relative">
+                                        <iconify-icon icon="tabler:search" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Rechercher un enregistrement..." 
+                                            className="form-input text-xs py-1.5 pl-8 w-full"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
                                         />
-                                        <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" style={{ color: isLinked ? '#f59e0b' : '#9ca3af' }}></iconify-icon>
-                                        <span className={`text-xs ${isLinked ? 'font-semibold text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>{entity.name}</span>
-                                        {isLinked && <iconify-icon icon="tabler:check" width="12" style={{ color: '#f59e0b', marginLeft: 'auto' }}></iconify-icon>}
-                                    </label>
-                                )
-                            })
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col gap-1 mt-1">
+                                    {isSearching && <div className="text-xs text-gray-400 italic text-center py-2">Recherche en cours...</div>}
+                                    
+                                    {!isSearching && searchResults.length === 0 && searchQuery && selectedEntityId && (
+                                        <div className="text-xs text-gray-400 italic text-center py-2">Aucun résultat</div>
+                                    )}
+
+                                    {!isSearching && searchResults.map(record => {
+                                        const entity = availableEntities.find(e => e.id === selectedEntityId)
+                                        const isLinked = (doc.linkedRecords || []).some(r => r.recordId === record._id)
+                                        
+                                        return (
+                                            <div 
+                                                key={record._id}
+                                                onClick={() => toggleRecord(record, entity)}
+                                                className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${isLinked ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isLinked}
+                                                    readOnly
+                                                    className="w-3 h-3 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
+                                                />
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className={`text-xs truncate ${isLinked ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                        {record.computedTitle || record.title || 'Sans titre'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                {/* Currently linked records */}
+                                {(doc.linkedRecords || []).length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Sélectionnés ({doc.linkedRecords.length})</div>
+                                        <div className="flex flex-col gap-1">
+                                            {doc.linkedRecords.map(lr => (
+                                                <div key={lr.recordId} className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <iconify-icon icon={lr.entityIcon || 'solar:database-bold'} width="12" className="text-gray-400"></iconify-icon>
+                                                        <span className="text-[11px] text-gray-700 dark:text-gray-300 truncate">{lr.recordTitle}</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setDoc(prev => ({
+                                                                ...prev,
+                                                                linkedRecords: prev.linkedRecords.filter(r => r.recordId !== lr.recordId)
+                                                            }))
+                                                            triggerSave()
+                                                        }}
+                                                        className="text-gray-400 hover:text-red-500"
+                                                    >
+                                                        <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
+
                     <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-700">
-                        <p className="text-[9px] text-gray-400 italic">Ce template sera utilisable dans les SmartDoc de ces collections.</p>
+                        <p className="text-[9px] text-gray-400 italic">
+                            {activeTab === 'collections' 
+                                ? 'Ce template sera utilisable dans les SmartDoc de ces collections.' 
+                                : 'Ce modèle sera visible uniquement sur les enregistrements sélectionnés.'}
+                        </p>
                     </div>
                 </div>
             )}
@@ -376,6 +608,9 @@ export default function EditorHeader({
     accountNumber,
     lastSaved,
     triggerSave,
+    forceSave,
+    autoSave,
+    setAutoSave,
     handlePdfExport,
     isContextFree = false,
     isGeneratingPdf = false,
@@ -400,18 +635,37 @@ export default function EditorHeader({
     handleLineSpacingChange,
     handleLetterSpacingChange,
     FONT_FAMILIES,
-    FONT_SIZES
+    FONT_SIZES,
+    hasUnsavedChanges
 }) {
     const [textColor, setTextColor] = useState('#000000')
     const [highlightColor, setHighlightColor] = useState('transparent')
+    const [modalConfig, setModalConfig] = useState(null)
 
-    const handleClose = () => {
-        if (window.self !== window.top) {
-            window.parent.postMessage({ type: 'smartdoc-cancel' }, '*');
+    const getCloseUrl = () => {
+        return window.self !== window.top ? 'smartdoc-cancel' : `/account/${accountNumber}/documents`;
+    }
+
+    const attemptNavigation = (targetUrl, e) => {
+        if (e) e.preventDefault();
+        
+        if (!autoSave && hasUnsavedChanges && hasUnsavedChanges()) {
+            setModalConfig({
+                type: 'unsaved',
+                title: "Modifications non enregistrées",
+                message: "Vous avez des modifications en cours qui seront perdues. Voulez-vous vraiment quitter ?",
+                targetUrl: targetUrl
+            });
         } else {
-            window.location.href = `/account/${accountNumber}/documents`;
+            if (targetUrl === 'smartdoc-cancel') {
+                window.parent.postMessage({ type: 'smartdoc-cancel' }, '*');
+            } else {
+                window.location.href = targetUrl;
+            }
         }
     };
+
+    const handleClose = (e) => attemptNavigation(getCloseUrl(), e);
 
     const handleNameChange = (e) => {
         setDoc(prev => ({ ...prev, name: e.target.value }))
@@ -592,7 +846,7 @@ export default function EditorHeader({
                 {window.self !== window.top ? (
                     /* Inside iframe (SmartDoc preview) → notify parent to cancel */
                     <button
-                        onClick={() => window.parent.postMessage({ type: 'smartdoc-cancel' }, '*')}
+                        onClick={(e) => attemptNavigation('smartdoc-cancel', e)}
                         className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                         title="Annuler"
                     >
@@ -601,6 +855,7 @@ export default function EditorHeader({
                 ) : (
                     <a
                         href={`/account/${accountNumber}/documents`}
+                        onClick={(e) => attemptNavigation(`/account/${accountNumber}/documents`, e)}
                         className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     >
                         <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
@@ -639,7 +894,8 @@ export default function EditorHeader({
                     )}
                 </div>
 
-                {/* Save Status */}
+                {/* Save Status — hidden in template mode when auto-save pill already shows it */}
+                {!(isTemplateMode && autoSave) && (
                 <div className="flex items-center gap-2 text-xs text-gray-400 mr-3">
                     {formatSavedTime() && (
                         <>
@@ -648,41 +904,117 @@ export default function EditorHeader({
                         </>
                     )}
                 </div>
+                )}
 
                 {/* === TEMPLATE MODE ACTIONS === */}
                 {isTemplateMode ? (
                     <div className="flex items-center gap-2">
-                        {/* Lié à dropdown */}
                         <LinkedToDropdown
                             doc={doc}
                             setDoc={setDoc}
                             availableEntities={availableEntities}
                             linkedEntities={linkedEntities}
-                            triggerSave={triggerSave}
+                            triggerSave={forceSave || triggerSave}
+                            accountNumber={accountNumber}
                         />
 
-                        {/* Enregistrer button */}
-                        <button
-                            onClick={() => triggerSave()}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        {/* Auto-save toggle */}
+                        <div
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all"
+                            style={{
+                                borderColor: autoSave ? '#bbf7d0' : '#e2e8f0',
+                                background: autoSave ? '#f0fdf4' : '#fff',
+                            }}
                         >
-                            <iconify-icon icon="tabler:device-floppy" width="17"></iconify-icon>
-                            <span>Enregistrer</span>
-                        </button>
+                            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap select-none">
+                                Auto
+                            </span>
+                            <button
+                                onClick={() => setAutoSave(!autoSave)}
+                                className="relative inline-flex items-center cursor-pointer"
+                                style={{ width: '32px', height: '18px', flexShrink: 0 }}
+                                title={autoSave ? 'Sauvegarde automatique activée' : 'Sauvegarde automatique désactivée'}
+                            >
+                                <div
+                                    style={{
+                                        width: '32px',
+                                        height: '18px',
+                                        borderRadius: '9px',
+                                        background: autoSave ? '#22c55e' : '#cbd5e1',
+                                        transition: 'background 0.2s ease',
+                                        position: 'relative',
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: '14px',
+                                            height: '14px',
+                                            borderRadius: '50%',
+                                            background: '#fff',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                                            position: 'absolute',
+                                            top: '2px',
+                                            left: autoSave ? '16px' : '2px',
+                                            transition: 'left 0.2s ease',
+                                        }}
+                                    />
+                                </div>
+                            </button>
+                            {autoSave && lastSaved && (
+                                <span className="text-[10px] text-green-600 dark:text-green-400 whitespace-nowrap flex items-center gap-1">
+                                    <iconify-icon icon="tabler:cloud-check" width="12"></iconify-icon>
+                                    {formatSavedTime()}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Enregistrer button — only when auto-save is OFF */}
+                        {!autoSave && (
+                            <button
+                                onClick={() => (forceSave || triggerSave)()}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            >
+                                <iconify-icon icon="tabler:device-floppy" width="17"></iconify-icon>
+                                <span>Enregistrer</span>
+                            </button>
+                        )}
 
                         {/* Générer button */}
-                        {doc._id && (
-                            <a
-                                href={`/account/${accountNumber}/documents/${doc._id}/generate`}
-                                className="flex items-center gap-1.5 px-4 py-2 text-white rounded-full text-sm font-medium transition-colors"
-                                style={{ backgroundColor: '#4361ee' }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b54d4'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4361ee'}
-                            >
-                                <iconify-icon icon="solar:play-bold-duotone" width="17"></iconify-icon>
-                                <span>Générer</span>
-                            </a>
-                        )}
+                        <button
+                            onClick={() => {
+                                if (doc._id) {
+                                    if (!autoSave && hasUnsavedChanges && hasUnsavedChanges()) {
+                                        setModalConfig({
+                                            title: "Attention",
+                                            message: "Veuillez d'abord enregistrer vos modifications avant de générer le document.",
+                                            confirmText: "Enregistrer maintenant",
+                                            confirmStyle: "bg-primary hover:bg-primary-dark text-white border border-transparent",
+                                            onConfirm: () => {
+                                                forceSave();
+                                                setModalConfig(null);
+                                            }
+                                        });
+                                        return;
+                                    }
+                                    window.location.href = `/account/${accountNumber}/documents/${doc._id}/generate`;
+                                } else {
+                                    setModalConfig({
+                                        title: "Document non enregistré",
+                                        message: "Veuillez d'abord enregistrer le document une première fois avant de pouvoir le générer.",
+                                        confirmText: "OK",
+                                        confirmStyle: "bg-primary hover:bg-primary-dark text-white border border-transparent",
+                                        onConfirm: () => setModalConfig(null)
+                                    });
+                                }
+                            }}
+                            className="flex items-center gap-1.5 px-4 py-2 text-white rounded-full text-sm font-medium transition-colors"
+                            style={{ backgroundColor: '#4361ee' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3b54d4'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4361ee'}
+                        >
+                            <iconify-icon icon="solar:play-bold-duotone" width="17"></iconify-icon>
+                            <span>Générer</span>
+                        </button>
                     </div>
                 ) : (
                     /* === NORMAL MODE ACTIONS === */
@@ -715,6 +1047,16 @@ export default function EditorHeader({
                             </>
                         ) : (
                             <>
+                                {/* Lié à dropdown */}
+                                <LinkedToDropdown
+                                    doc={doc}
+                                    setDoc={setDoc}
+                                    availableEntities={availableEntities}
+                                    linkedEntities={linkedEntities}
+                                    triggerSave={triggerSave}
+                                    accountNumber={accountNumber}
+                                />
+
                                 {/* PDF Button */}
                                 <button
                                     onClick={handlePdfExport}
@@ -1034,6 +1376,76 @@ export default function EditorHeader({
                     </div>
                 </div>
             </div>
+
+            {/* Visual Modal for Confirmations */}
+            {modalConfig && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-[500px] w-full overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all scale-100 opacity-100">
+                        <div className="p-5">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                <iconify-icon icon="solar:danger-triangle-bold" width="24" className="text-gray-500"></iconify-icon>
+                                {modalConfig.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 ml-8">
+                                {modalConfig.message}
+                            </p>
+                        </div>
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                            {modalConfig.type === 'unsaved' ? (
+                                <>
+                                    <button
+                                        onClick={() => setModalConfig(null)}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            await forceSave();
+                                            setModalConfig(null);
+                                            if (modalConfig.targetUrl === 'smartdoc-cancel') {
+                                                window.parent.postMessage({ type: 'smartdoc-cancel' }, '*');
+                                            } else {
+                                                window.location.href = modalConfig.targetUrl;
+                                            }
+                                        }}
+                                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        Sauvegarder
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (modalConfig.targetUrl === 'smartdoc-cancel') {
+                                                window.parent.postMessage({ type: 'smartdoc-cancel' }, '*');
+                                            } else {
+                                                window.location.href = modalConfig.targetUrl;
+                                            }
+                                        }}
+                                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm bg-[#ef4444] hover:bg-red-600 text-white"
+                                    >
+                                        Quitter sans sauvegarder
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => setModalConfig(null)}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={modalConfig.onConfirm}
+                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm ${modalConfig.confirmStyle}`}
+                                    >
+                                        {modalConfig.confirmText}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     )
 }

@@ -514,6 +514,58 @@ async function install(conn, userId, presetSlug) {
                 uploadedAt: new Date(Date.now() - (da.files.length - i) * 5 * 86400000),
                 uploadedBy: uid
             };
+
+            // Write the valid mock PDF file on disk under the correct tenant's folder
+            try {
+                const tenantId = conn.name.split('_').pop();
+                const outputDir = path.join(__dirname, '../private_uploads/attachments', String(tenantId));
+                fs.mkdirSync(outputDir, { recursive: true });
+                const mockPdf = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 595 842] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 100 >>
+stream
+BT
+/F1 18 Tf
+50 750 Td
+(Document de demonstration CRM) Tj
+/F1 12 Tf
+0 -30 Td
+(Ce document a ete genere automatiquement par le script de demonstration.) Tj
+0 -20 Td
+(Fichier PDF valide cree avec succes.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000242 00000 n 
+0000000309 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+460
+%%EOF`;
+                fs.writeFileSync(path.join(outputDir, att.filename), mockPdf, 'utf8');
+            } catch (err) {
+                console.error('[seed-crm] Error writing mock PDF file:', err);
+            }
+
             await db.Record.findByIdAndUpdate(da.record._id, { $push: { attachments: att } });
         }
     }

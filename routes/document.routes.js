@@ -172,12 +172,17 @@ router.get('/', async (req, res) => {
 
                 generatedDocs = results.map(doc => {
                     const entity = doc.entityId ? entityMap[doc.entityId.toString()] : null;
+                    let docName = doc.originalName || 'Document généré';
+                    if (doc.filename && doc.filename.toLowerCase().endsWith('.pdf') && !docName.toLowerCase().endsWith('.pdf')) {
+                        docName += '.pdf';
+                    }
                     return {
                         _id: doc._id,
-                        name: doc.originalName || 'Document généré',
+                        name: docName,
                         templateName: doc.generatedFromName || '',
                         createdAt: doc.uploadedAt,
                         downloadUrl: `/account/${req.account_number}/uploads/attachments/${doc.filename}`,
+                        recordId: doc.recordId,
                         recordTitle: doc.recordTitle || '',
                         entityName: entity?.name || '',
                         entityIcon: entity?.icon || '',
@@ -256,7 +261,7 @@ router.get('/templates', async (req, res) => {
 router.get('/new', async (req, res) => {
     const templateId = req.query.template;
     let documentData = null;
-    let isTemplateMode = false;
+    let isTemplateMode = req.query.isTemplate === 'true';
 
     if (templateId) {
         try {
@@ -468,22 +473,19 @@ router.put('/api/:id', async (req, res) => {
                     linkedEntityIds.push(document.entityId.toString());
                 }
 
-                // Get existing entity-scoped SmartDocTemplate entries for this document
-                const existingTemplates = await SmartDocTemplate.find({
-                    documentId: docId,
-                    $or: [
-                        { scopeType: 'entity' },
-                        { scopeType: { $exists: false } },
-                        { scopeType: null },
-                        { scopeType: '' }
-                    ]
-                }).lean();
-                const existingEntityIds = existingTemplates.map(t => t.entityId.toString());
+                // Get ALL existing SmartDocTemplate entries for this document
+                const allExistingTemplates = await SmartDocTemplate.find({ documentId: docId }).lean();
+                
+                // For auto-sync of generic entity links, we only care about 'entity' scoped ones to delete
+                const existingTemplates = allExistingTemplates.filter(t => !t.scopeType || t.scopeType === 'entity');
+                
+                // To prevent creating duplicate 'entity' templates when a 'record' template already exists for that entity
+                const allExistingEntityIds = allExistingTemplates.map(t => t.entityId.toString());
 
-                if (isTemplate && linkedEntityIds.length > 0) {
-                    // Create missing SmartDocTemplate entries
+                if (isTemplate && (linkedEntityIds.length > 0 || (document.linkedRecords && document.linkedRecords.length > 0))) {
+                    // Create missing SmartDocTemplate entries for generic 'entity' scope
                     for (const entityId of linkedEntityIds) {
-                        if (!existingEntityIds.includes(entityId)) {
+                        if (!allExistingEntityIds.includes(entityId)) {
                             await SmartDocTemplate.create({
                                 name: document.name || 'Template',
                                 documentId: docId,
@@ -497,6 +499,30 @@ router.put('/api/:id', async (req, res) => {
                         }
                     }
 
+                    // Create missing SmartDocTemplate entries for 'record' scope
+                    if (document.linkedRecords && document.linkedRecords.length > 0) {
+                        for (const lr of document.linkedRecords) {
+                            const exists = allExistingTemplates.some(t => 
+                                t.scopeType === 'record' && 
+                                t.scopeRecordId && t.scopeRecordId.toString() === lr.recordId.toString()
+                            );
+                            if (!exists) {
+                                await SmartDocTemplate.create({
+                                    name: document.name || 'Template',
+                                    documentId: docId,
+                                    entityId: lr.entityId,
+                                    scopeType: 'record',
+                                    scopeRecordId: lr.recordId,
+                                    scopeRecordLabel: lr.recordTitle,
+                                    outputFormat: 'pdf',
+                                    active: true,
+                                    createdBy: req.user?._id
+                                });
+                                console.log(`[SmartDoc] Auto-linked template "${document.name}" to record ${lr.recordId}`);
+                            }
+                        }
+                    }
+
                     // Remove SmartDocTemplate entries for unlinked entities
                     for (const existing of existingTemplates) {
                         if (!linkedEntityIds.includes(existing.entityId.toString())) {
@@ -505,20 +531,30 @@ router.put('/api/:id', async (req, res) => {
                         }
                     }
 
-                    // Update name if changed
-                    for (const existing of existingTemplates) {
-                        if (linkedEntityIds.includes(existing.entityId.toString()) && existing.name !== document.name) {
+                    // Remove SmartDocTemplate entries for unlinked records
+                    const recordTemplates = allExistingTemplates.filter(t => t.scopeType === 'record');
+                    const validRecordIds = (document.linkedRecords || []).map(r => r.recordId.toString());
+                    for (const existing of recordTemplates) {
+                        if (existing.scopeRecordId && !validRecordIds.includes(existing.scopeRecordId.toString())) {
+                            await SmartDocTemplate.findByIdAndDelete(existing._id);
+                            console.log(`[SmartDoc] Auto-unlinked template "${document.name}" from record ${existing.scopeRecordId}`);
+                        }
+                    }
+
+                    // Update name if changed (for all scopes: entity, record, relation)
+                    for (const existing of allExistingTemplates) {
+                        if (existing.name !== document.name) {
                             await SmartDocTemplate.findByIdAndUpdate(existing._id, { name: document.name });
                         }
                     }
-                } else if (!isTemplate && existingTemplates.length > 0) {
+                } else if (!isTemplate && allExistingTemplates.length > 0) {
                     // Template mode was disabled → remove all SmartDocTemplate entries
                     await SmartDocTemplate.deleteMany({ documentId: docId });
-                    console.log(`[SmartDoc] Template mode disabled → removed ${existingTemplates.length} SmartDocTemplate entries`);
-                } else if (isTemplate && linkedEntityIds.length === 0 && existingTemplates.length > 0) {
-                    // Template has no linked entities → remove orphan SmartDocTemplate entries
+                    console.log(`[SmartDoc] Template mode disabled → removed ${allExistingTemplates.length} SmartDocTemplate entries`);
+                } else if (isTemplate && linkedEntityIds.length === 0 && (!document.linkedRecords || document.linkedRecords.length === 0) && allExistingTemplates.length > 0) {
+                    // Template has no linked entities or records → remove orphan SmartDocTemplate entries
                     await SmartDocTemplate.deleteMany({ documentId: docId });
-                    console.log(`[SmartDoc] Template unlinked from all entities → removed ${existingTemplates.length} SmartDocTemplate entries`);
+                    console.log(`[SmartDoc] Template unlinked from all entities and records → removed ${allExistingTemplates.length} SmartDocTemplate entries`);
                 }
             }
         } catch (syncErr) {
@@ -594,6 +630,16 @@ router.delete('/api/:id', async (req, res) => {
 
         if (!document) {
             return res.status(404).json({ success: false, error: 'Document non trouvé' });
+        }
+
+        // --- Mission 8: Cascade delete SmartDocTemplates ---
+        try {
+            const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+            if (SmartDocTemplate) {
+                await SmartDocTemplate.deleteMany({ documentId: req.params.id });
+            }
+        } catch (cascadeErr) {
+            console.error('[SmartDoc] Error in cascade delete:', cascadeErr);
         }
 
         res.json({ success: true });
@@ -755,6 +801,16 @@ router.delete('/api/documents/:id', async (req, res) => {
 
         if (result.deletedCount === 0) {
             return res.status(404).json({ success: false, error: 'Document introuvable' });
+        }
+
+        // --- Cascade delete SmartDocTemplates ---
+        try {
+            const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+            if (SmartDocTemplate) {
+                await SmartDocTemplate.deleteMany({ documentId: req.params.id });
+            }
+        } catch (cascadeErr) {
+            console.error('[SmartDoc] Error in cascade delete:', cascadeErr);
         }
 
         res.json({ success: true });
@@ -921,6 +977,42 @@ router.get('/:id/generate', async (req, res) => {
             return res.status(404).send('Template non trouvé');
         }
 
+        // ── Check if document has an associated SmartDocTemplate ──
+        // If yes, use the DocGenerateWizard which resolves variables properly
+        if (SmartDocTemplate) {
+            const smartDocTemplate = await SmartDocTemplate.findOne({ documentId: doc._id.toString(), active: true }).lean();
+            if (smartDocTemplate) {
+                // Build entity list: include entities from entityIds, entityId, and linkedRecords
+                const allEntityIds = new Set();
+                (doc.entityIds || []).forEach(id => allEntityIds.add(id.toString()));
+                if (doc.entityId) allEntityIds.add(doc.entityId.toString());
+                // Also include entities referenced via linkedRecords
+                (doc.linkedRecords || []).forEach(lr => {
+                    if (lr.entityId) allEntityIds.add(lr.entityId.toString());
+                });
+
+                let entities = [];
+                if (allEntityIds.size > 0) {
+                    entities = await Entity.find({ _id: { $in: [...allEntityIds] } })
+                        .populate({
+                            path: 'relations.targetEntity',
+                            select: 'name icon slug color'
+                        })
+                        .lean();
+                }
+
+                return res.render('document/document-generate', {
+                    title: `Générer - ${doc.name}`,
+                    template: doc,
+                    entities,
+                    smartDocTemplate,
+                    account_number: req.account_number,
+                    layout: 'layout-app'
+                });
+            }
+        }
+
+        // ── Fallback: context-free generation (no SmartDocTemplate) ──
         // Get linked entities with relations populated
         const entityIds = [...(doc.entityIds || [])];
         if (doc.entityId && !entityIds.map(String).includes(doc.entityId.toString())) {

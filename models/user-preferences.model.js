@@ -105,6 +105,11 @@ const userPreferencesSchema = new mongoose.Schema({
         ficheLayout: {
             type: mongoose.Schema.Types.Mixed,
             default: undefined
+        },
+        // Document editor preferences
+        editorAutoSave: {
+            type: Boolean,
+            default: undefined
         }
     },
     updatedAt: {

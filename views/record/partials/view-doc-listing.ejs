@@ -186,7 +186,7 @@
                         </div>
                         <span class="dl-item-badge" :style="'background:<%= _dlColor %>10;color:<%= _dlColor %>;'" x-text="doc.mimeType === 'application/pdf' ? 'PDF' : 'DOC'"></span>
                         <div class="dl-item-actions">
-                            <a :href="doc.downloadUrl" @click.stop download class="dl-item-action" title="Télécharger">
+                            <a :href="doc.downloadUrl + '?dl=' + encodeURIComponent(doc.originalName || 'document.pdf')" @click.stop download class="dl-item-action" title="Télécharger">
                                 <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
                             </a>
                             <button @click.stop="openDoc(doc)" class="dl-item-action" title="Ouvrir">

@@ -7388,10 +7388,10 @@ window.__syncClsInputs = function(clsId, ids) {
                         window.location.reload();
                     } else {
                         const err = await res.json().catch(() => null);
-                        alert('Erreur: ' + (err?.error || 'Impossible de sauvegarder'));
+                        window.showMessage ? window.showMessage('Erreur: ' + (err?.error || 'Impossible de sauvegarder', 'danger') : alert('Erreur: ' + (err?.error || 'Impossible de sauvegarder'));
                     }
                 } catch (e) {
-                    alert('Erreur: ' + e.message);
+                    window.showMessage ? window.showMessage('Erreur: ' + e.message, 'danger') : alert('Erreur: ' + e.message);
                 } finally {
                     this.hcSaving = false;
                 }

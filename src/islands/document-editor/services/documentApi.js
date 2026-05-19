@@ -73,10 +73,14 @@ export async function exportPdf(docId, docName, html, accountNumber) {
         }
 
         const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
+        // Force PDF MIME type on the blob to ensure the browser treats it correctly
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' })
+        const url = window.URL.createObjectURL(pdfBlob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${docName}.pdf`
+        // Sanitize the filename: remove characters problematic for file systems
+        const safeName = (docName || 'document').replace(/[<>:"/\\|?*]/g, '_')
+        a.download = `${safeName}.pdf`
         document.body.appendChild(a)
         a.click()
         a.remove()

@@ -8,7 +8,7 @@
  * - Autosave timeout stored in ref
  */
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { saveDocument, exportPdf, uploadImage } from './services/documentApi'
+import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
 import { checkOverflow, checkUnderflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
@@ -1686,6 +1686,35 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             return
         }
 
+        // ── Draft finalization: save as record attachment ──────────────────────
+        // When this document is a SmartDoc-generated draft (isDraft=true),
+        // we call finalize-draft instead of a plain PDF export.
+        // This saves the PDF to the record's attachments (isGenerated:true) so
+        // it shows up in the docs hub under "Fichiers générés".
+        if (doc.isDraft && doc.draftRecordId) {
+            setIsGeneratingPdf(true)
+            try {
+                const result = await finalizeDraft(doc._id, doc.draftRecordId, accountNumber)
+                if (!result.success) {
+                    console.error('[SmartDoc] Finalize-draft failed:', result.error)
+                    alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
+                    return
+                }
+                // Draft is now deleted on the server — redirect to record drive tab
+                // so the user can see the generated file
+                console.log('[SmartDoc] Draft finalized, attachment saved:', result.attachmentId)
+                // Optionally redirect to the record's drive page after a short delay
+                // (the PDF download was already triggered inside finalizeDraft)
+                setTimeout(() => {
+                    window.location.href = `/account/${accountNumber}/documents`
+                }, 1500)
+            } finally {
+                setIsGeneratingPdf(false)
+            }
+            return
+        }
+
+        // ── Regular document export (non-draft) ───────────────────────────────
         // Build clean HTML matching EXACTLY the SmartDoc format (resolveDocumentTokens output)
         // Instead of sending raw editor DOM, we extract page content and wrap it properly
         const docMargins = doc.margins || { top: 40, right: 40, bottom: 40, left: 40 }

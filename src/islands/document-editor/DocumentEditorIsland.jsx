@@ -334,9 +334,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== AUTOSAVE ==========
     // Core save logic — extracted so both triggerSave and forceSave share it
-    const executeSave = useCallback(async () => {
+    const executeSave = useCallback(async (docOverride = null) => {
         // Read current content from page refs
-        const currentDoc = { ...docRef.current }
+        const currentDoc = { ...(docOverride || docRef.current) }
 
         // Safety check: verify all edition pages have valid refs
         // This prevents saving empty content when DOM refs aren't available
@@ -434,9 +434,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // forceSave — always saves immediately, ignores auto-save toggle
     // Used by: Enregistrer button, Ctrl+S, entity linking, binding resolution
-    const forceSave = useCallback(async () => {
+    const forceSave = useCallback(async (docOverride = null) => {
         clearTimeout(saveTimeoutRef.current)
-        return await executeSave()
+        return await executeSave(docOverride)
     }, [executeSave])
 
     // Flush pending changes when auto-save is re-enabled

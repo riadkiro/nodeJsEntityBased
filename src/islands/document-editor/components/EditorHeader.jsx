@@ -287,7 +287,7 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
 }
 
 // Linked-To dropdown for template mode header
-function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, triggerSave, accountNumber }) {
+function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, triggerSave, forceSave, accountNumber }) {
     const [open, setOpen] = useState(false)
     const [activeTab, setActiveTab] = useState('collections') // 'collections' | 'records'
     const ref = useRef(null)
@@ -342,39 +342,56 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
     }, [searchQuery, selectedEntityId, activeTab, accountNumber])
 
     const toggleEntity = (entityId) => {
-        setDoc(prev => {
-            const currentIds = prev.entityIds || (prev.entityId ? [prev.entityId] : [])
-            const isLinked = currentIds.includes(entityId)
-            const newIds = isLinked
-                ? currentIds.filter(id => id !== entityId)
-                : [...currentIds, entityId]
-            return { ...prev, entityIds: newIds, entityId: newIds[0] || null }
-        })
-        triggerSave()
+        const currentIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
+        const isLinked = currentIds.includes(entityId)
+        const newIds = isLinked
+            ? currentIds.filter(id => id !== entityId)
+            : [...currentIds, entityId]
+        
+        const updatedDoc = {
+            ...doc,
+            entityIds: newIds,
+            entityId: newIds[0] || null
+        }
+        
+        setDoc(updatedDoc)
+        if (forceSave) {
+            forceSave(updatedDoc)
+        } else {
+            triggerSave()
+        }
     }
 
     const toggleRecord = (record, entity) => {
-        setDoc(prev => {
-            const currentRecords = prev.linkedRecords || []
-            const isLinked = currentRecords.some(r => r.recordId === record._id)
-            
-            let newRecords
-            if (isLinked) {
-                newRecords = currentRecords.filter(r => r.recordId !== record._id)
-            } else {
-                newRecords = [...currentRecords, {
-                    recordId: record._id,
-                    recordTitle: record.computedTitle || record.title || 'Sans titre',
-                    entityId: entity.id,
-                    entityName: entity.name,
-                    entityIcon: entity.icon,
-                    entityColor: entity.color,
-                    entitySlug: entity.slug
-                }]
-            }
-            return { ...prev, linkedRecords: newRecords }
-        })
-        triggerSave()
+        const currentRecords = doc.linkedRecords || []
+        const isLinked = currentRecords.some(r => r.recordId === record._id)
+        
+        let newRecords
+        if (isLinked) {
+            newRecords = currentRecords.filter(r => r.recordId !== record._id)
+        } else {
+            newRecords = [...currentRecords, {
+                recordId: record._id,
+                recordTitle: record.computedTitle || record.title || 'Sans titre',
+                entityId: entity.id,
+                entityName: entity.name,
+                entityIcon: entity.icon,
+                entityColor: entity.color,
+                entitySlug: entity.slug
+            }]
+        }
+        
+        const updatedDoc = {
+            ...doc,
+            linkedRecords: newRecords
+        }
+        
+        setDoc(updatedDoc)
+        if (forceSave) {
+            forceSave(updatedDoc)
+        } else {
+            triggerSave()
+        }
     }
 
     const unassignedRecords = (doc.linkedRecords || []).length
@@ -570,11 +587,16 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
                                                     </div>
                                                     <button 
                                                         onClick={() => {
-                                                            setDoc(prev => ({
-                                                                ...prev,
-                                                                linkedRecords: prev.linkedRecords.filter(r => r.recordId !== lr.recordId)
-                                                            }))
-                                                            triggerSave()
+                                                            const updatedDoc = {
+                                                                ...doc,
+                                                                linkedRecords: doc.linkedRecords.filter(r => r.recordId !== lr.recordId)
+                                                            }
+                                                            setDoc(updatedDoc)
+                                                            if (forceSave) {
+                                                                forceSave(updatedDoc)
+                                                            } else {
+                                                                triggerSave()
+                                                            }
                                                         }}
                                                         className="text-gray-400 hover:text-red-500"
                                                     >
@@ -1054,6 +1076,7 @@ export default function EditorHeader({
                                     availableEntities={availableEntities}
                                     linkedEntities={linkedEntities}
                                     triggerSave={triggerSave}
+                                    forceSave={forceSave}
                                     accountNumber={accountNumber}
                                 />
 

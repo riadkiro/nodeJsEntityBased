@@ -2866,13 +2866,40 @@
                     if (!this.draftDocumentId) return;
                     this.finalizingDraft = true;
                     try {
+                        // ── PERMANENT FIX: get live DOM content from iframe ──────────────────
+                        // The iframe runs the React editor with uncontrolled contenteditable.
+                        // The DB (draftDoc.pages) contains only the initial generated content.
+                        // User edits live ONLY in the iframe DOM until autosave runs.
+                        // We MUST send pagesContent from the iframe to get the correct PDF output.
+                        let pagesContent = null;
+                        try {
+                            const iframe = document.getElementById('smartdoc-preview-iframe-sd');
+                            if (iframe && iframe.contentWindow) {
+                                pagesContent = await new Promise((resolve) => {
+                                    const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
+                                    const handler = (event) => {
+                                        if (event.data && event.data.type === 'PAGES_CONTENT_RESPONSE') {
+                                            clearTimeout(timeout);
+                                            window.removeEventListener('message', handler);
+                                            resolve(event.data.pagesContent || null);
+                                        }
+                                    };
+                                    window.addEventListener('message', handler);
+                                    iframe.contentWindow.postMessage({ type: 'REQUEST_PAGES_CONTENT' }, '*');
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('[SmartDoc] Could not get pages from iframe:', e);
+                        }
+
                         // Finalize: generate PDF from the (possibly edited) draft
                         const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/finalize-draft/${this.draftDocumentId}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
                             body: JSON.stringify({
-                                recordId: this.recordId
+                                recordId: this.recordId,
+                                pagesContent
                             })
                         });
                         const data = await res.json();
@@ -2885,11 +2912,11 @@
                                 window.showMessage('Document généré avec succès !', 'success');
                             }
                         } else {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            window.showMessage ? window.showMessage(data.error || 'Erreur de finalisation', 'danger') : alert(data.error || 'Erreur');
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Finalize error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        window.showMessage ? window.showMessage('Erreur de connexion', 'danger') : alert('Erreur de connexion');
                     } finally {
                         this.finalizingDraft = false;
                         this.showSmartDocPreview = false;

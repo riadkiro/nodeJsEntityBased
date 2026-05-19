@@ -290,6 +290,47 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         return () => window.removeEventListener('toggle-template-panel', handler)
     }, [])
 
+    // ========== POSTMESSAGE BRIDGE (iframe mode) ==========
+    // When the editor is embedded in an iframe (minimal=true mode, e.g. record docs module),
+    // the parent Alpine page can request the current page HTML via postMessage BEFORE calling
+    // finalize-draft. This is the ONLY reliable way to get live DOM content from an iframe.
+    //
+    // PERMANENT FIX for recurring "blank PDF" bug:
+    //   Root cause: finalize-draft reads draftDoc.pages from MongoDB, which is the INITIAL
+    //   generated content (just resolved tokens). User edits live only in the contenteditable DOM.
+    //   Solution: parent asks iframe for DOM content → sends it as pagesContent to finalize-draft.
+    //
+    // Protocol:
+    //   Parent → iframe: postMessage({ type: 'REQUEST_PAGES_CONTENT' }, '*')
+    //   iframe → parent: postMessage({ type: 'PAGES_CONTENT_RESPONSE', pagesContent: [...] }, '*')
+    useEffect(() => {
+        const handleMessage = (event) => {
+            if (!event.data || event.data.type !== 'REQUEST_PAGES_CONTENT') return
+
+            // Extract CURRENT DOM innerHTML from each page ref (source of truth)
+            const pages = docRef.current?.pages || []
+            const pagesContent = pages.map((page, i) => {
+                const pageEl = pageRefs.current[i]
+                if (pageEl) {
+                    let html = pageEl.innerHTML
+                    // Strip temporary markers that should not go into PDF
+                    html = html.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
+                    html = html.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+                    return html
+                }
+                return page.content || ''
+            })
+
+            console.log('[DocumentEditor] postMessage: sending pages content to parent, pages:', pagesContent.length)
+            // Reply to whoever sent the request (parent frame)
+            const target = event.source || window.parent
+            target.postMessage({ type: 'PAGES_CONTENT_RESPONSE', pagesContent }, '*')
+        }
+
+        window.addEventListener('message', handleMessage)
+        return () => window.removeEventListener('message', handleMessage)
+    }, []) // empty deps: pageRefs and docRef are refs (stable), not state
+
 
     // ========== AUTOSAVE ==========
     // Core save logic — extracted so both triggerSave and forceSave share it

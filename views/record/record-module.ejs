@@ -942,11 +942,37 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 if (!this.draftDocId || this.finalizing) return;
                 this.finalizing = true;
                 try {
+                    // ── PERMANENT FIX: get live DOM content from iframe ──────────────────
+                    // The iframe runs the React editor with uncontrolled contenteditable.
+                    // The DB (draftDoc.pages) contains only the initial generated content.
+                    // User edits live ONLY in the iframe DOM until autosave runs.
+                    // We MUST send pagesContent from the iframe to get the correct PDF output.
+                    let pagesContent = null;
+                    try {
+                        const iframe = document.getElementById('ov-smartdoc-preview-iframe');
+                        if (iframe && iframe.contentWindow) {
+                            pagesContent = await new Promise((resolve) => {
+                                const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
+                                const handler = (event) => {
+                                    if (event.data && event.data.type === 'PAGES_CONTENT_RESPONSE') {
+                                        clearTimeout(timeout);
+                                        window.removeEventListener('message', handler);
+                                        resolve(event.data.pagesContent || null);
+                                    }
+                                };
+                                window.addEventListener('message', handler);
+                                iframe.contentWindow.postMessage({ type: 'REQUEST_PAGES_CONTENT' }, '*');
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('[OvSmartDocs] Could not get pages from iframe:', e);
+                    }
+
                     const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/finalize-draft/${this.draftDocId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
-                        body: JSON.stringify({ recordId: this._recordId })
+                        body: JSON.stringify({ recordId: this._recordId, pagesContent })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -1564,11 +1590,37 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 if (!this.draftDocId || this.finalizing) return;
                 this.finalizing = true;
                 try {
+                    // ── PERMANENT FIX: get live DOM content from iframe ──────────────────
+                    // The iframe runs the React editor with uncontrolled contenteditable.
+                    // The DB (draftDoc.pages) contains only the initial generated content.
+                    // User edits live ONLY in the iframe DOM until autosave runs.
+                    // We MUST send pagesContent from the iframe to get the correct PDF output.
+                    let pagesContent = null;
+                    try {
+                        const iframe = document.getElementById('docs-smartdoc-preview-iframe');
+                        if (iframe && iframe.contentWindow) {
+                            pagesContent = await new Promise((resolve) => {
+                                const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
+                                const handler = (event) => {
+                                    if (event.data && event.data.type === 'PAGES_CONTENT_RESPONSE') {
+                                        clearTimeout(timeout);
+                                        window.removeEventListener('message', handler);
+                                        resolve(event.data.pagesContent || null);
+                                    }
+                                };
+                                window.addEventListener('message', handler);
+                                iframe.contentWindow.postMessage({ type: 'REQUEST_PAGES_CONTENT' }, '*');
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('[DocsModule] Could not get pages from iframe:', e);
+                    }
+
                     const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/finalize-draft/${this.draftDocId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
-                        body: JSON.stringify({ recordId: this._recordId })
+                        body: JSON.stringify({ recordId: this._recordId, pagesContent })
                     });
                     const data = await res.json();
                     if (data.success) {

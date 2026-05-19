@@ -1727,12 +1727,15 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             return
         }
 
-        // ── Draft finalization: save as record attachment ──────────────────────
-        // When this document is a SmartDoc-generated draft (isDraft=true),
-        // we call finalize-draft instead of a plain PDF export.
-        // This saves the PDF to the record's attachments (isGenerated:true) so
-        // it shows up in the docs hub under "Fichiers générés".
-        if (doc.isDraft && doc.draftRecordId) {
+        // ── Draft finalization ─────────────────────────────────────────────────
+        // ALL draft documents (isDraft=true) go through finalize-draft.
+        // This covers BOTH cases:
+        //   - Draft WITH draftRecordId → PDF saved as record attachment
+        //   - Draft WITHOUT draftRecordId → PDF saved as standalone generated document
+        // Previously this checked `doc.isDraft && doc.draftRecordId`, which skipped
+        // context-free drafts (Docs Hub flow) causing PDFs to only blob-download
+        // without persisting anywhere, and drafts to accumulate in the DB.
+        if (doc.isDraft) {
             setIsGeneratingPdf(true)
             try {
                 // CRITICAL: Extract CURRENT DOM content from pageRefs (contenteditable is uncontrolled)
@@ -1757,7 +1760,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
                     return
                 }
-                console.log('[SmartDoc] Draft finalized, attachment saved:', result.attachmentId)
+                console.log('[SmartDoc] Draft finalized:', result.attachmentId || 'standalone document')
                 // Redirect to docs hub after a short delay so user sees the new generated file
                 setTimeout(() => {
                     window.location.href = `/account/${accountNumber}/documents`

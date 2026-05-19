@@ -1150,12 +1150,16 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         if (!draftDoc) {
             return res.status(404).json({ error: 'Document brouillon introuvable' });
         }
+        console.log(`[SmartDoc] Finalizing draft ${draftDoc._id} | name: "${draftDoc.name}" | recordId: ${draftDoc.draftRecordId || 'NONE'}`);
 
-        // 2. Load the record
+        // 2. Try to load the record (optional — may be null for Docs Hub context-free generation)
         const recordId = req.body.recordId || draftDoc.draftRecordId;
-        const record = await Record.findById(recordId);
-        if (!record) {
-            return res.status(404).json({ error: 'Record introuvable' });
+        let record = null;
+        if (recordId) {
+            record = await Record.findById(recordId);
+            if (!record) {
+                console.warn(`[SmartDoc] Record ${recordId} not found — proceeding as standalone document`);
+            }
         }
 
         // 3. Load DocumentLines for the draft (interactive table data) and resolve dynamic tables
@@ -1295,6 +1299,7 @@ ${pagesHtml}
                 await generatePDF(fullHtml, pdfPath, draftDoc);
                 savedFilename = pdfFilename;
                 savedSize = fs.statSync(pdfPath).size;
+                console.log(`[SmartDoc] PDF generated: ${pdfFilename} (${savedSize} bytes)`);
             } catch (pdfErr) {
                 console.error('[SmartDoc] PDF generation error:', pdfErr);
                 const htmlFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.html';
@@ -1311,7 +1316,7 @@ ${pagesHtml}
             savedSize = fs.statSync(htmlPath).size;
         }
 
-        // 5. Save as record attachment
+        // 5. Resolve template name for metadata
         let generatedFromName = 'Document genere';
         try {
             if (draftDoc.draftSourceTemplateId) {
@@ -1321,45 +1326,86 @@ ${pagesHtml}
             }
         } catch(e) {}
 
-        const newAttachment = {
-            filename: savedFilename,
-            originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
-            mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
-            size: savedSize,
-            category: 'pdf',
-            isGenerated: true,
-            generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
-            generatedFromName: generatedFromName,
-            uploadedAt: new Date(),
-            uploadedBy: req.user?._id
-        };
+        // ── PATH A: Record exists → save as record attachment (original behavior) ───
+        // ── PATH B: No record → convert draft to standalone finalized document ──────
+        let responsePayload;
 
-        record.attachments = record.attachments || [];
-        record.attachments.push(newAttachment);
-        await record.save();
+        if (record) {
+            // PATH A: Save as record attachment
+            const newAttachment = {
+                filename: savedFilename,
+                originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
+                mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
+                size: savedSize,
+                category: 'pdf',
+                isGenerated: true,
+                generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
+                generatedFromName: generatedFromName,
+                uploadedAt: new Date(),
+                uploadedBy: req.user?._id
+            };
 
-        const addedAttachment = record.attachments[record.attachments.length - 1];
+            record.attachments = record.attachments || [];
+            record.attachments.push(newAttachment);
+            await record.save();
 
-        // 6. Delete the draft document and its lines (cleanup)
-        try {
-            const DocumentLine = await tenantCollection(req, 'DocumentLine');
-            if (DocumentLine) {
-                await DocumentLine.deleteMany({ documentId: draftDoc._id });
-            }
-        } catch (e) { /* non-critical */ }
-        await Document.findByIdAndDelete(draftDoc._id);
-        console.log(`[SmartDoc] Draft ${draftDoc._id} finalized and deleted`);
+            const addedAttachment = record.attachments[record.attachments.length - 1];
 
-        res.json({
-            success: true,
-            attachment: {
-                _id: addedAttachment._id,
-                ...newAttachment,
-                url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
-                sizeFormatted: formatSize(savedSize)
-            },
-            outputName
-        });
+            // Delete draft
+            try {
+                const DocumentLine = await tenantCollection(req, 'DocumentLine');
+                if (DocumentLine) {
+                    await DocumentLine.deleteMany({ documentId: draftDoc._id });
+                }
+            } catch (e) { /* non-critical */ }
+            await Document.findByIdAndDelete(draftDoc._id);
+            console.log(`[SmartDoc] Draft ${draftDoc._id} finalized as record attachment and deleted`);
+
+            responsePayload = {
+                success: true,
+                mode: 'record-attachment',
+                attachment: {
+                    _id: addedAttachment._id,
+                    ...newAttachment,
+                    url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
+                    sizeFormatted: formatSize(savedSize)
+                },
+                outputName
+            };
+        } else {
+            // PATH B: No record — convert draft to a standalone finalized document
+            // Instead of deleting the draft, convert it to a finalized document with file metadata.
+            // This allows it to appear in the "Générés" tab of the Docs Hub.
+            draftDoc.isDraft = false;
+            draftDoc.status = 'finalized';
+            draftDoc.generatedFile = {
+                filename: savedFilename,
+                originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
+                mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
+                size: savedSize,
+                generatedAt: new Date(),
+                generatedBy: req.user?._id,
+                generatedFromName: generatedFromName,
+                downloadUrl: `/account/${req.account_number}/uploads/attachments/${savedFilename}`
+            };
+            await draftDoc.save();
+            console.log(`[SmartDoc] Draft ${draftDoc._id} finalized as standalone document (no record)`);
+
+            responsePayload = {
+                success: true,
+                mode: 'standalone-document',
+                attachment: {
+                    _id: draftDoc._id,
+                    filename: savedFilename,
+                    originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
+                    url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
+                    sizeFormatted: formatSize(savedSize)
+                },
+                outputName
+            };
+        }
+
+        res.json(responsePayload);
 
     } catch (error) {
         console.error('[SmartDoc] Finalize-draft error:', error);

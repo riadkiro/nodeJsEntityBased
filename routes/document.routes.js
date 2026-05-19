@@ -130,11 +130,15 @@ router.get('/', async (req, res) => {
             }
         } catch (e) { /* entity enrichment is optional */ }
 
-        // Fetch generated documents from record attachments (isGenerated: true)
+        // Fetch generated documents from TWO sources:
+        // 1. Record attachments (isGenerated: true) — for record-bound generation
+        // 2. Standalone finalized documents (status: 'finalized', generatedFile exists) — for Docs Hub context-free generation
         let generatedDocs = [];
         try {
             const Record = await tenantCollection(req, 'Record');
             const Entity = await tenantCollection(req, 'Entity');
+
+            // Source 1: Record attachments
             if (Record) {
                 // Aggregate across all records to find generated attachments
                 const results = await Record.aggregate([
@@ -191,6 +195,37 @@ router.get('/', async (req, res) => {
                         status: 'finalized'
                     };
                 });
+            }
+
+            // Source 2: Standalone finalized documents (generated from Docs Hub without record context)
+            const Document = await tenantCollection(req, 'Document');
+            if (Document) {
+                const standaloneDocs = await Document.find({
+                    status: 'finalized',
+                    'generatedFile.filename': { $exists: true }
+                }).sort({ updatedAt: -1 }).limit(50).lean();
+
+                for (const sdoc of standaloneDocs) {
+                    const gf = sdoc.generatedFile || {};
+                    let docName = gf.originalName || sdoc.name || 'Document généré';
+                    generatedDocs.push({
+                        _id: sdoc._id,
+                        name: docName,
+                        templateName: gf.generatedFromName || sdoc.generatedFrom?.templateName || '',
+                        createdAt: gf.generatedAt || sdoc.updatedAt,
+                        downloadUrl: gf.downloadUrl || `/account/${req.account_number}/uploads/attachments/${gf.filename}`,
+                        recordId: null,
+                        recordTitle: '',
+                        entityName: '',
+                        entityIcon: '',
+                        entitySlug: '',
+                        entityColor: '',
+                        status: 'finalized'
+                    });
+                }
+
+                // Sort combined results by date, newest first
+                generatedDocs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             }
         } catch (e) {
             console.warn('[Documents] Could not fetch generated docs:', e.message);

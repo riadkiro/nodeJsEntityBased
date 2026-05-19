@@ -1179,6 +1179,11 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         }
 
         // 3b. Build per-page HTML matching editor layout pixel-perfectly
+        // CRITICAL: Prefer pagesContent from the request body (live DOM from the React editor)
+        // over draftDoc.pages from MongoDB. The contenteditable is uncontrolled — user edits
+        // only exist in the DOM until explicitly saved. Without this, the PDF is generated from
+        // the stale initial draft content (just resolved tokens), ignoring all user edits.
+        const domPagesContent = Array.isArray(req.body.pagesContent) ? req.body.pagesContent : null;
         const docMargins = draftDoc.margins || { top: 40, right: 40, bottom: 40, left: 40 };
         const docDims = draftDoc.dimensions || { width: 794, height: 1123 };
         const hasHeader = !!(draftDoc.headerHtml && draftDoc.headerHtml.trim());
@@ -1192,9 +1197,17 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             for (let i = 0; i < draftDoc.pages.length; i++) {
                 const page = draftDoc.pages[i];
                 let pageContent = '';
-                if (page.content) {
+
+                if (domPagesContent && domPagesContent[i] !== undefined) {
+                    // Use live DOM content from React editor — this is what the user sees
+                    pageContent = domPagesContent[i] || '';
+                    // Still resolve dynamic tables in the DOM content (interactive tables may have been added)
+                    pageContent = resolveDynamicTables(pageContent, draftLines, lineSchemas);
+                } else if (page.content) {
+                    // Fallback: DB content (only if no DOM content was sent)
                     pageContent = resolveDynamicTables(page.content, draftLines, lineSchemas);
                 }
+
                 if (page.elements) {
                     for (const el of page.elements) {
                         if (el.content && typeof el.content === 'object') {

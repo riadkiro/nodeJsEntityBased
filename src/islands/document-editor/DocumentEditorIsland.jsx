@@ -1694,17 +1694,30 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         if (doc.isDraft && doc.draftRecordId) {
             setIsGeneratingPdf(true)
             try {
-                const result = await finalizeDraft(doc._id, doc.draftRecordId, accountNumber)
+                // CRITICAL: Extract CURRENT DOM content from pageRefs (contenteditable is uncontrolled)
+                // The DB version (draftDoc.pages) is stale — user edits live only in the DOM until saved.
+                // We must pass pagesContent so the server uses the live editor content, not the DB snapshot.
+                const pages = doc.pages || []
+                const pagesContent = pages.map((page, i) => {
+                    const pageEl = pageRefs.current[i]
+                    if (pageEl) {
+                        // Clean reflow markers before sending
+                        let html = pageEl.innerHTML
+                        html = html.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
+                        html = html.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+                        return html
+                    }
+                    return page.content || ''
+                })
+
+                const result = await finalizeDraft(doc._id, doc.draftRecordId, accountNumber, pagesContent)
                 if (!result.success) {
                     console.error('[SmartDoc] Finalize-draft failed:', result.error)
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
                     return
                 }
-                // Draft is now deleted on the server — redirect to record drive tab
-                // so the user can see the generated file
                 console.log('[SmartDoc] Draft finalized, attachment saved:', result.attachmentId)
-                // Optionally redirect to the record's drive page after a short delay
-                // (the PDF download was already triggered inside finalizeDraft)
+                // Redirect to docs hub after a short delay so user sees the new generated file
                 setTimeout(() => {
                     window.location.href = `/account/${accountNumber}/documents`
                 }, 1500)

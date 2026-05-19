@@ -102,20 +102,25 @@ export async function exportPdf(docId, docName, html, accountNumber) {
  * the generated PDF is saved in the record's attachments and appears in the
  * docs hub under "Fichiers générés".
  *
- * @param {string} draftDocId - The draft document ID
- * @param {string} recordId   - The source record ID (from doc.draftRecordId)
- * @param {string} accountNumber - Account number
+ * CRITICAL: pagesContent must be the CURRENT DOM innerHTML of each page
+ * (not the React state), because contenteditable is uncontrolled.
+ * Without it, the server reads the stale DB content and generates a blank/minimal PDF.
+ *
+ * @param {string}   draftDocId   - The draft document ID
+ * @param {string}   recordId     - The source record ID (from doc.draftRecordId)
+ * @param {string}   accountNumber - Account number
+ * @param {string[]} pagesContent - Array of innerHTML strings, one per page (from DOM)
  * @returns {Promise<{success: boolean, downloadUrl?: string, outputName?: string, error?: string}>}
  */
-export async function finalizeDraft(draftDocId, recordId, accountNumber) {
-    console.log('[SmartDoc] Finalizing draft:', draftDocId, 'for record:', recordId)
+export async function finalizeDraft(draftDocId, recordId, accountNumber, pagesContent) {
+    console.log('[SmartDoc] Finalizing draft:', draftDocId, 'for record:', recordId, 'pages:', pagesContent?.length)
 
     try {
         const response = await fetch(`/account/${accountNumber}/api/smartdoc/finalize-draft/${draftDocId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ recordId })
+            body: JSON.stringify({ recordId, pagesContent })
         })
 
         const data = await response.json()

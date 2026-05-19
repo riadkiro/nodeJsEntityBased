@@ -640,8 +640,9 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         }
 
         // 3. Load the entity with full population (custom fields, relations, classifications)
-        // Using tenant-safe helper to avoid "Schema hasn't been registered" errors
-        const entity = await loadEntityWithFields(req, smartDocTemplate.entityId);
+        // Use the record's actual entity if available, fallback to template's entity
+        const targetEntityId = record.entityId || smartDocTemplate.entityId;
+        const entity = await loadEntityWithFields(req, targetEntityId);
 
         // 3b. Load related records for relations
         const relatedRecordsMap = {};
@@ -839,8 +840,9 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         }
 
         // 3. Load the entity with full population
-        // Using tenant-safe helper to avoid "Schema hasn't been registered" errors
-        const entity = await loadEntityWithFields(req, smartDocTemplate.entityId);
+        // Use the record's actual entity if available, fallback to template's entity
+        const targetEntityId = record.entityId || smartDocTemplate.entityId;
+        const entity = await loadEntityWithFields(req, targetEntityId);
 
         // 3b. Load related records
         const relatedRecordsMap = {};
@@ -927,6 +929,30 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                     }
                 } catch (err) {
                     console.warn(`[SmartDoc] Could not load linked record ${lr.recordId} for context:`, err.message);
+                }
+            }
+        }
+
+        // 6c. Inject variables for any manually selected additional context records passed in req.body
+        const additionalRecordsLoaded = [];
+        if (req.body.additionalRecordIds && Array.isArray(req.body.additionalRecordIds)) {
+            for (const addId of req.body.additionalRecordIds) {
+                if (!addId || addId.toString() === record._id.toString()) continue;
+                
+                try {
+                    const addRecord = await Record.findById(addId).lean();
+                    if (addRecord) {
+                        const addEntity = await loadEntityWithFields(req, addRecord.entityId);
+                        if (addEntity && addEntity.slug) {
+                            additionalRecordsLoaded.push({ record: addRecord, entity: addEntity });
+                            const addContext = buildTokenContext(addRecord, addEntity, {}, {}, req.user);
+                            if (addContext[addEntity.slug]) {
+                                context[addEntity.slug] = addContext[addEntity.slug];
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[SmartDoc] Could not load additional record ${addId} for context:`, err.message);
                 }
             }
         }
@@ -1057,6 +1083,23 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                         alias: relKey
                     });
                 }
+            }
+        }
+
+        // Also append any manually selected additional context records passed from the wizard
+        if (typeof additionalRecordsLoaded !== 'undefined' && additionalRecordsLoaded.length > 0) {
+            for (const addRec of additionalRecordsLoaded) {
+                if (draftLinkedRecords.some(lr => lr.recordId.toString() === addRec.record._id.toString())) continue;
+                draftLinkedRecords.push({
+                    recordId: addRec.record._id,
+                    recordTitle: addRec.record.computedTitle || addRec.record.title || '',
+                    entityId: addRec.entity._id,
+                    entityName: addRec.entity.name || '',
+                    entityIcon: addRec.entity.icon || '',
+                    entityColor: addRec.entity.color || '',
+                    entitySlug: addRec.entity.slug || '',
+                    alias: addRec.entity.slug || ''
+                });
             }
         }
 
@@ -1872,6 +1915,19 @@ function buildTokenContext(record, entity, inputs, relatedRecordsMap, user) {
         context[entity.slug] = entityContext;
     }
 
+    // Mirror any nested relation contexts (e.g. context.opportunites.contacts) at the root level (e.g. context.contacts)
+    for (const [entitySlug, entityContext] of Object.entries(context)) {
+        if (entityContext && typeof entityContext === 'object' && !Array.isArray(entityContext)) {
+            for (const [key, value] of Object.entries(entityContext)) {
+                if (value && typeof value === 'object' && !Array.isArray(value) && key !== 'classification' && key !== 'user') {
+                    if (!context[key]) {
+                        context[key] = value;
+                    }
+                }
+            }
+        }
+    }
+
     return context;
 }
 
@@ -1989,6 +2045,19 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
         }
 
         context[entity.slug] = entityContext;
+    }
+
+    // Mirror any nested relation contexts (e.g. context.opportunites.contacts) at the root level (e.g. context.contacts)
+    for (const [entitySlug, entityContext] of Object.entries(context)) {
+        if (entityContext && typeof entityContext === 'object' && !Array.isArray(entityContext)) {
+            for (const [key, value] of Object.entries(entityContext)) {
+                if (value && typeof value === 'object' && !Array.isArray(value) && key !== 'classification' && key !== 'user') {
+                    if (!context[key]) {
+                        context[key] = value;
+                    }
+                }
+            }
+        }
     }
 
     // Resolve in content blocks, pages, etc.

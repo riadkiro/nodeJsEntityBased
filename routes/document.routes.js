@@ -1287,6 +1287,92 @@ router.get('/api/:documentId/search-records', async (req, res) => {
 });
 
 /**
+ * GET /api/:documentId/resolve-context
+ * Find related context records (e.g. consultations) for the selected parent record.
+ * Query params:
+ *   - entityId: parent entity ID (e.g., patient entity ID)
+ *   - recordId: parent record ID (e.g., the selected patient record's ID)
+ */
+router.get('/api/:documentId/resolve-context', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        const Entity = await tenantCollection(req, 'Entity');
+        const Record = await tenantCollection(req, 'Record');
+        const mongoose = require('mongoose');
+
+        const { entityId: parentEntityId, recordId: parentRecordId } = req.query;
+        if (!parentEntityId || !parentRecordId) {
+            return res.status(400).json({ error: 'entityId and recordId are required' });
+        }
+
+        // 1. Get the template document
+        const doc = await Document.findById(req.params.documentId).lean();
+        if (!doc) {
+            return res.status(404).json({ error: 'Template non trouvé' });
+        }
+
+        // 2. Identify the target entities for this template
+        const targetEntityIds = [];
+        if (doc.entityIds && doc.entityIds.length > 0) {
+            doc.entityIds.forEach(id => targetEntityIds.push(id.toString()));
+        }
+        if (doc.entityId && !targetEntityIds.includes(doc.entityId.toString())) {
+            targetEntityIds.push(doc.entityId.toString());
+        }
+
+        // 3. Find primary entity metadata
+        let primaryEntity = null;
+        if (targetEntityIds.length > 0) {
+            const entityDoc = await Entity.findById(targetEntityIds[0]).select('name icon slug').lean();
+            if (entityDoc) {
+                primaryEntity = {
+                    _id: entityDoc._id,
+                    name: entityDoc.name,
+                    icon: entityDoc.icon,
+                    slug: entityDoc.slug
+                };
+            }
+        }
+
+        // 4. Query context records of the target entities that reference the parent record ID
+        const parentRecordObjectId = mongoose.Types.ObjectId.isValid(parentRecordId) 
+            ? new mongoose.Types.ObjectId(parentRecordId) 
+            : null;
+
+        const relationValues = [parentRecordId];
+        if (parentRecordObjectId) {
+            relationValues.push(parentRecordObjectId);
+        }
+
+        let contexts = [];
+        if (targetEntityIds.length > 0) {
+            const rawContexts = await Record.find({
+                entityId: { $in: targetEntityIds },
+                'relations.value': { $in: relationValues }
+            })
+            .select('_id title computedTitle createdAt')
+            .sort({ createdAt: -1 })
+            .lean();
+
+            contexts = rawContexts.map(c => ({
+                _id: c._id,
+                title: c.computedTitle || c.title || 'Sans titre',
+                createdAt: c.createdAt
+            }));
+        }
+
+        res.json({
+            success: true,
+            primaryEntity,
+            contexts
+        });
+    } catch (error) {
+        console.error('[Documents] Error in resolve-context:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * POST /api/:documentId/resolve-bindings
  * Resolve binding placeholders in a context-free document.
  * Called when the user picks a record (e.g. Patient) from the inline picker.

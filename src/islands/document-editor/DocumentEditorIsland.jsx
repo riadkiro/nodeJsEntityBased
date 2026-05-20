@@ -2723,6 +2723,7 @@ ${pagesHtml}
                     setDoc={setDoc}
                     triggerSave={triggerSave}
                     accountNumber={accountNumber}
+                    isTemplateMode={effectiveTemplateMode}
                     settingsPanelProps={{
                         isOpen: isSettingsOpen,
                         onClose: () => setIsSettingsOpen(false),

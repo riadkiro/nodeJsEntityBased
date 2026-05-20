@@ -64,7 +64,8 @@ export default function LeftSidebar({
     doc,
     setDoc,
     triggerSave,
-    accountNumber
+    accountNumber,
+    isTemplateMode
 }) {
     const toggleTab = (tab) => {
         setActiveTab(activeTab === tab ? null : tab)
@@ -134,12 +135,16 @@ export default function LeftSidebar({
 
                 {/* Dynamic Content */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'dynamic-nav'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                        }`}
-                    title="Contenu Dynamique"
-                    onClick={() => toggleTab('dynamic-nav')}
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
+                        !isTemplateMode
+                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            : activeTab === 'dynamic-nav'
+                                ? 'bg-primary/20 text-primary'
+                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    }`}
+                    title={isTemplateMode ? 'Contenu Dynamique' : 'Disponible uniquement en mode template'}
+                    onClick={() => isTemplateMode && toggleTab('dynamic-nav')}
+                    style={!isTemplateMode ? { opacity: 0.5 } : {}}
                 >
                     <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
                 </button>

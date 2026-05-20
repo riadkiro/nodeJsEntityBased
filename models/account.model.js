@@ -123,6 +123,16 @@ const AccountSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now },
   }],
 
+  company: {
+    name: { type: String, default: '' },
+    number: { type: String, default: '' },
+    address: { type: String, default: '' },
+    vat: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    email: { type: String, default: '' },
+    representative: { type: String, default: '' }
+  },
+
   // Workspace settings
   settings: {
     defaultRole: { type: String, enum: ['member', 'external', 'guest'], default: 'member' },

@@ -421,7 +421,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [accountNumber])
 
     // triggerSave — debounced auto-save, respects the autoSave toggle
-    const triggerSave = useCallback(() => {
+    const triggerSave = useCallback((docOverride = null) => {
         if (finalizedRef.current) return
         // If auto-save is disabled, we just track that there are unsaved changes
         if (!autoSaveRef.current) {
@@ -433,7 +433,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         clearTimeout(saveTimeoutRef.current)
 
         // Set new timeout (1 second debounce)
-        saveTimeoutRef.current = setTimeout(() => executeSave(), 1000)
+        saveTimeoutRef.current = setTimeout(() => executeSave(docOverride), 1000)
     }, [executeSave])
 
     // forceSave — always saves immediately, ignores auto-save toggle

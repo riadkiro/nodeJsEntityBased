@@ -287,7 +287,7 @@ function InsertDropdown({ onInsertTable, onInsertImage, onInsertCheckbox, onInse
 }
 
 // Linked-To dropdown for template mode header
-function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, triggerSave, forceSave, accountNumber }) {
+function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, triggerSave, forceSave, autoSave, accountNumber }) {
     const [open, setOpen] = useState(false)
     const [activeTab, setActiveTab] = useState('collections') // 'collections' | 'records'
     const ref = useRef(null)
@@ -354,10 +354,10 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
         }
         
         setDoc(updatedDoc)
-        if (forceSave) {
+        if (autoSave && forceSave) {
             forceSave(updatedDoc)
         } else {
-            triggerSave()
+            triggerSave(updatedDoc)
         }
     }
 
@@ -386,10 +386,10 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
         }
         
         setDoc(updatedDoc)
-        if (forceSave) {
+        if (autoSave && forceSave) {
             forceSave(updatedDoc)
         } else {
-            triggerSave()
+            triggerSave(updatedDoc)
         }
     }
 
@@ -406,7 +406,13 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
                 }`}
             >
                 <iconify-icon icon="solar:link-round-bold-duotone" width="16"></iconify-icon>
-                <span>Lié à</span>
+                <span>
+                    {linkedEntities.length > 0
+                        ? `Lié à ${linkedEntities[0].name}`
+                        : (doc.linkedRecords && doc.linkedRecords.length > 0)
+                            ? `Lié à ${doc.linkedRecords[0].recordTitle}`
+                            : 'Lié à'}
+                </span>
                 {(linkedEntities.length > 0 || unassignedRecords > 0) && (
                     <span className="ml-0.5 px-1.5 py-0 rounded-full text-[10px] font-bold bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200">
                         {linkedEntities.length + unassignedRecords}
@@ -593,10 +599,10 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
                                                                 linkedRecords: doc.linkedRecords.filter(r => r.recordId !== lr.recordId)
                                                             }
                                                             setDoc(updatedDoc)
-                                                            if (forceSave) {
+                                                            if (autoSave && forceSave) {
                                                                 forceSave(updatedDoc)
                                                             } else {
-                                                                triggerSave()
+                                                                triggerSave(updatedDoc)
                                                             }
                                                         }}
                                                         className="text-gray-400 hover:text-red-500"
@@ -933,13 +939,15 @@ export default function EditorHeader({
                 {isTemplateMode ? (
                     <div className="flex items-center gap-2">
                         <LinkedToDropdown
-                            doc={doc}
-                            setDoc={setDoc}
-                            availableEntities={availableEntities}
-                            linkedEntities={linkedEntities}
-                            triggerSave={forceSave || triggerSave}
-                            accountNumber={accountNumber}
-                        />
+                                                            doc={doc}
+                                                            setDoc={setDoc}
+                                                            availableEntities={availableEntities}
+                                                            linkedEntities={linkedEntities}
+                                                            triggerSave={triggerSave}
+                                                            forceSave={forceSave}
+                                                            autoSave={autoSave}
+                                                            accountNumber={accountNumber}
+                                                        />
 
                         {/* Auto-save toggle */}
                         <div

@@ -4,6 +4,8 @@
  */
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const uuidv4 = () => crypto.randomUUID();
 
 const PRESET = 'crm';
@@ -437,16 +439,84 @@ async function install(conn, userId, presetSlug) {
     const contratDocTpl = await upsertDoc(db.Document, { name: 'Contrat de Service', isTemplate: true }, {
         name: 'Contrat de Service', isTemplate: true, format: 'A4', orientation: 'portrait', status: 'published',
         entityIds: [E['entreprises']].filter(Boolean),
-        pages: [{
-            order: 0,
-            content: `<div style="font-family:Inter,sans-serif;padding:40px;">
-  <h1 style="text-align:center;color:#1e293b;font-size:24px;margin-bottom:30px;">CONTRAT DE PRESTATION DE SERVICES</h1>
-  <p style="text-align:center;color:#64748b;margin-bottom:40px;">Client: {{entreprises.titre}} — Date: {{today}}</p>
-  <hr style="border:1px solid #e2e8f0;margin:20px 0;">
-  <h2 style="color:#ec4899;font-size:16px;">Article 1 — Objet</h2>
-  <p>Le présent contrat a pour objet de définir les conditions de la prestation décrite ci-après.</p>
+        pages: [
+            {
+                order: 0,
+                content: `<div style="font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;">
+  <h1 style="text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;">Contrat de Prestation de Services</h1>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Entre les soussignés :</h2>
+  
+  <p style="margin:6px 0;"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;{{entreprises.title}} - {{entreprises.siret}}</p>
+  <p style="margin:6px 0;"><strong>Adresse : </strong>{{entreprises.adresse}}</p>
+  <p style="margin:6px 0;"><strong>Contact : </strong>{{entreprises.contact}} , <strong>Email</strong> : {{entreprises.contact.email}}</p>
+  <p style="margin:6px 0;"><strong>Représentée par :</strong>&nbsp;{{entreprises.representant}}&nbsp; , en qualité de Gérant</p>
+  
+  <p style="margin:12px 0;font-style:italic;color:#64748b;">Ci-après dénommée "Le Client",</p>
+  
+  <p style="text-align:center;font-weight:700;margin:15px 0;">Et</p>
+  
+  <p style="margin:6px 0;"><strong>L'entreprise (Le Prestataire) : </strong>{{company.name}}</p>
+  <p style="margin:6px 0;"><strong>SIRET : </strong>{{company.number}}</p>
+  <p style="margin:6px 0;"><strong>Adresse : </strong>{{company.address}}</p>
+  <p style="margin:6px 0;"><strong>Représentée par : </strong>{{company.representative}}</p>
+  
+  <p style="margin:12px 0;font-style:italic;color:#64748b;">Ci-après dénommé "Le Prestataire",</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Préambule</h2>
+  <p style="margin:10px 0;">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 1 : Objet du Contrat</h2>
+  <p style="margin:10px 0;">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 2 : Durée du Contrat</h2>
+  <p style="margin:10px 0;">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 3 : Conditions Financières</h2>
+  <p style="margin:10px 0;">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>
 </div>`
-        }],
+            },
+            {
+                order: 1,
+                content: `<div style="font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;">
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 4 : Obligations du Prestataire</h2>
+  <ul style="margin:10px 0;padding-left:20px;list-style-type:disc;">
+    <li style="margin:6px 0;">Fournir les services conformément aux normes professionnelles.</li>
+    <li style="margin:6px 0;">Respecter les délais convenus.</li>
+    <li style="margin:6px 0;">Maintenir la confidentialité des informations du Client.</li>
+  </ul>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 5 : Obligations du Client</h2>
+  <ul style="margin:10px 0;padding-left:20px;list-style-type:disc;">
+    <li style="margin:6px 0;">Fournir toutes les informations nécessaires à la réalisation des services.</li>
+    <li style="margin:6px 0;">Effectuer les paiements selon les modalités convenues.</li>
+  </ul>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 6 : Résiliation</h2>
+  <p style="margin:10px 0;">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 7 : Loi Applicable</h2>
+  <p style="margin:10px 0;">Le présent contrat est soumis à la loi de [Pays/Région].</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Article 8 : Litiges</h2>
+  <p style="margin:10px 0;">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>
+  
+  <h2 style="color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;">Signatures</h2>
+  <p style="margin:10px 0;">Fait à [Lieu], le [Date].</p>
+  
+  <div style="display:flex;justify-content:space-between;margin-top:30px;">
+    <div style="width:45%;">
+      <p style="margin:0;font-weight:600;">Le Prestataire :</p>
+      <p style="margin:40px 0 0 0;color:#64748b;font-size:12px;">_________________________</p>
+    </div>
+    <div style="width:45%;">
+      <p style="margin:0;font-weight:600;">Le Client :</p>
+      <p style="margin:40px 0 0 0;color:#64748b;font-size:12px;">_________________________</p>
+    </div>
+  </div>
+</div>`
+            }
+        ],
         createdBy: uid
     });
 

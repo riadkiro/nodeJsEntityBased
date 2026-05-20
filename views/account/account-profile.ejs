@@ -204,7 +204,141 @@
                         <% } %>
                     </div>
                 </div>
+
+                <!-- Informations de l'Entreprise -->
+                <div class="panel" x-data="companyForm"
+                     data-company-name="<%= account?.company?.name || '' %>"
+                     data-company-number="<%= account?.company?.number || '' %>"
+                     data-company-address="<%= account?.company?.address || '' %>"
+                     data-company-vat="<%= account?.company?.vat || '' %>"
+                     data-company-phone="<%= account?.company?.phone || '' %>"
+                     data-company-email="<%= account?.company?.email || '' %>"
+                     data-company-representative="<%= account?.company?.representative || '' %>">
+                    
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="p-2.5 bg-secondary/10 text-secondary rounded-xl">
+                            <iconify-icon icon="solar:shop-bold-duotone" width="22"></iconify-icon>
+                        </div>
+                        <div>
+                            <h5 class="text-base font-bold dark:text-white-light">Informations de l'Entreprise</h5>
+                            <p class="text-xs text-gray-500 mt-0.5">Ces informations seront utilisables comme variables dynamiques dans vos documents (ex: <code>{{company.name}}</code>, <code>{{company.number}}</code>).</p>
+                        </div>
+                    </div>
+
+                    <form @submit.prevent="saveCompany" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Nom de l'entreprise</label>
+                                <input type="text" x-model="form.name" class="form-input" placeholder="Ex: Ma Société SAS" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Numéro d'entreprise / SIRET</label>
+                                <input type="text" x-model="form.number" class="form-input" placeholder="Ex: 123 456 789 00010" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Adresse</label>
+                                <input type="text" x-model="form.address" class="form-input" placeholder="Ex: 10 Rue de la Paix, 75002 Paris" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Numéro de TVA</label>
+                                <input type="text" x-model="form.vat" class="form-input" placeholder="Ex: FR 12 345678901" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Représentant légal / Gérant</label>
+                                <input type="text" x-model="form.representative" class="form-input" placeholder="Ex: Jean Dupont" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Téléphone de l'entreprise</label>
+                                <input type="text" x-model="form.phone" class="form-input" placeholder="Ex: +33 1 23 45 67 89" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Email de l'entreprise</label>
+                                <input type="email" x-model="form.email" class="form-input" placeholder="Ex: contact@masociete.com" />
+                            </div>
+                        </div>
+
+                        <!-- Notification -->
+                        <div x-show="message" x-transition x-cloak class="p-3 rounded-lg text-sm" :class="success ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'">
+                            <span x-text="message"></span>
+                        </div>
+
+                        <div class="flex justify-end pt-3">
+                            <button type="submit" class="btn btn-primary flex items-center gap-2" :disabled="loading">
+                                <iconify-icon x-show="!loading" icon="solar:diskette-bold" width="16"></iconify-icon>
+                                <svg x-show="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="loading ? 'Enregistrement...' : 'Enregistrer les informations'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
+
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('companyForm', () => ({
+                    loading: false,
+                    message: '',
+                    success: true,
+                    form: {
+                        name: '',
+                        number: '',
+                        address: '',
+                        vat: '',
+                        phone: '',
+                        email: '',
+                        representative: ''
+                    },
+                    init() {
+                        this.form.name = this.$el.dataset.companyName || '';
+                        this.form.number = this.$el.dataset.companyNumber || '';
+                        this.form.address = this.$el.dataset.companyAddress || '';
+                        this.form.vat = this.$el.dataset.companyVat || '';
+                        this.form.phone = this.$el.dataset.companyPhone || '';
+                        this.form.email = this.$el.dataset.companyEmail || '';
+                        this.form.representative = this.$el.dataset.companyRepresentative || '';
+                    },
+                    async saveCompany() {
+                        this.loading = true;
+                        this.message = '';
+                        try {
+                            const res = await fetch('/account/<%= account_number %>/profile/company/update', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(this.form)
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                this.success = true;
+                                this.message = data.message;
+                                if (window.showMessage) {
+                                    window.showMessage(data.message, 'success');
+                                }
+                            } else {
+                                this.success = false;
+                                this.message = data.message || "Une erreur est survenue";
+                                if (window.showMessage) {
+                                    window.showMessage(this.message, 'error');
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Save company error:", e);
+                            this.success = false;
+                            this.message = "Erreur réseau. Veuillez réessayer.";
+                            if (window.showMessage) {
+                                window.showMessage(this.message, 'error');
+                            }
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }));
+            });
+        </script>
     </div>
 </div>

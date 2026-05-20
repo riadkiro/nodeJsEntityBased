@@ -1064,6 +1064,10 @@ router.get('/:id/generate', async (req, res) => {
                 .lean();
         }
 
+        const Account = require('../models/account.model');
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        const company = account?.company || {};
+
         // Build system-only context (no record needed)
         const systemContext = {
             today: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }),
@@ -1073,6 +1077,15 @@ router.get('/:id/generate', async (req, res) => {
             user: {
                 name: req.user ? (req.user.name || req.user.fullName || req.user.email || '') : '',
                 email: req.user ? (req.user.email || '') : ''
+            },
+            company: {
+                name: company.name || '',
+                number: company.number || '',
+                address: company.address || '',
+                vat: company.vat || '',
+                phone: company.phone || '',
+                email: company.email || '',
+                representative: company.representative || ''
             }
         };
 
@@ -1091,7 +1104,7 @@ router.get('/:id/generate', async (req, res) => {
         const bindingEntities = new Map(); // entitySlug -> entityInfo
 
         for (const token of allTokens) {
-            const isSystem = systemTokenKeys.some(sk => token === sk || token.startsWith('user.'));
+            const isSystem = systemTokenKeys.some(sk => token === sk || token.startsWith('user.')) || token.startsWith('company.') || token.startsWith('company_');
             if (!isSystem) {
                 // Parse token patterns:
                 //   "patients.patients.nom"  → self-referencing (entity.entity.field)
@@ -1169,6 +1182,15 @@ router.get('/:id/generate', async (req, res) => {
                 if (trimmed === 'currentTime') return systemContext.currentTime;
                 if (trimmed === 'user.name') return systemContext.user.name;
                 if (trimmed === 'user.email') return systemContext.user.email;
+
+                // Company tokens
+                if (trimmed === 'company_name' || trimmed === 'company.name') return systemContext.company.name;
+                if (trimmed === 'company_number' || trimmed === 'company.number') return systemContext.company.number;
+                if (trimmed === 'company_address' || trimmed === 'company.address') return systemContext.company.address;
+                if (trimmed === 'company_vat' || trimmed === 'company.vat') return systemContext.company.vat;
+                if (trimmed === 'company_phone' || trimmed === 'company.phone') return systemContext.company.phone;
+                if (trimmed === 'company_email' || trimmed === 'company.email') return systemContext.company.email;
+                if (trimmed === 'company_representative' || trimmed === 'company.representative' || trimmed === 'company.representant') return systemContext.company.representative;
 
                 // Relational token → convert to interactive placeholder
                 const parts = trimmed.split('.');

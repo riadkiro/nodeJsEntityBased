@@ -7,6 +7,9 @@ router.get("/", async (req, res) => {
     try {
         const user = req.user;
 
+        // Fetch current workspace account for company info
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+
         // Find pending invitations for this user's email
         let pendingInvitations = [];
         try {
@@ -34,6 +37,7 @@ router.get("/", async (req, res) => {
 
         res.render("account/account-profile", {
             account_number: req.account_number,
+            account: account,
             user: user,
             pendingInvitations,
             layout: "layout-app",
@@ -52,6 +56,34 @@ router.post("/update", async (req, res) => {
     } catch (error) {
         console.error("Profile update error:", error);
         res.status(500).json({ success: false, message: "Error updating profile" });
+    }
+});
+
+// Update Company Info
+router.post("/company/update", async (req, res) => {
+    try {
+        const { name, number, address, vat, phone, email, representative } = req.body;
+        
+        await Account.findOneAndUpdate(
+            { account_number: req.account_number },
+            {
+                $set: {
+                    'company.name': name || '',
+                    'company.number': number || '',
+                    'company.address': address || '',
+                    'company.vat': vat || '',
+                    'company.phone': phone || '',
+                    'company.email': email || '',
+                    'company.representative': representative || ''
+                }
+            },
+            { new: true, upsert: true }
+        );
+
+        res.json({ success: true, message: "Informations d'entreprise mises à jour avec succès" });
+    } catch (error) {
+        console.error("Company update error:", error);
+        res.status(500).json({ success: false, message: "Erreur lors de la mise à jour des informations" });
     }
 });
 

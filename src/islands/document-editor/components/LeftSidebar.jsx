@@ -1457,7 +1457,7 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [expandedSections, setExpandedSections] = useState({ system: true, user: true });
+    const [expandedSections, setExpandedSections] = useState({ system: true, user: true, company: true });
 
     // Fetch variables from the SmartDoc API
     useEffect(() => {
@@ -1473,8 +1473,8 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
                 const data = await res.json();
                 if (data.success && data.variables) {
                     setVariables(data.variables);
-                    // Only expand entity sections by default, system/user collapsed
-                    const expanded = { system: false, user: false };
+                    // Only expand entity sections by default, system/user/company collapsed
+                    const expanded = { system: false, user: false, company: false };
                     (data.variables.entities || []).forEach(e => {
                         expanded['entity_' + e.entityId] = true;
                     });
@@ -1688,6 +1688,9 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
 
             {/* User Variables */}
             {renderSection('user', 'Utilisateur', 'solar:user-bold-duotone', variables.user || [], '#0ea5e9')}
+
+            {/* Company Variables */}
+            {variables.company && variables.company.length > 0 && renderSection('company', 'Mon Entreprise', 'solar:buildings-bold-duotone', variables.company || [], '#10b981')}
 
             {/* Entity Variables */}
             {hasEntities && variables.entities.map(entity => {

@@ -454,9 +454,14 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
         const doc = await Document.findById(req.params.documentId).lean();
         if (!doc) return res.status(404).json({ error: 'Document introuvable' });
 
+        const Account = require('../../models/account.model');
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        const company = account?.company || {};
+
         const variables = {
             system: [],
             user: [],
+            company: [],
             entities: []
         };
 
@@ -472,6 +477,17 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
         variables.user = [
             { path: 'user.name', label: "Nom de l'utilisateur", type: 'text', icon: 'solar:user-bold-duotone' },
             { path: 'user.email', label: "Email de l'utilisateur", type: 'text', icon: 'solar:letter-bold-duotone' }
+        ];
+
+        // 2b. Company variables
+        variables.company = [
+            { path: 'company.name', label: "Nom de l'entreprise", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.name || '' },
+            { path: 'company.number', label: "SIRET", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.number || '' },
+            { path: 'company.address', label: "Adresse", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.address || '' },
+            { path: 'company.representative', label: "Représentant", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.representative || '' },
+            { path: 'company.vat', label: "TVA", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.vat || '' },
+            { path: 'company.phone', label: "Téléphone", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.phone || '' },
+            { path: 'company.email', label: "Email", type: 'text', icon: 'solar:buildings-bold-duotone', value: company.email || '' }
         ];
 
         // 3. Entity variables from linked entities
@@ -722,6 +738,10 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
  */
 router.post('/smartdoc/generate/:templateId', async (req, res) => {
     try {
+        const Account = require('../../models/account.model');
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        const company = account?.company || {};
+
         const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
         const Document = await tenantCollection(req, 'Document');
         const Record = await tenantCollection(req, 'Record');
@@ -865,13 +885,13 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         }
 
         // 6. Resolve tokens in the document template
-        let resolvedHtml = resolveDocumentTokens(docTemplate, recordForTokens, entity, inputs, relatedRecordsMap, req.user);
+        let resolvedHtml = resolveDocumentTokens(docTemplate, recordForTokens, entity, inputs, relatedRecordsMap, req.user, company);
 
         // 6a. Resolve dynamic tables
         resolvedHtml = resolveDynamicTables(resolvedHtml, recordLines, lineSchemas);
 
         // 6b. Extract used variables for preview sidebar
-        const usedVariables = extractUsedVariables(docTemplate, recordForTokens, entity, inputs, relatedRecordsMap, req.user);
+        const usedVariables = extractUsedVariables(docTemplate, recordForTokens, entity, inputs, relatedRecordsMap, req.user, company);
 
         // 7. Generate output file name
         const outputName = resolveOutputName(
@@ -971,6 +991,10 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
  */
 router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
     try {
+        const Account = require('../../models/account.model');
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        const company = account?.company || {};
+
         const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
         const Document = await tenantCollection(req, 'Document');
         const Record = await tenantCollection(req, 'Record');
@@ -1102,7 +1126,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         }
 
         // 6. Build token context (same as resolveDocumentTokens)
-        const context = buildTokenContext(recordForTokens, entity, inputs, relatedRecordsMap, req.user);
+        const context = buildTokenContext(recordForTokens, entity, inputs, relatedRecordsMap, req.user, company);
 
         // 6b. Inject variables for any OTHER records specifically linked to this template
         if (docTemplate.linkedRecords && docTemplate.linkedRecords.length > 0) {
@@ -1117,7 +1141,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                     
                     if (lrRecord && lrEntity && lrEntity.slug) {
                         await resolveRelationCustomFields(lrRecord, lrEntity, Record);
-                        const lrContext = buildTokenContext(lrRecord, lrEntity, {}, {}, req.user);
+                        const lrContext = buildTokenContext(lrRecord, lrEntity, {}, {}, req.user, company);
                         // Merge the entity-specific context into the main context
                         if (lrContext[lrEntity.slug]) {
                             context[lrEntity.slug] = lrContext[lrEntity.slug];
@@ -1142,7 +1166,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                         if (addEntity && addEntity.slug) {
                             await resolveRelationCustomFields(addRecord, addEntity, Record);
                             additionalRecordsLoaded.push({ record: addRecord, entity: addEntity });
-                            const addContext = buildTokenContext(addRecord, addEntity, {}, {}, req.user);
+                            const addContext = buildTokenContext(addRecord, addEntity, {}, {}, req.user, company);
                             if (addContext[addEntity.slug]) {
                                 context[addEntity.slug] = addContext[addEntity.slug];
                             }
@@ -2056,7 +2080,7 @@ async function loadRecordLinesWithSnapshotFallback({ DocumentLine, LineSchema, G
 /**
  * Build token context from record + entity data (shared between generate and generate-draft)
  */
-function buildTokenContext(record, entity, inputs, relatedRecordsMap, user) {
+function buildTokenContext(record, entity, inputs, relatedRecordsMap, user, company) {
     const context = {
         title: record.title || '',
         computedTitle: record.computedTitle || record.title || '',
@@ -2074,6 +2098,15 @@ function buildTokenContext(record, entity, inputs, relatedRecordsMap, user) {
         user: {
             name: user ? (user.name || user.fullName || user.email || '') : '',
             email: user ? (user.email || '') : ''
+        },
+        company: {
+            name: company ? (company.name || '') : '',
+            number: company ? (company.number || '') : '',
+            address: company ? (company.address || '') : '',
+            representative: company ? (company.representative || '') : '',
+            vat: company ? (company.vat || '') : '',
+            phone: company ? (company.phone || '') : '',
+            email: company ? (company.email || '') : ''
         }
     };
 
@@ -2207,7 +2240,7 @@ function buildTokenContext(record, entity, inputs, relatedRecordsMap, user) {
  * Supports: flat keys, entity-scoped keys (entity.field), related entity keys,
  * classification values, user info, and system variables.
  */
-function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, user) {
+function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, user, company) {
     // Build the token context
     const context = {
         // Standard record fields (flat, for backward compatibility)
@@ -2235,6 +2268,17 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
         user: {
             name: user ? (user.name || user.fullName || user.email || '') : '',
             email: user ? (user.email || '') : ''
+        },
+
+        // Company info
+        company: {
+            name: company ? (company.name || '') : '',
+            number: company ? (company.number || '') : '',
+            address: company ? (company.address || '') : '',
+            representative: company ? (company.representative || '') : '',
+            vat: company ? (company.vat || '') : '',
+            phone: company ? (company.phone || '') : '',
+            email: company ? (company.email || '') : ''
         }
     };
 
@@ -2831,7 +2875,7 @@ async function generatePDF(html, outputPath, docTemplate) {
  * Extract which variables were used in the document and their resolved values
  * Returns an array of { path, label, value, group }
  */
-function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecordsMap, user) {
+function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecordsMap, user, company) {
     // Build the same context as resolveDocumentTokens
     const context = {
         title: record.title || '',
@@ -2844,6 +2888,15 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
         user: {
             name: user ? (user.name || user.fullName || user.email || '') : '',
             email: user ? (user.email || '') : ''
+        },
+        company: {
+            name: company ? (company.name || '') : '',
+            number: company ? (company.number || '') : '',
+            address: company ? (company.address || '') : '',
+            representative: company ? (company.representative || '') : '',
+            vat: company ? (company.vat || '') : '',
+            phone: company ? (company.phone || '') : '',
+            email: company ? (company.email || '') : ''
         },
         ...extractCustomFields(record, entity),
         ...inputs
@@ -2973,7 +3026,19 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
         let group = 'Autre';
         let label = tokenPath;
 
-        if (tokenPath.startsWith('user.')) {
+        if (tokenPath.startsWith('company.')) {
+            group = 'Entreprise';
+            const labels = {
+                'company.name': "Nom de l'entreprise",
+                'company.number': 'SIRET',
+                'company.address': 'Adresse',
+                'company.representative': 'Représentant',
+                'company.vat': 'TVA',
+                'company.phone': 'Téléphone',
+                'company.email': 'Email'
+            };
+            label = labels[tokenPath] || tokenPath.replace('company.', '');
+        } else if (tokenPath.startsWith('user.')) {
             group = 'Utilisateur';
             label = tokenPath === 'user.name' ? "Nom de l'utilisateur" : tokenPath === 'user.email' ? 'Email' : tokenPath;
         } else if (['today', 'currentYear', 'currentMonth', 'currentTime'].includes(tokenPath)) {
@@ -3008,7 +3073,7 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
     }
 
     // Sort by group
-    const groupOrder = ['Entite', 'Champ', 'Classification', 'Relation', 'Saisie', 'Utilisateur', 'Systeme', 'Autre'];
+    const groupOrder = ['Entite', 'Champ', 'Classification', 'Relation', 'Saisie', 'Entreprise', 'Utilisateur', 'Systeme', 'Autre'];
     variables.sort((a, b) => {
         const ai = groupOrder.indexOf(a.group) === -1 ? 99 : groupOrder.indexOf(a.group);
         const bi = groupOrder.indexOf(b.group) === -1 ? 99 : groupOrder.indexOf(b.group);

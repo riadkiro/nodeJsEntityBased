@@ -2410,8 +2410,18 @@ module.exports = {
                             } catch(e) { /* target entity may not exist */ }
                         }
 
-                        if (val) {
-                            const ids = Array.isArray(val) ? val : [val];
+                        // Check customFields first, then fallback to record.relations
+                        let relVal = val;
+                        if (!relVal) {
+                            // Custom relation fields save via update-relation to record.relations
+                            const relEntry = (record.relations || []).find(r => r.relationKey === cf._id.toString());
+                            if (relEntry && relEntry.value) {
+                                relVal = relEntry.value;
+                            }
+                        }
+
+                        if (relVal) {
+                            const ids = Array.isArray(relVal) ? relVal : [relVal];
                             const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
                             if (validIds.length > 0) {
                                 const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
@@ -2552,7 +2562,7 @@ module.exports = {
 
             // Load user fiche preferences (field order + hidden fields)
             let fichePreferences = null;
-            if (moduleName === 'fiche') {
+            if (moduleName === 'fiche' || moduleName === 'overview') {
                 try {
                     const UserPreferences = await tenantCollection(req, "UserPreferences");
                     const viewId = `fiche-${entity.slug}`;

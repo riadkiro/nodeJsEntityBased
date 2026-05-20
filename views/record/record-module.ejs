@@ -430,6 +430,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <!-- ═══ OVERVIEW MODULE ═══ -->
     <% if (moduleName === 'overview') { %>
     <%
+        var _fichePrefs = (typeof fichePreferences !== 'undefined') ? fichePreferences : {};
+        var _hiddenFields = (_fichePrefs && _fichePrefs.hiddenFields) ? _fichePrefs.hiddenFields : [];
         var _ovFields = (typeof overviewFields !== 'undefined' && overviewFields.length > 0) ? overviewFields : _ficheFields.map(function(f){ return Object.assign({}, f, { layoutWidth: 12 }); });
     %>
     <div x-data="ovLayoutBuilder()" :class="layoutMode ? 'ov-dm' : ''">
@@ -466,7 +468,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                         <!-- Widget: fields -->
                                         <template x-if="wid === 'fields'">
                                         <div class="ov-card ov-card-fields" x-data="ovInlineEdit()">
-                                            <% if (typeof _ovFields !== 'undefined') { %><%- include('partials/ov-widget-fields', { _ovFields: _ovFields, _recBase: _recBase }) %><% } %>
+                                            <% if (typeof _ovFields !== 'undefined') { %><%- include('partials/ov-widget-fields', { _ovFields: _ovFields, _recBase: _recBase, _hiddenFields: _hiddenFields }) %><% } %>
                                         </div>
                                         </template>
                                         <!-- Widget: tasks -->

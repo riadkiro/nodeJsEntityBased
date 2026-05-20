@@ -24,6 +24,9 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
          <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>
          <% } %>
          <% } else { %>
+         <% if (_hiddenList.includes(f.key)) { %>
+         style="display: none;"
+         <% } %>
          @click="startEdit('<%= f.key %>',$event)"
          <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>
          <% } %>
@@ -457,6 +460,16 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
                 <% } %>
             </div>
         </div>
+        <% if (_isFiche) { %>
+            <!-- Required badge OR visibility toggle (config mode only) -->
+            <% if (f.required) { %>
+                <span class="fiche-req-badge">Obligatoire</span>
+            <% } else { %>
+                <button type="button" class="fiche-vis-toggle" @click.stop="toggleFieldVisibility('<%= f.key %>')" :title="isFieldHidden('<%= f.key %>') ? 'Afficher' : 'Masquer'">
+                    <iconify-icon :icon="isFieldHidden('<%= f.key %>') ? 'solar:eye-closed-bold' : 'solar:eye-bold'" width="16"></iconify-icon>
+                </button>
+            <% } %>
+        <% } %>
     </div>
     <% }); %>
 </div>

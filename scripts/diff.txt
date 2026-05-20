@@ -1,0 +1,337 @@
+diff --git a/src/islands/doc-generate-wizard/DocGenerateWizard.jsx b/src/islands/doc-generate-wizard/DocGenerateWizard.jsx
+index c66a825..1879c98 100644
+--- a/src/islands/doc-generate-wizard/DocGenerateWizard.jsx
++++ b/src/islands/doc-generate-wizard/DocGenerateWizard.jsx
+@@ -29,7 +29,7 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
+     const [selectedRecord, setSelectedRecord] = useState(null)
+     const [selectedEntityId, setSelectedEntityId] = useState(null)
+     const [contextData, setContextData] = useState(null)
+-    const [selectedContext, setSelectedContext] = useState(null) // the consultation/parent record
++    const [selectedContextMap, setSelectedContextMap] = useState({}) // map of selected contexts by entity slug
+     const [generating, setGenerating] = useState(false)
+     const [error, setError] = useState(null)
+ 
+@@ -164,11 +164,18 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
+ 
+             setContextData(data)
+ 
+-            // Auto-select last context if only one exists
+-            if (data.contexts && data.contexts.length === 1) {
+-                setSelectedContext(data.contexts[0])
+-            } else if (data.contexts && data.contexts.length > 0) {
+-                setSelectedContext(data.contexts[0]) // pre-select latest
++            // Pre-select the latest record in each resolved context group
++            if (data.contexts && data.contexts.length > 0) {
++                const initialMap = {}
++                for (const ctx of data.contexts) {
++                    const slug = ctx.entitySlug || 'other'
++                    if (!initialMap[slug]) {
++                        initialMap[slug] = ctx
++                    }
++                }
++                setSelectedContextMap(initialMap)
++            } else {
++                setSelectedContextMap({})
+             }
+         } catch (err) {
+             setError('Erreur réseau: ' + err.message)
+@@ -176,7 +183,7 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
+     }, [baseUrl, template])
+ 
+     // ─── Generate draft document ────────────────────────────────────
+-    const generateDraft = useCallback(async (recordId) => {
++    const generateDraft = useCallback(async (recordId, additionalRecordIds = []) => {
+         setGenerating(true)
+         setError(null)
+ 
+@@ -191,7 +198,7 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 credentials: 'include',
+-                body: JSON.stringify({ recordId })
++                body: JSON.stringify({ recordId, additionalRecordIds })
+             })
+ 
+             const data = await resp.json()
+@@ -212,13 +219,37 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
+ 
+     // ─── Handle context confirmation (step 2 → generate) ────────────
+     const handleContextConfirmed = useCallback(async () => {
+-        if (!selectedContext) {
+-            setError('Veuillez sélectionner un enregistrement ou générer sans contexte')
++        const selectedContexts = Object.values(selectedContextMap).filter(Boolean)
++        if (selectedContexts.length === 0) {
++            setError('Veuillez sélectionner au moins un enregistrement ou générer sans contexte')
+             return
+         }
++
++        // Identify primary record matching template primary entity slug
++        const primarySlug = entities[0]?.slug
++        let primaryContext = selectedContextMap[primarySlug]
++        if (!primaryContext) {
++            primaryContext = selectedContexts[0]
++        }
++
++        const primaryRecordId = primaryContext._id
++
++        // Gather additional context record IDs
++        const additionalRecordIds = []
++        for (const ctx of selectedContexts) {
++            if (ctx._id !== primaryRecordId) {
++                additionalRecordIds.push(ctx._id)
++            }
++        }
++
++        // Also add parent record from Step 1 if it's different from primary
++        if (selectedRecord && selectedRecord._id !== primaryRecordId) {
++            additionalRecordIds.push(selectedRecord._id)
++        }
++
+         setStep(3)
+-        await generateDraft(selectedContext._id)
+-    }, [selectedContext, generateDraft])
++        await generateDraft(primaryRecordId, additionalRecordIds)
++    }, [selectedContextMap, selectedRecord, entities, generateDraft])
+ 
+     // ─── Generate without context (empty ordonnance) ────────────────
+     const handleGenerateEmpty = useCallback(async () => {
+@@ -309,11 +340,16 @@ export default function DocGenerateWizard({ accountNumber, template, entities, s
+                     <StepResolveContext
+                         selectedRecord={selectedRecord}
+                         contextData={contextData}
+-                        selectedContext={selectedContext}
+-                        onContextSelect={setSelectedContext}
++                        selectedContextMap={selectedContextMap}
++                        onContextSelect={(ctx) => {
++                            setSelectedContextMap(prev => ({
++                                ...prev,
++                                [ctx.entitySlug || 'other']: ctx
++                            }))
++                        }}
+                         onConfirm={handleContextConfirmed}
+                         onGenerateEmpty={handleGenerateEmpty}
+-                        onBack={() => { setStep(1); setContextData(null); setSelectedContext(null) }}
++                        onBack={() => { setStep(1); setContextData(null); setSelectedContextMap({}) }}
+                         primaryEntityName={activeEntryPoint?.primaryEntityName || entities[0]?.name}
+                         error={error}
+                     />
+@@ -647,7 +683,7 @@ function StepPickRecord({ entryPoint, entryPoints, accountNumber, templateId, on
+ }
+ 
+ // ─── Step 2: Resolve Context ───────────────────────────────────────
+-function StepResolveContext({ selectedRecord, contextData, selectedContext, onContextSelect, onConfirm, onGenerateEmpty, onBack, primaryEntityName, error }) {
++function StepResolveContext({ selectedRecord, contextData, selectedContextMap, onContextSelect, onConfirm, onGenerateEmpty, onBack, primaryEntityName, error }) {
+     if (!contextData) {
+         return (
+             <div style={{
+@@ -665,6 +701,29 @@ function StepResolveContext({ selectedRecord, contextData, selectedContext, onCo
+ 
+     const hasContexts = contextData.contexts && contextData.contexts.length > 0
+ 
++    // Group the contexts by entitySlug
++    const groups = React.useMemo(() => {
++        const map = {}
++        if (contextData && contextData.contexts) {
++            for (const ctx of contextData.contexts) {
++                const slug = ctx.entitySlug || 'other'
++                if (!map[slug]) {
++                    map[slug] = {
++                        slug,
++                        name: ctx.entityName || 'Autre',
++                        icon: ctx.entityIcon || 'solar:document-bold-duotone',
++                        color: ctx.entityColor || '#4f46e5',
++                        records: []
++                    }
++                }
++                map[slug].records.push(ctx)
++            }
++        }
++        return Object.values(map)
++    }, [contextData])
++
++    const hasSelected = Object.keys(selectedContextMap).length > 0
++
+     return (
+         <div style={{
+             width: '100%', maxWidth: '540px',
+@@ -726,75 +785,103 @@ function StepResolveContext({ selectedRecord, contextData, selectedContext, onCo
+                 }}>
+                     <div style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>
+                         {hasContexts
+-                            ? `${primaryEntityName || 'Enregistrement'}s liés`
+-                            : `Aucun(e) ${(primaryEntityName || 'enregistrement').toLowerCase()} trouvé(e)`
++                            ? `Données liées à associer`
++                            : `Aucune donnée liée trouvée`
+                         }
+                     </div>
+                     <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                         {hasContexts
+-                            ? `Sélectionnez un(e) ${(primaryEntityName || '').toLowerCase()} pour récupérer les données associées`
++                            ? `Sélectionnez les enregistrements correspondants pour chaque catégorie`
+                             : `Vous pouvez créer un document vide pour ${selectedRecord?.title || 'ce patient'}`
+                         }
+                     </div>
+                 </div>
+ 
+-                {/* Context list */}
++                {/* Context list grouped by entity */}
+                 {hasContexts && (
+-                    <div style={{ padding: '8px 12px', maxHeight: '280px', overflowY: 'auto' }}>
+-                        {contextData.contexts.map((ctx, idx) => {
+-                            const isSelected = selectedContext?._id === ctx._id
+-                            return (
+-                                <button
+-                                    key={ctx._id}
+-                                    onClick={() => onContextSelect(ctx)}
+-                                    style={{
+-                                        width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+-                                        padding: '12px 14px', borderRadius: '10px',
+-                                        border: isSelected ? '2px solid #4f46e5' : '2px solid transparent',
+-                                        background: isSelected ? '#eef2ff' : 'transparent',
+-                                        cursor: 'pointer', textAlign: 'left',
+-                                        transition: 'all 0.15s',
+-                                        animation: `fadeInUp 0.2s ease-out ${idx * 0.04}s both`
+-                                    }}
+-                                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc' }}
+-                                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+-                                >
++                    <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
++                        {groups.map((group, groupIdx) => (
++                            <div key={group.slug} style={{
++                                borderBottom: groupIdx < groups.length - 1 ? '1px solid #f1f5f9' : 'none',
++                                padding: '16px 20px'
++                            }}>
++                                {/* Group Header */}
++                                <div style={{
++                                    display: 'flex', alignItems: 'center', gap: '8px',
++                                    marginBottom: '12px'
++                                }}>
+                                     <div style={{
+-                                        width: '36px', height: '36px', borderRadius: '10px',
+-                                        background: isSelected ? '#4f46e515' : '#f1f5f9',
++                                        width: '24px', height: '24px', borderRadius: '6px',
++                                        background: group.color ? `${group.color}15` : '#eef2ff',
+                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+-                                        color: isSelected ? '#4f46e5' : '#94a3b8',
+-                                        flexShrink: 0, transition: 'all 0.15s'
++                                        color: group.color || '#4f46e5'
+                                     }}>
+-                                        <iconify-icon
+-                                            icon={contextData.primaryEntity?.icon || 'solar:document-bold-duotone'}
+-                                            width="18"
+-                                        ></iconify-icon>
+-                                    </div>
+-                                    <div style={{ flex: 1, minWidth: 0 }}>
+-                                        <div style={{
+-                                            fontSize: '14px', fontWeight: 500,
+-                                            color: isSelected ? '#4f46e5' : '#1e293b',
+-                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+-                                        }}>
+-                                            {ctx.title}
+-                                        </div>
+-                                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+-                                            {formatDate(ctx.createdAt)} à {formatTime(ctx.createdAt)}
+-                                        </div>
++                                        <iconify-icon icon={group.icon} width="14"></iconify-icon>
+                                     </div>
+-                                    {isSelected && (
+-                                        <div style={{
+-                                            width: '20px', height: '20px', borderRadius: '50%',
+-                                            background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center',
+-                                            flexShrink: 0
+-                                        }}>
+-                                            <iconify-icon icon="solar:check-read-bold" width="12" style={{ color: '#fff' }}></iconify-icon>
+-                                        </div>
+-                                    )}
+-                                </button>
+-                            )
+-                        })}
++                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
++                                        {group.name}s associés
++                                    </span>
++                                </div>
++
++                                {/* Group records */}
++                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
++                                    {group.records.map((ctx, idx) => {
++                                        const isSelected = selectedContextMap[group.slug]?._id === ctx._id
++                                        return (
++                                            <button
++                                                key={ctx._id}
++                                                onClick={() => onContextSelect(ctx)}
++                                                style={{
++                                                    width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
++                                                    padding: '10px 12px', borderRadius: '8px',
++                                                    border: isSelected ? `2px solid ${group.color || '#4f46e5'}` : '2px solid transparent',
++                                                    background: isSelected ? `${group.color || '#4f46e5'}08` : 'transparent',
++                                                    cursor: 'pointer', textAlign: 'left',
++                                                    transition: 'all 0.15s',
++                                                    animation: `fadeInUp 0.2s ease-out ${idx * 0.04}s both`
++                                                }}
++                                                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc' }}
++                                                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
++                                            >
++                                                <div style={{
++                                                    width: '32px', height: '32px', borderRadius: '8px',
++                                                    background: isSelected ? `${group.color || '#4f46e5'}15` : '#f1f5f9',
++                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
++                                                    color: isSelected ? (group.color || '#4f46e5') : '#94a3b8',
++                                                    flexShrink: 0, transition: 'all 0.15s'
++                                                }}>
++                                                    <iconify-icon
++                                                        icon={group.icon || 'solar:document-bold-duotone'}
++                                                        width="16"
++                                                    ></iconify-icon>
++                                                </div>
++                                                <div style={{ flex: 1, minWidth: 0 }}>
++                                                    <div style={{
++                                                        fontSize: '13px', fontWeight: 500,
++                                                        color: isSelected ? (group.color || '#4f46e5') : '#1e293b',
++                                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
++                                                    }}>
++                                                        {ctx.title}
++                                                    </div>
++                                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
++                                                        {formatDate(ctx.createdAt)} à {formatTime(ctx.createdAt)}
++                                                    </div>
++                                                </div>
++                                                {isSelected && (
++                                                    <div style={{
++                                                        width: '18px', height: '18px', borderRadius: '50%',
++                                                        background: group.color || '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center',
++                                                        flexShrink: 0
++                                                    }}>
++                                                        <iconify-icon icon="solar:check-read-bold" width="10" style={{ color: '#fff' }}></iconify-icon>
++                                                    </div>
++                                                )}
++                                            </button>
++                                        )
++                                    })}
++                                </div>
++                            </div>
++                        ))}
+                     </div>
+                 )}
+ 
+@@ -836,16 +923,16 @@ function StepResolveContext({ selectedRecord, contextData, selectedContext, onCo
+ 
+                     <button
+                         onClick={onConfirm}
+-                        disabled={!selectedContext}
++                        disabled={!hasSelected}
+                         style={{
+                             display: 'flex', alignItems: 'center', gap: '6px',
+                             padding: '9px 20px', borderRadius: '10px',
+                             border: 'none',
+-                            background: selectedContext ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#e2e8f0',
+-                            color: selectedContext ? '#fff' : '#94a3b8',
+-                            cursor: selectedContext ? 'pointer' : 'not-allowed',
++                            background: hasSelected ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#e2e8f0',
++                            color: hasSelected ? '#fff' : '#94a3b8',
++                            cursor: hasSelected ? 'pointer' : 'not-allowed',
+                             fontSize: '13px', fontWeight: 600,
+-                            boxShadow: selectedContext ? '0 2px 8px rgba(79,70,229,0.3)' : 'none',
++                            boxShadow: hasSelected ? '0 2px 8px rgba(79,70,229,0.3)' : 'none',
+                             transition: 'all 0.15s'
+                         }}
+                     >

@@ -21,8 +21,46 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 
 // ============================================================================
+// SHARED HELPER: Resolve custom fields of type 'relation' asynchronously on-the-fly
+// ============================================================================
+async function resolveRelationCustomFields(record, entity, RecordModel) {
+    if (!entity || !entity.customFields || !Array.isArray(entity.customFields)) return;
+    if (!record) return;
+    for (const cfDef of entity.customFields) {
+        if (cfDef && cfDef.type === 'relation') {
+            const fieldId = cfDef._id.toString();
+            const relVal = (record.relations || []).find(r => r.relationKey === fieldId);
+            if (relVal && relVal.value) {
+                const ids = Array.isArray(relVal.value) ? relVal.value : [relVal.value];
+                const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+                if (validIds.length > 0) {
+                    try {
+                        const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title').lean();
+                        const displayVal = relRecs.map(r => r.title || 'Sans titre').join(', ');
+                        
+                        if (!record.customFields) record.customFields = [];
+                        const existingIndex = record.customFields.findIndex(cf => cf.field_id && cf.field_id.toString() === fieldId);
+                        if (existingIndex > -1) {
+                            record.customFields[existingIndex].value = displayVal;
+                        } else {
+                            record.customFields.push({
+                                field_id: cfDef._id,
+                                value: displayVal
+                            });
+                        }
+                    } catch (e) {
+                        console.error('[Relation Custom Field Resolution] Error:', e.message);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
 // SHARED HELPER: Load entity with all related fields (tenant-safe)
 // ============================================================================
+
 
 /**
  * Load an entity by ID with customFields, classifications, statusClassification populated,
@@ -672,6 +710,21 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             }
         }
 
+        // 3c. Pre-resolve custom fields of type 'relation' asynchronously
+        // Clone the mongoose record object to avoid modifying/saving the DB model directly
+        const recordForTokens = record.toObject ? record.toObject() : JSON.parse(JSON.stringify(record));
+        await resolveRelationCustomFields(recordForTokens, entity, Record);
+
+        // Also pre-resolve for any related records in relatedRecordsMap
+        if (relatedRecordsMap) {
+            for (const relKey of Object.keys(relatedRecordsMap)) {
+                const relData = relatedRecordsMap[relKey];
+                if (relData && relData.record && relData.entity) {
+                    await resolveRelationCustomFields(relData.record, relData.entity, Record);
+                }
+            }
+        }
+
         // 4. Validate required inputs
         const inputs = req.body.inputs || {};
         const missingInputs = [];
@@ -713,13 +766,13 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         }
 
         // 6. Resolve tokens in the document template
-        let resolvedHtml = resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
+        let resolvedHtml = resolveDocumentTokens(docTemplate, recordForTokens, entity, inputs, relatedRecordsMap, req.user);
 
         // 6a. Resolve dynamic tables
         resolvedHtml = resolveDynamicTables(resolvedHtml, recordLines, lineSchemas);
 
         // 6b. Extract used variables for preview sidebar
-        const usedVariables = extractUsedVariables(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
+        const usedVariables = extractUsedVariables(docTemplate, recordForTokens, entity, inputs, relatedRecordsMap, req.user);
 
         // 7. Generate output file name
         const outputName = resolveOutputName(
@@ -865,6 +918,21 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             }
         }
 
+        // 3c. Pre-resolve custom fields of type 'relation' asynchronously
+        // Clone the mongoose record object to avoid modifying/saving the DB model directly
+        const recordForTokens = record.toObject ? record.toObject() : JSON.parse(JSON.stringify(record));
+        await resolveRelationCustomFields(recordForTokens, entity, Record);
+
+        // Also pre-resolve for any related records in relatedRecordsMap
+        if (relatedRecordsMap) {
+            for (const relKey of Object.keys(relatedRecordsMap)) {
+                const relData = relatedRecordsMap[relKey];
+                if (relData && relData.record && relData.entity) {
+                    await resolveRelationCustomFields(relData.record, relData.entity, Record);
+                }
+            }
+        }
+
         // 4. Auto-fill required inputs with defaults for draft generation
         //    (drafts are editable, so we fill sensible defaults instead of rejecting)
         const inputs = req.body.inputs || {};
@@ -907,7 +975,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         }
 
         // 6. Build token context (same as resolveDocumentTokens)
-        const context = buildTokenContext(record, entity, inputs, relatedRecordsMap, req.user);
+        const context = buildTokenContext(recordForTokens, entity, inputs, relatedRecordsMap, req.user);
 
         // 6b. Inject variables for any OTHER records specifically linked to this template
         if (docTemplate.linkedRecords && docTemplate.linkedRecords.length > 0) {
@@ -921,6 +989,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                     const lrEntity = await loadEntityWithFields(req, lr.entityId);
                     
                     if (lrRecord && lrEntity && lrEntity.slug) {
+                        await resolveRelationCustomFields(lrRecord, lrEntity, Record);
                         const lrContext = buildTokenContext(lrRecord, lrEntity, {}, {}, req.user);
                         // Merge the entity-specific context into the main context
                         if (lrContext[lrEntity.slug]) {
@@ -944,6 +1013,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                     if (addRecord) {
                         const addEntity = await loadEntityWithFields(req, addRecord.entityId);
                         if (addEntity && addEntity.slug) {
+                            await resolveRelationCustomFields(addRecord, addEntity, Record);
                             additionalRecordsLoaded.push({ record: addRecord, entity: addEntity });
                             const addContext = buildTokenContext(addRecord, addEntity, {}, {}, req.user);
                             if (addContext[addEntity.slug]) {
@@ -1196,7 +1266,7 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         console.log(`[SmartDoc] Finalizing draft ${draftDoc._id} | name: "${draftDoc.name}" | recordId: ${draftDoc.draftRecordId || 'NONE'}`);
 
         // 2. Try to load the record (optional — may be null for Docs Hub context-free generation)
-        const recordId = req.body.recordId || draftDoc.draftRecordId;
+        const recordId = req.body.recordId || draftDoc.draftRecordId || (draftDoc.linkedRecords && draftDoc.linkedRecords.length > 0 ? draftDoc.linkedRecords[0].recordId : null);
         let record = null;
         if (recordId) {
             record = await Record.findById(recordId);
@@ -1276,13 +1346,27 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             }
         }
 
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
+
         const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <base href="${baseUrl}">
+    <link rel="stylesheet" href="themes/default/assets/css/style.css">
+    <link rel="stylesheet" href="css/app/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
-        @page { margin: 0; size: ${draftDoc.format || 'A4'}${draftDoc.orientation === 'landscape' ? ' landscape' : ''}; }
+        @page {
+            margin: 0;
+            size: ${docDims.width}px ${docDims.height}px;
+        }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
@@ -1296,26 +1380,45 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         }
         /* Tailwind Preflight resets — match editor environment */
         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
+        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
         
         /* Base typography matching the React Document Editor */
-        h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; }
-        h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; }
-        h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; }
-        p { margin-top: 0; margin-bottom: 1em; line-height: 1.5; }
-        ul { list-style-type: disc; margin: 1em 0; padding-left: 40px; }
-        ol { list-style-type: decimal; margin: 1em 0; padding-left: 40px; }
-        blockquote { border-left: 4px solid #cbd5e1; margin: 1em 40px; padding-left: 1em; color: #475569; }
+        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
+        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
+        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
+        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
+        ul { list-style-type: disc !important; padding-left: 40px !important; }
+        ol { list-style-type: decimal !important; padding-left: 40px !important; }
+        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
         
         img, svg { display: block; max-width: 100%; }
         .doc-page {
-            width: 100%;
+            width: ${docDims.width}px;
+            height: ${docDims.height}px;
             min-height: ${docDims.height}px;
+            max-height: ${docDims.height}px;
             background: #ffffff;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            page-break-after: always;
+        }
+        .doc-header, .doc-footer {
+            flex-shrink: 0;
+            user-select: none;
+            box-sizing: border-box;
         }
         .doc-content {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            box-sizing: border-box;
+            line-height: 1.6;
         }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -2111,15 +2214,30 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
         }
     }
 
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
+
     const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <base href="${baseUrl}">
+    <link rel="stylesheet" href="themes/default/assets/css/style.css">
+    <link rel="stylesheet" href="css/app/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
-        @page { margin: 0; size: A4; }
+        @page {
+            margin: 0;
+            size: ${docDims.width}px ${docDims.height}px;
+        }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
             font-size: 12pt; 
             line-height: 1.6;
             color: #000000;
@@ -2130,18 +2248,45 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
         }
         /* Tailwind Preflight resets — match editor environment */
         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
-        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; color: #333; }
-        ul, ol { list-style: none; padding: 0; }
+        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+        
+        /* Base typography matching the React Document Editor */
+        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
+        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
+        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
+        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
+        ul { list-style-type: disc !important; padding-left: 40px !important; }
+        ol { list-style-type: decimal !important; padding-left: 40px !important; }
+        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+        
         img, svg { display: block; max-width: 100%; }
         .doc-page {
-            width: 100%;
+            width: ${docDims.width}px;
+            height: ${docDims.height}px;
             min-height: ${docDims.height}px;
+            max-height: ${docDims.height}px;
             background: #ffffff;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            page-break-after: always;
+        }
+        .doc-header, .doc-footer {
+            flex-shrink: 0;
+            user-select: none;
+            box-sizing: border-box;
         }
         .doc-content {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            box-sizing: border-box;
+            line-height: 1.6;
         }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -2354,6 +2499,9 @@ async function generatePDF(html, outputPath, docTemplate) {
         const dims = docTemplate.dimensions || { width: 794, height: 1123 };
         await page.setViewport({ width: dims.width, height: dims.height });
 
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
+
         let wrappedHtml = html;
         if (!html.includes('<html') && !html.includes('<HTML')) {
             wrappedHtml = `
@@ -2361,29 +2509,76 @@ async function generatePDF(html, outputPath, docTemplate) {
                 <html>
                 <head>
                     <meta charset="UTF-8">
+                    <base href="${baseUrl}">
+                    <link rel="stylesheet" href="themes/default/assets/css/style.css">
+                    <link rel="stylesheet" href="css/app/main.css">
                     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
                     <script src="https://cdn.tailwindcss.com"></script>
+                    <script>
+                        tailwind.config = { darkMode: 'class' };
+                    </script>
                     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
                     <style>
-                        body { 
-                            margin: 0; 
-                            padding: 0; 
-                            -webkit-print-color-adjust: exact; 
-                            print-color-adjust: exact; 
-                            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                        @page {
+                            margin: 0;
+                            size: ${dims.width}px ${dims.height}px;
                         }
-                        /* Ensure pages start on new sheets */
-                        .page-break-after { page-break-after: always; }
-                        /* Resets specific to the editor viewer structure */
-                        .bg-white.shadow-2xl { box-shadow: none !important; margin: 0 auto !important; }
-                        /* Base typography to match editor */
-                        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; }
-                        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; }
-                        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; }
-                        p { margin-top: 0 !important; margin-bottom: 1em !important; line-height: 1.5 !important; }
-                        ul { list-style-type: disc !important; margin: 1em 0 !important; padding-left: 40px !important; }
-                        ol { list-style-type: decimal !important; margin: 1em 0 !important; padding-left: 40px !important; }
-                        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 40px !important; padding-left: 1em !important; color: #475569 !important; }
+                        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+                        body { 
+                            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+                            font-size: 12pt; 
+                            line-height: 1.6;
+                            color: #000000;
+                            margin: 0;
+                            padding: 0;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        /* Tailwind Preflight resets — match editor environment */
+                        p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
+                        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+                        
+                        /* Base typography matching the React Document Editor */
+                        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
+                        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
+                        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
+                        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
+                        ul { list-style-type: disc !important; padding-left: 40px !important; }
+                        ol { list-style-type: decimal !important; padding-left: 40px !important; }
+                        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+                        
+                        img, svg { display: block; max-width: 100%; }
+                        .doc-page {
+                            width: ${dims.width}px;
+                            height: ${dims.height}px;
+                            min-height: ${dims.height}px;
+                            max-height: ${dims.height}px;
+                            background: #ffffff;
+                            position: relative;
+                            display: flex;
+                            flex-direction: column;
+                            overflow: hidden;
+                            box-sizing: border-box;
+                            page-break-inside: avoid;
+                            page-break-after: always;
+                        }
+                        .doc-header, .doc-footer {
+                            flex-shrink: 0;
+                            user-select: none;
+                            box-sizing: border-box;
+                        }
+                        .doc-content {
+                            flex: 1;
+                            min-height: 0;
+                            overflow: hidden;
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
+                            box-sizing: border-box;
+                            line-height: 1.6;
+                        }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f5f5f5; font-weight: 600; }
                     </style>
                 </head>
                 <body>

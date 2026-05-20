@@ -128,23 +128,15 @@ export async function finalizeDraft(draftDocId, recordId, accountNumber, pagesCo
             throw new Error(data.error || 'Erreur lors de la finalisation')
         }
 
-        // Trigger browser download from the saved attachment URL
-        if (data.attachment?.url) {
-            const downloadUrl = data.attachment.url
-            const safeName = (data.outputName || data.attachment.originalName || 'document').replace(/[<>:"/\\|?*]/g, '_')
-            const a = document.createElement('a')
-            a.href = downloadUrl
-            a.download = safeName.endsWith('.pdf') ? safeName : safeName + '.pdf'
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
-        }
+
 
         return {
             success: true,
             downloadUrl: data.attachment?.url,
             outputName: data.outputName,
-            attachmentId: data.attachment?._id
+            attachmentId: data.attachment?._id,
+            mode: data.mode,
+            attachment: data.attachment
         }
     } catch (error) {
         console.error('[SmartDoc] Finalize-draft error:', error)

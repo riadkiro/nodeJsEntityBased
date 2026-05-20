@@ -169,6 +169,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [currentLetterSpacing, setCurrentLetterSpacing] = useState(0)
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+    const [finalizedAttachment, setFinalizedAttachment] = useState(null)
+    const finalizedRef = useRef(false)
 
     // HTML Editor Modal
     const [editingHtml, setEditingHtml] = useState(false)
@@ -335,6 +337,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // ========== AUTOSAVE ==========
     // Core save logic — extracted so both triggerSave and forceSave share it
     const executeSave = useCallback(async (docOverride = null) => {
+        if (finalizedRef.current) return
         // Read current content from page refs
         const currentDoc = { ...(docOverride || docRef.current) }
 
@@ -419,6 +422,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // triggerSave — debounced auto-save, respects the autoSave toggle
     const triggerSave = useCallback(() => {
+        if (finalizedRef.current) return
         // If auto-save is disabled, we just track that there are unsaved changes
         if (!autoSaveRef.current) {
             hasUnsavedChangesRef.current = true
@@ -1754,17 +1758,28 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     return page.content || ''
                 })
 
-                const result = await finalizeDraft(doc._id, doc.draftRecordId, accountNumber, pagesContent)
+                const targetRecordId = doc.draftRecordId || (doc.linkedRecords && doc.linkedRecords.length > 0 ? doc.linkedRecords[0].recordId : null)
+                const result = await finalizeDraft(doc._id, targetRecordId, accountNumber, pagesContent)
                 if (!result.success) {
                     console.error('[SmartDoc] Finalize-draft failed:', result.error)
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
                     return
                 }
                 console.log('[SmartDoc] Draft finalized:', result.attachmentId || 'standalone document')
-                // Redirect to docs hub after a short delay so user sees the new generated file
-                setTimeout(() => {
-                    window.location.href = `/account/${accountNumber}/documents`
-                }, 1500)
+                
+                // Prevent future auto-saves and mark as finalized
+                finalizedRef.current = true
+                
+                // Save finalized attachment to state
+                setFinalizedAttachment({
+                    success: true,
+                    mode: result.mode || (targetRecordId ? 'record-attachment' : 'standalone-document'),
+                    downloadUrl: result.downloadUrl,
+                    outputName: result.outputName || doc.name,
+                    attachmentId: result.attachmentId,
+                    attachment: result.attachment || { sizeFormatted: 'PDF' },
+                    linkedRecords: doc.linkedRecords || []
+                })
             } finally {
                 setIsGeneratingPdf(false)
             }
@@ -1802,15 +1817,29 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
         // Build the full HTML document — exact same structure as SmartDoc's resolveDocumentTokens
+        const baseUrl = window.location.origin + '/'
+
         const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <base href="${baseUrl}">
+    <link rel="stylesheet" href="themes/default/assets/css/style.css">
+    <link rel="stylesheet" href="css/app/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
-        @page { margin: 0; size: A4; }
+        @page {
+            margin: 0;
+            size: ${docDims.width}px ${docDims.height}px;
+        }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
             font-size: 12pt; 
             line-height: 1.6;
             color: #000000;
@@ -1819,30 +1848,47 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        /* Tailwind Preflight resets — zero out margins only */
+        /* Tailwind Preflight resets — match editor environment */
         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
-        ul, ol { list-style: none; padding: 0; }
+        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+        
+        /* Base typography matching the React Document Editor */
+        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
+        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
+        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
+        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
+        ul { list-style-type: disc !important; padding-left: 40px !important; }
+        ol { list-style-type: decimal !important; padding-left: 40px !important; }
+        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+        
         img, svg { display: block; max-width: 100%; }
-        /* Restore heading sizes to match editor preview */
-        h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; line-height: 1.2; color: #000; }
-        h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; line-height: 1.3; color: #000; }
-        h3 { font-size: 1.17em; font-weight: bold; margin-top: 1em; margin-bottom: 1em; line-height: 1.4; color: #000; }
-        h4 { font-size: 1em; font-weight: bold; margin-top: 1.33em; margin-bottom: 1.33em; color: #000; }
-        p { margin-top: 0; margin-bottom: 0; line-height: 1.6; }
-        ul { list-style-type: disc; padding-left: 40px; }
-        ol { list-style-type: decimal; padding-left: 40px; }
-        blockquote { border-left: 4px solid #cbd5e1; margin: 1em 0; padding-left: 1em; color: #475569; }
-        strong, b { font-weight: bold; }
-        em, i { font-style: italic; }
         .doc-page {
-            width: 100%;
+            width: ${docDims.width}px;
+            height: ${docDims.height}px;
             min-height: ${docDims.height}px;
+            max-height: ${docDims.height}px;
             background: #ffffff;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            page-break-after: always;
+        }
+        .doc-header, .doc-footer {
+            flex-shrink: 0;
+            user-select: none;
+            box-sizing: border-box;
         }
         .doc-content {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            box-sizing: border-box;
+            line-height: 1.6;
         }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -2817,6 +2863,130 @@ ${pagesHtml}
                     </button>
                 </div>
             )}
+
+            {/* Success Modal Overlay */}
+            {finalizedAttachment && (
+                <div 
+                    onClick={() => setFinalizedAttachment(null)}
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[99999] p-4 animate-modal-fade-in cursor-pointer"
+                >
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800/80 max-w-md w-full p-8 text-center flex flex-col items-center gap-6 relative overflow-hidden animate-modal-scale-in cursor-default"
+                    >
+                        {/* Close Button (Cross) */}
+                        <button
+                            onClick={() => setFinalizedAttachment(null)}
+                            className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none' }}
+                            aria-label="Fermer"
+                        >
+                            <iconify-icon icon="solar:close-circle-bold-duotone" width="24"></iconify-icon>
+                        </button>
+
+                        <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 mb-2 border border-emerald-100 dark:border-emerald-900/30 shadow-inner">
+                            <iconify-icon icon="solar:check-circle-bold-duotone" width="40" className="animate-[pulse_2s_infinite]"></iconify-icon>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-tight">Document Finalisé !</h2>
+                            {finalizedAttachment.mode === 'record-attachment' ? (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Le document a été finalisé avec succès. La version PDF a été générée et rattachée à l'enregistrement.
+                                </p>
+                            ) : (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    Le document a été finalisé et converti en document indépendant.
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 flex items-center gap-3.5 text-left">
+                            <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/20 flex items-center justify-center text-red-500 flex-shrink-0">
+                                <iconify-icon icon="solar:document-bold-duotone" width="24"></iconify-icon>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
+                                    {finalizedAttachment.outputName}.pdf
+                                </div>
+                                <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                                    {finalizedAttachment.attachment?.sizeFormatted || 'Format PDF'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 w-full mt-2">
+                            <button
+                                onClick={() => {
+                                    if (!finalizedAttachment?.downloadUrl) return
+                                    const a = document.createElement('a')
+                                    a.href = finalizedAttachment.downloadUrl
+                                    const safeName = (finalizedAttachment.outputName || 'document').replace(/[<>:"/\\|?*]/g, '_')
+                                    a.download = safeName.endsWith('.pdf') ? safeName : safeName + '.pdf'
+                                    document.body.appendChild(a)
+                                    a.click()
+                                    a.remove()
+                                }}
+                                className="w-full py-3.5 px-6 active:scale-[0.98] rounded-2xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10"
+                                style={{
+                                    background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
+                                    color: '#ffffff'
+                                }}
+                            >
+                                <iconify-icon icon="solar:download-bold-duotone" width="20"></iconify-icon>
+                                <span>Télécharger le document PDF</span>
+                            </button>
+
+                            {/* Secondary Navigation Button */}
+                            {(() => {
+                                const showRecordLink = finalizedAttachment.linkedRecords && finalizedAttachment.linkedRecords.length > 0
+                                const firstRecord = showRecordLink ? finalizedAttachment.linkedRecords[0] : null
+                                const recordUrl = firstRecord
+                                    ? `/account/${accountNumber}/record/${firstRecord.entitySlug}/${firstRecord.recordId}/overview`
+                                    : `/account/${accountNumber}/documents`
+
+                                return showRecordLink ? (
+                                    <button
+                                        onClick={() => window.location.href = recordUrl}
+                                        className="w-full py-3 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-200 rounded-2xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 border border-slate-200/20"
+                                    >
+                                        <iconify-icon icon="solar:arrow-right-up-bold-duotone" width="18"></iconify-icon>
+                                        <span>Voir l'enregistrement</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => window.location.href = `/account/${accountNumber}/documents`}
+                                        className="w-full py-3 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-200 rounded-2xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 border border-slate-200/20"
+                                    >
+                                        <iconify-icon icon="solar:arrow-left-bold-duotone" width="18"></iconify-icon>
+                                        <span>Retour aux documents</span>
+                                    </button>
+                                )
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal Custom Animations */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes modalFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes modalScaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-modal-fade-in {
+                    animation: modalFadeIn 0.2s ease-out forwards;
+                }
+                .animate-modal-scale-in {
+                    animation: modalScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                }
+                `
+            }} />
         </div>
     )
 }

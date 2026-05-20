@@ -341,12 +341,11 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
         return () => clearTimeout(delayDebounceFn)
     }, [searchQuery, selectedEntityId, activeTab, accountNumber])
 
-    const toggleEntity = (entityId) => {
+    const selectEntity = (entityId) => {
         const currentIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
-        const isLinked = currentIds.includes(entityId)
-        const newIds = isLinked
-            ? currentIds.filter(id => id !== entityId)
-            : [...currentIds, entityId]
+        const isAlreadySelected = currentIds.length === 1 && currentIds[0] === entityId
+        // If clicking the already-selected entity, unlink it; otherwise select this one only
+        const newIds = isAlreadySelected ? [] : [entityId]
         
         const updatedDoc = {
             ...doc,
@@ -456,10 +455,11 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
                                                             className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
                                                         >
                                                             <input
-                                                                type="checkbox"
+                                                                type="radio"
+                                                                name="linked-entity"
                                                                 checked={true}
-                                                                onChange={() => toggleEntity(entity.id)}
-                                                                className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                                                                onChange={() => selectEntity(entity.id)}
+                                                                className="w-3.5 h-3.5 border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
                                                             />
                                                             <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" style={{ color: '#f59e0b' }}></iconify-icon>
                                                             <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{entity.name}</span>
@@ -497,10 +497,11 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
                                                         className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/30"
                                                     >
                                                         <input
-                                                            type="checkbox"
+                                                            type="radio"
+                                                            name="linked-entity"
                                                             checked={false}
-                                                            onChange={() => toggleEntity(entity.id)}
-                                                            className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                                                            onChange={() => selectEntity(entity.id)}
+                                                            className="w-3.5 h-3.5 border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
                                                         />
                                                         <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" style={{ color: '#9ca3af' }}></iconify-icon>
                                                         <span className="text-xs text-gray-500 dark:text-gray-400">{entity.name}</span>
@@ -614,7 +615,7 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
                     <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-700">
                         <p className="text-[9px] text-gray-400 italic">
                             {activeTab === 'collections' 
-                                ? 'Ce template sera utilisable dans les SmartDoc de ces collections.' 
+                                ? 'Ce template sera lié à une seule collection.' 
                                 : 'Ce modèle sera visible uniquement sur les enregistrements sélectionnés.'}
                         </p>
                     </div>
@@ -1080,15 +1081,38 @@ export default function EditorHeader({
                                     accountNumber={accountNumber}
                                 />
 
-                                {/* PDF Button */}
-                                <button
-                                    onClick={handlePdfExport}
-                                    disabled={!doc._id}
-                                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
-                                    <span>PDF</span>
-                                </button>
+                                {/* Action Button */}
+                                {doc.isDraft ? (
+                                    <button
+                                        onClick={handlePdfExport}
+                                        disabled={!doc._id || isGeneratingPdf}
+                                        className="flex items-center gap-2 px-4 py-2 text-white rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 duration-200"
+                                        style={{
+                                            backgroundColor: '#10b981',
+                                            boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -2px rgba(16, 185, 129, 0.2)'
+                                        }}
+                                    >
+                                        {isGeneratingPdf ? (
+                                            <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                        ) : (
+                                            <iconify-icon icon="solar:check-circle-bold-duotone" width="18"></iconify-icon>
+                                        )}
+                                        <span>{isGeneratingPdf ? 'Génération...' : 'Finaliser et générer'}</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handlePdfExport}
+                                        disabled={!doc._id || isGeneratingPdf}
+                                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isGeneratingPdf ? (
+                                            <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                        ) : (
+                                            <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
+                                        )}
+                                        <span>{isGeneratingPdf ? 'Génération...' : 'PDF'}</span>
+                                    </button>
+                                )}
                             </>
                         )}
                     </div>

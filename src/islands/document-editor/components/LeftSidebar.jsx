@@ -1553,18 +1553,10 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
                 background: isDark ? 'rgba(245,158,11,0.15)' : '#fef3c7',
                 color: isDark ? '#fbbf24' : '#b45309',
                 borderRadius: '4px',
-                fontFamily: 'monospace',
-                fontSize: '10px',
+                fontSize: '11px',
                 fontWeight: 600,
-                flexShrink: 0,
-                maxWidth: '120px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                flexShrink: 0
             }}>
-                {`{{${v.path}}}`}
-            </span>
-            <span style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {v.label}
             </span>
         </button>

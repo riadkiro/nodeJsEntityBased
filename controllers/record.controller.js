@@ -2063,68 +2063,7 @@ module.exports = {
         }
     },
 
-    // ═══ Update Relation (add/remove a related record on a source record) ═══
-    updateRelation: async (req, res) => {
-        try {
-            const RecordModel = await tenantCollection(req, "Record");
-            const { id } = req.params;
-            const { relationKey, targetRecordId, action } = req.body;
 
-            if (!relationKey || !targetRecordId) {
-                return res.status(400).json({ success: false, message: 'Missing relationKey or targetRecordId' });
-            }
-
-            const record = await RecordModel.findById(id);
-            if (!record) {
-                return res.status(404).json({ success: false, message: 'Record not found' });
-            }
-
-            // Find existing relation entry
-            const existingIdx = record.relations.findIndex(r => r.relationKey === relationKey);
-
-            if (action === 'add') {
-                if (existingIdx >= 0) {
-                    // Relation entry exists — append to array or convert single to array
-                    let currentVal = record.relations[existingIdx].value;
-                    if (Array.isArray(currentVal)) {
-                        if (!currentVal.map(String).includes(String(targetRecordId))) {
-                            currentVal.push(targetRecordId);
-                        }
-                    } else if (currentVal) {
-                        // Convert single value to array
-                        if (String(currentVal) !== String(targetRecordId)) {
-                            record.relations[existingIdx].value = [currentVal, targetRecordId];
-                        }
-                    } else {
-                        record.relations[existingIdx].value = targetRecordId;
-                    }
-                } else {
-                    // No entry yet — create one
-                    record.relations.push({ relationKey, value: targetRecordId });
-                }
-            } else if (action === 'remove') {
-                if (existingIdx >= 0) {
-                    let currentVal = record.relations[existingIdx].value;
-                    if (Array.isArray(currentVal)) {
-                        record.relations[existingIdx].value = currentVal.filter(v => String(v) !== String(targetRecordId));
-                        if (record.relations[existingIdx].value.length === 0) {
-                            record.relations.splice(existingIdx, 1);
-                        }
-                    } else if (String(currentVal) === String(targetRecordId)) {
-                        record.relations.splice(existingIdx, 1);
-                    }
-                }
-            }
-
-            record.markModified('relations');
-            await record.save();
-
-            return res.json({ success: true });
-        } catch (err) {
-            console.error('Error updating relation:', err);
-            return res.status(500).json({ success: false, message: err.message });
-        }
-    },
 
     // ═══ Inline Field Update (from overview click-to-edit) ═══
     updateField: async (req, res) => {
@@ -2263,10 +2202,13 @@ module.exports = {
             // Clean up any orphan entries missing relationKey (from old seed data)
             record.relations = record.relations.filter(r => r.relationKey);
             let relEntry = record.relations.find(r => r.relationKey === relationKey);
+            let isNewEntry = false;
+            
             if (!relEntry) {
                 relEntry = { relationKey, value: [] };
-                record.relations.push(relEntry);
+                isNewEntry = true;
             }
+            
             // Normalize value to array of strings
             if (!Array.isArray(relEntry.value)) {
                 relEntry.value = relEntry.value ? [relEntry.value.toString()] : [];
@@ -2284,6 +2226,15 @@ module.exports = {
                 relEntry.value = relEntry.value.filter(id => id.toString() !== tid);
             } else if (action === 'set' && targetIds) {
                 relEntry.value = targetIds.map(id => id.toString());
+            }
+
+            if (isNewEntry) {
+                record.relations.push(relEntry);
+            }
+
+            // Clear draft flag on first edit
+            if (record.isDraft) {
+                record.isDraft = false;
             }
 
             record.markModified('relations');

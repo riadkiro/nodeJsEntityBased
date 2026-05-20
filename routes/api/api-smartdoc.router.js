@@ -605,6 +605,72 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
                     }
                 }
 
+                // Custom fields of type 'relation' (e.g., Contact, Représentant)
+                // Expose their target entity's fields as relation sub-sections
+                if (entity.customFields && entity.customFields.length > 0) {
+                    const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+                    for (const field of entity.customFields) {
+                        if (!field || field.type !== 'relation') continue;
+                        const typeConfig = field.type_config || {};
+                        const targetEntityId = typeConfig.refEntity;
+                        if (!targetEntityId) continue;
+
+                        // Load target entity with its fields and classifications
+                        const targetEntity = await loadEntityWithFields(req, targetEntityId);
+                        if (!targetEntity) continue;
+
+                        // Use the field name as the relation prefix (e.g., 'contact', 'representant')
+                        const fieldName = field.name || field.label?.toLowerCase().replace(/\s+/g, '_') || field._id.toString();
+
+                        const relVar = {
+                            relationKey: field._id.toString(),
+                            label: field.label || field.name,
+                            entityName: targetEntity.name,
+                            entityIcon: targetEntity.icon || 'solar:user-bold-duotone',
+                            entitySlug: targetEntity.slug,
+                            cardinality: typeConfig.multiple ? 'many' : 'one',
+                            isCustomField: true,
+                            fields: [],
+                            classifications: []
+                        };
+
+                        // Standard fields of related entity
+                        relVar.fields.push(
+                            { path: `${entity.slug}.${fieldName}.title`, label: 'Titre', type: 'text', fieldId: null },
+                            { path: `${entity.slug}.${fieldName}.description`, label: 'Description', type: 'text', fieldId: null }
+                        );
+
+                        // Custom fields of related entity
+                        if (targetEntity.customFields && targetEntity.customFields.length > 0) {
+                            for (const tf of targetEntity.customFields) {
+                                if (!tf) continue;
+                                relVar.fields.push({
+                                    path: `${entity.slug}.${fieldName}.${tf.name}`,
+                                    label: tf.label || tf.name,
+                                    type: tf.type || 'text',
+                                    fieldId: tf._id.toString()
+                                });
+                            }
+                        }
+
+                        // Classifications of related entity
+                        const relClassifications = [
+                            ...(targetEntity.statusClassification ? [targetEntity.statusClassification] : []),
+                            ...(targetEntity.classifications || [])
+                        ];
+                        for (const classif of relClassifications) {
+                            if (!classif) continue;
+                            relVar.classifications.push({
+                                path: `${entity.slug}.${fieldName}.classification.${classif.key}`,
+                                label: classif.name,
+                                classificationId: classif._id.toString()
+                            });
+                        }
+
+                        entityVar.relations.push(relVar);
+                    }
+                }
+
                 variables.entities.push(entityVar);
             }
         }
@@ -706,6 +772,39 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
                     }
                 } catch (e) {
                     console.warn('[SmartDoc] Could not load related record:', relatedId, e.message);
+                }
+            }
+        }
+
+        // 3b2. Also load related records for custom fields of type 'relation'
+        if (entity && entity.customFields && record.relations) {
+            for (const cfDef of entity.customFields) {
+                if (!cfDef || cfDef.type !== 'relation') continue;
+                const fieldId = cfDef._id.toString();
+                const typeConfig = cfDef.type_config || {};
+                const targetEntityId = typeConfig.refEntity;
+                if (!targetEntityId) continue;
+
+                const recRelation = record.relations.find(r => r.relationKey === fieldId);
+                if (!recRelation || !recRelation.value) continue;
+
+                const relatedId = Array.isArray(recRelation.value) ? recRelation.value[0] : recRelation.value;
+                if (!relatedId) continue;
+
+                try {
+                    const relatedRecord = await Record.findById(relatedId).lean();
+                    if (relatedRecord) {
+                        // Load the target entity for field resolution
+                        const targetEntity = await loadEntityWithFields(req, targetEntityId);
+                        if (targetEntity) {
+                            relatedRecordsMap[fieldId] = {
+                                record: relatedRecord,
+                                entity: targetEntity
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[SmartDoc] Could not load custom relation record:', relatedId, e.message);
                 }
             }
         }
@@ -914,6 +1013,34 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                     }
                 } catch (e) {
                     console.warn('[SmartDoc] Could not load related record:', relatedId, e.message);
+                }
+            }
+        }
+
+        // 3b2. Also load related records for custom fields of type 'relation'
+        if (entity && entity.customFields && record.relations) {
+            for (const cfDef of entity.customFields) {
+                if (!cfDef || cfDef.type !== 'relation') continue;
+                const fieldId = cfDef._id.toString();
+                const typeConfig = cfDef.type_config || {};
+                const targetEntityId2 = typeConfig.refEntity;
+                if (!targetEntityId2) continue;
+
+                const recRelation = record.relations.find(r => r.relationKey === fieldId);
+                if (!recRelation || !recRelation.value) continue;
+                const relatedId = Array.isArray(recRelation.value) ? recRelation.value[0] : recRelation.value;
+                if (!relatedId) continue;
+
+                try {
+                    const relatedRecord = await Record.findById(relatedId).lean();
+                    if (relatedRecord) {
+                        const targetEnt = await loadEntityWithFields(req, targetEntityId2);
+                        if (targetEnt) {
+                            relatedRecordsMap[fieldId] = { record: relatedRecord, entity: targetEnt };
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[SmartDoc] Could not load custom relation record:', relatedId, e.message);
                 }
             }
         }
@@ -2143,6 +2270,49 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
 
                     // Mount under entity slug: e.g. consultations.patient = { title, nom, ... }
                     entityContext[targetEntity.slug] = relContext;
+                }
+            }
+        }
+
+        // Add custom relation fields data (e.g., Contact, Représentant)
+        if (entity.customFields && relatedRecordsMap) {
+            for (const cfDef of entity.customFields) {
+                if (!cfDef || cfDef.type !== 'relation') continue;
+                const fieldId = cfDef._id.toString();
+                const fieldName = cfDef.name || cfDef.label?.toLowerCase().replace(/\s+/g, '_') || fieldId;
+
+                const relData = relatedRecordsMap[fieldId];
+                if (relData && relData.record) {
+                    const relRecord = relData.record;
+                    const relEntityDef = relData.entity;
+
+                    const relContext = {
+                        title: relRecord.title || '',
+                        computedTitle: relRecord.computedTitle || relRecord.title || '',
+                        description: relRecord.description || '',
+                        createdAt: relRecord.createdAt ? formatDate(relRecord.createdAt) : '',
+                        updatedAt: relRecord.updatedAt ? formatDate(relRecord.updatedAt) : '',
+                        ...extractCustomFields(relRecord, relEntityDef)
+                    };
+
+                    // Classification values of related record
+                    if (relRecord.classificationValues && relRecord.classificationValues.length > 0) {
+                        const relClassifContext = {};
+                        const relAllClassifs = [
+                            ...(relEntityDef.statusClassification ? [relEntityDef.statusClassification] : []),
+                            ...(relEntityDef.classifications || [])
+                        ];
+                        for (const cv of relRecord.classificationValues) {
+                            const classifDef = relAllClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                            if (classifDef && classifDef.key) {
+                                relClassifContext[classifDef.key] = cv.label || '';
+                            }
+                        }
+                        relContext.classification = relClassifContext;
+                    }
+
+                    // Mount under field name: e.g. entreprises.contact = { title, tel, email, ... }
+                    entityContext[fieldName] = relContext;
                 }
             }
         }

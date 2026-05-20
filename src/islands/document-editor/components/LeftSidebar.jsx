@@ -1468,8 +1468,8 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
                 const data = await res.json();
                 if (data.success && data.variables) {
                     setVariables(data.variables);
-                    // Auto-expand entity sections
-                    const expanded = { system: true, user: true };
+                    // Only expand entity sections by default, system/user collapsed
+                    const expanded = { system: false, user: false };
                     (data.variables.entities || []).forEach(e => {
                         expanded['entity_' + e.entityId] = true;
                     });
@@ -1693,57 +1693,61 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
             {renderSection('user', 'Utilisateur', 'solar:user-bold-duotone', variables.user || [], '#0ea5e9')}
 
             {/* Entity Variables */}
-            {hasEntities && variables.entities.map(entity => (
-                <div key={entity.entityId}>
-                    {/* Entity Fields */}
-                    {renderSection(
-                        'entity_' + entity.entityId,
-                        entity.name,
-                        entity.icon || 'solar:layers-bold-duotone',
-                        entity.fields || [],
-                        '#f59e0b'
-                    )}
+            {hasEntities && variables.entities.map(entity => {
+                // Merge classifications into entity fields
+                const entityFieldsWithClassifications = [
+                    ...(entity.fields || []),
+                    ...(entity.classifications || []).map(c => ({
+                        path: c.path,
+                        label: c.label,
+                        type: 'classification',
+                        fieldId: c.classificationId
+                    }))
+                ];
 
-                    {/* Entity Classifications */}
-                    {entity.classifications && entity.classifications.length > 0 && renderSection(
-                        'classif_' + entity.entityId,
-                        entity.name + ' · Classifications',
-                        'solar:tag-bold-duotone',
-                        entity.classifications.map(c => ({
-                            path: c.path,
-                            label: c.label,
-                            type: 'classification',
-                            fieldId: c.classificationId
-                        })),
-                        '#8b5cf6'
-                    )}
+                return (
+                    <div key={entity.entityId}>
+                        {/* Entity Fields + Classifications merged */}
+                        {renderSection(
+                            'entity_' + entity.entityId,
+                            entity.name,
+                            entity.icon || 'solar:layers-bold-duotone',
+                            entityFieldsWithClassifications,
+                            '#f59e0b'
+                        )}
 
-                    {/* Entity Relations */}
-                    {entity.relations && entity.relations.map(rel => (
-                        <div key={rel.relationKey}>
-                            {renderSection(
-                                'rel_' + rel.relationKey,
-                                rel.label + ' (' + rel.entityName + ')',
-                                rel.entityIcon || 'solar:link-bold-duotone',
-                                rel.fields || [],
-                                '#10b981'
-                            )}
-                            {rel.classifications && rel.classifications.length > 0 && renderSection(
-                                'relclass_' + rel.relationKey,
-                                rel.label + ' · Classifications',
-                                'solar:tag-bold-duotone',
-                                rel.classifications.map(c => ({
-                                    path: c.path,
-                                    label: c.label,
-                                    type: 'classification',
-                                    fieldId: c.classificationId
-                                })),
-                                '#8b5cf6'
-                            )}
-                        </div>
-                    ))}
-                </div>
-            ))}
+                        {/* Relation sub-sections (entity-level + custom relation fields) */}
+                        {entity.relations && entity.relations.length > 0 && (
+                            <div style={{ paddingLeft: '12px' }}>
+                                {entity.relations.map(rel => {
+                                    // Merge relation classifications into relation fields
+                                    const relFieldsWithClassifications = [
+                                        ...(rel.fields || []),
+                                        ...(rel.classifications || []).map(c => ({
+                                            path: c.path,
+                                            label: c.label,
+                                            type: 'classification',
+                                            fieldId: c.classificationId
+                                        }))
+                                    ];
+
+                                    return (
+                                        <div key={rel.relationKey}>
+                                            {renderSection(
+                                                'rel_' + rel.relationKey,
+                                                rel.label,
+                                                rel.entityIcon || 'solar:link-bold-duotone',
+                                                relFieldsWithClassifications,
+                                                rel.isCustomField ? '#6366f1' : '#10b981'
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
 
             {/* No entities linked */}
             {!hasEntities && (

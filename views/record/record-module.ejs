@@ -384,7 +384,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <iconify-icon icon="<%= entity.icon || _mod.icon %>" width="28" style="color:<%= entity.color || _modColor %>"></iconify-icon>
         </div>
         <div class="rm-hero-info">
-            <h1><%= record.title || 'Sans titre' %></h1>
+            <h1 id="record-hero-title"><%= record.title || 'Sans titre' %></h1>
             <p><%= entity.nameSingular || entity.name %></p>
         </div>
         <% if (moduleName !== 'team') { %>
@@ -738,6 +738,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                     viewEl.innerHTML = '<span class="ov-ef-val">' + displayVal.replace(/</g,'&lt;') + '</span>';
                                 } else {
                                     viewEl.innerHTML = '<span class="ov-placeholder">' + (fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur') + '</span>';
+                                }
+                                if (editingK === 'title') {
+                                    const heroTitle = document.getElementById('record-hero-title');
+                                    if (heroTitle) heroTitle.textContent = displayVal || 'Sans titre';
                                 }
                             }
                         }
@@ -4501,6 +4505,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                 } else {
                                     viewEl.textContent = fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur';
                                     viewEl.className = 'ov-placeholder';
+                                }
+                                if (editingK === 'title') {
+                                    const heroTitle = document.getElementById('record-hero-title');
+                                    if (heroTitle) heroTitle.textContent = displayVal || 'Sans titre';
                                 }
                             }
                         }

@@ -48,7 +48,7 @@ window.__ACCOUNT_NUMBER__ = '<%= typeof account_number !== "undefined" ? account
     <%- include("elements/scroll2top") %>
 
       <!-- theme customizer section -->
-      <!-- <%- include("elements/customizer") %> -->
+      <%# include("elements/customizer") %>
 
         <div class="main-container min-h-screen text-black dark:text-white-dark" :class="[$store.app.navbar]">
           <!-- sidebar section -->
@@ -57,7 +57,7 @@ window.__ACCOUNT_NUMBER__ = '<%= typeof account_number !== "undefined" ? account
             <div class="main-content">
               <!-- header section -->
               <header :class="{'dark' : $store.app.semidark && $store.app.menu === 'horizontal'}">
-                <div class="shadow-sm" style="margin-top:-20px;">
+                <div class="shadow-sm">
                   <!-- top bar menu -->
                   <%- include("nav/nav-topbar") %>
 

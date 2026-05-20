@@ -1070,16 +1070,13 @@ export default function EditorHeader({
                             </>
                         ) : (
                             <>
-                                {/* Lié à dropdown */}
-                                <LinkedToDropdown
-                                    doc={doc}
-                                    setDoc={setDoc}
-                                    availableEntities={availableEntities}
-                                    linkedEntities={linkedEntities}
-                                    triggerSave={triggerSave}
-                                    forceSave={forceSave}
-                                    accountNumber={accountNumber}
-                                />
+                                {/* Static Lié à badge */}
+                                <div className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700 select-none">
+                                    <iconify-icon icon="solar:link-round-bold-duotone" width="16"></iconify-icon>
+                                    <span>
+                                        Lié à {linkedEntities[0]?.name || doc.linkedRecords?.[0]?.entityName || 'Entreprise'}
+                                    </span>
+                                </div>
 
                                 {/* Action Button */}
                                 {doc.isDraft ? (

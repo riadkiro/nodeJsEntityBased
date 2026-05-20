@@ -2142,6 +2142,47 @@ function buildTokenContext(record, entity, inputs, relatedRecordsMap, user) {
             }
         }
 
+        // Add custom relation fields data (e.g., Contact, Représentant)
+        if (entity.customFields && relatedRecordsMap) {
+            for (const cfDef of entity.customFields) {
+                if (!cfDef || cfDef.type !== 'relation') continue;
+                const fieldId = cfDef._id.toString();
+                const fieldName = cfDef.name || cfDef.label?.toLowerCase().replace(/\s+/g, '_') || fieldId;
+
+                const relData = relatedRecordsMap[fieldId];
+                if (relData && relData.record) {
+                    const relRecord = relData.record;
+                    const relEntityDef = relData.entity;
+
+                    const relContext = {
+                        title: relRecord.title || '',
+                        computedTitle: relRecord.computedTitle || relRecord.title || '',
+                        description: relRecord.description || '',
+                        createdAt: relRecord.createdAt ? formatDate(relRecord.createdAt) : '',
+                        updatedAt: relRecord.updatedAt ? formatDate(relRecord.updatedAt) : '',
+                        ...extractCustomFields(relRecord, relEntityDef)
+                    };
+
+                    if (relRecord.classificationValues && relRecord.classificationValues.length > 0) {
+                        const relClassifContext = {};
+                        const relAllClassifs = [
+                            ...(relEntityDef.statusClassification ? [relEntityDef.statusClassification] : []),
+                            ...(relEntityDef.classifications || [])
+                        ];
+                        for (const cv of relRecord.classificationValues) {
+                            const classifDef = relAllClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                            if (classifDef && classifDef.key) {
+                                relClassifContext[classifDef.key] = cv.label || '';
+                            }
+                        }
+                        relContext.classification = relClassifContext;
+                    }
+
+                    entityContext[fieldName] = relContext;
+                }
+            }
+        }
+
         context[entity.slug] = entityContext;
     }
 
@@ -2835,6 +2876,26 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
                     const relRecord = relData.record;
                     const relEntityDef = relData.entity;
                     entityContext[targetEntity.slug] = {
+                        title: relRecord.title || '',
+                        computedTitle: relRecord.computedTitle || relRecord.title || '',
+                        description: relRecord.description || '',
+                        ...extractCustomFields(relRecord, relEntityDef)
+                    };
+                }
+            }
+        }
+
+        // Custom relation fields
+        if (entity.customFields && relatedRecordsMap) {
+            for (const cfDef of entity.customFields) {
+                if (!cfDef || cfDef.type !== 'relation') continue;
+                const fieldId = cfDef._id.toString();
+                const fieldName = cfDef.name || cfDef.label?.toLowerCase().replace(/\s+/g, '_') || fieldId;
+                const relData = relatedRecordsMap[fieldId];
+                if (relData && relData.record) {
+                    const relRecord = relData.record;
+                    const relEntityDef = relData.entity;
+                    entityContext[fieldName] = {
                         title: relRecord.title || '',
                         computedTitle: relRecord.computedTitle || relRecord.title || '',
                         description: relRecord.description || '',

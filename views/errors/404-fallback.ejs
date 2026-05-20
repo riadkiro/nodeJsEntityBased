@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <title>Page Non Trouvée | Cyberbox</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="La page que vous recherchez est introuvable." />
+        <link rel="icon" type="image/x-icon" href="/favicon.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" type="text/css" media="screen" href="/assets/css/perfect-scrollbar.min.css" />
+        <link rel="stylesheet" type="text/css" media="screen" href="/assets/css/style.css" />
+        <link defer rel="stylesheet" type="text/css" media="screen" href="/assets/css/animate.css" />
+        <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.7/dist/iconify-icon.min.js"></script>
+        <script src="/assets/js/perfect-scrollbar.min.js"></script>
+        <script defer src="/assets/js/popper.min.js"></script>
+        <script defer src="/assets/js/tippy-bundle.umd.min.js"></script>
+    </head>
+
+    <body
+        x-data="main"
+        class="relative overflow-x-hidden font-nunito text-sm font-normal antialiased bg-[#fafafa] dark:bg-[#060818]"
+        :class="[ $store.app.sidebar ? 'toggle-sidebar' : '', $store.app.theme, $store.app.menu, $store.app.layout,$store.app.rtlClass]"
+    >
+        <div class="main-container min-h-screen text-black dark:text-white-dark">
+            <div class="flex min-h-screen items-center justify-center bg-[url('../images/map.svg')] bg-cover bg-center dark:bg-[url('../images/map-dark.svg')]">
+                <div class="panel m-6 w-full max-w-lg sm:w-[480px] text-center shadow-3xl rounded-2xl bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-[#1b2e4b] p-8">
+                    
+                    <!-- Beautiful Status Icon -->
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-danger/10 mb-4 animate__animated animate__bounceIn">
+                        <iconify-icon icon="solar:danger-triangle-bold-duotone" width="44" class="text-danger"></iconify-icon>
+                    </div>
+
+                    <!-- Stunning Gradient 404 text -->
+                    <h1 class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#22bce9] tracking-widest animate__animated animate__zoomIn">404</h1>
+                    
+                    <h2 class="text-2xl font-bold mt-2 text-black dark:text-white">Page introuvable</h2>
+                    
+                    <p class="text-gray-500 dark:text-gray-400 mt-3 max-w-md mx-auto leading-relaxed">
+                        <%= locals.message || "Oups ! La page que vous recherchez n'existe pas, a été déplacée ou est temporairement indisponible." %>
+                    </p>
+
+                    <div class="relative my-6 h-[1px] w-full bg-[#ebedf2] dark:bg-[#253b5c]"></div>
+
+                    <!-- Redirect Options -->
+                    <div class="space-y-3">
+                        <a href="/auth/login" class="btn btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                            <iconify-icon icon="solar:login-2-bold" width="20"></iconify-icon>
+                            Se connecter à l'application
+                        </a>
+                        
+                        <button onclick="window.history.back()" class="btn btn-outline-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                            <iconify-icon icon="solar:alt-arrow-left-bold" width="20"></iconify-icon>
+                            Retourner à la page précédente
+                        </button>
+                    </div>
+
+                    <!-- Footer note -->
+                    <div class="mt-8 text-xs text-gray-400 dark:text-gray-500">
+                        &copy; <%= new Date().getFullYear() %> Cyberbox. Tous droits réservés.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="/assets/js/alpine-collaspe.min.js"></script>
+        <script src="/assets/js/alpine-persist.min.js"></script>
+        <script defer src="/assets/js/alpine-ui.min.js"></script>
+        <script defer src="/assets/js/alpine-focus.min.js"></script>
+        <script defer src="/assets/js/alpine.min.js"></script>
+        <script src="/assets/js/custom.js"></script>
+    </body>
+</html>

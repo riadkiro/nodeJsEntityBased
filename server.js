@@ -90,3 +90,8 @@ app.use(
   connectToTenantDb,
   RoutesAccount
 );
+
+// Fallback 404 handler for any unhandled routes
+app.use((req, res) => {
+  res.status(404).render("errors/404-fallback", { layout: false });
+});

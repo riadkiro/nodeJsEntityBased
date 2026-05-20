@@ -2637,6 +2637,16 @@ function resolveNestedValue(context, path) {
     if (!path || !context) return null;
     const key = path.trim();
 
+    // Helper: convert a resolved value to string, handling objects gracefully
+    const stringify = (val) => {
+        if (val === null || val === undefined) return null;
+        if (typeof val !== 'object' || Array.isArray(val)) return String(val);
+        // For objects (e.g., relation context), return title/computedTitle
+        if (val.computedTitle) return String(val.computedTitle);
+        if (val.title) return String(val.title);
+        return null;
+    };
+
     if (key.includes('.')) {
         const parts = key.split('.');
         let val = context;
@@ -2644,10 +2654,10 @@ function resolveNestedValue(context, path) {
             if (val && typeof val === 'object') val = val[part];
             else { val = undefined; break; }
         }
-        return val !== undefined ? String(val) : null;
+        return val !== undefined ? stringify(val) : null;
     }
 
-    return context[key] !== undefined ? String(context[key]) : null;
+    return context[key] !== undefined ? stringify(context[key]) : null;
 }
 
 /**

@@ -218,47 +218,62 @@ document.addEventListener('alpine:init', () => {
 
         async _restoreFromUrl(isPopstate) {
             this._restoringUrl = true;
-            const base = `/account/${this._accountNumber}/drive`;
-            const path = decodeURIComponent(window.location.pathname);
-            const rest = path.startsWith(base + '/') ? path.substring(base.length + 1) : '';
+            try {
+                const base = `/account/${this._accountNumber}/drive`;
+                const path = decodeURIComponent(window.location.pathname);
+                const rest = path.startsWith(base + '/') ? path.substring(base.length + 1) : '';
 
-            if (!rest) {
-                // Root
-                if (isPopstate) {
-                    this.globalLevel = 'root';
-                    this.selectedEntity = null;
-                    this.selectedRecord = null;
-                    this._recordId = '';
-                    this.globalCurrentFolder = '';
-                    this.allFiles = [];
-                    this.customFolders = [];
-                }
-            } else if (rest === 'app' || rest.startsWith('app/')) {
-                // App navigation
-                const parts = rest.split('/').slice(1); // remove 'app'
-                this.globalLevel = 'app-entities';
-                if (parts[0] && this.globalEntities.length > 0) {
-                    const entity = this.globalEntities.find(e => e.entityId === parts[0]);
-                    if (entity) {
-                        this.selectedEntity = entity;
-                        this.globalLevel = 'app-records';
-                        if (parts[1]) {
+                if (!rest) {
+                    // Root
+                    if (isPopstate) {
+                        this.selectedEntity = null;
+                        this.selectedRecord = null;
+                        this._recordId = '';
+                        this.globalCurrentFolder = '';
+                        this.allFiles = [];
+                        this.customFolders = [];
+                        this.currentFolder = '';
+                        this.viewingGenerated = '';
+                        this.globalLevel = 'root';
+                    }
+                } else if (rest === 'app' || rest.startsWith('app/')) {
+                    const parts = rest.split('/').slice(1); // remove 'app'
+                    if (parts[0] && this.globalEntities.length > 0) {
+                        const entity = this.globalEntities.find(e => e.entityId === parts[0]);
+                        if (entity && parts[1]) {
                             const record = entity.records.find(r => r.recordId === parts[1]);
                             if (record) {
+                                // Set ALL data BEFORE changing globalLevel
+                                this.selectedEntity = entity;
                                 this.selectedRecord = record;
                                 this._recordId = record.recordId;
-                                this.globalLevel = 'app-files';
+                                // Load files first while still at root level
                                 await this.loadFiles();
                                 if (parts[2]) this.currentFolder = parts[2];
+                                // NOW change level (triggers re-render with data ready)
+                                this.globalLevel = 'app-files';
+                            } else {
+                                // Record not found, show entity records
+                                this.selectedEntity = entity;
+                                this.globalLevel = 'app-records';
                             }
+                        } else if (entity) {
+                            this.selectedEntity = entity;
+                            this.globalLevel = 'app-records';
+                        } else {
+                            this.globalLevel = 'app-entities';
                         }
+                    } else {
+                        this.globalLevel = 'app-entities';
                     }
+                } else {
+                    // Custom folder path
+                    this.globalCurrentFolder = rest;
+                    await this.loadGlobalFolderFiles(rest);
+                    this.globalLevel = 'custom-folder';
                 }
-            } else {
-                // Custom folder path (e.g., "Factures" or "Factures/Ventes")
-                this.globalCurrentFolder = rest;
-                this.globalLevel = 'custom-folder';
-                await this.loadGlobalFolderFiles(rest);
+            } catch (e) {
+                console.error('[Drive] Restore from URL error:', e);
             }
             this._restoringUrl = false;
         },

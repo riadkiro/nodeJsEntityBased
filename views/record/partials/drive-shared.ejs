@@ -256,16 +256,34 @@ document.addEventListener('alpine:init', () => {
         },
 
         openContextMenu(e, item, type) {
-            if (!this.isAdmin) return;
             e.preventDefault();
             e.stopPropagation();
             const menuWidth = 190;
-            const menuHeight = 160;
+            const menuHeight = 200;
             this.contextMenu.x = Math.min(e.clientX, window.innerWidth - menuWidth - 20);
             this.contextMenu.y = Math.min(e.clientY, window.innerHeight - menuHeight - 20);
             this.contextMenu.item = item;
             this.contextMenu.type = type;
             this.contextMenu.show = true;
+            this._attachCloseListeners();
+        },
+
+        openBackgroundContextMenu(e) {
+            // Don't open if event originated from an item (it handles its own ctx menu)
+            if (e.target.closest('.rm-item')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const menuWidth = 200;
+            const menuHeight = 250;
+            this.contextMenu.x = Math.min(e.clientX, window.innerWidth - menuWidth - 20);
+            this.contextMenu.y = Math.min(e.clientY, window.innerHeight - menuHeight - 20);
+            this.contextMenu.item = null;
+            this.contextMenu.type = 'background';
+            this.contextMenu.show = true;
+            this._attachCloseListeners();
+        },
+
+        _attachCloseListeners() {
             const closeMenu = () => {
                 this.contextMenu.show = false;
                 window.removeEventListener('click', closeMenu);
@@ -275,6 +293,10 @@ document.addEventListener('alpine:init', () => {
                 window.addEventListener('click', closeMenu);
                 window.addEventListener('contextmenu', closeMenu);
             }, 50);
+        },
+
+        triggerFileUpload() {
+            this.$refs.fileUploadInput?.click();
         },
 
         startRenameFolder(folderName) {
@@ -744,11 +766,12 @@ document.addEventListener('alpine:init', () => {
 </div>
 <% } %>
 
-<div x-data="driveModule" x-cloak style="position:relative;"
+<div x-data="driveModule" x-cloak style="position:relative;min-height:200px;"
      @dragenter.prevent="isAtFileLevel ? onDragEnter($event) : null"
      @dragover.prevent
      @dragleave.prevent="isAtFileLevel ? onDragLeave($event) : null"
-     @drop.prevent="isAtFileLevel ? handleDrop($event) : null">
+     @drop.prevent="isAtFileLevel ? handleDrop($event) : null"
+     @contextmenu.prevent="openBackgroundContextMenu($event)">
 
     <!-- Drag overlay -->
     <div x-show="isDragging && isAtFileLevel" class="drive-dropzone-overlay" style="display:none;" x-transition.opacity>
@@ -890,7 +913,7 @@ document.addEventListener('alpine:init', () => {
             <label class="drive-btn-primary" x-show="!viewingGenerated && !selectMode">
                 <iconify-icon icon="solar:upload-bold" width="15"></iconify-icon>
                 Ajouter
-                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;">
+                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" x-ref="fileUploadInput">
             </label>
         </div>
 
@@ -1095,6 +1118,47 @@ document.addEventListener('alpine:init', () => {
              :style="'position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);z-index:999999;width:190px;padding:6px 0;animation:ctxFadeIn 0.12s ease-out;left:' + contextMenu.x + 'px;top:' + contextMenu.y + 'px;'"
              @click.outside="contextMenu.show = false">
             
+            <!-- Background Options (right-click on empty area) -->
+            <template x-if="contextMenu.type === 'background'">
+                <div>
+                    <template x-if="isAtFileLevel && !viewingGenerated">
+                        <div>
+                            <button @click="showNewFolderInput = true; contextMenu.show = false; $nextTick(() => $refs.folderInput?.focus())"
+                                    style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                                    onmouseover="this.style.background='#f8fafc';this.style.color='#4361ee';"
+                                    onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                                <iconify-icon icon="solar:folder-add-bold-duotone" style="color:#4361ee" width="18"></iconify-icon>
+                                Nouveau dossier
+                            </button>
+                            <button @click="triggerFileUpload(); contextMenu.show = false;"
+                                    style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                                    onmouseover="this.style.background='#f8fafc';this.style.color='#10b981';"
+                                    onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                                <iconify-icon icon="solar:upload-bold-duotone" style="color:#10b981" width="18"></iconify-icon>
+                                Importer des fichiers
+                            </button>
+                            <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+                        </div>
+                    </template>
+                    <template x-if="isAtFileLevel && displayFiles.length > 0">
+                        <button @click="selectMode = true; selectAll(); contextMenu.show = false;"
+                                style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                                onmouseover="this.style.background='#f8fafc';this.style.color='#8b5cf6';"
+                                onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                            <iconify-icon icon="solar:checklist-bold-duotone" style="color:#8b5cf6" width="18"></iconify-icon>
+                            Tout sélectionner
+                        </button>
+                    </template>
+                    <button @click="isAtFileLevel ? loadFiles() : loadGlobalDrive(); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#3b82f6';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:refresh-bold-duotone" style="color:#3b82f6" width="18"></iconify-icon>
+                        Actualiser
+                    </button>
+                </div>
+            </template>
+
             <!-- Folder Options -->
             <template x-if="contextMenu.type === 'folder' && contextMenu.item">
                 <div>

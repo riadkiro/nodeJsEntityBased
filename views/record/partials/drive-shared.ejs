@@ -1,0 +1,1231 @@
+<%
+/**
+ * drive-shared.ejs — Shared Drive partial
+ * 
+ * Used by:
+ *   - account-drive.ejs  → driveMode='global'
+ *   - record-module.ejs  → driveMode='record'
+ *
+ * Required EJS variables:
+ *   - driveMode:       'global' | 'record'
+ *   - account_number:  string
+ *
+ * Record mode also requires:
+ *   - entity:          { _id, name, icon, color, slug }
+ *   - record:          { _id, title, computedTitle }
+ *   - workspaceRole:   string (optional)
+ */
+%>
+
+<style>
+    .drive-breadcrumb { display:flex; align-items:center; gap:4px; margin-bottom:14px; flex-wrap:wrap; }
+    .drive-breadcrumb-item { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#94a3b8; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all 0.15s; }
+    .drive-breadcrumb-item:hover { color:#4361ee; background:#4361ee08; }
+    .drive-breadcrumb-item--active { color:#1e293b; cursor:default; }
+    .drive-breadcrumb-item--active:hover { color:#1e293b; background:transparent; }
+    .drive-breadcrumb-sep { display:inline-flex; align-items:center; gap:4px; color:#cbd5e1; }
+    .drive-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; }
+    .drive-btn-primary { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:10px; font-size:12px; font-weight:600; background:linear-gradient(135deg,#4361ee,#3b82f6); color:#fff; border:none; cursor:pointer; transition:all 0.2s; box-shadow:0 2px 8px #4361ee25; }
+    .drive-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px #4361ee35; }
+    .drive-btn-secondary { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:10px; font-size:12px; font-weight:600; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; cursor:pointer; transition:all 0.15s; }
+    .drive-btn-secondary:hover { background:#f1f5f9; border-color:#cbd5e1; color:#334155; }
+    .drive-dropzone-overlay { position:absolute; inset:0; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:rgba(255,255,255,0.95); border:3px dashed #4361ee; border-radius:16px; backdrop-filter:blur(4px); animation:drive-drop-in 0.2s ease; }
+    .drive-dropzone-overlay p { font-size:14px; font-weight:600; color:#4361ee; margin:0; }
+    .drive-dropzone-overlay span { font-size:11px; color:#94a3b8; }
+    @keyframes drive-drop-in { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+    .drive-new-folder { display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; }
+    .drive-new-folder-input { flex:1; border:none; background:transparent; font-size:13px; outline:none; color:#1e293b; }
+    .drive-new-folder-input::placeholder { color:#cbd5e1; }
+    .drive-new-folder-btn { padding:5px 14px; border-radius:8px; font-size:11px; font-weight:600; background:#4361ee; color:#fff; border:none; cursor:pointer; }
+    .drive-new-folder-btn:disabled { opacity:0.4; cursor:default; }
+    .drive-new-folder-cancel { background:none; border:none; cursor:pointer; color:#94a3b8; display:flex; padding:2px; }
+    .drive-new-folder-cancel:hover { color:#ef4444; }
+    .drive-upload-progress { display:flex; align-items:center; gap:10px; padding:10px 14px; margin-bottom:12px; background:#4361ee08; border:1px solid #4361ee20; border-radius:10px; font-size:12px; color:#4361ee; font-weight:500; }
+    .drive-progress-bar { flex:1; height:4px; background:#e2e8f0; border-radius:4px; overflow:hidden; }
+    .drive-progress-fill { height:100%; background:linear-gradient(90deg,#4361ee,#3b82f6); border-radius:4px; transition:width 0.3s; }
+    .drive-file-actions { display:flex; gap:2px; }
+    .drive-folder-item:hover { background:#f8fafc; }
+    .drive-folder-item--drop-target { background:#4361ee0a !important; box-shadow:inset 0 0 0 2px #4361ee40; border-radius:12px; }
+    .drive-empty { text-align:center; padding:40px 20px; color:#94a3b8; }
+    .rm-item[draggable='true'] { cursor:grab; }
+    .rm-item[draggable='true']:active { cursor:grabbing; opacity:0.6; }
+    .drive-img-thumb { width:40px; height:40px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+    .drive-pdf-wrap { position:relative; width:40px; height:40px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#f8fafc; }
+    .drive-pdf-wrap canvas { width:100%; height:100%; object-fit:cover; display:block; }
+    .drive-pdf-badge { position:absolute; bottom:2px; right:2px; font-size:7px; font-weight:800; text-transform:uppercase; padding:1px 4px; border-radius:3px; background:#ef4444; color:#fff; letter-spacing:.5px; line-height:1.3; }
+    .drive-rename-input { border:1.5px solid #4361ee; outline:none; border-radius:6px; padding:2px 8px; font-size:13px; font-weight:600; font-family:inherit; color:#1e293b; background:#fff; width:100%; box-sizing:border-box; }
+    .drive-rename-input:focus { box-shadow:0 0 0 3px #4361ee15; }
+    @keyframes shake { 0%,100% { transform:translateX(0); } 15%,45%,75% { transform:translateX(-4px); } 30%,60%,90% { transform:translateX(4px); } }
+
+    /* Shared rm-item styles (needed for global mode) */
+    .rm-items-list { display:flex; flex-direction:column; gap:2px; }
+    .rm-item {
+        display:flex; align-items:center; gap:14px; padding:14px 16px;
+        background:#fff; border-radius:10px; border:1px solid transparent;
+        transition:all .25s; cursor:pointer; animation:rmFadeIn .4s ease both;
+        position:relative;
+    }
+    .rm-item:hover { border-color:#e0e6ed; box-shadow:0 2px 8px rgba(0,0,0,.04); transform:translateX(2px); }
+    .rm-item-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative; }
+    .rm-item-body { flex:1; min-width:0; }
+    .rm-item-title { font-size:13.5px; font-weight:600; color:#0e1726; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rm-item-date { font-size:11.5px; color:#888da8; display:flex; align-items:center; gap:4px; margin-top:2px; }
+    .rm-item-badge { padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .rm-item-action { width:28px; height:28px; border:none; background:none; border-radius:6px; color:#bfc9d4; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    @keyframes rmFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes ctxFadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+    /* Global mode hero */
+    .drive-hero {
+        display:flex; align-items:center; gap:20px; padding:28px 32px;
+        background:linear-gradient(135deg, #ec489908, #ec489904);
+        border:1px solid #ec489920; border-radius:16px; margin-bottom:28px;
+        position:relative; overflow:hidden;
+    }
+    .drive-hero::before {
+        content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px;
+        background:radial-gradient(circle, #ec489912, transparent 70%);
+        border-radius:50%; pointer-events:none;
+    }
+    .drive-hero-icon {
+        width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+        background:linear-gradient(135deg, #ec489920, #ec489910); flex-shrink:0; position:relative; z-index:1;
+    }
+    .drive-hero-info { flex:1; z-index:1; }
+    .drive-hero-info h1 { font-size:20px; font-weight:700; color:#0e1726; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+    .drive-hero-info p { font-size:13px; color:#888da8; margin:0; }
+</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('driveModule', () => ({
+        // Mode
+        driveMode: '<%= typeof driveMode !== "undefined" ? driveMode : "record" %>',
+
+        // === Global mode state ===
+        globalEntities: [],
+        globalLevel: 'entities',
+        selectedEntity: null,
+        selectedRecord: null,
+        globalStats: { totalFiles: 0, totalSizeFormatted: '0 o' },
+
+        // === Record/File mode state ===
+        allFiles: [],
+        loading: true,
+        uploading: false,
+        uploadProgress: 0,
+        uploadCount: 0,
+        isDragging: false,
+        draggedFileId: null,
+        dropTargetFolder: null,
+        currentFolder: '',
+        viewingGenerated: '',
+        showNewFolderInput: false,
+        newFolderName: '',
+        customFolders: [],
+        _accountNumber: '<%= account_number %>',
+        _recordId: '<%= (typeof record !== "undefined" && record) ? record._id : "" %>',
+        selectedIds: [],
+        selectMode: false,
+        confirmingBulkDelete: false,
+        confirmDeleteFileId: null,
+        isAdmin: <%= (typeof workspaceRole !== 'undefined' && ['owner', 'admin'].includes(workspaceRole)) ? 'true' : 'true' %>,
+        contextMenu: { show: false, x: 0, y: 0, type: null, item: null },
+        renamingFolderOldName: null,
+        renameFolderValue: '',
+        showRenameFolderModal: false,
+        deletingFolderName: null,
+        showDeleteFolderModal: false,
+        uploadWarning: { show: false, title: '', message: '', files: [] },
+        renamingFileId: null,
+        renameValue: '',
+
+        // === Init ===
+        async init() {
+            if (this.driveMode === 'global') {
+                await this.loadGlobalDrive();
+            } else {
+                await this.loadFiles();
+            }
+        },
+
+        // ═══════════════════════════════════════
+        // GLOBAL MODE METHODS
+        // ═══════════════════════════════════════
+
+        async loadGlobalDrive() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/drive`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    this.globalEntities = data.entities;
+                    this.globalStats = data.stats;
+                }
+            } catch(e) { console.error('[Drive] Global load error:', e); }
+            this.loading = false;
+        },
+
+        selectEntity(entity) {
+            this.selectedEntity = entity;
+            this.globalLevel = 'records';
+        },
+
+        selectRecord(record) {
+            this.selectedRecord = record;
+            this._recordId = record.recordId;
+            this.globalLevel = 'files';
+            this.loadFiles();
+        },
+
+        globalGoBack() {
+            if (this.globalLevel === 'files') {
+                if (this.currentFolder || this.viewingGenerated) {
+                    this.currentFolder = '';
+                    this.viewingGenerated = '';
+                } else {
+                    this.globalLevel = 'records';
+                    this.selectedRecord = null;
+                    this._recordId = '';
+                    this.allFiles = [];
+                    this.customFolders = [];
+                    this.currentFolder = '';
+                    this.viewingGenerated = '';
+                }
+            } else if (this.globalLevel === 'records') {
+                this.globalLevel = 'entities';
+                this.selectedEntity = null;
+            }
+        },
+
+        get globalBreadcrumb() {
+            const crumbs = [{ label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', level: 'entities' }];
+            if (this.selectedEntity) {
+                crumbs.push({ label: this.selectedEntity.entityName, icon: this.selectedEntity.entityIcon, color: this.selectedEntity.entityColor, level: 'records' });
+            }
+            if (this.selectedRecord) {
+                crumbs.push({ label: this.selectedRecord.recordTitle, icon: 'solar:folder-bold-duotone', color: '#f59e0b', level: 'files' });
+            }
+            if (this.currentFolder) {
+                crumbs.push({ label: this.currentFolder, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'folder' });
+            }
+            if (this.viewingGenerated) {
+                crumbs.push({ label: this.viewingGenerated, icon: 'solar:magic-stick-3-bold', color: '#f59e0b', level: 'generated' });
+            }
+            return crumbs;
+        },
+
+        globalNavigateTo(level) {
+            if (level === 'entities') {
+                this.globalLevel = 'entities';
+                this.selectedEntity = null;
+                this.selectedRecord = null;
+                this._recordId = '';
+                this.allFiles = [];
+                this.customFolders = [];
+                this.currentFolder = '';
+                this.viewingGenerated = '';
+            } else if (level === 'records') {
+                this.globalLevel = 'records';
+                this.selectedRecord = null;
+                this._recordId = '';
+                this.allFiles = [];
+                this.customFolders = [];
+                this.currentFolder = '';
+                this.viewingGenerated = '';
+            } else if (level === 'files') {
+                this.currentFolder = '';
+                this.viewingGenerated = '';
+            }
+        },
+
+        get isAtFileLevel() {
+            return this.driveMode === 'record' || this.globalLevel === 'files';
+        },
+
+        // ═══════════════════════════════════════
+        // SHARED FILE-LEVEL METHODS
+        // ═══════════════════════════════════════
+
+        toggleSelectMode() {
+            this.selectMode = !this.selectMode;
+            if (!this.selectMode) this.selectedIds = [];
+        },
+
+        openContextMenu(e, item, type) {
+            if (!this.isAdmin) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const menuWidth = 190;
+            const menuHeight = 160;
+            this.contextMenu.x = Math.min(e.clientX, window.innerWidth - menuWidth - 20);
+            this.contextMenu.y = Math.min(e.clientY, window.innerHeight - menuHeight - 20);
+            this.contextMenu.item = item;
+            this.contextMenu.type = type;
+            this.contextMenu.show = true;
+            const closeMenu = () => {
+                this.contextMenu.show = false;
+                window.removeEventListener('click', closeMenu);
+                window.removeEventListener('contextmenu', closeMenu);
+            };
+            setTimeout(() => {
+                window.addEventListener('click', closeMenu);
+                window.addEventListener('contextmenu', closeMenu);
+            }, 50);
+        },
+
+        startRenameFolder(folderName) {
+            this.renamingFolderOldName = folderName;
+            this.renameFolderValue = folderName;
+        },
+        
+        cancelRenameFolder() {
+            this.renamingFolderOldName = null;
+            this.renameFolderValue = '';
+        },
+
+        async confirmRenameFolder() {
+            const oldName = this.renamingFolderOldName;
+            const newName = this.renameFolderValue.trim();
+            if (!newName || newName === oldName) {
+                this.renamingFolderOldName = null;
+                return;
+            }
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/drive-folders/${encodeURIComponent(oldName)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ newName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const idx = this.customFolders.indexOf(oldName);
+                    if (idx !== -1) this.customFolders.splice(idx, 1, newName);
+                    this.allFiles.forEach(f => { if (f.folder === oldName) f.folder = newName; });
+                    if (window.showMessage) window.showMessage('Dossier renommé', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur lors du renommage', 'danger') : alert(data.error || 'Erreur lors du renommage');
+                }
+            } catch (e) {
+                console.error('[Drive] Rename folder error:', e);
+                window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
+            }
+            this.renamingFolderOldName = null;
+        },
+
+        startDeleteFolder(folderName) {
+            this.deletingFolderName = folderName;
+            this.showDeleteFolderModal = true;
+        },
+
+        async confirmDeleteFolder() {
+            const folderName = this.deletingFolderName;
+            if (!folderName) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/drive-folders/${encodeURIComponent(folderName)}`, {
+                    method: 'DELETE', credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.customFolders = this.customFolders.filter(f => f !== folderName);
+                    this.allFiles.forEach(f => { if (f.folder === folderName) f.folder = ''; });
+                    if (window.showMessage) window.showMessage('Dossier supprimé', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
+                }
+            } catch (e) {
+                console.error('[Drive] Delete folder error:', e);
+                window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
+            }
+            this.showDeleteFolderModal = false;
+        },
+
+        toggleSelect(id) {
+            const idx = this.selectedIds.indexOf(id);
+            if (idx >= 0) this.selectedIds.splice(idx, 1);
+            else this.selectedIds.push(id);
+        },
+
+        isSelected(id) {
+            return this.selectedIds.includes(id);
+        },
+
+        selectAll() {
+            if (this.selectedIds.length === this.displayFiles.length) {
+                this.selectedIds = [];
+            } else {
+                this.selectedIds = this.displayFiles.map(f => f._id);
+            }
+        },
+
+        async bulkDelete() {
+            const count = this.selectedIds.length;
+            if (count === 0) return;
+            this.confirmingBulkDelete = true;
+        },
+
+        async executeBulkDelete() {
+            const count = this.selectedIds.length;
+            this.confirmingBulkDelete = false;
+            if (count === 0) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/bulk-delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ ids: [...this.selectedIds] })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const deletedSet = new Set(this.selectedIds);
+                    for (let i = this.allFiles.length - 1; i >= 0; i--) {
+                        if (deletedSet.has(this.allFiles[i]._id)) this.allFiles.splice(i, 1);
+                    }
+                    this.selectedIds = [];
+                    this.selectMode = false;
+                    if (window.showMessage) window.showMessage(data.deletedCount + ' fichier(s) supprimé(s)', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
+                }
+            } catch (e) {
+                console.error('[Drive] Bulk delete error:', e);
+                window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
+            }
+        },
+
+        get generatedCount() {
+            return this.allFiles.filter(f => f.isGenerated).length;
+        },
+
+        get generatedTemplateFolders() {
+            if (this.currentFolder || this.viewingGenerated) return [];
+            const map = {};
+            this.allFiles.filter(f => f.isGenerated).forEach(f => {
+                const tplName = f.generatedFromName || 'Autres documents';
+                if (!map[tplName]) map[tplName] = { name: tplName, count: 0, lastDate: null };
+                map[tplName].count++;
+                const d = new Date(f.uploadedAt);
+                if (!map[tplName].lastDate || d > map[tplName].lastDate) map[tplName].lastDate = d;
+            });
+            return Object.values(map).sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
+        },
+
+        get displayFolders() {
+            if (this.currentFolder || this.viewingGenerated) return [];
+            const folderMap = {};
+            this.allFiles.filter(f => !f.isGenerated && f.folder).forEach(f => {
+                folderMap[f.folder] = (folderMap[f.folder] || 0) + 1;
+            });
+            this.customFolders.forEach(name => {
+                if (!folderMap[name]) folderMap[name] = 0;
+            });
+            return Object.entries(folderMap)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        get displayFiles() {
+            if (this.viewingGenerated) {
+                return this.allFiles.filter(f => f.isGenerated && (f.generatedFromName || 'Autres documents') === this.viewingGenerated)
+                    .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+            }
+            return this.allFiles
+                .filter(f => !f.isGenerated && (f.folder || '') === this.currentFolder)
+                .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+        },
+
+        async loadFiles() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success && data.attachments) {
+                    this.allFiles = data.attachments;
+                }
+                if (data.driveFolders && Array.isArray(data.driveFolders)) {
+                    this.customFolders = data.driveFolders;
+                }
+            } catch (e) {
+                console.error('[Drive] Load error:', e);
+            }
+            this.loading = false;
+        },
+
+        navigateTo(folder) {
+            this.currentFolder = folder;
+            this.viewingGenerated = '';
+        },
+
+        async createFolder() {
+            const name = this.newFolderName.trim();
+            if (!name) return;
+            if (this.customFolders.includes(name) || this.allFiles.some(f => f.folder === name)) {
+                window.showMessage ? window.showMessage('Ce dossier existe déjà', 'danger') : alert('Ce dossier existe déjà');
+                return;
+            }
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/drive-folders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.customFolders.push(name);
+                    if (window.showMessage) window.showMessage('Dossier créé', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur', 'danger') : alert(data.error || 'Erreur');
+                }
+            } catch (e) {
+                console.error('[Drive] Create folder error:', e);
+                window.showMessage ? window.showMessage('Erreur lors de la création', 'danger') : alert('Erreur lors de la création');
+            }
+            this.newFolderName = '';
+            this.showNewFolderInput = false;
+        },
+
+        handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) this.uploadFiles(files);
+            e.target.value = '';
+        },
+
+        _dragCounter: 0,
+
+        startDragFile(e, fileId) {
+            this.draggedFileId = fileId;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', fileId);
+        },
+
+        onFolderDragEnter(e, folderName) {
+            e.preventDefault();
+            if (this.draggedFileId) this.dropTargetFolder = folderName;
+        },
+
+        onFolderDragLeave(e, folderName) {
+            if (this.dropTargetFolder === folderName) this.dropTargetFolder = null;
+        },
+
+        onFolderDrop(e, folderName) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (this.draggedFileId) {
+                this.moveFileToFolder(this.draggedFileId, folderName);
+                this.draggedFileId = null;
+                this.dropTargetFolder = null;
+                return;
+            }
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const prevFolder = this.currentFolder;
+                this.currentFolder = folderName;
+                this.uploadFiles(files);
+                this.currentFolder = prevFolder;
+            }
+        },
+
+        onDragEnd() {
+            this.draggedFileId = null;
+            this.dropTargetFolder = null;
+        },
+
+        async moveFileToFolder(fileId, folderName) {
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${fileId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ folder: folderName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const file = this.allFiles.find(f => f._id === fileId);
+                    if (file) file.folder = folderName;
+                    if (window.showMessage) window.showMessage('Fichier déplacé', 'success');
+                }
+            } catch (e) {
+                console.error('[Drive] Move error:', e);
+            }
+        },
+
+        onDragEnter(e) {
+            if (this.viewingGenerated) return;
+            if (this.draggedFileId) return;
+            this._dragCounter++;
+            if (e.dataTransfer?.types?.includes('Files')) this.isDragging = true;
+        },
+
+        onDragLeave(e) {
+            if (this.draggedFileId) return;
+            this._dragCounter--;
+            if (this._dragCounter <= 0) { this._dragCounter = 0; this.isDragging = false; }
+        },
+
+        handleDrop(e) {
+            this._dragCounter = 0;
+            this.isDragging = false;
+            if (this.draggedFileId) { this.draggedFileId = null; this.dropTargetFolder = null; return; }
+            const files = e.dataTransfer.files;
+            if (files.length > 0) this.uploadFiles(files);
+        },
+
+        async uploadFiles(fileList) {
+            this.uploading = true;
+            this.uploadProgress = 0;
+            this.uploadCount = fileList.length;
+            const formData = new FormData();
+            for (const file of fileList) formData.append('files', file);
+            formData.append('folder', this.currentFolder);
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                });
+                await new Promise((resolve, reject) => {
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const data = JSON.parse(xhr.responseText);
+                                if (data.success && data.attachments) {
+                                    data.attachments.forEach(a => { a.folder = this.currentFolder; });
+                                    this.allFiles.push(...data.attachments);
+                                }
+                            } catch (e) { /* ignore */ }
+                            resolve();
+                        } else {
+                            let errMsg = 'Erreur lors de l\'upload';
+                            try { const errData = JSON.parse(xhr.responseText); if (errData.error) errMsg = errData.error; } catch(e) {}
+                            reject(new Error(errMsg));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Erreur réseau'));
+                    xhr.open('POST', `/account/${this._accountNumber}/api/records/${this._recordId}/attachments`);
+                    xhr.withCredentials = true;
+                    xhr.send(formData);
+                });
+                if (window.showMessage) window.showMessage(this.uploadCount + ' fichier(s) ajouté(s)', 'success');
+            } catch (e) {
+                console.error('[Drive] Upload error:', e);
+                const msg = e.message || 'Erreur lors de l\'upload';
+                const isSecurity = msg.includes('interdit') || msg.includes('falsifié') || msg.includes('corrompu') || msg.includes('sécurité') || msg.includes('autorisé');
+                if (isSecurity) {
+                    this.uploadWarning = { show: true, title: 'Fichier bloqué par la sécurité', message: msg, files: Array.from(fileList).map(f => f.name) };
+                } else {
+                    this.uploadWarning = { show: true, title: 'Erreur d\'upload', message: msg, files: [] };
+                }
+            }
+            this.uploading = false;
+            this.uploadProgress = 0;
+        },
+
+        async deleteFile(file) {
+            if (!file._id) {
+                window.showMessage ? window.showMessage('Ce fichier ne peut pas être supprimé (ID manquant).', 'danger') : alert('Ce fichier ne peut pas être supprimé (ID manquant). Rechargez la page.');
+                return;
+            }
+            if (this.confirmDeleteFileId !== file._id) {
+                this.confirmDeleteFileId = file._id;
+                setTimeout(() => { if (this.confirmDeleteFileId === file._id) this.confirmDeleteFileId = null; }, 3000);
+                return;
+            }
+            this.confirmDeleteFileId = null;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${file._id}`, {
+                    method: 'DELETE', credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const idx = this.allFiles.findIndex(f => f._id === file._id);
+                    if (idx !== -1) this.allFiles.splice(idx, 1);
+                    this.selectedIds = this.selectedIds.filter(id => id !== file._id);
+                    if (window.showMessage) window.showMessage('Fichier supprimé', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
+                }
+            } catch (e) {
+                console.error('[Drive] Delete error:', e);
+                window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
+            }
+        },
+
+        startRename(file) {
+            this.renamingFileId = file._id;
+            this.renameValue = file.originalName;
+        },
+
+        cancelRename() {
+            this.renamingFileId = null;
+            this.renameValue = '';
+        },
+
+        async confirmRename(file) {
+            const newName = this.renameValue.trim();
+            if (!newName || newName === file.originalName) { this.cancelRename(); return; }
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${file._id}`, {
+                    method: 'PATCH', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ originalName: newName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const f = this.allFiles.find(f => f._id === file._id);
+                    if (f) f.originalName = newName;
+                    if (window.showMessage) window.showMessage('Fichier renommé', 'success');
+                }
+            } catch (e) {
+                console.error('[Drive] Rename error:', e);
+            }
+            this.cancelRename();
+        },
+
+        formatDate(dateStr) {
+            if (!dateStr) return '';
+            return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        },
+
+        getCategoryIcon(cat) {
+            const map = { image: 'solar:gallery-bold-duotone', pdf: 'solar:file-text-bold-duotone', word: 'solar:document-bold-duotone', excel: 'solar:chart-square-bold-duotone', video: 'solar:videocamera-record-bold-duotone', audio: 'solar:music-note-2-bold-duotone' };
+            return map[cat] || 'solar:file-bold-duotone';
+        },
+
+        getCategoryColor(cat) {
+            const map = { image: '#8b5cf6', pdf: '#ef4444', word: '#3b82f6', excel: '#10b981', video: '#f59e0b', audio: '#ec4899' };
+            return map[cat] || '#6b7280';
+        },
+
+        async renderPdfThumb(url, canvas, size) {
+            try {
+                if (!window.pdfjsLib) return;
+                const pdf = await window.pdfjsLib.getDocument(url).promise;
+                const page = await pdf.getPage(1);
+                const vp = page.getViewport({ scale: 1 });
+                const scale = (size * 2) / Math.min(vp.width, vp.height);
+                const viewport = page.getViewport({ scale });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            } catch (e) { /* silently ignore */ }
+        }
+    }));
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- HTML TEMPLATE                                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<% if (driveMode === 'global') { %>
+<!-- Global Drive Hero -->
+<div class="drive-hero">
+    <div class="drive-hero-icon">
+        <iconify-icon icon="solar:cloud-storage-bold-duotone" width="28" style="color:#ec4899"></iconify-icon>
+    </div>
+    <div class="drive-hero-info">
+        <h1>
+            <iconify-icon icon="solar:cloud-storage-bold-duotone" width="24" style="color:#ec4899"></iconify-icon>
+            Drive
+        </h1>
+        <p>Tous vos fichiers et documents organisés par entité</p>
+    </div>
+</div>
+<% } %>
+
+<div x-data="driveModule" x-cloak style="position:relative;"
+     @dragenter.prevent="isAtFileLevel ? onDragEnter($event) : null"
+     @dragover.prevent
+     @dragleave.prevent="isAtFileLevel ? onDragLeave($event) : null"
+     @drop.prevent="isAtFileLevel ? handleDrop($event) : null">
+
+    <!-- Drag overlay -->
+    <div x-show="isDragging && isAtFileLevel" class="drive-dropzone-overlay" style="display:none;" x-transition.opacity>
+        <iconify-icon icon="solar:cloud-upload-bold-duotone" width="48" style="color:#4361ee;"></iconify-icon>
+        <p>Déposez vos fichiers ici</p>
+        <span x-text="currentFolder ? 'dans ' + currentFolder : 'dans le Drive'"></span>
+    </div>
+
+    <!-- ═══ BREADCRUMB ═══ -->
+    <% if (driveMode === 'global') { %>
+    <!-- Global breadcrumb (fully dynamic) -->
+    <div class="drive-breadcrumb">
+        <template x-for="(crumb, ci) in globalBreadcrumb" :key="ci">
+            <span style="display:inline-flex;align-items:center;">
+                <template x-if="ci > 0">
+                    <span class="drive-breadcrumb-sep"><iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon></span>
+                </template>
+                <button @click="ci < globalBreadcrumb.length - 1 ? globalNavigateTo(crumb.level) : null"
+                        class="drive-breadcrumb-item" :class="ci === globalBreadcrumb.length - 1 ? 'drive-breadcrumb-item--active' : ''">
+                    <iconify-icon :icon="crumb.icon" width="14" :style="'color:' + crumb.color"></iconify-icon>
+                    <span x-text="crumb.label"></span>
+                </button>
+            </span>
+        </template>
+    </div>
+    <% } else { %>
+    <!-- Record breadcrumb (static EJS + dynamic folder) -->
+    <div class="drive-breadcrumb">
+        <a href="/account/<%= account_number %>/drive" class="drive-breadcrumb-item" style="text-decoration:none;">
+            <iconify-icon icon="solar:cloud-storage-bold-duotone" width="14" style="color:#ec4899"></iconify-icon>
+            Drive
+        </a>
+        <span class="drive-breadcrumb-sep"><iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon></span>
+        <a href="/account/<%= account_number %>/drive" class="drive-breadcrumb-item" style="text-decoration:none;">
+            <iconify-icon icon="<%= entity.icon || 'solar:folder-bold-duotone' %>" width="14" style="color:<%= entity.color || '#4361ee' %>"></iconify-icon>
+            <%= entity.name %>
+        </a>
+        <span class="drive-breadcrumb-sep"><iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon></span>
+        <button @click="navigateTo('')" class="drive-breadcrumb-item" :class="!currentFolder && !viewingGenerated ? 'drive-breadcrumb-item--active' : ''">
+            <iconify-icon icon="solar:folder-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
+            <%= record.computedTitle || record.title || 'Sans titre' %>
+        </button>
+        <template x-if="viewingGenerated">
+            <span class="drive-breadcrumb-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <span class="drive-breadcrumb-item drive-breadcrumb-item--active">
+                    <iconify-icon icon="solar:magic-stick-3-bold" width="13" style="color:#f59e0b"></iconify-icon>
+                    <span x-text="viewingGenerated"></span>
+                </span>
+            </span>
+        </template>
+        <template x-if="currentFolder && !viewingGenerated">
+            <span class="drive-breadcrumb-sep">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <span class="drive-breadcrumb-item drive-breadcrumb-item--active" x-text="currentFolder"></span>
+            </span>
+        </template>
+    </div>
+    <% } %>
+
+    <!-- ═══ GLOBAL MODE: Entity / Record navigation ═══ -->
+    <% if (driveMode === 'global') { %>
+
+    <!-- Loading -->
+    <div x-show="loading" style="text-align:center; padding:40px 0; color:#94a3b8;">
+        <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+    </div>
+
+    <!-- Entity list -->
+    <div x-show="globalLevel === 'entities' && !loading" class="rm-items-list">
+        <template x-for="(ent, eIdx) in globalEntities" :key="ent.entityId">
+            <div class="rm-item" @click="selectEntity(ent)" :style="'animation-delay:' + (eIdx * 40) + 'ms'">
+                <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (ent.entityColor||'#4361ee') + '15,' + (ent.entityColor||'#4361ee') + '08)'">
+                    <iconify-icon :icon="ent.entityIcon || 'solar:database-bold-duotone'" width="20" :style="'color:' + (ent.entityColor||'#4361ee')"></iconify-icon>
+                </div>
+                <div class="rm-item-body">
+                    <div class="rm-item-title" x-text="ent.entityName"></div>
+                    <div class="rm-item-date">
+                        <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
+                        <span x-text="ent.fileCount + ' fichier(s) • ' + ent.records.length + ' fiche(s)'"></span>
+                    </div>
+                </div>
+                <span class="rm-item-badge" :style="'background:' + (ent.entityColor||'#4361ee') + '10;color:' + (ent.entityColor||'#4361ee')">Entité</span>
+                <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+            </div>
+        </template>
+        <div x-show="globalEntities.length === 0" class="drive-empty">
+            <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.15"></iconify-icon>
+            <p style="font-size:13px; font-weight:600; margin-top:12px;">Aucune entité avec des fichiers</p>
+        </div>
+    </div>
+
+    <!-- Record list -->
+    <div x-show="globalLevel === 'records' && !loading" class="rm-items-list">
+        <template x-for="(rec, rIdx) in (selectedEntity ? selectedEntity.records : [])" :key="rec.recordId">
+            <div class="rm-item" @click="selectRecord(rec)" :style="'animation-delay:' + (rIdx * 40) + 'ms'">
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                </div>
+                <div class="rm-item-body">
+                    <div class="rm-item-title" x-text="rec.recordTitle"></div>
+                    <div class="rm-item-date">
+                        <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
+                        <span x-text="rec.fileCount + ' fichier(s)'"></span>
+                    </div>
+                </div>
+                <span class="rm-item-badge" style="background:#f59e0b10;color:#f59e0b">Fiche</span>
+                <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+            </div>
+        </template>
+    </div>
+
+    <% } %>
+
+    <!-- ═══ FILE LEVEL (shared between both modes) ═══ -->
+    <div x-show="isAtFileLevel">
+
+        <!-- Toolbar -->
+        <div class="drive-toolbar">
+            <div style="display:flex;gap:8px;">
+                <% if (driveMode === 'global') { %>
+                <button @click="globalGoBack()" class="drive-btn-secondary">
+                    <iconify-icon icon="solar:alt-arrow-left-linear" width="15"></iconify-icon>
+                    Retour
+                </button>
+                <% } %>
+                <button @click="showNewFolderInput = !showNewFolderInput; $nextTick(() => $refs.folderInput?.focus())" class="drive-btn-secondary" x-show="!viewingGenerated && !currentFolder && !selectMode">
+                    <iconify-icon icon="solar:folder-add-bold" width="15"></iconify-icon>
+                    Nouveau dossier
+                </button>
+                <!-- Select mode toggle -->
+                <button @click="toggleSelectMode()" class="drive-btn-secondary" x-show="displayFiles.length > 0"
+                    :style="selectMode ? 'background:#4361ee10;color:#4361ee;border-color:#4361ee30;' : ''">
+                    <iconify-icon :icon="selectMode ? 'solar:check-square-bold' : 'solar:checkbox-minimalistic-bold-duotone'" width="15"></iconify-icon>
+                    <span x-text="selectMode ? 'Annuler' : 'Sélectionner'"></span>
+                </button>
+            </div>
+            <label class="drive-btn-primary" x-show="!viewingGenerated && !selectMode">
+                <iconify-icon icon="solar:upload-bold" width="15"></iconify-icon>
+                Ajouter
+                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;">
+            </label>
+        </div>
+
+        <!-- Bulk action bar (visible in select mode) -->
+        <div x-show="selectMode" x-transition style="display:flex;flex-direction:column;gap:8px;padding:10px 14px;margin-bottom:12px;background:#4361ee08;border:1px solid #4361ee20;border-radius:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#4361ee;">
+                        <input type="checkbox" @click="selectAll()"
+                            :checked="selectedIds.length > 0 && selectedIds.length === displayFiles.length"
+                            :indeterminate="selectedIds.length > 0 && selectedIds.length < displayFiles.length"
+                            style="width:14px;height:14px;accent-color:#4361ee;cursor:pointer;">
+                        Tout sélectionner
+                    </label>
+                    <span x-show="selectedIds.length > 0" style="font-size:12px;color:#64748b;" x-text="selectedIds.length + ' sélectionné(s)'"></span>
+                </div>
+                <!-- Normal delete button -->
+                <button @click="bulkDelete()" x-show="selectedIds.length > 0 && !confirmingBulkDelete"
+                    style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;background:#ef444415;color:#ef4444;border:1px solid #ef444430;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">
+                    <iconify-icon icon="solar:trash-bin-2-bold" width="14"></iconify-icon>
+                    <span x-text="'Supprimer (' + selectedIds.length + ')'"></span>
+                </button>
+            </div>
+            <!-- Confirmation row -->
+            <div x-show="confirmingBulkDelete" x-transition style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#ef44440d;border:1px solid #ef444430;border-radius:8px;">
+                <span style="font-size:12px;font-weight:600;color:#ef4444;display:flex;align-items:center;gap:6px;">
+                    <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
+                    <span x-text="'Supprimer définitivement ' + selectedIds.length + ' fichier(s) ?'"></span>
+                </span>
+                <div style="display:flex;gap:6px;">
+                    <button @click="confirmingBulkDelete = false" style="padding:4px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;">Annuler</button>
+                    <button @click="executeBulkDelete()" style="padding:4px 12px;border-radius:6px;border:none;background:#ef4444;color:#fff;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                        <iconify-icon icon="solar:trash-bin-2-bold" width="12"></iconify-icon>
+                        Oui, supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- New folder input -->
+        <div x-show="showNewFolderInput" x-transition class="drive-new-folder">
+            <iconify-icon icon="solar:folder-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
+            <input type="text" x-model="newFolderName" @keydown.enter="createFolder()" @keydown.escape="showNewFolderInput = false; newFolderName = ''"
+                placeholder="Nom du dossier..." class="drive-new-folder-input" x-ref="folderInput">
+            <button @click="createFolder()" class="drive-new-folder-btn" :disabled="!newFolderName.trim()">Créer</button>
+            <button @click="showNewFolderInput = false; newFolderName = ''" class="drive-new-folder-cancel">
+                <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+            </button>
+        </div>
+
+        <!-- Upload progress -->
+        <div x-show="uploading" class="drive-upload-progress">
+            <iconify-icon icon="line-md:uploading-loop" width="20" style="color:#4361ee"></iconify-icon>
+            <span x-text="'Upload en cours... ' + uploadCount + ' fichier(s)'"></span>
+            <div class="drive-progress-bar"><div class="drive-progress-fill" :style="'width:' + uploadProgress + '%'"></div></div>
+        </div>
+
+        <!-- Loading -->
+        <div x-show="loading" style="text-align:center; padding:40px 0; color:#94a3b8;">
+            <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+        </div>
+
+        <!-- Content -->
+        <div x-show="!loading" class="rm-items-list">
+            <!-- Generated template folders (root only) -->
+            <template x-for="(tplFolder, tIdx) in generatedTemplateFolders" :key="tplFolder.name">
+                <div class="rm-item drive-folder-item" @click="viewingGenerated = tplFolder.name" style="cursor:pointer;" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                        <iconify-icon icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
+                    </div>
+                    <div class="rm-item-body">
+                        <div class="rm-item-title" x-text="tplFolder.name"></div>
+                        <div class="rm-item-date"><iconify-icon icon="solar:magic-stick-3-bold" width="12" style="color:#f59e0b"></iconify-icon> <span x-text="tplFolder.count + ' fichier(s)'"></span></div>
+                    </div>
+                    <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Auto</span>
+                    <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                </div>
+            </template>
+
+            <!-- Custom folders (root only) -->
+            <template x-for="(folder, idx) in displayFolders" :key="folder.name">
+                <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : navigateTo(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
+                     :class="dropTargetFolder === folder.name ? 'drive-folder-item--drop-target' : ''"
+                     @dragover.prevent @dragenter.prevent="onFolderDragEnter($event, folder.name)"
+                     @dragleave="onFolderDragLeave($event, folder.name)" @drop="onFolderDrop($event, folder.name)"
+                     @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                    </div>
+                    <div class="rm-item-body" style="min-width:0;">
+                        <template x-if="renamingFolderOldName !== folder.name">
+                            <div class="rm-item-title" x-text="folder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                        </template>
+                        <template x-if="renamingFolderOldName === folder.name">
+                            <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameFolder()" @click.stop />
+                        </template>
+                        <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
+                    </div>
+                    <template x-if="renamingFolderOldName !== folder.name">
+                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                    </template>
+                    <template x-if="renamingFolderOldName !== folder.name">
+                        <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Files -->
+            <template x-for="(file, idx) in displayFiles" :key="file._id">
+                <div class="rm-item" :style="'animation-delay:' + ((displayFolders.length + idx) * 40) + 'ms;' + (isSelected(file._id) ? 'background:#4361ee06;border-left:3px solid #4361ee40;' : '')"
+                     style="cursor:pointer;"
+                     :draggable="!file.isGenerated && !selectMode && renamingFileId !== file._id"
+                     @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()"
+                     @click="selectMode ? toggleSelect(file._id) : (renamingFileId !== file._id && !selectMode ? window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx) : null)"
+                     @contextmenu.prevent="openContextMenu($event, file, 'file')">
+                    <!-- Checkbox in select mode -->
+                    <template x-if="selectMode">
+                        <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" @click.stop="toggleSelect(file._id)">
+                            <input type="checkbox" :checked="isSelected(file._id)"
+                                style="width:16px;height:16px;accent-color:#4361ee;cursor:pointer;"
+                                @click.stop="toggleSelect(file._id)">
+                        </div>
+                    </template>
+                    <template x-if="file.category === 'image' && !selectMode">
+                        <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" />
+                    </template>
+                    <template x-if="file.category === 'image' && selectMode">
+                        <img :src="file.url" :alt="file.originalName" class="drive-img-thumb" style="opacity:0.8;" />
+                    </template>
+                    <template x-if="file.category === 'pdf'">
+                        <div class="drive-pdf-wrap">
+                            <canvas x-init="renderPdfThumb(file.url, $el, 40)" width="40" height="40"></canvas>
+                            <span class="drive-pdf-badge">PDF</span>
+                        </div>
+                    </template>
+                    <template x-if="file.category !== 'image' && file.category !== 'pdf'">
+                        <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + getCategoryColor(file.category) + '15,' + getCategoryColor(file.category) + '08)'">
+                            <iconify-icon :icon="getCategoryIcon(file.category)" width="20" :style="'color:' + getCategoryColor(file.category)"></iconify-icon>
+                        </div>
+                    </template>
+                    <div class="rm-item-body" style="min-width:0;">
+                        <template x-if="renamingFileId !== file._id">
+                            <div class="rm-item-title" x-text="file.originalName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                        </template>
+                        <template x-if="renamingFileId === file._id">
+                            <input type="text" class="drive-rename-input" x-model="renameValue" @keydown.enter="confirmRename(file)" @keydown.escape="cancelRename()" x-init="$nextTick(() => $el.focus())" @blur="confirmRename(file)" />
+                        </template>
+                        <div class="rm-item-date">
+                            <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                            <span x-text="formatDate(file.uploadedAt)"></span>
+                            <template x-if="file.isGenerated && file.generatedFromName">
+                                <span style="margin-left:4px;color:#f59e0b;">· <span x-text="file.generatedFromName"></span></span>
+                            </template>
+                        </div>
+                    </div>
+                    <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
+                    <div class="drive-file-actions" x-show="!selectMode">
+                        <template x-if="confirmDeleteFileId !== file._id">
+                            <div style="display:flex;gap:2px;">
+                                <button @click.stop="window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
+                                <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
+                                <a :href="file.url + '?dl=' + encodeURIComponent(file.originalName)" :download="file.originalName" class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
+                                <button @click.stop="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
+                            </div>
+                        </template>
+                        <template x-if="confirmDeleteFileId === file._id">
+                            <div style="display:flex;align-items:center;gap:4px;">
+                                <button @click.stop="deleteFile(file)" style="display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:6px;background:#ef4444;color:#fff;border:none;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;line-height:1.3;">
+                                    <iconify-icon icon="solar:trash-bin-2-bold" width="11"></iconify-icon> Oui
+                                </button>
+                                <button @click.stop="confirmDeleteFileId = null" style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;line-height:1.3;">Non</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Empty states -->
+            <div x-show="displayFiles.length === 0 && displayFolders.length === 0 && generatedCount === 0 && !currentFolder && !viewingGenerated" class="drive-empty">
+                <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.15"></iconify-icon>
+                <p style="font-size:13px; font-weight:600; margin-top:12px;">Aucun fichier</p>
+                <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Utilisez le bouton "Ajouter" pour importer des fichiers</p>
+            </div>
+            <div x-show="displayFiles.length === 0 && (currentFolder || viewingGenerated)" class="drive-empty">
+                <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.2"></iconify-icon>
+                <p style="font-size:13px; font-weight:600; margin-top:12px;">Dossier vide</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <template x-teleport="body">
+        <div x-show="contextMenu.show"
+             x-cloak
+             :style="'position:fixed;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);z-index:999999;width:190px;padding:6px 0;animation:ctxFadeIn 0.12s ease-out;left:' + contextMenu.x + 'px;top:' + contextMenu.y + 'px;'"
+             @click.outside="contextMenu.show = false">
+            
+            <!-- Folder Options -->
+            <template x-if="contextMenu.type === 'folder' && contextMenu.item">
+                <div>
+                    <button @click="navigateTo(contextMenu.item.name); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#4361ee';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:folder-open-bold-duotone" style="color:#4361ee" width="18"></iconify-icon>
+                        Ouvrir
+                    </button>
+                    <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+                    <button @click="startRenameFolder(contextMenu.item.name); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#f59e0b';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b" width="18"></iconify-icon>
+                        Renommer
+                    </button>
+                    <button @click="startDeleteFolder(contextMenu.item.name); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#fef2f2';this.style.color='#dc2626';"
+                            onmouseout="this.style.background='none';this.style.color='#ef4444';">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:#ef4444" width="18"></iconify-icon>
+                        Supprimer
+                    </button>
+                </div>
+            </template>
+
+            <!-- File Options -->
+            <template x-if="contextMenu.type === 'file' && contextMenu.item">
+                <div>
+                    <button @click="window.openFileViewer(contextMenu.item.url, contextMenu.item.originalName, contextMenu.item.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), displayFiles.findIndex(f=>f._id===contextMenu.item._id)); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#10b981';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:eye-bold-duotone" style="color:#10b981" width="18"></iconify-icon>
+                        Aperçu
+                    </button>
+                    <a :href="contextMenu.item ? contextMenu.item.url + '?dl=' + encodeURIComponent(contextMenu.item.originalName) : '#'" :download="contextMenu.item ? contextMenu.item.originalName : ''"
+                       @click="contextMenu.show = false"
+                       style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;text-decoration:none;box-sizing:border-box;"
+                       onmouseover="this.style.background='#f8fafc';this.style.color='#4361ee';"
+                       onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:download-bold-duotone" style="color:#4361ee" width="18"></iconify-icon>
+                        Télécharger
+                    </a>
+                    
+                    <template x-if="contextMenu.item">
+                        <div>
+                            <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+                            <button @click="startRename(contextMenu.item); contextMenu.show = false;"
+                                    style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                                    onmouseover="this.style.background='#f8fafc';this.style.color='#f59e0b';"
+                                    onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                                <iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b" width="18"></iconify-icon>
+                                Renommer
+                            </button>
+                            <button @click="deleteFile(contextMenu.item); contextMenu.show = false;"
+                                    style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                                    onmouseover="this.style.background='#fef2f2';this.style.color='#dc2626';"
+                                    onmouseout="this.style.background='none';this.style.color='#ef4444';">
+                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:#ef4444" width="18"></iconify-icon>
+                                Supprimer
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <!-- Delete Folder Modal -->
+    <template x-teleport="body">
+        <div x-show="showDeleteFolderModal" 
+             style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:99999;" 
+             x-cloak 
+             @click.self="showDeleteFolderModal = false">
+            <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;width:100%;max-width:400px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);display:flex;flex-direction:column;overflow:hidden;">
+                <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-weight:700;color:#ef4444;font-size:15px;display:flex;align-items:center;gap:8px;">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:#ef4444" width="20"></iconify-icon>
+                        Supprimer le dossier
+                    </span>
+                    <button @click="showDeleteFolderModal = false" style="background:none;border:none;cursor:pointer;color:#94a3b8;display:flex;padding:2px;">
+                        <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                    </button>
+                </div>
+                <div style="padding:20px;">
+                    <p style="font-size:13px;color:#1e293b;margin:0;line-height:1.5;">Êtes-vous sûr de vouloir supprimer le dossier <strong style="color:#0f172a;" x-text="'&ldquo;' + deletingFolderName + '&rdquo;'"></strong> ?</p>
+                    <p style="font-size:11px;color:#ef4444;margin-top:8px;background:#fef2f2;padding:8px 10px;border-radius:6px;border:1px solid #fee2e2;">⚠️ Les fichiers contenus à l'intérieur ne seront pas supprimés, ils seront simplement déplacés à la racine du Drive.</p>
+                </div>
+                <div style="padding:12px 20px;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;justify-content:end;gap:10px;">
+                    <button @click="showDeleteFolderModal = false" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:#fff;border:1px solid #e2e8f0;color:#64748b;cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Annuler</button>
+                    <button @click="confirmDeleteFolder()" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;background:#ef4444;border:none;color:#fff;cursor:pointer;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Security Warning Modal -->
+    <template x-teleport="body">
+        <div x-show="uploadWarning.show" 
+             style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:99999;" 
+             x-cloak 
+             x-transition.opacity
+             @click.self="uploadWarning.show = false">
+            <div style="background:#fff;border-radius:20px;border:1px solid #fecaca;width:100%;max-width:480px;box-shadow:0 25px 50px -12px rgba(239,68,68,0.2);display:flex;flex-direction:column;overflow:hidden;animation:shake 0.4s ease-in-out;" x-transition>
+                <!-- Header -->
+                <div style="padding:20px 24px;background:linear-gradient(135deg,#fef2f2,#fff1f2);border-bottom:1px solid #fecaca;display:flex;align-items:center;gap:14px;">
+                    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(239,68,68,0.3);">
+                        <iconify-icon icon="solar:shield-warning-bold" width="24" style="color:#fff;"></iconify-icon>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <h3 style="margin:0;font-size:16px;font-weight:700;color:#991b1b;" x-text="uploadWarning.title"></h3>
+                        <p style="margin:2px 0 0;font-size:12px;color:#b91c1c;font-weight:500;">Protection de sécurité</p>
+                    </div>
+                    <button @click="uploadWarning.show = false" style="background:none;border:none;cursor:pointer;color:#dc2626;display:flex;padding:4px;border-radius:8px;transition:all 0.15s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">
+                        <iconify-icon icon="solar:close-circle-bold" width="22"></iconify-icon>
+                    </button>
+                </div>
+                <!-- Body -->
+                <div style="padding:20px 24px;">
+                    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+                        <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.6;font-weight:500;" x-text="uploadWarning.message"></p>
+                    </div>
+                    <template x-if="uploadWarning.files && uploadWarning.files.length > 0">
+                        <div>
+                            <p style="font-size:11px;color:#64748b;margin:0 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Fichier(s) concerné(s)</p>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <template x-for="fname in uploadWarning.files" :key="fname">
+                                    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                                        <iconify-icon icon="solar:file-corrupted-bold-duotone" width="18" style="color:#ef4444;flex-shrink:0;"></iconify-icon>
+                                        <span style="font-size:13px;color:#1e293b;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="fname"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    <p style="margin:16px 0 0;font-size:11px;color:#94a3b8;line-height:1.5;">Pour votre sécurité, seuls les fichiers dont le contenu est vérifié et autorisé peuvent être ajoutés au Drive.</p>
+                </div>
+                <!-- Footer -->
+                <div style="padding:14px 24px;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;justify-content:end;">
+                    <button @click="uploadWarning.show = false" style="padding:10px 28px;border-radius:10px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 16px rgba(239,68,68,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 12px rgba(239,68,68,0.3)'">Compris</button>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>

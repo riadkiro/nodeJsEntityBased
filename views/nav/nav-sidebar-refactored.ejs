@@ -719,6 +719,15 @@
 
           <script>
             document.addEventListener("alpine:init", () => {
+              // Initialize sidebar store BEFORE Alpine.data() so templates can access $store.sidebar immediately
+              if (!Alpine.store('sidebar')) {
+                Alpine.store('sidebar', {
+                  showMenu: false,
+                  showEditMenu: false,
+                  contextItem: null
+                });
+              }
+
               Alpine.data('sidebarHierarchy', () => ({
                 hierarchy: [],
                 activeDropdown: null,

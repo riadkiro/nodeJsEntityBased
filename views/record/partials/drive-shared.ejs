@@ -795,7 +795,9 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 console.error('[Drive] Load error:', e);
             }
-            this.loading = false;
+            this.$nextTick(() => {
+                this.loading = false;
+            });
         },
 
         navigateTo(folder) {

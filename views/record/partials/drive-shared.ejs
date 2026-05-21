@@ -394,20 +394,20 @@ document.addEventListener('alpine:init', () => {
                 let path = '';
                 segments.forEach((seg, i) => {
                     path = path ? path + '/' + seg : seg;
-                    crumbs.push({ label: seg, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'custom-folder', path: path });
+                    crumbs.push({ label: seg, icon: 'solar:folder-bold-duotone', color: '#f59e0b', level: 'custom-folder', path: path });
                 });
             }
             if (this.globalLevel.startsWith('app')) {
-                crumbs.push({ label: 'App', icon: 'solar:box-bold-duotone', color: '#f59e0b', level: 'app-entities' });
+                crumbs.push({ label: 'App', icon: 'solar:box-bold-duotone', color: '#4361ee', level: 'app-entities' });
             }
             if (this.selectedEntity) {
-                crumbs.push({ label: this.selectedEntity.entityName, icon: this.selectedEntity.entityIcon, color: this.selectedEntity.entityColor, level: 'app-records' });
+                crumbs.push({ label: this.selectedEntity.entityName, icon: this.selectedEntity.entityIcon, color: '#4361ee', level: 'app-records' });
             }
             if (this.selectedRecord) {
-                crumbs.push({ label: this.selectedRecord.recordTitle, icon: 'solar:folder-bold-duotone', color: '#f59e0b', level: 'app-files' });
+                crumbs.push({ label: this.selectedRecord.recordTitle, icon: this.selectedEntity ? this.selectedEntity.entityIcon : 'solar:folder-bold-duotone', color: '#4361ee', level: 'app-files' });
             }
             if (this.currentFolder) {
-                crumbs.push({ label: this.currentFolder, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'folder' });
+                crumbs.push({ label: this.currentFolder, icon: 'solar:folder-bold-duotone', color: '#f59e0b', level: 'folder' });
             }
             if (this.viewingGenerated) {
                 crumbs.push({ label: this.viewingGenerated, icon: 'solar:magic-stick-3-bold', color: '#f59e0b', level: 'generated' });
@@ -1160,12 +1160,12 @@ document.addEventListener('alpine:init', () => {
         </a>
         <span class="drive-breadcrumb-sep"><iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon></span>
         <a href="/account/<%= account_number %>/drive" class="drive-breadcrumb-item" style="text-decoration:none;">
-            <iconify-icon icon="<%= entity.icon || 'solar:folder-bold-duotone' %>" width="14" style="color:<%= entity.color || '#4361ee' %>"></iconify-icon>
+            <iconify-icon icon="<%= entity.icon || 'solar:folder-bold-duotone' %>" width="14" style="color:#4361ee"></iconify-icon>
             <%= entity.name %>
         </a>
         <span class="drive-breadcrumb-sep"><iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon></span>
         <button @click="navigateTo('')" class="drive-breadcrumb-item" :class="!currentFolder && !viewingGenerated ? 'drive-breadcrumb-item--active' : ''">
-            <iconify-icon icon="solar:folder-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
+            <iconify-icon icon="<%= entity.icon || 'solar:folder-bold-duotone' %>" width="14" style="color:#4361ee"></iconify-icon>
             <%= record.computedTitle || record.title || 'Sans titre' %>
         </button>
         <template x-if="viewingGenerated">
@@ -1250,14 +1250,17 @@ document.addEventListener('alpine:init', () => {
         <div class="rm-items-list">
             <!-- App folder (locked system) -->
             <div class="rm-item drive-folder-item" @click="enterApp()" style="cursor:pointer;">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
-                    <iconify-icon icon="solar:box-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                     <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                 </div>
                 <div class="rm-item-body">
-                    <div class="rm-item-title">App</div>
+                    <div class="rm-item-title" style="display:flex; align-items:center; gap:6px;">
+                        <iconify-icon icon="solar:box-bold-duotone" width="16" style="color:#4361ee"></iconify-icon>
+                        <span>App</span>
+                    </div>
                     <div class="rm-item-date">
-                        <iconify-icon icon="solar:database-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
+                        <iconify-icon icon="solar:database-bold-duotone" width="12" style="color:#4361ee"></iconify-icon>
                         <span x-text="globalEntities.length + ' entité(s) · ' + globalStats.totalFiles + ' fichier(s)'"></span>
                     </div>
                 </div>
@@ -1269,8 +1272,8 @@ document.addEventListener('alpine:init', () => {
             <template x-for="(folder, idx) in globalRootDisplayFolders" :key="'root-folder-' + folder.name">
                 <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + ((idx + 1) * 40) + 'ms'"
                      @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
-                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
-                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
                     </div>
                     <div class="rm-item-body" style="min-width:0;">
                         <template x-if="renamingFolderOldName !== folder.name">
@@ -1282,7 +1285,7 @@ document.addEventListener('alpine:init', () => {
                         <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
                     </div>
                     <template x-if="renamingFolderOldName !== folder.name">
-                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                        <span class="rm-item-badge" style="background:#f59e0b10;color:#f59e0b">Dossier</span>
                     </template>
                     <template x-if="renamingFolderOldName !== folder.name">
                         <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
@@ -1319,8 +1322,8 @@ document.addEventListener('alpine:init', () => {
             <template x-for="(subfolder, idx) in globalCurrentSubfolders" :key="'subfolder-' + subfolder.fullPath">
                 <div class="rm-item drive-folder-item" @click="renamingFolderOldName === subfolder.fullPath ? null : enterGlobalFolder(subfolder.fullPath)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
                      @contextmenu.prevent="openContextMenu($event, {name: subfolder.fullPath}, 'folder')">
-                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
-                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
                     </div>
                     <div class="rm-item-body" style="min-width:0;">
                         <template x-if="renamingFolderOldName !== subfolder.fullPath">
@@ -1332,7 +1335,7 @@ document.addEventListener('alpine:init', () => {
                         <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="subfolder.count + ' fichier(s)'"></span></div>
                     </div>
                     <template x-if="renamingFolderOldName !== subfolder.fullPath">
-                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                        <span class="rm-item-badge" style="background:#f59e0b10;color:#f59e0b">Dossier</span>
                     </template>
                     <template x-if="renamingFolderOldName !== subfolder.fullPath">
                         <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
@@ -1371,17 +1374,20 @@ document.addEventListener('alpine:init', () => {
     <div x-show="globalLevel === 'app-entities' && !loading" class="rm-items-list">
         <template x-for="(ent, eIdx) in globalEntities" :key="ent.entityId">
             <div class="rm-item" @click="selectEntity(ent)" :style="'animation-delay:' + (eIdx * 40) + 'ms'">
-                <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (ent.entityColor||'#4361ee') + '15,' + (ent.entityColor||'#4361ee') + '08)'">
-                    <iconify-icon :icon="ent.entityIcon || 'solar:database-bold-duotone'" width="20" :style="'color:' + (ent.entityColor||'#4361ee')"></iconify-icon>
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                 </div>
                 <div class="rm-item-body">
-                    <div class="rm-item-title" x-text="ent.entityName"></div>
+                    <div class="rm-item-title" style="display:flex; align-items:center; gap:6px;">
+                        <iconify-icon :icon="ent.entityIcon || 'solar:database-bold-duotone'" width="16" style="color:#4361ee"></iconify-icon>
+                        <span x-text="ent.entityName"></span>
+                    </div>
                     <div class="rm-item-date">
                         <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
                         <span x-text="ent.fileCount + ' fichier(s) • ' + ent.records.length + ' fiche(s)'"></span>
                     </div>
                 </div>
-                <span class="rm-item-badge" :style="'background:' + (ent.entityColor||'#4361ee') + '10;color:' + (ent.entityColor||'#4361ee')">Entité</span>
+                <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Entité</span>
                 <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
             </div>
         </template>
@@ -1395,12 +1401,15 @@ document.addEventListener('alpine:init', () => {
     <div x-show="globalLevel === 'app-records' && !loading" class="rm-items-list">
         <template x-for="(rec, rIdx) in (selectedEntity ? selectedEntity.records : [])" :key="rec.recordId">
             <div class="rm-item" @click="selectRecord(rec)" :style="'animation-delay:' + (rIdx * 40) + 'ms'">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
-                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                     <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                 </div>
                 <div class="rm-item-body">
-                    <div class="rm-item-title" x-text="rec.recordTitle"></div>
+                    <div class="rm-item-title" style="display:flex; align-items:center; gap:6px;">
+                        <iconify-icon :icon="selectedEntity ? selectedEntity.entityIcon : 'solar:document-bold-duotone'" width="16" style="color:#4361ee"></iconify-icon>
+                        <span x-text="rec.recordTitle"></span>
+                    </div>
                     <div class="rm-item-date">
                         <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
                         <span x-text="rec.fileCount + ' fichier(s)'"></span>
@@ -1480,7 +1489,7 @@ document.addEventListener('alpine:init', () => {
 
         <!-- New folder input -->
         <div x-show="showNewFolderInput" x-transition class="drive-new-folder">
-            <iconify-icon icon="solar:folder-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
+            <iconify-icon icon="solar:folder-bold-duotone" width="18" style="color:#f59e0b"></iconify-icon>
             <input type="text" x-model="newFolderName" @keydown.enter="createFolder()" @keydown.escape="showNewFolderInput = false; newFolderName = ''"
                 placeholder="Nom du dossier..." class="drive-new-folder-input" x-ref="folderInput">
             <button @click="createFolder()" class="drive-new-folder-btn" :disabled="!newFolderName.trim()">Créer</button>
@@ -1506,13 +1515,13 @@ document.addEventListener('alpine:init', () => {
             <!-- Generated template folders (root only) — System locked -->
             <template x-for="(tplFolder, tIdx) in generatedTemplateFolders" :key="tplFolder.name">
                 <div class="rm-item drive-folder-item" @click="viewingGenerated = tplFolder.name" style="cursor:pointer;" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
-                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
-                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                         <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                     </div>
                     <div class="rm-item-body">
                         <div class="rm-item-title" x-text="tplFolder.name"></div>
-                        <div class="rm-item-date"><iconify-icon icon="solar:magic-stick-3-bold" width="12" style="color:#f59e0b"></iconify-icon> <span x-text="tplFolder.count + ' fichier(s)'"></span></div>
+                        <div class="rm-item-date"><iconify-icon icon="solar:magic-stick-3-bold" width="12" style="color:#4361ee"></iconify-icon> <span x-text="tplFolder.count + ' fichier(s)'"></span></div>
                     </div>
                     <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>
                     <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
@@ -1526,8 +1535,8 @@ document.addEventListener('alpine:init', () => {
                      @dragover.prevent @dragenter.prevent="onFolderDragEnter($event, folder.name)"
                      @dragleave="onFolderDragLeave($event, folder.name)" @drop="onFolderDrop($event, folder.name)"
                      @contextmenu.prevent="folder.isCustom ? openContextMenu($event, folder, 'folder') : null">
-                    <div class="rm-item-icon" :style="folder.isCustom ? 'background:linear-gradient(135deg,#4361ee15,#4361ee08)' : 'background:linear-gradient(135deg,#94a3b810,#94a3b805)'" style="position:relative;">
-                        <iconify-icon icon="solar:folder-bold-duotone" width="20" :style="folder.isCustom ? 'color:#4361ee' : 'color:#94a3b8'"></iconify-icon>
+                    <div class="rm-item-icon" :style="folder.isCustom ? 'background:linear-gradient(135deg,#f59e0b15,#f59e0b08)' : 'background:linear-gradient(135deg,#4361ee15,#4361ee08)'" style="position:relative;">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" :style="folder.isCustom ? 'color:#f59e0b' : 'color:#4361ee'"></iconify-icon>
                         <template x-if="!folder.isCustom">
                             <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                         </template>
@@ -1542,7 +1551,7 @@ document.addEventListener('alpine:init', () => {
                         <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
                     </div>
                     <template x-if="renamingFolderOldName !== folder.name && folder.isCustom">
-                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                        <span class="rm-item-badge" style="background:#f59e0b10;color:#f59e0b">Dossier</span>
                     </template>
                     <template x-if="renamingFolderOldName !== folder.name && !folder.isCustom">
                         <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>

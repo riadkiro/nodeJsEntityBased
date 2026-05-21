@@ -196,72 +196,69 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // URL state management
+        // URL state management — clean slash-based URLs
         _updateUrl() {
             if (this.driveMode !== 'global' || this._restoringUrl) return;
             const base = `/account/${this._accountNumber}/drive`;
-            const params = new URLSearchParams();
+            let url = base;
             if (this.globalLevel === 'custom-folder' && this.globalCurrentFolder) {
-                params.set('folder', this.globalCurrentFolder);
+                url = `${base}/${this.globalCurrentFolder}`;
             } else if (this.globalLevel === 'app-entities') {
-                params.set('view', 'app');
+                url = `${base}/app`;
             } else if (this.globalLevel === 'app-records' && this.selectedEntity) {
-                params.set('view', 'app');
-                params.set('entity', this.selectedEntity.entityId);
+                url = `${base}/app/${this.selectedEntity.entityId}`;
             } else if (this.globalLevel === 'app-files' && this.selectedRecord) {
-                params.set('view', 'app');
-                if (this.selectedEntity) params.set('entity', this.selectedEntity.entityId);
-                params.set('record', this.selectedRecord.recordId);
-                if (this.currentFolder) params.set('sub', this.currentFolder);
+                url = `${base}/app/${this.selectedEntity ? this.selectedEntity.entityId : '_'}/${this.selectedRecord.recordId}`;
+                if (this.currentFolder) url += '/' + encodeURIComponent(this.currentFolder);
             }
-            const qs = params.toString();
-            const url = qs ? `${base}?${qs}` : base;
-            if (window.location.pathname + window.location.search !== url) {
+            if (decodeURIComponent(window.location.pathname) !== decodeURIComponent(url)) {
                 history.pushState({ driveState: true }, '', url);
             }
         },
 
         async _restoreFromUrl(isPopstate) {
             this._restoringUrl = true;
-            const params = new URLSearchParams(window.location.search);
-            const folder = params.get('folder');
-            const view = params.get('view');
-            const entityId = params.get('entity');
-            const recordId = params.get('record');
-            const sub = params.get('sub');
+            const base = `/account/${this._accountNumber}/drive`;
+            const path = decodeURIComponent(window.location.pathname);
+            const rest = path.startsWith(base + '/') ? path.substring(base.length + 1) : '';
 
-            if (folder) {
-                this.globalCurrentFolder = folder;
-                this.globalLevel = 'custom-folder';
-                await this.loadGlobalFolderFiles(folder);
-            } else if (view === 'app') {
+            if (!rest) {
+                // Root
+                if (isPopstate) {
+                    this.globalLevel = 'root';
+                    this.selectedEntity = null;
+                    this.selectedRecord = null;
+                    this._recordId = '';
+                    this.globalCurrentFolder = '';
+                    this.allFiles = [];
+                    this.customFolders = [];
+                }
+            } else if (rest === 'app' || rest.startsWith('app/')) {
+                // App navigation
+                const parts = rest.split('/').slice(1); // remove 'app'
                 this.globalLevel = 'app-entities';
-                if (entityId && this.globalEntities.length > 0) {
-                    const entity = this.globalEntities.find(e => e.entityId === entityId);
+                if (parts[0] && this.globalEntities.length > 0) {
+                    const entity = this.globalEntities.find(e => e.entityId === parts[0]);
                     if (entity) {
                         this.selectedEntity = entity;
                         this.globalLevel = 'app-records';
-                        if (recordId) {
-                            const record = entity.records.find(r => r.recordId === recordId);
+                        if (parts[1]) {
+                            const record = entity.records.find(r => r.recordId === parts[1]);
                             if (record) {
                                 this.selectedRecord = record;
                                 this._recordId = record.recordId;
                                 this.globalLevel = 'app-files';
                                 await this.loadFiles();
-                                if (sub) this.currentFolder = sub;
+                                if (parts[2]) this.currentFolder = parts[2];
                             }
                         }
                     }
                 }
-            } else if (isPopstate) {
-                // Popstate to root
-                this.globalLevel = 'root';
-                this.selectedEntity = null;
-                this.selectedRecord = null;
-                this._recordId = '';
-                this.globalCurrentFolder = '';
-                this.allFiles = [];
-                this.customFolders = [];
+            } else {
+                // Custom folder path (e.g., "Factures" or "Factures/Ventes")
+                this.globalCurrentFolder = rest;
+                this.globalLevel = 'custom-folder';
+                await this.loadGlobalFolderFiles(rest);
             }
             this._restoringUrl = false;
         },

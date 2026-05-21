@@ -449,6 +449,15 @@ router.get("/drive", (req, res) => {
     });
 });
 
+// Global Drive - catch-all for deep links (/drive/Factures, /drive/app/entityId, etc.)
+router.get("/drive/*", (req, res) => {
+    res.render("account/account-drive", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 
 
 // Doctor Clinical Command Center

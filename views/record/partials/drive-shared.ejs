@@ -766,7 +766,7 @@ document.addEventListener('alpine:init', () => {
 </div>
 <% } %>
 
-<div x-data="driveModule" x-cloak style="position:relative;min-height:200px;"
+<div x-data="driveModule" x-cloak style="position:relative;min-height:calc(100vh - 200px);"
      @dragenter.prevent="isAtFileLevel ? onDragEnter($event) : null"
      @dragover.prevent
      @dragleave.prevent="isAtFileLevel ? onDragLeave($event) : null"

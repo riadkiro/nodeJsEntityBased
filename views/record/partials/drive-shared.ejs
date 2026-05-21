@@ -142,10 +142,15 @@ document.addEventListener('alpine:init', () => {
 
         // === Global mode state ===
         globalEntities: [],
-        globalLevel: 'entities',
+        globalLevel: 'root',
         selectedEntity: null,
         selectedRecord: null,
         globalStats: { totalFiles: 0, totalSizeFormatted: '0 o' },
+
+        // === Global root state (account-level folders & files) ===
+        globalDriveFolders: [],
+        globalDriveFiles: [],
+        globalCurrentFolder: '',
 
         // === Record/File mode state ===
         allFiles: [],
@@ -181,7 +186,7 @@ document.addEventListener('alpine:init', () => {
         // === Init ===
         async init() {
             if (this.driveMode === 'global') {
-                await this.loadGlobalDrive();
+                await this.loadGlobalRoot();
             } else {
                 await this.loadFiles();
             }
@@ -191,38 +196,70 @@ document.addEventListener('alpine:init', () => {
         // GLOBAL MODE METHODS
         // ═══════════════════════════════════════
 
-        async loadGlobalDrive() {
+        async loadGlobalRoot() {
             this.loading = true;
             try {
-                const res = await fetch(`/account/${this._accountNumber}/api/drive`, { credentials: 'include' });
+                // Load entities + stats
+                const res1 = await fetch(`/account/${this._accountNumber}/api/drive`, { credentials: 'include' });
+                const data1 = await res1.json();
+                if (data1.success) {
+                    this.globalEntities = data1.entities;
+                    this.globalStats = data1.stats;
+                }
+                // Load root folders & files
+                const res2 = await fetch(`/account/${this._accountNumber}/api/drive/files`, { credentials: 'include' });
+                const data2 = await res2.json();
+                if (data2.success) {
+                    this.globalDriveFolders = data2.folders || [];
+                    this.globalDriveFiles = data2.files || [];
+                }
+            } catch(e) { console.error('[Drive] Global root load error:', e); }
+            this.loading = false;
+        },
+
+        async loadGlobalFolderFiles(folderName) {
+            this.loading = true;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/drive/files?folder=${encodeURIComponent(folderName)}`, { credentials: 'include' });
                 const data = await res.json();
                 if (data.success) {
-                    this.globalEntities = data.entities;
-                    this.globalStats = data.stats;
+                    this.globalDriveFiles = data.files || [];
                 }
-            } catch(e) { console.error('[Drive] Global load error:', e); }
+            } catch(e) { console.error('[Drive] Folder files load error:', e); }
             this.loading = false;
+        },
+
+        // Navigate into App (entities)
+        enterApp() {
+            this.globalLevel = 'app-entities';
+        },
+
+        // Navigate into a custom folder
+        async enterGlobalFolder(folderName) {
+            this.globalCurrentFolder = folderName;
+            this.globalLevel = 'custom-folder';
+            await this.loadGlobalFolderFiles(folderName);
         },
 
         selectEntity(entity) {
             this.selectedEntity = entity;
-            this.globalLevel = 'records';
+            this.globalLevel = 'app-records';
         },
 
         selectRecord(record) {
             this.selectedRecord = record;
             this._recordId = record.recordId;
-            this.globalLevel = 'files';
+            this.globalLevel = 'app-files';
             this.loadFiles();
         },
 
         globalGoBack() {
-            if (this.globalLevel === 'files') {
+            if (this.globalLevel === 'app-files') {
                 if (this.currentFolder || this.viewingGenerated) {
                     this.currentFolder = '';
                     this.viewingGenerated = '';
                 } else {
-                    this.globalLevel = 'records';
+                    this.globalLevel = 'app-records';
                     this.selectedRecord = null;
                     this._recordId = '';
                     this.allFiles = [];
@@ -230,19 +267,31 @@ document.addEventListener('alpine:init', () => {
                     this.currentFolder = '';
                     this.viewingGenerated = '';
                 }
-            } else if (this.globalLevel === 'records') {
-                this.globalLevel = 'entities';
+            } else if (this.globalLevel === 'app-records') {
+                this.globalLevel = 'app-entities';
                 this.selectedEntity = null;
+            } else if (this.globalLevel === 'app-entities') {
+                this.globalLevel = 'root';
+            } else if (this.globalLevel === 'custom-folder') {
+                this.globalLevel = 'root';
+                this.globalCurrentFolder = '';
+                this.globalDriveFiles = [];
             }
         },
 
         get globalBreadcrumb() {
-            const crumbs = [{ label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', level: 'entities' }];
+            const crumbs = [{ label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', level: 'root' }];
+            if (this.globalLevel === 'custom-folder') {
+                crumbs.push({ label: this.globalCurrentFolder, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'custom-folder' });
+            }
+            if (this.globalLevel.startsWith('app')) {
+                crumbs.push({ label: 'App', icon: 'solar:box-bold-duotone', color: '#f59e0b', level: 'app-entities' });
+            }
             if (this.selectedEntity) {
-                crumbs.push({ label: this.selectedEntity.entityName, icon: this.selectedEntity.entityIcon, color: this.selectedEntity.entityColor, level: 'records' });
+                crumbs.push({ label: this.selectedEntity.entityName, icon: this.selectedEntity.entityIcon, color: this.selectedEntity.entityColor, level: 'app-records' });
             }
             if (this.selectedRecord) {
-                crumbs.push({ label: this.selectedRecord.recordTitle, icon: 'solar:folder-bold-duotone', color: '#f59e0b', level: 'files' });
+                crumbs.push({ label: this.selectedRecord.recordTitle, icon: 'solar:folder-bold-duotone', color: '#f59e0b', level: 'app-files' });
             }
             if (this.currentFolder) {
                 crumbs.push({ label: this.currentFolder, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'folder' });
@@ -254,8 +303,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         globalNavigateTo(level) {
-            if (level === 'entities') {
-                this.globalLevel = 'entities';
+            if (level === 'root') {
+                this.globalLevel = 'root';
                 this.selectedEntity = null;
                 this.selectedRecord = null;
                 this._recordId = '';
@@ -263,22 +312,53 @@ document.addEventListener('alpine:init', () => {
                 this.customFolders = [];
                 this.currentFolder = '';
                 this.viewingGenerated = '';
-            } else if (level === 'records') {
-                this.globalLevel = 'records';
+                this.globalCurrentFolder = '';
+            } else if (level === 'app-entities') {
+                this.globalLevel = 'app-entities';
+                this.selectedEntity = null;
                 this.selectedRecord = null;
                 this._recordId = '';
                 this.allFiles = [];
                 this.customFolders = [];
                 this.currentFolder = '';
                 this.viewingGenerated = '';
-            } else if (level === 'files') {
+            } else if (level === 'app-records') {
+                this.globalLevel = 'app-records';
+                this.selectedRecord = null;
+                this._recordId = '';
+                this.allFiles = [];
+                this.customFolders = [];
+                this.currentFolder = '';
+                this.viewingGenerated = '';
+            } else if (level === 'app-files') {
                 this.currentFolder = '';
                 this.viewingGenerated = '';
             }
         },
 
         get isAtFileLevel() {
-            return this.driveMode === 'record' || this.globalLevel === 'files';
+            if (this.driveMode === 'record') return true;
+            return ['app-files', 'root', 'custom-folder'].includes(this.globalLevel);
+        },
+
+        // Whether we are in the global root context (not inside a record)
+        get isGlobalRoot() {
+            return this.driveMode === 'global' && ['root', 'custom-folder'].includes(this.globalLevel);
+        },
+
+        get globalRootDisplayFolders() {
+            return this.globalDriveFolders.map(name => {
+                const count = this.globalDriveFiles.filter(f => f.folder === name).length;
+                return { name, count, isCustom: true };
+            }).sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        get globalRootDisplayFiles() {
+            if (this.globalLevel === 'custom-folder') {
+                return this.globalDriveFiles.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+            }
+            // Root: files without folder
+            return this.globalDriveFiles.filter(f => !f.folder).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
         },
 
         // ═══════════════════════════════════════
@@ -331,6 +411,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         triggerFileUpload() {
+            if (this.isGlobalRoot) {
+                this.$refs.fileUploadInput?.click();
+                return;
+            }
             if (!this.isAtFileLevel) {
                 window.showMessage ? window.showMessage('Sélectionnez une fiche pour importer des fichiers', 'info') : null;
                 return;
@@ -339,12 +423,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         triggerNewFolder() {
-            if (!this.isAtFileLevel) {
-                window.showMessage ? window.showMessage('Sélectionnez une fiche pour créer un dossier', 'info') : null;
+            if (this.isGlobalRoot || this.isAtFileLevel) {
+                this.showNewFolderInput = true;
+                this.$nextTick(() => this.$refs.folderInput?.focus());
                 return;
             }
-            this.showNewFolderInput = true;
-            this.$nextTick(() => this.$refs.folderInput?.focus());
+            window.showMessage ? window.showMessage('Sélectionnez une fiche pour créer un dossier', 'info') : null;
         },
 
         startRenameFolder(folderName) {
@@ -412,6 +496,62 @@ document.addEventListener('alpine:init', () => {
                 window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
             }
             this.showDeleteFolderModal = false;
+        },
+
+        // ═══ Global folder CRUD ═══
+        async confirmRenameGlobalFolder() {
+            const oldName = this.renamingFolderOldName;
+            const newName = this.renameFolderValue.trim();
+            if (!newName || newName === oldName) { this.renamingFolderOldName = null; return; }
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/drive/folders/${encodeURIComponent(oldName)}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                    body: JSON.stringify({ newName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.globalDriveFolders = data.folders;
+                    if (this.globalCurrentFolder === oldName) this.globalCurrentFolder = newName;
+                    if (window.showMessage) window.showMessage('Dossier renommé', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur', 'danger') : alert(data.error);
+                }
+            } catch (e) { console.error('[Drive] Rename global folder error:', e); }
+            this.renamingFolderOldName = null;
+        },
+
+        async deleteGlobalFolder(folderName) {
+            if (!confirm(`Supprimer le dossier "${folderName}" ? Les fichiers seront déplacés à la racine.`)) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/drive/folders/${encodeURIComponent(folderName)}`, {
+                    method: 'DELETE', credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.globalDriveFolders = data.folders;
+                    if (this.globalLevel === 'custom-folder' && this.globalCurrentFolder === folderName) {
+                        this.globalLevel = 'root';
+                        this.globalCurrentFolder = '';
+                    }
+                    if (window.showMessage) window.showMessage('Dossier supprimé', 'success');
+                } else {
+                    window.showMessage ? window.showMessage(data.error || 'Erreur', 'danger') : alert(data.error);
+                }
+            } catch (e) { console.error('[Drive] Delete global folder error:', e); }
+        },
+
+        async deleteGlobalFile(file) {
+            if (!confirm(`Supprimer "${file.originalName}" ?`)) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/drive/files/${file._id}`, {
+                    method: 'DELETE', credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.globalDriveFiles = this.globalDriveFiles.filter(f => f._id !== file._id);
+                    if (window.showMessage) window.showMessage('Fichier supprimé', 'success');
+                }
+            } catch (e) { console.error('[Drive] Delete global file error:', e); }
         },
 
         toggleSelect(id) {
@@ -537,15 +677,36 @@ document.addEventListener('alpine:init', () => {
         async createFolder() {
             const name = this.newFolderName.trim();
             if (!name) return;
+            // Global root mode: use account-level API
+            if (this.isGlobalRoot && this.globalLevel === 'root') {
+                if (this.globalDriveFolders.includes(name)) {
+                    window.showMessage ? window.showMessage('Ce dossier existe déjà', 'danger') : alert('Ce dossier existe déjà');
+                    this.newFolderName = ''; this.showNewFolderInput = false; return;
+                }
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/drive/folders`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ name })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.globalDriveFolders = data.folders;
+                        if (window.showMessage) window.showMessage('Dossier créé', 'success');
+                    } else {
+                        window.showMessage ? window.showMessage(data.error || 'Erreur', 'danger') : alert(data.error);
+                    }
+                } catch (e) { console.error('[Drive] Create global folder error:', e); }
+                this.newFolderName = ''; this.showNewFolderInput = false;
+                return;
+            }
+            // Record mode
             if (this.customFolders.includes(name) || this.allFiles.some(f => f.folder === name)) {
                 window.showMessage ? window.showMessage('Ce dossier existe déjà', 'danger') : alert('Ce dossier existe déjà');
-                return;
+                this.newFolderName = ''; this.showNewFolderInput = false; return;
             }
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/drive-folders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                     body: JSON.stringify({ name })
                 });
                 const data = await res.json();
@@ -655,7 +816,15 @@ document.addEventListener('alpine:init', () => {
             this.uploadCount = fileList.length;
             const formData = new FormData();
             for (const file of fileList) formData.append('files', file);
-            formData.append('folder', this.currentFolder);
+            // Determine upload URL based on context
+            let uploadUrl;
+            if (this.isGlobalRoot) {
+                formData.append('folder', this.globalCurrentFolder || '');
+                uploadUrl = `/account/${this._accountNumber}/api/drive/upload`;
+            } else {
+                formData.append('folder', this.currentFolder);
+                uploadUrl = `/account/${this._accountNumber}/api/records/${this._recordId}/attachments`;
+            }
             try {
                 const xhr = new XMLHttpRequest();
                 xhr.upload.addEventListener('progress', (e) => {
@@ -666,9 +835,15 @@ document.addEventListener('alpine:init', () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
                             try {
                                 const data = JSON.parse(xhr.responseText);
-                                if (data.success && data.attachments) {
-                                    data.attachments.forEach(a => { a.folder = this.currentFolder; });
-                                    this.allFiles.push(...data.attachments);
+                                if (this.isGlobalRoot) {
+                                    if (data.success && data.files) {
+                                        this.globalDriveFiles.push(...data.files);
+                                    }
+                                } else {
+                                    if (data.success && data.attachments) {
+                                        data.attachments.forEach(a => { a.folder = this.currentFolder; });
+                                        this.allFiles.push(...data.attachments);
+                                    }
                                 }
                             } catch (e) { /* ignore */ }
                             resolve();
@@ -679,7 +854,7 @@ document.addEventListener('alpine:init', () => {
                         }
                     };
                     xhr.onerror = () => reject(new Error('Erreur réseau'));
-                    xhr.open('POST', `/account/${this._accountNumber}/api/records/${this._recordId}/attachments`);
+                    xhr.open('POST', uploadUrl);
                     xhr.withCredentials = true;
                     xhr.send(formData);
                 });
@@ -886,30 +1061,33 @@ document.addEventListener('alpine:init', () => {
     <!-- Unified actions bar (all levels) -->
     <div class="drive-actions-bar" x-show="!loading">
         <div class="drive-actions-group">
-            <button @click="globalGoBack()" class="drive-action-btn drive-action-btn--secondary" x-show="globalLevel !== 'entities'">
+            <button @click="globalGoBack()" class="drive-action-btn drive-action-btn--secondary" x-show="globalLevel !== 'root'">
                 <iconify-icon icon="solar:alt-arrow-left-linear" width="16"></iconify-icon>
                 Retour
             </button>
-            <span class="drive-stats-pill" x-show="globalLevel === 'entities'">
+            <span class="drive-stats-pill" x-show="globalLevel === 'root'">
                 <iconify-icon icon="solar:chart-2-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
                 <span x-text="globalStats.totalFiles + ' fichiers · ' + globalStats.totalSizeFormatted"></span>
             </span>
         </div>
         <div class="drive-actions-group">
-            <!-- Select mode toggle (file level only) -->
-            <button @click="toggleSelectMode()" class="drive-action-btn drive-action-btn--secondary" x-show="isAtFileLevel && displayFiles.length > 0"
+            <!-- Select mode toggle -->
+            <button @click="toggleSelectMode()" class="drive-action-btn drive-action-btn--secondary" 
+                x-show="(globalLevel === 'root' || globalLevel === 'custom-folder' || globalLevel === 'app-files') && !selectMode"
                 :style="selectMode ? 'background:#4361ee10;color:#4361ee;border-color:#4361ee30;' : ''">
                 <iconify-icon :icon="selectMode ? 'solar:check-square-bold' : 'solar:checkbox-minimalistic-bold-duotone'" width="16"></iconify-icon>
                 <span x-text="selectMode ? 'Annuler' : 'Sélectionner'"></span>
             </button>
-            <button @click="triggerNewFolder()" class="drive-action-btn drive-action-btn--secondary" x-show="!selectMode && !viewingGenerated">
+            <button @click="triggerNewFolder()" class="drive-action-btn drive-action-btn--secondary" 
+                x-show="!selectMode && !viewingGenerated && (globalLevel === 'root' || globalLevel === 'custom-folder' || globalLevel === 'app-files')">
                 <iconify-icon icon="solar:folder-add-bold-duotone" width="17"></iconify-icon>
                 Nouveau dossier
             </button>
-            <label class="drive-action-btn drive-action-btn--primary" @click="!isAtFileLevel ? triggerFileUpload() : null" x-show="!selectMode && !viewingGenerated">
+            <label class="drive-action-btn drive-action-btn--primary" 
+                x-show="!selectMode && !viewingGenerated && (globalLevel === 'root' || globalLevel === 'custom-folder' || globalLevel === 'app-files')">
                 <iconify-icon icon="solar:cloud-upload-bold-duotone" width="17"></iconify-icon>
                 Importer
-                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" x-ref="fileUploadInput" :disabled="!isAtFileLevel">
+                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" x-ref="fileUploadInput">
             </label>
         </div>
     </div>
@@ -918,8 +1096,125 @@ document.addEventListener('alpine:init', () => {
         <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
     </div>
 
-    <!-- Entity list -->
-    <div x-show="globalLevel === 'entities' && !loading" class="rm-items-list">
+    <!-- New folder input (global root mode) -->
+    <div x-show="showNewFolderInput && (globalLevel === 'root' || globalLevel === 'custom-folder')" x-transition class="drive-new-folder">
+        <iconify-icon icon="solar:folder-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
+        <input type="text" x-model="newFolderName" @keydown.enter="createFolder()" @keydown.escape="showNewFolderInput = false; newFolderName = ''"
+            placeholder="Nom du dossier..." class="drive-new-folder-input" x-ref="folderInput">
+        <button @click="createFolder()" class="drive-new-folder-btn" :disabled="!newFolderName.trim()">Créer</button>
+        <button @click="showNewFolderInput = false; newFolderName = ''" class="drive-new-folder-cancel">
+            <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+        </button>
+    </div>
+
+    <!-- Upload progress (global root mode) -->
+    <div x-show="uploading && (globalLevel === 'root' || globalLevel === 'custom-folder')" class="drive-upload-progress">
+        <iconify-icon icon="line-md:uploading-loop" width="20" style="color:#4361ee"></iconify-icon>
+        <span x-text="'Upload en cours... ' + uploadCount + ' fichier(s)'"></span>
+        <div class="drive-progress-bar"><div class="drive-progress-fill" :style="'width:' + uploadProgress + '%'"></div></div>
+    </div>
+
+    <!-- ═══ ROOT LEVEL: App folder + Custom folders + Root files ═══ -->
+    <div x-show="globalLevel === 'root' && !loading" class="rm-items-list">
+        <!-- App folder (locked system) -->
+        <div class="rm-item drive-folder-item" @click="enterApp()" style="cursor:pointer;">
+            <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
+                <iconify-icon icon="solar:box-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
+            </div>
+            <div class="rm-item-body">
+                <div class="rm-item-title">App</div>
+                <div class="rm-item-date">
+                    <iconify-icon icon="solar:database-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
+                    <span x-text="globalEntities.length + ' entité(s) · ' + globalStats.totalFiles + ' fichier(s)'"></span>
+                </div>
+            </div>
+            <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>
+            <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+        </div>
+
+        <!-- Custom folders -->
+        <template x-for="(folder, idx) in globalRootDisplayFolders" :key="folder.name">
+            <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + ((idx + 1) * 40) + 'ms'"
+                 @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                </div>
+                <div class="rm-item-body" style="min-width:0;">
+                    <template x-if="renamingFolderOldName !== folder.name">
+                        <div class="rm-item-title" x-text="folder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                    </template>
+                    <template x-if="renamingFolderOldName === folder.name">
+                        <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameGlobalFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameGlobalFolder()" @click.stop />
+                    </template>
+                    <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
+                </div>
+                <template x-if="renamingFolderOldName !== folder.name">
+                    <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                </template>
+                <template x-if="renamingFolderOldName !== folder.name">
+                    <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                </template>
+            </div>
+        </template>
+
+        <!-- Root files -->
+        <template x-for="(file, idx) in globalRootDisplayFiles" :key="file._id">
+            <div class="rm-item" :style="'animation-delay:' + ((globalRootDisplayFolders.length + idx + 1) * 40) + 'ms'" style="cursor:pointer;"
+                 @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
+                 @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
+                <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
+                    <iconify-icon :icon="file.category === 'image' ? 'solar:gallery-bold-duotone' : file.category === 'pdf' ? 'solar:document-text-bold-duotone' : file.category === 'word' ? 'solar:document-bold-duotone' : file.category === 'excel' ? 'solar:chart-square-bold-duotone' : 'solar:file-bold-duotone'" width="20"
+                        :style="'color:' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee')"></iconify-icon>
+                </div>
+                <div class="rm-item-body">
+                    <div class="rm-item-title" x-text="file.originalName"></div>
+                    <div class="rm-item-date">
+                        <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                        <span x-text="formatDate(file.uploadedAt)"></span>
+                    </div>
+                </div>
+                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
+            </div>
+        </template>
+
+        <!-- Empty root -->
+        <div x-show="globalRootDisplayFolders.length === 0 && globalRootDisplayFiles.length === 0 && globalEntities.length === 0" class="drive-empty" style="margin-top:16px;">
+            <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.15"></iconify-icon>
+            <p style="font-size:13px; font-weight:600; margin-top:12px;">Drive vide</p>
+            <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Créez un dossier ou importez des fichiers pour commencer</p>
+        </div>
+    </div>
+
+    <!-- ═══ CUSTOM FOLDER CONTENT ═══ -->
+    <div x-show="globalLevel === 'custom-folder' && !loading" class="rm-items-list">
+        <template x-for="(file, idx) in globalRootDisplayFiles" :key="file._id">
+            <div class="rm-item" :style="'animation-delay:' + (idx * 40) + 'ms'" style="cursor:pointer;"
+                 @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
+                 @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
+                <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
+                    <iconify-icon :icon="file.category === 'image' ? 'solar:gallery-bold-duotone' : file.category === 'pdf' ? 'solar:document-text-bold-duotone' : file.category === 'word' ? 'solar:document-bold-duotone' : file.category === 'excel' ? 'solar:chart-square-bold-duotone' : 'solar:file-bold-duotone'" width="20"
+                        :style="'color:' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee')"></iconify-icon>
+                </div>
+                <div class="rm-item-body">
+                    <div class="rm-item-title" x-text="file.originalName"></div>
+                    <div class="rm-item-date">
+                        <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                        <span x-text="formatDate(file.uploadedAt)"></span>
+                    </div>
+                </div>
+                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
+            </div>
+        </template>
+        <div x-show="globalRootDisplayFiles.length === 0" class="drive-empty">
+            <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.2"></iconify-icon>
+            <p style="font-size:13px; font-weight:600; margin-top:12px;">Dossier vide</p>
+            <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Importez des fichiers dans ce dossier</p>
+        </div>
+    </div>
+
+    <!-- ═══ APP: Entity list ═══ -->
+    <div x-show="globalLevel === 'app-entities' && !loading" class="rm-items-list">
         <template x-for="(ent, eIdx) in globalEntities" :key="ent.entityId">
             <div class="rm-item" @click="selectEntity(ent)" :style="'animation-delay:' + (eIdx * 40) + 'ms'">
                 <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (ent.entityColor||'#4361ee') + '15,' + (ent.entityColor||'#4361ee') + '08)'">
@@ -942,8 +1237,8 @@ document.addEventListener('alpine:init', () => {
         </div>
     </div>
 
-    <!-- Record list -->
-    <div x-show="globalLevel === 'records' && !loading" class="rm-items-list">
+    <!-- ═══ APP: Record list ═══ -->
+    <div x-show="globalLevel === 'app-records' && !loading" class="rm-items-list">
         <template x-for="(rec, rIdx) in (selectedEntity ? selectedEntity.records : [])" :key="rec.recordId">
             <div class="rm-item" @click="selectRecord(rec)" :style="'animation-delay:' + (rIdx * 40) + 'ms'">
                 <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
@@ -966,7 +1261,7 @@ document.addEventListener('alpine:init', () => {
     <% } %>
 
     <!-- ═══ FILE LEVEL (shared between both modes) ═══ -->
-    <div x-show="isAtFileLevel">
+    <div x-show="driveMode === 'record' || globalLevel === 'app-files'">
 
         <% if (driveMode !== 'global') { %>
         <!-- Record mode toolbar -->
@@ -1232,7 +1527,7 @@ document.addEventListener('alpine:init', () => {
                             Tout sélectionner
                         </button>
                     </template>
-                    <button @click="isAtFileLevel ? loadFiles() : loadGlobalDrive(); contextMenu.show = false;"
+                    <button @click="isGlobalRoot ? loadGlobalRoot() : (isAtFileLevel ? loadFiles() : loadGlobalRoot()); contextMenu.show = false;"
                             style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
                             onmouseover="this.style.background='#f8fafc';this.style.color='#3b82f6';"
                             onmouseout="this.style.background='none';this.style.color='#1e293b';">
@@ -1245,7 +1540,7 @@ document.addEventListener('alpine:init', () => {
             <!-- Folder Options -->
             <template x-if="contextMenu.type === 'folder' && contextMenu.item">
                 <div>
-                    <button @click="navigateTo(contextMenu.item.name); contextMenu.show = false;"
+                    <button @click="isGlobalRoot ? enterGlobalFolder(contextMenu.item.name) : navigateTo(contextMenu.item.name); contextMenu.show = false;"
                             style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
                             onmouseover="this.style.background='#f8fafc';this.style.color='#4361ee';"
                             onmouseout="this.style.background='none';this.style.color='#1e293b';">
@@ -1253,14 +1548,36 @@ document.addEventListener('alpine:init', () => {
                         Ouvrir
                     </button>
                     <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
-                    <button @click="startRenameFolder(contextMenu.item.name); contextMenu.show = false;"
+                    <button @click="isGlobalRoot ? (renamingFolderOldName = contextMenu.item.name, renameFolderValue = contextMenu.item.name) : startRenameFolder(contextMenu.item.name); contextMenu.show = false;"
                             style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
                             onmouseover="this.style.background='#f8fafc';this.style.color='#f59e0b';"
                             onmouseout="this.style.background='none';this.style.color='#1e293b';">
                         <iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b" width="18"></iconify-icon>
                         Renommer
                     </button>
-                    <button @click="startDeleteFolder(contextMenu.item.name); contextMenu.show = false;"
+                    <button @click="isGlobalRoot ? deleteGlobalFolder(contextMenu.item.name) : startDeleteFolder(contextMenu.item.name); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#fef2f2';this.style.color='#dc2626';"
+                            onmouseout="this.style.background='none';this.style.color='#ef4444';">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:#ef4444" width="18"></iconify-icon>
+                        Supprimer
+                    </button>
+                </div>
+            </template>
+
+            <!-- Global File Options -->
+            <template x-if="contextMenu.type === 'global-file' && contextMenu.item">
+                <div>
+                    <a :href="contextMenu.item ? contextMenu.item.url + '?dl=' + encodeURIComponent(contextMenu.item.originalName) : '#'" :download="contextMenu.item ? contextMenu.item.originalName : ''"
+                       @click="contextMenu.show = false"
+                       style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;text-decoration:none;box-sizing:border-box;"
+                       onmouseover="this.style.background='#f8fafc';this.style.color='#4361ee';"
+                       onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:download-bold-duotone" style="color:#4361ee" width="18"></iconify-icon>
+                        Télécharger
+                    </a>
+                    <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+                    <button @click="deleteGlobalFile(contextMenu.item); contextMenu.show = false;"
                             style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
                             onmouseover="this.style.background='#fef2f2';this.style.color='#dc2626';"
                             onmouseout="this.style.background='none';this.style.color='#ef4444';">

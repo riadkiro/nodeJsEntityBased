@@ -151,6 +151,9 @@ const AccountSchema = new mongoose.Schema({
 
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],
 
+  // Global Drive folders (account-level custom folders)
+  driveFolders: [{ type: String }],
+
   created_on: {
     type: Date,
     default: Date.now,

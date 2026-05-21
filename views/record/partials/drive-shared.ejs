@@ -56,6 +56,9 @@
     .drive-rename-input { border:1.5px solid #4361ee; outline:none; border-radius:6px; padding:2px 8px; font-size:13px; font-weight:600; font-family:inherit; color:#1e293b; background:#fff; width:100%; box-sizing:border-box; }
     .drive-rename-input:focus { box-shadow:0 0 0 3px #4361ee15; }
     @keyframes shake { 0%,100% { transform:translateX(0); } 15%,45%,75% { transform:translateX(-4px); } 30%,60%,90% { transform:translateX(4px); } }
+    /* Lock badge for system folders */
+    .drive-lock-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; background:#94a3b810; color:#94a3b8; white-space:nowrap; }
+    .drive-lock-icon { display:inline-flex; align-items:center; }
 
     /* Shared rm-item styles (needed for global mode) */
     .rm-items-list { display:flex; flex-direction:column; gap:2px; }
@@ -421,8 +424,12 @@ document.addEventListener('alpine:init', () => {
                 if (!folderMap[name]) folderMap[name] = 0;
             });
             return Object.entries(folderMap)
-                .map(([name, count]) => ({ name, count }))
+                .map(([name, count]) => ({ name, count, isCustom: this.customFolders.includes(name) }))
                 .sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        isCustomFolder(folderName) {
+            return this.customFolders.includes(folderName);
         },
 
         get displayFiles() {
@@ -838,8 +845,9 @@ document.addEventListener('alpine:init', () => {
     <div x-show="globalLevel === 'records' && !loading" class="rm-items-list">
         <template x-for="(rec, rIdx) in (selectedEntity ? selectedEntity.records : [])" :key="rec.recordId">
             <div class="rm-item" @click="selectRecord(rec)" :style="'animation-delay:' + (rIdx * 40) + 'ms'">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
                     <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                    <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                 </div>
                 <div class="rm-item-body">
                     <div class="rm-item-title" x-text="rec.recordTitle"></div>
@@ -848,7 +856,7 @@ document.addEventListener('alpine:init', () => {
                         <span x-text="rec.fileCount + ' fichier(s)'"></span>
                     </div>
                 </div>
-                <span class="rm-item-badge" style="background:#f59e0b10;color:#f59e0b">Fiche</span>
+                <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Fiche</span>
                 <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
             </div>
         </template>
@@ -947,31 +955,34 @@ document.addEventListener('alpine:init', () => {
 
         <!-- Content -->
         <div x-show="!loading" class="rm-items-list">
-            <!-- Generated template folders (root only) -->
+            <!-- Generated template folders (root only) — System locked -->
             <template x-for="(tplFolder, tIdx) in generatedTemplateFolders" :key="tplFolder.name">
                 <div class="rm-item drive-folder-item" @click="viewingGenerated = tplFolder.name" style="cursor:pointer;" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
                     <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
                         <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
-                        <iconify-icon icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
+                        <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                     </div>
                     <div class="rm-item-body">
                         <div class="rm-item-title" x-text="tplFolder.name"></div>
                         <div class="rm-item-date"><iconify-icon icon="solar:magic-stick-3-bold" width="12" style="color:#f59e0b"></iconify-icon> <span x-text="tplFolder.count + ' fichier(s)'"></span></div>
                     </div>
-                    <span class="rm-item-badge" style="background:#f59e0b15;color:#f59e0b">Auto</span>
+                    <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>
                     <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
                 </div>
             </template>
 
-            <!-- Custom folders (root only) -->
+            <!-- Folders (root only) — Custom = editable, System = locked -->
             <template x-for="(folder, idx) in displayFolders" :key="folder.name">
                 <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : navigateTo(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
                      :class="dropTargetFolder === folder.name ? 'drive-folder-item--drop-target' : ''"
                      @dragover.prevent @dragenter.prevent="onFolderDragEnter($event, folder.name)"
                      @dragleave="onFolderDragLeave($event, folder.name)" @drop="onFolderDrop($event, folder.name)"
-                     @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
-                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
-                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                     @contextmenu.prevent="folder.isCustom ? openContextMenu($event, folder, 'folder') : null">
+                    <div class="rm-item-icon" :style="folder.isCustom ? 'background:linear-gradient(135deg,#4361ee15,#4361ee08)' : 'background:linear-gradient(135deg,#94a3b810,#94a3b805)'" style="position:relative;">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" :style="folder.isCustom ? 'color:#4361ee' : 'color:#94a3b8'"></iconify-icon>
+                        <template x-if="!folder.isCustom">
+                            <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
+                        </template>
                     </div>
                     <div class="rm-item-body" style="min-width:0;">
                         <template x-if="renamingFolderOldName !== folder.name">
@@ -982,8 +993,11 @@ document.addEventListener('alpine:init', () => {
                         </template>
                         <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
                     </div>
-                    <template x-if="renamingFolderOldName !== folder.name">
+                    <template x-if="renamingFolderOldName !== folder.name && folder.isCustom">
                         <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                    </template>
+                    <template x-if="renamingFolderOldName !== folder.name && !folder.isCustom">
+                        <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>
                     </template>
                     <template x-if="renamingFolderOldName !== folder.name">
                         <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>

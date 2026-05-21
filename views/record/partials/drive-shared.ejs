@@ -678,7 +678,7 @@ document.addEventListener('alpine:init', () => {
             const name = this.newFolderName.trim();
             if (!name) return;
             // Global root mode: use account-level API
-            if (this.isGlobalRoot && this.globalLevel === 'root') {
+            if (this.isGlobalRoot) {
                 if (this.globalDriveFolders.includes(name)) {
                     window.showMessage ? window.showMessage('Ce dossier existe déjà', 'danger') : alert('Ce dossier existe déjà');
                     this.newFolderName = ''; this.showNewFolderInput = false; return;

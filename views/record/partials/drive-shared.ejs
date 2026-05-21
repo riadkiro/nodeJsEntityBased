@@ -331,7 +331,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         triggerFileUpload() {
+            if (!this.isAtFileLevel) {
+                window.showMessage ? window.showMessage('Sélectionnez une fiche pour importer des fichiers', 'info') : null;
+                return;
+            }
             this.$refs.fileUploadInput?.click();
+        },
+
+        triggerNewFolder() {
+            if (!this.isAtFileLevel) {
+                window.showMessage ? window.showMessage('Sélectionnez une fiche pour créer un dossier', 'info') : null;
+                return;
+            }
+            this.showNewFolderInput = true;
+            this.$nextTick(() => this.$refs.folderInput?.focus());
         },
 
         startRenameFolder(folderName) {
@@ -870,27 +883,33 @@ document.addEventListener('alpine:init', () => {
     <!-- ═══ GLOBAL MODE: Entity / Record navigation ═══ -->
     <% if (driveMode === 'global') { %>
 
-    <!-- Global actions bar (visible at entity & record levels) -->
-    <div class="drive-actions-bar" x-show="!loading && !isAtFileLevel">
+    <!-- Unified actions bar (all levels) -->
+    <div class="drive-actions-bar" x-show="!loading">
         <div class="drive-actions-group">
             <button @click="globalGoBack()" class="drive-action-btn drive-action-btn--secondary" x-show="globalLevel !== 'entities'">
                 <iconify-icon icon="solar:alt-arrow-left-linear" width="16"></iconify-icon>
                 Retour
             </button>
-        </div>
-        <div class="drive-actions-group">
             <span class="drive-stats-pill" x-show="globalLevel === 'entities'">
                 <iconify-icon icon="solar:chart-2-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
                 <span x-text="globalStats.totalFiles + ' fichiers · ' + globalStats.totalSizeFormatted"></span>
             </span>
-            <button class="drive-action-btn drive-action-btn--secondary" :disabled="!isAtFileLevel" @click="showNewFolderInput = true; $nextTick(() => $refs.folderInput?.focus())" :title="!isAtFileLevel ? 'Sélectionnez une fiche pour créer un dossier' : 'Créer un dossier'">
+        </div>
+        <div class="drive-actions-group">
+            <!-- Select mode toggle (file level only) -->
+            <button @click="toggleSelectMode()" class="drive-action-btn drive-action-btn--secondary" x-show="isAtFileLevel && displayFiles.length > 0"
+                :style="selectMode ? 'background:#4361ee10;color:#4361ee;border-color:#4361ee30;' : ''">
+                <iconify-icon :icon="selectMode ? 'solar:check-square-bold' : 'solar:checkbox-minimalistic-bold-duotone'" width="16"></iconify-icon>
+                <span x-text="selectMode ? 'Annuler' : 'Sélectionner'"></span>
+            </button>
+            <button @click="triggerNewFolder()" class="drive-action-btn drive-action-btn--secondary" x-show="!selectMode && !viewingGenerated">
                 <iconify-icon icon="solar:folder-add-bold-duotone" width="17"></iconify-icon>
                 Nouveau dossier
             </button>
-            <label class="drive-action-btn drive-action-btn--primary" :class="{'opacity-45 cursor-not-allowed': !isAtFileLevel}" :title="!isAtFileLevel ? 'Sélectionnez une fiche pour importer' : 'Importer des fichiers'">
+            <label class="drive-action-btn drive-action-btn--primary" @click="!isAtFileLevel ? triggerFileUpload() : null" x-show="!selectMode && !viewingGenerated">
                 <iconify-icon icon="solar:cloud-upload-bold-duotone" width="17"></iconify-icon>
                 Importer
-                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" :disabled="!isAtFileLevel">
+                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" x-ref="fileUploadInput" :disabled="!isAtFileLevel">
             </label>
         </div>
     </div>
@@ -949,32 +968,30 @@ document.addEventListener('alpine:init', () => {
     <!-- ═══ FILE LEVEL (shared between both modes) ═══ -->
     <div x-show="isAtFileLevel">
 
-        <!-- Toolbar -->
-        <div class="drive-toolbar">
-            <div style="display:flex;gap:8px;">
-                <% if (driveMode === 'global') { %>
-                <button @click="globalGoBack()" class="drive-btn-secondary">
-                    <iconify-icon icon="solar:alt-arrow-left-linear" width="15"></iconify-icon>
-                    Retour
-                </button>
-                <% } %>
-                <button @click="showNewFolderInput = !showNewFolderInput; $nextTick(() => $refs.folderInput?.focus())" class="drive-btn-secondary" x-show="!viewingGenerated && !currentFolder && !selectMode">
-                    <iconify-icon icon="solar:folder-add-bold" width="15"></iconify-icon>
-                    Nouveau dossier
-                </button>
+        <% if (driveMode !== 'global') { %>
+        <!-- Record mode toolbar -->
+        <div class="drive-actions-bar">
+            <div class="drive-actions-group">
                 <!-- Select mode toggle -->
-                <button @click="toggleSelectMode()" class="drive-btn-secondary" x-show="displayFiles.length > 0"
+                <button @click="toggleSelectMode()" class="drive-action-btn drive-action-btn--secondary" x-show="displayFiles.length > 0"
                     :style="selectMode ? 'background:#4361ee10;color:#4361ee;border-color:#4361ee30;' : ''">
-                    <iconify-icon :icon="selectMode ? 'solar:check-square-bold' : 'solar:checkbox-minimalistic-bold-duotone'" width="15"></iconify-icon>
+                    <iconify-icon :icon="selectMode ? 'solar:check-square-bold' : 'solar:checkbox-minimalistic-bold-duotone'" width="16"></iconify-icon>
                     <span x-text="selectMode ? 'Annuler' : 'Sélectionner'"></span>
                 </button>
             </div>
-            <label class="drive-btn-primary" x-show="!viewingGenerated && !selectMode">
-                <iconify-icon icon="solar:upload-bold" width="15"></iconify-icon>
-                Ajouter
-                <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" x-ref="fileUploadInput">
-            </label>
+            <div class="drive-actions-group">
+                <button @click="triggerNewFolder()" class="drive-action-btn drive-action-btn--secondary" x-show="!viewingGenerated && !currentFolder && !selectMode">
+                    <iconify-icon icon="solar:folder-add-bold-duotone" width="17"></iconify-icon>
+                    Nouveau dossier
+                </button>
+                <label class="drive-action-btn drive-action-btn--primary" x-show="!viewingGenerated && !selectMode">
+                    <iconify-icon icon="solar:cloud-upload-bold-duotone" width="17"></iconify-icon>
+                    Importer
+                    <input type="file" multiple @change="handleFileSelect($event)" style="display:none;" x-ref="fileUploadInput">
+                </label>
+            </div>
         </div>
+        <% } %>
 
         <!-- Bulk action bar (visible in select mode) -->
         <div x-show="selectMode" x-transition style="display:flex;flex-direction:column;gap:8px;padding:10px 14px;margin-bottom:12px;background:#4361ee08;border:1px solid #4361ee20;border-radius:10px;">

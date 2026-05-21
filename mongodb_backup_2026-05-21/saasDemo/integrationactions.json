@@ -1,0 +1,368 @@
+[
+  {
+    "_id": "698203c651a0e3777df6200b",
+    "providerKey": "unsplash",
+    "actionKey": "search-photos",
+    "__v": 0,
+    "createdAt": "2026-02-03T14:18:46.023Z",
+    "description": "Search for photos on Unsplash by keyword",
+    "http": {
+      "method": "GET",
+      "path": "/search/photos"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "title": "Search Query",
+          "description": "Keywords to search for"
+        },
+        "per_page": {
+          "type": "number",
+          "title": "Results per page",
+          "default": 10
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "isPublished": true,
+    "name": "Search Photos",
+    "requestTemplate": {
+      "query": {
+        "query": "{{input.query}}",
+        "per_page": "{{input.per_page}}"
+      },
+      "headers": {},
+      "body": {}
+    },
+    "responseMapping": {
+      "photos": "results",
+      "total": "total",
+      "totalPages": "total_pages"
+    },
+    "testPayload": {
+      "query": "mountains",
+      "per_page": 5
+    },
+    "updatedAt": "2026-02-03T14:18:46.023Z"
+  },
+  {
+    "_id": "69821cb855fdbed1691d1ff3",
+    "providerKey": "google",
+    "actionKey": "get-userinfo",
+    "name": "Get user profile",
+    "description": "Retrieve basic Google user profile (OAuth test)\n",
+    "http": {
+      "method": "GET",
+      "path": "/oauth2/v3/userinfo"
+    },
+    "isPublished": true,
+    "createdAt": "2026-02-03T16:05:12.897Z",
+    "updatedAt": "2026-02-03T16:05:12.897Z",
+    "__v": 0
+  },
+  {
+    "_id": "6982ca8351a0e3777df62010",
+    "actionKey": "chat-completion",
+    "providerKey": "openai",
+    "__v": 0,
+    "createdAt": "2026-02-04T04:26:43.951Z",
+    "description": "Generate text using GPT models (GPT-4, GPT-3.5-turbo)",
+    "http": {
+      "method": "POST",
+      "path": "/chat/completions"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "title": "Model",
+          "description": "ID of the model to use",
+          "enum": [
+            "gpt-4",
+            "gpt-4-turbo",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-3.5-turbo"
+          ],
+          "default": "gpt-4o-mini"
+        },
+        "messages": {
+          "type": "array",
+          "title": "Messages",
+          "description": "List of messages in the conversation",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "user",
+                  "assistant"
+                ]
+              },
+              "content": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "temperature": {
+          "type": "number",
+          "title": "Temperature",
+          "description": "Creativity level (0-2)",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2
+        },
+        "max_tokens": {
+          "type": "number",
+          "title": "Max Tokens",
+          "description": "Maximum tokens in response",
+          "default": 1000
+        }
+      },
+      "required": [
+        "model",
+        "messages"
+      ]
+    },
+    "isPublished": true,
+    "name": "Chat Completion",
+    "requestTemplate": {
+      "query": {},
+      "headers": {},
+      "body": {
+        "model": "{{input.model}}",
+        "messages": "{{input.messages}}",
+        "temperature": "{{input.temperature}}",
+        "max_tokens": "{{input.max_tokens}}",
+        "response_format": "{{input.response_format}}"
+      }
+    },
+    "responseMapping": {
+      "content": "choices[0].message.content",
+      "role": "choices[0].message.role",
+      "model": "model",
+      "usage": "usage",
+      "finishReason": "choices[0].finish_reason"
+    },
+    "testPayload": {
+      "model": "gpt-4o-mini",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Say hello in French"
+        }
+      ],
+      "max_tokens": 50
+    },
+    "updatedAt": "2026-02-09T03:53:22.161Z"
+  },
+  {
+    "_id": "698732d7dc0731b0e1a8eb8d",
+    "actionKey": "create-record",
+    "providerKey": "app",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:40:55.529Z",
+    "description": "Créer un nouveau record dans une entity",
+    "http": {
+      "method": "POST",
+      "path": "/internal/create-record"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "entityId": {
+          "type": "string",
+          "label": "Entity ID",
+          "required": true,
+          "description": "ID de l'entity cible"
+        },
+        "title": {
+          "type": "string",
+          "label": "Titre",
+          "description": "Titre du record"
+        },
+        "description": {
+          "type": "string",
+          "label": "Description"
+        },
+        "status": {
+          "type": "string",
+          "label": "Statut",
+          "default": "draft"
+        },
+        "customFields": {
+          "type": "object",
+          "label": "Champs personnalisés",
+          "description": "Objet { field_id: value }"
+        }
+      },
+      "required": [
+        "entityId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Create Record",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "title": "title",
+      "createdAt": "createdAt"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:40:55.529Z"
+  },
+  {
+    "_id": "698732d7dc0731b0e1a8eb8e",
+    "providerKey": "app",
+    "actionKey": "update-record",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:40:55.531Z",
+    "description": "Modifier un record existant",
+    "http": {
+      "method": "PUT",
+      "path": "/internal/update-record"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "label": "Record ID",
+          "required": true,
+          "description": "ID du record à modifier"
+        },
+        "title": {
+          "type": "string",
+          "label": "Titre"
+        },
+        "description": {
+          "type": "string",
+          "label": "Description"
+        },
+        "status": {
+          "type": "string",
+          "label": "Statut"
+        },
+        "customFields": {
+          "type": "object",
+          "label": "Champs personnalisés",
+          "description": "Objet { field_id: value }"
+        }
+      },
+      "required": [
+        "recordId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Update Record",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "title": "title",
+      "updatedAt": "updatedAt"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:40:55.531Z"
+  },
+  {
+    "_id": "698732d7dc0731b0e1a8eb8f",
+    "actionKey": "delete-record",
+    "providerKey": "app",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:40:55.534Z",
+    "description": "Supprimer un record",
+    "http": {
+      "method": "DELETE",
+      "path": "/internal/delete-record"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "label": "Record ID",
+          "required": true,
+          "description": "ID du record à supprimer"
+        }
+      },
+      "required": [
+        "recordId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Delete Record",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "deleted": "deleted"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:40:55.534Z"
+  },
+  {
+    "_id": "698732d7dc0731b0e1a8eb90",
+    "providerKey": "app",
+    "actionKey": "set-status",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:40:55.536Z",
+    "description": "Changer le statut/classification d'un record",
+    "http": {
+      "method": "PUT",
+      "path": "/internal/set-status"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "label": "Record ID",
+          "required": true
+        },
+        "classificationId": {
+          "type": "string",
+          "label": "Classification ID",
+          "required": true,
+          "description": "ID de la classification (ex: statusClassification)"
+        },
+        "optionId": {
+          "type": "string",
+          "label": "Option ID",
+          "required": true,
+          "description": "ID de l'option cible"
+        }
+      },
+      "required": [
+        "recordId",
+        "classificationId",
+        "optionId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Set Status",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "classificationId": "classificationId",
+      "optionId": "optionId",
+      "optionLabel": "optionLabel"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:40:55.536Z"
+  }
+]

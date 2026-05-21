@@ -1,0 +1,584 @@
+[
+  {
+    "_id": "69e9e4165ca57f4b82f92999",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "rdv_status",
+    "__v": 0,
+    "createdAt": "2026-04-23T09:19:18.213Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Statut RDV",
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#3b82f6",
+        "type": "start",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d10073"
+      },
+      {
+        "label": "Confirmé",
+        "color": "#8b5cf6",
+        "type": "active",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d10074"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "type": "completed",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d10075"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "type": "normal",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d10076"
+      },
+      {
+        "label": "Non présenté",
+        "color": "#f97316",
+        "type": "normal",
+        "order": 4,
+        "_id": "69e9e41650764dbd79d10077"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.213Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9299a",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "consult_type",
+    "__v": 0,
+    "createdAt": "2026-04-23T09:19:18.215Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Type de consultation",
+    "options": [
+      {
+        "label": "Générale",
+        "color": "#3b82f6",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d1007e"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d1007f"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d10080"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#8b5cf6",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d10081"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.215Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9299b",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "invoice_status",
+    "__v": 0,
+    "createdAt": "2026-04-23T09:19:18.216Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Statut facture",
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#94a3b8",
+        "type": "start",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d10087"
+      },
+      {
+        "label": "Envoyée",
+        "color": "#3b82f6",
+        "type": "active",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d10088"
+      },
+      {
+        "label": "Payée",
+        "color": "#22c55e",
+        "type": "completed",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d10089"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "type": "normal",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d1008a"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.216Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9299c",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "payment_method",
+    "__v": 0,
+    "createdAt": "2026-04-23T09:19:18.217Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Mode de paiement",
+    "options": [
+      {
+        "label": "Espèces",
+        "color": "#22c55e",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d10090"
+      },
+      {
+        "label": "Carte bancaire",
+        "color": "#3b82f6",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d10091"
+      },
+      {
+        "label": "Virement",
+        "color": "#8b5cf6",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d10092"
+      },
+      {
+        "label": "Assurance",
+        "color": "#f59e0b",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d10093"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.217Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9299d",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "staff_role",
+    "__v": 0,
+    "createdAt": "2026-04-23T09:19:18.219Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Rôle personnel",
+    "options": [
+      {
+        "label": "Médecin",
+        "color": "#3b82f6",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d10099"
+      },
+      {
+        "label": "Infirmier(e)",
+        "color": "#22c55e",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d1009a"
+      },
+      {
+        "label": "Secrétaire",
+        "color": "#8b5cf6",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d1009b"
+      },
+      {
+        "label": "Administrateur",
+        "color": "#f59e0b",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d1009c"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.219Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9299e",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "patient_tags",
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-04-23T09:19:18.220Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Tags patient",
+    "options": [
+      {
+        "label": "VIP",
+        "color": "#f59e0b",
+        "icon": "solar:star-bold",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d100a2"
+      },
+      {
+        "label": "Chronique",
+        "color": "#ef4444",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d100a3"
+      },
+      {
+        "label": "Risque allergie",
+        "color": "#f97316",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d100a4"
+      },
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d100a5"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.220Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9299f",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "key": "lab_type",
+    "__v": 0,
+    "createdAt": "2026-04-23T09:19:18.221Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Type analyse labo",
+    "options": [
+      {
+        "label": "Sang",
+        "color": "#ef4444",
+        "order": 0,
+        "_id": "69e9e41650764dbd79d100ab"
+      },
+      {
+        "label": "Urine",
+        "color": "#f59e0b",
+        "order": 1,
+        "_id": "69e9e41650764dbd79d100ac"
+      },
+      {
+        "label": "Imagerie",
+        "color": "#3b82f6",
+        "order": 2,
+        "_id": "69e9e41650764dbd79d100ad"
+      },
+      {
+        "label": "Autre",
+        "color": "#94a3b8",
+        "order": 3,
+        "_id": "69e9e41650764dbd79d100ae"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-04-23T09:19:18.221Z"
+  },
+  {
+    "_id": "697e0010000000000000010a",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-04-29T22:00:20.925Z",
+    "defaultOptionId": null,
+    "description": "Statut de progression",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_progression",
+    "name": "Progression",
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#9ca3af",
+        "icon": "tabler:circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001a"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "tabler:progress",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001b"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "tabler:eye",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001c"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "tabler:check",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001d"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "tabler:alert-circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001e"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-04-29T22:00:20.925Z"
+  },
+  {
+    "_id": "697e0010000000000000010b",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-04-29T22:00:20.940Z",
+    "defaultOptionId": null,
+    "description": "Niveau de priorité",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_priority",
+    "name": "Priorité",
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "tabler:arrow-down",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002a"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "tabler:minus",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002b"
+      },
+      {
+        "label": "Haute",
+        "color": "#ef4444",
+        "icon": "tabler:arrow-up",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002c"
+      },
+      {
+        "label": "Urgent",
+        "color": "#dc2626",
+        "icon": "tabler:alert-triangle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002d"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-04-29T22:00:20.940Z"
+  },
+  {
+    "_id": "697e0010000000000000010c",
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-04-29T22:00:20.942Z",
+    "defaultOptionId": null,
+    "description": "Tags de catégorisation",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_tags",
+    "name": "Tags",
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003b"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003c"
+      },
+      {
+        "label": "DevOps",
+        "color": "#f97316",
+        "icon": "tabler:cloud",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003d"
+      },
+      {
+        "label": "Docs",
+        "color": "#14b8a6",
+        "icon": "tabler:file-text",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003e"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "tabler:bug",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003f"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-04-29T22:00:20.942Z"
+  },
+  {
+    "_id": "697e0010000000000000010d",
+    "__v": 1,
+    "allowMultiple": false,
+    "createdAt": "2026-04-29T22:00:20.944Z",
+    "defaultOptionId": null,
+    "description": "Liste / groupe de tâches",
+    "entities": [],
+    "isShared": true,
+    "key": "task_list",
+    "name": "Liste",
+    "options": [
+      {
+        "label": "Général",
+        "color": "#6366f1",
+        "icon": "tabler:list",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004b"
+      },
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004c"
+      },
+      {
+        "label": "App mobile",
+        "color": "#10b981",
+        "icon": "tabler:device-mobile",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004d"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004e"
+      },
+      {
+        "label": "WW",
+        "color": "#6366f1",
+        "icon": "tabler:list",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69f2fb231f74e61fafa55aa7"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-04-30T06:48:03.761Z"
+  }
+]

@@ -1,0 +1,721 @@
+[
+  {
+    "_id": "697e0000000000000000e001",
+    "__v": 0,
+    "classifications": [
+      "697e0010000000000000010b",
+      "697e0010000000000000010c",
+      "697e0010000000000000010d"
+    ],
+    "color": "#4361ee",
+    "createdAt": "2026-05-20T08:08:21.246Z",
+    "customFields": [
+      "697e0020000000000000020b",
+      "697e0020000000000000020c"
+    ],
+    "description": "Gestion des tâches et suivi de projet",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "dueDate",
+      "attachments"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "isSystem": true,
+    "layout": [],
+    "name": "Tâches",
+    "namePlural": "Tâches",
+    "nameSingular": "Tâche",
+    "order": 0,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0ec62"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [],
+    "slug": "taches",
+    "spaces": [],
+    "statusClassification": "697e0010000000000000010a",
+    "updatedAt": "2026-05-20T08:08:21.246Z"
+  },
+  {
+    "_id": "697e0000000000000000e002",
+    "__v": 0,
+    "classifications": [],
+    "color": "#f59e0b",
+    "createdAt": "2026-05-20T08:08:21.248Z",
+    "customFields": [],
+    "description": "Bloc-notes et mémos",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:notes-bold-duotone",
+    "isSystem": true,
+    "layout": [],
+    "name": "Notes",
+    "namePlural": "Notes",
+    "nameSingular": "Note",
+    "order": 0,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0ec65"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [],
+    "slug": "notes",
+    "spaces": [],
+    "updatedAt": "2026-05-20T08:08:21.248Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b717",
+    "slug": "contacts",
+    "__v": 0,
+    "classifications": [
+      "6a0d6bf5491c52a4e438b716"
+    ],
+    "color": "#3b82f6",
+    "createdAt": "2026-05-20T08:08:21.294Z",
+    "customFields": [
+      "6a0d6bf5491c52a4e438b6f9",
+      "6a0d6bf5491c52a4e438b6fa",
+      "6a0d6bf5491c52a4e438b6fb",
+      "6a0d6bf5491c52a4e438b6fc",
+      "6a0d6bf5491c52a4e438b6fd",
+      "6a0d6bf5491c52a4e438b6fe",
+      "6a0d6bf5491c52a4e438b710"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:user-bold-duotone",
+    "isSystem": false,
+    "layout": [],
+    "name": "Contact",
+    "namePlural": "Contacts",
+    "nameSingular": "Contact",
+    "order": 0,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "6a0d6bf5491c52a4e438b6fa",
+        "_id": "6a0d6bf556619d10f2a0ecbd"
+      },
+      {
+        "t": "text",
+        "v": " ",
+        "_id": "6a0d6bf556619d10f2a0ecbe"
+      },
+      {
+        "t": "field",
+        "id": "6a0d6bf5491c52a4e438b6f9",
+        "_id": "6a0d6bf556619d10f2a0ecbf"
+      }
+    ],
+    "relations": [
+      {
+        "key": "89380c53-2ad8-491c-8c07-1d3d7625d70e",
+        "targetEntity": "6a0d6bf5491c52a4e438b718",
+        "label": "Entreprise",
+        "inverseLabel": "Contacts",
+        "cardinality": "many-to-one",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "showInForm": true,
+        "_id": "6a0d6bf556619d10f2a0ece3"
+      }
+    ],
+    "sidebarWidgets": [
+      {
+        "_id": "6a0d6bf556619d10f2a0ecc0",
+        "type": "note",
+        "label": "Note CRM",
+        "icon": "solar:notes-bold-duotone",
+        "color": "#3b82f6",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      },
+      {
+        "_id": "6a0d6bf556619d10f2a0ecc1",
+        "type": "tasks",
+        "label": "Suivi",
+        "icon": "solar:checklist-bold-duotone",
+        "color": "#f59e0b",
+        "order": 1,
+        "visible": true,
+        "config": {
+          "tasks": [
+            {
+              "label": "Appel de découverte",
+              "done": false
+            },
+            {
+              "label": "Envoyer plaquette commerciale",
+              "done": false
+            }
+          ]
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-05-20T08:08:21.303Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b718",
+    "slug": "entreprises",
+    "__v": 2,
+    "classifications": [
+      "6a0d6bf5491c52a4e438b715"
+    ],
+    "color": "#64748b",
+    "createdAt": "2026-05-20T08:08:21.296Z",
+    "customFields": [
+      "6a0d6bf5491c52a4e438b6ff",
+      "6a0d6bf5491c52a4e438b700",
+      "6a0d6bf5491c52a4e438b701",
+      "6a0d6bf5491c52a4e438b710",
+      "6a0d7189df797cae524fba5e",
+      "6a0d719edf797cae524fbc5d"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:buildings-bold-duotone",
+    "isSystem": false,
+    "layout": [],
+    "name": "Entreprise",
+    "namePlural": "Entreprises",
+    "nameSingular": "Entreprise",
+    "order": 1,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0ecc9"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [
+      {
+        "_id": "6a0d6bf556619d10f2a0ecca",
+        "type": "note",
+        "label": "Stratégie de compte",
+        "icon": "solar:target-bold-duotone",
+        "color": "#64748b",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-05-20T08:32:30.597Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b719",
+    "slug": "opportunites",
+    "__v": 0,
+    "classifications": [
+      "6a0d6bf5491c52a4e438b713"
+    ],
+    "color": "#22c55e",
+    "createdAt": "2026-05-20T08:08:21.297Z",
+    "customFields": [
+      "6a0d6bf5491c52a4e438b702",
+      "6a0d6bf5491c52a4e438b703",
+      "6a0d6bf5491c52a4e438b704",
+      "6a0d6bf5491c52a4e438b710"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:chart-bold-duotone",
+    "isSystem": false,
+    "layout": [],
+    "name": "Opportunité",
+    "namePlural": "Opportunités",
+    "nameSingular": "Opportunité",
+    "order": 2,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0eccf"
+      }
+    ],
+    "relations": [
+      {
+        "key": "1f47f432-b31c-4792-90de-984c0dcbec74",
+        "targetEntity": "6a0d6bf5491c52a4e438b717",
+        "label": "Contact principal",
+        "inverseLabel": "Opportunités",
+        "cardinality": "many-to-one",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "showInForm": true,
+        "_id": "6a0d6bf556619d10f2a0ecea"
+      },
+      {
+        "key": "bd665af6-547d-4a8e-9112-a337af5637bd",
+        "targetEntity": "6a0d6bf5491c52a4e438b718",
+        "label": "Entreprise",
+        "inverseLabel": "Opportunités",
+        "cardinality": "many-to-one",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "showInForm": true,
+        "_id": "6a0d6bf556619d10f2a0ecef"
+      }
+    ],
+    "sidebarWidgets": [
+      {
+        "_id": "6a0d6bf556619d10f2a0ecd0",
+        "type": "note",
+        "label": "Next steps",
+        "icon": "solar:arrow-right-bold-duotone",
+        "color": "#22c55e",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      },
+      {
+        "_id": "6a0d6bf556619d10f2a0ecd1",
+        "type": "tasks",
+        "label": "Checklist Deal",
+        "icon": "solar:checklist-bold-duotone",
+        "color": "#8b5cf6",
+        "order": 1,
+        "visible": true,
+        "config": {
+          "tasks": [
+            {
+              "label": "Identifier le décideur",
+              "done": false
+            },
+            {
+              "label": "Valider le budget",
+              "done": false
+            },
+            {
+              "label": "Démonstration produit",
+              "done": false
+            }
+          ]
+        }
+      }
+    ],
+    "spaces": [],
+    "statusClassification": "6a0d6bf5491c52a4e438b712",
+    "updatedAt": "2026-05-20T08:08:21.306Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b71a",
+    "slug": "activites",
+    "__v": 0,
+    "classifications": [
+      "6a0d6bf5491c52a4e438b714"
+    ],
+    "color": "#8b5cf6",
+    "createdAt": "2026-05-20T08:08:21.299Z",
+    "customFields": [
+      "6a0d6bf5491c52a4e438b705",
+      "6a0d6bf5491c52a4e438b706"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:phone-calling-bold-duotone",
+    "isSystem": false,
+    "layout": [],
+    "name": "Activité",
+    "namePlural": "Activités",
+    "nameSingular": "Activité",
+    "order": 3,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0ecd7"
+      }
+    ],
+    "relations": [
+      {
+        "key": "f7a3d9dc-081a-44db-894a-218c94fedaa3",
+        "targetEntity": "6a0d6bf5491c52a4e438b717",
+        "label": "Contact",
+        "inverseLabel": "Activités",
+        "cardinality": "many-to-one",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "showInForm": true,
+        "_id": "6a0d6bf556619d10f2a0ecf5"
+      },
+      {
+        "key": "0dd8ba88-0c39-4216-b06d-3e296a004d3b",
+        "targetEntity": "6a0d6bf5491c52a4e438b719",
+        "label": "Opportunité",
+        "inverseLabel": "Activités",
+        "cardinality": "many-to-one",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "showInForm": true,
+        "_id": "6a0d6bf556619d10f2a0ecf8"
+      }
+    ],
+    "sidebarWidgets": [],
+    "spaces": [],
+    "updatedAt": "2026-05-20T08:08:21.308Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b71b",
+    "slug": "produits",
+    "__v": 0,
+    "classifications": [],
+    "color": "#0ea5e9",
+    "createdAt": "2026-05-20T08:08:21.301Z",
+    "customFields": [
+      "6a0d6bf5491c52a4e438b707",
+      "6a0d6bf5491c52a4e438b708",
+      "6a0d6bf5491c52a4e438b709",
+      "6a0d6bf5491c52a4e438b710"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:box-bold-duotone",
+    "isSystem": false,
+    "layout": [],
+    "name": "Produit",
+    "namePlural": "Produits",
+    "nameSingular": "Produit",
+    "order": 4,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0ecdb"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [],
+    "spaces": [],
+    "updatedAt": "2026-05-20T08:08:21.301Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b71c",
+    "slug": "services",
+    "__v": 0,
+    "classifications": [],
+    "color": "#0ea5e9",
+    "createdAt": "2026-05-20T08:08:21.302Z",
+    "customFields": [
+      "6a0d6bf5491c52a4e438b707",
+      "6a0d6bf5491c52a4e438b708",
+      "6a0d6bf5491c52a4e438b709",
+      "6a0d6bf5491c52a4e438b710"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:settings-bold-duotone",
+    "isSystem": false,
+    "layout": [],
+    "name": "Service",
+    "namePlural": "Services",
+    "nameSingular": "Service",
+    "order": 5,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a0d6bf556619d10f2a0ecdf"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [],
+    "spaces": [],
+    "updatedAt": "2026-05-20T08:08:21.302Z"
+  }
+]

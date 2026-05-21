@@ -1,0 +1,92 @@
+[
+  {
+    "_id": "6814b618de053b781897978b",
+    "workspace": "6814b618de053b7818979776",
+    "entity": "6814b618de053b781897977f",
+    "data": {
+      "name": "Acme Corporation",
+      "email": "contact@acme.com",
+      "phone": "555-123-4567",
+      "status": "Active"
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.186Z",
+    "updatedAt": "2025-05-02T12:10:00.186Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814b618de053b781897978c",
+    "workspace": "6814b618de053b7818979776",
+    "entity": "6814b618de053b781897977f",
+    "data": {
+      "name": "TechStars Inc.",
+      "email": "info@techstars.com",
+      "phone": "555-987-6543",
+      "status": "Active"
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.186Z",
+    "updatedAt": "2025-05-02T12:10:00.186Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814b618de053b781897978d",
+    "workspace": "6814b618de053b7818979776",
+    "entity": "6814b618de053b781897977f",
+    "data": {
+      "name": "Global Enterprises",
+      "email": "sales@globalent.com",
+      "phone": "555-567-8901",
+      "status": "Inactive"
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.186Z",
+    "updatedAt": "2025-05-02T12:10:00.186Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814b618de053b781897978f",
+    "workspace": "6814b618de053b7818979776",
+    "entity": "6814b618de053b7818979785",
+    "data": {
+      "title": "Annual Software License",
+      "amount": 25000,
+      "status": "Negotiation",
+      "customer": "6814b618de053b781897978b"
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.189Z",
+    "updatedAt": "2025-05-02T12:10:00.189Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814b618de053b7818979790",
+    "workspace": "6814b618de053b7818979776",
+    "entity": "6814b618de053b7818979785",
+    "data": {
+      "title": "Cloud Migration Project",
+      "amount": 75000,
+      "status": "Closed Won",
+      "customer": "6814b618de053b781897978c"
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.189Z",
+    "updatedAt": "2025-05-02T12:10:00.189Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814b618de053b7818979791",
+    "workspace": "6814b618de053b7818979776",
+    "entity": "6814b618de053b7818979785",
+    "data": {
+      "title": "Infrastructure Upgrade",
+      "amount": 125000,
+      "status": "Proposal",
+      "customer": "6814b618de053b781897978b"
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.189Z",
+    "updatedAt": "2025-05-02T12:10:00.189Z",
+    "__v": 0
+  }
+]

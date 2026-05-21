@@ -1,0 +1,46 @@
+[
+  {
+    "_id": "6a04e8373e9ebff1c4cbf146",
+    "recordId": "69ce302352c96f71dd936176",
+    "entityId": "69ce302352c96f71dd935ef7",
+    "isPublic": false,
+    "publicPermissions": {
+      "read": true,
+      "update": false
+    },
+    "grants": [
+      {
+        "granteeType": "team",
+        "granteeId": "6a04e8363e9ebff1c4cbf132",
+        "permissions": {
+          "read": true,
+          "update": true,
+          "delete": false,
+          "share": false
+        },
+        "grantedBy": "643c0b36fbde1ceb1bdc97bb",
+        "grantedAt": "2026-05-13T21:08:07.023Z",
+        "expiresAt": null,
+        "note": "",
+        "_id": "6a04e8373e9ebff1c4cbf147"
+      }
+    ],
+    "createdAt": "2026-05-13T21:08:07.025Z",
+    "updatedAt": "2026-05-13T21:08:07.025Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a05052593c6f8ea7405fd3b",
+    "recordId": "69ce302352c96f71dd936036",
+    "entityId": "69ce302352c96f71dd935ef0",
+    "isPublic": false,
+    "publicPermissions": {
+      "read": true,
+      "update": false
+    },
+    "grants": [],
+    "createdAt": "2026-05-13T23:11:33.406Z",
+    "updatedAt": "2026-05-14T16:00:38.882Z",
+    "__v": 5
+  }
+]

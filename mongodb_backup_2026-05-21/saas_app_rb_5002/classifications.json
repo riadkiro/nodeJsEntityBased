@@ -1,0 +1,238 @@
+[
+  {
+    "_id": "6999042d89cd63ea3da5ad00",
+    "name": "Statut",
+    "key": "6999042d89cd63ea3da5acef_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999042d89cd63ea3da5acef"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5ad01"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6999042d89cd63ea3da5ad02"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "6999042d89cd63ea3da5ad03"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T01:02:37.542Z",
+    "updatedAt": "2026-02-21T01:02:37.542Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae14",
+    "name": "Type",
+    "key": "6999042d89cd63ea3da5ae09_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999042d89cd63ea3da5ae09"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5ae15"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5ae16"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5ae17"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5ae18"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T01:02:37.653Z",
+    "updatedAt": "2026-02-21T01:02:37.653Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aeef",
+    "name": "Statut",
+    "key": "6999042d89cd63ea3da5aede_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999042d89cd63ea3da5aede"
+    ],
+    "options": [
+      {
+        "label": "En cours",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5aef0"
+      },
+      {
+        "label": "Terminé",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6999042d89cd63ea3da5aef1"
+      },
+      {
+        "label": "Suspendu",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6999042d89cd63ea3da5aef2"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "6999042d89cd63ea3da5aef3"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T01:02:37.705Z",
+    "updatedAt": "2026-02-21T01:02:37.705Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aef6",
+    "name": "Type",
+    "key": "6999042d89cd63ea3da5aede_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999042d89cd63ea3da5aede"
+    ],
+    "options": [
+      {
+        "label": "Médicament",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5aef7"
+      },
+      {
+        "label": "Kinésithérapie",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5aef8"
+      },
+      {
+        "label": "Chirurgie",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5aef9"
+      },
+      {
+        "label": "Immunothérapie",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5aefa"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999042d89cd63ea3da5aefb"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T01:02:37.708Z",
+    "updatedAt": "2026-02-21T01:02:37.708Z",
+    "__v": 0
+  }
+]

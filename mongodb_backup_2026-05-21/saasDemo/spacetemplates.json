@@ -1,0 +1,369 @@
+[
+  {
+    "_id": "6997693e7181bfedeca2870a",
+    "name": "CRM",
+    "slug": "tpl-space-crm",
+    "description": "Gestion de la relation client : contacts, opportunités et pipeline commercial",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "image": "",
+    "category": "crm",
+    "tags": [
+      "crm",
+      "sales",
+      "contacts"
+    ],
+    "entities": [
+      {
+        "templateSlug": "tpl-contacts",
+        "isMain": true,
+        "order": 0,
+        "_id": "6998908b4a21c28ce42f5769"
+      },
+      {
+        "templateSlug": "tpl-opportunities",
+        "isMain": false,
+        "order": 1,
+        "_id": "6998908b4a21c28ce42f576a"
+      }
+    ],
+    "defaultViews": [
+      {
+        "entitySlug": "tpl-contacts",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f576c"
+      },
+      {
+        "entitySlug": "tpl-opportunities",
+        "viewType": "kanban",
+        "_id": "6998908b4a21c28ce42f576d"
+      }
+    ],
+    "active": true,
+    "featured": true,
+    "order": 0,
+    "usageCount": 12,
+    "relations": [
+      {
+        "from": "tpl-opportunities",
+        "to": "tpl-contacts",
+        "type": "many-to-one",
+        "fieldName": "contact",
+        "label": "Contact",
+        "_id": "6998908b4a21c28ce42f576b"
+      }
+    ],
+    "createdAt": "2026-02-19T19:49:18.950Z",
+    "updatedAt": "2026-05-16T21:00:44.672Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997693e7181bfedeca28711",
+    "name": "Comptabilité",
+    "slug": "tpl-space-accounting",
+    "description": "Suivi des factures, devis et dépenses de votre entreprise",
+    "icon": "solar:wallet-bold-duotone",
+    "color": "#e2a03f",
+    "image": "",
+    "category": "finance",
+    "tags": [
+      "accounting",
+      "finance",
+      "invoices"
+    ],
+    "entities": [
+      {
+        "templateSlug": "tpl-invoices",
+        "isMain": true,
+        "order": 0,
+        "_id": "6998908b4a21c28ce42f5779"
+      },
+      {
+        "templateSlug": "tpl-expenses",
+        "isMain": false,
+        "order": 1,
+        "_id": "6998908b4a21c28ce42f577a"
+      }
+    ],
+    "defaultViews": [
+      {
+        "entitySlug": "tpl-invoices",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f577b"
+      },
+      {
+        "entitySlug": "tpl-expenses",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f577c"
+      }
+    ],
+    "active": true,
+    "featured": true,
+    "order": 1,
+    "usageCount": 2,
+    "relations": [],
+    "createdAt": "2026-02-19T19:49:18.972Z",
+    "updatedAt": "2026-02-20T16:49:15.957Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997693e7181bfedeca28718",
+    "name": "Gestion de Projet",
+    "slug": "tpl-space-project",
+    "description": "Planification et suivi de vos projets avec tâches, jalons et tableaux kanban",
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "image": "",
+    "category": "project",
+    "tags": [
+      "project",
+      "tasks",
+      "management"
+    ],
+    "entities": [
+      {
+        "templateSlug": "tpl-tasks",
+        "isMain": true,
+        "order": 0,
+        "_id": "6998908b4a21c28ce42f5788"
+      },
+      {
+        "templateSlug": "tpl-milestones",
+        "isMain": false,
+        "order": 1,
+        "_id": "6998908b4a21c28ce42f5789"
+      }
+    ],
+    "defaultViews": [
+      {
+        "entitySlug": "tpl-tasks",
+        "viewType": "kanban",
+        "_id": "6998908b4a21c28ce42f578b"
+      },
+      {
+        "entitySlug": "tpl-milestones",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f578c"
+      }
+    ],
+    "active": true,
+    "featured": true,
+    "order": 2,
+    "usageCount": 4,
+    "relations": [
+      {
+        "from": "tpl-tasks",
+        "to": "tpl-milestones",
+        "type": "many-to-one",
+        "fieldName": "milestone",
+        "label": "Jalon",
+        "_id": "6998908b4a21c28ce42f578a"
+      }
+    ],
+    "createdAt": "2026-02-19T19:49:18.974Z",
+    "updatedAt": "2026-03-22T13:19:04.460Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997693e7181bfedeca2871f",
+    "name": "Ressources Humaines",
+    "slug": "tpl-space-hr",
+    "description": "Gestion du personnel, des contrats et des demandes de congés",
+    "icon": "solar:user-id-bold-duotone",
+    "color": "#805dca",
+    "image": "",
+    "category": "hr",
+    "tags": [
+      "hr",
+      "employees",
+      "leave"
+    ],
+    "entities": [
+      {
+        "templateSlug": "tpl-employees",
+        "isMain": true,
+        "order": 0,
+        "_id": "6998908b4a21c28ce42f5799"
+      },
+      {
+        "templateSlug": "tpl-leave-requests",
+        "isMain": false,
+        "order": 1,
+        "_id": "6998908b4a21c28ce42f579a"
+      }
+    ],
+    "defaultViews": [
+      {
+        "entitySlug": "tpl-employees",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f579c"
+      },
+      {
+        "entitySlug": "tpl-leave-requests",
+        "viewType": "kanban",
+        "_id": "6998908b4a21c28ce42f579d"
+      }
+    ],
+    "active": true,
+    "featured": true,
+    "order": 3,
+    "usageCount": 2,
+    "relations": [
+      {
+        "from": "tpl-leave-requests",
+        "to": "tpl-employees",
+        "type": "many-to-one",
+        "fieldName": "employee",
+        "label": "Employé",
+        "_id": "6998908b4a21c28ce42f579b"
+      }
+    ],
+    "createdAt": "2026-02-19T19:49:18.975Z",
+    "updatedAt": "2026-02-21T00:47:56.922Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997693e7181bfedeca28726",
+    "name": "Cabinet Médical",
+    "slug": "tpl-space-medical",
+    "description": "Gestion complète du cabinet : patients, consultations, traitements et suivi médical",
+    "icon": "solar:health-bold-duotone",
+    "color": "#2196f3",
+    "image": "",
+    "category": "medical",
+    "tags": [
+      "medical",
+      "patients",
+      "health",
+      "doctor"
+    ],
+    "entities": [
+      {
+        "templateSlug": "tpl-patients",
+        "isMain": true,
+        "order": 0,
+        "_id": "6998908b4a21c28ce42f57aa"
+      },
+      {
+        "templateSlug": "tpl-consultations",
+        "isMain": false,
+        "order": 1,
+        "_id": "6998908b4a21c28ce42f57ab"
+      },
+      {
+        "templateSlug": "tpl-treatments",
+        "isMain": false,
+        "order": 2,
+        "_id": "6998908b4a21c28ce42f57ac"
+      }
+    ],
+    "defaultViews": [
+      {
+        "entitySlug": "tpl-patients",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f57b0"
+      },
+      {
+        "entitySlug": "tpl-consultations",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f57b1"
+      },
+      {
+        "entitySlug": "tpl-treatments",
+        "viewType": "kanban",
+        "_id": "6998908b4a21c28ce42f57b2"
+      }
+    ],
+    "active": true,
+    "featured": true,
+    "order": 4,
+    "usageCount": 20,
+    "relations": [
+      {
+        "from": "tpl-consultations",
+        "to": "tpl-patients",
+        "type": "many-to-one",
+        "fieldName": "patient",
+        "label": "Patient",
+        "_id": "6998908b4a21c28ce42f57ad"
+      },
+      {
+        "from": "tpl-treatments",
+        "to": "tpl-patients",
+        "type": "many-to-one",
+        "fieldName": "patient",
+        "label": "Patient",
+        "_id": "6998908b4a21c28ce42f57ae"
+      },
+      {
+        "from": "tpl-treatments",
+        "to": "tpl-consultations",
+        "type": "many-to-one",
+        "fieldName": "consultation",
+        "label": "Consultation",
+        "_id": "6998908b4a21c28ce42f57af"
+      }
+    ],
+    "createdAt": "2026-02-19T19:49:18.977Z",
+    "updatedAt": "2026-02-27T07:07:04.985Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997693e7181bfedeca2872d",
+    "name": "Logistique & Stock",
+    "slug": "tpl-space-logistics",
+    "description": "Gestion des produits, du stock et des commandes",
+    "icon": "solar:box-minimalistic-bold-duotone",
+    "color": "#f97316",
+    "image": "",
+    "category": "logistics",
+    "tags": [
+      "logistics",
+      "inventory",
+      "orders"
+    ],
+    "entities": [
+      {
+        "templateSlug": "tpl-products",
+        "isMain": true,
+        "order": 0,
+        "_id": "6998908b4a21c28ce42f57bf"
+      },
+      {
+        "templateSlug": "tpl-orders",
+        "isMain": false,
+        "order": 1,
+        "_id": "6998908b4a21c28ce42f57c0"
+      }
+    ],
+    "defaultViews": [
+      {
+        "entitySlug": "tpl-products",
+        "viewType": "table",
+        "_id": "6998908b4a21c28ce42f57c2"
+      },
+      {
+        "entitySlug": "tpl-orders",
+        "viewType": "kanban",
+        "_id": "6998908b4a21c28ce42f57c3"
+      }
+    ],
+    "active": true,
+    "featured": true,
+    "order": 5,
+    "usageCount": 0,
+    "relations": [
+      {
+        "from": "tpl-orders",
+        "to": "tpl-products",
+        "type": "many-to-many",
+        "fieldName": "products",
+        "label": "Produits",
+        "_id": "6998908b4a21c28ce42f57c1"
+      }
+    ],
+    "createdAt": "2026-02-19T19:49:18.978Z",
+    "updatedAt": "2026-02-20T16:49:15.964Z",
+    "__v": 0
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "_id": "6999042d89cd63ea3da5ad07",
+    "name": "Patients",
+    "slug": "patients",
+    "entity": "6999042d89cd63ea3da5acef",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "6999042d89cd63ea3da5aceb"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T01:02:37.547Z",
+    "updatedAt": "2026-02-21T01:02:37.547Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae1c",
+    "name": "Consultations",
+    "slug": "consultations",
+    "entity": "6999042d89cd63ea3da5ae09",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "6999042d89cd63ea3da5aceb"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T01:02:37.656Z",
+    "updatedAt": "2026-02-21T01:02:37.656Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aeff",
+    "name": "Traitements",
+    "slug": "traitements",
+    "entity": "6999042d89cd63ea3da5aede",
+    "cockpitId": null,
+    "icon": "solar:pills-3-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 2,
+    "viewType": "kanban",
+    "spaces": [
+      "6999042d89cd63ea3da5aceb"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T01:02:37.711Z",
+    "updatedAt": "2026-02-21T01:02:37.711Z",
+    "__v": 0
+  }
+]

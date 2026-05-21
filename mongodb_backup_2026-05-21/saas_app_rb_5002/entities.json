@@ -1,0 +1,189 @@
+[
+  {
+    "_id": "6999042d89cd63ea3da5acef",
+    "name": "Patients",
+    "slug": "patients",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286dc"
+      }
+    ],
+    "spaces": [
+      "6999042d89cd63ea3da5aceb"
+    ],
+    "folders": [],
+    "customFields": [
+      "6999042d89cd63ea3da5acf1",
+      "6999042d89cd63ea3da5acf3",
+      "6999042d89cd63ea3da5acf5",
+      "6999042d89cd63ea3da5acf7",
+      "6999042d89cd63ea3da5acf9",
+      "6999042d89cd63ea3da5acfb",
+      "6999042d89cd63ea3da5acfd"
+    ],
+    "classifications": [
+      "6999042d89cd63ea3da5ad00"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": false,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-21T01:02:37.539Z",
+    "updatedAt": "2026-02-21T01:02:37.544Z",
+    "__v": 1,
+    "statusClassification": "6999042d89cd63ea3da5ad00"
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae09",
+    "name": "Consultations",
+    "slug": "consultations",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6999046f89cd63ea3da5b780"
+      }
+    ],
+    "spaces": [
+      "6999042d89cd63ea3da5aceb"
+    ],
+    "folders": [],
+    "customFields": [
+      "6999042d89cd63ea3da5ae0d",
+      "6999042d89cd63ea3da5ae11",
+      "6999042d89cd63ea3da5ae0f",
+      "6999042d89cd63ea3da5ae0b"
+    ],
+    "classifications": [
+      "6999042d89cd63ea3da5ae14"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "ae5ea55a-dcb5-4f92-bc97-866651f16a0e",
+        "targetEntity": "6999042d89cd63ea3da5acef",
+        "label": "Patient",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "6999042d89cd63ea3da5af9d"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-21T01:02:37.652Z",
+    "updatedAt": "2026-02-21T01:03:43.685Z",
+    "__v": 1,
+    "description": "",
+    "statusClassification": null
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aede",
+    "name": "Traitements",
+    "slug": "traitements",
+    "icon": "solar:pills-3-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6998908b4a21c28ce42f56a5"
+      }
+    ],
+    "spaces": [
+      "6999042d89cd63ea3da5aceb"
+    ],
+    "folders": [],
+    "customFields": [
+      "6999042d89cd63ea3da5aee0",
+      "6999042d89cd63ea3da5aee2",
+      "6999042d89cd63ea3da5aee4",
+      "6999042d89cd63ea3da5aee6",
+      "6999042d89cd63ea3da5aee8",
+      "6999042d89cd63ea3da5aeea",
+      "6999042d89cd63ea3da5aeec"
+    ],
+    "classifications": [
+      "6999042d89cd63ea3da5aeef",
+      "6999042d89cd63ea3da5aef6"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": false,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "bf4a158f-29b9-4440-a718-bc720745528c",
+        "targetEntity": "6999042d89cd63ea3da5acef",
+        "label": "Patient",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "6999042d89cd63ea3da5b018"
+      },
+      {
+        "key": "a97a16ba-1a31-4f0b-be1c-8b65bf580d15",
+        "targetEntity": "6999042d89cd63ea3da5ae09",
+        "label": "Consultation",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "6999042d89cd63ea3da5b0c5"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-21T01:02:37.703Z",
+    "updatedAt": "2026-02-21T01:02:37.768Z",
+    "__v": 2,
+    "statusClassification": "6999042d89cd63ea3da5aeef"
+  }
+]

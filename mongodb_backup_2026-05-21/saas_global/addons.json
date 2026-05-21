@@ -1,0 +1,132 @@
+[
+  {
+    "_id": "6a01512d430ecf8b558a655a",
+    "slug": "ai-plus",
+    "__v": 0,
+    "availablePlans": [
+      "pro",
+      "business",
+      "enterprise"
+    ],
+    "createdAt": "2026-05-11T03:46:53.578Z",
+    "description": "5x crédits IA, GPT-4 accès, custom prompts",
+    "icon": "solar:magic-stick-3-bold-duotone",
+    "isActive": true,
+    "name": "IA+ Pack",
+    "order": 0,
+    "price": {
+      "monthly": 5,
+      "annual": 4
+    },
+    "provides": {
+      "aiCreditsMultiplier": 5,
+      "features": [
+        "customAiModels"
+      ]
+    },
+    "type": "per-user",
+    "updatedAt": "2026-05-11T03:46:53.578Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a655b",
+    "slug": "automation-plus",
+    "__v": 0,
+    "availablePlans": [
+      "pro",
+      "business"
+    ],
+    "createdAt": "2026-05-11T03:46:53.580Z",
+    "description": "Automations illimitées, webhooks, scheduled jobs",
+    "icon": "solar:bolt-circle-bold-duotone",
+    "isActive": true,
+    "name": "Automation+ Pack",
+    "order": 1,
+    "price": {
+      "monthly": 3,
+      "annual": 2.5
+    },
+    "provides": {
+      "automationsPerMonth": -1,
+      "features": [
+        "advancedAutomations"
+      ]
+    },
+    "type": "per-user",
+    "updatedAt": "2026-05-11T03:46:53.580Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a655c",
+    "slug": "storage-plus",
+    "__v": 0,
+    "availablePlans": [],
+    "createdAt": "2026-05-11T03:46:53.582Z",
+    "description": "10 GB de stockage supplémentaire",
+    "icon": "solar:cloud-storage-bold-duotone",
+    "isActive": true,
+    "name": "Stockage+ Pack",
+    "order": 2,
+    "price": {
+      "monthly": 2,
+      "annual": 1.5
+    },
+    "provides": {
+      "storageMB": 10240
+    },
+    "type": "flat",
+    "updatedAt": "2026-05-11T03:46:53.582Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a655d",
+    "slug": "vertical-medical",
+    "__v": 0,
+    "availablePlans": [
+      "pro",
+      "business",
+      "enterprise"
+    ],
+    "createdAt": "2026-05-11T03:46:53.583Z",
+    "description": "Templates médecin, ordonnances, certificats, CNAM",
+    "icon": "solar:heart-pulse-bold-duotone",
+    "isActive": true,
+    "name": "Pack Médical",
+    "order": 3,
+    "price": {
+      "monthly": 8,
+      "annual": 6.5
+    },
+    "provides": {
+      "features": [
+        "verticalMedical"
+      ]
+    },
+    "type": "per-user",
+    "updatedAt": "2026-05-11T03:46:53.583Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a655e",
+    "slug": "vertical-legal",
+    "__v": 0,
+    "availablePlans": [
+      "pro",
+      "business",
+      "enterprise"
+    ],
+    "createdAt": "2026-05-11T03:46:53.584Z",
+    "description": "Templates juridiques, contrats, mises en demeure",
+    "icon": "solar:scale-bold-duotone",
+    "isActive": true,
+    "name": "Pack Juridique",
+    "order": 4,
+    "price": {
+      "monthly": 8,
+      "annual": 6.5
+    },
+    "provides": {
+      "features": [
+        "verticalLegal"
+      ]
+    },
+    "type": "per-user",
+    "updatedAt": "2026-05-11T03:46:53.584Z"
+  }
+]

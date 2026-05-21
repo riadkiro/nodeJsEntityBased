@@ -1,0 +1,773 @@
+[
+  {
+    "_id": "69e9e4175ca57f4b82f92c2b",
+    "name": "Ordonnance",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.636Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a2",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a2"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;\">\n    <div>\n      <p style=\"margin:0;font-size:14px;font-weight:700;color:#1e293b;\">Dr. {{user.name}}</p>\n      <p style=\"margin:2px 0;font-size:11px;color:#64748b;\">Médecine Générale</p>\n      <p style=\"margin:2px 0;font-size:11px;color:#64748b;\">N° RPPS : XXXXXXXXXXX</p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:12px;color:#475569;\">Le {{today}}</p>\n    </div>\n  </div>\n  <div style=\"text-align:center;margin:32px 0 24px;\">\n    <h1 style=\"margin:0;font-size:22px;font-weight:700;color:#1e40af;letter-spacing:1px;\">ORDONNANCE MÉDICALE</h1>\n    <div style=\"width:80px;height:3px;background:linear-gradient(to right,#3b82f6,#60a5fa);margin:8px auto 0;border-radius:2px;\"></div>\n  </div>\n  <div style=\"background:#f0f9ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:24px;\">\n    <p style=\"margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b82f6;\">Patient</p>\n    <p style=\"margin:0;font-size:15px;font-weight:600;color:#1e293b;\">{{consultations.patients.prenom}} {{consultations.patients.nom}}</p>\n    <div style=\"display:flex;gap:24px;margin-top:8px;\">\n      <p style=\"margin:0;font-size:11px;color:#64748b;\">Né(e) le : {{consultations.patients.date_naissance}}</p>\n      <p style=\"margin:0;font-size:11px;color:#64748b;\">N° SS : {{consultations.patients.numero_secu}}</p>\n    </div>\n  </div>\n  <div style=\"margin-bottom:20px;\">\n    <p style=\"margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;\">Motif de consultation</p>\n    <p style=\"margin:0;font-size:13px;color:#374151;\">{{consultations.motif}}</p>\n  </div>\n  <div class=\"dynamic-table\" data-table='{\"schemaId\":\"69e9e4165ca57f4b82f929d0\",\"style\":\"professional\",\"title\":\"Prescription\",\"showTotals\":false}'>\n    <table style=\"width:100%;border-collapse:collapse;margin:16px 0;font-family:inherit;font-size:11pt;border:1px solid #d1d5db;\">\n      <thead style=\"background:#f3f4f6;\"><tr><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;width:40px;text-align:center;\">#</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Traitement</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Moment</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Fréquence</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Durée</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Instructions</th></tr></thead>\n      <tbody><tr><td colspan=\"7\" style=\"padding:20px 12px;border:1px solid #d1d5db;text-align:center;color:#9ca3af;font-style:italic;\">Aucune ligne</td></tr></tbody>\n    </table>\n  </div>\n  <div style=\"margin-top:48px;text-align:right;\">\n    <p style=\"margin:0;font-size:12px;color:#64748b;\">Signature et cachet</p>\n    <div style=\"border-bottom:1px solid #d1d5db;width:200px;margin:24px 0 8px auto;min-height:40px;\"></div>\n    <p style=\"margin:0;font-size:13px;font-weight:600;color:#1e293b;\">Dr. {{user.name}}</p>\n  </div>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.636Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c2d",
+    "name": "Certificat médical",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.639Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a2",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a2"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <h1 style=\"margin:0 0 18px;font-size:22px;color:#1e40af;\">CERTIFICAT MÉDICAL</h1>\n  <p style=\"font-size:14px;line-height:1.7;color:#334155;\">\n    Je soussigné(e) Dr. {{user.name}}, certifie avoir examiné ce jour le/la patient(e)\n    <strong>{{consultations.patients.prenom}} {{consultations.patients.nom}}</strong>,\n    né(e) le {{consultations.patients.date_naissance}}.\n  </p>\n  <p style=\"font-size:14px;line-height:1.7;color:#334155;\">\n    L'état de santé constaté ce jour, le {{today}}, nécessite une prise en charge médicale adaptée.\n  </p>\n  <p style=\"font-size:14px;line-height:1.7;color:#334155;\">\n    Motif de consultation: <strong>{{consultations.motif}}</strong>\n  </p>\n  <p style=\"margin-top:28px;font-size:13px;color:#64748b;\">Certificat remis à l'intéressé(e) pour faire valoir ce que de droit.</p>\n  <div style=\"margin-top:46px;text-align:right;\">\n    <p style=\"margin:0;font-size:13px;font-weight:600;color:#1e293b;\">Dr. {{user.name}}</p>\n    <p style=\"margin:2px 0 0;font-size:11px;color:#64748b;\">Date : {{today}}</p>\n  </div>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.639Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c2f",
+    "name": "Compte rendu consultation",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.641Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a2",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a2"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <h1 style=\"margin:0 0 18px;font-size:22px;color:#00ab55;\">COMPTE RENDU DE CONSULTATION</h1>\n  <div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:16px;\">\n    <p style=\"margin:0 0 4px;font-size:12px;\"><strong>Patient :</strong> {{consultations.patients.prenom}} {{consultations.patients.nom}}</p>\n    <p style=\"margin:0 0 4px;font-size:12px;\"><strong>Date :</strong> {{today}}</p>\n    <p style=\"margin:0;font-size:12px;\"><strong>Consultation :</strong> {{consultations.title}}</p>\n  </div>\n  <h3 style=\"margin:10px 0 6px;font-size:14px;color:#334155;\">Motif</h3>\n  <p style=\"margin:0 0 10px;font-size:13px;color:#475569;\">{{consultations.motif}}</p>\n  <h3 style=\"margin:10px 0 6px;font-size:14px;color:#334155;\">Examen / Observations</h3>\n  <p style=\"margin:0 0 10px;font-size:13px;color:#475569;\">{{consultations.note_medecin}}</p>\n  <h3 style=\"margin:10px 0 6px;font-size:14px;color:#334155;\">Plan de prise en charge</h3>\n  <p style=\"margin:0;font-size:13px;color:#475569;\">{{consultations.notes_generales}}</p>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.641Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c31",
+    "name": "Lettre orientation spécialiste",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.643Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a2",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a2"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;\">\n    <div><p style=\"margin:0;font-size:14px;color:#1e293b;font-weight:600;\">Dr. {{user.name}}</p><p style=\"margin:2px 0 0;font-size:12px;color:#64748b;\">Médecine générale</p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-size:13px;color:#64748b;\">Le {{today}}</p></div>\n  </div>\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#8b5cf6;font-weight:700;\">Lettre d'orientation</h1>\n  <div style=\"width:50px;height:3px;background:#8b5cf6;margin-bottom:20px;border-radius:2px;\"></div>\n  <div style=\"background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:14px 16px;margin-bottom:18px;\">\n    <p style=\"margin:0;font-size:11px;color:#7c3aed;font-weight:600;text-transform:uppercase;\">Adressé à</p>\n    <p style=\"margin:6px 0 0;font-size:14px;color:#1e293b;\">Dr. / Pr. ____________________________________</p>\n    <p style=\"margin:2px 0 0;font-size:13px;color:#64748b;\">Spécialité : ____________________________________</p>\n  </div>\n  <p style=\"font-size:14px;line-height:1.6;color:#334155;margin:0 0 6px;\">Cher(e) confrère,</p>\n  <p style=\"font-size:14px;line-height:1.7;color:#334155;margin:0 0 12px;\">Je vous adresse <strong>{{consultations.consultations.patients.prenom}} {{consultations.consultations.patients.nom}}</strong>, né(e) le {{consultations.consultations.patients.date_naissance}}, pour prise en charge spécialisée.</p>\n  <div style=\"margin-bottom:16px;\"><p style=\"font-size:13px;color:#1e293b;font-weight:600;margin:0 0 6px;\">Motif de la consultation :</p><p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0;\">{{consultations.consultations.motif}}</p></div>\n  <div style=\"margin-bottom:16px;\"><p style=\"font-size:13px;color:#1e293b;font-weight:600;margin:0 0 6px;\">Antécédents notables :</p><p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0;\">{{consultations.consultations.patients.antecedents}}</p></div>\n  <p style=\"font-size:14px;line-height:1.7;color:#334155;margin:0 0 6px;\">Je vous remercie pour votre avis et reste à votre disposition pour tout renseignement complémentaire.</p>\n  <p style=\"font-size:14px;line-height:1.7;color:#334155;margin:0 0 24px;\">Confraternellement,</p>\n  <div><p style=\"font-size:13px;color:#1e293b;font-weight:600;margin:0;\">Dr. {{user.name}}</p><p style=\"font-size:12px;color:#64748b;margin:2px 0 0;\">Signature et cachet</p></div>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.643Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c33",
+    "name": "Demande d'examen labo",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.645Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Demande d'examen de laboratoire</h1>\n  <div style=\"width:60px;height:3px;background:#f97316;margin-bottom:20px;border-radius:2px;\"></div>\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:16px;\">\n    <div><p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;\">PRESCRIPTEUR</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;font-weight:600;\">Dr. {{user.name}}</p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;\">DATE</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;\">{{today}}</p></div>\n  </div>\n  <div style=\"background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;margin-bottom:18px;\">\n    <p style=\"margin:0;font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase;\">Patient</p>\n    <p style=\"margin:4px 0 0;font-size:15px;color:#1e293b;font-weight:600;\">{{patients.prenom}} {{patients.nom}}</p>\n    <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\">Né(e) le : {{patients.date_naissance}}</p>\n  </div>\n  <p style=\"font-size:13px;color:#334155;font-weight:600;margin:0 0 10px;\">Examens demandés :</p>\n  <table style=\"width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px;\">\n    <thead><tr style=\"background:#f97316;color:#fff;\"><th style=\"padding:8px 14px;text-align:left;font-weight:600;\">Examen</th><th style=\"padding:8px 14px;text-align:left;font-weight:600;\">Précisions</th></tr></thead>\n    <tbody>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ NFS (Numération Formule Sanguine)</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Glycémie à jeun</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ HbA1c</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Bilan lipidique complet</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ Créatinine / DFG</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ TSH</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ Bilan hépatique (ASAT, ALAT, GGT)</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Ferritine / Fer sérique</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ CRP</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Autre : ________________________</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n    </tbody>\n  </table>\n  <div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin-bottom:16px;\">\n    <p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;\">Renseignements cliniques :</p>\n    <p style=\"margin:6px 0 0;font-size:13px;color:#334155;line-height:1.6;\">________________________________________</p>\n  </div>\n  <div style=\"margin-top:24px;\"><p style=\"font-size:13px;color:#64748b;margin:0;\">☐ Urgent &nbsp;&nbsp; ☐ À jeun obligatoire</p><p style=\"font-size:13px;color:#64748b;margin:20px 0 0;border-top:1px solid #cbd5e1;padding-top:8px;display:inline-block;\">Signature et cachet du prescripteur</p></div>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.645Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c35",
+    "name": "Arrêt de travail",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.646Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#ef4444;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Certificat d'arrêt de travail</h1>\n  <div style=\"width:60px;height:3px;background:#ef4444;margin-bottom:24px;border-radius:2px;\"></div>\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:20px;\">\n    <div><p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;\">Praticien</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;\">Dr. {{user.name}}</p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;\">Date</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;\">{{today}}</p></div>\n  </div>\n  <p style=\"font-size:14px;line-height:1.8;color:#334155;margin:0 0 8px;\">Je soussigné(e), <strong>Dr. {{user.name}}</strong>, certifie avoir examiné ce jour :</p>\n  <div style=\"background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:0 0 20px;\">\n    <p style=\"margin:0;font-size:15px;color:#1e293b;font-weight:600;\">{{patients.prenom}} {{patients.nom}}</p>\n    <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\">Né(e) le : {{patients.date_naissance}}</p>\n  </div>\n  <p style=\"font-size:14px;line-height:1.8;color:#334155;margin:0 0 6px;\">et certifie que son état de santé nécessite un arrêt de travail :</p>\n  <div style=\"background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;margin:0 0 20px;\">\n    <div style=\"display:flex;gap:40px;\">\n      <div><p style=\"margin:0;font-size:12px;color:#9a3412;font-weight:600;\">DU</p><p style=\"margin:4px 0 0;font-size:16px;color:#1e293b;font-weight:600;\">____/____/________</p></div>\n      <div><p style=\"margin:0;font-size:12px;color:#9a3412;font-weight:600;\">AU</p><p style=\"margin:4px 0 0;font-size:16px;color:#1e293b;font-weight:600;\">____/____/________</p></div>\n      <div><p style=\"margin:0;font-size:12px;color:#9a3412;font-weight:600;\">INCLUS</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;\">Soit _______ jours</p></div>\n    </div>\n  </div>\n  <div style=\"margin-bottom:16px;\"><p style=\"font-size:13px;color:#334155;margin:0 0 8px;font-weight:600;\">Sorties autorisées :</p><label style=\"font-size:13px;color:#334155;margin-right:16px;\">☐ Sans restriction</label><label style=\"font-size:13px;color:#334155;\">☐ De 10h à 12h et de 14h à 18h</label></div>\n  <p style=\"font-size:13px;line-height:1.7;color:#64748b;margin:0 0 30px;font-style:italic;\">Cet arrêt est prescrit à titre initial / de prolongation (rayer la mention inutile).</p>\n  <div><p style=\"font-size:13px;color:#64748b;margin:0;\">Fait à : ________________ , le {{today}}</p><p style=\"font-size:13px;color:#64748b;margin:30px 0 0;border-top:1px solid #cbd5e1;padding-top:8px;display:inline-block;\">Signature et cachet du praticien</p></div>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.646Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c37",
+    "name": "Attestation de présence",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.647Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#6366f1;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Attestation de présence</h1>\n  <div style=\"width:60px;height:3px;background:#6366f1;margin-bottom:24px;border-radius:2px;\"></div>\n  <p style=\"font-size:14px;line-height:1.8;color:#334155;margin:0 0 16px;\">Je soussigné(e), <strong>Dr. {{user.name}}</strong>, certifie que :</p>\n  <div style=\"background:#eef2ff;border-left:4px solid #6366f1;padding:16px 20px;border-radius:0 8px 8px 0;margin:0 0 20px;\">\n    <p style=\"margin:0;font-size:15px;color:#1e293b;font-weight:600;\">{{patients.prenom}} {{patients.nom}}</p>\n    <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\">Né(e) le : {{patients.date_naissance}}</p>\n  </div>\n  <p style=\"font-size:14px;line-height:1.8;color:#334155;margin:0 0 8px;\">s'est présenté(e) à mon cabinet le <strong>{{today}}</strong> pour une consultation médicale.</p>\n  <p style=\"font-size:14px;line-height:1.8;color:#334155;margin:0 0 8px;\">La consultation a eu lieu de ____h____ à ____h____ .</p>\n  <p style=\"font-size:14px;line-height:1.8;color:#334155;margin:0 0 24px;\">Cette attestation est délivrée pour servir et valoir ce que de droit.</p>\n  <div style=\"margin-top:40px;\">\n    <p style=\"font-size:13px;color:#64748b;margin:0;\">Fait à : ________________</p>\n    <p style=\"font-size:13px;color:#64748b;margin:4px 0 0;\">Le : {{today}}</p>\n    <p style=\"font-size:13px;color:#64748b;margin:30px 0 0;border-top:1px solid #cbd5e1;padding-top:8px;display:inline-block;\">Signature et cachet du praticien</p>\n  </div>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.647Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c39",
+    "name": "Fiche patient résumé",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.649Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;\">\n    <div><h1 style=\"margin:0 0 4px;font-size:20px;color:#3b82f6;font-weight:700;\">Fiche patient résumé</h1><div style=\"width:50px;height:3px;background:#3b82f6;border-radius:2px;\"></div></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-size:12px;color:#94a3b8;\">Édité le {{today}}</p></div>\n  </div>\n  <div style=\"background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:16px;\">\n    <div style=\"display:flex;gap:40px;\">\n      <div><p style=\"margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;\">Identité</p><p style=\"margin:0;font-size:15px;color:#1e293b;font-weight:600;\">{{patients.prenom}} {{patients.nom}}</p></div>\n      <div><p style=\"margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;\">Date de naissance</p><p style=\"margin:0;font-size:14px;color:#1e293b;\">{{patients.date_naissance}}</p></div>\n      <div><p style=\"margin:0 0 2px;font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;\">Téléphone</p><p style=\"margin:0;font-size:14px;color:#1e293b;\">{{patients.telephone}}</p></div>\n    </div>\n  </div>\n  <table style=\"width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;\">\n    <tr style=\"background:#f8fafc;\"><td style=\"padding:10px 14px;color:#64748b;font-weight:600;width:35%;border-bottom:1px solid #e2e8f0;\">Email</td><td style=\"padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;\">{{patients.email}}</td></tr>\n    <tr><td style=\"padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;\">Adresse</td><td style=\"padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;\">{{patients.adresse}}</td></tr>\n    <tr style=\"background:#f8fafc;\"><td style=\"padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;\">Groupe sanguin</td><td style=\"padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;\">{{patients.groupe_sanguin}}</td></tr>\n    <tr><td style=\"padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;\">Allergies</td><td style=\"padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;\">{{patients.allergies}}</td></tr>\n    <tr style=\"background:#f8fafc;\"><td style=\"padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;\">Antécédents</td><td style=\"padding:10px 14px;color:#1e293b;border-bottom:1px solid #e2e8f0;\">{{patients.antecedents}}</td></tr>\n  </table>\n  <div style=\"background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:12px;\">\n    <p style=\"margin:0;font-size:12px;color:#92400e;font-weight:600;\">Notes du praticien :</p>\n    <p style=\"margin:6px 0 0;font-size:13px;color:#78350f;line-height:1.6;\">{{patients.notes}}</p>\n  </div>\n  <p style=\"font-size:11px;color:#94a3b8;margin:20px 0 0;text-align:center;\">Document confidentiel — Dr. {{user.name}}</p>\n</div>",
+        "mode": "edition",
+        "order": 0,
+        "elements": [],
+        "background": {
+          "color": "#ffffff"
+        }
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-23T09:19:19.649Z"
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c3b",
+    "name": "Facture PDF",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.650Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;\">\n    <div>\n      <h1 style=\"margin:0;font-size:24px;color:#e2a03f;\">FACTURE</h1>\n      <p style=\"margin:4px 0 0;font-size:12px;color:#64748b;\">N° 1234</p>\n      <p style=\"margin:2px 0 0;font-size:12px;color:#64748b;\">Date : {{today}}</p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:12px;color:#334155;\"><strong>Patient :</strong>&nbsp;<span class=\"template-token\" contenteditable=\"false\" data-token=\"{&quot;path&quot;:&quot;patients.nom&quot;,&quot;fieldId&quot;:&quot;69e9e4165ca57f4b82f92953&quot;,&quot;type&quot;:&quot;string&quot;,&quot;label&quot;:&quot;Nom&quot;}\">Nom</span>&nbsp;&nbsp;<span class=\"template-token\" contenteditable=\"false\" data-token=\"{&quot;path&quot;:&quot;patients.prenom&quot;,&quot;fieldId&quot;:&quot;69e9e4165ca57f4b82f92954&quot;,&quot;type&quot;:&quot;string&quot;,&quot;label&quot;:&quot;Prénom&quot;}\">Prénom</span>&nbsp;</p>\n      <p style=\"margin:2px 0 0;font-size:12px;color:#334155;\"><strong>Échéance :&nbsp;</strong></p>\n    </div>\n  </div>\n  <div class=\"dynamic-table\" data-table=\"{&quot;schemaId&quot;:&quot;69e9e4165ca57f4b82f929d4&quot;,&quot;style&quot;:&quot;professional&quot;,&quot;title&quot;:&quot;Détail des prestations&quot;,&quot;showTotals&quot;:true}\"></div>\n  <div style=\"margin-top:20px;display:flex;justify-content:flex-end;\">\n    <div style=\"width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;background:#f9fafb;\">\n      <p style=\"margin:0 0 6px;font-size:13px;color:#334155;\"><strong>Total :</strong>&nbsp;</p>\n      <p style=\"margin:0 0 6px;font-size:13px;color:#334155;\"><strong>Payé :</strong>&nbsp;</p>\n      <p style=\"margin:0;font-size:13px;color:#ef4444;\"><strong>Reste à payer :</strong>&nbsp;</p>\n    </div>\n  </div>\n</div><p><br></p>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69f2771ab012f8e68a82a6e9"
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-29T21:24:42.542Z",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "draftOutputFormat": "pdf",
+    "draftOutputName": "",
+    "draftRecordId": null,
+    "draftSourceTemplateId": null,
+    "folderId": null,
+    "footerHtml": "",
+    "generatedFrom": {
+      "templateName": ""
+    },
+    "headerHtml": "",
+    "isDraft": false,
+    "linkedRecords": [],
+    "sharedWith": []
+  },
+  {
+    "_id": "69e9e4175ca57f4b82f92c3d",
+    "name": "Consentement éclairé",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-04-23T09:19:19.653Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "format": "A4",
+    "isTemplate": true,
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Consentement éclairé</h1>\n  <div style=\"width:60px;height:3px;background:#22c55e;margin-bottom:20px;border-radius:2px;\"></div>\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:20px;\">\n    <div>\n      <p style=\"margin:0;font-size:13px;color:#64748b;\"><b>Patient :</b> <span style=\"color:#1e293b;\">{{patients.prenom}} {{patients.nom}}</span></p>\n      <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\"><b>Date de naissance :</b> <span style=\"color:#1e293b;\">{{patients.date_naissance}}</span></p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:13px;color:#64748b;\"><b>Date :</b> <span style=\"color:#1e293b;\">{{today}}</span></p>\n    </div>\n  </div>\n  <div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:18px;\">\n    <p style=\"margin:0;font-size:13px;color:#166534;font-weight:600;\">Nature de l'acte proposé :</p>\n    <p style=\"margin:8px 0 0;font-size:13px;color:#1e293b;line-height:1.6;\">_______________________________________________</p>\n  </div>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;\">Je soussigné(e), <strong>{{patients.prenom}} {{patients.nom}}</strong>, déclare avoir été informé(e) de manière claire et complète par le Dr. {{user.name}} sur :</p>\n  <ul style=\"font-size:13px;line-height:1.8;color:#334155;padding-left:20px;margin:0 0 16px;\">\n    <li>La nature et le déroulement de l'acte envisagé</li>\n    <li>Les bénéfices attendus et les alternatives thérapeutiques</li>\n    <li>Les risques fréquents et graves normalement prévisibles</li>\n    <li>Les conséquences prévisibles en cas de refus</li>\n    <li>Les suites habituelles et les précautions à prendre</li>\n  </ul>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;\">J'ai pu poser toutes les questions souhaitées et j'ai reçu des réponses adaptées. J'ai disposé d'un délai de réflexion suffisant.</p>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 20px;\">En conséquence, je donne mon consentement libre et éclairé pour la réalisation de l'acte mentionné ci-dessus.</p>\n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\"><p style=\"font-size:12px;color:#64748b;margin:0 0 4px;\">Fait à : ________________</p><p style=\"font-size:12px;color:#64748b;margin:0 0 30px;\">Le : {{today}}</p><p style=\"font-size:12px;color:#64748b;margin:0;border-top:1px solid #cbd5e1;padding-top:6px;\">Signature du patient</p></div>\n    <div style=\"width:45%;\"><p style=\"font-size:12px;color:#64748b;margin:0 0 34px;\">&nbsp;</p><p style=\"font-size:12px;color:#64748b;margin:0;border-top:1px solid #cbd5e1;padding-top:6px;\">Signature du praticien</p></div>\n  </div>\n</div><p><br></p><p><br></p>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69ef5c38293c79c2744d2715"
+      }
+    ],
+    "status": "published",
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "updatedAt": "2026-04-27T12:53:12.599Z",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "draftOutputFormat": "pdf",
+    "draftOutputName": "",
+    "draftRecordId": null,
+    "draftSourceTemplateId": null,
+    "folderId": null,
+    "footerHtml": "",
+    "generatedFrom": {
+      "templateName": ""
+    },
+    "headerHtml": "",
+    "isDraft": false,
+    "linkedRecords": [],
+    "sharedWith": []
+  },
+  {
+    "_id": "69ef5c3b293c79c2744d2725",
+    "name": "Consentement éclairé - 27 avril 2026",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Consentement éclairé</h1>\n  <div style=\"width:60px;height:3px;background:#22c55e;margin-bottom:20px;border-radius:2px;\"></div>\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:20px;\">\n    <div>\n      <p style=\"margin:0;font-size:13px;color:#64748b;\"><b>Patient :</b> <span style=\"color:#1e293b;\">Adam Naji</span></p>\n      <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\"><b>Date de naissance :</b> <span style=\"color:#1e293b;\">15/10/1967</span></p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:13px;color:#64748b;\"><b>Date :</b> <span style=\"color:#1e293b;\">27 avril 2026</span></p>\n    </div>\n  </div>\n  <div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:18px;\">\n    <p style=\"margin:0;font-size:13px;color:#166534;font-weight:600;\">Nature de l'acte proposé :</p>\n    <p style=\"margin:8px 0 0;font-size:13px;color:#1e293b;line-height:1.6;\">_______________________________________________</p>\n  </div>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;\">Je soussigné(e), <strong>Adam Naji</strong>, déclare avoir été informé(e) de manière claire et complète par le Dr. Riad Boukirou sur :</p>\n  <ul style=\"font-size:13px;line-height:1.8;color:#334155;padding-left:20px;margin:0 0 16px;\">\n    <li>La nature et le déroulement de l'acte envisagé</li>\n    <li>Les bénéfices attendus et les alternatives thérapeutiques</li>\n    <li>Les risques fréquents et graves normalement prévisibles</li>\n    <li>Les conséquences prévisibles en cas de refus</li>\n    <li>Les suites habituelles et les précautions à prendre</li>\n  </ul>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;\">J'ai pu poser toutes les questions souhaitées et j'ai reçu des réponses adaptées. J'ai disposé d'un délai de réflexion suffisant.</p>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 20px;\">En conséquence, je donne mon consentement libre et éclairé pour la réalisation de l'acte mentionné ci-dessus.</p>\n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\"><p style=\"font-size:12px;color:#64748b;margin:0 0 4px;\">Fait à : ________________</p><p style=\"font-size:12px;color:#64748b;margin:0 0 30px;\">Le : 27 avril 2026</p><p style=\"font-size:12px;color:#64748b;margin:0;border-top:1px solid #cbd5e1;padding-top:6px;\">Signature du patient</p></div>\n    <div style=\"width:45%;\"><p style=\"font-size:12px;color:#64748b;margin:0 0 34px;\">&nbsp;</p><p style=\"font-size:12px;color:#64748b;margin:0;border-top:1px solid #cbd5e1;padding-top:6px;\">Signature du praticien</p></div>\n  </div>\n</div><p><br></p><p><br></p>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69ef5c3f293c79c2744d2987"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "69e9e4175ca57f4b82f92c3d",
+    "draftRecordId": "69e9e4165ca57f4b82f92ae8",
+    "draftOutputName": "",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateName": ""
+    },
+    "createdAt": "2026-04-27T12:53:15.248Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "linkedRecords": [
+      {
+        "recordId": "69e9e4165ca57f4b82f92ae8",
+        "recordTitle": "Adam Naji 58",
+        "entityId": "69e9e4165ca57f4b82f929a0",
+        "entityName": "Patient",
+        "entityIcon": "solar:user-heart-bold-duotone",
+        "entitySlug": "patients",
+        "alias": "patients",
+        "_id": "69ef5c3f293c79c2744d2988"
+      }
+    ],
+    "updatedAt": "2026-04-27T12:53:19.491Z",
+    "__v": 0,
+    "entityId": null
+  },
+  {
+    "_id": "69ef5dc4e77b19dea95e4206",
+    "name": "Consentement éclairé - 27 avril 2026",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Consentement éclairé</h1>\n  <div style=\"width:60px;height:3px;background:#22c55e;margin-bottom:20px;border-radius:2px;\"></div>\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:20px;\">\n    <div>\n      <p style=\"margin:0;font-size:13px;color:#64748b;\"><b>Patient :</b> <span style=\"color:#1e293b;\">Lina Mansouri</span></p>\n      <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\"><b>Date de naissance :</b> <span style=\"color:#1e293b;\">15/11/1968&nbsp;</span></p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:13px;color:#64748b;\"><b>Date :</b> <span style=\"color:#1e293b;\">27 avril 2026</span></p>\n    </div>\n  </div>\n  <div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:18px;\">\n    <p style=\"margin:0;font-size:13px;color:#166534;font-weight:600;\">Nature de l'acte proposé :</p>\n    <p style=\"margin:8px 0 0;font-size:13px;color:#1e293b;line-height:1.6;\">_______________________________________________</p>\n  </div>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;\">Je soussigné(e), <strong>Lina Mansouri</strong>, déclare avoir été informé(e) de manière claire et complète par le Dr. Riad Boukirou sur :</p>\n  <ul style=\"font-size:13px;line-height:1.8;color:#334155;padding-left:20px;margin:0 0 16px;\">\n    <li>La nature et le déroulement de l'acte envisagé</li>\n    <li>Les bénéfices attendus et les alternatives thérapeutiques</li>\n    <li>Les risques fréquents et graves normalement prévisibles</li>\n    <li>Les conséquences prévisibles en cas de refus</li>\n    <li>Les suites habituelles et les précautions à prendre</li>\n  </ul>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 12px;\">J'ai pu poser toutes les questions souhaitées et j'ai reçu des réponses adaptées. J'ai disposé d'un délai de réflexion suffisant.</p>\n  <p style=\"font-size:13px;line-height:1.7;color:#334155;margin:0 0 20px;\">En conséquence, je donne mon consentement libre et éclairé pour la réalisation de l'acte mentionné ci-dessus.</p>\n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\"><p style=\"font-size:12px;color:#64748b;margin:0 0 4px;\">Fait à : ________________</p><p style=\"font-size:12px;color:#64748b;margin:0 0 30px;\">Le : 27 avril 2026</p><p style=\"font-size:12px;color:#64748b;margin:0;border-top:1px solid #cbd5e1;padding-top:6px;\">Signature du patient</p></div>\n    <div style=\"width:45%;\"><p style=\"font-size:12px;color:#64748b;margin:0 0 34px;\">&nbsp;</p><p style=\"font-size:12px;color:#64748b;margin:0;border-top:1px solid #cbd5e1;padding-top:6px;\">Signature du praticien</p></div>\n  </div>\n</div><p><br></p><p><br></p>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69ef5e73e77b19dea95e5d5b"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "69e9e4175ca57f4b82f92c3d",
+    "draftRecordId": "69e9e4165ca57f4b82f92ae9",
+    "draftOutputName": "",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateName": ""
+    },
+    "createdAt": "2026-04-27T12:59:48.054Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "linkedRecords": [
+      {
+        "recordId": "69e9e4165ca57f4b82f92ae9",
+        "recordTitle": "Lina Mansouri 59",
+        "entityId": "69e9e4165ca57f4b82f929a0",
+        "entityName": "Patient",
+        "entityIcon": "solar:user-heart-bold-duotone",
+        "entitySlug": "patients",
+        "alias": "patients",
+        "_id": "69ef5dcce77b19dea95e446c"
+      }
+    ],
+    "updatedAt": "2026-04-27T13:02:43.489Z",
+    "__v": 0,
+    "entityId": null
+  },
+  {
+    "_id": "69f11beeaabbdb334f1fe41f",
+    "name": "Demande d'examen labo - Rayan Chevalier2",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <h1 style=\"margin:0 0 6px;font-size:20px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:1px;\">Demande d'examen de laboratoire</h1>\n  <div style=\"width:60px;height:3px;background:#f97316;margin-bottom:20px;border-radius:2px;\"></div>\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:16px;\">\n    <div><p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;\">PRESCRIPTEUR</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;font-weight:600;\">Dr. Riad Boukirou</p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;\">DATE</p><p style=\"margin:4px 0 0;font-size:14px;color:#1e293b;\">28/04/2026</p></div>\n  </div>\n  <div style=\"background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;margin-bottom:18px;\">\n    <p style=\"margin:0;font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase;\">Patient</p>\n    <p style=\"margin:4px 0 0;font-size:15px;color:#1e293b;font-weight:600;\">Rayan Chevalier</p>\n    <p style=\"margin:4px 0 0;font-size:13px;color:#64748b;\">Né(e) le : 15/12/1969</p>\n  </div>\n  <p style=\"font-size:13px;color:#334155;font-weight:600;margin:0 0 10px;\">Examens demandés :</p>\n  <table style=\"width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px;\">\n    <thead><tr style=\"background:#f97316;color:#fff;\"><th style=\"padding:8px 14px;text-align:left;font-weight:600;\">Examen</th><th style=\"padding:8px 14px;text-align:left;font-weight:600;\">Précisions</th></tr></thead>\n    <tbody>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ NFS (Numération Formule Sanguine)</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Glycémie à jeun</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ HbA1c</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Bilan lipidique complet</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ Créatinine / DFG</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ TSH</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ Bilan hépatique (ASAT, ALAT, GGT)</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Ferritine / Fer sérique</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n      <tr style=\"background:#fff7ed;\"><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\">☐ CRP</td><td style=\"padding:8px 14px;border-bottom:1px solid #fed7aa;\"></td></tr>\n      <tr><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\">☐ Autre : ________________________</td><td style=\"padding:8px 14px;border-bottom:1px solid #f1f5f9;\"></td></tr>\n    </tbody>\n  </table>\n  <div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin-bottom:16px;\">\n    <p style=\"margin:0;font-size:12px;color:#64748b;font-weight:600;\">Renseignements cliniques :</p>\n    <p style=\"margin:6px 0 0;font-size:13px;color:#334155;line-height:1.6;\">________________________________________</p>\n  </div>\n  <div style=\"margin-top:24px;\"><p style=\"font-size:13px;color:#64748b;margin:0;\">☐ Urgent &nbsp;&nbsp; ☐ À jeun obligatoire</p><p style=\"font-size:13px;color:#64748b;margin:20px 0 0;border-top:1px solid #cbd5e1;padding-top:8px;display:inline-block;\">Signature et cachet du prescripteur</p></div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69f11beeaabbdb334f1fe41b"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "69e9e4175ca57f4b82f92c34",
+    "draftRecordId": "69e9e4165ca57f4b82f92aea",
+    "draftOutputName": "Demande d'examen labo - Rayan Chevalier2",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "69e9e4175ca57f4b82f92c33",
+      "smartDocId": "69e9e4175ca57f4b82f92c34",
+      "templateName": "Demande d'examen labo",
+      "generatedAt": "2026-04-28T20:43:26.811Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "69e9e4165ca57f4b82f92aea",
+        "recordTitle": "Rayan Chevalier2",
+        "entityId": "69e9e4165ca57f4b82f929a0",
+        "entityName": "Patient",
+        "entityIcon": "solar:user-heart-bold-duotone",
+        "entityColor": "#3b82f6",
+        "entitySlug": "patients",
+        "alias": "patients",
+        "_id": "69f11beeaabbdb334f1fe421"
+      }
+    ],
+    "createdAt": "2026-04-28T20:43:26.811Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-04-28T20:43:26.811Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f1fda646f5f55b3be52a5c",
+    "name": "Ordonnance - Consult. Lea Leclerc 15 - Céphalées #180",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;\">\n    <div>\n      <p style=\"margin:0;font-size:14px;font-weight:700;color:#1e293b;\">Dr. Riad Boukirou</p>\n      <p style=\"margin:2px 0;font-size:11px;color:#64748b;\">Médecine Générale</p>\n      <p style=\"margin:2px 0;font-size:11px;color:#64748b;\">N° RPPS : XXXXXXXXXXX</p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:12px;color:#475569;\">Le 29/04/2026</p>\n    </div>\n  </div>\n  <div style=\"text-align:center;margin:32px 0 24px;\">\n    <h1 style=\"margin:0;font-size:22px;font-weight:700;color:#1e40af;letter-spacing:1px;\">ORDONNANCE MÉDICALE</h1>\n    <div style=\"width:80px;height:3px;background:linear-gradient(to right,#3b82f6,#60a5fa);margin:8px auto 0;border-radius:2px;\"></div>\n  </div>\n  <div style=\"background:#f0f9ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:24px;\">\n    <p style=\"margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b82f6;\">Patient</p>\n    <p style=\"margin:0;font-size:15px;font-weight:600;color:#1e293b;\">Samir Lacroix</p>\n    <div style=\"display:flex;gap:24px;margin-top:8px;\">\n      <p style=\"margin:0;font-size:11px;color:#64748b;\">Né(e) le : 15/06/1963</p>\n      <p style=\"margin:0;font-size:11px;color:#64748b;\">N° SS : </p>\n    </div>\n  </div>\n  <div style=\"margin-bottom:20px;\">\n    <p style=\"margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;\">Motif de consultation</p>\n    <p style=\"margin:0;font-size:13px;color:#374151;\">Céphalées</p>\n  </div>\n  <div class=\"dynamic-table\" data-table='{\"schemaId\":\"69e9e4165ca57f4b82f929d0\",\"style\":\"professional\",\"title\":\"Prescription\",\"showTotals\":false}'><p style=\"font-size:13pt;font-weight:600;margin:16px 0 8px;color:#1f2937;\">Prescription</p><table style=\"width:100%;border-collapse:collapse;margin:16px 0;font-family:inherit;font-size:11pt;border:1px solid #d1d5db;\"><thead style=\"background:#f3f4f6;\"><tr><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;width:40px;text-align:center;\">#</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Traitement</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Moment</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Fréquence</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Durée</th><th style=\"padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;\">Instructions</th></tr></thead><tbody><tr style=\"\"><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:center;color:#9ca3af;width:40px;\">1</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">Bisoprolol 5mg</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">Matin</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">2x / jour</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">7 jours</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">Après le repas</td></tr><tr style=\"background:#f9fafb;\"><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:center;color:#9ca3af;width:40px;\">2</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">Alprazolam 0.25mg</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">Soir</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">2x / jour</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">7 jours</td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\">Le soir au coucher</td></tr></tbody></table></div>\n  <div style=\"margin-top:48px;text-align:right;\">\n    <p style=\"margin:0;font-size:12px;color:#64748b;\">Signature et cachet</p>\n    <div style=\"border-bottom:1px solid #d1d5db;width:200px;margin:24px 0 8px auto;min-height:40px;\"></div>\n    <p style=\"margin:0;font-size:13px;font-weight:600;color:#1e293b;\">Dr. Riad Boukirou</p>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69f1fda646f5f55b3be52a58"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "69e9e4175ca57f4b82f92c2c",
+    "draftRecordId": "69e9e4165ca57f4b82f92b9e",
+    "draftOutputName": "Ordonnance - Consult. Lea Leclerc 15 - Céphalées #180",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "69e9e4175ca57f4b82f92c2b",
+      "smartDocId": "69e9e4175ca57f4b82f92c2c",
+      "templateName": "Ordonnance",
+      "generatedAt": "2026-04-29T12:46:30.806Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "69e9e4165ca57f4b82f92b9e",
+        "recordTitle": "Consult. Lea Leclerc 15 - Céphalées #180",
+        "entityId": "69e9e4165ca57f4b82f929a2",
+        "entityName": "Consultation",
+        "entityIcon": "solar:stethoscope-bold-duotone",
+        "entityColor": "#00ab55",
+        "entitySlug": "consultations",
+        "alias": "consultations",
+        "_id": "69f1fda646f5f55b3be52a5e"
+      },
+      {
+        "recordId": "69e9e4165ca57f4b82f92ae4",
+        "recordTitle": "Samir Lacroix 54",
+        "entityId": "69e9e4165ca57f4b82f929a0",
+        "entityName": "Patient",
+        "entityIcon": "solar:user-heart-bold-duotone",
+        "entityColor": "",
+        "entitySlug": "patients",
+        "alias": "347d10fb-3084-4fb8-ba20-5921bec929eb",
+        "_id": "69f1fda646f5f55b3be52a5f"
+      }
+    ],
+    "createdAt": "2026-04-29T12:46:30.806Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-04-29T12:46:30.806Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f27691b012f8e68a829138",
+    "name": "Facture PDF (Copie)",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;\">\n    <div>\n      <h1 style=\"margin:0;font-size:24px;color:#e2a03f;\">FACTURE</h1>\n      <p style=\"margin:4px 0 0;font-size:12px;color:#64748b;\">N° {{factures.title}}</p>\n      <p style=\"margin:2px 0 0;font-size:12px;color:#64748b;\">Date : {{today}}</p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:12px;color:#334155;\"><strong>Patient :</strong> {{factures.patients.prenom}} {{factures.patients.nom}}</p>\n      <p style=\"margin:2px 0 0;font-size:12px;color:#334155;\"><strong>Échéance :</strong> {{factures.date_echeance}}</p>\n    </div>\n  </div>\n  <div class=\"dynamic-table\" data-table=\"{&quot;schemaId&quot;:&quot;69e9e4165ca57f4b82f929d4&quot;,&quot;style&quot;:&quot;professional&quot;,&quot;title&quot;:&quot;Détail des prestations&quot;,&quot;showTotals&quot;:true}\"></div>\n  <div style=\"margin-top:20px;display:flex;justify-content:flex-end;\">\n    <div style=\"width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;background:#f9fafb;\">\n      <p style=\"margin:0 0 6px;font-size:13px;color:#334155;\"><strong>Total :</strong> {{factures.montant_total}}</p>\n      <p style=\"margin:0 0 6px;font-size:13px;color:#334155;\"><strong>Payé :</strong> {{factures.montant_paye}}</p>\n      <p style=\"margin:0;font-size:13px;color:#ef4444;\"><strong>Reste à payer :</strong> {{factures.reste_a_payer}}</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69f276a4b012f8e68a829175"
+      }
+    ],
+    "entityId": "69e9e4165ca57f4b82f929a0",
+    "entityIds": [
+      "69e9e4165ca57f4b82f929a0"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "sharedWith": [],
+    "tags": [
+      "médical",
+      "template"
+    ],
+    "status": "published",
+    "collections": [],
+    "contentBlocks": [],
+    "folderId": null,
+    "isDraft": false,
+    "draftSourceTemplateId": null,
+    "draftRecordId": null,
+    "draftOutputName": "",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateName": ""
+    },
+    "linkedRecords": [],
+    "__v": 0,
+    "createdAt": "2026-04-29T21:22:25.675Z",
+    "updatedAt": "2026-04-29T21:22:44.775Z"
+  },
+  {
+    "_id": "69f27767b012f8e68a82af73",
+    "name": "Facture PDF - Rayan Chevalier2",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:'Segoe UI',Arial,sans-serif;max-width:100%;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;\">\n    <div>\n      <h1 style=\"margin:0;font-size:24px;color:#e2a03f;\">FACTURE</h1>\n      <p style=\"margin:4px 0 0;font-size:12px;color:#64748b;\">N° 1234</p>\n      <p style=\"margin:2px 0 0;font-size:12px;color:#64748b;\">Date : 29/04/2026</p>\n    </div>\n    <div style=\"text-align:right;\">\n      <p style=\"margin:0;font-size:12px;color:#334155;\"><strong>Patient :</strong>&nbsp;Chevalier&nbsp;&nbsp;Rayan&nbsp;</p>\n      <p style=\"margin:2px 0 0;font-size:12px;color:#334155;\"><strong>Échéance :&nbsp;</strong></p>\n    </div>\n  </div>\n  <div class=\"dynamic-table\" data-table=\"{&quot;schemaId&quot;:&quot;69e9e4165ca57f4b82f929d4&quot;,&quot;style&quot;:&quot;professional&quot;,&quot;title&quot;:&quot;Détail des prestations&quot;,&quot;showTotals&quot;:true}\"><p style=\"font-size:13pt;font-weight:600;margin:16px 0 8px;color:#1f2937;\">Détail des prestations</p><table style=\"width:100%;border-collapse:collapse;margin:16px 0;font-family:inherit;font-size:11pt;border:1px solid #d1d5db;\"><thead style=\"background:#f3f4f6;\"><tr><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); width: 40px; text-align: center;\"><font style=\"font-size: 15px;\">#</font></th><th style=\"padding: 10px 12px; text-align: left; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219);\"><font style=\"font-size: 15px;\">Description</font></th><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); text-align: right;\"><font style=\"font-size: 15px;\">Qté</font></th><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); text-align: right;\"><font style=\"font-size: 15px;\">P.U. HT</font></th><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); text-align: right;\"><font style=\"font-size: 15px;\">Remise %</font></th><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); text-align: right;\"><font style=\"font-size: 15px;\">TVA %</font></th><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); text-align: right;\"><font style=\"font-size: 15px;\">Total HT</font></th><th style=\"padding: 10px 12px; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219); text-align: right;\"><font style=\"font-size: 15px;\">TVA</font></th><th style=\"padding: 10px 12px; text-align: left; font-weight: 600; color: rgb(31, 41, 55); border: 1px solid rgb(209, 213, 219);\"><font style=\"font-size: 15px;\">Note</font></th></tr></thead><tbody><tr style=\"\"><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:center;color:#9ca3af;width:40px;\"><font style=\"font-size: 15px;\">1</font></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\"><font style=\"font-size: 15px;\">NFS</font></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:right;\"></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:right;\"></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:right;\"></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:right;\"></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:right;\"></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;text-align:right;\"></td><td style=\"padding:8px 12px;border:1px solid #d1d5db;color:#374151;\"></td></tr></tbody><tfoot style=\"background:#f3f4f6;font-weight:600;\"><tr><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;\"></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;\"><font style=\"font-size: 15px;\">Total</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;text-align:right;\"><font style=\"font-size: 15px;\">0</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;text-align:right;\"><font style=\"font-size: 15px;\">0,00 EUR</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;text-align:right;\"><font style=\"font-size: 15px;\">0</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;text-align:right;\"><font style=\"font-size: 15px;\">0</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;text-align:right;\"><font style=\"font-size: 15px;\">0</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;text-align:right;\"><font style=\"font-size: 15px;\">0</font></td><td style=\"padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;\"></td></tr></tfoot></table></div>\n  <div style=\"margin-top:20px;display:flex;justify-content:flex-end;\">\n    <div style=\"width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;background:#f9fafb;\">\n      <p style=\"margin:0 0 6px;font-size:13px;color:#334155;\"><strong>Total :</strong>&nbsp;</p>\n      <p style=\"margin:0 0 6px;font-size:13px;color:#334155;\"><strong>Payé :</strong>&nbsp;</p>\n      <p style=\"margin:0;font-size:13px;color:#ef4444;\"><strong>Reste à payer :</strong>&nbsp;</p>\n    </div>\n  </div>\n</div><p><br></p>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "69f277a3b012f8e68a82b047"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "69f276bcb012f8e68a829b8b",
+    "draftRecordId": "69e9e4165ca57f4b82f92aea",
+    "draftOutputName": "Facture PDF - Rayan Chevalier2",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "69e9e4175ca57f4b82f92c3b",
+      "smartDocId": "69f276bcb012f8e68a829b8b",
+      "templateName": "Facture PDF",
+      "generatedAt": "2026-04-29T21:25:59.982Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "69e9e4165ca57f4b82f92aea",
+        "recordTitle": "Rayan Chevalier2",
+        "entityId": "69e9e4165ca57f4b82f929a0",
+        "entityName": "Patient",
+        "entityIcon": "solar:user-heart-bold-duotone",
+        "entityColor": "#3b82f6",
+        "entitySlug": "patients",
+        "alias": "patients",
+        "_id": "69f27767b012f8e68a82af75"
+      }
+    ],
+    "createdAt": "2026-04-29T21:25:59.982Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-04-29T21:26:59.531Z",
+    "__v": 0,
+    "entityId": null
+  }
+]

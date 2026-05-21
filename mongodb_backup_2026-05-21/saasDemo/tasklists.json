@@ -1,0 +1,4058 @@
+[
+  {
+    "_id": "69f2fe96261e0cb000dfe503",
+    "recordId": "69e9e3e85ca57f4b82f9279f",
+    "label": "IRM",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T07:02:46.982Z",
+    "updatedAt": "2026-04-30T07:02:46.982Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f2fed9261e0cb000dff2bb",
+    "recordId": "69e9e4165ca57f4b82f92ae8",
+    "label": "Suivi m",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T07:03:53.247Z",
+    "updatedAt": "2026-04-30T07:03:53.247Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f2fed9261e0cb000dff2c7",
+    "recordId": "69e9e4165ca57f4b82f92aea",
+    "label": "Imagerie",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T07:03:53.687Z",
+    "updatedAt": "2026-04-30T07:03:53.687Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f2ff46261e0cb000dff520",
+    "recordId": "69e9e4165ca57f4b82f92aea",
+    "label": "Analyses",
+    "color": "#ef4444",
+    "icon": "tabler:list",
+    "order": 2,
+    "createdAt": "2026-04-30T07:05:42.037Z",
+    "updatedAt": "2026-04-30T08:17:01.068Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f3014e20f10e7690dfc843",
+    "recordId": "69e9e3e85ca57f4b82f9279f",
+    "label": "Analyses",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 2,
+    "createdAt": "2026-04-30T07:14:22.665Z",
+    "updatedAt": "2026-04-30T07:14:22.665Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f3039020f10e7690dfd8e4",
+    "recordId": "69e9e3e85ca57f4b82f9279e",
+    "label": "Analyses",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T07:24:00.561Z",
+    "updatedAt": "2026-04-30T07:27:03.019Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f3057d20f10e7690dff92a",
+    "recordId": "69e9e3e85ca57f4b82f9279a",
+    "label": "Imagerie",
+    "color": "#06b6d4",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T07:32:13.554Z",
+    "updatedAt": "2026-04-30T07:53:57.861Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f3058420f10e7690dff937",
+    "recordId": "69e9e3e85ca57f4b82f9279a",
+    "label": "Analyses",
+    "color": "#ef4444",
+    "icon": "tabler:list",
+    "order": 2,
+    "createdAt": "2026-04-30T07:32:20.100Z",
+    "updatedAt": "2026-04-30T07:54:05.762Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f312fe9cee630bcbc9306d",
+    "recordId": "69ce302352c96f71dd936035",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T08:29:50.398Z",
+    "updatedAt": "2026-04-30T08:29:50.398Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f319b47017af5f64570ea4",
+    "recordId": "69ce302352c96f71dd9360ea",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-04-30T08:58:28.801Z",
+    "updatedAt": "2026-04-30T08:58:28.801Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f5d4d72c110a4b9c3e50af",
+    "recordId": "69ccfac0738ff763a647e29d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "createdAt": "2026-05-02T10:41:27.840Z",
+    "updatedAt": "2026-05-05T22:23:56.784Z",
+    "__v": 0,
+    "viewMode": "list",
+    "statuses": [
+      {
+        "label": "Backlog",
+        "color": "#9ca3af",
+        "order": 0,
+        "_id": "69fa6dfc1070c044401437a0"
+      },
+      {
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 1,
+        "_id": "69fa6dfc1070c044401437a1"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 2,
+        "_id": "69fa6dfc1070c044401437a2"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 3,
+        "_id": "69fa6dfc1070c044401437a3"
+      },
+      {
+        "label": "Révision",
+        "color": "#f59e0b",
+        "order": 4,
+        "_id": "69fa6dfc1070c044401437a4"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 5,
+        "_id": "69fa6dfc1070c044401437a5"
+      }
+    ]
+  },
+  {
+    "_id": "69f8c199f7e6ac665d997360",
+    "recordId": "69ccfac0738ff763a647e29d",
+    "label": "Marketing",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 2,
+    "createdAt": "2026-05-04T15:56:09.238Z",
+    "updatedAt": "2026-05-04T16:16:57.283Z",
+    "__v": 0,
+    "viewMode": "kanban"
+  },
+  {
+    "_id": "69f8c68d791768f2c3b33dc3",
+    "recordId": "69ccfac0738ff763a647e29b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "createdAt": "2026-05-04T16:17:17.308Z",
+    "updatedAt": "2026-05-04T16:17:17.308Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fa4c721070c04440128707",
+    "recordId": "69ccfac0738ff763a647e29c",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fa4c721070c04440128708",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fa4c721070c04440128709",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fa4c721070c0444012870a",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fa4c721070c0444012870b",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fa4c721070c0444012870c",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-05T20:00:50.781Z",
+    "updatedAt": "2026-05-05T20:00:50.781Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fa7011aeef17cac32ba935",
+    "recordId": "69ccfac0738ff763a647e297",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fa7011aeef17cac32ba936",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fa7011aeef17cac32ba937",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fa7011aeef17cac32ba938",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fa7011aeef17cac32ba939",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fa7011aeef17cac32ba93a",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-05T22:32:49.201Z",
+    "updatedAt": "2026-05-05T22:32:49.201Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fb41aa08bc1a3cda53762c",
+    "recordId": "69e9b0f723861ca6c46951a6",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fb41aa08bc1a3cda53762d",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fb41aa08bc1a3cda53762e",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fb41aa08bc1a3cda53762f",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fb41aa08bc1a3cda537630",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fb41aa08bc1a3cda537631",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-06T13:27:06.602Z",
+    "updatedAt": "2026-05-06T13:27:06.602Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fb975fd9a96ee753d51eec",
+    "recordId": "69fb975ed9a96ee753d51d1b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fb975fd9a96ee753d51eed",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fb975fd9a96ee753d51eee",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fb975fd9a96ee753d51eef",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fb975fd9a96ee753d51ef0",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fb975fd9a96ee753d51ef1",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-06T19:32:47.177Z",
+    "updatedAt": "2026-05-06T19:32:47.177Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fb988ad9a96ee753d528cc",
+    "recordId": "69fb988ad9a96ee753d52703",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fb988ad9a96ee753d528cd",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fb988ad9a96ee753d528ce",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fb988ad9a96ee753d528cf",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fb988ad9a96ee753d528d0",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fb988ad9a96ee753d528d1",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-06T19:37:46.546Z",
+    "updatedAt": "2026-05-06T19:37:46.546Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fb9890d9a96ee753d52af9",
+    "recordId": "69fb988fd9a96ee753d52936",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fb9890d9a96ee753d52afa",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fb9890d9a96ee753d52afb",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fb9890d9a96ee753d52afc",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fb9890d9a96ee753d52afd",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fb9890d9a96ee753d52afe",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-06T19:37:52.035Z",
+    "updatedAt": "2026-05-06T19:37:52.035Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fba5edd9a96ee753d559eb",
+    "recordId": "69fba5edd9a96ee753d5581b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fba5edd9a96ee753d559ec",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fba5edd9a96ee753d559ed",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fba5edd9a96ee753d559ee",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fba5edd9a96ee753d559ef",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fba5edd9a96ee753d559f0",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-06T20:34:53.776Z",
+    "updatedAt": "2026-05-06T20:34:53.776Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fc7670867f9ff4a943b24d",
+    "recordId": "69fc7670867f9ff4a943b07d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fc7670867f9ff4a943b24e",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fc7670867f9ff4a943b24f",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fc7670867f9ff4a943b250",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fc7670867f9ff4a943b251",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fc7670867f9ff4a943b252",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-07T11:24:32.846Z",
+    "updatedAt": "2026-05-07T11:24:32.846Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fcf766498ed6563f6b69f4",
+    "recordId": "69ce302352c96f71dd936036",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fcf766498ed6563f6b69f5",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fcf766498ed6563f6b69f6",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fcf766498ed6563f6b69f7",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fcf766498ed6563f6b69f8",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fcf766498ed6563f6b69f9",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-07T20:34:46.808Z",
+    "updatedAt": "2026-05-07T20:34:46.808Z",
+    "__v": 0
+  },
+  {
+    "_id": "69fe54fb5d7a49e3d2cffccc",
+    "recordId": "69ccfac0738ff763a647e299",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69fe54fb5d7a49e3d2cffccd",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69fe54fb5d7a49e3d2cffcce",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69fe54fb5d7a49e3d2cffccf",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69fe54fb5d7a49e3d2cffcd0",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69fe54fb5d7a49e3d2cffcd1",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-08T21:26:19.859Z",
+    "updatedAt": "2026-05-08T21:26:19.859Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ff1f852a075365450222f0",
+    "recordId": "69ccfac0738ff763a647e26c",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "69ff1f852a075365450222f1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "69ff1f852a075365450222f2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "69ff1f852a075365450222f3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "69ff1f852a075365450222f4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "69ff1f852a075365450222f5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-09T11:50:29.481Z",
+    "updatedAt": "2026-05-09T11:50:29.481Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a007c7b97114b77e91f3280",
+    "recordId": "6a007c7a97114b77e91f30b1",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a007c7b97114b77e91f3281",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a007c7b97114b77e91f3282",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a007c7b97114b77e91f3283",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a007c7b97114b77e91f3284",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a007c7b97114b77e91f3285",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-10T12:39:23.035Z",
+    "updatedAt": "2026-05-10T12:39:23.035Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a035e38eb304665d4ab3977",
+    "recordId": "69ccfac0738ff763a647e351",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a035e38eb304665d4ab3978",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a035e38eb304665d4ab3979",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a035e38eb304665d4ab397a",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a035e38eb304665d4ab397b",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a035e38eb304665d4ab397c",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:07:04.579Z",
+    "updatedAt": "2026-05-12T17:07:04.579Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a035e4aeb304665d4ab3d29",
+    "recordId": "6a035e49eb304665d4ab3b4e",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a035e4aeb304665d4ab3d2a",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a035e4aeb304665d4ab3d2b",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a035e4aeb304665d4ab3d2c",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a035e4aeb304665d4ab3d2d",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a035e4aeb304665d4ab3d2e",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:07:22.064Z",
+    "updatedAt": "2026-05-12T17:07:22.064Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a035e72eb304665d4ab436d",
+    "recordId": "69ccfac0738ff763a647e350",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a035e72eb304665d4ab436e",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a035e72eb304665d4ab436f",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a035e72eb304665d4ab4370",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a035e72eb304665d4ab4371",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a035e72eb304665d4ab4372",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:08:02.250Z",
+    "updatedAt": "2026-05-12T17:08:02.250Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a035e81eb304665d4ab46d9",
+    "recordId": "6a035e81eb304665d4ab44fd",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a035e81eb304665d4ab46da",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a035e81eb304665d4ab46db",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a035e81eb304665d4ab46dc",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a035e81eb304665d4ab46dd",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a035e81eb304665d4ab46de",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:08:17.858Z",
+    "updatedAt": "2026-05-12T17:08:17.858Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a035fac6188bdc90cead0f4",
+    "recordId": "6a035fac6188bdc90ceacee3",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a035fac6188bdc90cead0f5",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a035fac6188bdc90cead0f6",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a035fac6188bdc90cead0f7",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a035fac6188bdc90cead0f8",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a035fac6188bdc90cead0f9",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:13:16.481Z",
+    "updatedAt": "2026-05-12T17:13:16.481Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0360c8edd9172dd619daa0",
+    "recordId": "69e9e4165ca57f4b82f92b9e",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0360c8edd9172dd619daa1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0360c8edd9172dd619daa2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0360c8edd9172dd619daa3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0360c8edd9172dd619daa4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0360c8edd9172dd619daa5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:18:00.368Z",
+    "updatedAt": "2026-05-12T17:18:00.368Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a036383edd9172dd619fbb9",
+    "recordId": "6a036383edd9172dd619f9bd",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a036383edd9172dd619fbba",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a036383edd9172dd619fbbb",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a036383edd9172dd619fbbc",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a036383edd9172dd619fbbd",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a036383edd9172dd619fbbe",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:29:39.680Z",
+    "updatedAt": "2026-05-12T17:29:39.680Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a036396edd9172dd61a0ab6",
+    "recordId": "6a036396edd9172dd61a0886",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a036396edd9172dd61a0ab7",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a036396edd9172dd61a0ab8",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a036396edd9172dd61a0ab9",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a036396edd9172dd61a0aba",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a036396edd9172dd61a0abb",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:29:58.339Z",
+    "updatedAt": "2026-05-12T17:29:58.339Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a03639eedd9172dd61a1034",
+    "recordId": "6a03639eedd9172dd61a0e07",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a03639eedd9172dd61a1035",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a03639eedd9172dd61a1036",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a03639eedd9172dd61a1037",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a03639eedd9172dd61a1038",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a03639eedd9172dd61a1039",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:30:06.260Z",
+    "updatedAt": "2026-05-12T17:30:06.260Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a03662d3f8185f9cfcbe633",
+    "recordId": "6a03662d3f8185f9cfcbe40b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a03662d3f8185f9cfcbe634",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a03662d3f8185f9cfcbe635",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a03662d3f8185f9cfcbe636",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a03662d3f8185f9cfcbe637",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a03662d3f8185f9cfcbe638",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:41:01.918Z",
+    "updatedAt": "2026-05-12T17:41:01.918Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0369e8c4255a4db8c5a24f",
+    "recordId": "6a0369e8c4255a4db8c5a018",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0369e8c4255a4db8c5a250",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0369e8c4255a4db8c5a251",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0369e8c4255a4db8c5a252",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0369e8c4255a4db8c5a253",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0369e8c4255a4db8c5a254",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:56:56.823Z",
+    "updatedAt": "2026-05-12T17:56:56.823Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0369f7c4255a4db8c5a8d8",
+    "recordId": "6a0369f7c4255a4db8c5a6d6",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0369f7c4255a4db8c5a8d9",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0369f7c4255a4db8c5a8da",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0369f7c4255a4db8c5a8db",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0369f7c4255a4db8c5a8dc",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0369f7c4255a4db8c5a8dd",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-12T17:57:11.489Z",
+    "updatedAt": "2026-05-12T17:57:11.489Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a04e0f67b394b4558fdb937",
+    "recordId": "6a04e0f67b394b4558fdb6e3",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a04e0f67b394b4558fdb938",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a04e0f67b394b4558fdb939",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a04e0f67b394b4558fdb93a",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a04e0f67b394b4558fdb93b",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a04e0f67b394b4558fdb93c",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-13T20:37:10.921Z",
+    "updatedAt": "2026-05-13T20:37:10.921Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a04e7dd3e9ebff1c4cbede0",
+    "recordId": "69ce302352c96f71dd936176",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a04e7dd3e9ebff1c4cbede1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a04e7dd3e9ebff1c4cbede2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a04e7dd3e9ebff1c4cbede3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a04e7dd3e9ebff1c4cbede4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a04e7dd3e9ebff1c4cbede5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-13T21:06:37.493Z",
+    "updatedAt": "2026-05-13T21:06:37.493Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a04eb8b6f8a561bd915393e",
+    "recordId": "69ce302352c96f71dd936175",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a04eb8b6f8a561bd915393f",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a04eb8b6f8a561bd9153940",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a04eb8b6f8a561bd9153941",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a04eb8b6f8a561bd9153942",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a04eb8b6f8a561bd9153943",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-13T21:22:19.365Z",
+    "updatedAt": "2026-05-13T21:22:19.365Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a06143d3aaf4d6792a9d214",
+    "recordId": "6a04e0f67b394b4558fdb6e3",
+    "label": "Test",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 2,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a06143d3aaf4d6792a9d215",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a06143d3aaf4d6792a9d216",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a06143d3aaf4d6792a9d217",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a06143d3aaf4d6792a9d218",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a06143d3aaf4d6792a9d219",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-14T18:28:13.663Z",
+    "updatedAt": "2026-05-14T18:28:13.663Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0897063f147c74a2379d22",
+    "recordId": "69ce302352c96f71dd935fe0",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0897063f147c74a2379d23",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0897063f147c74a2379d24",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0897063f147c74a2379d25",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0897063f147c74a2379d26",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0897063f147c74a2379d27",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T16:10:46.638Z",
+    "updatedAt": "2026-05-16T16:10:46.638Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08db0a6267cef60c8040f0",
+    "recordId": "6a08dafc6267cef60c8036c2",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a08db0a6267cef60c8040f1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a08db0a6267cef60c8040f2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a08db0a6267cef60c8040f3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a08db0a6267cef60c8040f4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a08db0a6267cef60c8040f5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T21:00:58.829Z",
+    "updatedAt": "2026-05-16T21:00:58.829Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08db456267cef60c8050a2",
+    "recordId": "6a08dafc6267cef60c8036bb",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a08db456267cef60c8050a3",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a08db456267cef60c8050a4",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a08db456267cef60c8050a5",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a08db456267cef60c8050a6",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a08db456267cef60c8050a7",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T21:01:57.882Z",
+    "updatedAt": "2026-05-16T21:01:57.882Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08db756267cef60c805e3d",
+    "recordId": "6a08dafc6267cef60c803619",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a08db756267cef60c805e3e",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a08db756267cef60c805e3f",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a08db756267cef60c805e40",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a08db756267cef60c805e41",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a08db756267cef60c805e42",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T21:02:45.148Z",
+    "updatedAt": "2026-05-16T21:02:45.148Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08dc2e6267cef60c807d19",
+    "recordId": "6a08dafc6267cef60c803605",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a08dc2e6267cef60c807d1a",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a08dc2e6267cef60c807d1b",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a08dc2e6267cef60c807d1c",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a08dc2e6267cef60c807d1d",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a08dc2e6267cef60c807d1e",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T21:05:50.963Z",
+    "updatedAt": "2026-05-16T21:05:50.963Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08dc436267cef60c8080a8",
+    "recordId": "6a08dc436267cef60c807f53",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a08dc436267cef60c8080a9",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a08dc436267cef60c8080aa",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a08dc436267cef60c8080ab",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a08dc436267cef60c8080ac",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a08dc436267cef60c8080ad",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T21:06:11.634Z",
+    "updatedAt": "2026-05-16T21:06:11.634Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08dca86267cef60c808b2e",
+    "recordId": "6a08dafc6267cef60c803660",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a08dca86267cef60c808b2f",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a08dca86267cef60c808b30",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a08dca86267cef60c808b31",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a08dca86267cef60c808b32",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a08dca86267cef60c808b33",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-16T21:07:52.983Z",
+    "updatedAt": "2026-05-16T21:07:52.983Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b25bcb7bdc01a96b6ef0",
+    "recordId": "6a09b190f1c5ddd28f737b2b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b25bcb7bdc01a96b6ef1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b25bcb7bdc01a96b6ef2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b25bcb7bdc01a96b6ef3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b25bcb7bdc01a96b6ef4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b25bcb7bdc01a96b6ef5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:19:39.201Z",
+    "updatedAt": "2026-05-17T12:19:39.201Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b2a9cb7bdc01a96b7d54",
+    "recordId": "6a09b190f1c5ddd28f737b2c",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b2a9cb7bdc01a96b7d55",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b2a9cb7bdc01a96b7d56",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b2a9cb7bdc01a96b7d57",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b2a9cb7bdc01a96b7d58",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b2a9cb7bdc01a96b7d59",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:20:57.632Z",
+    "updatedAt": "2026-05-17T12:20:57.632Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b533972ccaf328751857",
+    "recordId": "6a09b190f1c5ddd28f737b28",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b533972ccaf328751858",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b533972ccaf328751859",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b533972ccaf32875185a",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b533972ccaf32875185b",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b533972ccaf32875185c",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:31:47.599Z",
+    "updatedAt": "2026-05-17T12:31:47.599Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b54c972ccaf328751c83",
+    "recordId": "6a09b190f1c5ddd28f737b29",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b54c972ccaf328751c84",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b54c972ccaf328751c85",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b54c972ccaf328751c86",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b54c972ccaf328751c87",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b54c972ccaf328751c88",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:32:12.038Z",
+    "updatedAt": "2026-05-17T12:32:12.038Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b55a972ccaf328752252",
+    "recordId": "6a09b55a972ccaf328752103",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b55a972ccaf328752253",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b55a972ccaf328752254",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b55a972ccaf328752255",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b55a972ccaf328752256",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b55a972ccaf328752257",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:32:26.262Z",
+    "updatedAt": "2026-05-17T12:32:26.262Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b564972ccaf328752604",
+    "recordId": "6a09b564972ccaf3287524c8",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b564972ccaf328752605",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b564972ccaf328752606",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b564972ccaf328752607",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b564972ccaf328752608",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b564972ccaf328752609",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:32:36.829Z",
+    "updatedAt": "2026-05-17T12:32:36.829Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b61b972ccaf328754f52",
+    "recordId": "6a09b190f1c5ddd28f737b26",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b61b972ccaf328754f53",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b61b972ccaf328754f54",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b61b972ccaf328754f55",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b61b972ccaf328754f56",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b61b972ccaf328754f57",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:35:39.076Z",
+    "updatedAt": "2026-05-17T12:35:39.076Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b64c972ccaf3287558f8",
+    "recordId": "6a09b190f1c5ddd28f737b2a",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b64c972ccaf3287558f9",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b64c972ccaf3287558fa",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b64c972ccaf3287558fb",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b64c972ccaf3287558fc",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b64c972ccaf3287558fd",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:36:28.423Z",
+    "updatedAt": "2026-05-17T12:36:28.423Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b728972ccaf3287572b5",
+    "recordId": "6a09b190f1c5ddd28f737b2e",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b728972ccaf3287572b6",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b728972ccaf3287572b7",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b728972ccaf3287572b8",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b728972ccaf3287572b9",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b728972ccaf3287572ba",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:40:08.552Z",
+    "updatedAt": "2026-05-17T12:40:08.552Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09b9e90052fd6c37c8dd41",
+    "recordId": "6a09b9e90052fd6c37c8dbeb",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09b9e90052fd6c37c8dd42",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09b9e90052fd6c37c8dd43",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09b9e90052fd6c37c8dd44",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09b9e90052fd6c37c8dd45",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09b9e90052fd6c37c8dd46",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:51:53.234Z",
+    "updatedAt": "2026-05-17T12:51:53.234Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09baac0052fd6c37c8ecdf",
+    "recordId": "6a09baac0052fd6c37c8eb5f",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09baac0052fd6c37c8ece0",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09baac0052fd6c37c8ece1",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09baac0052fd6c37c8ece2",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09baac0052fd6c37c8ece3",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09baac0052fd6c37c8ece4",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:55:08.480Z",
+    "updatedAt": "2026-05-17T12:55:08.480Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bb360052fd6c37c8f516",
+    "recordId": "6a09bb360052fd6c37c8f3b8",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bb360052fd6c37c8f517",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bb360052fd6c37c8f518",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bb360052fd6c37c8f519",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bb360052fd6c37c8f51a",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bb360052fd6c37c8f51b",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T12:57:26.738Z",
+    "updatedAt": "2026-05-17T12:57:26.738Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bbe50052fd6c37c90cb4",
+    "recordId": "6a09bbe50052fd6c37c90b2e",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bbe50052fd6c37c90cb5",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bbe50052fd6c37c90cb6",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bbe50052fd6c37c90cb7",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bbe50052fd6c37c90cb8",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bbe50052fd6c37c90cb9",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:00:21.911Z",
+    "updatedAt": "2026-05-17T13:00:21.911Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bc7f0052fd6c37c917d3",
+    "recordId": "6a09bc7f0052fd6c37c9164d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bc7f0052fd6c37c917d4",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bc7f0052fd6c37c917d5",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bc7f0052fd6c37c917d6",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bc7f0052fd6c37c917d7",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bc7f0052fd6c37c917d8",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:02:55.283Z",
+    "updatedAt": "2026-05-17T13:02:55.283Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bd770052fd6c37c91a3e",
+    "recordId": "6a09bd770052fd6c37c918ab",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bd770052fd6c37c91a3f",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bd770052fd6c37c91a40",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bd770052fd6c37c91a41",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bd770052fd6c37c91a42",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bd770052fd6c37c91a43",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:07:03.893Z",
+    "updatedAt": "2026-05-17T13:07:03.893Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bd8e0052fd6c37c92090",
+    "recordId": "6a09b190f1c5ddd28f737b2d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bd8e0052fd6c37c92091",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bd8e0052fd6c37c92092",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bd8e0052fd6c37c92093",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bd8e0052fd6c37c92094",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bd8e0052fd6c37c92095",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:07:26.954Z",
+    "updatedAt": "2026-05-17T13:07:26.954Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bd900052fd6c37c9228f",
+    "recordId": "6a09bd900052fd6c37c92108",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bd900052fd6c37c92290",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bd900052fd6c37c92291",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bd900052fd6c37c92292",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bd900052fd6c37c92293",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bd900052fd6c37c92294",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:07:28.466Z",
+    "updatedAt": "2026-05-17T13:07:28.466Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bdaf0052fd6c37c926f0",
+    "recordId": "6a09bdaf0052fd6c37c92575",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bdaf0052fd6c37c926f1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bdaf0052fd6c37c926f2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bdaf0052fd6c37c926f3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bdaf0052fd6c37c926f4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bdaf0052fd6c37c926f5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:07:59.580Z",
+    "updatedAt": "2026-05-17T13:07:59.580Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09be530052fd6c37c928ea",
+    "recordId": "6a09be530052fd6c37c92774",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09be530052fd6c37c928eb",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09be530052fd6c37c928ec",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09be530052fd6c37c928ed",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09be530052fd6c37c928ee",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09be530052fd6c37c928ef",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:10:43.471Z",
+    "updatedAt": "2026-05-17T13:10:43.471Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09be6c0052fd6c37c92d41",
+    "recordId": "6a09be6c0052fd6c37c92ba9",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09be6c0052fd6c37c92d42",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09be6c0052fd6c37c92d43",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09be6c0052fd6c37c92d44",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09be6c0052fd6c37c92d45",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09be6c0052fd6c37c92d46",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:11:08.795Z",
+    "updatedAt": "2026-05-17T13:11:08.795Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bf110052fd6c37c9325b",
+    "recordId": "6a09bf080052fd6c37c92ea7",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bf110052fd6c37c9325c",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bf110052fd6c37c9325d",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bf110052fd6c37c9325e",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bf110052fd6c37c9325f",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bf110052fd6c37c93260",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:13:53.005Z",
+    "updatedAt": "2026-05-17T13:13:53.005Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09bfd10052fd6c37c948c8",
+    "recordId": "6a09bfd10052fd6c37c9473d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09bfd10052fd6c37c948c9",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09bfd10052fd6c37c948ca",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09bfd10052fd6c37c948cb",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09bfd10052fd6c37c948cc",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09bfd10052fd6c37c948cd",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:17:05.604Z",
+    "updatedAt": "2026-05-17T13:17:05.604Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09c1618b4ca5abe58cc24e",
+    "recordId": "6a09b190f1c5ddd28f737b27",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09c1618b4ca5abe58cc24f",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09c1618b4ca5abe58cc250",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09c1618b4ca5abe58cc251",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09c1618b4ca5abe58cc252",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09c1618b4ca5abe58cc253",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:23:45.996Z",
+    "updatedAt": "2026-05-17T13:23:45.996Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09c1818b4ca5abe58cc6dc",
+    "recordId": "6a09c1778b4ca5abe58cc36b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09c1818b4ca5abe58cc6dd",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09c1818b4ca5abe58cc6de",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09c1818b4ca5abe58cc6df",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09c1818b4ca5abe58cc6e0",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09c1818b4ca5abe58cc6e1",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:24:17.365Z",
+    "updatedAt": "2026-05-17T13:24:17.365Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a09c514e02767ad1973343e",
+    "recordId": "6a09c1778b4ca5abe58cc36b",
+    "label": "Taches du jour",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 2,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a09c514e02767ad1973343f",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a09c514e02767ad19733440",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a09c514e02767ad19733441",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a09c514e02767ad19733442",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a09c514e02767ad19733443",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-17T13:39:32.453Z",
+    "updatedAt": "2026-05-17T13:39:32.453Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b2d069fa0d233d94e47aa",
+    "recordId": "6a0b2c54f1c5ddd28f737b76",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b2d069fa0d233d94e47ab",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b2d069fa0d233d94e47ac",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b2d069fa0d233d94e47ad",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b2d069fa0d233d94e47ae",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b2d069fa0d233d94e47af",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:15:18.402Z",
+    "updatedAt": "2026-05-18T15:15:18.402Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b2d3b9fa0d233d94e5274",
+    "recordId": "6a0b2c54f1c5ddd28f737b79",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b2d3b9fa0d233d94e5275",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b2d3b9fa0d233d94e5276",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b2d3b9fa0d233d94e5277",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b2d3b9fa0d233d94e5278",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b2d3b9fa0d233d94e5279",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:16:11.146Z",
+    "updatedAt": "2026-05-18T15:16:11.146Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b2d9d9fa0d233d94e5822",
+    "recordId": "6a0b2c54f1c5ddd28f737b74",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b2d9d9fa0d233d94e5823",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b2d9d9fa0d233d94e5824",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b2d9d9fa0d233d94e5825",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b2d9d9fa0d233d94e5826",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b2d9d9fa0d233d94e5827",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:17:49.618Z",
+    "updatedAt": "2026-05-18T15:17:49.618Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b2fb818cff87fd75796bb",
+    "recordId": "6a0b2f1af1c5ddd28f737bc5",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b2fb818cff87fd75796bc",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b2fb818cff87fd75796bd",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b2fb818cff87fd75796be",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b2fb818cff87fd75796bf",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b2fb818cff87fd75796c0",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:26:48.041Z",
+    "updatedAt": "2026-05-18T15:26:48.041Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b300b18cff87fd757a5a7",
+    "recordId": "6a0b2f1af1c5ddd28f737bce",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b300b18cff87fd757a5a8",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b300b18cff87fd757a5a9",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b300b18cff87fd757a5aa",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b300b18cff87fd757a5ab",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b300b18cff87fd757a5ac",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:28:11.098Z",
+    "updatedAt": "2026-05-18T15:28:11.098Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b301918cff87fd757ac76",
+    "recordId": "6a0b2f1af1c5ddd28f737bc7",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b301918cff87fd757ac77",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b301918cff87fd757ac78",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b301918cff87fd757ac79",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b301918cff87fd757ac7a",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b301918cff87fd757ac7b",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:28:25.450Z",
+    "updatedAt": "2026-05-18T15:28:25.450Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b316c18cff87fd757d055",
+    "recordId": "6a0b2f1af1c5ddd28f737bca",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b316c18cff87fd757d056",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b316c18cff87fd757d057",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b316c18cff87fd757d058",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b316c18cff87fd757d059",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b316c18cff87fd757d05a",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T15:34:04.207Z",
+    "updatedAt": "2026-05-18T15:34:04.207Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b378342d564729e0e45d4",
+    "recordId": "6a0b34d8f1c5ddd28f737c11",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b378342d564729e0e45d5",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b378342d564729e0e45d6",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b378342d564729e0e45d7",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b378342d564729e0e45d8",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b378342d564729e0e45d9",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T16:00:03.650Z",
+    "updatedAt": "2026-05-18T16:00:03.650Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b378642d564729e0e4a3b",
+    "recordId": "6a0b34d8f1c5ddd28f737c13",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b378642d564729e0e4a3c",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b378642d564729e0e4a3d",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b378642d564729e0e4a3e",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b378642d564729e0e4a3f",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b378642d564729e0e4a40",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T16:00:06.635Z",
+    "updatedAt": "2026-05-18T16:00:06.635Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b3ab842d564729e0e5106",
+    "recordId": "6a0b34d8f1c5ddd28f737c16",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b3ab842d564729e0e5107",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b3ab842d564729e0e5108",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b3ab842d564729e0e5109",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b3ab842d564729e0e510a",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b3ab842d564729e0e510b",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T16:13:44.864Z",
+    "updatedAt": "2026-05-18T16:13:44.864Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b3b0737ee664e2daa6ef3",
+    "recordId": "6a0b3adff1c5ddd28f737c56",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b3b0737ee664e2daa6ef4",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b3b0737ee664e2daa6ef5",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b3b0737ee664e2daa6ef6",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b3b0737ee664e2daa6ef7",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b3b0737ee664e2daa6ef8",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T16:15:03.263Z",
+    "updatedAt": "2026-05-18T16:15:03.263Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b42729923316d1d0e85b0",
+    "recordId": "6a0b4221f1c5ddd28f737c99",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b42729923316d1d0e85b1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b42729923316d1d0e85b2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b42729923316d1d0e85b3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b42729923316d1d0e85b4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b42729923316d1d0e85b5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T16:46:42.761Z",
+    "updatedAt": "2026-05-18T16:46:42.761Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b427c9923316d1d0e8856",
+    "recordId": "6a0b4221f1c5ddd28f737c98",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b427c9923316d1d0e8857",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b427c9923316d1d0e8858",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b427c9923316d1d0e8859",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b427c9923316d1d0e885a",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b427c9923316d1d0e885b",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T16:46:52.123Z",
+    "updatedAt": "2026-05-18T16:46:52.123Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b515d21534bc6dbc8e1b0",
+    "recordId": "6a0b4221f1c5ddd28f737c9c",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b515d21534bc6dbc8e1b1",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b515d21534bc6dbc8e1b2",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b515d21534bc6dbc8e1b3",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b515d21534bc6dbc8e1b4",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b515d21534bc6dbc8e1b5",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T17:50:21.177Z",
+    "updatedAt": "2026-05-18T17:50:21.177Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b876aa9c2daacbd1ba8a4",
+    "recordId": "6a0b4221f1c5ddd28f737c97",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b876aa9c2daacbd1ba8a5",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b876aa9c2daacbd1ba8a6",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b876aa9c2daacbd1ba8a7",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b876aa9c2daacbd1ba8a8",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b876aa9c2daacbd1ba8a9",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T21:40:58.801Z",
+    "updatedAt": "2026-05-18T21:40:58.801Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b8a2ca02d16a039fa0663",
+    "recordId": "6a0b4221f1c5ddd28f737c9b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b8a2ca02d16a039fa0664",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b8a2ca02d16a039fa0665",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b8a2ca02d16a039fa0666",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b8a2ca02d16a039fa0667",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b8a2ca02d16a039fa0668",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T21:52:44.458Z",
+    "updatedAt": "2026-05-18T21:52:44.458Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0b8a4da02d16a039fa09ee",
+    "recordId": "6a0b4221f1c5ddd28f737c96",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0b8a4da02d16a039fa09ef",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0b8a4da02d16a039fa09f0",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0b8a4da02d16a039fa09f1",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0b8a4da02d16a039fa09f2",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0b8a4da02d16a039fa09f3",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-18T21:53:17.345Z",
+    "updatedAt": "2026-05-18T21:53:17.345Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d64593c3a6a4e56aad0c9",
+    "recordId": "6a0b4221f1c5ddd28f737c95",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d64593c3a6a4e56aad0ca",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d64593c3a6a4e56aad0cb",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d64593c3a6a4e56aad0cc",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d64593c3a6a4e56aad0cd",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d64593c3a6a4e56aad0ce",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T07:35:53.274Z",
+    "updatedAt": "2026-05-20T07:35:53.274Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d7167df797cae524fb78a",
+    "recordId": "6a0d6bf5491c52a4e438b72e",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d7167df797cae524fb78b",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d7167df797cae524fb78c",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d7167df797cae524fb78d",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d7167df797cae524fb78e",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d7167df797cae524fb78f",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:31:35.075Z",
+    "updatedAt": "2026-05-20T08:31:35.075Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d71bfdf797cae524fcde9",
+    "recordId": "6a0d6bf5491c52a4e438b72d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d71bfdf797cae524fcdea",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d71bfdf797cae524fcdeb",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d71bfdf797cae524fcdec",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d71bfdf797cae524fcded",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d71bfdf797cae524fcdee",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:33:03.111Z",
+    "updatedAt": "2026-05-20T08:33:03.111Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d7208df797cae524ff0d2",
+    "recordId": "6a0d6bf5491c52a4e438b72b",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d7208df797cae524ff0d3",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d7208df797cae524ff0d4",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d7208df797cae524ff0d5",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d7208df797cae524ff0d6",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d7208df797cae524ff0d7",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:34:16.699Z",
+    "updatedAt": "2026-05-20T08:34:16.699Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d720edf797cae524ff3af",
+    "recordId": "6a0d6bf5491c52a4e438b72c",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d720edf797cae524ff3b0",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d720edf797cae524ff3b1",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d720edf797cae524ff3b2",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d720edf797cae524ff3b3",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d720edf797cae524ff3b4",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:34:22.380Z",
+    "updatedAt": "2026-05-20T08:34:22.380Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d7214df797cae524ff611",
+    "recordId": "6a0d6bf5491c52a4e438b729",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d7214df797cae524ff612",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d7214df797cae524ff613",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d7214df797cae524ff614",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d7214df797cae524ff615",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d7214df797cae524ff616",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:34:28.332Z",
+    "updatedAt": "2026-05-20T08:34:28.332Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d72afdf797cae52500aac",
+    "recordId": "6a0d72aedf797cae52500958",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d72afdf797cae52500aad",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d72afdf797cae52500aae",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d72afdf797cae52500aaf",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d72afdf797cae52500ab0",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d72afdf797cae52500ab1",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:37:03.087Z",
+    "updatedAt": "2026-05-20T08:37:03.087Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d74f36d62a4ed3e2273a3",
+    "recordId": "6a0d74f26d62a4ed3e22724d",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d74f36d62a4ed3e2273a4",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d74f36d62a4ed3e2273a5",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d74f36d62a4ed3e2273a6",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d74f36d62a4ed3e2273a7",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d74f36d62a4ed3e2273a8",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:46:43.026Z",
+    "updatedAt": "2026-05-20T08:46:43.026Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d75296d62a4ed3e228466",
+    "recordId": "6a0d75296d62a4ed3e228310",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d75296d62a4ed3e228467",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d75296d62a4ed3e228468",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d75296d62a4ed3e228469",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d75296d62a4ed3e22846a",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d75296d62a4ed3e22846b",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:47:37.348Z",
+    "updatedAt": "2026-05-20T08:47:37.348Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d76c16d62a4ed3e22aa46",
+    "recordId": "6a0d76c16d62a4ed3e22a8f0",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0d76c16d62a4ed3e22aa47",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0d76c16d62a4ed3e22aa48",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0d76c16d62a4ed3e22aa49",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0d76c16d62a4ed3e22aa4a",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0d76c16d62a4ed3e22aa4b",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-20T08:54:25.986Z",
+    "updatedAt": "2026-05-20T08:54:25.986Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0ea31a62694b74c44898ee",
+    "recordId": "6a0d6bf5491c52a4e438b731",
+    "label": "Général",
+    "color": "#6366f1",
+    "icon": "tabler:list",
+    "order": 1,
+    "viewMode": "kanban",
+    "statuses": [
+      {
+        "_id": "6a0ea31a62694b74c44898ef",
+        "label": "À faire",
+        "color": "#9ca3af",
+        "order": 0
+      },
+      {
+        "_id": "6a0ea31a62694b74c44898f0",
+        "label": "En cours",
+        "color": "#3b82f6",
+        "order": 1
+      },
+      {
+        "_id": "6a0ea31a62694b74c44898f1",
+        "label": "En revue",
+        "color": "#f59e0b",
+        "order": 2
+      },
+      {
+        "_id": "6a0ea31a62694b74c44898f2",
+        "label": "Terminé",
+        "color": "#22c55e",
+        "order": 3
+      },
+      {
+        "_id": "6a0ea31a62694b74c44898f3",
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "order": 4
+      }
+    ],
+    "createdAt": "2026-05-21T06:15:54.348Z",
+    "updatedAt": "2026-05-21T06:15:54.348Z",
+    "__v": 0
+  }
+]

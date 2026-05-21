@@ -1,0 +1,70 @@
+[
+  {
+    "_id": "69f3763f05452daa8266cf25",
+    "type": "group",
+    "recordId": "69e9e3e85ca57f4b82f9279f",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "entityName": "Patient",
+    "recordTitle": "Rayan Chevalier 60",
+    "name": "test",
+    "avatar": "",
+    "participants": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "name": "Riad Boukirou",
+        "email": "boukirou6@hotmail.com",
+        "avatar": "",
+        "role": "admin",
+        "joinedAt": "2026-04-30T15:33:19.345Z",
+        "lastReadAt": "2026-04-30T15:33:19.345Z",
+        "unreadCount": 0,
+        "_id": "69f3763f05452daa8266cf26"
+      }
+    ],
+    "lastMessage": {
+      "text": "Test",
+      "senderId": "643c0b36fbde1ceb1bdc97bb",
+      "senderName": "Riad Boukirou",
+      "sentAt": "2026-04-30T21:37:45.480Z",
+      "type": "text"
+    },
+    "archived": false,
+    "createdAt": "2026-04-30T15:33:19.347Z",
+    "updatedAt": "2026-04-30T21:37:45.488Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f376b205452daa8266cf86",
+    "type": "group",
+    "recordId": "69e9e3e85ca57f4b82f9279f",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "entityName": "Patient",
+    "recordTitle": "Rayan Chevalier 60",
+    "name": "Discussion patient test",
+    "avatar": "",
+    "participants": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "name": "Riad Boukirou",
+        "email": "boukirou6@hotmail.com",
+        "avatar": "",
+        "role": "admin",
+        "joinedAt": "2026-04-30T15:35:14.359Z",
+        "lastReadAt": "2026-04-30T15:35:14.359Z",
+        "unreadCount": 0,
+        "_id": "69f376b205452daa8266cf87"
+      }
+    ],
+    "lastMessage": {
+      "text": "Bonjour, ceci est un test depuis le script!",
+      "senderId": "643c0b36fbde1ceb1bdc97bb",
+      "senderName": "Riad Boukirou",
+      "sentAt": "2026-04-30T15:35:14.366Z",
+      "type": "text"
+    },
+    "archived": false,
+    "createdAt": "2026-04-30T15:35:14.359Z",
+    "updatedAt": "2026-04-30T15:35:14.368Z",
+    "__v": 0
+  }
+]

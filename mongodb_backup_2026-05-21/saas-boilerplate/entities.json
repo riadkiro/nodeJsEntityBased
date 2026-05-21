@@ -1,0 +1,158 @@
+[
+  {
+    "_id": "6814b618de053b781897977f",
+    "workspace": "6814b618de053b7818979776",
+    "module": "6814b618de053b781897977b",
+    "name": "customer",
+    "displayName": "Customer",
+    "description": "Customer information",
+    "fields": [
+      {
+        "name": "name",
+        "displayName": "Name",
+        "type": "string",
+        "required": true,
+        "unique": false,
+        "_id": "6814b618de053b7818979780"
+      },
+      {
+        "name": "email",
+        "displayName": "Email",
+        "type": "string",
+        "required": true,
+        "unique": false,
+        "_id": "6814b618de053b7818979781"
+      },
+      {
+        "name": "phone",
+        "displayName": "Phone",
+        "type": "string",
+        "required": false,
+        "unique": false,
+        "_id": "6814b618de053b7818979782"
+      },
+      {
+        "name": "status",
+        "displayName": "Status",
+        "type": "string",
+        "required": false,
+        "unique": false,
+        "_id": "6814b618de053b7818979783"
+      }
+    ],
+    "permissions": {
+      "create": {
+        "roles": [
+          "owner",
+          "admin",
+          "editor"
+        ]
+      },
+      "read": {
+        "roles": [
+          "owner",
+          "admin",
+          "editor",
+          "viewer"
+        ]
+      },
+      "update": {
+        "roles": [
+          "owner",
+          "admin",
+          "editor"
+        ]
+      },
+      "delete": {
+        "roles": [
+          "owner",
+          "admin"
+        ]
+      }
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.180Z",
+    "updatedAt": "2025-05-02T12:10:00.181Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814b618de053b7818979785",
+    "workspace": "6814b618de053b7818979776",
+    "module": "6814b618de053b781897977b",
+    "name": "deal",
+    "displayName": "Deal",
+    "description": "Sales deals",
+    "fields": [
+      {
+        "name": "title",
+        "displayName": "Title",
+        "type": "string",
+        "required": true,
+        "unique": false,
+        "_id": "6814b618de053b7818979786"
+      },
+      {
+        "name": "amount",
+        "displayName": "Amount",
+        "type": "number",
+        "required": true,
+        "unique": false,
+        "_id": "6814b618de053b7818979787"
+      },
+      {
+        "name": "status",
+        "displayName": "Status",
+        "type": "string",
+        "required": true,
+        "unique": false,
+        "_id": "6814b618de053b7818979788"
+      },
+      {
+        "name": "customer",
+        "displayName": "Customer",
+        "type": "reference",
+        "required": true,
+        "unique": false,
+        "reference": {
+          "entity": "6814b618de053b781897977f",
+          "displayField": "name"
+        },
+        "_id": "6814b618de053b7818979789"
+      }
+    ],
+    "permissions": {
+      "create": {
+        "roles": [
+          "owner",
+          "admin",
+          "editor"
+        ]
+      },
+      "read": {
+        "roles": [
+          "owner",
+          "admin",
+          "editor",
+          "viewer"
+        ]
+      },
+      "update": {
+        "roles": [
+          "owner",
+          "admin",
+          "editor"
+        ]
+      },
+      "delete": {
+        "roles": [
+          "owner",
+          "admin"
+        ]
+      }
+    },
+    "createdBy": "6814b618de053b7818979774",
+    "createdAt": "2025-05-02T12:10:00.183Z",
+    "updatedAt": "2025-05-02T12:10:00.184Z",
+    "__v": 0
+  }
+]

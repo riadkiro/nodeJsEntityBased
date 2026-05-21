@@ -1,0 +1,1708 @@
+[
+  {
+    "_id": "69a970082233fefa8c87b603",
+    "accountId": "9194",
+    "viewId": "record_tabs_69a53cfbde03671e05ed22f3",
+    "__v": 0,
+    "createdAt": "2026-03-05T11:59:04.815Z",
+    "preferences": {
+      "customTabs": [
+        {
+          "key": "custom_1772887568750",
+          "label": "Diagnostic",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": "<p><b>Diagnostic principal :</b> Eczema atopique (L20.0)</p><p><b>Diagnostic secondaire :</b> Dermatite de contact allergique</p><p><b>Severite :</b> Moderee</p><p><b>Localisation :</b> Membres superieurs, tronc</p>"
+        },
+        {
+          "key": "custom_1772991211447",
+          "label": "Suivie",
+          "icon": "solar:clipboard-list-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": "<div><b><br></b></div>"
+        },
+        {
+          "key": "custom_1773001545552",
+          "label": "Riad",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "relationTabs": [
+        {
+          "key": "f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+          "visible": true
+        },
+        {
+          "key": "a5cd21e5-a2e1-4e7a-ad3e-48a291f178d7",
+          "visible": true
+        },
+        {
+          "key": "inv_8e90cee2-97ff-4007-be46-2fea5766695c",
+          "visible": true
+        },
+        {
+          "key": "inv_17b6f05d-9016-43ea-ac04-9c794e52b19e",
+          "visible": true
+        }
+      ],
+      "tabOrder": [
+        "f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+        "a5cd21e5-a2e1-4e7a-ad3e-48a291f178d7",
+        "inv_8e90cee2-97ff-4007-be46-2fea5766695c",
+        "inv_17b6f05d-9016-43ea-ac04-9c794e52b19e",
+        "custom_1772887568750",
+        "custom_1772991211447",
+        "custom_1773001545552"
+      ],
+      "fieldAssignments": {
+        "text_69a53cfbde03671e05ed22c0": "custom_notes_1772720910752",
+        "text_69a53cfbde03671e05ed22c3": "custom_notes_1772720910752",
+        "text_69a53cfbde03671e05ed22c2": "custom_notes_1772720910752",
+        "number_69a53cfbde03671e05ed22c9": "custom_1772878543461",
+        "text_69a53cfbde03671e05ed22c1": "custom_1772878543461",
+        "number_69a53cfbde03671e05ed22c5": "custom_1772878543461"
+      },
+      "tabLayouts": {
+        "custom_notes_1772720910752": "side-notes-fields",
+        "custom_1772878543461": "stacked",
+        "custom_1772887476096": "side-fields-notes",
+        "custom_1772887568750": "side-fields-notes",
+        "custom_1772991125507": "stacked"
+      },
+      "customTabLayouts": {
+        "custom_1772991211447": {
+          "rows": [
+            {
+              "id": "row_mmi1qk1xpilt2",
+              "columns": [
+                {
+                  "id": "col_mmkv2wfrgz1ke",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmjnite27omv9"
+                  ]
+                },
+                {
+                  "id": "col_mmkv2wfrh9lhr",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmkv2kr4mh9ca",
+                    "block_mmkv3dbjeil8e"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mmi1xd2n0kzav",
+              "columns": [
+                {
+                  "id": "col_mmi1yt3z1tc36",
+                  "width": 8,
+                  "blockIds": [
+                    "block_mml6mfz4eqxsw"
+                  ]
+                },
+                {
+                  "id": "col_mmi63z28s5g1r",
+                  "width": 0,
+                  "blockIds": []
+                },
+                {
+                  "id": "col_mml6vj6jpnq1g",
+                  "width": 1,
+                  "blockIds": []
+                }
+              ]
+            },
+            {
+              "id": "row_mmjczno4rk0wl",
+              "columns": [
+                {
+                  "id": "col_mmjczno49nzhb",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmjd0i726c76b"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmjd0i726c76b": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "defaultRange": "all"
+              }
+            },
+            "block_mmjnite27omv9": {
+              "type": "timeline",
+              "title": "Timeline"
+            },
+            "block_mmkv2kr4mh9ca": {
+              "type": "notes",
+              "title": "Notes",
+              "content": ""
+            },
+            "block_mmkv3dbjeil8e": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "chartType": "line",
+                "defaultRange": "all"
+              }
+            },
+            "block_mml6mfz4eqxsw": {
+              "type": "tasks",
+              "title": "Tâches",
+              "tasks": [
+                {
+                  "text": "Task 1",
+                  "done": false
+                },
+                {
+                  "text": "Task 2",
+                  "done": false
+                },
+                {
+                  "text": "Task 3",
+                  "done": false
+                },
+                {
+                  "text": "Task 4",
+                  "done": false
+                },
+                {
+                  "text": "Task 5",
+                  "done": false
+                },
+                {
+                  "text": "Task 6",
+                  "done": false
+                },
+                {
+                  "text": "Task 7",
+                  "done": false
+                },
+                {
+                  "text": "Task 8",
+                  "done": false
+                },
+                {
+                  "text": "Task 9",
+                  "done": false
+                },
+                {
+                  "text": "Task 10",
+                  "done": false
+                },
+                {
+                  "text": "Task 11",
+                  "done": false
+                },
+                {
+                  "text": "Task 12",
+                  "done": false
+                },
+                {
+                  "text": "Task 13",
+                  "done": false
+                },
+                {
+                  "text": "Task 14",
+                  "done": false
+                },
+                {
+                  "text": "Task 15",
+                  "done": false
+                }
+              ]
+            }
+          }
+        },
+        "custom_1772992582154": {
+          "rows": [
+            {
+              "id": "row_mmi209d7w0586",
+              "columns": [
+                {
+                  "id": "col_mmi20hj7ngxtn",
+                  "blockId": "block_mmi20f4rbyd16",
+                  "width": null
+                },
+                {
+                  "id": "col_mmi20hj7svxp7",
+                  "blockId": null,
+                  "width": null
+                },
+                {
+                  "id": "col_mmi20hj7t83b0",
+                  "blockId": null
+                }
+              ]
+            },
+            {
+              "id": "row_mmi20amjqf924",
+              "columns": [
+                {
+                  "id": "col_mmi20dcy161c8",
+                  "blockId": null,
+                  "width": -2
+                },
+                {
+                  "id": "col_mmi20dcyysze7",
+                  "blockId": null,
+                  "width": 1
+                },
+                {
+                  "id": "col_mmi79mw3wp22k",
+                  "width": 0,
+                  "blockId": null
+                },
+                {
+                  "id": "col_mmi79r2wpxye6",
+                  "width": 1,
+                  "blockId": null
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmi20f4rbyd16": {
+              "type": "tasks",
+              "title": "Tâches",
+              "tasks": []
+            }
+          }
+        },
+        "custom_1773001545552": {
+          "rows": [
+            {
+              "id": "row_mmi7cihkf6mcz",
+              "columns": [
+                {
+                  "id": "col_mmkqce2cf9x3e",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmi7i51w50hsb",
+                    "block_mmnb4hayhiqok"
+                  ]
+                },
+                {
+                  "id": "col_mmkqce2cvwtai",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmltr63qx623x",
+                    "block_mmi7ht601gtx5"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mmicwcsc3d8sj",
+              "columns": [
+                {
+                  "id": "col_mmicwcsc0nyrv",
+                  "width": 12,
+                  "blockIds": []
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmi7ht601gtx5": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "dataSource": "entity:69a53cfbde03671e05ed22f3",
+                "xField": "69a53cfbde03671e05ed22c5",
+                "relationFilterKey": "",
+                "relationFilterValue": "",
+                "classificationFilterId": "",
+                "classificationFilterOption": "",
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "yField": "count",
+                "yAgg": "sum",
+                "period": "day",
+                "defaultRange": "1m",
+                "chartType": "line",
+                "colorScheme": "purple"
+              }
+            },
+            "block_mmi7i51w50hsb": {
+              "type": "timeline",
+              "title": "Timeline",
+              "config": {
+                "source": "current",
+                "color": "#4361ee",
+                "relationFilterKey": "f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+                "relationFilterValue": "69a53cfbde03671e05ed231d",
+                "relationFilterLabel": "Nadia Bouzid",
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and"
+              }
+            },
+            "block_mmltr63qx623x": {
+              "type": "timeline",
+              "title": "Timeline",
+              "config": {
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "dataSource": "entity:69a53cfbde03671e05ed22f1",
+                "relationFilterKey": "",
+                "relationFilterValue": "",
+                "classificationFilterId": "",
+                "classificationFilterOption": "",
+                "maxItems": 5
+              }
+            },
+            "block_mmnb4hayhiqok": {
+              "type": "kpi",
+              "title": "KPI",
+              "config": {
+                "color": "#e2a03f"
+              }
+            }
+          }
+        },
+        "custom_1772887476096": {
+          "rows": [
+            {
+              "id": "row_mmicj5g9vddn5",
+              "columns": [
+                {
+                  "id": "col_mmicj5g9xhij5",
+                  "width": 6,
+                  "blockId": "block_mmicjpsesy2d7"
+                },
+                {
+                  "id": "col_mmj0dfolur0ei",
+                  "width": 6,
+                  "blockId": null
+                }
+              ]
+            },
+            {
+              "id": "row_mmicokdn3m3cv",
+              "columns": [
+                {
+                  "id": "col_mmicokdnend4c",
+                  "width": 12,
+                  "blockId": "block_mmicp7v4jb5kq"
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmicjpsesy2d7": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {}
+            },
+            "block_mmicp7v4jb5kq": {
+              "type": "fields",
+              "title": "Champs",
+              "fields": []
+            }
+          }
+        }
+      }
+    },
+    "updatedAt": "2026-03-15T13:41:33.376Z"
+  },
+  {
+    "_id": "69a972e12233fefa8c87b604",
+    "viewId": "record_panels_69a53cfbde03671e05ed22f3",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-05T12:11:13.732Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 9
+        },
+        {
+          "id": "sidebar",
+          "width": 3
+        }
+      ],
+      "extraColumns": [],
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "card-widget-f77eec4b-23cb-4b96-b39f-e085b7409c4a-0",
+          "smartdoc",
+          "attachments",
+          "classifications",
+          "relations-fields"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-15T12:32:59.444Z"
+  },
+  {
+    "_id": "69adad2fc79fe48d5fc2f725",
+    "accountId": "9194",
+    "viewId": "record_panels_69a82c8a49972f3d2fbbb2c4",
+    "__v": 0,
+    "createdAt": "2026-03-08T17:09:03.872Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "relations-fields"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "sw-69a8911b5d8442f256e9e4e6",
+          "inv-relation-inv_b3298737-b158-4dd2-a3cd-87f8817a7f65",
+          "sw-69a88c1e9945ab1233f46add",
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "lines",
+          "sw-69a874049945ab1233f44c5f",
+          "sw-69a898ba5d8442f256e9f02a"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-08T17:09:43.769Z"
+  },
+  {
+    "_id": "69adfea2c79fe48d5fc2f726",
+    "accountId": "9194",
+    "viewId": "record_tabs_69a53cfbde03671e05ed22f1",
+    "__v": 0,
+    "createdAt": "2026-03-08T22:56:34.598Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773010594593": {
+          "rows": [
+            {
+              "id": "row_mmicqcknl515b",
+              "columns": [
+                {
+                  "id": "col_mmicqckncgise",
+                  "width": 12,
+                  "blockId": "block_mmicqnm00yvxh"
+                }
+              ]
+            },
+            {
+              "id": "row_mmido5tukp26l",
+              "columns": [
+                {
+                  "id": "col_mmido5tueyy5d",
+                  "width": 12,
+                  "blockId": "block_mmido7t90odw7"
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmicqnm00yvxh": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "xField": "date"
+              }
+            },
+            "block_mmido7t90odw7": {
+              "type": "timeline",
+              "title": "Timeline",
+              "config": {
+                "source": "current"
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773010594593",
+          "label": "RB",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+          "visible": true
+        },
+        {
+          "key": "inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+          "visible": true
+        },
+        {
+          "key": "inv_3039ade5-ac0b-4a78-b78b-38352b06a833",
+          "visible": true
+        },
+        {
+          "key": "inv_a562f8ef-3bab-41ba-b09a-ea04294d3f5d",
+          "visible": true
+        },
+        {
+          "key": "inv_24a56f9e-25fb-432e-8ef5-11d33911cf89",
+          "visible": true
+        },
+        {
+          "key": "inv_f53fd2eb-6b1b-440b-b71e-3707581390d2",
+          "visible": true
+        },
+        {
+          "key": "inv_fb41a9fa-c833-4a73-9345-aa5695e56f97",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+        "inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+        "inv_3039ade5-ac0b-4a78-b78b-38352b06a833",
+        "inv_a562f8ef-3bab-41ba-b09a-ea04294d3f5d",
+        "inv_24a56f9e-25fb-432e-8ef5-11d33911cf89",
+        "inv_f53fd2eb-6b1b-440b-b71e-3707581390d2",
+        "inv_fb41a9fa-c833-4a73-9345-aa5695e56f97",
+        "custom_1773010594593"
+      ]
+    },
+    "updatedAt": "2026-03-08T23:23:13.995Z"
+  },
+  {
+    "_id": "69b29533f861fd6bc6cb9ca8",
+    "accountId": "9194",
+    "viewId": "record_panels_69a53cfbde03671e05ed22f1",
+    "__v": 0,
+    "createdAt": "2026-03-12T10:28:03.583Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "attachments",
+          "smartdoc",
+          "classifications",
+          "inv-relation-inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+          "inv-relation-inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-16T05:06:33.842Z"
+  },
+  {
+    "_id": "69b915029bb20cc26f24d2a0",
+    "viewId": "record_panels_69b911479bb20cc26f24d1ca",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-17T08:46:58.828Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "inv-relation-inv_33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+          "inv-relation-inv_5573a44a-ad20-4784-bc64-7e2ca6c7ee86",
+          "sw-69bae4770d46c949d64fbd1a",
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "relations-fields",
+          "relation-83c325af-025b-4b0a-a76a-a4c4b1d7fda6",
+          "card-widget-09096dae-e504-4444-b7e3-a8b5390b0c07-0"
+        ],
+        "extra": {}
+      },
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 8
+        },
+        {
+          "id": "sidebar",
+          "width": 4
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-18T17:48:33.055Z"
+  },
+  {
+    "_id": "69b929099bb20cc26f24d2a2",
+    "viewId": "record_tabs_69b911479bb20cc26f24d1ca",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-17T10:12:25.293Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773786006489": {
+          "rows": [
+            {
+              "id": "row_mmwkjigi22fd9",
+              "columns": [
+                {
+                  "id": "col_mmwkjigiuevyr",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmwmhs0s1pj99"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mmxh58l5nvjkt",
+              "columns": [
+                {
+                  "id": "col_mmxh58l5vyqgc",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmxp42o4s3utp"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmwmhs0s1pj99": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "split-doc",
+                "enableCatalog": true,
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "699d883142e48edd2430b395",
+                "schemaName": "Traitement",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "treatment",
+                    "label": "Traitement",
+                    "type": "relation"
+                  },
+                  {
+                    "key": "frequency",
+                    "label": "Fréquence",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "moment",
+                    "label": "Moment",
+                    "type": "multiselect"
+                  }
+                ]
+              }
+            },
+            "block_mmxp42o4s3utp": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "table",
+                "enableCatalog": true,
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "69a8c6fb066f2e812a7a1ba8",
+                "schemaName": "Facture",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "Desc",
+                    "label": "Description",
+                    "type": "text"
+                  },
+                  {
+                    "key": "P.U",
+                    "label": "P.U",
+                    "type": "text"
+                  },
+                  {
+                    "key": "TVA",
+                    "label": "TVA",
+                    "type": "text"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "custom_1774138175741": {
+          "rows": [
+            {
+              "id": "row_mn102akh1issx",
+              "columns": [
+                {
+                  "id": "col_mn102akheh17n",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mn102dmx1mqei"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mn102dmx1mqei": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "table",
+                "enableCatalog": true,
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "699d883142e48edd2430b395",
+                "schemaName": "Traitement",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "treatment",
+                    "label": "Traitement",
+                    "type": "relation"
+                  },
+                  {
+                    "key": "frequency",
+                    "label": "Fréquence",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "moment",
+                    "label": "Moment",
+                    "type": "multiselect"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1774138175741",
+          "label": "Traitements",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "09096dae-e504-4444-b7e3-a8b5390b0c07",
+          "visible": true
+        },
+        {
+          "key": "80aa260a-b29e-44af-9e57-00567d3365b4",
+          "visible": true
+        },
+        {
+          "key": "83c325af-025b-4b0a-a76a-a4c4b1d7fda6",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "custom_1774138175741",
+        "09096dae-e504-4444-b7e3-a8b5390b0c07",
+        "80aa260a-b29e-44af-9e57-00567d3365b4",
+        "83c325af-025b-4b0a-a76a-a4c4b1d7fda6"
+      ]
+    },
+    "updatedAt": "2026-03-22T00:09:58.182Z"
+  },
+  {
+    "_id": "69b9c42d9bb20cc26f24d2a3",
+    "accountId": "9194",
+    "viewId": "record_tabs_69b911479bb20cc26f24d1cb",
+    "__v": 0,
+    "createdAt": "2026-03-17T21:14:21.025Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773782061019": {
+          "rows": [
+            {
+              "id": "row_mmv41mjnsoxxi",
+              "columns": [
+                {
+                  "id": "col_mmv41mjnh4vmt",
+                  "width": 12,
+                  "blockIds": []
+                }
+              ]
+            }
+          ],
+          "blocks": {}
+        },
+        "custom_1773786222863": {
+          "rows": [
+            {
+              "id": "row_mmv6iv1ticvqj",
+              "columns": [
+                {
+                  "id": "col_mmv6iv1tt7rb7",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmv6lwn2sbd7o",
+                    "block_mmv6mdhdwaaxi",
+                    "block_mmv6mzhfzf4h2",
+                    "block_mmv6ng0yrwt5t",
+                    "block_mmv6nyfh4u8lu"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmv6lwn2sbd7o": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6mdhdwaaxi": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6mzhfzf4h2": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6ng0yrwt5t": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6nyfh4u8lu": {
+              "type": "lines-history",
+              "title": "lines-history"
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773786222863",
+          "label": "Traitement",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "22afb2e3-52c0-4d52-bf58-3d688836403e",
+          "visible": true
+        },
+        {
+          "key": "33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+          "visible": true
+        },
+        {
+          "key": "01565c38-e209-41eb-9f20-eb921484d6a9",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "22afb2e3-52c0-4d52-bf58-3d688836403e",
+        "33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+        "01565c38-e209-41eb-9f20-eb921484d6a9",
+        "custom_1773786222863"
+      ]
+    },
+    "updatedAt": "2026-03-17T22:27:48.369Z"
+  },
+  {
+    "_id": "69c00bdb6b20251b71c955fe",
+    "viewId": "record_tabs_69c00b3c6b20251b71c95525",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-22T15:33:47.060Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1774193627052": {
+          "rows": [
+            {
+              "id": "row_mn1x2z4rp17yc",
+              "columns": [
+                {
+                  "id": "col_mn1x2z4r569cb",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mn1x30vb1fxxm"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mn1x30vb1fxxm": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "table",
+                "enableCatalog": true,
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "69c00b3c6b20251b71c95547",
+                "schemaName": "Ordonnance Traitement",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "treatment",
+                    "label": "Traitement",
+                    "type": "relation"
+                  },
+                  {
+                    "key": "dosage",
+                    "label": "Dosage",
+                    "type": "dosage"
+                  },
+                  {
+                    "key": "frequency",
+                    "label": "Fréquence",
+                    "type": "select"
+                  },
+                  {
+                    "key": "moment",
+                    "label": "Moment",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "duration",
+                    "label": "Durée",
+                    "type": "duration"
+                  },
+                  {
+                    "key": "instructions",
+                    "label": "Instructions",
+                    "type": "textarea"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1774193627052",
+          "label": "Traitements",
+          "icon": "solar:pill-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "fbc62d35-b7ee-42e1-8012-47b4b9c28ab1",
+          "visible": true
+        },
+        {
+          "key": "57e93e8c-2b17-470c-bc7a-8bd91b365cbb",
+          "visible": true
+        },
+        {
+          "key": "1d0edb8d-4309-4feb-90fa-2807f4e10a67",
+          "visible": true
+        },
+        {
+          "key": "inv_e3b83f14-d7e2-45c6-9b08-101bf4b312f1",
+          "visible": true
+        },
+        {
+          "key": "inv_35fb3018-f02b-49b3-94fd-1584dbde24af",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "custom_1774193627052",
+        "fbc62d35-b7ee-42e1-8012-47b4b9c28ab1",
+        "57e93e8c-2b17-470c-bc7a-8bd91b365cbb",
+        "1d0edb8d-4309-4feb-90fa-2807f4e10a67",
+        "inv_e3b83f14-d7e2-45c6-9b08-101bf4b312f1",
+        "inv_35fb3018-f02b-49b3-94fd-1584dbde24af"
+      ]
+    },
+    "updatedAt": "2026-03-22T15:41:16.225Z"
+  },
+  {
+    "_id": "69c01bc16b20251b71c9571e",
+    "accountId": "9194",
+    "viewId": "record_tabs_69c01b846b20251b71c95643",
+    "__v": 0,
+    "createdAt": "2026-03-22T16:41:37.364Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1774197697358": {
+          "rows": [
+            {
+              "id": "row_mn1zi1rdveqi0",
+              "columns": [
+                {
+                  "id": "col_mn1zi1rdxlmzx",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mn1zi3zql1155"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mn1zi3zql1155": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "table",
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "69c01b846b20251b71c95669",
+                "schemaName": "Ordonnance Traitement",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "treatment",
+                    "label": "Traitement",
+                    "type": "relation"
+                  },
+                  {
+                    "key": "moment",
+                    "label": "Moment",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "frequency",
+                    "label": "Fréquence",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "duration",
+                    "label": "Durée",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "instructions",
+                    "label": "Instructions",
+                    "type": "textarea"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1774197697358",
+          "label": "Traitements",
+          "icon": "solar:pill-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "73796bc1-ff57-448f-a202-9fe6d43addf4",
+          "visible": true
+        },
+        {
+          "key": "00c8cc24-ad9f-4573-99d2-b6dea610012c",
+          "visible": true
+        },
+        {
+          "key": "2729e348-7977-4b7e-87be-b5ad54acfbc5",
+          "visible": true
+        },
+        {
+          "key": "inv_ad90b887-466d-4d30-8573-dcd3c587aad7",
+          "visible": true
+        },
+        {
+          "key": "inv_643c2598-e981-4764-bf19-21d07aecfdc5",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "custom_1774197697358",
+        "73796bc1-ff57-448f-a202-9fe6d43addf4",
+        "00c8cc24-ad9f-4573-99d2-b6dea610012c",
+        "2729e348-7977-4b7e-87be-b5ad54acfbc5",
+        "inv_ad90b887-466d-4d30-8573-dcd3c587aad7",
+        "inv_643c2598-e981-4764-bf19-21d07aecfdc5"
+      ]
+    },
+    "updatedAt": "2026-03-22T16:41:57.696Z"
+  },
+  {
+    "_id": "69c037b66b20251b71c95aa5",
+    "accountId": "9194",
+    "viewId": "record_tabs_69c036e76b20251b71c959a2",
+    "__v": 0,
+    "createdAt": "2026-03-22T18:40:54.582Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1774204854575": {
+          "rows": [],
+          "blocks": {}
+        }
+      },
+      "customTabs": [],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "7adcb370-b2f6-4105-adf2-498fb4cf0fca",
+          "visible": true
+        },
+        {
+          "key": "bd6480ac-867c-4e03-bc2e-563a12cbf978",
+          "visible": true
+        },
+        {
+          "key": "df5ef4ed-2452-48b6-b335-bd12d84dad89",
+          "visible": true
+        },
+        {
+          "key": "inv_88b5c762-722e-4c86-8fd1-6b951c84c749",
+          "visible": true
+        },
+        {
+          "key": "inv_77861e3a-a530-4e60-98ab-c080c12cb157",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "7adcb370-b2f6-4105-adf2-498fb4cf0fca",
+        "bd6480ac-867c-4e03-bc2e-563a12cbf978",
+        "df5ef4ed-2452-48b6-b335-bd12d84dad89",
+        "inv_88b5c762-722e-4c86-8fd1-6b951c84c749",
+        "inv_77861e3a-a530-4e60-98ab-c080c12cb157"
+      ]
+    },
+    "updatedAt": "2026-03-22T18:41:28.259Z"
+  },
+  {
+    "_id": "69c038fe6b20251b71c95aa7",
+    "accountId": "9194",
+    "viewId": "record_panels_69c036e76b20251b71c959a2",
+    "__v": 0,
+    "createdAt": "2026-03-22T18:46:22.942Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "relations-fields"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "card-widget-7adcb370-b2f6-4105-adf2-498fb4cf0fca-0",
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "lines",
+          "relation-df5ef4ed-2452-48b6-b335-bd12d84dad89",
+          "sw-69c0388d86737abc5d2e9004"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-22T18:46:29.956Z"
+  },
+  {
+    "_id": "69c112280fa7abd357abd22d",
+    "viewId": "record_panels_69c071566b20251b71c95ec7",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-23T10:12:56.197Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 7
+        },
+        {
+          "id": "sidebar",
+          "width": 5
+        }
+      ],
+      "extraColumns": [],
+      "panelLayout": {
+        "main": [
+          "attributs"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "relations-fields",
+          "attachments",
+          "smartdoc",
+          "lines",
+          "relation-94563876-a286-452c-9861-ddcda887d6fc",
+          "card-widget-df53fd16-d8c2-4f26-8cfe-44644de04984-0",
+          "sw-69c127c385d676c298099588"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-23T11:45:19.916Z"
+  },
+  {
+    "_id": "69c221460fa7abd357abd4c2",
+    "viewId": "record_panels_69c215140fa7abd357abd3c0",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-24T05:29:42.402Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 8
+        },
+        {
+          "id": "sidebar",
+          "width": 4
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-24T05:30:05.584Z"
+  },
+  {
+    "_id": "69c2769bbf9216b861fd4ff9",
+    "accountId": "9194",
+    "viewId": "record_panels_69c232cd0fa7abd357abd651",
+    "__v": 0,
+    "createdAt": "2026-03-24T11:33:47.279Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c7bb933a7fdf0fe5dae10e"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "card-widget-ba7b0717-9d10-4dca-b1fb-157bf3c6e7eb-0",
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "lines",
+          "relation-41b45e1d-b387-4d55-8893-eb6c3fe11fe0"
+        ],
+        "extra": {}
+      },
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 9
+        },
+        {
+          "id": "sidebar",
+          "width": 3
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-28T11:29:34.469Z"
+  },
+  {
+    "_id": "69c27afbbf9216b861fd4ffb",
+    "viewId": "record_tabs_69c232cd0fa7abd357abd651",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-24T11:52:27.172Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1774353147093": {
+          "rows": [
+            {
+              "id": "row_mn4k25um0ka7u",
+              "columns": [
+                {
+                  "id": "col_mn4k25umyn76v",
+                  "width": 12,
+                  "blockIds": []
+                }
+              ]
+            }
+          ],
+          "blocks": {}
+        },
+        "custom_1774447005099": {
+          "rows": [
+            {
+              "id": "row_mn63xl6zjl0ec",
+              "columns": [
+                {
+                  "id": "col_mn63xl6z9i5zp",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mn64ccrj48rt7"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mn64k353irlnh",
+              "columns": [
+                {
+                  "id": "col_mn64k3538n58k",
+                  "width": 12,
+                  "blockIds": []
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mn64ccrj48rt7": {
+              "type": "dynamic-table",
+              "title": "Tableau",
+              "config": {
+                "schemaId": "",
+                "schemaIds": [],
+                "enableAdd": true,
+                "enableDocPreview": false
+              }
+            }
+          }
+        },
+        "custom_1774715713681": {
+          "rows": [
+            {
+              "id": "row_mnajwyrws3v0e",
+              "columns": [
+                {
+                  "id": "col_mnajwyrwahogm",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mnajx3vb86ock"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mnajx3vb86ock": {
+              "type": "dynamic-table",
+              "title": "Tableau",
+              "config": {
+                "schemaId": "69c232cd0fa7abd357abd677",
+                "schemaIds": [
+                  "69c232cd0fa7abd357abd677"
+                ],
+                "enableAdd": true,
+                "enableDocPreview": false
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1774715713681",
+          "label": "Traitements",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "ba7b0717-9d10-4dca-b1fb-157bf3c6e7eb",
+          "visible": true
+        },
+        {
+          "key": "__documents__",
+          "visible": true
+        },
+        {
+          "key": "4c8dcdb5-35ca-49a9-bfae-320a63eba396",
+          "visible": false
+        },
+        {
+          "key": "41b45e1d-b387-4d55-8893-eb6c3fe11fe0",
+          "visible": false
+        },
+        {
+          "key": "inv_0d6efccd-eba0-41d5-9c19-42d082e040e3",
+          "visible": false
+        },
+        {
+          "key": "inv_d6f03115-687b-4f52-bd1e-576a152263ca",
+          "visible": false
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "ba7b0717-9d10-4dca-b1fb-157bf3c6e7eb",
+        "__documents__",
+        "4c8dcdb5-35ca-49a9-bfae-320a63eba396",
+        "41b45e1d-b387-4d55-8893-eb6c3fe11fe0",
+        "inv_0d6efccd-eba0-41d5-9c19-42d082e040e3",
+        "inv_d6f03115-687b-4f52-bd1e-576a152263ca",
+        "custom_1774715713681"
+      ]
+    },
+    "updatedAt": "2026-03-28T16:35:22.972Z"
+  },
+  {
+    "_id": "69c54f1bbf9216b861fd5000",
+    "viewId": "record_tabs_69c232cd0fa7abd357abd64f",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-26T15:22:03.492Z",
+    "preferences": {
+      "customTabLayouts": {},
+      "customTabs": [],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "inv_ba7b0717-9d10-4dca-b1fb-157bf3c6e7eb",
+          "visible": true
+        },
+        {
+          "key": "__documents__",
+          "visible": true
+        },
+        {
+          "key": "inv_9b7681f3-7eb7-421e-b8eb-8fdb5f01c133",
+          "visible": true
+        },
+        {
+          "key": "inv_07906321-24ab-4bec-a70a-82274c880ede",
+          "visible": true
+        },
+        {
+          "key": "inv_72a94809-12ec-47a6-a808-84757277dcec",
+          "visible": true
+        },
+        {
+          "key": "inv_488c7283-2780-4866-bb60-e907ae7fa8bc",
+          "visible": true
+        },
+        {
+          "key": "inv_b7f93695-061e-4c13-8207-9b8681224d82",
+          "visible": true
+        },
+        {
+          "key": "inv_fb0aa3a3-a3b1-40ca-b4a3-d1d5dc435b7c",
+          "visible": true
+        },
+        {
+          "key": "inv_5d36407d-395b-489e-b62b-0cbce9f31d71",
+          "visible": true
+        },
+        {
+          "key": "inv_09fcfe35-abd7-4193-8bbf-8a906921e228",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "inv_ba7b0717-9d10-4dca-b1fb-157bf3c6e7eb",
+        "__documents__",
+        "inv_9b7681f3-7eb7-421e-b8eb-8fdb5f01c133",
+        "inv_07906321-24ab-4bec-a70a-82274c880ede",
+        "inv_72a94809-12ec-47a6-a808-84757277dcec",
+        "inv_488c7283-2780-4866-bb60-e907ae7fa8bc",
+        "inv_b7f93695-061e-4c13-8207-9b8681224d82",
+        "inv_fb0aa3a3-a3b1-40ca-b4a3-d1d5dc435b7c",
+        "inv_5d36407d-395b-489e-b62b-0cbce9f31d71",
+        "inv_09fcfe35-abd7-4193-8bbf-8a906921e228"
+      ]
+    },
+    "updatedAt": "2026-03-26T15:22:23.804Z"
+  },
+  {
+    "_id": "69c7ab3612662cd0b04a6d1c",
+    "accountId": "9194",
+    "viewId": "record_panels_69c232cd0fa7abd357abd64f",
+    "__v": 0,
+    "createdAt": "2026-03-28T10:19:34.510Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c27a24c7fdcf7656d6491b"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "attachments",
+          "sw-69c27a24c7fdcf7656d6491a",
+          "smartdoc",
+          "lines",
+          "inv-relation-inv_5d36407d-395b-489e-b62b-0cbce9f31d71",
+          "inv-relation-inv_09fcfe35-abd7-4193-8bbf-8a906921e228"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-28T10:20:16.544Z"
+  },
+  {
+    "_id": "69ccfac0738ff763a647e450",
+    "accountId": "9194",
+    "viewId": "record_panels_69ccfabf738ff763a647e157",
+    "createdAt": "2026-04-01T11:00:16.974Z",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-23T05:59:41.373Z"
+  },
+  {
+    "_id": "69f7abc570ec9b44cdcbbd5b",
+    "accountId": "9194",
+    "viewId": "record_panels_69ccfabf738ff763a647e155",
+    "__v": 0,
+    "createdAt": "2026-05-03T20:10:45.482Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 9
+        },
+        {
+          "id": "sidebar",
+          "width": 3
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-05-03T20:10:45.482Z"
+  },
+  {
+    "_id": "69f7b0e670ec9b44cdcbbd5d",
+    "accountId": "9194",
+    "viewId": "overview_69ccfabf738ff763a647e155",
+    "__v": 0,
+    "createdAt": "2026-05-03T20:32:38.230Z",
+    "preferences": {
+      "rows": [
+        {
+          "id": "r1",
+          "columns": [
+            {
+              "id": "c1",
+              "width": 8,
+              "widgetIds": [
+                "fields"
+              ]
+            },
+            {
+              "id": "c2",
+              "width": 4,
+              "widgetIds": [
+                "docs"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": [
+            {
+              "id": "c3",
+              "width": 12,
+              "widgetIds": [
+                "drive"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": [
+            {
+              "id": "c4",
+              "width": 12,
+              "widgetIds": [
+                "lines"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": [
+            {
+              "id": "c5",
+              "width": 12,
+              "widgetIds": [
+                "agenda"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-05-03T20:46:34.748Z"
+  }
+]

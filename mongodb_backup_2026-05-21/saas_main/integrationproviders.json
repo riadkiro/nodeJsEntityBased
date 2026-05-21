@@ -1,0 +1,25 @@
+[
+  {
+    "_id": "69873142dc0731b0e1a8eb87",
+    "key": "app",
+    "__v": 0,
+    "authInjection": {
+      "format": "{{token}}",
+      "mode": "header",
+      "name": "Authorization"
+    },
+    "authType": "none",
+    "baseUrl": "internal://",
+    "category": "internal",
+    "createdAt": "2026-02-07T12:34:10.239Z",
+    "defaultHeaders": {},
+    "logo": "⚡",
+    "name": "App (Internal)",
+    "oauth": {
+      "pkce": false,
+      "scopes": []
+    },
+    "status": "published",
+    "updatedAt": "2026-02-07T12:34:10.239Z"
+  }
+]

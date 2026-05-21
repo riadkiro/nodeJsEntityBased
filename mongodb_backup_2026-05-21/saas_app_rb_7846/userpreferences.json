@@ -1,0 +1,1835 @@
+[
+  {
+    "_id": "69c84d7412662cd0b04a7f5c",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69c84d2a12662cd0b04a7c71",
+    "__v": 0,
+    "createdAt": "2026-03-28T21:51:48.458Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd747"
+        },
+        {
+          "id": "rel:57d16233-a002-415d-9973-c278d2442cca",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd748"
+        },
+        {
+          "id": "rel:7d32bff8-3b74-4e92-8993-3d7f7c35d4ae",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd749"
+        },
+        {
+          "id": "rel:039ccdab-812b-46a7-91c6-7b4a82b4e82a",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd74a"
+        },
+        {
+          "id": "69c84d2a12662cd0b04a7c3a",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd74b"
+        },
+        {
+          "id": "69c84d2a12662cd0b04a7c3b",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd74c"
+        },
+        {
+          "id": "69c84d2a12662cd0b04a7c3c",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd74d"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd74e"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69c84d749218e6a51febd74f"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T21:51:48.458Z"
+  },
+  {
+    "_id": "69c8533412662cd0b04a85d5",
+    "viewId": "entity_69c8531012662cd0b04a82e8_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-28T22:16:20.616Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "rel_9a1ab43f-3e6f-4ada-9c40-06e4b0707163": false,
+        "rel_237b60c6-f276-452d-bcfa-4cb5894e50e2": false,
+        "rel_ea0add1c-6470-448f-a78a-f31069000007": false,
+        "inv_inv_6d305c7f-608d-4886-abf5-37ed97b5f48e": false
+      },
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T22:16:32.211Z"
+  },
+  {
+    "_id": "69c858c912662cd0b04a8911",
+    "viewId": "69c8542d12662cd0b04a8625",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-28T22:40:09.704Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326022"
+        },
+        {
+          "id": "rel:db5e7ff3-0c49-427e-bb3c-411aa4327d2d",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326023"
+        },
+        {
+          "id": "rel:c47364ef-cf2c-4ad0-a0e2-b14f8eeaa7d1",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326024"
+        },
+        {
+          "id": "rel:242bb396-90bf-46fb-8eef-9c80b031ce51",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326025"
+        },
+        {
+          "id": "rel:3c480b15-5da6-4f89-a52d-11277a70ce17",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326026"
+        },
+        {
+          "id": "69c8542d12662cd0b04a85e3",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326027"
+        },
+        {
+          "id": "69c8542d12662cd0b04a85e4",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326028"
+        },
+        {
+          "id": "classif:69c8542d12662cd0b04a861d",
+          "visible": true,
+          "_id": "69c858c9469c116f3f326029"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69c858c9469c116f3f32602a"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69c858c9469c116f3f32602b"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T22:40:09.704Z"
+  },
+  {
+    "_id": "69c858e512662cd0b04a8913",
+    "viewId": "entity_69c8542d12662cd0b04a8625_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-28T22:40:37.724Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sidebar_panels": {
+        "attachments": false,
+        "classifications": false,
+        "rel_c47364ef-cf2c-4ad0-a0e2-b14f8eeaa7d1": false,
+        "rel_242bb396-90bf-46fb-8eef-9c80b031ce51": false,
+        "rel_3c480b15-5da6-4f89-a52d-11277a70ce17": false,
+        "inv_inv_8e5a79ee-b381-4e6f-b8b3-d0f10d64651a": false,
+        "lines": false
+      },
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T22:41:31.029Z"
+  },
+  {
+    "_id": "69c862c812662cd0b04a8c50",
+    "viewId": "record_panels_69c862a112662cd0b04a8963",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-28T23:22:48.072Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "card-widget-32b16e9f-ef13-4302-b04c-c71bf2ea6523-0",
+          "card-widget-72eba834-5531-48f5-9786-34871e1398e2-1"
+        ],
+        "extra": {}
+      },
+      "showSidebar": true,
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T23:22:48.072Z"
+  },
+  {
+    "_id": "69c862cc12662cd0b04a8c51",
+    "viewId": "entity_69c862a112662cd0b04a8963_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-28T23:22:52.926Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sidebar_panels": {
+        "classifications": true,
+        "attachments": true,
+        "card_72eba834-5531-48f5-9786-34871e1398e2_1": false,
+        "card_32b16e9f-ef13-4302-b04c-c71bf2ea6523_0": false,
+        "inv_inv_c13546d0-b474-46fa-83b3-5bd5d40ac190": false,
+        "inv_inv_bf617a93-bd3a-4de0-91c0-70c36b878f88": false,
+        "rel_72eba834-5531-48f5-9786-34871e1398e2": false,
+        "rel_7c5d787a-dc69-4d2b-8ccb-12c2403f4123": false,
+        "rel_f76dfa10-1bce-4e11-91f7-12063a5f99a7": false,
+        "lines": true
+      },
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T23:23:22.674Z"
+  },
+  {
+    "_id": "69c8639c12662cd0b04a8f90",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69c8639a12662cd0b04a8ca1_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-03-28T23:26:20.892Z"
+  },
+  {
+    "_id": "69c8639c12662cd0b04a8f91",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69c8639a12662cd0b04a8ca1",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-03-28T23:26:20.893Z"
+  },
+  {
+    "_id": "69c8688112662cd0b04a8f92",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69c8639a12662cd0b04a8ca5",
+    "__v": 0,
+    "createdAt": "2026-03-28T23:47:13.110Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71d5"
+        },
+        {
+          "id": "69c8639a12662cd0b04a8c72",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71d6"
+        },
+        {
+          "id": "69c8639a12662cd0b04a8c73",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71d7"
+        },
+        {
+          "id": "69c8639a12662cd0b04a8c74",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71d8"
+        },
+        {
+          "id": "69c8639a12662cd0b04a8c75",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71d9"
+        },
+        {
+          "id": "69c8639a12662cd0b04a8c76",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71da"
+        },
+        {
+          "id": "69c8639a12662cd0b04a8c87",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71db"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71dc"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69c868812f3cffe3567a71dd"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-28T23:47:13.110Z"
+  },
+  {
+    "_id": "69c8689212662cd0b04a92d1",
+    "viewId": "entity_69c8688f12662cd0b04a8fe2_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-03-28T23:47:30.085Z"
+  },
+  {
+    "_id": "69c8689212662cd0b04a92d2",
+    "viewId": "record_panels_69c8688f12662cd0b04a8fe2",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c868ba2f3cffe3567aab66"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "lines",
+          "card-widget-9a6bea02-9ae5-40c7-9511-c29edc8b27df-0",
+          "card-widget-2b82c493-e0df-431e-bd66-66e13d436050-1"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-28T23:48:18.164Z"
+  },
+  {
+    "_id": "69c86bf312662cd0b04a9615",
+    "viewId": "entity_69c86bf112662cd0b04a9323_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-03-29T00:16:18.094Z"
+  },
+  {
+    "_id": "69c86bf312662cd0b04a9616",
+    "viewId": "record_panels_69c86bf112662cd0b04a9323",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c86ca6ecdf580e629bfd04"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-29T00:16:18.095Z"
+  },
+  {
+    "_id": "69c871e312662cd0b04a9959",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69c871e112662cd0b04a9667_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-03-29T00:27:15.799Z"
+  },
+  {
+    "_id": "69c871e312662cd0b04a995a",
+    "viewId": "record_panels_69c871e112662cd0b04a9667",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c8759bff5304a76d3a6f00"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "lines",
+          "card-widget-c2f990d1-62c1-476b-b301-12307d862fa7-0",
+          "card-widget-adcaa608-9d4d-455e-977a-77ff7a110521-1"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-29T00:43:16.630Z"
+  },
+  {
+    "_id": "69c8768d12662cd0b04a9c9d",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69c8768c12662cd0b04a99ab_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": true,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true,
+        "inv_inv_d286b8c8-56e4-412a-8c35-d470f7459cb8": false,
+        "rel_eb58c83d-d1b4-42af-9505-d15df9427205": false,
+        "rel_5ed30b4a-42fd-46a3-89dd-fc3dc9718785": false,
+        "rel_c3f41a5c-1a92-4f16-8714-450a3e82641c": false
+      }
+    },
+    "updatedAt": "2026-03-30T14:51:39.129Z"
+  },
+  {
+    "_id": "69c8768d12662cd0b04a9c9e",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69c8768c12662cd0b04a99ab",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c876c612e751f72b2c0be9"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "lines",
+          "card-widget-982f4ff4-f431-49f3-a2b6-28a0e1faa75e-0",
+          "card-widget-5ed30b4a-42fd-46a3-89dd-fc3dc9718785-1"
+        ],
+        "extra": {}
+      },
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 9
+        },
+        {
+          "id": "sidebar",
+          "width": 3
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-30T14:57:03.197Z"
+  },
+  {
+    "_id": "69c87b4312662cd0b04a9ca0",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69c8768d12e751f72b2c029e",
+    "__v": 0,
+    "createdAt": "2026-03-29T01:07:15.424Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69c87b432317ce53b8f00445"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69c87b432317ce53b8f00446"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69c87b432317ce53b8f00447"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-01T09:49:31.144Z"
+  },
+  {
+    "_id": "69c9951818828a8280b0de0f",
+    "viewId": "69c8768c12662cd0b04a99ab",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-29T21:09:44.468Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd2527"
+        },
+        {
+          "id": "rel:982f4ff4-f431-49f3-a2b6-28a0e1faa75e",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd2528"
+        },
+        {
+          "id": "rel:c3f41a5c-1a92-4f16-8714-450a3e82641c",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd2529"
+        },
+        {
+          "id": "rel:eb58c83d-d1b4-42af-9505-d15df9427205",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd252a"
+        },
+        {
+          "id": "rel:5ed30b4a-42fd-46a3-89dd-fc3dc9718785",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd252b"
+        },
+        {
+          "id": "69c8768b12662cd0b04a9969",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd252c"
+        },
+        {
+          "id": "69c8768b12662cd0b04a996a",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd252d"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd252e"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69c99518c9e66b7c6bfd252f"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-29T21:09:44.468Z"
+  },
+  {
+    "_id": "69c9a1ca18828a8280b0de10",
+    "viewId": "dynamic-table:69c8768c12662cd0b04a9ba5",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-29T22:03:54.446Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null,
+      "gridColumnWidths": {
+        "69c8768d12e751f72b2c02a7": {
+          "code": 40,
+          "__relation": 316,
+          "lineTtc": 40,
+          "unitPrice": 40,
+          "qty": 40,
+          "vatRate": 40
+        }
+      }
+    },
+    "updatedAt": "2026-03-30T14:43:09.701Z"
+  },
+  {
+    "_id": "69c9a2ac18828a8280b0de11",
+    "viewId": "dynamic-table:test123",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-03-29T22:07:40.942Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-29T22:09:49.086Z"
+  },
+  {
+    "_id": "69c9a59c18828a8280b0de12",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "dynamic-table:test_persistence_v3",
+    "__v": 0,
+    "createdAt": "2026-03-29T22:20:12.553Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "gridColumnWidths": {
+        "schema_1": {
+          "col_A": 150,
+          "col_B": 300
+        }
+      },
+      "pageSize": 10,
+      "showSidebar": true,
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-03-29T22:20:12.553Z"
+  },
+  {
+    "_id": "69ccff69738ff763a647e797",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69ccff67738ff763a647e4a0_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T11:20:09.048Z"
+  },
+  {
+    "_id": "69ccff69738ff763a647e798",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69ccff67738ff763a647e4a0",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69ccff90eadb63e5b9c05e9c"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "lines",
+          "card-widget-ec359bbc-d401-4ee5-a6ad-e6c5fe42796e-0",
+          "card-widget-8bff2046-d0de-423c-8a8d-fd7dc1423a44-1",
+          "smartdoc"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-04-01T11:21:07.826Z"
+  },
+  {
+    "_id": "69ccff73738ff763a647e79a",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69ccff67738ff763a647e4a0",
+    "__v": 0,
+    "createdAt": "2026-04-01T11:20:19.805Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b14"
+        },
+        {
+          "id": "rel:ec359bbc-d401-4ee5-a6ad-e6c5fe42796e",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b15"
+        },
+        {
+          "id": "rel:3a109fd0-2c5b-4cdd-9cda-4fbca334eae3",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b16"
+        },
+        {
+          "id": "rel:57486cac-c144-4198-b7e4-4439e1896d59",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b17"
+        },
+        {
+          "id": "rel:8bff2046-d0de-423c-8a8d-fd7dc1423a44",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b18"
+        },
+        {
+          "id": "69ccff67738ff763a647e45e",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b19"
+        },
+        {
+          "id": "69ccff67738ff763a647e45f",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b1a"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b1b"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69ccff73eadb63e5b9c05b1c"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-01T11:20:19.805Z"
+  },
+  {
+    "_id": "69cd1b78738ff763a647e79c",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "dynamic-table:69ccff67738ff763a647e69a",
+    "__v": 0,
+    "createdAt": "2026-04-01T13:19:52.548Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "gridColumnWidths": {
+        "69ccff68eadb63e5b9c05647": {
+          "__relation": 438,
+          "description": 274
+        }
+      },
+      "pageSize": 10,
+      "showSidebar": true,
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-01T13:28:26.256Z"
+  },
+  {
+    "_id": "69cd248e738ff763a647e79d",
+    "viewId": "69ccff67738ff763a647e4a1",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-04-01T13:58:38.139Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abcc7"
+        },
+        {
+          "id": "rel:da7bf10d-5783-4b9a-91d4-0c74e96dfeae",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abcc8"
+        },
+        {
+          "id": "rel:736db47e-155e-4c55-b8b4-e5129b7304d5",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abcc9"
+        },
+        {
+          "id": "rel:9a3bc943-6abb-468c-8308-671e9414245f",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abcca"
+        },
+        {
+          "id": "69ccff67738ff763a647e46a",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abccb"
+        },
+        {
+          "id": "69ccff67738ff763a647e46b",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abccc"
+        },
+        {
+          "id": "69ccff67738ff763a647e46c",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abccd"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abcce"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69cd248ebc0abfea608abccf"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-01T13:58:38.139Z"
+  },
+  {
+    "_id": "69cd255a738ff763a647e79e",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69ccff68eadb63e5b9c0563e",
+    "__v": 0,
+    "createdAt": "2026-04-01T14:02:02.728Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac35b"
+        },
+        {
+          "id": "69ccff68738ff763a647e73f",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac35c"
+        },
+        {
+          "id": "69ccff68738ff763a647e73c",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac35d"
+        },
+        {
+          "id": "69ccff68738ff763a647e73d",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac35e"
+        },
+        {
+          "id": "69ccff68738ff763a647e73e",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac35f"
+        },
+        {
+          "id": "classif:69ccff68738ff763a647e73b",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac360"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac361"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69cd255abc0abfea608ac362"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-01T14:02:02.728Z"
+  },
+  {
+    "_id": "69cd2fba738ff763a647eae5",
+    "viewId": "entity_69cd2fb8738ff763a647e7ee_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T14:46:18.580Z"
+  },
+  {
+    "_id": "69cd2fba738ff763a647eae6",
+    "viewId": "record_panels_69cd2fb8738ff763a647e7ee",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T14:46:18.581Z"
+  },
+  {
+    "_id": "69cd320a738ff763a647ee2e",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd3209738ff763a647eb37_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T14:56:10.954Z"
+  },
+  {
+    "_id": "69cd320a738ff763a647ee2f",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd3209738ff763a647eb37",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T14:56:10.955Z"
+  },
+  {
+    "_id": "69cd32fa738ff763a647f177",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd32f8738ff763a647ee80_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T15:00:10.706Z"
+  },
+  {
+    "_id": "69cd32fa738ff763a647f178",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd32f8738ff763a647ee80",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69cd331c21112274707ba9e1"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "lines",
+          "card-widget-90211507-db30-412c-ac53-5eee41dd3884-0",
+          "card-widget-f7c2480b-ab78-471f-bf9d-b3de1623d7dc-1",
+          "smartdoc"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-04-01T15:00:53.308Z"
+  },
+  {
+    "_id": "69cd3633738ff763a647f4c0",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd3630738ff763a647f1c9_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T15:13:55.031Z"
+  },
+  {
+    "_id": "69cd3633738ff763a647f4c1",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd3630738ff763a647f1c9",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T15:13:55.032Z"
+  },
+  {
+    "_id": "69cd4c79738ff763a647f809",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd4c77738ff763a647f512_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T16:48:57.050Z"
+  },
+  {
+    "_id": "69cd4c79738ff763a647f80a",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd4c77738ff763a647f512",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T16:48:57.051Z"
+  },
+  {
+    "_id": "69cd6fc4738ff763a647fb52",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd6fc2738ff763a647f85b_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T19:19:32.045Z"
+  },
+  {
+    "_id": "69cd6fc4738ff763a647fb53",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd6fc2738ff763a647f85b",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content",
+          "line-defaults"
+        ],
+        "sidebarInner": [
+          "sw-undefined",
+          "classifications",
+          "smartdoc",
+          "relation-consultations__patients"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-04-01T19:22:39.803Z"
+  },
+  {
+    "_id": "69cd87aa738ff763a647fe9b",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd87a9738ff763a647fba4_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T21:01:30.175Z"
+  },
+  {
+    "_id": "69cd87aa738ff763a647fe9c",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd87a9738ff763a647fba4",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T21:01:30.175Z"
+  },
+  {
+    "_id": "69cd89bd738ff763a647fe9e",
+    "viewId": "entity_69cd87a9738ff763a647fba8_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-04-01T21:10:21.705Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sidebar_panels": {
+        "attachments": false,
+        "smartdoc": false,
+        "lines": false
+      },
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "avatar",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-01T21:10:28.401Z"
+  },
+  {
+    "_id": "69cd9de9738ff763a64801e5",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cd9de8738ff763a647feee_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T22:36:25.573Z"
+  },
+  {
+    "_id": "69cd9de9738ff763a64801e6",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cd9de8738ff763a647feee",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T22:36:25.574Z"
+  },
+  {
+    "_id": "69cda860738ff763a648052e",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69cda85e738ff763a6480237_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-01T23:21:04.092Z"
+  },
+  {
+    "_id": "69cda860738ff763a648052f",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69cda85e738ff763a6480237",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-01T23:21:04.093Z"
+  },
+  {
+    "_id": "69ce594d52c96f71dd9364cc",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69ce594c52c96f71dd9361da_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-02T11:55:57.522Z"
+  },
+  {
+    "_id": "69ce594d52c96f71dd9364cd",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69ce594c52c96f71dd9361da",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-02T11:55:57.537Z"
+  },
+  {
+    "_id": "69ce60dd52c96f71dd936b57",
+    "viewId": "entity_69ce60db52c96f71dd936862_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-02T12:28:13.550Z"
+  },
+  {
+    "_id": "69ce60dd52c96f71dd936b58",
+    "viewId": "record_panels_69ce60db52c96f71dd936862",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-02T12:28:13.551Z"
+  },
+  {
+    "_id": "69cfff7052c96f71dd936b5a",
+    "viewId": "69ce60db52c96f71dd936862",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-04-03T17:57:04.088Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c08e"
+        },
+        {
+          "id": "rel:e0bb4789-2fe4-4d86-8137-3d64fa0de49a",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c08f"
+        },
+        {
+          "id": "rel:8a062582-e018-4e26-af63-f41b95ad8c04",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c090"
+        },
+        {
+          "id": "rel:0ffe8252-41b5-49b6-8960-b944cc8d612e",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c091"
+        },
+        {
+          "id": "69ce60db52c96f71dd936820",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c092"
+        },
+        {
+          "id": "69ce60db52c96f71dd936821",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c093"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c094"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69cfff7029efaf883bb3c095"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": "table"
+    },
+    "updatedAt": "2026-04-03T17:57:54.400Z"
+  },
+  {
+    "_id": "69cfff8152c96f71dd936b5b",
+    "viewId": "69ce60db52c96f71dd936861",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-04-03T17:57:21.958Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd4a"
+        },
+        {
+          "id": "rel:62a1c0f1-7c06-42de-8ea3-32e982955d0c",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd4b"
+        },
+        {
+          "id": "69ce60db52c96f71dd936849",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd4c"
+        },
+        {
+          "id": "69ce60db52c96f71dd93684a",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd4d"
+        },
+        {
+          "id": "69ce60db52c96f71dd93684b",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd4e"
+        },
+        {
+          "id": "69ce60db52c96f71dd936848",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd4f"
+        },
+        {
+          "id": "classif:69ce60db52c96f71dd936859",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd50"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd51"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69cfff8129efaf883bb3cd52"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": "calendar"
+    },
+    "updatedAt": "2026-04-03T17:57:21.958Z"
+  },
+  {
+    "_id": "69d11ba3d9e4628599106950",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69d11ba1d9e462859910665b_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-04T14:09:39.253Z"
+  },
+  {
+    "_id": "69d11ba3d9e4628599106951",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69d11ba1d9e462859910665b",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-04T14:09:39.259Z"
+  },
+  {
+    "_id": "69e996655ca57f4b82f922d2",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "entity_69e996635ca57f4b82f91fdd_sidebar",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-23T03:47:49.465Z"
+  },
+  {
+    "_id": "69e996655ca57f4b82f922d3",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "record_panels_69e996635ca57f4b82f91fdd",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-23T03:47:49.480Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f92950",
+    "viewId": "entity_69e9e3e75ca57f4b82f92657_sidebar",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "sidebar_panels": {
+        "classifications": false,
+        "attachments": false,
+        "lines": false,
+        "smartdoc": true,
+        "rel_consultations__patients": true
+      }
+    },
+    "updatedAt": "2026-04-23T09:18:33.082Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f92951",
+    "viewId": "record_panels_69e9e3e75ca57f4b82f92657",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "preferences": {
+      "panelLayout": {
+        "sidebarInner": [
+          "relation-consultations__patients",
+          "smartdoc"
+        ]
+      }
+    },
+    "updatedAt": "2026-04-23T09:18:33.083Z"
+  },
+  {
+    "_id": "69f1f471f6a55951d17759f3",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69e9e3e75ca57f4b82f92656",
+    "__v": 0,
+    "createdAt": "2026-04-29T12:07:13.427Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a7767"
+        },
+        {
+          "id": "rel:d15ef6d4-de4d-4b97-b707-7a98871fdf9a",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a7768"
+        },
+        {
+          "id": "69e9e3e75ca57f4b82f9263e",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a7769"
+        },
+        {
+          "id": "69e9e3e75ca57f4b82f9263f",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a776a"
+        },
+        {
+          "id": "69e9e3e75ca57f4b82f92640",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a776b"
+        },
+        {
+          "id": "69e9e3e75ca57f4b82f9263d",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a776c"
+        },
+        {
+          "id": "classif:69e9e3e75ca57f4b82f9264e",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a776d"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a776e"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69f1f471cfa20950629a776f"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": "calendar"
+    },
+    "updatedAt": "2026-04-29T14:14:01.958Z"
+  },
+  {
+    "_id": "69f21224f6a55951d17759f4",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "viewId": "69e9e3e75ca57f4b82f92657",
+    "__v": 0,
+    "createdAt": "2026-04-29T14:13:56.246Z",
+    "preferences": {
+      "columns": [
+        {
+          "id": "title",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28693"
+        },
+        {
+          "id": "rel:aaf6b6c2-1072-43f5-9159-d7e858554e9b",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28694"
+        },
+        {
+          "id": "rel:757d015a-7552-47c3-af05-edc20602d0d1",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28695"
+        },
+        {
+          "id": "rel:8deca104-f339-4ed8-9e7b-982b3cdd25e4",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28696"
+        },
+        {
+          "id": "69e9e3e75ca57f4b82f92615",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28697"
+        },
+        {
+          "id": "69e9e3e75ca57f4b82f92616",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28698"
+        },
+        {
+          "id": "createdAt",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac28699"
+        },
+        {
+          "id": "actions",
+          "visible": true,
+          "_id": "69f2122412f100eb9ac2869a"
+        }
+      ],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": false,
+      "sidebarWidth": 280,
+      "sort": {
+        "field": "createdAt",
+        "direction": "desc"
+      },
+      "titleDisplay": "icon",
+      "viewMode": "table"
+    },
+    "updatedAt": "2026-04-30T06:41:37.147Z"
+  },
+  {
+    "_id": "69f21243f6a55951d17759f5",
+    "viewId": "calendar_69e9e3e75ca57f4b82f92656",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "__v": 0,
+    "createdAt": "2026-04-29T14:14:27.149Z",
+    "preferences": {
+      "columns": [],
+      "density": "normal",
+      "enabledViews": [
+        "table",
+        "kanban",
+        "notes",
+        "calendar"
+      ],
+      "pageSize": 10,
+      "showSidebar": true,
+      "sort": {
+        "direction": "desc",
+        "field": "createdAt"
+      },
+      "titleDisplay": "avatar",
+      "viewMode": null
+    },
+    "updatedAt": "2026-04-29T14:14:27.149Z"
+  }
+]

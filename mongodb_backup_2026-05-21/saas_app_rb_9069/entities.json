@@ -1,0 +1,134 @@
+[
+  {
+    "_id": "697e0000000000000000e001",
+    "__v": 0,
+    "classifications": [
+      "697e0010000000000000010b",
+      "697e0010000000000000010c",
+      "697e0010000000000000010d"
+    ],
+    "color": "#4361ee",
+    "createdAt": "2026-05-16T20:40:27.885Z",
+    "customFields": [
+      "697e0020000000000000020b",
+      "697e0020000000000000020c"
+    ],
+    "description": "Gestion des tâches et suivi de projet",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "dueDate",
+      "attachments"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "isSystem": true,
+    "layout": [],
+    "name": "Tâches",
+    "namePlural": "Tâches",
+    "nameSingular": "Tâche",
+    "order": 0,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a08d63b90d235ef799f20b6"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [],
+    "slug": "taches",
+    "spaces": [],
+    "statusClassification": "697e0010000000000000010a",
+    "updatedAt": "2026-05-16T20:40:27.885Z"
+  },
+  {
+    "_id": "697e0000000000000000e002",
+    "__v": 0,
+    "classifications": [],
+    "color": "#f59e0b",
+    "createdAt": "2026-05-16T20:40:27.886Z",
+    "customFields": [],
+    "description": "Bloc-notes et mémos",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description"
+    ],
+    "fieldOverrides": {},
+    "folders": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "gridSchemas": [],
+    "headerConfig": {
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "titleSource": {
+        "type": "entity"
+      },
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "heroFields": [],
+      "metaFields": [],
+      "showIcon": true,
+      "showTitle": true,
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "showDuration": false
+    },
+    "icon": "solar:notes-bold-duotone",
+    "isSystem": true,
+    "layout": [],
+    "name": "Notes",
+    "namePlural": "Notes",
+    "nameSingular": "Note",
+    "order": 0,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6a08d63b90d235ef799f20b9"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [],
+    "slug": "notes",
+    "spaces": [],
+    "updatedAt": "2026-05-16T20:40:27.886Z"
+  }
+]

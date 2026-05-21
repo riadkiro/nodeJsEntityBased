@@ -1,0 +1,742 @@
+[
+  {
+    "_id": "6a0d6bf5491c52a4e438b733",
+    "isTemplate": true,
+    "name": "Devis Commercial",
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-05-20T08:08:21.399Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityIds": [
+      "6a0d6bf5491c52a4e438b718",
+      "6a0d6bf5491c52a4e438b719"
+    ],
+    "format": "A4",
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "orientation": "portrait",
+    "pages": [
+      {
+        "order": 0,
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;\">\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:40px;\">\n    <div><h1 style=\"font-size:28px;color:#1e293b;margin:0;\">DEVIS</h1><p style=\"color:#64748b;margin:4px 0;\">{{entreprises.titre}}</p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-weight:600;\">Date : {{today}}</p></div>\n  </div>\n  <hr style=\"border:1px solid #e2e8f0;margin:20px 0;\">\n  <table style=\"width:100%;border-collapse:collapse;margin-top:20px;\"><thead><tr style=\"background:#f1f5f9;\"><th style=\"text-align:left;padding:10px;border:1px solid #e2e8f0;\">Description</th><th style=\"padding:10px;border:1px solid #e2e8f0;\">Qté</th><th style=\"padding:10px;border:1px solid #e2e8f0;\">P.U. HT</th><th style=\"padding:10px;border:1px solid #e2e8f0;\">Total HT</th></tr></thead><tbody><tr><td style=\"padding:10px;border:1px solid #e2e8f0;\">Prestation</td><td style=\"padding:10px;border:1px solid #e2e8f0;text-align:center;\">1</td><td style=\"padding:10px;border:1px solid #e2e8f0;text-align:right;\">0,00 €</td><td style=\"padding:10px;border:1px solid #e2e8f0;text-align:right;\">0,00 €</td></tr></tbody></table>\n</div>"
+      }
+    ],
+    "status": "published",
+    "tags": [],
+    "updatedAt": "2026-05-20T08:08:21.399Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b734",
+    "isTemplate": true,
+    "name": "Contrat de Service",
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-05-20T08:08:21.400Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityIds": [
+      "6a0d6bf5491c52a4e438b718"
+    ],
+    "format": "A4",
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "orientation": "portrait",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;{{entreprises.title}} - {{entreprises.siret}}</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>{{entreprises.adresse}}</p>\n  <p style=\"margin:6px 0;\"><strong>Contact :</strong> {{entreprises.contact_principal.title}}&nbsp;&nbsp;, <strong>Email</strong> : {{entreprises.contact_principal.email}}&nbsp;</p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;{{entreprises.representant}}&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong>{{company.name}}</p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong>{{company.number}}</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>{{company.address}}</p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong>{{company.representative}}</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d7254df797cae524ffe01"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d7254df797cae524ffe02"
+      }
+    ],
+    "status": "published",
+    "tags": [],
+    "updatedAt": "2026-05-20T08:35:32.249Z",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "draftOutputFormat": "pdf",
+    "draftOutputName": "",
+    "draftRecordId": null,
+    "draftSourceTemplateId": null,
+    "entityId": null,
+    "folderId": null,
+    "footerHtml": "",
+    "generatedFrom": {
+      "templateName": ""
+    },
+    "headerHtml": "",
+    "isDraft": false,
+    "linkedRecords": [],
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "sharedWith": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b735",
+    "isTemplate": true,
+    "name": "Facture",
+    "__v": 0,
+    "collections": [],
+    "contentBlocks": [],
+    "createdAt": "2026-05-20T08:08:21.401Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entityIds": [
+      "6a0d6bf5491c52a4e438b718"
+    ],
+    "format": "A4",
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "orientation": "portrait",
+    "pages": [
+      {
+        "order": 0,
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;\">\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:40px;\">\n    <div><h1 style=\"font-size:28px;color:#ef4444;margin:0;\">FACTURE</h1><p style=\"color:#64748b;margin:4px 0;\">{{entreprises.titre}}</p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-weight:600;\">Date : {{today}}</p></div>\n  </div>\n  <hr style=\"border:1px solid #e2e8f0;margin:20px 0;\">\n  <table style=\"width:100%;border-collapse:collapse;\"><thead><tr style=\"background:#fef2f2;\"><th style=\"text-align:left;padding:10px;border:1px solid #e2e8f0;\">Description</th><th style=\"padding:10px;border:1px solid #e2e8f0;\">Total HT</th></tr></thead><tbody><tr><td style=\"padding:10px;border:1px solid #e2e8f0;\">Prestation</td><td style=\"text-align:right;padding:10px;border:1px solid #e2e8f0;\">0,00 €</td></tr></tbody></table>\n</div>"
+      }
+    ],
+    "status": "published",
+    "tags": [],
+    "updatedAt": "2026-05-20T08:08:21.401Z"
+  },
+  {
+    "_id": "6a0d6ca062658db37494cace",
+    "name": "Contrat de Service - TechCorp France",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;TechCorp France - 98765432100021</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>15 avenue Jean Jaurès\n69007 Lyon</p>\n  <p style=\"margin:6px 0;\"><strong>Contact : </strong> , <strong>Email</strong> : </p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong></p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d6ca062658db37494caca"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d6ca062658db37494cacb"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b737",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72e",
+    "draftOutputName": "Contrat de Service - TechCorp France",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b734",
+      "smartDocId": "6a0d6bf5491c52a4e438b737",
+      "templateName": "Contrat de Service",
+      "generatedAt": "2026-05-20T08:11:12.377Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72e",
+        "recordTitle": "TechCorp France",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d6ca062658db37494cad1"
+      }
+    ],
+    "createdAt": "2026-05-20T08:11:12.377Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:11:12.377Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d6cba62658db37494cd71",
+    "name": "Contrat de Service - TechCorp France",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;TechCorp France - 98765432100021</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>15 avenue Jean Jaurès\n69007 Lyon</p>\n  <p style=\"margin:6px 0;\"><strong>Contact : </strong> , <strong>Email</strong> : </p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong></p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d6cba62658db37494cd6d"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d6cba62658db37494cd6e"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b737",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72e",
+    "draftOutputName": "Contrat de Service - TechCorp France",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b734",
+      "smartDocId": "6a0d6bf5491c52a4e438b737",
+      "templateName": "Contrat de Service",
+      "generatedAt": "2026-05-20T08:11:38.721Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72e",
+        "recordTitle": "TechCorp France",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d6cba62658db37494cd74"
+      }
+    ],
+    "createdAt": "2026-05-20T08:11:38.721Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:11:38.721Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d6cc262658db37494d153",
+    "name": "Contrat de Service - Acme Corp",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;Acme Corp - 12345678900010</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>1 rue de Paris\n75001 Paris</p>\n  <p style=\"margin:6px 0;\"><strong>Contact : </strong> , <strong>Email</strong> : </p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong></p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d6cc262658db37494d14f"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d6cc262658db37494d150"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b737",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72d",
+    "draftOutputName": "Contrat de Service - Acme Corp",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b734",
+      "smartDocId": "6a0d6bf5491c52a4e438b737",
+      "templateName": "Contrat de Service",
+      "generatedAt": "2026-05-20T08:11:46.318Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72d",
+        "recordTitle": "Acme Corp",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d6cc262658db37494d156"
+      }
+    ],
+    "createdAt": "2026-05-20T08:11:46.318Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:11:46.318Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d6e75b0a5dd12a03c620d",
+    "name": "Facture - TechCorp France",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;\">\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:40px;\">\n    <div><h1 style=\"font-size:28px;color:#ef4444;margin:0;\">FACTURE</h1><p style=\"color:#64748b;margin:4px 0;\"></p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-weight:600;\">Date : 20/05/2026</p></div>\n  </div>\n  <hr style=\"border:1px solid #e2e8f0;margin:20px 0;\">\n  <table style=\"width:100%;border-collapse:collapse;\"><thead><tr style=\"background:#fef2f2;\"><th style=\"text-align:left;padding:10px;border:1px solid #e2e8f0;\">Description</th><th style=\"padding:10px;border:1px solid #e2e8f0;\">Total HT</th></tr></thead><tbody><tr><td style=\"padding:10px;border:1px solid #e2e8f0;\">Prestation</td><td style=\"text-align:right;padding:10px;border:1px solid #e2e8f0;\">0,00 €</td></tr></tbody></table>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d6e75b0a5dd12a03c620a"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b738",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72e",
+    "draftOutputName": "Facture - TechCorp France",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b735",
+      "smartDocId": "6a0d6bf5491c52a4e438b738",
+      "templateName": "Facture",
+      "generatedAt": "2026-05-20T08:19:01.948Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72e",
+        "recordTitle": "TechCorp France",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d6e75b0a5dd12a03c620f"
+      }
+    ],
+    "createdAt": "2026-05-20T08:19:01.948Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:19:01.948Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d6e7bb0a5dd12a03c65fd",
+    "name": "Contrat de Service - TechCorp France",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;TechCorp France - 98765432100021</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>15 avenue Jean Jaurès\n69007 Lyon</p>\n  <p style=\"margin:6px 0;\"><strong>Contact : </strong> , <strong>Email</strong> : </p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong>Klerens Group</p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong>101.123.456.789</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>RDP Shuman Bruxelles, Belgiaue</p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong>Samir DIF</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d6e7bb0a5dd12a03c65f9"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d6e7bb0a5dd12a03c65fa"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b737",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72e",
+    "draftOutputName": "Contrat de Service - TechCorp France",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b734",
+      "smartDocId": "6a0d6bf5491c52a4e438b737",
+      "templateName": "Contrat de Service",
+      "generatedAt": "2026-05-20T08:19:07.452Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72e",
+        "recordTitle": "TechCorp France",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d6e7bb0a5dd12a03c6600"
+      }
+    ],
+    "createdAt": "2026-05-20T08:19:07.452Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:19:07.452Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d711fdf797cae524fa746",
+    "name": "Facture - TechCorp France",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;\">\n  <div style=\"display:flex;justify-content:space-between;margin-bottom:40px;\">\n    <div><h1 style=\"font-size:28px;color:#ef4444;margin:0;\">FACTURE</h1><p style=\"color:#64748b;margin:4px 0;\"></p></div>\n    <div style=\"text-align:right;\"><p style=\"margin:0;font-weight:600;\">Date : 20/05/2026</p></div>\n  </div>\n  <hr style=\"border:1px solid #e2e8f0;margin:20px 0;\">\n  <table style=\"width:100%;border-collapse:collapse;\"><thead><tr style=\"background:#fef2f2;\"><th style=\"text-align:left;padding:10px;border:1px solid #e2e8f0;\">Description</th><th style=\"padding:10px;border:1px solid #e2e8f0;\">Total HT</th></tr></thead><tbody><tr><td style=\"padding:10px;border:1px solid #e2e8f0;\">Prestation</td><td style=\"text-align:right;padding:10px;border:1px solid #e2e8f0;\">0,00 €</td></tr></tbody></table>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d711fdf797cae524fa743"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b738",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72e",
+    "draftOutputName": "Facture - TechCorp France",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b735",
+      "smartDocId": "6a0d6bf5491c52a4e438b738",
+      "templateName": "Facture",
+      "generatedAt": "2026-05-20T08:30:23.615Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72e",
+        "recordTitle": "TechCorp France",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d711fdf797cae524fa748"
+      }
+    ],
+    "createdAt": "2026-05-20T08:30:23.615Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:30:23.615Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d7124df797cae524fab36",
+    "name": "Contrat de Service - TechCorp France",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;TechCorp France - 98765432100021</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>15 avenue Jean Jaurès\n69007 Lyon</p>\n  <p style=\"margin:6px 0;\"><strong>Contact : </strong> , <strong>Email</strong> : </p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong>Klerens Group</p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong>101.123.456.789</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>RDP Shuman Bruxelles, Belgiaue</p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong>Samir DIF</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d7124df797cae524fab32"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d7124df797cae524fab33"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b737",
+    "draftRecordId": "6a0d6bf5491c52a4e438b72e",
+    "draftOutputName": "Contrat de Service - TechCorp France",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b734",
+      "smartDocId": "6a0d6bf5491c52a4e438b737",
+      "templateName": "Contrat de Service",
+      "generatedAt": "2026-05-20T08:30:28.252Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72e",
+        "recordTitle": "TechCorp France",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d7124df797cae524fab39"
+      }
+    ],
+    "createdAt": "2026-05-20T08:30:28.252Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:30:28.252Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d758a6d62a4ed3e228ae5",
+    "name": "Contrat de Service - Maxxi",
+    "format": "A4",
+    "orientation": "portrait",
+    "dimensions": {
+      "width": 794,
+      "height": 1123
+    },
+    "margins": {
+      "top": 40,
+      "right": 40,
+      "bottom": 40,
+      "left": 40
+    },
+    "headerHtml": "",
+    "footerHtml": "",
+    "pages": [
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h1 style=\"text-align:center;color:#0f172a;font-size:24px;font-weight:700;margin-bottom:30px;text-transform:uppercase;letter-spacing:0.05em;\">Contrat de Prestation de Services</h1>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:20px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Entre les soussignés :</h2>\n  \n  <p style=\"margin:6px 0;\"><strong>Nom de l'entreprise (Le Client) :</strong>&nbsp;Maxxi - </p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong></p>\n  <p style=\"margin:6px 0;\"><strong>Contact :</strong> Luc Bernard&nbsp;&nbsp;, <strong>Email</strong> : lbernard@innovate.io&nbsp;</p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par :</strong>&nbsp;Sophie Martin&nbsp; , en qualité de Gérant</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommée \"Le Client\",</p>\n  \n  <p style=\"text-align:center;font-weight:700;margin:15px 0;\">Et</p>\n  \n  <p style=\"margin:6px 0;\"><strong>L'entreprise (Le Prestataire) : </strong>Klerens Group</p>\n  <p style=\"margin:6px 0;\"><strong>SIRET : </strong>101.123.456.789</p>\n  <p style=\"margin:6px 0;\"><strong>Adresse : </strong>RDP Shuman Bruxelles, Belgiaue</p>\n  <p style=\"margin:6px 0;\"><strong>Représentée par : </strong>Samir DIF</p>\n  \n  <p style=\"margin:12px 0;font-style:italic;color:#64748b;\">Ci-après dénommé \"Le Prestataire\",</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Préambule</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat a pour objet de définir les termes et conditions selon lesquels le Prestataire fournira des services au Client.</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 1 : Objet du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le Prestataire s'engage à fournir les services suivants : [Description des services].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 2 : Durée du Contrat</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat prend effet à compter du [Date de début] pour une durée de [Durée du contrat].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 3 : Conditions Financières</h2>\n  <p style=\"margin:10px 0;\">Le Client s'engage à payer au Prestataire la somme de [Montant] pour les services rendus, selon les modalités suivantes : [Modalités de paiement].</p>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 0,
+        "_id": "6a0d7254df797cae524ffe01"
+      },
+      {
+        "content": "<div style=\"font-family:Inter,sans-serif;padding:40px;color:#1e293b;line-height:1.6;\">\n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:0;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 4 : Obligations du Prestataire</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir les services conformément aux normes professionnelles.</li>\n    <li style=\"margin:6px 0;\">Respecter les délais convenus.</li>\n    <li style=\"margin:6px 0;\">Maintenir la confidentialité des informations du Client.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 5 : Obligations du Client</h2>\n  <ul style=\"margin:10px 0;padding-left:20px;list-style-type:disc;\">\n    <li style=\"margin:6px 0;\">Fournir toutes les informations nécessaires à la réalisation des services.</li>\n    <li style=\"margin:6px 0;\">Effectuer les paiements selon les modalités convenues.</li>\n  </ul>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 6 : Résiliation</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat peut être résilié par l'une ou l'autre des parties en cas de manquement grave aux obligations contractuelles, après mise en demeure restée sans effet pendant [Délai de préavis].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 7 : Loi Applicable</h2>\n  <p style=\"margin:10px 0;\">Le présent contrat est soumis à la loi de [Pays/Région].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:25px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Article 8 : Litiges</h2>\n  <p style=\"margin:10px 0;\">En cas de litige, les parties s'engagent à rechercher une solution amiable avant de recourir aux tribunaux compétents de [Lieu].</p>\n  \n  <h2 style=\"color:#0f172a;font-size:16px;font-weight:600;margin-top:35px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:5px;\">Signatures</h2>\n  <p style=\"margin:10px 0;\">Fait à [Lieu], le [Date].</p>\n  \n  <div style=\"display:flex;justify-content:space-between;margin-top:30px;\">\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Prestataire :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n    <div style=\"width:45%;\">\n      <p style=\"margin:0;font-weight:600;\">Le Client :</p>\n      <p style=\"margin:40px 0 0 0;color:#64748b;font-size:12px;\">_________________________</p>\n    </div>\n  </div>\n</div>",
+        "mode": "edition",
+        "elements": [],
+        "rows": [],
+        "background": {
+          "color": "#ffffff"
+        },
+        "order": 1,
+        "_id": "6a0d7254df797cae524ffe02"
+      }
+    ],
+    "entityIds": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isTemplate": false,
+    "tags": [],
+    "status": "draft",
+    "folderId": null,
+    "isDraft": true,
+    "draftSourceTemplateId": "6a0d6bf5491c52a4e438b737",
+    "draftRecordId": "6a0d74f26d62a4ed3e22724d",
+    "draftOutputName": "Contrat de Service - Maxxi",
+    "draftOutputFormat": "pdf",
+    "generatedFrom": {
+      "templateId": "6a0d6bf5491c52a4e438b734",
+      "smartDocId": "6a0d6bf5491c52a4e438b737",
+      "templateName": "Contrat de Service",
+      "generatedAt": "2026-05-20T08:49:14.990Z"
+    },
+    "linkedRecords": [
+      {
+        "recordId": "6a0d74f26d62a4ed3e22724d",
+        "recordTitle": "Maxxi",
+        "entityId": "6a0d6bf5491c52a4e438b718",
+        "entityName": "Entreprise",
+        "entityIcon": "solar:buildings-bold-duotone",
+        "entityColor": "#64748b",
+        "entitySlug": "entreprises",
+        "alias": "entreprises",
+        "_id": "6a0d758a6d62a4ed3e228ae8"
+      },
+      {
+        "recordId": "6a0d6bf5491c52a4e438b72b",
+        "recordTitle": "Luc Bernard",
+        "entityId": "6a0d6bf5491c52a4e438b717",
+        "entityName": "Contact",
+        "entityIcon": "solar:user-bold-duotone",
+        "entityColor": "#3b82f6",
+        "entitySlug": "contacts",
+        "alias": "6a0d7189df797cae524fba5e",
+        "_id": "6a0d758a6d62a4ed3e228ae9"
+      }
+    ],
+    "createdAt": "2026-05-20T08:49:14.990Z",
+    "sharedWith": [],
+    "collections": [],
+    "contentBlocks": [],
+    "updatedAt": "2026-05-20T08:49:14.990Z",
+    "__v": 0
+  }
+]

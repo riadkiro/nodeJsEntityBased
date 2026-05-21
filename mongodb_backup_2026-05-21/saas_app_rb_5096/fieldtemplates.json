@@ -1,0 +1,891 @@
+[
+  {
+    "_id": "697e0020000000000000020b",
+    "__v": 0,
+    "category": "text",
+    "createdAt": "2026-05-20T08:08:21.172Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "name": "Progression",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "autocomplete": false,
+      "order": 0,
+      "readonly": false,
+      "rows": 1,
+      "searchable": false,
+      "visible": true,
+      "width": "full"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.172Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "697e0020000000000000020c",
+    "__v": 0,
+    "category": "text",
+    "createdAt": "2026-05-20T08:08:21.237Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "name": "Assigné à",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "text",
+    "type_config": {},
+    "ui": {
+      "autocomplete": false,
+      "order": 0,
+      "readonly": false,
+      "rows": 1,
+      "searchable": false,
+      "visible": true,
+      "width": "full"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.237Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6f9",
+    "name": "nom",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.265Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Nom",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:user-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.265Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6fa",
+    "name": "prenom",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.267Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prénom",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:user-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.267Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6fb",
+    "name": "email",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.267Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Email",
+    "required": false,
+    "showOnQuickForm": false,
+    "subtype": "email",
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:letter-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.267Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6fc",
+    "name": "telephone",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.268Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Téléphone",
+    "required": false,
+    "showOnQuickForm": false,
+    "subtype": "tel",
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:phone-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.268Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6fd",
+    "name": "fonction",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.269Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Fonction",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:user-id-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.269Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6fe",
+    "name": "linkedin",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.270Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Profil LinkedIn",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:link-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.270Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b6ff",
+    "name": "siret",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.271Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "SIRET",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:buildings-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.271Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b700",
+    "name": "site_web",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.272Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Site Web",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:global-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.272Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b701",
+    "name": "adresse",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.272Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Adresse complète",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "text",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:map-point-bold-duotone",
+      "width": "full",
+      "rows": 2
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.272Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b702",
+    "name": "montant",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.273Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Montant estimé",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:dollar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.273Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b703",
+    "name": "date_cloture",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.274Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date de clôture prévue",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "date",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.274Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b704",
+    "name": "probabilite",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.275Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Probabilité (%)",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:chart-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.275Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b705",
+    "name": "date_activite",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.276Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date de l'activité",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "date",
+    "type_config": {
+      "includeTime": true
+    },
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.276Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b706",
+    "name": "compte_rendu",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.277Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Compte rendu",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "text",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:document-text-bold-duotone",
+      "width": "full",
+      "rows": 4
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.277Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b707",
+    "name": "reference",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.278Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Référence",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "string",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:hashtag-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.278Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b708",
+    "name": "prix_unitaire",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.278Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prix Unitaire HT",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:tag-price-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.278Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b709",
+    "name": "tva_rate",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.279Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Taux TVA (%)",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:calculator-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.279Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b70a",
+    "name": "date_debut",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.280Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date de début",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "date",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.280Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b70b",
+    "name": "date_fin",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.281Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date de fin",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "date",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.281Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b70c",
+    "name": "mrr",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.282Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "MRR (Revenu Récurrent Mensuel)",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:dollar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.282Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b70d",
+    "name": "montant_total",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.282Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Montant total TTC",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:dollar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.282Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b70e",
+    "name": "montant_paye",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.283Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Montant payé",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:wallet-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.283Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b70f",
+    "name": "date_echeance",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.284Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date d'échéance",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "date",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.284Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b710",
+    "name": "notes_generales",
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-05-20T08:08:21.285Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Notes internes",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "text",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:notes-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.285Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b711",
+    "name": "reste_a_payer",
+    "__v": 0,
+    "category": "computed",
+    "color": "#ef4444",
+    "createdAt": "2026-05-20T08:08:21.286Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "fromFunction": "expression",
+      "expression": "%montant_total% - %montant_paye%",
+      "sourceFields": {},
+      "dependsOn": [
+        "montant_total",
+        "montant_paye"
+      ]
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Reste à payer",
+    "render": {
+      "display": {
+        "table": "currency",
+        "card": "currency"
+      }
+    },
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "icon": "solar:wallet-bold-duotone",
+      "width": "half"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-20T08:08:21.286Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "6a0d7189df797cae524fba5e",
+    "name": "contact_principal",
+    "label": "Contact principal",
+    "description": "",
+    "type": "relation",
+    "type_config": {
+      "refEntity": "6a0d6bf5491c52a4e438b717"
+    },
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "placeholder": "",
+      "width": "full",
+      "order": 0,
+      "icon": "solar:link-round-angle-bold-duotone",
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false,
+      "rows": 1
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "showOnQuickForm": false,
+    "isSystem": false,
+    "category": "custom",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-05-20T08:32:09.076Z",
+    "updatedAt": "2026-05-20T08:32:09.076Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d719edf797cae524fbc5d",
+    "name": "representant",
+    "label": "Représentant",
+    "description": "",
+    "type": "relation",
+    "type_config": {
+      "refEntity": "6a0d6bf5491c52a4e438b717"
+    },
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "placeholder": "",
+      "width": "full",
+      "order": 0,
+      "icon": "solar:link-round-angle-bold-duotone",
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false,
+      "rows": 1
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "showOnQuickForm": false,
+    "isSystem": false,
+    "category": "custom",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-05-20T08:32:30.586Z",
+    "updatedAt": "2026-05-20T08:32:30.586Z",
+    "__v": 0
+  }
+]

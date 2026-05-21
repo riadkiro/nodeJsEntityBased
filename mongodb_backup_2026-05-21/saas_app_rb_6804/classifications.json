@@ -1,0 +1,270 @@
+[
+  {
+    "_id": "697e0010000000000000010a",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-16T20:40:48.195Z",
+    "defaultOptionId": null,
+    "description": "Statut de progression",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_progression",
+    "name": "Progression",
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#9ca3af",
+        "icon": "tabler:circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001a"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "tabler:progress",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001b"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "tabler:eye",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001c"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "tabler:check",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001d"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "tabler:alert-circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001e"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-16T20:40:48.195Z"
+  },
+  {
+    "_id": "697e0010000000000000010b",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-16T20:40:48.197Z",
+    "defaultOptionId": null,
+    "description": "Niveau de priorité",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_priority",
+    "name": "Priorité",
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "tabler:arrow-down",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002a"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "tabler:minus",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002b"
+      },
+      {
+        "label": "Haute",
+        "color": "#ef4444",
+        "icon": "tabler:arrow-up",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002c"
+      },
+      {
+        "label": "Urgent",
+        "color": "#dc2626",
+        "icon": "tabler:alert-triangle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002d"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-16T20:40:48.197Z"
+  },
+  {
+    "_id": "697e0010000000000000010c",
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-05-16T20:40:48.200Z",
+    "defaultOptionId": null,
+    "description": "Tags de catégorisation",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_tags",
+    "name": "Tags",
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003b"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003c"
+      },
+      {
+        "label": "DevOps",
+        "color": "#f97316",
+        "icon": "tabler:cloud",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003d"
+      },
+      {
+        "label": "Docs",
+        "color": "#14b8a6",
+        "icon": "tabler:file-text",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003e"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "tabler:bug",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003f"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-16T20:40:48.200Z"
+  },
+  {
+    "_id": "697e0010000000000000010d",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-16T20:40:48.201Z",
+    "defaultOptionId": null,
+    "description": "Liste / groupe de tâches",
+    "entities": [],
+    "isShared": true,
+    "key": "task_list",
+    "name": "Liste",
+    "options": [
+      {
+        "label": "Général",
+        "color": "#6366f1",
+        "icon": "tabler:list",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004b"
+      },
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004c"
+      },
+      {
+        "label": "App mobile",
+        "color": "#10b981",
+        "icon": "tabler:device-mobile",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004d"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004e"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-16T20:40:48.201Z"
+  }
+]

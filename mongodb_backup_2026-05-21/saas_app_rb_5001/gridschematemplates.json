@@ -1,0 +1,169 @@
+[
+  {
+    "_id": "69ce31b32c668ff0b6ed3764",
+    "name": "Protocole Angine",
+    "slug": "protocole_angine",
+    "description": "Traitement standard pour angine bactérienne",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#ef4444",
+    "schemaId": "69ce302352c96f71dd935f1c",
+    "presetRows": [
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment": "",
+          "treatment_label": "Amoxicilline 500mg",
+          "moment": [
+            "morning",
+            "noon",
+            "evening"
+          ],
+          "frequency": [
+            "3x_day"
+          ],
+          "duration": [
+            "7_days"
+          ],
+          "instructions": "Prendre pendant les repas"
+        },
+        "order": 0
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment": "",
+          "treatment_label": "Doliprane 1000mg",
+          "moment": [
+            "morning",
+            "evening"
+          ],
+          "frequency": [
+            "2x_day"
+          ],
+          "duration": [
+            "5_days"
+          ],
+          "instructions": "Si douleur ou fièvre > 38.5°C"
+        },
+        "order": 1
+      }
+    ],
+    "scope": "workspace",
+    "recordId": null,
+    "tags": [
+      "angine",
+      "ORL"
+    ],
+    "createdAt": "2026-04-02T09:06:59.030Z"
+  },
+  {
+    "_id": "69ce31b32c668ff0b6ed3765",
+    "name": "Protocole Grippe",
+    "slug": "protocole_grippe",
+    "description": "Traitement symptomatique de la grippe",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#3b82f6",
+    "schemaId": "69ce302352c96f71dd935f1c",
+    "presetRows": [
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment": "",
+          "treatment_label": "Doliprane 1000mg",
+          "moment": [
+            "morning",
+            "noon",
+            "evening"
+          ],
+          "frequency": [
+            "3x_day"
+          ],
+          "duration": [
+            "7_days"
+          ],
+          "instructions": "Espacer de 6h minimum"
+        },
+        "order": 0
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment": "",
+          "treatment_label": "Toplexil",
+          "moment": [
+            "bedtime"
+          ],
+          "frequency": [
+            "1x_day"
+          ],
+          "duration": [
+            "5_days"
+          ],
+          "instructions": "Au coucher si toux"
+        },
+        "order": 1
+      }
+    ],
+    "scope": "workspace",
+    "recordId": null,
+    "tags": [
+      "grippe",
+      "virus"
+    ],
+    "createdAt": "2026-04-02T09:06:59.030Z"
+  },
+  {
+    "_id": "69ce31b32c668ff0b6ed3766",
+    "name": "Protocole HTA",
+    "slug": "protocole_hta",
+    "description": "Traitement de fond hypertension artérielle",
+    "icon": "solar:heart-pulse-bold-duotone",
+    "color": "#22c55e",
+    "schemaId": "69ce302352c96f71dd935f1c",
+    "presetRows": [
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment": "",
+          "treatment_label": "Amlodipine 5mg",
+          "moment": [
+            "morning"
+          ],
+          "frequency": [
+            "1x_day"
+          ],
+          "duration": [
+            "permanent"
+          ],
+          "instructions": "Prise quotidienne le matin"
+        },
+        "order": 0
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment": "",
+          "treatment_label": "Bisoprolol 5mg",
+          "moment": [
+            "morning"
+          ],
+          "frequency": [
+            "1x_day"
+          ],
+          "duration": [
+            "permanent"
+          ],
+          "instructions": "Ne pas arrêter brutalement"
+        },
+        "order": 1
+      }
+    ],
+    "scope": "workspace",
+    "recordId": null,
+    "tags": [
+      "HTA",
+      "cardio"
+    ],
+    "createdAt": "2026-04-02T09:06:59.030Z"
+  }
+]

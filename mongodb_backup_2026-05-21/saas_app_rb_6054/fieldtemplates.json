@@ -1,0 +1,68 @@
+[
+  {
+    "_id": "697e0020000000000000020b",
+    "__v": 0,
+    "category": "text",
+    "createdAt": "2026-05-16T20:40:42.061Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "name": "Progression",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "autocomplete": false,
+      "order": 0,
+      "readonly": false,
+      "rows": 1,
+      "searchable": false,
+      "visible": true,
+      "width": "full"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-16T20:40:42.061Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "697e0020000000000000020c",
+    "__v": 0,
+    "category": "text",
+    "createdAt": "2026-05-16T20:40:42.123Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "name": "Assigné à",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "text",
+    "type_config": {},
+    "ui": {
+      "autocomplete": false,
+      "order": 0,
+      "readonly": false,
+      "rows": 1,
+      "searchable": false,
+      "visible": true,
+      "width": "full"
+    },
+    "unique": false,
+    "updatedAt": "2026-05-16T20:40:42.123Z",
+    "visibilityConditions": []
+  }
+]

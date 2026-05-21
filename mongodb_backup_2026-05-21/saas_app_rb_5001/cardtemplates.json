@@ -1,0 +1,562 @@
+[
+  {
+    "_id": "69ce302352c96f71dd935f02",
+    "context": "kanban",
+    "entityId": "69ce302352c96f71dd935ef1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-04-02T09:00:19.471Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-04-02T09:00:19.471Z"
+  },
+  {
+    "_id": "69ce302352c96f71dd935f03",
+    "context": "calendar",
+    "entityId": "69ce302352c96f71dd935ef1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-04-02T09:00:19.472Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-04-02T09:00:19.472Z"
+  },
+  {
+    "_id": "69d08eacafe6b12f9d860f1d",
+    "name": "Fiche Consultation",
+    "entityId": "69ce302352c96f71dd935ef2",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935eb0",
+              "label": "Motif de consultation",
+              "icon": "solar:chat-round-dots-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935eb1",
+              "label": "Note médecin",
+              "icon": "solar:document-text-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-04-04T04:08:12.395Z",
+    "updatedAt": "2026-04-04T04:08:12.395Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d08eacafe6b12f9d860f27",
+    "name": "Fiche Facture",
+    "entityId": "69ce302352c96f71dd935ef7",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ecd",
+              "label": "Montant total",
+              "icon": "solar:dollar-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ece",
+              "label": "Montant payé",
+              "icon": "solar:wallet-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ecf",
+              "label": "Date d'échéance",
+              "icon": "solar:alarm-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ed8",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ee7",
+              "label": "Reste à payer",
+              "icon": "solar:wallet-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-04-04T04:08:12.433Z",
+    "updatedAt": "2026-04-04T04:08:12.433Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d0f5641683cdb175134153",
+    "name": "Fiche Patient",
+    "entityId": "69ce302352c96f71dd935ef0",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea3",
+              "label": "Nom",
+              "icon": "solar:user-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea4",
+              "label": "Prénom",
+              "icon": "solar:user-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea5",
+              "label": "Date de naissance",
+              "icon": "solar:calendar-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea6",
+              "label": "Sexe",
+              "icon": "solar:user-id-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea7",
+              "label": "Téléphone",
+              "icon": "solar:phone-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea8",
+              "label": "Email",
+              "icon": "solar:letter-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ea9",
+              "label": "Adresse",
+              "icon": "solar:map-point-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935eaa",
+              "label": "N° Sécurité Sociale",
+              "icon": "solar:shield-check-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935eab",
+              "label": "Groupe sanguin",
+              "icon": "solar:dropper-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935eac",
+              "label": "Allergies",
+              "icon": "solar:danger-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935ead",
+              "label": "Antécédents médicaux",
+              "icon": "solar:clipboard-text-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69ce302352c96f71dd935eae",
+              "label": "Médecin traitant",
+              "icon": "solar:stethoscope-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-04-04T11:26:28.678Z",
+    "updatedAt": "2026-04-04T11:26:28.678Z",
+    "__v": 0
+  }
+]

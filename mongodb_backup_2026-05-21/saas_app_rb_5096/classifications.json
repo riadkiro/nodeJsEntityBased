@@ -1,0 +1,600 @@
+[
+  {
+    "_id": "697e0010000000000000010a",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.239Z",
+    "defaultOptionId": null,
+    "description": "Statut de progression",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_progression",
+    "name": "Progression",
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#9ca3af",
+        "icon": "tabler:circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001a"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "tabler:progress",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001b"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "tabler:eye",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001c"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "tabler:check",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001d"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "tabler:alert-circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001e"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.239Z"
+  },
+  {
+    "_id": "697e0010000000000000010b",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.242Z",
+    "defaultOptionId": null,
+    "description": "Niveau de priorité",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_priority",
+    "name": "Priorité",
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "tabler:arrow-down",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002a"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "tabler:minus",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002b"
+      },
+      {
+        "label": "Haute",
+        "color": "#ef4444",
+        "icon": "tabler:arrow-up",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002c"
+      },
+      {
+        "label": "Urgent",
+        "color": "#dc2626",
+        "icon": "tabler:alert-triangle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002d"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.242Z"
+  },
+  {
+    "_id": "697e0010000000000000010c",
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-05-20T08:08:21.244Z",
+    "defaultOptionId": null,
+    "description": "Tags de catégorisation",
+    "entities": [],
+    "isShared": true,
+    "key": "tache_tags",
+    "name": "Tags",
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003b"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003c"
+      },
+      {
+        "label": "DevOps",
+        "color": "#f97316",
+        "icon": "tabler:cloud",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003d"
+      },
+      {
+        "label": "Docs",
+        "color": "#14b8a6",
+        "icon": "tabler:file-text",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003e"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "tabler:bug",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003f"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.244Z"
+  },
+  {
+    "_id": "697e0010000000000000010d",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.245Z",
+    "defaultOptionId": null,
+    "description": "Liste / groupe de tâches",
+    "entities": [],
+    "isShared": true,
+    "key": "task_list",
+    "name": "Liste",
+    "options": [
+      {
+        "label": "Général",
+        "color": "#6366f1",
+        "icon": "tabler:list",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004b"
+      },
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004c"
+      },
+      {
+        "label": "App mobile",
+        "color": "#10b981",
+        "icon": "tabler:device-mobile",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004d"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0004000000000000004e"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.245Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b712",
+    "key": "crm_pipeline",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.287Z",
+    "defaultOptionId": null,
+    "entities": [],
+    "isShared": true,
+    "name": "Pipeline Commercial",
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6a0d6bf556619d10f2a0ec86"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6a0d6bf556619d10f2a0ec87"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6a0d6bf556619d10f2a0ec88"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6a0d6bf556619d10f2a0ec89"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6a0d6bf556619d10f2a0ec8a"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "6a0d6bf556619d10f2a0ec8b"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.287Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b713",
+    "key": "crm_priority",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.288Z",
+    "defaultOptionId": null,
+    "entities": [],
+    "isShared": true,
+    "name": "Priorité",
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6a0d6bf556619d10f2a0ec93"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6a0d6bf556619d10f2a0ec94"
+      },
+      {
+        "label": "Haute",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6a0d6bf556619d10f2a0ec95"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.288Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b714",
+    "key": "crm_activity_type",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.290Z",
+    "defaultOptionId": null,
+    "entities": [],
+    "isShared": true,
+    "name": "Type Activité",
+    "options": [
+      {
+        "label": "Appel",
+        "color": "#3b82f6",
+        "icon": "solar:phone-calling-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6a0d6bf556619d10f2a0ec9a"
+      },
+      {
+        "label": "Email",
+        "color": "#8b5cf6",
+        "icon": "solar:letter-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6a0d6bf556619d10f2a0ec9b"
+      },
+      {
+        "label": "Réunion",
+        "color": "#22c55e",
+        "icon": "solar:users-group-rounded-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6a0d6bf556619d10f2a0ec9c"
+      },
+      {
+        "label": "Démo",
+        "color": "#f59e0b",
+        "icon": "solar:monitor-camera-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "6a0d6bf556619d10f2a0ec9d"
+      },
+      {
+        "label": "Déjeuner",
+        "color": "#ec4899",
+        "icon": "solar:cup-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "6a0d6bf556619d10f2a0ec9e"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.290Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b715",
+    "key": "crm_industry",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.291Z",
+    "defaultOptionId": null,
+    "entities": [],
+    "isShared": true,
+    "name": "Secteur d'activité",
+    "options": [
+      {
+        "label": "Tech & Logiciels",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6a0d6bf556619d10f2a0eca5"
+      },
+      {
+        "label": "Finance & Assurances",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6a0d6bf556619d10f2a0eca6"
+      },
+      {
+        "label": "Santé & Médical",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6a0d6bf556619d10f2a0eca7"
+      },
+      {
+        "label": "Retail & E-commerce",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "6a0d6bf556619d10f2a0eca8"
+      },
+      {
+        "label": "Industrie & Manufacturing",
+        "color": "#64748b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "6a0d6bf556619d10f2a0eca9"
+      },
+      {
+        "label": "Services Professionnels",
+        "color": "#0ea5e9",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "6a0d6bf556619d10f2a0ecaa"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.291Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b716",
+    "key": "crm_lead_source",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-05-20T08:08:21.292Z",
+    "defaultOptionId": null,
+    "entities": [],
+    "isShared": true,
+    "name": "Source Lead",
+    "options": [
+      {
+        "label": "Site Web (Inbound)",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6a0d6bf556619d10f2a0ecb2"
+      },
+      {
+        "label": "Prospection (Outbound)",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6a0d6bf556619d10f2a0ecb3"
+      },
+      {
+        "label": "LinkedIn",
+        "color": "#0ea5e9",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6a0d6bf556619d10f2a0ecb4"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "6a0d6bf556619d10f2a0ecb5"
+      },
+      {
+        "label": "Événement / Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "6a0d6bf556619d10f2a0ecb6"
+      }
+    ],
+    "showOnQuickForm": false,
+    "type": "simple",
+    "updatedAt": "2026-05-20T08:08:21.292Z"
+  }
+]

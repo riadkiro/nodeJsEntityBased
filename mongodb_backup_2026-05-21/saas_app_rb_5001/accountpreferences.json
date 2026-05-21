@@ -1,0 +1,207 @@
+[
+  {
+    "_id": "69a965dc27ce2a0d068394d9",
+    "accountId": "5001",
+    "viewId": "record_panels_69985b2114b503aa91f46d8b",
+    "__v": 0,
+    "createdAt": "2026-03-05T11:15:40.821Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 6
+        },
+        {
+          "id": "sidebar",
+          "width": 6
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-05T11:15:40.821Z"
+  },
+  {
+    "_id": "69b0ba0cc79fe48d5fc2f727",
+    "accountId": "5001",
+    "viewId": "record_tabs_699857ef027e29bba9654a6a",
+    "__v": 0,
+    "createdAt": "2026-03-11T00:40:44.762Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773189644746": {
+          "rows": [
+            {
+              "id": "row_mmlbcae5grotu",
+              "columns": [
+                {
+                  "id": "col_mmlbcae5auy6a",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmlbcnaiabpuz",
+                    "block_mmlbdt143b2z4",
+                    "block_mmlshurzef6eq"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmlbcnaiabpuz": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "period": "day",
+                "defaultRange": "all"
+              }
+            },
+            "block_mmlbdt143b2z4": {
+              "type": "timeline",
+              "title": "Timeline"
+            },
+            "block_mmlshurzef6eq": {
+              "type": "chart",
+              "title": "Graphique"
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773189644746",
+          "label": "Suivi",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [],
+      "tabLayouts": {},
+      "tabOrder": [
+        "custom_1773189644746"
+      ]
+    },
+    "updatedAt": "2026-03-15T21:48:05.035Z"
+  },
+  {
+    "_id": "69c36fa2bf9216b861fd4ffe",
+    "viewId": "record_panels_69c028596b20251b71c9587f",
+    "accountId": "5001",
+    "__v": 0,
+    "createdAt": "2026-03-25T05:16:18.920Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 8
+        },
+        {
+          "id": "sidebar",
+          "width": 4
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-25T05:16:18.920Z"
+  },
+  {
+    "_id": "69c7baf712662cd0b04a6e70",
+    "accountId": "5001",
+    "viewId": "record_panels_69c7baba12662cd0b04a6d6d",
+    "__v": 0,
+    "createdAt": "2026-03-28T11:26:47.853Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "sw-69c7bae8a0097d6e3c47abd7"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "lines",
+          "relation-1030ad2a-8fac-424a-b757-f69ef72a2186",
+          "card-widget-1a75c4aa-666c-4aab-8b72-5f302630ec3b-0",
+          "sw-69c7bae8a0097d6e3c47abe4"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-28T11:26:54.284Z"
+  },
+  {
+    "_id": "69ef82d7f6a55951d17759f2",
+    "accountId": "5001",
+    "viewId": "record_tabs_69ce302352c96f71dd935ef0",
+    "__v": 0,
+    "createdAt": "2026-04-27T15:37:59.658Z",
+    "preferences": {
+      "customTabLayouts": {},
+      "customTabs": [],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "inv_e8d4af36-4c17-49d2-9cdf-402f181d4a8e",
+          "visible": false
+        },
+        {
+          "key": "inv_8544a1c9-616b-4a84-a0d5-05928251b5a3",
+          "visible": false
+        },
+        {
+          "key": "inv_ea745ad9-976d-4fa9-9720-0b86100884d2",
+          "visible": false
+        },
+        {
+          "key": "inv_538355c0-2dc5-49aa-8528-af164faaa358",
+          "visible": false
+        },
+        {
+          "key": "inv_f7e2fb54-31e2-4371-92a2-cde4c3532c1a",
+          "visible": false
+        },
+        {
+          "key": "inv_ea4a0c0c-5c35-497c-aa92-aa0bc7c2f755",
+          "visible": false
+        },
+        {
+          "key": "inv_79d69a14-bd20-4346-a15a-b71e93107b62",
+          "visible": false
+        },
+        {
+          "key": "inv_c528599a-0e79-4584-91ad-a6d817aa8de8",
+          "visible": false
+        },
+        {
+          "key": "inv_68d4200f-166e-4ea5-ac89-96ff79ba1ed7",
+          "visible": false
+        },
+        {
+          "key": "__documents__",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "inv_e8d4af36-4c17-49d2-9cdf-402f181d4a8e",
+        "inv_8544a1c9-616b-4a84-a0d5-05928251b5a3",
+        "inv_ea745ad9-976d-4fa9-9720-0b86100884d2",
+        "inv_538355c0-2dc5-49aa-8528-af164faaa358",
+        "inv_f7e2fb54-31e2-4371-92a2-cde4c3532c1a",
+        "inv_ea4a0c0c-5c35-497c-aa92-aa0bc7c2f755",
+        "inv_79d69a14-bd20-4346-a15a-b71e93107b62",
+        "inv_c528599a-0e79-4584-91ad-a6d817aa8de8",
+        "inv_68d4200f-166e-4ea5-ac89-96ff79ba1ed7",
+        "__documents__"
+      ]
+    },
+    "updatedAt": "2026-04-27T15:38:13.459Z"
+  }
+]

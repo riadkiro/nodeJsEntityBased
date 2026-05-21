@@ -1,0 +1,416 @@
+[
+  {
+    "_id": "69e9e4165ca57f4b82f929b6",
+    "slug": "view-patients-f929b5-0",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#3b82f6",
+    "createdAt": "2026-04-23T09:19:18.262Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a0",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:user-heart-bold-duotone",
+    "name": "Patients",
+    "order": 0,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.262Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929b7",
+    "slug": "view-rendez-vous-f929b5-1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#8b5cf6",
+    "createdAt": "2026-04-23T09:19:18.263Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a1",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:calendar-mark-bold-duotone",
+    "name": "Rendez-vous",
+    "order": 1,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.263Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929b8",
+    "slug": "view-consultations-f929b5-2",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#00ab55",
+    "createdAt": "2026-04-23T09:19:18.264Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a2",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:stethoscope-bold-duotone",
+    "name": "Consultations",
+    "order": 2,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.264Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929b9",
+    "slug": "view-prescriptions-f929b5-3",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#e2a03f",
+    "createdAt": "2026-04-23T09:19:18.265Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a3",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:document-medicine-bold-duotone",
+    "name": "Ordonnances",
+    "order": 3,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.265Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929ba",
+    "slug": "view-resultats-labo-f929b5-4",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#f97316",
+    "createdAt": "2026-04-23T09:19:18.265Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929aa",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:test-tube-bold-duotone",
+    "name": "Examens",
+    "order": 4,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.265Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929bb",
+    "slug": "view-examens-f929b5-5",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#fb923c",
+    "createdAt": "2026-04-23T09:19:18.266Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a6",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:test-tube-minimalistic-bold-duotone",
+    "name": "Catalogue examens",
+    "order": 5,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.266Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929bc",
+    "slug": "view-symptomes-f929b5-6",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#ec4899",
+    "createdAt": "2026-04-23T09:19:18.267Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929af",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:heart-pulse-bold-duotone",
+    "name": "Symptômes",
+    "order": 6,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.267Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929bd",
+    "slug": "view-pathologies-f929b5-7",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#dc2626",
+    "createdAt": "2026-04-23T09:19:18.268Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929b0",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:virus-bold-duotone",
+    "name": "Pathologies",
+    "order": 7,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.268Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929be",
+    "slug": "view-traitements-f929b5-8",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#0891b2",
+    "createdAt": "2026-04-23T09:19:18.268Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929b1",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:pills-bold-duotone",
+    "name": "Traitements",
+    "order": 8,
+    "spaces": [
+      "69e9e4165ca57f4b82f929b5"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.268Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929c1",
+    "slug": "view-documents-medicaux-f929c0-0",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#6366f1",
+    "createdAt": "2026-04-23T09:19:18.271Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929ab",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:folder-open-bold-duotone",
+    "name": "Documents patients",
+    "order": 0,
+    "spaces": [
+      "69e9e4165ca57f4b82f929c0"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.271Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929c2",
+    "slug": "view-plans-traitement-f929c0-1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#0ea5e9",
+    "createdAt": "2026-04-23T09:19:18.272Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929ac",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:clipboard-list-bold-duotone",
+    "name": "Plans de traitement",
+    "order": 1,
+    "spaces": [
+      "69e9e4165ca57f4b82f929c0"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.272Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929c5",
+    "slug": "view-prestations-f929c4-0",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#0ea5e9",
+    "createdAt": "2026-04-23T09:19:18.274Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a5",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:clipboard-check-bold-duotone",
+    "name": "Prestations",
+    "order": 0,
+    "spaces": [
+      "69e9e4165ca57f4b82f929c4"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.274Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929c6",
+    "slug": "view-factures-f929c4-1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#e2a03f",
+    "createdAt": "2026-04-23T09:19:18.274Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a7",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:bill-list-bold-duotone",
+    "name": "Factures",
+    "order": 1,
+    "spaces": [
+      "69e9e4165ca57f4b82f929c4"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.274Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929c7",
+    "slug": "view-paiements-f929c4-2",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#22c55e",
+    "createdAt": "2026-04-23T09:19:18.275Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a8",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:wallet-bold-duotone",
+    "name": "Paiements",
+    "order": 2,
+    "spaces": [
+      "69e9e4165ca57f4b82f929c4"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.275Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929c8",
+    "slug": "view-assurances-f929c4-3",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#3b82f6",
+    "createdAt": "2026-04-23T09:19:18.276Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a9",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:shield-bold-duotone",
+    "name": "Assurances",
+    "order": 3,
+    "spaces": [
+      "69e9e4165ca57f4b82f929c4"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.276Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929cb",
+    "slug": "view-personnel-f929ca-0",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#4361ee",
+    "createdAt": "2026-04-23T09:19:18.278Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929ad",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "name": "Personnel",
+    "order": 0,
+    "spaces": [
+      "69e9e4165ca57f4b82f929ca"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.278Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929ce",
+    "slug": "view-medicaments-f929cd-0",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#ef4444",
+    "createdAt": "2026-04-23T09:19:18.280Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929a4",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:pills-3-bold-duotone",
+    "name": "Médicaments",
+    "order": 0,
+    "spaces": [
+      "69e9e4165ca57f4b82f929cd"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.280Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929cf",
+    "slug": "view-stock-f929cd-1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "color": "#94a3b8",
+    "createdAt": "2026-04-23T09:19:18.280Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69e9e4165ca57f4b82f929ae",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:box-bold-duotone",
+    "name": "Consommables",
+    "order": 1,
+    "spaces": [
+      "69e9e4165ca57f4b82f929cd"
+    ],
+    "updatedAt": "2026-04-23T09:19:18.280Z",
+    "viewType": "list"
+  }
+]

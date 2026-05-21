@@ -1,0 +1,839 @@
+[
+  {
+    "_id": "6a0d6bf5491c52a4e438b729",
+    "title": "Jean Dupont",
+    "entityId": "6a0d6bf5491c52a4e438b717",
+    "__v": 0,
+    "classificationValues": [],
+    "computedTitle": "Jean Dupont",
+    "createdAt": "2026-05-20T08:08:21.387Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6f9",
+        "value": "Dupont",
+        "_id": "6a0d6bf556619d10f2a0ed08"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fa",
+        "value": "Jean",
+        "_id": "6a0d6bf556619d10f2a0ed09"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fb",
+        "value": "jean.dupont@acme.com",
+        "_id": "6a0d6bf556619d10f2a0ed0a"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fc",
+        "value": "0612345678",
+        "_id": "6a0d6bf556619d10f2a0ed0b"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fd",
+        "value": "Directeur Général",
+        "_id": "6a0d6bf556619d10f2a0ed0c"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "89380c53-2ad8-491c-8c07-1d3d7625d70e",
+        "value": "6a0d6bf5491c52a4e438b72d",
+        "_id": "6a0d6bf556619d10f2a0ed63"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:08:21.397Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b72a",
+    "title": "Sophie Martin",
+    "entityId": "6a0d6bf5491c52a4e438b717",
+    "__v": 0,
+    "classificationValues": [],
+    "computedTitle": "Sophie Martin",
+    "createdAt": "2026-05-20T08:08:21.389Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6f9",
+        "value": "Martin",
+        "_id": "6a0d6bf556619d10f2a0ed13"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fa",
+        "value": "Sophie",
+        "_id": "6a0d6bf556619d10f2a0ed14"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fb",
+        "value": "smartin@techcorp.fr",
+        "_id": "6a0d6bf556619d10f2a0ed15"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fc",
+        "value": "0623456789",
+        "_id": "6a0d6bf556619d10f2a0ed16"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fd",
+        "value": "CTO",
+        "_id": "6a0d6bf556619d10f2a0ed17"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "89380c53-2ad8-491c-8c07-1d3d7625d70e",
+        "value": "6a0d6bf5491c52a4e438b72e",
+        "_id": "6a0d6bf556619d10f2a0ed6a"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:08:21.398Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b72b",
+    "title": "Luc Bernard",
+    "entityId": "6a0d6bf5491c52a4e438b717",
+    "__v": 0,
+    "classificationValues": [],
+    "computedTitle": "Luc Bernard",
+    "createdAt": "2026-05-20T08:08:21.390Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6f9",
+        "value": "Bernard",
+        "_id": "6a0d6bf556619d10f2a0ed1e"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fa",
+        "value": "Luc",
+        "_id": "6a0d6bf556619d10f2a0ed1f"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fb",
+        "value": "lbernard@innovate.io",
+        "_id": "6a0d6bf556619d10f2a0ed20"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fc",
+        "value": "0634567890",
+        "_id": "6a0d6bf556619d10f2a0ed21"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fd",
+        "value": "Lead Dev",
+        "_id": "6a0d6bf556619d10f2a0ed22"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [],
+    "updatedAt": "2026-05-20T08:08:21.390Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b72c",
+    "title": "Marie Dubois",
+    "entityId": "6a0d6bf5491c52a4e438b717",
+    "__v": 2,
+    "classificationValues": [],
+    "computedTitle": "Marie Dubois",
+    "createdAt": "2026-05-20T08:08:21.391Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6f9",
+        "value": "Dubois",
+        "_id": "6a0d6bf556619d10f2a0ed29"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fa",
+        "value": "Marie",
+        "_id": "6a0d6bf556619d10f2a0ed2a"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fb",
+        "value": "mdubois@globalcorp.net",
+        "_id": "6a0d6bf556619d10f2a0ed2b"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fc",
+        "value": "0645678901",
+        "_id": "6a0d6bf556619d10f2a0ed2c"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6fd",
+        "value": "CTO",
+        "_id": "6a0d6bf556619d10f2a0ed2d"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "89380c53-2ad8-491c-8c07-1d3d7625d70e",
+        "value": [
+          "6a0d76c16d62a4ed3e22a8f0"
+        ],
+        "_id": "6a0d77e76d62a4ed3e22c5bf"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:59:19.271Z",
+    "_denorm": {
+      "relations": []
+    },
+    "attachments": [],
+    "driveFolders": [],
+    "folders": [],
+    "gallery": [],
+    "isDraft": false,
+    "lineDefaults": [],
+    "medias": [],
+    "order": 0,
+    "published": false,
+    "spaces": [],
+    "status": "draft",
+    "tags": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b72d",
+    "title": "Acme Corp",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "__v": 9,
+    "classificationValues": [],
+    "computedTitle": "Acme Corp",
+    "createdAt": "2026-05-20T08:08:21.392Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6ff",
+        "value": "12345678900010",
+        "_id": "6a0d6bf556619d10f2a0ed34"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b700",
+        "value": "acme.com",
+        "_id": "6a0d6bf556619d10f2a0ed35"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b701",
+        "value": "1 rue de Paris\n75001 Paris",
+        "_id": "6a0d6bf556619d10f2a0ed36"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "6a0d7189df797cae524fba5e",
+        "value": [
+          "6a0d6bf5491c52a4e438b72b"
+        ],
+        "_id": "6a0d71c3df797cae524fd05c"
+      },
+      {
+        "relationKey": "6a0d719edf797cae524fbc5d",
+        "value": [
+          "6a0d6bf5491c52a4e438b72a"
+        ],
+        "_id": "6a0d71d6df797cae524fda9a"
+      }
+    ],
+    "updatedAt": "2026-05-21T17:16:37.161Z",
+    "attachments": [
+      {
+        "filename": "demo_gen_1779264501404_0.pdf",
+        "originalName": "Devis_Refonte_Web_Acme.pdf",
+        "mimeType": "application/pdf",
+        "size": 62972,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b736",
+        "generatedFromName": "Devis Commercial",
+        "uploadedAt": "2026-05-10T08:08:21.404Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "demo_gen_1779264501406_1.pdf",
+        "originalName": "Devis_Maintenance_Annuelle.pdf",
+        "mimeType": "application/pdf",
+        "size": 120584,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b736",
+        "generatedFromName": "Devis Commercial",
+        "uploadedAt": "2026-05-15T08:08:21.406Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "demo_gen_1779264501408_0.pdf",
+        "originalName": "Contrat_Prestation_2026_Acme.pdf",
+        "mimeType": "application/pdf",
+        "size": 104058,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b737",
+        "generatedFromName": "Contrat de Service",
+        "uploadedAt": "2026-05-15T08:08:21.408Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "demo_gen_1779264501411_0.pdf",
+        "originalName": "Facture_FAC-2026-001.pdf",
+        "mimeType": "application/pdf",
+        "size": 95924,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b738",
+        "generatedFromName": "Facture",
+        "uploadedAt": "2026-05-15T08:08:21.411Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "1779266145829-523028647.pdf",
+        "originalName": "Contrat de Service - Acme Corp.pdf",
+        "mimeType": "application/pdf",
+        "size": 133067,
+        "category": "pdf",
+        "folder": "",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b737",
+        "generatedFromName": "Contrat de Service",
+        "uploadedAt": "2026-05-20T08:35:47.680Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb",
+        "_id": "6a0d7263df797cae52500070"
+      }
+    ],
+    "_denorm": {
+      "relations": []
+    },
+    "driveFolders": [
+      "Test",
+      "Vidéos"
+    ],
+    "folders": [],
+    "gallery": [],
+    "isDraft": false,
+    "lineDefaults": [],
+    "medias": [],
+    "order": 0,
+    "published": false,
+    "spaces": [],
+    "status": "draft",
+    "tags": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b72e",
+    "title": "TechCorp France",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "__v": 5,
+    "classificationValues": [],
+    "computedTitle": "TechCorp France",
+    "createdAt": "2026-05-20T08:08:21.393Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6ff",
+        "value": "98765432100021",
+        "_id": "6a0d6bf556619d10f2a0ed3b"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b700",
+        "value": "techcorp.fr",
+        "_id": "6a0d6bf556619d10f2a0ed3c"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b701",
+        "value": "15 avenue Jean Jaurès\n69007 Lyon",
+        "_id": "6a0d6bf556619d10f2a0ed3d"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "6a0d7189df797cae524fba5e",
+        "value": [
+          "6a0d6bf5491c52a4e438b72b"
+        ],
+        "_id": "6a0d71a2df797cae524fbe5a"
+      },
+      {
+        "relationKey": "6a0d719edf797cae524fbc5d",
+        "value": [
+          "6a0d6bf5491c52a4e438b72a"
+        ],
+        "_id": "6a0d71a5df797cae524fbe7e"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:32:46.868Z",
+    "attachments": [
+      {
+        "filename": "demo_gen_1779264501407_0.pdf",
+        "originalName": "Devis_Deploiement_ERP.pdf",
+        "mimeType": "application/pdf",
+        "size": 110312,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b736",
+        "generatedFromName": "Devis Commercial",
+        "uploadedAt": "2026-05-15T08:08:21.407Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "demo_gen_1779264501410_0.pdf",
+        "originalName": "Contrat_Support_TechCorp.pdf",
+        "mimeType": "application/pdf",
+        "size": 123137,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b737",
+        "generatedFromName": "Contrat de Service",
+        "uploadedAt": "2026-05-15T08:08:21.410Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "demo_gen_1779264501412_0.pdf",
+        "originalName": "Facture_FAC-2026-002.pdf",
+        "mimeType": "application/pdf",
+        "size": 54289,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b738",
+        "generatedFromName": "Facture",
+        "uploadedAt": "2026-05-10T08:08:21.412Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "demo_gen_1779264501413_1.pdf",
+        "originalName": "Facture_FAC-2026-003.pdf",
+        "mimeType": "application/pdf",
+        "size": 57896,
+        "category": "pdf",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b738",
+        "generatedFromName": "Facture",
+        "uploadedAt": "2026-05-15T08:08:21.413Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb"
+      },
+      {
+        "filename": "1779265854867-506795845.pdf",
+        "originalName": "Contrat de Service - TechCorp France.pdf",
+        "mimeType": "application/pdf",
+        "size": 131876,
+        "category": "pdf",
+        "folder": "",
+        "isGenerated": true,
+        "generatedFrom": "6a0d6bf5491c52a4e438b737",
+        "generatedFromName": "Contrat de Service",
+        "uploadedAt": "2026-05-20T08:30:56.728Z",
+        "uploadedBy": "643c0b36fbde1ceb1bdc97bb",
+        "_id": "6a0d7140df797cae524fb001"
+      }
+    ],
+    "_denorm": {
+      "relations": []
+    },
+    "driveFolders": [],
+    "folders": [],
+    "gallery": [],
+    "isDraft": false,
+    "lineDefaults": [],
+    "medias": [],
+    "order": 0,
+    "published": false,
+    "spaces": [],
+    "status": "draft",
+    "tags": []
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b72f",
+    "title": "Refonte Site Web Acme",
+    "entityId": "6a0d6bf5491c52a4e438b719",
+    "__v": 0,
+    "classificationValues": [
+      {
+        "classificationId": "6a0d6bf5491c52a4e438b712",
+        "optionId": "6a0d6bf556619d10f2a0ec86",
+        "label": "Prospection",
+        "color": "#94a3b8"
+      }
+    ],
+    "computedTitle": "Refonte Site Web Acme",
+    "createdAt": "2026-05-20T08:08:21.394Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b702",
+        "value": 15000,
+        "_id": "6a0d6bf556619d10f2a0ed42"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b704",
+        "value": 20,
+        "_id": "6a0d6bf556619d10f2a0ed43"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b703",
+        "value": "2026-06-19T08:08:21.394Z",
+        "_id": "6a0d6bf556619d10f2a0ed44"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "1f47f432-b31c-4792-90de-984c0dcbec74",
+        "value": "6a0d6bf5491c52a4e438b729",
+        "_id": "6a0d6bf556619d10f2a0ed45"
+      },
+      {
+        "relationKey": "bd665af6-547d-4a8e-9112-a337af5637bd",
+        "value": "6a0d6bf5491c52a4e438b72d",
+        "_id": "6a0d6bf556619d10f2a0ed46"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:08:21.394Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b730",
+    "title": "Déploiement ERP TechCorp",
+    "entityId": "6a0d6bf5491c52a4e438b719",
+    "__v": 0,
+    "classificationValues": [
+      {
+        "classificationId": "6a0d6bf5491c52a4e438b712",
+        "optionId": "6a0d6bf556619d10f2a0ec88",
+        "label": "Proposition",
+        "color": "#f59e0b"
+      }
+    ],
+    "computedTitle": "Déploiement ERP TechCorp",
+    "createdAt": "2026-05-20T08:08:21.395Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b702",
+        "value": 45000,
+        "_id": "6a0d6bf556619d10f2a0ed4d"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b704",
+        "value": 60,
+        "_id": "6a0d6bf556619d10f2a0ed4e"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b703",
+        "value": "2026-06-19T08:08:21.395Z",
+        "_id": "6a0d6bf556619d10f2a0ed4f"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "1f47f432-b31c-4792-90de-984c0dcbec74",
+        "value": "6a0d6bf5491c52a4e438b72a",
+        "_id": "6a0d6bf556619d10f2a0ed50"
+      },
+      {
+        "relationKey": "bd665af6-547d-4a8e-9112-a337af5637bd",
+        "value": "6a0d6bf5491c52a4e438b72e",
+        "_id": "6a0d6bf556619d10f2a0ed51"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:08:21.395Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b731",
+    "title": "Licences SaaS GlobalCorp",
+    "entityId": "6a0d6bf5491c52a4e438b719",
+    "__v": 0,
+    "classificationValues": [
+      {
+        "classificationId": "6a0d6bf5491c52a4e438b712",
+        "optionId": "6a0d6bf556619d10f2a0ec89",
+        "label": "Négociation",
+        "color": "#8b5cf6"
+      }
+    ],
+    "computedTitle": "Licences SaaS GlobalCorp",
+    "createdAt": "2026-05-20T08:08:21.396Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b702",
+        "value": 8000,
+        "_id": "6a0d6bf556619d10f2a0ed58"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b704",
+        "value": 90,
+        "_id": "6a0d6bf556619d10f2a0ed59"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b703",
+        "value": "2026-06-19T08:08:21.396Z",
+        "_id": "6a0d6bf556619d10f2a0ed5a"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "1f47f432-b31c-4792-90de-984c0dcbec74",
+        "value": "6a0d6bf5491c52a4e438b72c",
+        "_id": "6a0d6bf556619d10f2a0ed5b"
+      },
+      {
+        "relationKey": "bd665af6-547d-4a8e-9112-a337af5637bd",
+        "value": "6a0d6bf5491c52a4e438b72d",
+        "_id": "6a0d6bf556619d10f2a0ed5c"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:08:21.396Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b732",
+    "title": "Appel découverte - Jean Dupont",
+    "entityId": "6a0d6bf5491c52a4e438b71a",
+    "__v": 0,
+    "classificationValues": [],
+    "computedTitle": "Appel découverte - Jean Dupont",
+    "createdAt": "2026-05-20T08:08:21.398Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b705",
+        "value": "2026-05-20T08:08:21.398Z",
+        "_id": "6a0d6bf556619d10f2a0ed71"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b706",
+        "value": "Bon échange, budget validé pour Q3.",
+        "_id": "6a0d6bf556619d10f2a0ed72"
+      }
+    ],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "relations": [
+      {
+        "relationKey": "f7a3d9dc-081a-44db-894a-218c94fedaa3",
+        "value": "6a0d6bf5491c52a4e438b729",
+        "_id": "6a0d6bf556619d10f2a0ed73"
+      },
+      {
+        "relationKey": "0dd8ba88-0c39-4216-b06d-3e296a004d3b",
+        "value": "6a0d6bf5491c52a4e438b72f",
+        "_id": "6a0d6bf556619d10f2a0ed74"
+      }
+    ],
+    "updatedAt": "2026-05-20T08:08:21.398Z"
+  },
+  {
+    "_id": "6a0d72aedf797cae52500958",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "spaces": [],
+    "folders": [],
+    "title": "Digi Tech",
+    "gallery": [],
+    "medias": [],
+    "status": "draft",
+    "published": false,
+    "isDraft": false,
+    "order": 0,
+    "classificationValues": [],
+    "tags": [],
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6ff",
+        "value": "12345678",
+        "_id": "6a0d72ccdf797cae52500b56"
+      },
+      {
+        "field_id": "6a0d6bf5491c52a4e438b700",
+        "value": "digitech.com",
+        "_id": "6a0d72d4df797cae52500b64"
+      }
+    ],
+    "relations": [
+      {
+        "relationKey": "6a0d7189df797cae524fba5e",
+        "value": [
+          "6a0d6bf5491c52a4e438b72a"
+        ],
+        "_id": "6a0d72e9df797cae52500d4d"
+      },
+      {
+        "relationKey": "6a0d719edf797cae524fbc5d",
+        "value": [],
+        "_id": "6a0d74da6d62a4ed3e226849"
+      }
+    ],
+    "_denorm": {
+      "relations": []
+    },
+    "driveFolders": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "attachments": [],
+    "lineDefaults": [],
+    "createdAt": "2026-05-20T08:37:02.927Z",
+    "updatedAt": "2026-05-20T08:46:30.567Z",
+    "__v": 8
+  },
+  {
+    "_id": "6a0d74f26d62a4ed3e22724d",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "spaces": [],
+    "folders": [],
+    "title": "Maxxi",
+    "gallery": [],
+    "medias": [],
+    "status": "draft",
+    "published": false,
+    "isDraft": false,
+    "order": 0,
+    "classificationValues": [],
+    "tags": [],
+    "customFields": [
+      {
+        "field_id": "6a0d6bf5491c52a4e438b6ff",
+        "value": "198765643",
+        "_id": "6a0d76546d62a4ed3e229f35"
+      }
+    ],
+    "relations": [
+      {
+        "relationKey": "6a0d7189df797cae524fba5e",
+        "value": [
+          "6a0d6bf5491c52a4e438b72b"
+        ],
+        "_id": "6a0d750e6d62a4ed3e2277e5"
+      },
+      {
+        "relationKey": "6a0d719edf797cae524fbc5d",
+        "value": [
+          "6a0d6bf5491c52a4e438b72a"
+        ],
+        "_id": "6a0d75116d62a4ed3e227801"
+      }
+    ],
+    "_denorm": {
+      "relations": []
+    },
+    "driveFolders": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "attachments": [],
+    "lineDefaults": [],
+    "createdAt": "2026-05-20T08:46:42.843Z",
+    "updatedAt": "2026-05-20T08:52:36.735Z",
+    "__v": 6
+  },
+  {
+    "_id": "6a0d75296d62a4ed3e228310",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "spaces": [],
+    "folders": [],
+    "title": "AB Construct",
+    "gallery": [],
+    "medias": [],
+    "status": "draft",
+    "published": false,
+    "isDraft": false,
+    "order": 0,
+    "classificationValues": [],
+    "tags": [],
+    "customFields": [],
+    "relations": [
+      {
+        "relationKey": "6a0d7189df797cae524fba5e",
+        "value": [
+          "6a0d6bf5491c52a4e438b72b"
+        ],
+        "_id": "6a0d75396d62a4ed3e228519"
+      },
+      {
+        "relationKey": "6a0d719edf797cae524fbc5d",
+        "value": [
+          "6a0d6bf5491c52a4e438b72c"
+        ],
+        "_id": "6a0d753b6d62a4ed3e228534"
+      }
+    ],
+    "_denorm": {
+      "relations": []
+    },
+    "driveFolders": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "attachments": [],
+    "lineDefaults": [],
+    "createdAt": "2026-05-20T08:47:37.176Z",
+    "updatedAt": "2026-05-20T08:47:55.240Z",
+    "__v": 2
+  },
+  {
+    "_id": "6a0d76c16d62a4ed3e22a8f0",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "spaces": [],
+    "folders": [],
+    "title": "Alamal",
+    "gallery": [],
+    "medias": [],
+    "status": "draft",
+    "published": false,
+    "isDraft": false,
+    "order": 0,
+    "classificationValues": [],
+    "tags": [],
+    "customFields": [],
+    "relations": [
+      {
+        "relationKey": "6a0d7189df797cae524fba5e",
+        "value": [
+          "6a0d6bf5491c52a4e438b72b"
+        ],
+        "_id": "6a0d76e86d62a4ed3e22aafd"
+      },
+      {
+        "relationKey": "6a0d719edf797cae524fbc5d",
+        "value": [
+          "6a0d6bf5491c52a4e438b72a"
+        ],
+        "_id": "6a0d76eb6d62a4ed3e22ab18"
+      }
+    ],
+    "_denorm": {
+      "relations": []
+    },
+    "driveFolders": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "attachments": [],
+    "lineDefaults": [],
+    "createdAt": "2026-05-20T08:54:25.800Z",
+    "updatedAt": "2026-05-20T08:55:07.685Z",
+    "__v": 2
+  }
+]

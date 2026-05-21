@@ -1,0 +1,86 @@
+[
+  {
+    "_id": "69a029dbaca552fba7a9476c",
+    "slug": "cabinet-medical",
+    "__v": 0,
+    "category": "Sante",
+    "color": "#00ab55",
+    "createdAt": "2026-02-26T11:09:15.090Z",
+    "description": "Configuration complete pour un cabinet medical : patients, consultations, prescriptions, facturation, planning, stock et documents.",
+    "features": [
+      "13 entites metier (Patient, Consultation, Prescription...)",
+      "10+ modeles de documents (Ordonnance, Certificat...)",
+      "Donnees de demonstration realistes",
+      "Navigation structuree par activite",
+      "Classifications metier (Statuts, Types...)",
+      "Lignes de prescription & facturation"
+    ],
+    "icon": "solar:stethoscope-bold-duotone",
+    "isComplete": true,
+    "name": "Cabinet Medical",
+    "seedModule": "./seed-cabinet-medical",
+    "updatedAt": "2026-05-20T08:08:21.106Z"
+  },
+  {
+    "_id": "69a029dbaca552fba7a9476d",
+    "slug": "notaire",
+    "__v": 0,
+    "category": "Juridique",
+    "color": "#805dca",
+    "createdAt": "2026-02-26T11:09:15.170Z",
+    "description": "Configuration de base pour une etude notariale : clients, dossiers, actes, rendez-vous et facturation.",
+    "features": [
+      "7 entites metier (Client, Dossier, Acte...)",
+      "Navigation par activite",
+      "Donnees de demonstration legeres",
+      "Classifications de base"
+    ],
+    "icon": "solar:diploma-verified-bold-duotone",
+    "isComplete": false,
+    "name": "Etude Notariale",
+    "seedModule": "./seed-notaire",
+    "updatedAt": "2026-05-20T08:08:21.118Z"
+  },
+  {
+    "_id": "69c84cd112662cd0b04a7c20",
+    "slug": "cabinet-dentiste",
+    "__v": 0,
+    "category": "Sante",
+    "color": "#0ea5e9",
+    "createdAt": "2026-03-28T21:49:05.396Z",
+    "description": "Configuration dentaire avec nomenclature des actes, catalogue tarife et TD unique Traitements lie aux consultations.",
+    "features": [
+      "Import actes depuis Nomenclature (code, categorie, tarif, description)",
+      "Collection Actes utilisable en catalogue",
+      "TD unique Traitements centre sur Consultation",
+      "Sidebar dynamique configuree pour le schema principal",
+      "Donnees de demonstration installables immediatement"
+    ],
+    "icon": "solar:clipboard-check-bold-duotone",
+    "isComplete": true,
+    "name": "Cabinet Dentiste",
+    "seedModule": "./seed-cabinet-dentiste",
+    "updatedAt": "2026-05-20T08:08:21.117Z"
+  },
+  {
+    "_id": "6a09b04df1c5ddd28f737ae5",
+    "slug": "crm",
+    "__v": 0,
+    "category": "Business",
+    "color": "#22c55e",
+    "createdAt": "2026-05-17T12:10:53.803Z",
+    "description": "Configuration complète type Salesforce : Pipeline, Contacts, Entreprises, et suivi d'activité. Templates de documents (Devis, Contrats, Factures) générables depuis les fiches.",
+    "features": [
+      "Pipeline Kanban des opportunités",
+      "6 entités métier (Contact, Entreprise, Opportunité, Activité, Produit, Service)",
+      "Templates de documents : Devis, Contrats, Factures (liés aux Entreprises)",
+      "Génération de documents depuis les fiches Entreprise",
+      "Vue 360° du client et suivi des interactions"
+    ],
+    "icon": "solar:chart-bold-duotone",
+    "isComplete": true,
+    "name": "CRM Commercial",
+    "seedModule": "./seed-crm",
+    "updatedAt": "2026-05-20T08:08:21.116Z"
+  }
+]

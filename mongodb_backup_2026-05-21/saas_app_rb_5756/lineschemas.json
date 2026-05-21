@@ -1,0 +1,1048 @@
+[
+  {
+    "_id": "69e9e4165ca57f4b82f929d0",
+    "slug": "traitement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "appliesTo": {
+      "entityIds": [
+        "69e9e4165ca57f4b82f929a3",
+        "69e9e4165ca57f4b82f929a2",
+        "69e9e4165ca57f4b82f929a0"
+      ],
+      "documentType": "treatment"
+    },
+    "columns": [
+      {
+        "key": "treatment",
+        "label": "Traitement",
+        "type": "relation",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "targetEntity": "69e9e4165ca57f4b82f929b1",
+          "searchFields": [
+            "title"
+          ],
+          "displayFields": [
+            "title"
+          ],
+          "applyDefaults": {
+            "description": "title"
+          }
+        }
+      },
+      {
+        "key": "moment",
+        "label": "Moment",
+        "type": "multiselect",
+        "required": false,
+        "visible": true,
+        "width": "M",
+        "order": 1,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "source": "manual",
+          "options": [
+            {
+              "value": "morning",
+              "label": "Matin"
+            },
+            {
+              "value": "noon",
+              "label": "Midi"
+            },
+            {
+              "value": "evening",
+              "label": "Soir"
+            },
+            {
+              "value": "bedtime",
+              "label": "Au coucher"
+            },
+            {
+              "value": "before_meal",
+              "label": "Avant repas"
+            },
+            {
+              "value": "after_meal",
+              "label": "Après repas"
+            },
+            {
+              "value": "fasting",
+              "label": "À jeun"
+            }
+          ]
+        }
+      },
+      {
+        "key": "frequency",
+        "label": "Fréquence",
+        "type": "multiselect",
+        "required": false,
+        "visible": true,
+        "width": "M",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "source": "manual",
+          "options": [
+            {
+              "value": "1x_day",
+              "label": "1x / jour"
+            },
+            {
+              "value": "2x_day",
+              "label": "2x / jour"
+            },
+            {
+              "value": "3x_day",
+              "label": "3x / jour"
+            },
+            {
+              "value": "every_8h",
+              "label": "Toutes les 8h"
+            },
+            {
+              "value": "every_12h",
+              "label": "Toutes les 12h"
+            },
+            {
+              "value": "weekly",
+              "label": "1x / semaine"
+            },
+            {
+              "value": "as_needed",
+              "label": "Si besoin"
+            }
+          ]
+        }
+      },
+      {
+        "key": "duration",
+        "label": "Durée",
+        "type": "multiselect",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "source": "manual",
+          "options": [
+            {
+              "value": "1_day",
+              "label": "1 jour"
+            },
+            {
+              "value": "3_days",
+              "label": "3 jours"
+            },
+            {
+              "value": "5_days",
+              "label": "5 jours"
+            },
+            {
+              "value": "7_days",
+              "label": "7 jours"
+            },
+            {
+              "value": "10_days",
+              "label": "10 jours"
+            },
+            {
+              "value": "14_days",
+              "label": "14 jours"
+            },
+            {
+              "value": "21_days",
+              "label": "21 jours"
+            },
+            {
+              "value": "30_days",
+              "label": "30 jours"
+            },
+            {
+              "value": "3_months",
+              "label": "3 mois"
+            },
+            {
+              "value": "6_months",
+              "label": "6 mois"
+            },
+            {
+              "value": "permanent",
+              "label": "Permanent"
+            }
+          ]
+        }
+      },
+      {
+        "key": "instructions",
+        "label": "Instructions",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 4,
+        "config": {}
+      }
+    ],
+    "createdAt": "2026-04-23T09:19:18.281Z",
+    "defaultLineType": "treatment",
+    "description": "Lignes de traitement (partagé entre ordonnances, consultations et suivi patient)",
+    "lineTypes": [
+      "treatment",
+      "note"
+    ],
+    "name": "Traitement",
+    "snapshotConfig": {
+      "enabled": true,
+      "targetType": "relation",
+      "targetRelationKey": "3ef342ca-24e5-4b74-93a9-d006e35a153f",
+      "targetEntityId": "69e9e4165ca57f4b82f929a0"
+    },
+    "sourceEntityId": "69e9e4165ca57f4b82f929b1",
+    "totals": {},
+    "updatedAt": "2026-04-23T09:19:18.281Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929d1",
+    "slug": "consultation_billing_v1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "appliesTo": {
+      "entityIds": [
+        "69e9e4165ca57f4b82f929a2"
+      ],
+      "documentType": "consultation"
+    },
+    "columns": [
+      {
+        "key": "prestation",
+        "label": "Prestation",
+        "type": "relation",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {
+          "targetEntity": "69e9e4165ca57f4b82f929a5",
+          "searchFields": [
+            "title",
+            "code_prestation"
+          ],
+          "displayFields": [
+            "title",
+            "code_prestation"
+          ],
+          "applyDefaults": {
+            "description": "title",
+            "unitPrice": "cf.69e9e4165ca57f4b82f92970",
+            "vatRate": "cf.69e9e4165ca57f4b82f92971",
+            "code": "cf.69e9e4165ca57f4b82f9296f"
+          }
+        }
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 1,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "code",
+        "label": "Code",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "qty",
+        "label": "Qté",
+        "type": "number",
+        "required": true,
+        "visible": true,
+        "width": "XS",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "unitPrice",
+        "label": "P.U HT",
+        "type": "number",
+        "required": true,
+        "visible": true,
+        "width": "S",
+        "order": 4,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "vatRate",
+        "label": "TVA %",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 5,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "lineTotal",
+        "label": "Total HT",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 6,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "qty * unitPrice",
+          "dependencies": [
+            "qty",
+            "unitPrice"
+          ]
+        }
+      },
+      {
+        "key": "lineVat",
+        "label": "TVA",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 7,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "lineTotal * vatRate / 100",
+          "dependencies": [
+            "lineTotal",
+            "vatRate"
+          ]
+        }
+      },
+      {
+        "key": "lineTtc",
+        "label": "Total TTC",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 8,
+        "showWhen": {
+          "lineType": [
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "lineTotal + lineVat",
+          "dependencies": [
+            "lineTotal",
+            "lineVat"
+          ]
+        }
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "XL",
+        "order": 9,
+        "showWhen": {
+          "lineType": [
+            "note"
+          ]
+        },
+        "config": {}
+      }
+    ],
+    "createdAt": "2026-04-23T09:19:18.283Z",
+    "defaultLineType": "service",
+    "description": "Prestations médicales utilisées pendant la consultation",
+    "lineTypes": [
+      "service",
+      "note"
+    ],
+    "name": "Prestations Consultation",
+    "snapshotConfig": {
+      "enabled": true,
+      "targetType": "relation",
+      "targetRelationKey": "347d10fb-3084-4fb8-ba20-5921bec929eb",
+      "targetEntityId": "69e9e4165ca57f4b82f929a0"
+    },
+    "sourceEntityId": "69e9e4165ca57f4b82f929a5",
+    "totals": {
+      "subtotalKey": "lineTotal",
+      "vatKey": "lineVat",
+      "totalFormula": "subtotal + vat"
+    },
+    "updatedAt": "2026-04-23T09:19:18.283Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929d2",
+    "slug": "consultation_exams_v1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "appliesTo": {
+      "entityIds": [
+        "69e9e4165ca57f4b82f929a2"
+      ],
+      "documentType": "consultation"
+    },
+    "columns": [
+      {
+        "key": "exam",
+        "label": "Examen",
+        "type": "relation",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {
+          "targetEntity": "69e9e4165ca57f4b82f929a6",
+          "searchFields": [
+            "title",
+            "code_examen"
+          ],
+          "displayFields": [
+            "title",
+            "code_examen"
+          ],
+          "applyDefaults": {
+            "description": "title",
+            "examCode": "cf.69e9e4165ca57f4b82f92973",
+            "unit": "cf.69e9e4165ca57f4b82f92974",
+            "normalRange": "cf.69e9e4165ca57f4b82f92975",
+            "fasting": "cf.69e9e4165ca57f4b82f92976",
+            "turnaround": "cf.69e9e4165ca57f4b82f92977"
+          }
+        }
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 1,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "examCode",
+        "label": "Code",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "urgency",
+        "label": "Priorité",
+        "type": "select",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {
+          "options": [
+            {
+              "value": "routine",
+              "label": "Routine"
+            },
+            {
+              "value": "urgent",
+              "label": "Urgent"
+            },
+            {
+              "value": "stat",
+              "label": "STAT"
+            }
+          ]
+        }
+      },
+      {
+        "key": "status",
+        "label": "Statut",
+        "type": "select",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 4,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {
+          "options": [
+            {
+              "value": "todo",
+              "label": "À faire"
+            },
+            {
+              "value": "done",
+              "label": "Réalisé"
+            }
+          ]
+        }
+      },
+      {
+        "key": "resultValue",
+        "label": "Résultat",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 5,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "unit",
+        "label": "Unité",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 6,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "normalRange",
+        "label": "Normes",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 7,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "comment",
+        "label": "Commentaire",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "XL",
+        "order": 8,
+        "showWhen": {
+          "lineType": [
+            "exam",
+            "note"
+          ]
+        },
+        "config": {}
+      }
+    ],
+    "createdAt": "2026-04-23T09:19:18.285Z",
+    "defaultLineType": "exam",
+    "description": "Liste des examens demandés pendant une consultation",
+    "lineTypes": [
+      "exam",
+      "note"
+    ],
+    "name": "Examens à réaliser",
+    "snapshotConfig": {
+      "enabled": true,
+      "targetType": "relation",
+      "targetRelationKey": "347d10fb-3084-4fb8-ba20-5921bec929eb",
+      "targetEntityId": "69e9e4165ca57f4b82f929a0"
+    },
+    "sourceEntityId": "69e9e4165ca57f4b82f929a6",
+    "totals": {},
+    "updatedAt": "2026-04-23T09:19:18.285Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929d3",
+    "slug": "patient_exam_followup_v1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "appliesTo": {
+      "entityIds": [
+        "69e9e4165ca57f4b82f929a0"
+      ],
+      "documentType": "medical-followup"
+    },
+    "columns": [
+      {
+        "key": "exam",
+        "label": "Examen",
+        "type": "relation",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {
+          "targetEntity": "69e9e4165ca57f4b82f929a6",
+          "searchFields": [
+            "title",
+            "code_examen"
+          ],
+          "displayFields": [
+            "title",
+            "code_examen"
+          ],
+          "applyDefaults": {
+            "description": "title",
+            "examCode": "cf.69e9e4165ca57f4b82f92973",
+            "unit": "cf.69e9e4165ca57f4b82f92974",
+            "normalRange": "cf.69e9e4165ca57f4b82f92975",
+            "fasting": "cf.69e9e4165ca57f4b82f92976",
+            "turnaround": "cf.69e9e4165ca57f4b82f92977"
+          }
+        }
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 1,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "examCode",
+        "label": "Code",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "urgency",
+        "label": "Priorité",
+        "type": "select",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {
+          "options": [
+            {
+              "value": "routine",
+              "label": "Routine"
+            },
+            {
+              "value": "urgent",
+              "label": "Urgent"
+            },
+            {
+              "value": "stat",
+              "label": "STAT"
+            }
+          ]
+        }
+      },
+      {
+        "key": "status",
+        "label": "Statut",
+        "type": "select",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 4,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {
+          "options": [
+            {
+              "value": "todo",
+              "label": "À faire"
+            },
+            {
+              "value": "done",
+              "label": "Réalisé"
+            }
+          ]
+        }
+      },
+      {
+        "key": "resultValue",
+        "label": "Résultat",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 5,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "unit",
+        "label": "Unité",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 6,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "normalRange",
+        "label": "Normes",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 7,
+        "showWhen": {
+          "lineType": [
+            "exam"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "comment",
+        "label": "Commentaire",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "XL",
+        "order": 8,
+        "showWhen": {
+          "lineType": [
+            "exam",
+            "note"
+          ]
+        },
+        "config": {}
+      }
+    ],
+    "createdAt": "2026-04-23T09:19:18.287Z",
+    "defaultLineType": "exam",
+    "description": "Historique des examens du patient",
+    "lineTypes": [
+      "exam",
+      "note"
+    ],
+    "name": "Examens Patient",
+    "snapshotConfig": {
+      "enabled": true,
+      "targetType": "record"
+    },
+    "sourceEntityId": "69e9e4165ca57f4b82f929a6",
+    "totals": {},
+    "updatedAt": "2026-04-23T09:19:18.287Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f929d4",
+    "slug": "invoice_v1",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "appliesTo": {
+      "entityIds": [
+        "69e9e4165ca57f4b82f929a7"
+      ],
+      "documentType": "invoice"
+    },
+    "columns": [
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "config": {}
+      },
+      {
+        "key": "qty",
+        "label": "Qté",
+        "type": "number",
+        "required": true,
+        "visible": true,
+        "width": "XS",
+        "order": 1,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "unitPrice",
+        "label": "P.U. HT",
+        "type": "money",
+        "required": true,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "currency": "MAD",
+          "decimals": 2
+        }
+      },
+      {
+        "key": "discount",
+        "label": "Remise %",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "vatRate",
+        "label": "TVA %",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 4,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {}
+      },
+      {
+        "key": "lineTotal",
+        "label": "Total HT",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 5,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "qty * unitPrice * (1 - discount / 100)",
+          "dependencies": [
+            "qty",
+            "unitPrice",
+            "discount"
+          ]
+        }
+      },
+      {
+        "key": "lineVat",
+        "label": "TVA",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 6,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "lineTotal * vatRate / 100",
+          "dependencies": [
+            "lineTotal",
+            "vatRate"
+          ]
+        }
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "XL",
+        "order": 7,
+        "showWhen": {
+          "lineType": [
+            "note"
+          ]
+        },
+        "config": {}
+      }
+    ],
+    "createdAt": "2026-04-23T09:19:18.289Z",
+    "defaultLineType": "product",
+    "description": "Lignes de facturation pour factures et devis",
+    "lineTypes": [
+      "product",
+      "service",
+      "note"
+    ],
+    "name": "Facture Standard",
+    "totals": {
+      "subtotalKey": "lineTotal",
+      "vatKey": "lineVat",
+      "totalFormula": "subtotal + vat"
+    },
+    "updatedAt": "2026-04-23T09:19:18.289Z"
+  }
+]

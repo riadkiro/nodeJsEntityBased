@@ -1,0 +1,282 @@
+[
+  {
+    "_id": "69e9e3e95ca57f4b82f9294a",
+    "schemaId": "69e9e3e75ca57f4b82f92685",
+    "slug": "protocole_grippe_dentiste",
+    "__v": 0,
+    "color": "#06b6d4",
+    "createdAt": "2026-04-23T09:18:33.076Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Schéma standard grippe / syndrome viral",
+    "icon": "solar:mask-happly-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-dentiste",
+      "isDemo": true
+    },
+    "name": "Protocole Grippe",
+    "presetRows": [
+      {
+        "lineType": "medication",
+        "order": 0,
+        "values": {
+          "treatment": "69e9e3e75ca57f4b82f926da",
+          "treatment_label": "Doliprane 1000mg",
+          "moment": [
+            "matin",
+            "soir"
+          ],
+          "frequency": [
+            "2x_jour"
+          ],
+          "duration": [
+            "5_jours"
+          ],
+          "instructions": "Hydratation + repos. Prendre après repas."
+        }
+      }
+    ],
+    "scope": "workspace",
+    "tags": [
+      "dentiste",
+      "traitements",
+      "preset"
+    ],
+    "updatedAt": "2026-04-23T09:18:33.076Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f9294b",
+    "schemaId": "69e9e3e75ca57f4b82f92685",
+    "slug": "protocole_angine_dentiste",
+    "__v": 0,
+    "color": "#3b82f6",
+    "createdAt": "2026-04-23T09:18:33.077Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Schéma symptomatique ORL",
+    "icon": "solar:stethoscope-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-dentiste",
+      "isDemo": true
+    },
+    "name": "Protocole Angine",
+    "presetRows": [
+      {
+        "lineType": "medication",
+        "order": 0,
+        "values": {
+          "treatment": "69e9e3e75ca57f4b82f926da",
+          "treatment_label": "Doliprane 1000mg",
+          "moment": [
+            "matin",
+            "midi",
+            "soir"
+          ],
+          "frequency": [
+            "3x_jour"
+          ],
+          "duration": [
+            "7_jours"
+          ],
+          "instructions": "Antalgique/antipyrétique; surveiller fièvre."
+        }
+      },
+      {
+        "lineType": "medication",
+        "order": 1,
+        "values": {
+          "treatment": "69e9e3e75ca57f4b82f926e4",
+          "treatment_label": "Tramadol 50mg",
+          "moment": [
+            "soir"
+          ],
+          "frequency": [
+            "1x_jour"
+          ],
+          "duration": [
+            "3_jours"
+          ],
+          "instructions": "Si douleur importante uniquement."
+        }
+      }
+    ],
+    "scope": "workspace",
+    "tags": [
+      "dentiste",
+      "traitements",
+      "preset"
+    ],
+    "updatedAt": "2026-04-23T09:18:33.077Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f9294c",
+    "schemaId": "69e9e3e75ca57f4b82f92685",
+    "slug": "protocole_sinusite_dentiste",
+    "__v": 0,
+    "color": "#22c55e",
+    "createdAt": "2026-04-23T09:18:33.078Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Schéma court avec suivi",
+    "icon": "solar:health-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-dentiste",
+      "isDemo": true
+    },
+    "name": "Protocole Sinusite",
+    "presetRows": [
+      {
+        "lineType": "medication",
+        "order": 0,
+        "values": {
+          "treatment": "69e9e3e75ca57f4b82f926da",
+          "treatment_label": "Doliprane 1000mg",
+          "moment": [
+            "matin",
+            "soir"
+          ],
+          "frequency": [
+            "2x_jour"
+          ],
+          "duration": [
+            "7_jours"
+          ],
+          "instructions": "Lavage nasal + antalgique."
+        }
+      },
+      {
+        "lineType": "medication",
+        "order": 1,
+        "values": {
+          "treatment": "69e9e3e75ca57f4b82f926e0",
+          "treatment_label": "Amlodipine 5mg",
+          "moment": [
+            "soir"
+          ],
+          "frequency": [
+            "1x_jour"
+          ],
+          "duration": [
+            "7_jours"
+          ],
+          "instructions": "Adapter si comorbidités HTA."
+        }
+      }
+    ],
+    "scope": "workspace",
+    "tags": [
+      "dentiste",
+      "traitements",
+      "preset"
+    ],
+    "updatedAt": "2026-04-23T09:18:33.078Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f9294d",
+    "schemaId": "69e9e3e75ca57f4b82f92687",
+    "slug": "preset_bilan_general_dentiste",
+    "__v": 0,
+    "color": "#6366f1",
+    "createdAt": "2026-04-23T09:18:33.080Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Bilan biologique de base",
+    "icon": "solar:test-tube-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-dentiste",
+      "isDemo": true
+    },
+    "name": "Bilan général",
+    "presetRows": [
+      {
+        "lineType": "exam",
+        "order": 0,
+        "values": {
+          "exam": "69e9e3e75ca57f4b82f926bb",
+          "exam_label": "NFS",
+          "comment": "Contrôle de base avant prise en charge."
+        }
+      },
+      {
+        "lineType": "exam",
+        "order": 1,
+        "values": {
+          "exam": "69e9e3e75ca57f4b82f926c0",
+          "exam_label": "Ferritine",
+          "comment": "Vérifier statut martial."
+        }
+      }
+    ],
+    "scope": "workspace",
+    "tags": [
+      "dentiste",
+      "examens",
+      "preset"
+    ],
+    "updatedAt": "2026-04-23T09:18:33.080Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f9294e",
+    "schemaId": "69e9e3e75ca57f4b82f92687",
+    "slug": "preset_suivi_thyroide_dentiste",
+    "__v": 0,
+    "color": "#06b6d4",
+    "createdAt": "2026-04-23T09:18:33.081Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Suivi thyroïdien standard",
+    "icon": "solar:health-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-dentiste",
+      "isDemo": true
+    },
+    "name": "Suivi Tyroide",
+    "presetRows": [
+      {
+        "lineType": "exam",
+        "order": 0,
+        "values": {
+          "exam": "69e9e3e75ca57f4b82f926b7",
+          "exam_label": "TSH ultrasensible",
+          "comment": "Suivi thyroïde: dosage de contrôle."
+        }
+      }
+    ],
+    "scope": "workspace",
+    "tags": [
+      "dentiste",
+      "examens",
+      "preset"
+    ],
+    "updatedAt": "2026-04-23T09:18:33.081Z"
+  },
+  {
+    "_id": "69e9e3e95ca57f4b82f9294f",
+    "schemaId": "69e9e3e75ca57f4b82f92687",
+    "slug": "preset_suivi_diabete_dentiste",
+    "__v": 0,
+    "color": "#22c55e",
+    "createdAt": "2026-04-23T09:18:33.082Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Bilan glycémique de suivi",
+    "icon": "solar:heart-pulse-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-dentiste",
+      "isDemo": true
+    },
+    "name": "Suivi diabète",
+    "presetRows": [
+      {
+        "lineType": "exam",
+        "order": 0,
+        "values": {
+          "exam": "69e9e3e75ca57f4b82f926b8",
+          "exam_label": "HbA1c",
+          "comment": "Contrôle trimestriel du diabète."
+        }
+      }
+    ],
+    "scope": "workspace",
+    "tags": [
+      "dentiste",
+      "examens",
+      "preset"
+    ],
+    "updatedAt": "2026-04-23T09:18:33.082Z"
+  }
+]

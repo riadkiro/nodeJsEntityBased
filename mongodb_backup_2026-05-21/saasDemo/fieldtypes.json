@@ -1,0 +1,457 @@
+[
+  {
+    "_id": "697da6fd51a0e3777df61f9d",
+    "name": "string",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "text",
+    "createdAt": "2026-01-31T06:53:49.628Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Champ texte simple (max 255 caractères)",
+    "filterOperators": [
+      "equals",
+      "contains",
+      "startsWith",
+      "endsWith"
+    ],
+    "icon": "solar:text-bold-duotone",
+    "isActive": true,
+    "label": "Texte court",
+    "order": 1,
+    "subtypes": [
+      {
+        "name": "email",
+        "label": "Email",
+        "icon": "solar:letter-bold-duotone",
+        "validation": {
+          "regex": "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$"
+        },
+        "_id": "697da71ccf58afd75001b44b"
+      },
+      {
+        "name": "tel",
+        "label": "Téléphone",
+        "icon": "solar:phone-bold-duotone",
+        "validation": {
+          "regex": "^[+]?[(]?[0-9]{1,4}[)]?[-\\s./0-9]*$"
+        },
+        "_id": "697da71ccf58afd75001b44c"
+      },
+      {
+        "name": "url",
+        "label": "URL",
+        "icon": "solar:link-bold-duotone",
+        "validation": {
+          "regex": "^https?://.+"
+        },
+        "_id": "697da71ccf58afd75001b44d"
+      }
+    ],
+    "updatedAt": "2026-01-31T06:54:20.014Z"
+  },
+  {
+    "_id": "697da6fd51a0e3777df61f9e",
+    "name": "text_long",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "text",
+    "createdAt": "2026-01-31T06:53:49.642Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Zone de texte multiligne",
+    "filterOperators": [
+      "contains"
+    ],
+    "icon": "solar:document-text-bold-duotone",
+    "isActive": true,
+    "label": "Texte long",
+    "order": 2,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.027Z"
+  },
+  {
+    "_id": "697da6fd51a0e3777df61f9f",
+    "name": "rich_text",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "text",
+    "createdAt": "2026-01-31T06:53:49.644Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Éditeur de texte avec mise en forme",
+    "filterOperators": [
+      "contains"
+    ],
+    "icon": "solar:text-italic-bold-duotone",
+    "isActive": true,
+    "label": "Texte enrichi",
+    "order": 3,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.029Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa0",
+    "name": "number",
+    "__v": 0,
+    "availableValidations": [
+      {
+        "name": "min",
+        "label": "Minimum",
+        "valueType": "number",
+        "_id": "697da71ccf58afd75001b45a"
+      },
+      {
+        "name": "max",
+        "label": "Maximum",
+        "valueType": "number",
+        "_id": "697da71ccf58afd75001b45b"
+      },
+      {
+        "name": "decimals",
+        "label": "Décimales",
+        "valueType": "number",
+        "_id": "697da71ccf58afd75001b45c"
+      }
+    ],
+    "category": "numeric",
+    "createdAt": "2026-01-31T06:54:20.031Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Valeur numérique entière ou décimale",
+    "filterOperators": [
+      "equals",
+      "lt",
+      "lte",
+      "gt",
+      "gte",
+      "between"
+    ],
+    "icon": "solar:hashtag-bold-duotone",
+    "isActive": true,
+    "label": "Nombre",
+    "order": 10,
+    "subtypes": [
+      {
+        "name": "currency",
+        "label": "Montant",
+        "icon": "solar:dollar-bold-duotone",
+        "validation": {
+          "decimals": 2,
+          "prefix": "€"
+        },
+        "_id": "697da71ccf58afd75001b457"
+      },
+      {
+        "name": "percent",
+        "label": "Pourcentage",
+        "icon": "solar:pie-chart-bold-duotone",
+        "validation": {
+          "min": 0,
+          "max": 100,
+          "suffix": "%"
+        },
+        "_id": "697da71ccf58afd75001b458"
+      },
+      {
+        "name": "rating",
+        "label": "Note",
+        "icon": "solar:star-bold-duotone",
+        "validation": {
+          "min": 0,
+          "max": 5
+        },
+        "_id": "697da71ccf58afd75001b459"
+      }
+    ],
+    "updatedAt": "2026-01-31T06:54:20.031Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa1",
+    "name": "date",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "date",
+    "createdAt": "2026-01-31T06:54:20.033Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Date sans heure",
+    "filterOperators": [
+      "equals",
+      "before",
+      "after",
+      "between"
+    ],
+    "icon": "solar:calendar-bold-duotone",
+    "isActive": true,
+    "label": "Date",
+    "order": 20,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.033Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa2",
+    "name": "datetime",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "date",
+    "createdAt": "2026-01-31T06:54:20.035Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Date avec heure",
+    "filterOperators": [
+      "equals",
+      "before",
+      "after",
+      "between"
+    ],
+    "icon": "solar:calendar-date-bold-duotone",
+    "isActive": true,
+    "label": "Date et heure",
+    "order": 21,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.035Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa3",
+    "name": "time",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "date",
+    "createdAt": "2026-01-31T06:54:20.036Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Heure uniquement",
+    "filterOperators": [
+      "equals",
+      "before",
+      "after"
+    ],
+    "icon": "solar:clock-circle-bold-duotone",
+    "isActive": true,
+    "label": "Heure",
+    "order": 22,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.036Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa4",
+    "name": "select",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "choice",
+    "createdAt": "2026-01-31T06:54:20.037Z",
+    "defaultConfig": {
+      "options": []
+    },
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Liste déroulante avec une seule sélection",
+    "filterOperators": [
+      "equals",
+      "in"
+    ],
+    "icon": "solar:checklist-bold-duotone",
+    "isActive": true,
+    "label": "Choix unique",
+    "order": 30,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.037Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa5",
+    "name": "multiselect",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "choice",
+    "createdAt": "2026-01-31T06:54:20.038Z",
+    "defaultConfig": {
+      "options": []
+    },
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Liste déroulante avec plusieurs sélections",
+    "filterOperators": [
+      "in",
+      "contains"
+    ],
+    "icon": "solar:list-check-bold-duotone",
+    "isActive": true,
+    "label": "Choix multiple",
+    "order": 31,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.038Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa6",
+    "name": "boolean",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "choice",
+    "createdAt": "2026-01-31T06:54:20.039Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Case à cocher ou toggle",
+    "filterOperators": [
+      "equals"
+    ],
+    "icon": "solar:toggle-on-bold-duotone",
+    "isActive": true,
+    "label": "Oui/Non",
+    "order": 32,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.039Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa7",
+    "name": "relation",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "relation",
+    "createdAt": "2026-01-31T06:54:20.040Z",
+    "defaultConfig": {
+      "refEntity": null,
+      "displayField": "title"
+    },
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Lien vers une autre collection",
+    "filterOperators": [
+      "equals",
+      "in"
+    ],
+    "icon": "solar:link-round-bold-duotone",
+    "isActive": true,
+    "label": "Relation",
+    "order": 40,
+    "subtypes": [
+      {
+        "name": "user",
+        "label": "Utilisateur",
+        "icon": "solar:user-bold-duotone",
+        "_id": "697da71ccf58afd75001b46a"
+      },
+      {
+        "name": "entity",
+        "label": "Collection",
+        "icon": "solar:inbox-bold-duotone",
+        "_id": "697da71ccf58afd75001b46b"
+      }
+    ],
+    "updatedAt": "2026-01-31T06:54:20.040Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa8",
+    "name": "file",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "media",
+    "createdAt": "2026-01-31T06:54:20.041Z",
+    "defaultConfig": {
+      "maxSize": 10485760,
+      "allowedTypes": []
+    },
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Upload de fichier",
+    "filterOperators": [
+      "exists"
+    ],
+    "icon": "solar:file-bold-duotone",
+    "isActive": true,
+    "label": "Fichier",
+    "order": 50,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.041Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fa9",
+    "name": "image",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "media",
+    "createdAt": "2026-01-31T06:54:20.042Z",
+    "defaultConfig": {
+      "maxSize": 5242880,
+      "allowedTypes": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp"
+      ]
+    },
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Upload d'image avec prévisualisation",
+    "filterOperators": [
+      "exists"
+    ],
+    "icon": "solar:gallery-bold-duotone",
+    "isActive": true,
+    "label": "Image",
+    "order": 51,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.042Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61faa",
+    "name": "json",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "advanced",
+    "createdAt": "2026-01-31T06:54:20.043Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Données structurées JSON",
+    "filterOperators": [],
+    "icon": "solar:code-bold-duotone",
+    "isActive": true,
+    "label": "JSON",
+    "order": 60,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.043Z"
+  },
+  {
+    "_id": "697da71c51a0e3777df61fab",
+    "name": "formula",
+    "__v": 0,
+    "availableValidations": [],
+    "category": "advanced",
+    "createdAt": "2026-01-31T06:54:20.044Z",
+    "defaultConfig": {},
+    "defaultUIOptions": {
+      "width": "full"
+    },
+    "description": "Champ calculé automatiquement",
+    "filterOperators": [],
+    "icon": "solar:calculator-bold-duotone",
+    "isActive": true,
+    "label": "Formule",
+    "order": 61,
+    "subtypes": [],
+    "updatedAt": "2026-01-31T06:54:20.044Z"
+  }
+]

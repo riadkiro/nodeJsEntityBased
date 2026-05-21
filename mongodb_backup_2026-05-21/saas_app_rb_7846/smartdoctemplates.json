@@ -1,0 +1,213 @@
+[
+  {
+    "_id": "69e9e3e85ca57f4b82f928e1",
+    "entityId": "69e9e3e75ca57f4b82f92657",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Ordonnance",
+    "__v": 0,
+    "active": true,
+    "color": "#e2a03f",
+    "createdAt": "2026-04-23T09:18:32.967Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Ordonnance",
+    "documentId": "69e9e3e85ca57f4b82f928e0",
+    "icon": "solar:document-medicine-bold-duotone",
+    "inputFields": [],
+    "order": 0,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.967Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928e3",
+    "entityId": "69e9e3e75ca57f4b82f92657",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Certificat médical",
+    "__v": 0,
+    "active": true,
+    "color": "#3b82f6",
+    "createdAt": "2026-04-23T09:18:32.969Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Certificat médical",
+    "documentId": "69e9e3e85ca57f4b82f928e2",
+    "icon": "solar:diploma-verified-bold-duotone",
+    "inputFields": [],
+    "order": 1,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.969Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928e5",
+    "entityId": "69e9e3e75ca57f4b82f92657",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Compte rendu consultation",
+    "__v": 0,
+    "active": true,
+    "color": "#00ab55",
+    "createdAt": "2026-04-23T09:18:32.970Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Compte rendu consultation",
+    "documentId": "69e9e3e85ca57f4b82f928e4",
+    "icon": "solar:clipboard-text-bold-duotone",
+    "inputFields": [],
+    "order": 2,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.970Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928e7",
+    "entityId": "69e9e3e75ca57f4b82f92657",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Lettre orientation spécialiste",
+    "__v": 0,
+    "active": true,
+    "color": "#8b5cf6",
+    "createdAt": "2026-04-23T09:18:32.971Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Lettre orientation spécialiste",
+    "documentId": "69e9e3e85ca57f4b82f928e6",
+    "icon": "solar:letter-bold-duotone",
+    "inputFields": [],
+    "order": 3,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.971Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928e9",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Demande d'examen labo",
+    "__v": 0,
+    "active": true,
+    "color": "#f97316",
+    "createdAt": "2026-04-23T09:18:32.972Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Demande d'examen labo",
+    "documentId": "69e9e3e85ca57f4b82f928e8",
+    "icon": "solar:test-tube-bold-duotone",
+    "inputFields": [],
+    "order": 4,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.972Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928eb",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Arrêt de travail",
+    "__v": 0,
+    "active": true,
+    "color": "#ef4444",
+    "createdAt": "2026-04-23T09:18:32.972Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Arrêt de travail",
+    "documentId": "69e9e3e85ca57f4b82f928ea",
+    "icon": "solar:calendar-bold-duotone",
+    "inputFields": [],
+    "order": 5,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.972Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928ed",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Attestation de présence",
+    "__v": 0,
+    "active": true,
+    "color": "#6366f1",
+    "createdAt": "2026-04-23T09:18:32.973Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Attestation de présence",
+    "documentId": "69e9e3e85ca57f4b82f928ec",
+    "icon": "solar:document-text-bold-duotone",
+    "inputFields": [],
+    "order": 6,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.973Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928ef",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Fiche patient résumé",
+    "__v": 0,
+    "active": true,
+    "color": "#3b82f6",
+    "createdAt": "2026-04-23T09:18:32.974Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Fiche patient résumé",
+    "documentId": "69e9e3e85ca57f4b82f928ee",
+    "icon": "solar:user-bold-duotone",
+    "inputFields": [],
+    "order": 7,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.974Z"
+  },
+  {
+    "_id": "69e9e3e85ca57f4b82f928f3",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Consentement éclairé",
+    "__v": 0,
+    "active": true,
+    "color": "#22c55e",
+    "createdAt": "2026-04-23T09:18:32.976Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Consentement éclairé",
+    "documentId": "69e9e3e85ca57f4b82f928f2",
+    "icon": "solar:shield-check-bold-duotone",
+    "inputFields": [],
+    "order": 9,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-04-23T09:18:32.976Z"
+  },
+  {
+    "_id": "69f277f04d2c7010d5c43730",
+    "name": "Facture PDF",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "69e9e3e85ca57f4b82f928f0",
+    "entityId": "69e9e3e75ca57f4b82f92655",
+    "scopeType": "entity",
+    "scopeRecordId": null,
+    "scopeRelationKey": "",
+    "scopeRecordLabel": "",
+    "scopeRelationLabel": "",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-04-29T21:28:16.459Z",
+    "updatedAt": "2026-04-29T21:28:16.459Z",
+    "__v": 0
+  }
+]

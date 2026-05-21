@@ -1,0 +1,168 @@
+[
+  {
+    "_id": "6a01512d430ecf8b558a6556",
+    "slug": "free",
+    "__v": 0,
+    "color": "#6b7280",
+    "createdAt": "2026-05-11T03:46:53.503Z",
+    "description": "Pour démarrer gratuitement",
+    "features": {
+      "api": false,
+      "sso": false,
+      "auditLog": false,
+      "customRoles": false,
+      "advancedAutomations": false,
+      "prioritySupport": false,
+      "whiteLabel": false,
+      "customAiModels": false,
+      "dataExport": false,
+      "advancedAnalytics": false
+    },
+    "isActive": true,
+    "isPublic": true,
+    "limits": {
+      "users": 1,
+      "externalCollaborators": 2,
+      "guests": 5,
+      "entities": 3,
+      "records": 500,
+      "storageMB": 1024,
+      "aiCreditsPerMonth": 50,
+      "automationsPerMonth": 0,
+      "documentsPerMonth": -1,
+      "apiCallsPerMonth": 0
+    },
+    "name": "Free",
+    "order": 0,
+    "price": {
+      "monthly": 0,
+      "annual": 0
+    },
+    "updatedAt": "2026-05-11T03:46:53.503Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a6557",
+    "slug": "pro",
+    "__v": 0,
+    "badge": "POPULAIRE",
+    "color": "#4361ee",
+    "createdAt": "2026-05-11T03:46:53.573Z",
+    "description": "Pour les équipes en croissance",
+    "features": {
+      "api": false,
+      "sso": false,
+      "auditLog": false,
+      "customRoles": false,
+      "advancedAutomations": false,
+      "prioritySupport": false,
+      "whiteLabel": false,
+      "customAiModels": false,
+      "dataExport": true,
+      "advancedAnalytics": false
+    },
+    "isActive": true,
+    "isPublic": true,
+    "limits": {
+      "users": -1,
+      "externalCollaborators": 10,
+      "guests": -1,
+      "entities": 10,
+      "records": 10000,
+      "storageMB": 10240,
+      "aiCreditsPerMonth": 500,
+      "automationsPerMonth": 50,
+      "documentsPerMonth": -1,
+      "apiCallsPerMonth": 0
+    },
+    "name": "Pro",
+    "order": 1,
+    "price": {
+      "monthly": 12,
+      "annual": 10
+    },
+    "updatedAt": "2026-05-11T03:46:53.573Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a6558",
+    "slug": "business",
+    "__v": 0,
+    "badge": "MEILLEUR RAPPORT",
+    "color": "#00ab55",
+    "createdAt": "2026-05-11T03:46:53.576Z",
+    "description": "Pour les entreprises exigeantes",
+    "features": {
+      "api": true,
+      "sso": false,
+      "auditLog": true,
+      "customRoles": true,
+      "advancedAutomations": true,
+      "prioritySupport": true,
+      "whiteLabel": false,
+      "customAiModels": false,
+      "dataExport": true,
+      "advancedAnalytics": true
+    },
+    "isActive": true,
+    "isPublic": true,
+    "limits": {
+      "users": -1,
+      "externalCollaborators": -1,
+      "guests": -1,
+      "entities": -1,
+      "records": -1,
+      "storageMB": 102400,
+      "aiCreditsPerMonth": 5000,
+      "automationsPerMonth": 500,
+      "documentsPerMonth": -1,
+      "apiCallsPerMonth": 10000
+    },
+    "name": "Business",
+    "order": 2,
+    "price": {
+      "monthly": 25,
+      "annual": 20
+    },
+    "updatedAt": "2026-05-11T03:46:53.576Z"
+  },
+  {
+    "_id": "6a01512d430ecf8b558a6559",
+    "slug": "enterprise",
+    "__v": 0,
+    "color": "#805dca",
+    "createdAt": "2026-05-11T03:46:53.577Z",
+    "description": "Solution sur mesure",
+    "features": {
+      "api": true,
+      "sso": true,
+      "auditLog": true,
+      "customRoles": true,
+      "advancedAutomations": true,
+      "prioritySupport": true,
+      "whiteLabel": true,
+      "customAiModels": true,
+      "dataExport": true,
+      "advancedAnalytics": true
+    },
+    "isActive": true,
+    "isPublic": false,
+    "limits": {
+      "users": -1,
+      "externalCollaborators": -1,
+      "guests": -1,
+      "entities": -1,
+      "records": -1,
+      "storageMB": -1,
+      "aiCreditsPerMonth": -1,
+      "automationsPerMonth": -1,
+      "documentsPerMonth": -1,
+      "apiCallsPerMonth": -1
+    },
+    "name": "Enterprise",
+    "order": 3,
+    "price": {
+      "monthly": 0,
+      "annual": 0
+    },
+    "updatedAt": "2026-05-11T03:46:53.577Z"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "_id": "6a0d6bf5491c52a4e438b736",
+    "name": "Devis Commercial",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "__v": 0,
+    "active": true,
+    "color": "#f59e0b",
+    "createdAt": "2026-05-20T08:08:21.402Z",
+    "description": "Génération de devis commercial",
+    "documentId": "6a0d6bf5491c52a4e438b733",
+    "icon": "solar:document-text-bold-duotone",
+    "inputFields": [],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "order": 0,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-05-20T08:08:21.402Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b737",
+    "name": "Contrat de Service",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "__v": 0,
+    "active": true,
+    "color": "#ec4899",
+    "createdAt": "2026-05-20T08:08:21.403Z",
+    "description": "Génération de contrat de service",
+    "documentId": "6a0d6bf5491c52a4e438b734",
+    "icon": "solar:diploma-bold-duotone",
+    "inputFields": [],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "order": 0,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-05-20T08:08:21.403Z"
+  },
+  {
+    "_id": "6a0d6bf5491c52a4e438b738",
+    "name": "Facture",
+    "entityId": "6a0d6bf5491c52a4e438b718",
+    "__v": 0,
+    "active": true,
+    "color": "#ef4444",
+    "createdAt": "2026-05-20T08:08:21.403Z",
+    "description": "Génération de facture",
+    "documentId": "6a0d6bf5491c52a4e438b735",
+    "icon": "solar:bill-list-bold-duotone",
+    "inputFields": [],
+    "meta": {
+      "createdByPreset": "crm",
+      "isDemo": true
+    },
+    "order": 0,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-05-20T08:08:21.403Z"
+  }
+]

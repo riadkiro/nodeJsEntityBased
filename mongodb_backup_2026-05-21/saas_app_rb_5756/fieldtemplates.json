@@ -1,0 +1,1700 @@
+[
+  {
+    "_id": "69e9e4165ca57f4b82f92953",
+    "name": "nom",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "popular",
+    "createdAt": "2026-04-23T09:19:17.989Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Nom",
+    "type": "string",
+    "ui": {
+      "icon": "solar:user-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:17.989Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92954",
+    "name": "prenom",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "popular",
+    "createdAt": "2026-04-23T09:19:18.163Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prénom",
+    "type": "string",
+    "ui": {
+      "icon": "solar:user-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.163Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92955",
+    "name": "date_naissance",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "dates",
+    "createdAt": "2026-04-23T09:19:18.164Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date de naissance",
+    "type": "date",
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.164Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92956",
+    "name": "sexe",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.165Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Sexe",
+    "type": "select",
+    "type_config": {
+      "options": [
+        {
+          "label": "Homme",
+          "value": "M"
+        },
+        {
+          "label": "Femme",
+          "value": "F"
+        }
+      ]
+    },
+    "ui": {
+      "icon": "solar:user-id-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.165Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92957",
+    "name": "telephone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.166Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Téléphone",
+    "subtype": "tel",
+    "type": "string",
+    "ui": {
+      "icon": "solar:phone-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.166Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92958",
+    "name": "email",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.167Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Email",
+    "subtype": "email",
+    "type": "string",
+    "ui": {
+      "icon": "solar:letter-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.167Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92959",
+    "name": "adresse",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.168Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Adresse",
+    "type": "text",
+    "ui": {
+      "icon": "solar:map-point-bold-duotone",
+      "width": "full",
+      "rows": 1
+    },
+    "updatedAt": "2026-04-23T09:19:18.168Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9295a",
+    "name": "numero_secu",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.169Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "N° Sécurité Sociale",
+    "type": "string",
+    "ui": {
+      "icon": "solar:shield-check-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.169Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9295b",
+    "name": "groupe_sanguin",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.170Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Groupe sanguin",
+    "type": "select",
+    "type_config": {
+      "options": [
+        {
+          "label": "A+",
+          "value": "A+"
+        },
+        {
+          "label": "A-",
+          "value": "A-"
+        },
+        {
+          "label": "B+",
+          "value": "B+"
+        },
+        {
+          "label": "B-",
+          "value": "B-"
+        },
+        {
+          "label": "AB+",
+          "value": "AB+"
+        },
+        {
+          "label": "AB-",
+          "value": "AB-"
+        },
+        {
+          "label": "O+",
+          "value": "O+"
+        },
+        {
+          "label": "O-",
+          "value": "O-"
+        }
+      ]
+    },
+    "ui": {
+      "icon": "solar:dropper-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.170Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9295c",
+    "name": "allergies",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.171Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Allergies",
+    "type": "text",
+    "ui": {
+      "icon": "solar:danger-bold-duotone",
+      "width": "full",
+      "rows": 2
+    },
+    "updatedAt": "2026-04-23T09:19:18.171Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9295d",
+    "name": "antecedents",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.171Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Antécédents médicaux",
+    "type": "text",
+    "ui": {
+      "icon": "solar:clipboard-text-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "updatedAt": "2026-04-23T09:19:18.171Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9295e",
+    "name": "medecin_traitant",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.172Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Médecin traitant",
+    "type": "string",
+    "ui": {
+      "icon": "solar:stethoscope-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.172Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9295f",
+    "name": "mutuelle",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.172Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Mutuelle",
+    "type": "string",
+    "ui": {
+      "icon": "solar:shield-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.172Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92960",
+    "name": "motif",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.174Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Motif de consultation",
+    "type": "text",
+    "ui": {
+      "icon": "solar:chat-round-dots-bold-duotone",
+      "width": "full",
+      "rows": 1
+    },
+    "updatedAt": "2026-04-23T09:19:18.174Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92961",
+    "name": "note_medecin",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.175Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Note médecin",
+    "type": "text",
+    "ui": {
+      "icon": "solar:document-text-bold-duotone",
+      "width": "full",
+      "rows": 4
+    },
+    "updatedAt": "2026-04-23T09:19:18.175Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92962",
+    "name": "symptomes_rel",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.175Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Symptômes",
+    "type": "relation",
+    "type_config": {
+      "refEntity": "69e9e4165ca57f4b82f929af",
+      "multiple": true
+    },
+    "ui": {
+      "icon": "solar:heart-pulse-bold-duotone",
+      "width": "full"
+    },
+    "updatedAt": "2026-04-23T09:19:18.241Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92963",
+    "name": "symptomes",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.176Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Symptômes",
+    "type": "text",
+    "ui": {
+      "icon": "solar:heart-pulse-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "updatedAt": "2026-04-23T09:19:18.176Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92964",
+    "name": "diagnostic",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.176Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Diagnostic",
+    "type": "text",
+    "ui": {
+      "icon": "solar:clipboard-check-bold-duotone",
+      "width": "full",
+      "rows": 1
+    },
+    "updatedAt": "2026-04-23T09:19:18.176Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92965",
+    "name": "examen_clinique",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.177Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Examen clinique",
+    "type": "text",
+    "ui": {
+      "icon": "solar:magnifer-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "updatedAt": "2026-04-23T09:19:18.177Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92966",
+    "name": "plan_traitement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.177Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Plan de traitement",
+    "type": "text",
+    "ui": {
+      "icon": "solar:document-text-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "updatedAt": "2026-04-23T09:19:18.177Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92967",
+    "name": "poids",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.177Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Poids (kg)",
+    "type": "number",
+    "ui": {
+      "icon": "solar:weights-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.177Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92968",
+    "name": "taille_cm",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.178Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Taille (cm)",
+    "type": "number",
+    "ui": {
+      "icon": "solar:ruler-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.178Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92969",
+    "name": "tension",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.178Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Tension artérielle",
+    "type": "string",
+    "ui": {
+      "icon": "solar:heart-bold-duotone",
+      "width": "half",
+      "placeholder": "12/8"
+    },
+    "updatedAt": "2026-04-23T09:19:18.178Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9296a",
+    "name": "temperature",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.179Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Température (°C)",
+    "type": "number",
+    "ui": {
+      "icon": "solar:temperature-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.179Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9296b",
+    "name": "frequence_cardiaque",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.179Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Fréquence cardiaque",
+    "type": "number",
+    "ui": {
+      "icon": "solar:heart-pulse-2-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.179Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9296c",
+    "name": "posologie",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.179Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Posologie",
+    "type": "text",
+    "ui": {
+      "icon": "solar:pills-bold-duotone",
+      "width": "full",
+      "rows": 1
+    },
+    "updatedAt": "2026-04-23T09:19:18.179Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9296d",
+    "name": "duree_traitement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.180Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Durée du traitement",
+    "type": "string",
+    "ui": {
+      "icon": "solar:clock-circle-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.180Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9296e",
+    "name": "notes_prescription",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.180Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Notes",
+    "type": "text",
+    "ui": {
+      "icon": "solar:notes-bold-duotone",
+      "width": "full",
+      "rows": 2
+    },
+    "updatedAt": "2026-04-23T09:19:18.180Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9296f",
+    "name": "code_prestation",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.181Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Code prestation",
+    "type": "string",
+    "ui": {
+      "icon": "solar:hashtag-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.181Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92970",
+    "name": "prix_ht",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.181Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prix HT",
+    "type": "number",
+    "ui": {
+      "icon": "solar:tag-price-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.181Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92971",
+    "name": "tva_rate",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.181Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "TVA (%)",
+    "type": "number",
+    "ui": {
+      "icon": "solar:calculator-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.181Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92972",
+    "name": "prix_ttc",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "computed",
+    "createdAt": "2026-04-23T09:19:18.182Z",
+    "formula": {
+      "fromFunction": "expression",
+      "expression": "%prix_ht% * (1 + %tva_rate% / 100)",
+      "sourceFields": {},
+      "dependsOn": [
+        "prix_ht",
+        "tva_rate"
+      ]
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prix TTC",
+    "render": {
+      "display": {
+        "table": "currency",
+        "card": "currency"
+      }
+    },
+    "type": "number",
+    "ui": {
+      "icon": "solar:dollar-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.182Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92973",
+    "name": "code_examen",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.183Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Code examen",
+    "type": "string",
+    "ui": {
+      "icon": "solar:hashtag-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.183Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92974",
+    "name": "unite_mesure",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.183Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Unité",
+    "type": "string",
+    "ui": {
+      "icon": "solar:ruler-cross-pen-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.183Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92975",
+    "name": "valeur_normale",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.184Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Valeur normale",
+    "type": "string",
+    "ui": {
+      "icon": "solar:chart-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.184Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92976",
+    "name": "condition_prelevement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.184Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Condition prélèvement",
+    "type": "string",
+    "ui": {
+      "icon": "solar:test-tube-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.184Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92977",
+    "name": "delai_resultat",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.185Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Délai résultat",
+    "type": "string",
+    "ui": {
+      "icon": "solar:clock-circle-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.185Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92978",
+    "name": "forme",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.186Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Forme",
+    "type": "select",
+    "type_config": {
+      "options": [
+        {
+          "label": "Comprimé",
+          "value": "comprime"
+        },
+        {
+          "label": "Gélule",
+          "value": "gelule"
+        },
+        {
+          "label": "Sirop",
+          "value": "sirop"
+        },
+        {
+          "label": "Injectable",
+          "value": "injectable"
+        },
+        {
+          "label": "Crème",
+          "value": "creme"
+        },
+        {
+          "label": "Suppositoire",
+          "value": "suppositoire"
+        },
+        {
+          "label": "Gouttes",
+          "value": "gouttes"
+        },
+        {
+          "label": "Patch",
+          "value": "patch"
+        },
+        {
+          "label": "Inhalation",
+          "value": "inhalation"
+        }
+      ]
+    },
+    "ui": {
+      "icon": "solar:pills-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.186Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92979",
+    "name": "dosage",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.187Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Dosage",
+    "type": "string",
+    "ui": {
+      "icon": "solar:test-tube-bold-duotone",
+      "width": "half",
+      "placeholder": "500mg"
+    },
+    "updatedAt": "2026-04-23T09:19:18.187Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9297a",
+    "name": "prix_vente",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.188Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prix de vente",
+    "type": "number",
+    "ui": {
+      "icon": "solar:dollar-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.188Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9297b",
+    "name": "stock_min",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.188Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Stock minimum",
+    "type": "number",
+    "ui": {
+      "icon": "solar:box-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.188Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9297c",
+    "name": "stock_actuel",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.189Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Stock actuel",
+    "type": "number",
+    "ui": {
+      "icon": "solar:box-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.189Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9297d",
+    "name": "montant_total",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.190Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Montant total",
+    "type": "number",
+    "ui": {
+      "icon": "solar:dollar-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.190Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9297e",
+    "name": "montant_paye",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.191Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Montant payé",
+    "type": "number",
+    "ui": {
+      "icon": "solar:wallet-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.191Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9297f",
+    "name": "date_echeance",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.192Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date d'échéance",
+    "type": "date",
+    "ui": {
+      "icon": "solar:alarm-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.192Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92980",
+    "name": "mode_paiement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.193Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Mode de paiement",
+    "type": "select",
+    "type_config": {
+      "options": [
+        {
+          "label": "Espèces",
+          "value": "cash"
+        },
+        {
+          "label": "Carte",
+          "value": "card"
+        },
+        {
+          "label": "Virement",
+          "value": "transfer"
+        },
+        {
+          "label": "Assurance",
+          "value": "insurance"
+        }
+      ]
+    },
+    "ui": {
+      "icon": "solar:card-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.193Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92981",
+    "name": "reference_paiement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.194Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Référence",
+    "type": "string",
+    "ui": {
+      "icon": "solar:hashtag-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.194Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92982",
+    "name": "type_analyse",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.194Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Type d'analyse",
+    "type": "string",
+    "ui": {
+      "icon": "solar:test-tube-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.194Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92983",
+    "name": "resultats_labo",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.195Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Résultats",
+    "type": "text",
+    "ui": {
+      "icon": "solar:document-text-bold-duotone",
+      "width": "full",
+      "rows": 5
+    },
+    "updatedAt": "2026-04-23T09:19:18.195Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92984",
+    "name": "valeurs_reference",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.196Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Valeurs de référence",
+    "type": "text",
+    "ui": {
+      "icon": "solar:chart-bold-duotone",
+      "width": "full",
+      "rows": 2
+    },
+    "updatedAt": "2026-04-23T09:19:18.196Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92985",
+    "name": "interpretation",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.197Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Interprétation",
+    "type": "text",
+    "ui": {
+      "icon": "solar:clipboard-check-bold-duotone",
+      "width": "full",
+      "rows": 2
+    },
+    "updatedAt": "2026-04-23T09:19:18.197Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92986",
+    "name": "specialite",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.198Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Spécialité",
+    "type": "string",
+    "ui": {
+      "icon": "solar:stethoscope-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.198Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92987",
+    "name": "numero_rpps",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.198Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "N° RPPS",
+    "type": "string",
+    "ui": {
+      "icon": "solar:document-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.198Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92988",
+    "name": "notes_generales",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.199Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Notes",
+    "type": "text",
+    "ui": {
+      "icon": "solar:notes-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "updatedAt": "2026-04-23T09:19:18.199Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92989",
+    "name": "date_rdv",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.200Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Date du rendez-vous",
+    "type": "date",
+    "type_config": {
+      "includeTime": true
+    },
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.200Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9298a",
+    "name": "duree_rdv",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.200Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Durée (min)",
+    "type": "number",
+    "ui": {
+      "icon": "solar:clock-circle-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.200Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9298b",
+    "name": "objet_rdv",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.201Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Objet",
+    "type": "text",
+    "ui": {
+      "icon": "solar:chat-round-dots-bold-duotone",
+      "width": "full",
+      "rows": 1
+    },
+    "updatedAt": "2026-04-23T09:19:18.201Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9298c",
+    "name": "numero_contrat",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.202Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "N° Contrat",
+    "type": "string",
+    "ui": {
+      "icon": "solar:document-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.202Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9298d",
+    "name": "compagnie",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.203Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Compagnie",
+    "type": "string",
+    "ui": {
+      "icon": "solar:buildings-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.203Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9298e",
+    "name": "taux_remboursement",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.204Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Taux remboursement (%)",
+    "type": "number",
+    "ui": {
+      "icon": "solar:tag-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.204Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f9298f",
+    "name": "type_document",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.204Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Type de document",
+    "type": "string",
+    "ui": {
+      "icon": "solar:file-text-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.204Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92990",
+    "name": "objectif",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.205Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Objectif",
+    "type": "text",
+    "ui": {
+      "icon": "solar:target-bold-duotone",
+      "width": "full",
+      "rows": 2
+    },
+    "updatedAt": "2026-04-23T09:19:18.205Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92991",
+    "name": "protocole",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.206Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Protocole",
+    "type": "text",
+    "ui": {
+      "icon": "solar:document-text-bold-duotone",
+      "width": "full",
+      "rows": 3
+    },
+    "updatedAt": "2026-04-23T09:19:18.206Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92992",
+    "name": "categorie_stock",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.206Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Catégorie",
+    "type": "select",
+    "type_config": {
+      "options": [
+        {
+          "label": "Médicament",
+          "value": "medication"
+        },
+        {
+          "label": "Consommable",
+          "value": "consumable"
+        },
+        {
+          "label": "Matériel",
+          "value": "equipment"
+        }
+      ]
+    },
+    "ui": {
+      "icon": "solar:tag-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.206Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92993",
+    "name": "fournisseur",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.207Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Fournisseur",
+    "type": "string",
+    "ui": {
+      "icon": "solar:buildings-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.207Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92994",
+    "name": "prix_achat",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "other",
+    "createdAt": "2026-04-23T09:19:18.207Z",
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Prix d'achat",
+    "type": "number",
+    "ui": {
+      "icon": "solar:tag-price-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.207Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92995",
+    "name": "age_patient",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "computed",
+    "color": "#3b82f6",
+    "createdAt": "2026-04-23T09:19:18.208Z",
+    "formula": {
+      "fromFunction": "age",
+      "sourceFields": {
+        "birthDate": "69e9e4165ca57f4b82f92955"
+      },
+      "dependsOn": [
+        "date_naissance"
+      ]
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Âge",
+    "render": {
+      "display": {
+        "table": "badge",
+        "card": "badge"
+      }
+    },
+    "type": "number",
+    "ui": {
+      "icon": "solar:calendar-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.212Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92996",
+    "name": "imc",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "computed",
+    "color": "#00ab55",
+    "createdAt": "2026-04-23T09:19:18.209Z",
+    "formula": {
+      "fromFunction": "expression",
+      "expression": "%poids% / ((%taille_cm% / 100) * (%taille_cm% / 100))",
+      "sourceFields": {},
+      "dependsOn": [
+        "poids",
+        "taille_cm"
+      ]
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "IMC",
+    "render": {
+      "display": {
+        "table": "badge",
+        "card": "badge"
+      }
+    },
+    "type": "number",
+    "ui": {
+      "icon": "solar:heart-pulse-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.209Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92997",
+    "name": "reste_a_payer",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "computed",
+    "color": "#ef4444",
+    "createdAt": "2026-04-23T09:19:18.210Z",
+    "formula": {
+      "fromFunction": "expression",
+      "expression": "%montant_total% - %montant_paye%",
+      "sourceFields": {},
+      "dependsOn": [
+        "montant_total",
+        "montant_paye"
+      ]
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Reste à payer",
+    "render": {
+      "display": {
+        "table": "currency",
+        "card": "currency"
+      }
+    },
+    "type": "number",
+    "ui": {
+      "icon": "solar:wallet-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.210Z"
+  },
+  {
+    "_id": "69e9e4165ca57f4b82f92998",
+    "name": "marge_stock",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "category": "computed",
+    "color": "#22c55e",
+    "createdAt": "2026-04-23T09:19:18.211Z",
+    "formula": {
+      "fromFunction": "expression",
+      "expression": "%prix_vente% - %prix_achat%",
+      "sourceFields": {},
+      "dependsOn": [
+        "prix_vente",
+        "prix_achat"
+      ]
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "label": "Marge",
+    "render": {
+      "display": {
+        "table": "currency",
+        "card": "currency"
+      }
+    },
+    "type": "number",
+    "ui": {
+      "icon": "solar:chart-bold-duotone",
+      "width": "half"
+    },
+    "updatedAt": "2026-04-23T09:19:18.211Z"
+  },
+  {
+    "_id": "697e0020000000000000020b",
+    "__v": 0,
+    "category": "text",
+    "createdAt": "2026-04-29T22:00:20.904Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "name": "Progression",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "number",
+    "type_config": {},
+    "ui": {
+      "autocomplete": false,
+      "order": 0,
+      "readonly": false,
+      "rows": 1,
+      "searchable": false,
+      "visible": true,
+      "width": "full"
+    },
+    "unique": false,
+    "updatedAt": "2026-04-29T22:00:20.904Z",
+    "visibilityConditions": []
+  },
+  {
+    "_id": "697e0020000000000000020c",
+    "__v": 0,
+    "category": "text",
+    "createdAt": "2026-04-29T22:00:20.921Z",
+    "entities": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "filterable": true,
+    "formula": {
+      "dependsOn": []
+    },
+    "isCustom": true,
+    "isSystem": false,
+    "name": "Assigné à",
+    "required": false,
+    "showOnQuickForm": false,
+    "type": "text",
+    "type_config": {},
+    "ui": {
+      "autocomplete": false,
+      "order": 0,
+      "readonly": false,
+      "rows": 1,
+      "searchable": false,
+      "visible": true,
+      "width": "full"
+    },
+    "unique": false,
+    "updatedAt": "2026-04-29T22:00:20.921Z",
+    "visibilityConditions": []
+  }
+]

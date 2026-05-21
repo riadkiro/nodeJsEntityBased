@@ -1,0 +1,479 @@
+[
+  {
+    "_id": "6994826487fd5dee265da62b",
+    "name": "Actirama",
+    "icon": "solar:star-broken",
+    "ownerId": "643c0b36fbde1ceb1bdc97bb",
+    "users": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "email": "boukirou6@hotmail.com",
+        "role": "owner",
+        "status": "active",
+        "_id": "6994826487fd5dee265da62c",
+        "joinedAt": "2026-02-17T14:59:48.402Z"
+      },
+      {
+        "userId": "69f4c152d23a571866225bd9",
+        "email": "marc.dubois@actirama.com",
+        "role": "manager",
+        "joinedAt": "2026-05-01T15:05:54.123Z",
+        "status": "active",
+        "_id": "69f4c152d23a571866225bde",
+        "entityAccess": [],
+        "entityPermissions": []
+      },
+      {
+        "userId": "69f4c152d23a571866225bea",
+        "email": "julie.moreau@actirama.com",
+        "role": "member",
+        "joinedAt": "2026-05-01T15:05:54.168Z",
+        "status": "active",
+        "_id": "69f4c152d23a571866225bf0",
+        "entityAccess": [],
+        "entityPermissions": []
+      }
+    ],
+    "account_number": "9194",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "permissions": [],
+    "created_on": "2026-02-17T14:59:48.401Z",
+    "invitations": [
+      {
+        "email": "newinviteduser@example.com",
+        "role": "member",
+        "token": "d089bc86364f343fa35dc4f4a6c6f148d2130a1d676adec99cde3c6dd185753b",
+        "invitedBy": "643c0b36fbde1ceb1bdc97bb",
+        "invitedAt": "2026-05-09T12:58:05.255Z",
+        "expiresAt": "2026-05-16T12:58:05.255Z",
+        "status": "expired",
+        "_id": "69ff2f5dd6ba8072f4229504"
+      },
+      {
+        "email": "test.pending@example.com",
+        "role": "member",
+        "token": "af302230f017ae7dd6cf9a809673be52200abe9bafa1e92e2aaa98b7aacc3603",
+        "invitedBy": "643c0b36fbde1ceb1bdc97bb",
+        "invitedAt": "2026-05-15T04:57:37.476Z",
+        "expiresAt": "2026-05-22T04:57:37.476Z",
+        "status": "pending",
+        "_id": "6a06a7c11903f600983605f8"
+      },
+      {
+        "email": "contact@belgawebsite.be",
+        "role": "guest",
+        "token": "e3a194257e1b23dc231d85c3dc439bbf3fe9b735da95f2e41e270292e6b944cb",
+        "invitedBy": "643c0b36fbde1ceb1bdc97bb",
+        "invitedAt": "2026-05-15T05:46:45.176Z",
+        "expiresAt": "2026-05-22T05:51:34.998Z",
+        "status": "accepted",
+        "_id": "6a06b34567511481cae92c77"
+      },
+      {
+        "email": "contact@belgawebsite.be",
+        "role": "guest",
+        "token": "191ffd9b4933afae558556e92a184507cecdb6ca0129b7643f91ee0e47051211",
+        "invitedBy": "643c0b36fbde1ceb1bdc97bb",
+        "invitedAt": "2026-05-15T06:05:13.851Z",
+        "expiresAt": "2026-05-22T06:05:13.851Z",
+        "status": "accepted",
+        "_id": "6a06b7999690bf8945e3a9ba"
+      },
+      {
+        "email": "contact@belgawebsite.be",
+        "role": "guest",
+        "token": "496cb5d0654033da54935fc8b84e5360d6ba411897c7544f66177c9d592f662d",
+        "invitedBy": "643c0b36fbde1ceb1bdc97bb",
+        "invitedAt": "2026-05-15T11:05:51.618Z",
+        "expiresAt": "2026-05-22T11:05:51.618Z",
+        "status": "accepted",
+        "_id": "6a06fe0f46b69077c749fe33"
+      }
+    ],
+    "__v": 61,
+    "teams": [
+      {
+        "name": "Marketing",
+        "description": "",
+        "color": "#4361ee",
+        "icon": "solar:users-group-rounded-bold-duotone",
+        "memberIds": [
+          "643c0b36fbde1ceb1bdc97bb",
+          "69f4c152d23a571866225bea",
+          "69f4c152d23a571866225bca"
+        ],
+        "createdBy": "643c0b36fbde1ceb1bdc97bb",
+        "createdAt": "2026-05-09T11:53:05.976Z",
+        "_id": "69ff20212a075365450236b0"
+      },
+      {
+        "name": "DEV",
+        "description": "",
+        "color": "#4361ee",
+        "icon": "solar:users-group-rounded-bold-duotone",
+        "memberIds": [
+          "643c0b36fbde1ceb1bdc97bb",
+          "69f4c152d23a571866225bd9"
+        ],
+        "createdBy": "643c0b36fbde1ceb1bdc97bb",
+        "createdAt": "2026-05-09T12:03:56.232Z",
+        "_id": "69ff22ac2a07536545023e59"
+      },
+      {
+        "name": "Secrétariat",
+        "description": "",
+        "color": "#06b6d4",
+        "icon": "solar:users-group-rounded-bold-duotone",
+        "memberIds": [
+          "69f4c152d23a571866225bea",
+          "69f4c152d23a571866225bd9"
+        ],
+        "dataAccess": {
+          "entities": []
+        },
+        "createdBy": "643c0b36fbde1ceb1bdc97bb",
+        "createdAt": "2026-05-15T05:45:07.673Z",
+        "_id": "6a06b2e367511481cae918ce",
+        "entityPermissions": []
+      }
+    ],
+    "settings": {
+      "allowSelfSignup": false,
+      "defaultRole": "member",
+      "modulesEnabled": {
+        "agenda": true,
+        "chat": true,
+        "documents": true,
+        "drive": true,
+        "email": true,
+        "notes": true,
+        "tasks": true
+      },
+      "requireApproval": false
+    },
+    "customRoles": [
+      {
+        "slug": "test",
+        "name": "Test",
+        "description": "",
+        "color": "#8b5cf6",
+        "icon": "solar:shield-bold-duotone",
+        "isCustom": true,
+        "baseRole": "member",
+        "level": 40,
+        "permissions": {
+          "settings.view": false,
+          "settings.update": false,
+          "members.view": true,
+          "members.invite": true,
+          "members.inviteExternal": true,
+          "members.remove": false,
+          "members.changeRole": false,
+          "invites.cancel": false,
+          "account.delete": false,
+          "account.export": false,
+          "members.inviteAdmin": false,
+          "members.promoteAdmin": false,
+          "integrations.manage": false,
+          "records.create": true,
+          "records.read": true,
+          "records.update": true,
+          "records.delete": false,
+          "records.export": false,
+          "records.share": true,
+          "entities.manage": false,
+          "entities.view": true,
+          "dashboard.view": true,
+          "agenda.view": true,
+          "agenda.manage": true,
+          "team.view": true,
+          "chat.view": true,
+          "chat.send": true,
+          "tasks.view": true,
+          "tasks.manage": true,
+          "documents.view": true,
+          "documents.create": true,
+          "documents.manage": false,
+          "notes.view": true,
+          "notes.create": true,
+          "drive.view": true,
+          "drive.upload": true,
+          "email.view": false,
+          "email.send": false,
+          "automations.view": false,
+          "automations.manage": false,
+          "ai.use": true,
+          "ai.manage": false,
+          "workspace.access": true
+        },
+        "createdAt": "2026-05-11T07:48:53.991Z",
+        "updatedAt": "2026-05-11T07:49:04.065Z",
+        "_id": "6a0189e5e129c4ff40ffa00a"
+      }
+    ]
+  },
+  {
+    "_id": "69ff2ae0191ab527c091b73b",
+    "name": "Saad Agassi's Workspace",
+    "icon": "solar:home-2-bold-duotone",
+    "ownerId": "69ff2ae0191ab527c091b738",
+    "users": [
+      {
+        "userId": "69ff2ae0191ab527c091b738",
+        "email": "contact@belgawebsite.be",
+        "role": "owner",
+        "entityAccess": [],
+        "status": "active",
+        "_id": "69ff2ae0191ab527c091b73c",
+        "entityPermissions": [],
+        "joinedAt": "2026-05-09T12:38:56.971Z"
+      }
+    ],
+    "account_number": "7216",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "permissions": [],
+    "invitations": [],
+    "teams": [],
+    "created_on": "2026-05-09T12:38:56.971Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a08d63090d235ef799f201e",
+    "name": "Klerens Group",
+    "icon": "solar:home-2-bold-duotone",
+    "ownerId": "643c0b36fbde1ceb1bdc97bb",
+    "users": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "email": "boukirou6@hotmail.com",
+        "role": "owner",
+        "entityAccess": [],
+        "moduleAccess": {
+          "chat": null,
+          "tasks": null,
+          "documents": null,
+          "agenda": null,
+          "drive": null,
+          "email": null,
+          "notes": null,
+          "automations": null
+        },
+        "status": "active",
+        "_id": "6a08d63090d235ef799f201f",
+        "entityPermissions": [],
+        "joinedAt": "2026-05-16T20:40:16.775Z"
+      }
+    ],
+    "account_number": "5096",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "settings": {
+      "modulesEnabled": {
+        "chat": true,
+        "tasks": true,
+        "documents": true,
+        "agenda": true,
+        "drive": true,
+        "email": true,
+        "notes": true
+      },
+      "defaultRole": "member",
+      "allowSelfSignup": false,
+      "requireApproval": false
+    },
+    "permissions": [],
+    "created_on": "2026-05-16T20:40:16.774Z",
+    "invitations": [],
+    "teams": [],
+    "customRoles": [],
+    "__v": 24,
+    "company": {
+      "address": "RDP Shuman Bruxelles, Belgiaue",
+      "email": "klerensgroup@gmail.com",
+      "name": "Klerens Group",
+      "number": "101.123.456.789",
+      "phone": "0483166102",
+      "representative": "Samir DIF",
+      "vat": ""
+    },
+    "driveFolders": [
+      "Factures",
+      "Factures/Ventes",
+      "Factures/Achats",
+      "Vidéos"
+    ]
+  },
+  {
+    "_id": "6a08d63b90d235ef799f2093",
+    "name": "Belgawebsite",
+    "icon": "solar:home-2-bold-duotone",
+    "ownerId": "643c0b36fbde1ceb1bdc97bb",
+    "users": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "email": "boukirou6@hotmail.com",
+        "role": "owner",
+        "entityAccess": [],
+        "moduleAccess": {
+          "chat": null,
+          "tasks": null,
+          "documents": null,
+          "agenda": null,
+          "drive": null,
+          "email": null,
+          "notes": null,
+          "automations": null
+        },
+        "status": "active",
+        "_id": "6a08d63b90d235ef799f2094",
+        "entityPermissions": [],
+        "joinedAt": "2026-05-16T20:40:27.803Z"
+      }
+    ],
+    "account_number": "9069",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "settings": {
+      "modulesEnabled": {
+        "chat": true,
+        "tasks": true,
+        "documents": true,
+        "agenda": true,
+        "drive": true,
+        "email": true,
+        "notes": true
+      },
+      "defaultRole": "member",
+      "allowSelfSignup": false,
+      "requireApproval": false
+    },
+    "permissions": [],
+    "created_on": "2026-05-16T20:40:27.802Z",
+    "invitations": [],
+    "teams": [],
+    "customRoles": [],
+    "__v": 0
+  },
+  {
+    "_id": "6a08d64a90d235ef799f2120",
+    "name": "DA Group",
+    "icon": "solar:home-2-bold-duotone",
+    "ownerId": "643c0b36fbde1ceb1bdc97bb",
+    "users": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "email": "boukirou6@hotmail.com",
+        "role": "owner",
+        "entityAccess": [],
+        "moduleAccess": {
+          "chat": null,
+          "tasks": null,
+          "documents": null,
+          "agenda": null,
+          "drive": null,
+          "email": null,
+          "notes": null,
+          "automations": null
+        },
+        "status": "active",
+        "_id": "6a08d64a90d235ef799f2121",
+        "entityPermissions": [],
+        "joinedAt": "2026-05-16T20:40:42.053Z"
+      }
+    ],
+    "account_number": "6054",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "settings": {
+      "modulesEnabled": {
+        "chat": true,
+        "tasks": true,
+        "documents": true,
+        "agenda": true,
+        "drive": true,
+        "email": true,
+        "notes": true
+      },
+      "defaultRole": "member",
+      "allowSelfSignup": false,
+      "requireApproval": false
+    },
+    "permissions": [],
+    "created_on": "2026-05-16T20:40:42.053Z",
+    "invitations": [],
+    "teams": [],
+    "customRoles": [],
+    "__v": 0
+  },
+  {
+    "_id": "6a08d65090d235ef799f21c1",
+    "name": "Perso",
+    "icon": "solar:home-2-bold-duotone",
+    "ownerId": "643c0b36fbde1ceb1bdc97bb",
+    "users": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "email": "boukirou6@hotmail.com",
+        "role": "owner",
+        "entityAccess": [],
+        "moduleAccess": {
+          "chat": null,
+          "tasks": null,
+          "documents": null,
+          "agenda": null,
+          "drive": null,
+          "email": null,
+          "notes": null,
+          "automations": null
+        },
+        "status": "active",
+        "_id": "6a08d65090d235ef799f21c2",
+        "entityPermissions": [],
+        "joinedAt": "2026-05-16T20:40:48.121Z"
+      }
+    ],
+    "account_number": "6804",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "settings": {
+      "modulesEnabled": {
+        "chat": true,
+        "tasks": true,
+        "documents": true,
+        "agenda": true,
+        "drive": true,
+        "email": true,
+        "notes": true
+      },
+      "defaultRole": "member",
+      "allowSelfSignup": false,
+      "requireApproval": false
+    },
+    "permissions": [],
+    "created_on": "2026-05-16T20:40:48.121Z",
+    "invitations": [],
+    "teams": [],
+    "customRoles": [],
+    "__v": 0
+  }
+]

@@ -59,6 +59,17 @@
     /* Lock badge for system folders */
     .drive-lock-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; background:#94a3b810; color:#94a3b8; white-space:nowrap; }
     .drive-lock-icon { display:inline-flex; align-items:center; }
+    /* Subtle dropzone hint */
+    .drive-zone-hint {
+        margin-top:16px; padding:28px 20px; border:1.5px dashed #e2e8f0; border-radius:14px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+        color:#cbd5e1; transition:all 0.25s; cursor:default; min-height:80px;
+    }
+    .drive-zone-hint:hover { border-color:#4361ee30; background:#4361ee03; color:#94a3b8; }
+    .drive-zone-hint iconify-icon { opacity:0.4; transition:opacity 0.25s; }
+    .drive-zone-hint:hover iconify-icon { opacity:0.6; }
+    .drive-zone-hint-text { font-size:12px; font-weight:500; }
+    .drive-zone-hint-sub { font-size:10.5px; opacity:0.7; }
 
     /* Shared rm-item styles (needed for global mode) */
     .rm-items-list { display:flex; flex-direction:column; gap:2px; }
@@ -1108,6 +1119,13 @@ document.addEventListener('alpine:init', () => {
                 <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.2"></iconify-icon>
                 <p style="font-size:13px; font-weight:600; margin-top:12px;">Dossier vide</p>
             </div>
+        </div>
+
+        <!-- Subtle zone hint -->
+        <div class="drive-zone-hint" x-show="!loading && isAtFileLevel && !viewingGenerated">
+            <iconify-icon icon="solar:add-folder-bold-duotone" width="28"></iconify-icon>
+            <span class="drive-zone-hint-text">Glissez des fichiers ici ou clic droit pour plus d'options</span>
+            <span class="drive-zone-hint-sub">Nouveau dossier · Importer · Sélectionner</span>
         </div>
     </div>
 

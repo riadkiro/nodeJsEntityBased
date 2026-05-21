@@ -182,14 +182,88 @@ document.addEventListener('alpine:init', () => {
         uploadWarning: { show: false, title: '', message: '', files: [] },
         renamingFileId: null,
         renameValue: '',
+        _restoringUrl: false,
 
         // === Init ===
         async init() {
             if (this.driveMode === 'global') {
                 await this.loadGlobalRoot();
+                await this._restoreFromUrl();
+                // Listen for browser back/forward
+                window.addEventListener('popstate', () => this._restoreFromUrl(true));
             } else {
                 await this.loadFiles();
             }
+        },
+
+        // URL state management
+        _updateUrl() {
+            if (this.driveMode !== 'global' || this._restoringUrl) return;
+            const base = `/account/${this._accountNumber}/drive`;
+            const params = new URLSearchParams();
+            if (this.globalLevel === 'custom-folder' && this.globalCurrentFolder) {
+                params.set('folder', this.globalCurrentFolder);
+            } else if (this.globalLevel === 'app-entities') {
+                params.set('view', 'app');
+            } else if (this.globalLevel === 'app-records' && this.selectedEntity) {
+                params.set('view', 'app');
+                params.set('entity', this.selectedEntity.entityId);
+            } else if (this.globalLevel === 'app-files' && this.selectedRecord) {
+                params.set('view', 'app');
+                if (this.selectedEntity) params.set('entity', this.selectedEntity.entityId);
+                params.set('record', this.selectedRecord.recordId);
+                if (this.currentFolder) params.set('sub', this.currentFolder);
+            }
+            const qs = params.toString();
+            const url = qs ? `${base}?${qs}` : base;
+            if (window.location.pathname + window.location.search !== url) {
+                history.pushState({ driveState: true }, '', url);
+            }
+        },
+
+        async _restoreFromUrl(isPopstate) {
+            this._restoringUrl = true;
+            const params = new URLSearchParams(window.location.search);
+            const folder = params.get('folder');
+            const view = params.get('view');
+            const entityId = params.get('entity');
+            const recordId = params.get('record');
+            const sub = params.get('sub');
+
+            if (folder) {
+                this.globalCurrentFolder = folder;
+                this.globalLevel = 'custom-folder';
+                await this.loadGlobalFolderFiles(folder);
+            } else if (view === 'app') {
+                this.globalLevel = 'app-entities';
+                if (entityId && this.globalEntities.length > 0) {
+                    const entity = this.globalEntities.find(e => e.entityId === entityId);
+                    if (entity) {
+                        this.selectedEntity = entity;
+                        this.globalLevel = 'app-records';
+                        if (recordId) {
+                            const record = entity.records.find(r => r.recordId === recordId);
+                            if (record) {
+                                this.selectedRecord = record;
+                                this._recordId = record.recordId;
+                                this.globalLevel = 'app-files';
+                                await this.loadFiles();
+                                if (sub) this.currentFolder = sub;
+                            }
+                        }
+                    }
+                }
+            } else if (isPopstate) {
+                // Popstate to root
+                this.globalLevel = 'root';
+                this.selectedEntity = null;
+                this.selectedRecord = null;
+                this._recordId = '';
+                this.globalCurrentFolder = '';
+                this.allFiles = [];
+                this.customFolders = [];
+            }
+            this._restoringUrl = false;
         },
 
         // ═══════════════════════════════════════
@@ -232,6 +306,7 @@ document.addEventListener('alpine:init', () => {
         // Navigate into App (entities)
         enterApp() {
             this.globalLevel = 'app-entities';
+            this._updateUrl();
         },
 
         // Navigate into a custom folder
@@ -239,11 +314,13 @@ document.addEventListener('alpine:init', () => {
             this.globalCurrentFolder = folderName;
             this.globalLevel = 'custom-folder';
             await this.loadGlobalFolderFiles(folderName);
+            this._updateUrl();
         },
 
         selectEntity(entity) {
             this.selectedEntity = entity;
             this.globalLevel = 'app-records';
+            this._updateUrl();
         },
 
         selectRecord(record) {
@@ -251,6 +328,7 @@ document.addEventListener('alpine:init', () => {
             this._recordId = record.recordId;
             this.globalLevel = 'app-files';
             this.loadFiles();
+            this._updateUrl();
         },
 
         globalGoBack() {
@@ -275,17 +353,16 @@ document.addEventListener('alpine:init', () => {
             } else if (this.globalLevel === 'custom-folder') {
                 // Go up one level in path hierarchy
                 if (this.globalCurrentFolder.includes('/')) {
-                    // Has parent: go to parent folder
                     const parent = this.globalCurrentFolder.substring(0, this.globalCurrentFolder.lastIndexOf('/'));
                     this.globalCurrentFolder = parent;
                     this.loadGlobalFolderFiles(parent);
                 } else {
-                    // At top-level folder: go to root
                     this.globalLevel = 'root';
                     this.globalCurrentFolder = '';
                     this.globalDriveFiles = [];
                 }
             }
+            this._updateUrl();
         },
 
         get globalBreadcrumb() {
@@ -349,6 +426,7 @@ document.addEventListener('alpine:init', () => {
                 this.currentFolder = '';
                 this.viewingGenerated = '';
             }
+            this._updateUrl();
         },
 
         get isAtFileLevel() {

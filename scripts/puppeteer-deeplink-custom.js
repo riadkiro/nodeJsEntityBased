@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 async function run() {
-  console.log('Starting Puppeteer E2E debugging...');
+  console.log('Starting Puppeteer E2E debugging for root vs deep-link...');
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -36,28 +36,27 @@ async function run() {
     page.waitForNavigation({ waitUntil: 'networkidle2' })
   ]);
   
-  // 2. Access the root drive page
-  const rootLink = 'http://localhost:3000/account/5096/drive';
-  console.log(`\n--- NAVIGATING TO ROOT DRIVE: ${rootLink} ---`);
-  await page.goto(rootLink, { waitUntil: 'load' });
-  console.log('Waiting 5 seconds for page load...');
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  
   const screenshotsDir = path.join(__dirname, '..', 'screenshots');
   if (!fs.existsSync(screenshotsDir)) {
     fs.mkdirSync(screenshotsDir, { recursive: true });
   }
-  await page.screenshot({ path: path.join(screenshotsDir, 'root_drive_debug.png') });
 
-  // 3. Access the deep link
-  const deepLink = 'http://localhost:3000/account/5096/drive/app/6a0d6bf5491c52a4e438b718/6a0d6bf5491c52a4e438b72d';
-  console.log(`\n--- NAVIGATING TO DEEP LINK: ${deepLink} ---`);
-  await page.goto(deepLink, { waitUntil: 'load' });
-  console.log('Waiting 5 seconds for page load...');
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  await page.screenshot({ path: path.join(screenshotsDir, 'deep_link_debug.png') });
+  // 2. Access Root Drive
+  const rootLink = 'http://localhost:3000/account/5096/drive';
+  console.log(`\n--- NAVIGATING TO ROOT DRIVE: ${rootLink} ---`);
+  await page.goto(rootLink, { waitUntil: 'networkidle2' });
+  console.log('Waiting 3 seconds for root page load...');
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  await page.screenshot({ path: path.join(screenshotsDir, 'root_drive_test.png') });
 
-  
+  // 3. Access Custom Deep Link
+  const deepLink = 'http://localhost:3000/account/5096/drive/Factures/Achats';
+  console.log(`\n--- NAVIGATING TO CUSTOM DEEP LINK: ${deepLink} ---`);
+  await page.goto(deepLink, { waitUntil: 'networkidle2' });
+  console.log('Waiting 3 seconds for deep link page load...');
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  await page.screenshot({ path: path.join(screenshotsDir, 'custom_deeplink_test.png') });
+
   await browser.close();
   console.log('Done.');
 }

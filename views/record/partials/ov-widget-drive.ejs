@@ -22,7 +22,7 @@
                             </template>
                             <template x-if="file.category === 'pdf'">
                                 <div class="ov-drive-thumb" style="overflow:hidden;padding:0;position:relative;background:#f8fafc;">
-                                    <canvas x-init="renderPdfThumb(file.url, $el)" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"></canvas>
+                                    <canvas x-init="(() => { renderPdfThumb(file.url, $el) })()" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"></canvas>
                                     <span style="position:absolute;bottom:6px;right:6px;font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:#ef4444;color:#fff;letter-spacing:.5px;">PDF</span>
                                 </div>
                             </template>

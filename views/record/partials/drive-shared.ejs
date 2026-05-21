@@ -268,9 +268,18 @@ document.addEventListener('alpine:init', () => {
                     }
                 } else {
                     // Custom folder path
-                    this.globalCurrentFolder = rest;
-                    await this.loadGlobalFolderFiles(rest);
-                    this.globalLevel = 'custom-folder';
+                    const isValidFolder = this.globalDriveFolders.includes(rest) || this.globalDriveFolders.some(f => f.startsWith(rest + '/'));
+                    if (!isValidFolder) {
+                        alert("Chemin invalide ou dossier introuvable");
+                        this.globalLevel = 'root';
+                        this.globalCurrentFolder = '';
+                        // Rewrite URL back to root
+                        this._updateUrl();
+                    } else {
+                        this.globalCurrentFolder = rest;
+                        await this.loadGlobalFolderFiles(rest);
+                        this.globalLevel = 'custom-folder';
+                    }
                 }
             } catch (e) {
                 console.error('[Drive] Restore from URL error:', e);
@@ -448,7 +457,7 @@ document.addEventListener('alpine:init', () => {
 
         // Whether we are in the global root context (not inside a record)
         get isGlobalRoot() {
-            return this.driveMode === 'global' && ['root', 'custom-folder'].includes(this.globalLevel);
+            return this.driveMode === 'global' && this.globalLevel === 'root';
         },
 
         get globalRootDisplayFolders() {
@@ -475,7 +484,7 @@ document.addEventListener('alpine:init', () => {
 
         get globalRootDisplayFiles() {
             if (this.globalLevel === 'custom-folder') {
-                return this.globalDriveFiles.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+                return [...this.globalDriveFiles].sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
             }
             // Root: files without folder
             return this.globalDriveFiles.filter(f => !f.folder).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
@@ -1237,103 +1246,99 @@ document.addEventListener('alpine:init', () => {
     </div>
 
     <!-- ═══ ROOT LEVEL: App folder + Custom folders + Root files ═══ -->
-    <div x-show="globalLevel === 'root' && !loading" class="rm-items-list">
-        <!-- App folder (locked system) -->
-        <div class="rm-item drive-folder-item" @click="enterApp()" style="cursor:pointer;">
-            <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
-                <iconify-icon icon="solar:box-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
-                <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
-            </div>
-            <div class="rm-item-body">
-                <div class="rm-item-title">App</div>
-                <div class="rm-item-date">
-                    <iconify-icon icon="solar:database-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
-                    <span x-text="globalEntities.length + ' entité(s) · ' + globalStats.totalFiles + ' fichier(s)'"></span>
-                </div>
-            </div>
-            <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>
-            <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
-        </div>
-
-        <!-- Custom folders -->
-        <template x-for="(folder, idx) in globalRootDisplayFolders" :key="folder.name">
-            <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + ((idx + 1) * 40) + 'ms'"
-                 @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
-                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
-                </div>
-                <div class="rm-item-body" style="min-width:0;">
-                    <template x-if="renamingFolderOldName !== folder.name">
-                        <div class="rm-item-title" x-text="folder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                    </template>
-                    <template x-if="renamingFolderOldName === folder.name">
-                        <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameGlobalFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameGlobalFolder()" @click.stop />
-                    </template>
-                    <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
-                </div>
-                <template x-if="renamingFolderOldName !== folder.name">
-                    <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
-                </template>
-                <template x-if="renamingFolderOldName !== folder.name">
-                    <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
-                </template>
-            </div>
-        </template>
-
-        <!-- Root files -->
-        <template x-for="(file, idx) in globalRootDisplayFiles" :key="file._id">
-            <div class="rm-item" :style="'animation-delay:' + ((globalRootDisplayFolders.length + idx + 1) * 40) + 'ms'" style="cursor:pointer;"
-                 @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
-                 @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
-                <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
-                    <iconify-icon :icon="file.category === 'image' ? 'solar:gallery-bold-duotone' : file.category === 'pdf' ? 'solar:document-text-bold-duotone' : file.category === 'word' ? 'solar:document-bold-duotone' : file.category === 'excel' ? 'solar:chart-square-bold-duotone' : 'solar:file-bold-duotone'" width="20"
-                        :style="'color:' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee')"></iconify-icon>
+    <template x-if="globalLevel === 'root'">
+        <div class="rm-items-list">
+            <!-- App folder (locked system) -->
+            <div class="rm-item drive-folder-item" @click="enterApp()" style="cursor:pointer;">
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
+                    <iconify-icon icon="solar:box-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
+                    <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
                 </div>
                 <div class="rm-item-body">
-                    <div class="rm-item-title" x-text="file.originalName"></div>
+                    <div class="rm-item-title">App</div>
                     <div class="rm-item-date">
-                        <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
-                        <span x-text="formatDate(file.uploadedAt)"></span>
+                        <iconify-icon icon="solar:database-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
+                        <span x-text="globalEntities.length + ' entité(s) · ' + globalStats.totalFiles + ' fichier(s)'"></span>
                     </div>
                 </div>
-                <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
+                <span class="drive-lock-badge"><iconify-icon icon="solar:lock-keyhole-bold" width="11"></iconify-icon> Système</span>
+                <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
             </div>
-        </template>
 
-        <!-- Empty root -->
-        <div x-show="globalRootDisplayFolders.length === 0 && globalRootDisplayFiles.length === 0 && globalEntities.length === 0" class="drive-empty" style="margin-top:16px;">
-            <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.15"></iconify-icon>
-            <p style="font-size:13px; font-weight:600; margin-top:12px;">Drive vide</p>
-            <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Créez un dossier ou importez des fichiers pour commencer</p>
+            <!-- Custom folders -->
+            <template x-for="(folder, idx) in globalRootDisplayFolders" :key="'root-folder-' + folder.name">
+                <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + ((idx + 1) * 40) + 'ms'"
+                     @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                    </div>
+                    <div class="rm-item-body" style="min-width:0;">
+                        <template x-if="renamingFolderOldName !== folder.name">
+                            <div class="rm-item-title" x-text="folder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                        </template>
+                        <template x-if="renamingFolderOldName === folder.name">
+                            <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameGlobalFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameGlobalFolder()" @click.stop />
+                        </template>
+                        <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="folder.count + ' fichier(s)'"></span></div>
+                    </div>
+                    <template x-if="renamingFolderOldName !== folder.name">
+                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                    </template>
+                    <template x-if="renamingFolderOldName !== folder.name">
+                        <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Root files -->
+            <template x-for="(file, idx) in globalRootDisplayFiles" :key="'root-file-' + file._id">
+                <div class="rm-item" :style="'animation-delay:' + ((globalRootDisplayFolders.length + idx + 1) * 40) + 'ms'" style="cursor:pointer;"
+                     @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
+                     @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
+                    <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
+                        <iconify-icon :icon="file.category === 'image' ? 'solar:gallery-bold-duotone' : file.category === 'pdf' ? 'solar:document-text-bold-duotone' : file.category === 'word' ? 'solar:document-bold-duotone' : file.category === 'excel' ? 'solar:chart-square-bold-duotone' : 'solar:file-bold-duotone'" width="20"
+                            :style="'color:' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee')"></iconify-icon>
+                    </div>
+                    <div class="rm-item-body">
+                        <div class="rm-item-title" x-text="file.originalName"></div>
+                        <div class="rm-item-date">
+                            <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+                            <span x-text="formatDate(file.uploadedAt)"></span>
+                        </div>
+                    </div>
+                    <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
+                </div>
+            </template>
         </div>
-    </div>
+    </template>
 
     <!-- ═══ CUSTOM FOLDER CONTENT ═══ -->
-    <div x-show="globalLevel === 'custom-folder' && !loading" class="rm-items-list">
-        <!-- Subfolders -->
-        <template x-for="(subfolder, idx) in globalCurrentSubfolders" :key="subfolder.fullPath">
-            <div class="rm-item drive-folder-item" @click="renamingFolderOldName === subfolder.fullPath ? null : enterGlobalFolder(subfolder.fullPath)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
-                 @contextmenu.prevent="openContextMenu($event, {name: subfolder.fullPath}, 'folder')">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
-                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
-                </div>
-                <div class="rm-item-body" style="min-width:0;">
+    <template x-if="globalLevel === 'custom-folder'">
+        <div class="rm-items-list">
+            <!-- Subfolders -->
+            <template x-for="(subfolder, idx) in globalCurrentSubfolders" :key="'subfolder-' + subfolder.fullPath">
+                <div class="rm-item drive-folder-item" @click="renamingFolderOldName === subfolder.fullPath ? null : enterGlobalFolder(subfolder.fullPath)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
+                     @contextmenu.prevent="openContextMenu($event, {name: subfolder.fullPath}, 'folder')">
+                    <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
+                        <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                    </div>
+                    <div class="rm-item-body" style="min-width:0;">
+                        <template x-if="renamingFolderOldName !== subfolder.fullPath">
+                            <div class="rm-item-title" x-text="subfolder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                        </template>
+                        <template x-if="renamingFolderOldName === subfolder.fullPath">
+                            <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameGlobalFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameGlobalFolder()" @click.stop />
+                        </template>
+                        <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="subfolder.count + ' fichier(s)'"></span></div>
+                    </div>
                     <template x-if="renamingFolderOldName !== subfolder.fullPath">
-                        <div class="rm-item-title" x-text="subfolder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                        <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
                     </template>
-                    <template x-if="renamingFolderOldName === subfolder.fullPath">
-                        <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameGlobalFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameGlobalFolder()" @click.stop />
+                    <template x-if="renamingFolderOldName !== subfolder.fullPath">
+                        <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
                     </template>
-                    <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="subfolder.count + ' fichier(s)'"></span></div>
                 </div>
-                <template x-if="renamingFolderOldName !== subfolder.fullPath">
-                    <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
-                </template>
-                <template x-if="renamingFolderOldName !== subfolder.fullPath">
-                    <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
-                </template>
-            </div>
-        </template>
+            </template>
 
         <!-- Files -->
         <template x-for="(file, idx) in globalRootDisplayFiles" :key="file._id">
@@ -1360,6 +1365,7 @@ document.addEventListener('alpine:init', () => {
             <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Créez un sous-dossier ou importez des fichiers</p>
         </div>
     </div>
+    </template>
 
     <!-- ═══ APP: Entity list ═══ -->
     <div x-show="globalLevel === 'app-entities' && !loading" class="rm-items-list">
@@ -1571,7 +1577,7 @@ document.addEventListener('alpine:init', () => {
                     </template>
                     <template x-if="file.category === 'pdf'">
                         <div class="drive-pdf-wrap">
-                            <canvas x-init="renderPdfThumb(file.url, $el, 40)" width="40" height="40"></canvas>
+                            <canvas x-init="(() => { renderPdfThumb(file.url, $el, 40) })()" width="40" height="40"></canvas>
                             <span class="drive-pdf-badge">PDF</span>
                         </div>
                     </template>

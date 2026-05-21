@@ -190,9 +190,16 @@ document.addEventListener('alpine:init', () => {
                 await this.loadGlobalRoot();
                 await this._restoreFromUrl();
                 // Listen for browser back/forward
-                window.addEventListener('popstate', () => this._restoreFromUrl(true));
+                this._handlePopstate = () => this._restoreFromUrl(true);
+                window.addEventListener('popstate', this._handlePopstate);
             } else {
                 await this.loadFiles();
+            }
+        },
+
+        destroy() {
+            if (this._handlePopstate) {
+                window.removeEventListener('popstate', this._handlePopstate);
             }
         },
 
@@ -795,9 +802,7 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 console.error('[Drive] Load error:', e);
             }
-            this.$nextTick(() => {
-                this.loading = false;
-            });
+            this.loading = false;
         },
 
         navigateTo(folder) {
@@ -1225,9 +1230,11 @@ document.addEventListener('alpine:init', () => {
         </div>
     </div>
     <!-- Loading -->
-    <div x-show="loading" style="text-align:center; padding:40px 0; color:#94a3b8;">
-        <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
-    </div>
+    <template x-if="loading">
+        <div style="text-align:center; padding:40px 0; color:#94a3b8;">
+            <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+        </div>
+    </template>
 
     <!-- New folder input (global root mode) -->
     <div x-show="showNewFolderInput && (globalLevel === 'root' || globalLevel === 'custom-folder')" x-transition class="drive-new-folder">
@@ -1508,13 +1515,16 @@ document.addEventListener('alpine:init', () => {
         </div>
 
         <!-- Loading -->
-        <div x-show="loading" style="text-align:center; padding:40px 0; color:#94a3b8;">
-            <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
-        </div>
+        <template x-if="loading">
+            <div style="text-align:center; padding:40px 0; color:#94a3b8;">
+                <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+            </div>
+        </template>
 
         <!-- Content -->
-        <div x-show="!loading" class="rm-items-list">
-            <!-- Generated template folders (root only) — System locked -->
+        <template x-if="!loading">
+            <div class="rm-items-list">
+                <!-- Generated template folders (root only) — System locked -->
             <template x-for="(tplFolder, tIdx) in generatedTemplateFolders" :key="tplFolder.name">
                 <div class="rm-item drive-folder-item" @click="viewingGenerated = tplFolder.name" style="cursor:pointer;" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
                     <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;">
@@ -1645,6 +1655,7 @@ document.addEventListener('alpine:init', () => {
                 <p style="font-size:13px; font-weight:600; margin-top:12px;">Dossier vide</p>
             </div>
         </div>
+        </template>
 
         <!-- Subtle zone hint -->
         <div class="drive-zone-hint" x-show="!loading && isAtFileLevel && !viewingGenerated">

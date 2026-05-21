@@ -273,16 +273,31 @@ document.addEventListener('alpine:init', () => {
             } else if (this.globalLevel === 'app-entities') {
                 this.globalLevel = 'root';
             } else if (this.globalLevel === 'custom-folder') {
-                this.globalLevel = 'root';
-                this.globalCurrentFolder = '';
-                this.globalDriveFiles = [];
+                // Go up one level in path hierarchy
+                if (this.globalCurrentFolder.includes('/')) {
+                    // Has parent: go to parent folder
+                    const parent = this.globalCurrentFolder.substring(0, this.globalCurrentFolder.lastIndexOf('/'));
+                    this.globalCurrentFolder = parent;
+                    this.loadGlobalFolderFiles(parent);
+                } else {
+                    // At top-level folder: go to root
+                    this.globalLevel = 'root';
+                    this.globalCurrentFolder = '';
+                    this.globalDriveFiles = [];
+                }
             }
         },
 
         get globalBreadcrumb() {
             const crumbs = [{ label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', level: 'root' }];
-            if (this.globalLevel === 'custom-folder') {
-                crumbs.push({ label: this.globalCurrentFolder, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'custom-folder' });
+            if (this.globalLevel === 'custom-folder' && this.globalCurrentFolder) {
+                // Build breadcrumb for each path segment
+                const segments = this.globalCurrentFolder.split('/');
+                let path = '';
+                segments.forEach((seg, i) => {
+                    path = path ? path + '/' + seg : seg;
+                    crumbs.push({ label: seg, icon: 'solar:folder-bold-duotone', color: '#4361ee', level: 'custom-folder', path: path });
+                });
             }
             if (this.globalLevel.startsWith('app')) {
                 crumbs.push({ label: 'App', icon: 'solar:box-bold-duotone', color: '#f59e0b', level: 'app-entities' });
@@ -347,10 +362,25 @@ document.addEventListener('alpine:init', () => {
         },
 
         get globalRootDisplayFolders() {
-            return this.globalDriveFolders.map(name => {
-                const count = this.globalDriveFiles.filter(f => f.folder === name).length;
-                return { name, count, isCustom: true };
-            }).sort((a, b) => a.name.localeCompare(b.name));
+            // Show only root-level folders (no '/' in name)
+            return this.globalDriveFolders
+                .filter(name => !name.includes('/'))
+                .map(name => {
+                    const count = this.globalDriveFiles.filter(f => f.folder === name).length;
+                    return { name, count, isCustom: true };
+                }).sort((a, b) => a.name.localeCompare(b.name));
+        },
+
+        get globalCurrentSubfolders() {
+            if (!this.globalCurrentFolder) return [];
+            const prefix = this.globalCurrentFolder + '/';
+            return this.globalDriveFolders
+                .filter(f => f.startsWith(prefix) && !f.substring(prefix.length).includes('/'))
+                .map(fullPath => {
+                    const name = fullPath.substring(prefix.length);
+                    const count = this.globalDriveFiles.filter(f => f.folder === fullPath).length;
+                    return { name, fullPath, count, isCustom: true };
+                }).sort((a, b) => a.name.localeCompare(b.name));
         },
 
         get globalRootDisplayFiles() {
@@ -679,14 +709,16 @@ document.addEventListener('alpine:init', () => {
             if (!name) return;
             // Global root mode: use account-level API
             if (this.isGlobalRoot) {
-                if (this.globalDriveFolders.includes(name)) {
+                // Build full path: if inside a folder, prefix with parent path
+                const fullName = this.globalCurrentFolder ? this.globalCurrentFolder + '/' + name : name;
+                if (this.globalDriveFolders.includes(fullName)) {
                     window.showMessage ? window.showMessage('Ce dossier existe déjà', 'danger') : alert('Ce dossier existe déjà');
                     this.newFolderName = ''; this.showNewFolderInput = false; return;
                 }
                 try {
                     const res = await fetch(`/account/${this._accountNumber}/api/drive/folders`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                        body: JSON.stringify({ name })
+                        body: JSON.stringify({ name: fullName })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -1012,7 +1044,7 @@ document.addEventListener('alpine:init', () => {
                 <template x-if="ci > 0">
                     <span class="drive-breadcrumb-sep"><iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon></span>
                 </template>
-                <button @click="ci < globalBreadcrumb.length - 1 ? globalNavigateTo(crumb.level) : null"
+                <button @click="ci < globalBreadcrumb.length - 1 ? (crumb.path ? enterGlobalFolder(crumb.path) : globalNavigateTo(crumb.level)) : null"
                         class="drive-breadcrumb-item" :class="ci === globalBreadcrumb.length - 1 ? 'drive-breadcrumb-item--active' : ''">
                     <iconify-icon :icon="crumb.icon" width="14" :style="'color:' + crumb.color"></iconify-icon>
                     <span x-text="crumb.label"></span>
@@ -1188,8 +1220,34 @@ document.addEventListener('alpine:init', () => {
 
     <!-- ═══ CUSTOM FOLDER CONTENT ═══ -->
     <div x-show="globalLevel === 'custom-folder' && !loading" class="rm-items-list">
+        <!-- Subfolders -->
+        <template x-for="(subfolder, idx) in globalCurrentSubfolders" :key="subfolder.fullPath">
+            <div class="rm-item drive-folder-item" @click="renamingFolderOldName === subfolder.fullPath ? null : enterGlobalFolder(subfolder.fullPath)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
+                 @contextmenu.prevent="openContextMenu($event, {name: subfolder.fullPath}, 'folder')">
+                <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+                </div>
+                <div class="rm-item-body" style="min-width:0;">
+                    <template x-if="renamingFolderOldName !== subfolder.fullPath">
+                        <div class="rm-item-title" x-text="subfolder.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                    </template>
+                    <template x-if="renamingFolderOldName === subfolder.fullPath">
+                        <input type="text" class="drive-rename-input" x-model="renameFolderValue" @keydown.enter.prevent="confirmRenameGlobalFolder()" @keydown.escape.prevent="cancelRenameFolder()" x-init="$nextTick(() => { $el.focus(); $el.select(); })" @blur="confirmRenameGlobalFolder()" @click.stop />
+                    </template>
+                    <div class="rm-item-date"><iconify-icon icon="solar:documents-linear" width="12"></iconify-icon> <span x-text="subfolder.count + ' fichier(s)'"></span></div>
+                </div>
+                <template x-if="renamingFolderOldName !== subfolder.fullPath">
+                    <span class="rm-item-badge" style="background:#4361ee10;color:#4361ee">Dossier</span>
+                </template>
+                <template x-if="renamingFolderOldName !== subfolder.fullPath">
+                    <span class="rm-item-action" style="color:#94a3b8;"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></span>
+                </template>
+            </div>
+        </template>
+
+        <!-- Files -->
         <template x-for="(file, idx) in globalRootDisplayFiles" :key="file._id">
-            <div class="rm-item" :style="'animation-delay:' + (idx * 40) + 'ms'" style="cursor:pointer;"
+            <div class="rm-item" :style="'animation-delay:' + ((globalCurrentSubfolders.length + idx) * 40) + 'ms'" style="cursor:pointer;"
                  @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
                  @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
                 <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
@@ -1206,10 +1264,10 @@ document.addEventListener('alpine:init', () => {
                 <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
             </div>
         </template>
-        <div x-show="globalRootDisplayFiles.length === 0" class="drive-empty">
+        <div x-show="globalCurrentSubfolders.length === 0 && globalRootDisplayFiles.length === 0" class="drive-empty">
             <iconify-icon icon="solar:folder-open-bold-duotone" width="48" style="opacity:0.2"></iconify-icon>
             <p style="font-size:13px; font-weight:600; margin-top:12px;">Dossier vide</p>
-            <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Importez des fichiers dans ce dossier</p>
+            <p style="font-size:11px; margin-top:4px; color:#94a3b8;">Créez un sous-dossier ou importez des fichiers</p>
         </div>
     </div>
 

@@ -571,6 +571,10 @@ document.addEventListener('alpine:init', () => {
 
                 if (resp.ok) {
                     const data = await resp.json();
+                    if (data.success === false || data.error) {
+                        this.searchError = true;
+                        return;
+                    }
                     const results = data.output?.results || data.results || [];
                     this.searchResults = results.map(photo => ({
                         id: photo.id,

@@ -366,6 +366,150 @@ router.patch('/drive/files/:id', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/drive/download-remote
+ * Télécharge une image distante (ex: Unsplash) et l'enregistre localement (Record ou Drive global)
+ */
+router.post('/drive/download-remote', async (req, res) => {
+    let tempFilePath = null;
+    let tempDir = null;
+    try {
+        const { url, originalName, recordId } = req.body;
+        if (!url) return res.status(400).json({ error: 'URL requise' });
+
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return res.status(400).json({ error: 'URL invalide' });
+        }
+
+        const axios = require('axios');
+        const fileType = require('file-type');
+        const mongoose = require('mongoose');
+
+        const cleanName = sanitizeFilename(originalName || 'unsplash-image.jpg');
+        const ext = path.extname(cleanName).toLowerCase() || '.jpg';
+        
+        if (forbiddenExts.includes(ext)) {
+            return res.status(400).json({ error: 'Extension interdite' });
+        }
+
+        const uuid = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.round(Math.random() * 1E9));
+        const dir = path.join(__dirname, '../../private_uploads/attachments', String(req.account_number), uuid);
+        fs.mkdirSync(dir, { recursive: true });
+        tempDir = dir;
+
+        const filePath = path.join(dir, cleanName);
+        tempFilePath = filePath;
+
+        // Téléchargement en flux
+        const writer = fs.createWriteStream(filePath);
+        const response = await axios({
+            url,
+            method: 'GET',
+            responseType: 'stream',
+            timeout: 15000
+        });
+
+        response.data.pipe(writer);
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+        });
+
+        // Magic number check
+        let mimeType = 'image/jpeg';
+        try {
+            const type = await fileType.fromFile(filePath);
+            if (type) {
+                mimeType = type.mime;
+                if (!allowedMimeTypes.includes(mimeType)) {
+                    throw new Error(`MIME non autorisé: ${mimeType}`);
+                }
+            } else if (!ext.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i)) {
+                throw new Error('Type de fichier inconnu');
+            }
+        } catch (err) {
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            if (fs.existsSync(dir)) fs.rmdirSync(dir);
+            return res.status(400).json({ error: `Sécurité : ${err.message}` });
+        }
+
+        const fileSize = fs.statSync(filePath).size;
+        const dbFilename = `${uuid}/${cleanName}`;
+
+        if (recordId) {
+            const Record = await tenantCollection(req, 'Record');
+            const record = await Record.findById(recordId);
+            if (!record) {
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                if (fs.existsSync(dir)) fs.rmdirSync(dir);
+                return res.status(404).json({ error: 'Record introuvable' });
+            }
+
+            const newAttachment = {
+                filename: dbFilename,
+                originalName: cleanName,
+                mimeType: mimeType,
+                size: fileSize,
+                category: 'image',
+                folder: 'uploads',
+                uploadedAt: new Date(),
+                uploadedBy: req.user?._id
+            };
+
+            record.attachments = record.attachments || [];
+            record.attachments.push(newAttachment);
+            await record.save();
+
+            const savedAttachment = record.attachments[record.attachments.length - 1];
+
+            return res.json({
+                success: true,
+                attachment: {
+                    _id: savedAttachment._id,
+                    filename: savedAttachment.filename,
+                    originalName: savedAttachment.originalName,
+                    mimeType: savedAttachment.mimeType,
+                    size: savedAttachment.size,
+                    url: `/account/${req.account_number}/uploads/attachments/${savedAttachment.filename}`,
+                }
+            });
+        } else {
+            const DriveFile = await tenantCollection(req, 'DriveFile');
+            const doc = await DriveFile.create({
+                filename: dbFilename,
+                originalName: cleanName,
+                mimeType: mimeType,
+                size: fileSize,
+                category: 'image',
+                folder: '',
+                uploadedAt: new Date(),
+            });
+
+            return res.json({
+                success: true,
+                file: {
+                    _id: doc._id,
+                    filename: doc.filename,
+                    originalName: doc.originalName,
+                    mimeType: doc.mimeType,
+                    size: doc.size,
+                    url: `/account/${req.account_number}/uploads/attachments/${doc.filename}`,
+                }
+            });
+        }
+
+    } catch (error) {
+        console.error('[Drive] Remote download error:', error);
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+            try { fs.unlinkSync(tempFilePath); } catch (e) {}
+        }
+        if (tempDir && fs.existsSync(tempDir)) {
+            try { fs.rmdirSync(tempDir); } catch (e) {}
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============================================================================
 // Record-Level Drive (existing aggregation endpoint)
 // ============================================================================

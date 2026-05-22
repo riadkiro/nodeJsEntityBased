@@ -47,7 +47,7 @@
 .ip-recent-label { font-size:12px; font-weight:600; color:#94a3b8; display:flex; align-items:center; gap:5px; }
 .ip-recent-link { font-size:11px; font-weight:600; color:#8b5cf6; cursor:pointer; display:flex; align-items:center; gap:3px; background:none; border:none; padding:0; font-family:inherit; }
 .ip-recent-link:hover { text-decoration:underline; }
-.ip-recent-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+.ip-recent-strip { display:flex; gap:8px; overflow-x:auto; padding:6px; margin:-6px; }
 .ip-recent-strip::-webkit-scrollbar { height:4px; }
 .ip-recent-strip::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:2px; }
 .ip-recent-thumb { width:72px; height:72px; flex-shrink:0; border:2px solid #e0e6ed; border-radius:8px; overflow:hidden; cursor:pointer; transition:all .15s; background:#f8fafc; }
@@ -252,7 +252,16 @@
                         <div class="ip-empty" x-show="$store.imagePicker.searchError">
                             <iconify-icon icon="solar:link-broken-bold-duotone" width="44"></iconify-icon>
                             <div class="ip-empty-title">Unsplash non connecté</div>
-                            <div class="ip-empty-msg">Connectez votre compte Unsplash dans les Intégrations pour rechercher des images.</div>
+                            <div class="ip-empty-msg">
+                                Connectez votre compte Unsplash dans les 
+                                <a :href="'/account/' + $store.imagePicker.accountNumber + '/integrations'" 
+                                   target="_blank" 
+                                   rel="noopener" 
+                                   style="color:#8b5cf6; font-weight:600; text-decoration:underline;">
+                                    Intégrations
+                                </a> 
+                                pour rechercher des images.
+                            </div>
                         </div>
 
                         <!-- Empty results -->
@@ -432,6 +441,21 @@ document.addEventListener('alpine:init', () => {
                             url: '/account/' + accountNum + '/uploads/attachments/' + filename,
                             originalName: f.originalName || f.name || filename.split('/').pop()
                         };
+                    });
+
+                    // Afficher les derniers ajoutés en premier (tri décroissant sur uploadedAt, createdAt, ou _id)
+                    this.driveFiles.sort((a, b) => {
+                        const dateA = a.uploadedAt ? new Date(a.uploadedAt) : (a.createdAt ? new Date(a.createdAt) : null);
+                        const dateB = b.uploadedAt ? new Date(b.uploadedAt) : (b.createdAt ? new Date(b.createdAt) : null);
+                        if (dateA && dateB) {
+                            return dateB.getTime() - dateA.getTime();
+                        }
+                        const idA = a._id ? String(a._id) : '';
+                        const idB = b._id ? String(b._id) : '';
+                        if (idA && idB) {
+                            return idB.localeCompare(idA);
+                        }
+                        return 0;
                     });
                 }
             } catch (err) {

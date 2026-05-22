@@ -1307,7 +1307,7 @@
                             <div class="note-list-item"
                                  :class="{ 'active': activeNote && activeNote._id === note._id }"
                                  @click="openNote(note)">
-                                <div class="note-list-item-color" :style="'background:' + note.color"></div>
+                                <div class="note-list-item-color" :style="'background:' + (note.color || '#8b5cf6')"></div>
                                 <div class="note-list-item-body">
                                     <div class="note-list-item-title">
                                         <span x-text="note.title || 'Sans titre'"></span>
@@ -1343,7 +1343,7 @@
                             <div class="note-list-item"
                                  :class="{ 'active': activeNote && activeNote._id === note._id }"
                                  @click="openNote(note)">
-                                <div class="note-list-item-color" :style="'background:' + note.color"></div>
+                                <div class="note-list-item-color" :style="'background:' + (note.color || '#8b5cf6')"></div>
                                 <div class="note-list-item-body">
                                     <div class="note-list-item-title">
                                         <span x-text="note.title || 'Sans titre'"></span>
@@ -1424,14 +1424,14 @@
                         <div class="ne-topbar-actions" style="display:flex;align-items:center;gap:4px;">
                             <!-- Note Color Picker -->
                             <div class="ne-toolbar-dropdown" @click.away="showNoteColorMenu = false" style="display:inline-block;">
-                                <button class="ne-topbar-btn" @click.prevent="showNoteColorMenu = !showNoteColorMenu" title="Couleur de la note" style="padding: 5px; display: flex; align-items: center; justify-content: center;">
-                                    <span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,0.15);" :style="'background:' + activeNote.color"></span>
+                                <button class="ne-topbar-btn" @click.prevent="showNoteColorMenu = !showNoteColorMenu" title="Couleur de la note" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;">
+                                    <span style="display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);transition:all .15s;" :style="'background:' + (activeNote.color || '#8b5cf6')"></span>
                                 </button>
-                                <div class="ne-toolbar-dropdown-menu" x-show="showNoteColorMenu" x-transition @click="showNoteColorMenu = false" style="min-width: 140px; padding: 10px; right: 0; left: auto; z-index: 100;">
-                                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; justify-items: center; align-items: center;">
+                                <div class="ne-toolbar-dropdown-menu" x-show="showNoteColorMenu" x-transition @click="showNoteColorMenu = false" style="min-width: 150px; padding: 12px; right: 0; left: auto; z-index: 100;">
+                                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; justify-items: center; align-items: center;">
                                         <template x-for="c in colorOptions" :key="c">
                                             <span class="note-color-picker-dot"
-                                                  :class="activeNote.color === c ? 'active' : ''"
+                                                  :class="((activeNote.color || '#8b5cf6') === c) ? 'active' : ''"
                                                   :style="'background:' + c + ';color:' + c"
                                                   @click="updateNoteColor(c)"
                                                   :title="c"></span>
@@ -1554,21 +1554,20 @@
                         
                         <!-- Highlight Color Picker -->
                         <div class="ne-toolbar-dropdown" @click.away="showColorMenu = false">
-                            <button class="ne-toolbar-dropdown-btn" @mousedown.prevent="showColorMenu = !showColorMenu" title="Surlignage" style="display:flex;align-items:center;gap:6px;">
-                                <iconify-icon icon="solar:pen-2-bold-duotone" width="14" style="color: #8b5cf6"></iconify-icon>
-                                <span x-ref="highlightIndicator" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fef08a;border:1px solid rgba(0,0,0,0.15);"></span>
-                                <iconify-icon icon="solar:alt-arrow-down-linear" width="10" style="opacity: .5; margin-left: 2px;"></iconify-icon>
+                            <button @mousedown.prevent="showColorMenu = !showColorMenu" title="Surlignage" style="width: 32px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                                <iconify-icon icon="solar:pen-2-bold-duotone" width="16" style="color: #64748b;"></iconify-icon>
+                                <span x-ref="highlightIndicator" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); display: inline-block; width: 14px; height: 3px; border-radius: 1px; background: #fef08a; box-shadow: 0 0 1px rgba(0,0,0,0.2);"></span>
                             </button>
-                            <div class="ne-toolbar-dropdown-menu" x-show="showColorMenu" x-transition @click="showColorMenu = false" style="min-width: 140px; padding: 10px; z-index: 100;">
+                            <div class="ne-toolbar-dropdown-menu" x-show="showColorMenu" x-transition @click="showColorMenu = false" style="min-width: 170px; padding: 10px; z-index: 100; left: 50%; transform: translateX(-50%);">
                                 <div style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
                                     <span class="note-color-picker-dot" style="background:#fef08a;color:#fef08a;" @mousedown.prevent="highlight('#fef08a'); $refs.highlightIndicator.style.background = '#fef08a'" title="Jaune"></span>
                                     <span class="note-color-picker-dot" style="background:#bbf7d0;color:#bbf7d0;" @mousedown.prevent="highlight('#bbf7d0'); $refs.highlightIndicator.style.background = '#bbf7d0'" title="Vert"></span>
                                     <span class="note-color-picker-dot" style="background:#bfdbfe;color:#bfdbfe;" @mousedown.prevent="highlight('#bfdbfe'); $refs.highlightIndicator.style.background = '#bfdbfe'" title="Bleu"></span>
                                     <span class="note-color-picker-dot" style="background:#fecaca;color:#fecaca;" @mousedown.prevent="highlight('#fecaca'); $refs.highlightIndicator.style.background = '#fecaca'" title="Rouge"></span>
                                     <span class="note-color-picker-dot" style="background:#e9d5ff;color:#e9d5ff;" @mousedown.prevent="highlight('#e9d5ff'); $refs.highlightIndicator.style.background = '#e9d5ff'" title="Violet"></span>
-                                    <button @mousedown.prevent="highlight('transparent'); $refs.highlightIndicator.style.background = 'transparent'" title="Effacer" style="width:20px;height:20px;border-radius:50%;border:1px solid #ccc;background:transparent;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;color:#ef4444;margin:0;">
-                                        <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
-                                    </button>
+                                    <span class="note-color-picker-dot" @mousedown.prevent="highlight('transparent'); $refs.highlightIndicator.style.background = 'transparent'" title="Effacer" style="border:1px solid #ccc;background:transparent;display:flex;align-items:center;justify-content:center;color:#ef4444;">
+                                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                                    </span>
                                 </div>
                             </div>
                         </div>

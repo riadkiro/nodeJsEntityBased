@@ -295,6 +295,7 @@
     flex-direction: column;
     min-width: 0;
     background: #fff;
+    position: relative;
 }
 
 /* ── Editor Empty State ── */
@@ -609,11 +610,130 @@
     border-radius: 8px;
     margin: 8px 0;
     cursor: pointer;
+    transition: outline .15s;
 }
 
 .ne-content img:hover {
     outline: 2px solid #8b5cf6;
     outline-offset: 2px;
+}
+
+.ne-content img.ne-img-selected {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 2px;
+}
+
+/* ── Image Floating Toolbar ── */
+.ne-image-toolbar {
+    position: absolute;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: #fff;
+    border: 1px solid #e0e6ed;
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+    animation: nmSlide .15s ease;
+}
+
+.ne-image-toolbar button {
+    height: 30px;
+    padding: 0 10px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all .12s;
+    white-space: nowrap;
+}
+
+.ne-image-toolbar button:hover {
+    background: #f1f5f9;
+    color: #0e1726;
+}
+
+.ne-image-toolbar button.active {
+    background: #8b5cf610;
+    color: #8b5cf6;
+}
+
+.ne-image-toolbar .sep {
+    width: 1px;
+    height: 18px;
+    background: #e0e6ed;
+    margin: 0 2px;
+}
+
+.ne-image-toolbar .delete-btn {
+    color: #ef4444;
+}
+
+.ne-image-toolbar .delete-btn:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* ── Drive Grid (in modal) ── */
+.ne-drive-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.ne-drive-item {
+    border: 2px solid #e0e6ed;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fafbfc;
+}
+
+.ne-drive-item:hover {
+    border-color: #8b5cf6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139,92,246,.15);
+}
+
+.ne-drive-item img {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    display: block;
+}
+
+.ne-drive-item-name {
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ne-drive-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: #94a3b8;
+}
+
+.ne-drive-empty iconify-icon {
+    display: block;
+    margin: 0 auto 8px;
+    opacity: .3;
 }
 
 .ne-content a {
@@ -1033,6 +1153,30 @@
     color: #c4b5fd;
 }
 
+[data-theme="dark"] .ne-image-toolbar {
+    background: #0e1726;
+    border-color: #253b5c;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3);
+}
+
+[data-theme="dark"] .ne-image-toolbar button:hover {
+    background: #1b2e4b;
+    color: #e0e6ed;
+}
+
+[data-theme="dark"] .ne-drive-item {
+    background: #0b1320;
+    border-color: #253b5c;
+}
+
+[data-theme="dark"] .ne-drive-item:hover {
+    border-color: #8b5cf6;
+}
+
+[data-theme="dark"] .ne-drive-item-name {
+    color: #94a3b8;
+}
+
 [data-theme="dark"] .ne-inline-modal {
     background: #0e1726;
 }
@@ -1358,9 +1502,13 @@
                         <button @mousedown.prevent="openLinkModal()" title="Insérer un lien">
                             <iconify-icon icon="solar:link-round-bold-duotone" width="16"></iconify-icon>
                         </button>
-                        <!-- Insert Image -->
-                        <button @mousedown.prevent="openImageModal()" title="Insérer une image">
+                        <!-- Insert Image URL -->
+                        <button @mousedown.prevent="openImageModal()" title="Insérer une image (URL)">
                             <iconify-icon icon="solar:gallery-bold-duotone" width="16"></iconify-icon>
+                        </button>
+                        <!-- Insert Image from Drive -->
+                        <button @mousedown.prevent="openDriveModal()" title="Insérer depuis le Drive">
+                            <iconify-icon icon="solar:cloud-download-bold-duotone" width="16"></iconify-icon>
                         </button>
                         <div class="sep"></div>
                         
@@ -1387,9 +1535,24 @@
                          @input="scheduleAutosave()"
                          @keyup="updateFormats()"
                          @mouseup="updateFormats()"
-                         @click="updateFormats()"
+                         @click="handleContentClick($event)"
                          @keydown.enter="handleEditorEnter($event)"
                          @keydown.backspace="handleEditorBackspace($event)"></div>
+
+                    <!-- Image Floating Toolbar -->
+                    <div class="ne-image-toolbar" x-show="selectedImage" x-ref="imageToolbar"
+                         x-transition
+                         :style="imageToolbarStyle"
+                         @click.outside="selectedImage = null">
+                        <button @click="resizeImage('25%')" :class="{ 'active': selectedImageSize === '25%' }">25%</button>
+                        <button @click="resizeImage('50%')" :class="{ 'active': selectedImageSize === '50%' }">50%</button>
+                        <button @click="resizeImage('75%')" :class="{ 'active': selectedImageSize === '75%' }">75%</button>
+                        <button @click="resizeImage('100%')" :class="{ 'active': selectedImageSize === '100%' }">100%</button>
+                        <div class="sep"></div>
+                        <button class="delete-btn" @click="deleteImage()">
+                            <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+                        </button>
+                    </div>
                 </div>
             </template>
         </div>
@@ -1434,6 +1597,46 @@
                 <div class="ne-inline-modal-footer">
                     <button class="btn-cancel" @click="showImageModal = false">Annuler</button>
                     <button class="btn-insert" @click="insertImage()">Insérer</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ═══ DRIVE IMAGES MODAL ═══ -->
+    <template x-if="showDriveModal">
+        <div class="ne-inline-modal-overlay" @click.self="showDriveModal = false">
+            <div class="ne-inline-modal" style="width:520px;">
+                <div class="ne-inline-modal-header">
+                    <iconify-icon icon="solar:cloud-download-bold-duotone" width="18" style="color:#8b5cf6"></iconify-icon>
+                    Insérer depuis le Drive
+                </div>
+                <div class="ne-inline-modal-body">
+                    <template x-if="driveLoading">
+                        <div class="ne-drive-empty">
+                            <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
+                            <div>Chargement des images...</div>
+                        </div>
+                    </template>
+                    <template x-if="!driveLoading && driveImages.length === 0">
+                        <div class="ne-drive-empty">
+                            <iconify-icon icon="solar:gallery-broken" width="40"></iconify-icon>
+                            <div style="font-weight:600;color:#64748b;">Aucune image dans le Drive</div>
+                            <div style="font-size:12px;margin-top:4px;">Uploadez d'abord des images via l'onglet Drive du record.</div>
+                        </div>
+                    </template>
+                    <template x-if="!driveLoading && driveImages.length > 0">
+                        <div class="ne-drive-grid">
+                            <template x-for="img in driveImages" :key="img._id || img.filename">
+                                <div class="ne-drive-item" @click="insertDriveImage(img)">
+                                    <img :src="img.url" :alt="img.originalName" loading="lazy">
+                                    <div class="ne-drive-item-name" x-text="img.originalName"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <div class="ne-inline-modal-footer">
+                    <button class="btn-cancel" @click="showDriveModal = false">Fermer</button>
                 </div>
             </div>
         </div>
@@ -1508,6 +1711,12 @@ document.addEventListener('alpine:init', () => {
         imageUrl: '',
         imageAlt: '',
         savedSelection: null,
+        selectedImage: null,
+        selectedImageSize: '',
+        imageToolbarStyle: '',
+        showDriveModal: false,
+        driveImages: [],
+        driveLoading: false,
 
         async init() {
             await this.loadNotes();
@@ -1901,6 +2110,116 @@ document.addEventListener('alpine:init', () => {
             this.$refs.editorContent?.focus();
             this.restoreSelection();
             const html = '<div><img src="' + url + '" alt="' + alt + '" style="max-width:100%;"></div><div><br></div>';
+            document.execCommand('insertHTML', false, html);
+            this.scheduleAutosave();
+        },
+
+        // ── Content Click Handler (image toolbar + link Ctrl+Click) ──
+        handleContentClick(e) {
+            this.updateFormats();
+
+            // Image click: show floating toolbar
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                // Remove previous selection
+                this.$refs.editorContent?.querySelectorAll('.ne-img-selected').forEach(el => el.classList.remove('ne-img-selected'));
+                e.target.classList.add('ne-img-selected');
+                this.selectedImage = e.target;
+                this.selectedImageSize = e.target.style.width || '100%';
+                this.$nextTick(() => this.positionImageToolbar(e.target));
+                return;
+            }
+
+            // Link Ctrl+Click: open in new tab
+            if (e.target.tagName === 'A' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                const href = e.target.getAttribute('href');
+                if (href) window.open(href, '_blank', 'noopener');
+                return;
+            }
+
+            // Click elsewhere: deselect image
+            if (this.selectedImage) {
+                this.selectedImage.classList.remove('ne-img-selected');
+                this.selectedImage = null;
+            }
+        },
+
+        positionImageToolbar(img) {
+            const toolbar = this.$refs.imageToolbar;
+            if (!toolbar || !img) return;
+            const container = img.closest('.notes-editor-panel') || img.closest('.notes-container');
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+            const imgRect = img.getBoundingClientRect();
+            const toolbarW = toolbar.offsetWidth || 250;
+            let left = imgRect.left - containerRect.left + (imgRect.width / 2) - (toolbarW / 2);
+            let top = imgRect.top - containerRect.top - 44;
+            // Clamp left
+            if (left < 4) left = 4;
+            if (left + toolbarW > container.clientWidth - 4) left = container.clientWidth - toolbarW - 4;
+            // If above is negative, put below
+            if (top < 0) top = imgRect.bottom - containerRect.top + 8;
+            this.imageToolbarStyle = `left:${left}px;top:${top}px;`;
+        },
+
+        resizeImage(size) {
+            if (!this.selectedImage) return;
+            this.selectedImage.style.width = size;
+            this.selectedImageSize = size;
+            this.scheduleAutosave();
+            this.$nextTick(() => this.positionImageToolbar(this.selectedImage));
+        },
+
+        deleteImage() {
+            if (!this.selectedImage) return;
+            const parent = this.selectedImage.parentElement;
+            this.selectedImage.remove();
+            // Clean empty wrapper div
+            if (parent && parent.tagName === 'DIV' && !parent.textContent.trim() && !parent.querySelector('img')) {
+                parent.remove();
+            }
+            this.selectedImage = null;
+            this.scheduleAutosave();
+        },
+
+        // ── Drive Images ──
+        async openDriveModal() {
+            this.saveSelection();
+            this.showDriveModal = true;
+            this.driveLoading = true;
+            this.driveImages = [];
+            try {
+                const resp = await fetch('/account/' + _accountNumber + '/api/records/' + _recordId + '/attachments', {
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const attachments = data.attachments || data.data || data || [];
+                    // Filter to images only and build URL
+                    this.driveImages = attachments.filter(a => {
+                        const mime = a.mimeType || a.type || '';
+                        return mime.startsWith('image/');
+                    }).map(a => {
+                        const filename = a.filename || a.path || '';
+                        return {
+                            ...a,
+                            url: '/account/' + _accountNumber + '/uploads/attachments/' + filename,
+                            originalName: a.originalName || a.name || filename.split('/').pop()
+                        };
+                    });
+                }
+            } catch (err) {
+                console.error('Drive fetch error:', err);
+            }
+            this.driveLoading = false;
+        },
+
+        insertDriveImage(img) {
+            this.showDriveModal = false;
+            this.$refs.editorContent?.focus();
+            this.restoreSelection();
+            const html = '<div><img src="' + img.url + '" alt="' + (img.originalName || 'image') + '" style="max-width:100%;"></div><div><br></div>';
             document.execCommand('insertHTML', false, html);
             this.scheduleAutosave();
         },

@@ -7,14 +7,14 @@ const APP_URL = 'http://localhost:3000';
 let idx = 0;
 async function ss(page, name) {
     idx++;
-    const f = `scope_${idx}_${name}.png`;
+    const f = `premium_${idx}_${name}.png`;
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, f) });
     console.log(`📸 [${idx}] ${name}`);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
-    console.log('🚀 Testing SCOPED clear formatting on "Test Complet Toolbar"...\n');
+    console.log('🚀 Testing remaining premium features...\n');
     const browser = await puppeteer.launch({
         headless: false,
         defaultViewport: null,
@@ -38,144 +38,231 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     }
     console.log('✅ Logged in\n');
 
-    // Navigate
+    // Navigate to notes
     await page.goto(`${APP_URL}/account/5096/record/contacts/6a0d6bf5491c52a4e438b729/notes`, { waitUntil: 'networkidle2' });
     await wait(3000);
 
-    // Click on "Test Complet Toolbar"
+    // Open "Test Complet Toolbar"
     console.log('📝 Opening "Test Complet Toolbar"...');
-    const noteItem = await page.evaluateHandle(() => {
+    await page.evaluate(() => {
         const items = document.querySelectorAll('.note-list-item');
         for (const item of items) {
             const title = item.querySelector('.note-list-item-title span');
-            if (title && title.textContent.includes('Test Complet Toolbar')) return item;
+            if (title && title.textContent.includes('Test Complet Toolbar')) {
+                item.click();
+                return;
+            }
         }
-        return null;
     });
-    
-    if (noteItem) {
-        await noteItem.click();
-        await wait(2000);
-    } else {
-        console.log('   ❌ Note not found!');
-        await browser.close();
-        return;
-    }
+    await wait(2000);
+    await ss(page, 'initial');
 
-    // Get initial content info
-    const initialState = await page.evaluate(() => {
+    // ═══ TEST 1: Image Resize to 25% then 100% ═══
+    console.log('\n═══ TEST 1: Image resize (25% then back to 100%) ═══');
+    // Click image via evaluate to avoid clickable issues
+    await page.evaluate(() => {
+        const img = document.querySelector('.ne-content img');
+        if (img) img.click();
+    });
+    await wait(500);
+    
+    // Click 25%
+    await page.evaluate(() => {
+        const tb = document.querySelector('.ne-image-toolbar');
+        if (tb) {
+            const btn = Array.from(tb.querySelectorAll('button')).find(b => b.textContent.trim() === '25%');
+            if (btn) btn.click();
+        }
+    });
+    await wait(500);
+    
+    const w25 = await page.evaluate(() => document.querySelector('.ne-content img')?.style.width);
+    console.log(`   25% resize: ${w25 === '25%' ? 'PASS ✅' : 'FAIL ❌ (got: ' + w25 + ')'}`);
+    await ss(page, 'resize_25');
+    
+    // Click image again and resize to 100%
+    await page.evaluate(() => {
+        const img = document.querySelector('.ne-content img');
+        if (img) img.click();
+    });
+    await wait(300);
+    await page.evaluate(() => {
+        const tb = document.querySelector('.ne-image-toolbar');
+        if (tb) {
+            const btn = Array.from(tb.querySelectorAll('button')).find(b => b.textContent.trim() === '100%');
+            if (btn) btn.click();
+        }
+    });
+    await wait(500);
+    const w100 = await page.evaluate(() => document.querySelector('.ne-content img')?.style.width);
+    console.log(`   100% resize: ${w100 === '100%' ? 'PASS ✅' : 'FAIL ❌ (got: ' + w100 + ')'}`);
+    await ss(page, 'resize_100');
+
+    // ═══ TEST 2: Link test ═══
+    console.log('\n═══ TEST 2: Link functionality ═══');
+    // Click away first to close image toolbar
+    await page.evaluate(() => {
         const editor = document.querySelector('.ne-content');
-        if (!editor) return {};
-        return {
-            innerHTML: editor.innerHTML.substring(0, 500),
-            h1Count: editor.querySelectorAll('h1').length,
-            h2Count: editor.querySelectorAll('h2').length,
-            h3Count: editor.querySelectorAll('h3').length,
-            bCount: editor.querySelectorAll('b, strong').length,
-            fontCount: editor.querySelectorAll('font').length,
-            totalChildren: editor.children.length,
-        };
+        if (editor) editor.click();
     });
-    console.log('\n   === INITIAL STATE ===');
-    console.log(`   Children: ${initialState.totalChildren}`);
-    console.log(`   H1: ${initialState.h1Count}, H2: ${initialState.h2Count}, H3: ${initialState.h3Count}`);
-    console.log(`   Bold: ${initialState.bCount}, Font: ${initialState.fontCount}`);
-    
-    await ss(page, 'initial_state');
-
-    // ═══ TEST: Select ONLY the first paragraph, clear it ═══
-    console.log('\n═══ TEST: Select only FIRST paragraph and clear ═══');
-    
-    // Click at the start of the content
-    await page.click('.ne-content');
-    await wait(200);
-    
-    // Move to the very start
-    await page.keyboard.down('Control');
-    await page.keyboard.press('Home');
-    await page.keyboard.up('Control');
-    await wait(100);
-    
-    // Select just the first line (Home -> Shift+End)
-    await page.keyboard.press('Home');
-    await page.keyboard.down('Shift');
-    await page.keyboard.press('End');
-    await page.keyboard.up('Shift');
     await wait(300);
     
-    await ss(page, 'first_line_selected');
-    
-    // Check what's selected
-    const selectedText = await page.evaluate(() => {
-        const sel = window.getSelection();
-        return sel.toString().substring(0, 60);
+    const linkInfo = await page.evaluate(() => {
+        const a = document.querySelector('.ne-content a');
+        return a ? { href: a.getAttribute('href'), target: a.getAttribute('target'), text: a.textContent } : null;
     });
-    console.log(`   Selected text: "${selectedText}..."`);
-    
-    // Click clear formatting
-    const clearBtn = await page.evaluateHandle(() => {
-        return Array.from(document.querySelectorAll('.ne-toolbar > button')).find(b => b.title === 'Effacer formatage');
-    });
-    await clearBtn.click();
-    await wait(800);
-    
-    // Check the state after partial clear
-    const afterPartialClear = await page.evaluate(() => {
-        const editor = document.querySelector('.ne-content');
-        if (!editor) return {};
-        return {
-            h1Count: editor.querySelectorAll('h1').length,
-            h2Count: editor.querySelectorAll('h2').length,
-            h3Count: editor.querySelectorAll('h3').length,
-            bCount: editor.querySelectorAll('b, strong').length,
-            fontCount: editor.querySelectorAll('font').length,
-            totalChildren: editor.children.length,
-            // Check if rest of content still has formatting
-            hasFormattedContent: editor.querySelectorAll('b, strong, i, em, font, h1, h2, h3').length > 0
-        };
-    });
-    console.log('\n   === AFTER PARTIAL CLEAR ===');
-    console.log(`   H1: ${afterPartialClear.h1Count}, H2: ${afterPartialClear.h2Count}, H3: ${afterPartialClear.h3Count}`);
-    console.log(`   Bold: ${afterPartialClear.bCount}, Font: ${afterPartialClear.fontCount}`);
-    console.log(`   Rest still has formatting: ${afterPartialClear.hasFormattedContent}`);
-    
-    // The key test: if we only cleared the first line, the rest should still have formatting
-    const scopedCorrectly = afterPartialClear.hasFormattedContent;
-    console.log(`\n   ✅ Scoped to selection only: ${scopedCorrectly ? 'PASS — rest preserved!' : 'FAIL — everything got cleared!'}`);
-    
-    await ss(page, 'after_partial_clear');
+    if (linkInfo) {
+        console.log(`   Link found: "${linkInfo.text}" → ${linkInfo.href}`);
+        console.log(`   target="_blank": ${linkInfo.target === '_blank' ? 'PASS ✅' : 'FAIL ❌'}`);
+    } else {
+        console.log('   No links found — inserting a test link');
+        // Click at end of content
+        await page.evaluate(() => {
+            const editor = document.querySelector('.ne-content');
+            editor.focus();
+            const sel = window.getSelection();
+            sel.selectAllChildren(editor);
+            sel.collapseToEnd();
+        });
+        await wait(200);
+        
+        // Click link button via evaluate
+        await page.evaluate(() => {
+            const btn = Array.from(document.querySelectorAll('.ne-toolbar button')).find(b => b.title === 'Insérer un lien');
+            if (btn) btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        });
+        await wait(800);
+        
+        // Fill the modal
+        await page.evaluate(() => {
+            const inputs = document.querySelectorAll('.ne-inline-modal input');
+            if (inputs[0]) { inputs[0].value = 'Google'; inputs[0].dispatchEvent(new Event('input')); }
+            if (inputs[1]) { inputs[1].value = 'https://google.com'; inputs[1].dispatchEvent(new Event('input')); }
+        });
+        await wait(300);
+        
+        // Click insert
+        await page.evaluate(() => {
+            const btn = document.querySelector('.ne-inline-modal .btn-insert');
+            if (btn) btn.click();
+        });
+        await wait(500);
+        
+        const newLink = await page.evaluate(() => {
+            const a = document.querySelector('.ne-content a');
+            return a ? { href: a.getAttribute('href'), target: a.getAttribute('target') } : null;
+        });
+        if (newLink) {
+            console.log(`   Inserted link: target="${newLink.target}" href="${newLink.href}"`);
+            console.log(`   ✅ Link with target="_blank": ${newLink.target === '_blank' ? 'PASS' : 'FAIL'}`);
+        }
+    }
+    await ss(page, 'links');
 
-    // ═══ TEST 2: Now select ALL and clear everything ═══
-    console.log('\n═══ TEST 2: Select ALL and clear (should clean everything) ═══');
-    
-    await page.click('.ne-content');
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
+    // ═══ TEST 3: Drive modal ═══
+    console.log('\n═══ TEST 3: Drive images modal ═══');
+    // Save selection first
+    await page.evaluate(() => {
+        const editor = document.querySelector('.ne-content');
+        if (editor) editor.focus();
+    });
     await wait(200);
     
-    await clearBtn.click();
-    await wait(800);
+    await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll('.ne-toolbar button')).find(b => b.title === 'Insérer depuis le Drive');
+        if (btn) btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    });
+    await wait(2500);
     
-    const afterFullClear = await page.evaluate(() => {
-        const editor = document.querySelector('.ne-content');
+    const driveModalInfo = await page.evaluate(() => {
+        const overlay = document.querySelector('.ne-inline-modal-overlay');
+        const items = document.querySelectorAll('.ne-drive-item');
+        const emptyMsg = document.querySelector('.ne-drive-empty');
         return {
-            h1Count: editor.querySelectorAll('h1').length,
-            bCount: editor.querySelectorAll('b, strong').length,
-            fontCount: editor.querySelectorAll('font').length,
-            styledCount: editor.querySelectorAll('[style]').length,
+            visible: !!overlay,
+            imageCount: items.length,
+            hasEmptyMsg: !!emptyMsg,
+            emptyText: emptyMsg?.textContent?.trim() || ''
         };
     });
-    console.log(`   After Ctrl+A clear: H1=${afterFullClear.h1Count}, Bold=${afterFullClear.bCount}, Font=${afterFullClear.fontCount}, Styled=${afterFullClear.styledCount}`);
-    const fullClean = afterFullClear.h1Count === 0 && afterFullClear.bCount === 0 && afterFullClear.fontCount === 0;
-    console.log(`   ✅ Full clear works: ${fullClean ? 'PASS' : 'FAIL'}`);
+    console.log(`   Drive modal visible: ${driveModalInfo.visible ? 'PASS ✅' : 'FAIL ❌'}`);
+    console.log(`   Drive images found: ${driveModalInfo.imageCount}`);
+    if (driveModalInfo.hasEmptyMsg) {
+        console.log(`   Empty message: "${driveModalInfo.emptyText}"`);
+    }
+    await ss(page, 'drive_modal');
     
-    await ss(page, 'after_full_clear');
+    // If images found, click one to insert
+    if (driveModalInfo.imageCount > 0) {
+        await page.evaluate(() => {
+            const item = document.querySelector('.ne-drive-item');
+            if (item) item.click();
+        });
+        await wait(1000);
+        console.log('   ✅ Inserted Drive image');
+        await ss(page, 'drive_inserted');
+    } else {
+        // Close modal
+        await page.evaluate(() => {
+            const btn = document.querySelector('.ne-inline-modal .btn-cancel');
+            if (btn) btn.click();
+        });
+        await wait(300);
+    }
+
+    // ═══ TEST 4: Delete image ═══
+    console.log('\n═══ TEST 4: Image delete ═══');
+    const imgCount1 = await page.evaluate(() => document.querySelectorAll('.ne-content img').length);
+    console.log(`   Images before delete: ${imgCount1}`);
+    
+    if (imgCount1 > 0) {
+        // Click last image
+        await page.evaluate(() => {
+            const imgs = document.querySelectorAll('.ne-content img');
+            const lastImg = imgs[imgs.length - 1];
+            if (lastImg) lastImg.click();
+        });
+        await wait(500);
+        
+        // Click delete button
+        await page.evaluate(() => {
+            const tb = document.querySelector('.ne-image-toolbar');
+            if (tb) {
+                const delBtn = tb.querySelector('.delete-btn');
+                if (delBtn) delBtn.click();
+            }
+        });
+        await wait(500);
+        
+        const imgCount2 = await page.evaluate(() => document.querySelectorAll('.ne-content img').length);
+        console.log(`   Images after delete: ${imgCount2}`);
+        console.log(`   ✅ Image deleted: ${imgCount2 === imgCount1 - 1 ? 'PASS' : 'FAIL'}`);
+        await ss(page, 'image_deleted');
+    }
+
+    // ═══ TEST 5: Notes Hub ═══
+    console.log('\n═══ TEST 5: Notes Hub ═══');
+    await page.goto(`${APP_URL}/account/5096/notes`, { waitUntil: 'networkidle2' });
+    await wait(3000);
+    
+    const hubInfo = await page.evaluate(() => {
+        return {
+            title: document.title,
+            hasAlpine: !!document.querySelector('[x-data]'),
+            hasContent: document.body.innerText.length > 100,
+            url: window.location.href
+        };
+    });
+    console.log(`   URL: ${hubInfo.url}`);
+    console.log(`   Title: ${hubInfo.title}`);
+    console.log(`   Has Alpine: ${hubInfo.hasAlpine ? 'PASS ✅' : 'FAIL ❌'}`);
+    console.log(`   Has content: ${hubInfo.hasContent ? 'PASS ✅' : 'FAIL ❌'}`);
+    await ss(page, 'notes_hub');
 
     await wait(3000);
 
     console.log('\n═══════════════════════════════════════════');
-    console.log('  🎉 SCOPED CLEAR FORMATTING TEST COMPLETE');
+    console.log('  🎉 ALL PREMIUM TESTS COMPLETE');
     console.log('═══════════════════════════════════════════');
 
     await browser.close();

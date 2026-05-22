@@ -17,6 +17,12 @@
                 <iconify-icon icon="solar:settings-bold-duotone" width="18"></iconify-icon>
                 Général
             </button>
+            <button @click="activeTab = 'security'"
+                class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
+                :class="activeTab === 'security' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+                <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="18"></iconify-icon>
+                Sécurité
+            </button>
             <% if (isAdmin) { %>
             <button @click="activeTab = 'members'"
                 class="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] flex items-center gap-2"
@@ -143,6 +149,173 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB: Sécurité -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <div x-show="activeTab === 'security'" x-transition x-init="initSecurity()">
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <!-- PIN Code Section (REAL) -->
+                <div class="panel">
+                    <div class="mb-5 flex items-start justify-between">
+                        <div>
+                            <h6 class="text-lg font-bold dark:text-white-light flex items-center gap-2">
+                                <iconify-icon icon="solar:dialpad-bold-duotone" width="20" class="text-primary"></iconify-icon>
+                                Code PIN personnel
+                            </h6>
+                            <p class="text-sm text-gray-500 mt-1">Verrouillez l'accès à certaines données (ex: Notes sécurisées)</p>
+                        </div>
+                        <template x-if="pinEnabled">
+                            <span class="badge bg-success/10 text-success text-xs flex items-center gap-1">
+                                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon> Actif
+                            </span>
+                        </template>
+                        <template x-if="!pinEnabled">
+                            <span class="badge bg-gray-100 text-gray-500 text-xs flex items-center gap-1">
+                                <iconify-icon icon="solar:minus-circle-bold" width="14"></iconify-icon> Inactif
+                            </span>
+                        </template>
+                    </div>
+
+                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl mb-5">
+                        <div class="flex gap-3">
+                            <iconify-icon icon="solar:info-circle-bold-duotone" width="24" class="text-primary shrink-0"></iconify-icon>
+                            <p class="text-sm text-primary">Le code PIN est lié à votre compte utilisateur. Il vous permet de protéger l'accès à des informations sensibles au sein des espaces partagés.</p>
+                        </div>
+                    </div>
+
+                    <form @submit.prevent="savePin">
+                        <template x-if="pinEnabled">
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold mb-2">PIN actuel <span class="text-danger">*</span></label>
+                                <input type="password" x-model="currentPin" maxlength="4" pattern="[0-9]{4}" placeholder="••••" class="form-input text-center tracking-widest text-lg font-mono w-24" required />
+                            </div>
+                        </template>
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold mb-2">
+                                <span x-text="pinEnabled ? 'Nouveau PIN (4 chiffres)' : 'Créer un PIN (4 chiffres)'"></span>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="flex gap-4">
+                                <div>
+                                    <input type="password" x-model="newPin" maxlength="4" pattern="[0-9]{4}" placeholder="••••" class="form-input text-center tracking-widest text-lg font-mono w-24" required />
+                                    <div class="text-xs text-gray-400 mt-1">Saisie</div>
+                                </div>
+                                <div>
+                                    <input type="password" x-model="confirmPin" maxlength="4" pattern="[0-9]{4}" placeholder="••••" class="form-input text-center tracking-widest text-lg font-mono w-24" required />
+                                    <div class="text-xs text-gray-400 mt-1">Confirmation</div>
+                                </div>
+                            </div>
+                            <template x-if="pinError">
+                                <p class="text-danger text-sm mt-2 flex items-center gap-1">
+                                    <iconify-icon icon="solar:danger-circle-bold" width="16"></iconify-icon>
+                                    <span x-text="pinError"></span>
+                                </p>
+                            </template>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn btn-primary" :disabled="isPinSaving">
+                                <span x-show="isPinSaving" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 inline-block mr-2"></span>
+                                <span x-text="pinEnabled ? 'Modifier le PIN' : 'Définir le PIN'"></span>
+                            </button>
+                            <template x-if="pinEnabled">
+                                <button type="button" @click="deletePin" class="btn btn-outline-danger" :disabled="isPinSaving">
+                                    Désactiver
+                                </button>
+                            </template>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2FA & Sessions Section (DEMO) -->
+                <div class="space-y-6">
+                    <div class="panel relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-3">
+                            <span class="badge bg-warning/10 text-warning text-xs font-bold px-2 py-1">Bientôt disponible</span>
+                        </div>
+                        <h6 class="text-lg font-bold dark:text-white-light flex items-center gap-2 mb-4 opacity-50">
+                            <iconify-icon icon="solar:lock-password-bold-duotone" width="20" class="text-gray-500"></iconify-icon>
+                            Authentification à deux facteurs (2FA)
+                        </h6>
+                        <p class="text-sm text-gray-500 mb-4 opacity-50">Sécurisez votre compte en ajoutant une couche de sécurité supplémentaire (Google Authenticator, SMS).</p>
+                        <button class="btn btn-outline-secondary" disabled>Configurer 2FA</button>
+                    </div>
+
+                    <div class="panel">
+                        <h6 class="text-lg font-bold dark:text-white-light flex items-center gap-2 mb-4">
+                            <iconify-icon icon="solar:devices-bold-duotone" width="20" class="text-info"></iconify-icon>
+                            Sessions actives
+                        </h6>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                                        <iconify-icon icon="solar:laptop-minimalistic-bold-duotone" width="20"></iconify-icon>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold dark:text-white-light">Windows 11 · Chrome</div>
+                                        <div class="text-xs text-gray-500">Rabat, Maroc · Actuellement active</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-success">Cet appareil</span>
+                            </div>
+                            <div class="flex items-center justify-between opacity-60">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">
+                                        <iconify-icon icon="solar:smartphone-bold-duotone" width="20"></iconify-icon>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold dark:text-white-light">iPhone 14 Pro · Safari</div>
+                                        <div class="text-xs text-gray-500">Casablanca, Maroc · Il y a 2 jours</div>
+                                    </div>
+                                </div>
+                                <button class="text-danger hover:underline text-xs">Déconnecter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Access Logs Demo -->
+            <div class="panel mt-6">
+                <h6 class="text-lg font-bold dark:text-white-light flex items-center gap-2 mb-4">
+                    <iconify-icon icon="solar:history-bold-duotone" width="20" class="text-gray-500"></iconify-icon>
+                    Journaux d'accès récents
+                </h6>
+                <div class="table-responsive">
+                    <table class="text-sm">
+                        <thead>
+                            <tr>
+                                <th>Événement</th>
+                                <th>Date & Heure</th>
+                                <th>IP & Localisation</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-semibold">Connexion réussie</td>
+                                <td>Aujourd'hui, 09:30</td>
+                                <td>196.100.12.34 (Rabat, MA)</td>
+                                <td><span class="badge bg-success/10 text-success">Succès</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Déverrouillage note sécurisée</td>
+                                <td>Hier, 14:45</td>
+                                <td>196.100.12.34 (Rabat, MA)</td>
+                                <td><span class="badge bg-success/10 text-success">Succès</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Tentative PIN échouée</td>
+                                <td>Hier, 14:42</td>
+                                <td>196.100.12.34 (Rabat, MA)</td>
+                                <td><span class="badge bg-danger/10 text-danger">Échec</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -631,6 +804,102 @@ document.addEventListener('alpine:init', () => {
                         else alert(data.error || 'Erreur');
                     }).catch(() => alert('Erreur'));
                 }
+            }
+        },
+
+        // Security / PIN methods
+        pinEnabled: false,
+        newPin: '',
+        confirmPin: '',
+        currentPin: '',
+        pinError: '',
+        isPinSaving: false,
+
+        async initSecurity() {
+            try {
+                const res = await fetch('/account/<%= account_number %>/api/user/security-status');
+                const data = await res.json();
+                if (data.success) {
+                    this.pinEnabled = data.pinEnabled;
+                }
+            } catch (e) { console.error('Erreur chargement sécurité'); }
+        },
+
+        async savePin() {
+            this.pinError = '';
+            if (this.newPin !== this.confirmPin) {
+                this.pinError = 'Les PINs ne correspondent pas.';
+                return;
+            }
+            if (this.newPin.length !== 4) {
+                this.pinError = 'Le PIN doit contenir 4 chiffres.';
+                return;
+            }
+            if (this.pinEnabled && !this.currentPin) {
+                this.pinError = 'Le PIN actuel est requis pour le modifier.';
+                return;
+            }
+
+            this.isPinSaving = true;
+            try {
+                const res = await fetch('/account/<%= account_number %>/api/user/set-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pin: this.newPin,
+                        currentPin: this.currentPin
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.pinEnabled = true;
+                    this.newPin = '';
+                    this.confirmPin = '';
+                    this.currentPin = '';
+                    if (window.showMessage) window.showMessage('PIN défini avec succès !');
+                    else alert('PIN défini avec succès !');
+                } else {
+                    this.pinError = data.error || 'Erreur lors de la sauvegarde du PIN.';
+                }
+            } catch (e) {
+                this.pinError = 'Erreur réseau.';
+            } finally {
+                this.isPinSaving = false;
+            }
+        },
+
+        async deletePin() {
+            if (!this.currentPin) {
+                this.pinError = 'Le PIN actuel est requis pour le désactiver.';
+                return;
+            }
+            if (!confirm('Êtes-vous sûr de vouloir désactiver votre code PIN ? Les éléments sécurisés ne seront plus accessibles sans définir un nouveau PIN.')) return;
+
+            this.isPinSaving = true;
+            try {
+                const res = await fetch('/account/<%= account_number %>/api/user/pin', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: this.currentPin })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.pinEnabled = false;
+                    this.newPin = '';
+                    this.confirmPin = '';
+                    this.currentPin = '';
+                    this.pinError = '';
+                    if (window.showMessage) window.showMessage('PIN désactivé !');
+                    else alert('PIN désactivé !');
+                } else {
+                    this.pinError = data.error || 'PIN incorrect.';
+                }
+            } catch (e) {
+                this.pinError = 'Erreur réseau.';
+            } finally {
+                this.isPinSaving = false;
             }
         }
     }));

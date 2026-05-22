@@ -122,13 +122,14 @@ module.exports = (router) => {
             const RecordNote = await tenantCollection(req, 'RecordNote');
             if (!RecordNote) return res.status(500).json({ success: false, error: 'DB not ready' });
 
-            const { title, content, color, icon } = req.body;
+            const { title, content, color, icon, isProtected } = req.body;
 
             const updateFields = { updatedAt: new Date() };
             if (title !== undefined) updateFields.title = title;
             if (content !== undefined) updateFields.content = content;
             if (color !== undefined) updateFields.color = color;
             if (icon !== undefined) updateFields.icon = icon;
+            if (isProtected !== undefined) updateFields.isProtected = isProtected;
 
             const note = await RecordNote.findOneAndUpdate(
                 { _id: req.params.noteId, recordId: req.params.recordId },
@@ -141,6 +142,35 @@ module.exports = (router) => {
             res.json({ success: true, note });
         } catch (err) {
             console.error('[RecordNotes] Update error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ═══════════════════════════════════════════
+    // PATCH /api/record/:recordId/notes/:noteId/protect
+    // Toggle note protection (requires user PIN to be set)
+    // ═══════════════════════════════════════════
+    router.patch('/api/record/:recordId/notes/:noteId/protect', async (req, res) => {
+        try {
+            const RecordNote = await tenantCollection(req, 'RecordNote');
+            if (!RecordNote) return res.status(500).json({ success: false, error: 'DB not ready' });
+
+            const { protect } = req.body; // true = lock, false = unlock
+
+            const note = await RecordNote.findOne({
+                _id: req.params.noteId,
+                recordId: req.params.recordId
+            });
+
+            if (!note) return res.status(404).json({ success: false, error: 'Note not found' });
+
+            note.isProtected = protect === true || protect === 'true';
+            note.updatedAt = new Date();
+            await note.save();
+
+            res.json({ success: true, isProtected: note.isProtected });
+        } catch (err) {
+            console.error('[RecordNotes] Protect error:', err);
             res.status(500).json({ success: false, error: err.message });
         }
     });
@@ -212,7 +242,13 @@ module.exports = (router) => {
             const { pin } = req.body;
             if (!pin) return res.status(400).json({ success: false, error: 'PIN requis' });
 
-            const match = await bcrypt.compare(String(pin), note.pinHash);
+            const User = require('../../models/user.model');
+            const user = await User.findById(req.user._id);
+            if (!user || !user.pinHash) {
+                return res.status(403).json({ success: false, error: 'Aucun code PIN configuré sur votre compte' });
+            }
+
+            const match = await bcrypt.compare(String(pin), user.pinHash);
             if (!match) return res.status(403).json({ success: false, error: 'PIN incorrect' });
 
             // PIN correct — return full content

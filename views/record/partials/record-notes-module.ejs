@@ -1319,8 +1319,16 @@
                                     <div class="note-list-item-title">
                                         <span x-text="note.title || 'Sans titre'"></span>
                                         <iconify-icon icon="solar:pin-bold" width="11" class="pin-icon"></iconify-icon>
+                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-danger ml-1" title="Note sécurisée"></iconify-icon>
                                     </div>
-                                    <div class="note-list-item-preview" x-text="getPreviewText(note.content)"></div>
+                                    <div class="note-list-item-preview">
+                                        <template x-if="note.isProtected">
+                                            <span style="font-style:italic; opacity:0.7;">Contenu masqué...</span>
+                                        </template>
+                                        <template x-if="!note.isProtected">
+                                            <span x-text="getPreviewText(note.content)"></span>
+                                        </template>
+                                    </div>
                                     <div class="note-list-item-meta">
                                         <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
                                         <span x-text="formatDate(note.updatedAt)"></span>
@@ -1354,8 +1362,16 @@
                                 <div class="note-list-item-body">
                                     <div class="note-list-item-title">
                                         <span x-text="note.title || 'Sans titre'"></span>
+                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-danger ml-1" title="Note sécurisée"></iconify-icon>
                                     </div>
-                                    <div class="note-list-item-preview" x-text="getPreviewText(note.content)"></div>
+                                    <div class="note-list-item-preview">
+                                        <template x-if="note.isProtected">
+                                            <span style="font-style:italic; opacity:0.7;">Contenu masqué...</span>
+                                        </template>
+                                        <template x-if="!note.isProtected">
+                                            <span x-text="getPreviewText(note.content)"></span>
+                                        </template>
+                                    </div>
                                     <div class="note-list-item-meta">
                                         <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
                                         <span x-text="formatDate(note.updatedAt)"></span>
@@ -1432,6 +1448,11 @@
                             <button class="ne-topbar-btn" :class="{ 'pin-active': activeNote.pinned }"
                                     @click="togglePinActive()" :title="activeNote.pinned ? 'Désépingler' : 'Épingler'">
                                 <iconify-icon :icon="activeNote.pinned ? 'solar:pin-bold' : 'solar:pin-linear'" width="14"></iconify-icon>
+                            </button>
+
+                            <button class="ne-topbar-btn" :class="{ 'pin-active text-danger': activeNote.isProtected }"
+                                    @click="toggleProtection()" :title="activeNote.isProtected ? 'Désécuriser la note (PIN requis)' : 'Sécuriser avec PIN'">
+                                <iconify-icon :icon="activeNote.isProtected ? 'solar:lock-password-bold' : 'solar:lock-password-linear'" width="14"></iconify-icon>
                             </button>
 
                             <!-- Note Color Picker — rond coloré à côté de l'épingle -->
@@ -1643,6 +1664,37 @@
         </div>
     </template>
 
+    <!-- ═══ PIN MODAL ═══ -->
+    <template x-if="showPinModal">
+        <div class="note-modal-overlay" @click.self="cancelPinModal()">
+            <div class="note-modal" style="max-width: 400px;">
+                <div class="note-modal-header">
+                    <h3>
+                        <iconify-icon icon="solar:lock-password-bold-duotone" width="18" class="text-danger"></iconify-icon>
+                        Note sécurisée
+                    </h3>
+                </div>
+                <div class="note-modal-body text-center">
+                    <p class="text-sm text-gray-500 mb-4">Veuillez saisir votre code PIN pour accéder à cette note.</p>
+                    <input type="password" x-ref="pinInputRef" x-model="pinInput" maxlength="4" pattern="[0-9]*"
+                           placeholder="••••" class="form-input text-center tracking-widest text-2xl font-mono mx-auto w-32"
+                           @keydown.enter="verifyPin()" :disabled="isPinVerifying">
+                    
+                    <template x-if="pinError">
+                        <p class="text-danger text-sm mt-3" x-text="pinError"></p>
+                    </template>
+                </div>
+                <div class="note-modal-footer">
+                    <button class="btn-cancel" @click="cancelPinModal()" :disabled="isPinVerifying">Annuler</button>
+                    <button class="btn-create" style="background:#e7515a;border-color:#e7515a;" @click="verifyPin()" :disabled="isPinVerifying || pinInput.length !== 4">
+                        <span x-show="isPinVerifying" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 inline-block mr-2" style="vertical-align: middle;"></span>
+                        Déverrouiller
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
     <!-- ═══ CREATE MODAL ═══ -->
     <template x-if="showCreateModal">
         <div class="note-modal-overlay" @click.self="showCreateModal = false">
@@ -1689,6 +1741,12 @@ document.addEventListener('alpine:init', () => {
         loading: true,
         activeNote: null,
         showCreateModal: false,
+        showPinModal: false,
+        pinInput: '',
+        pinError: '',
+        isPinVerifying: false,
+        pendingNoteToOpen: null,
+        pendingProtectToggle: false,
         newTitle: '',
         newColor: '#8b5cf6',
         saveStatus: '',
@@ -1785,6 +1843,18 @@ document.addEventListener('alpine:init', () => {
         },
 
         openNote(note) {
+            // Check protection FIRST
+            if (note.isProtected && (!this.activeNote || this.activeNote._id !== note._id)) {
+                this.pendingNoteToOpen = note;
+                this.pinInput = '';
+                this.pinError = '';
+                this.showPinModal = true;
+                this.$nextTick(() => {
+                    if (this.$refs.pinInputRef) this.$refs.pinInputRef.focus();
+                });
+                return;
+            }
+
             // Save current note before switching
             if (this.activeNote && this.activeNote._id !== note._id) {
                 this.saveCurrentNote();
@@ -1895,8 +1965,140 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        cancelPinModal() {
+            this.showPinModal = false;
+            this.pendingNoteToOpen = null;
+            this.pendingProtectToggle = false;
+            this.pinInput = '';
+            this.pinError = '';
+        },
+
+        async verifyPin() {
+            if (this.pinInput.length !== 4) return;
+            
+            this.isPinVerifying = true;
+            this.pinError = '';
+
+            try {
+                // If we are toggling protection on the current note
+                if (this.pendingProtectToggle && this.activeNote) {
+                    const res = await fetch('/account/' + _accountNumber + '/api/user/verify-pin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pin: this.pinInput })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success && data.valid) {
+                        this.showPinModal = false;
+                        this.pendingProtectToggle = false;
+                        await this.executeToggleProtection();
+                    } else {
+                        this.pinError = data.error || 'PIN incorrect';
+                    }
+                } 
+                // If we are opening a protected note
+                else if (this.pendingNoteToOpen) {
+                    const noteId = this.pendingNoteToOpen._id;
+                    const res = await fetch(`${_apiBase}/${noteId}/verify-pin`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pin: this.pinInput })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        this.showPinModal = false;
+                        const fullNote = data.note;
+                        fullNote.content = data.content; // Attach decrypted content
+                        
+                        // Proceed to open note
+                        if (this.activeNote && this.activeNote._id !== fullNote._id) {
+                            this.saveCurrentNote();
+                        }
+                        this.activeNote = JSON.parse(JSON.stringify(fullNote));
+                        this.mobileEditing = true;
+                        this.saveStatus = '';
+                        this.$nextTick(() => {
+                            const el = this.$refs.editorContent;
+                            if (el) {
+                                el.innerHTML = fullNote.content || '';
+                                el.focus();
+                            }
+                        });
+                        this.pendingNoteToOpen = null;
+                    } else {
+                        this.pinError = data.error || 'PIN incorrect';
+                    }
+                }
+            } catch (err) {
+                console.error('[Notes] PIN error', err);
+                this.pinError = 'Erreur réseau';
+            } finally {
+                this.isPinVerifying = false;
+            }
+        },
+
+        async toggleProtection() {
+            if (!this.activeNote) return;
+
+            // If it's already protected and we want to unprotect it, ask for PIN
+            if (this.activeNote.isProtected) {
+                this.pendingProtectToggle = true;
+                this.pinInput = '';
+                this.pinError = '';
+                this.showPinModal = true;
+                this.$nextTick(() => {
+                    if (this.$refs.pinInputRef) this.$refs.pinInputRef.focus();
+                });
+            } else {
+                // If we want to protect it, check if user has PIN enabled first
+                try {
+                    const statusRes = await fetch('/account/' + _accountNumber + '/api/user/security-status');
+                    const statusData = await statusRes.json();
+                    
+                    if (!statusData.pinEnabled) {
+                        alert('Vous devez configurer un code PIN dans vos paramètres (onglet Sécurité) avant de pouvoir sécuriser une note.');
+                        return;
+                    }
+                    
+                    if (confirm('Voulez-vous sécuriser cette note ? Un code PIN sera requis pour l\'ouvrir.')) {
+                        await this.executeToggleProtection();
+                    }
+                } catch (e) {
+                    console.error('Erreur status', e);
+                }
+            }
+        },
+
+        async executeToggleProtection() {
+            if (!this.activeNote) return;
+            const newStatus = !this.activeNote.isProtected;
+            
+            try {
+                const res = await fetch(`${_apiBase}/${this.activeNote._id}/protect`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ protect: newStatus })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.activeNote.isProtected = newStatus;
+                    
+                    // Update in list
+                    const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
+                    if (idx > -1) {
+                        this.notes[idx].isProtected = newStatus;
+                    }
+                }
+            } catch (err) {
+                console.error('[Notes] Protect error', err);
+            }
+        },
+
         async deleteNote(note) {
-            if (!confirm('Supprimer la note "' + (note.title || 'Sans titre') + '" ?')) return;
+            if (!confirm('Voulez-vous vraiment supprimer cette note ?')) return;
             const noteId = note._id;
             // If deleting the active note, clear editor
             if (this.activeNote && this.activeNote._id === noteId) {

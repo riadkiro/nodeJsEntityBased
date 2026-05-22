@@ -57,6 +57,12 @@ const UserSchema = new mongoose.Schema({
   lastLogin: { type: Date },
   loginCount: { type: Number, default: 0 },
 
+  // Security — Personal PIN
+  pinHash: { type: String, default: null },   // bcrypt hash of 4-digit PIN
+  pinEnabled: { type: Boolean, default: false },
+  pinAttempts: { type: Number, default: 0 },  // failed attempts counter
+  pinLockedUntil: { type: Date, default: null }, // lockout expiry
+
   created_on: {
     type: Date,
     default: Date.now,
@@ -90,6 +96,12 @@ UserSchema.pre("save", function (next) {
 // Compare password method
 UserSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Compare PIN method
+UserSchema.methods.comparePin = function (candidatePin) {
+  if (!this.pinHash) return Promise.resolve(false);
+  return bcrypt.compare(String(candidatePin), this.pinHash);
 };
 
 // Check if membership is active

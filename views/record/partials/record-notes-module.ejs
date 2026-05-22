@@ -1319,7 +1319,7 @@
                                     <div class="note-list-item-title">
                                         <span x-text="note.title || 'Sans titre'"></span>
                                         <iconify-icon icon="solar:pin-bold" width="11" class="pin-icon"></iconify-icon>
-                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-danger ml-1" title="Note sécurisée"></iconify-icon>
+                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-warning ml-1" title="Note sécurisée" style="color: #f59e0b;"></iconify-icon>
                                     </div>
                                     <div class="note-list-item-preview">
                                         <template x-if="note.isProtected">
@@ -1362,7 +1362,7 @@
                                 <div class="note-list-item-body">
                                     <div class="note-list-item-title">
                                         <span x-text="note.title || 'Sans titre'"></span>
-                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-danger ml-1" title="Note sécurisée"></iconify-icon>
+                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-warning ml-1" title="Note sécurisée" style="color: #f59e0b;"></iconify-icon>
                                     </div>
                                     <div class="note-list-item-preview">
                                         <template x-if="note.isProtected">
@@ -1450,9 +1450,9 @@
                                 <iconify-icon :icon="activeNote.pinned ? 'solar:pin-bold' : 'solar:pin-linear'" width="14"></iconify-icon>
                             </button>
 
-                            <button class="ne-topbar-btn" :class="{ 'pin-active text-danger': activeNote.isProtected }"
+                            <button class="ne-topbar-btn" :class="{ 'pin-active text-warning': activeNote.isProtected }"
                                     @click="toggleProtection()" :title="activeNote.isProtected ? 'Désécuriser la note (PIN requis)' : 'Sécuriser avec PIN'">
-                                <iconify-icon :icon="activeNote.isProtected ? 'solar:lock-password-bold' : 'solar:lock-password-linear'" width="14"></iconify-icon>
+                                <iconify-icon :icon="activeNote.isProtected ? 'solar:lock-password-bold' : 'solar:lock-password-linear'" width="14" :style="activeNote.isProtected ? 'color: #f59e0b;' : ''"></iconify-icon>
                             </button>
 
                             <!-- Note Color Picker — rond coloré à côté de l'épingle -->
@@ -1670,12 +1670,15 @@
             <div class="note-modal" style="max-width: 400px;">
                 <div class="note-modal-header">
                     <h3>
-                        <iconify-icon icon="solar:lock-password-bold-duotone" width="18" class="text-danger"></iconify-icon>
+                        <iconify-icon icon="solar:lock-password-bold-duotone" width="18" class="text-warning" style="color: #f59e0b;"></iconify-icon>
                         Note sécurisée
                     </h3>
                 </div>
                 <div class="note-modal-body text-center">
-                    <p class="text-sm text-gray-500 mb-4">Veuillez saisir votre code PIN pour accéder à cette note.</p>
+                    <p class="text-sm text-gray-500 mb-4">
+                        <span x-show="pendingProtectToggle && (!activeNote || !activeNote.isProtected)">Veuillez saisir votre code PIN pour sécuriser cette note.</span>
+                        <span x-show="!(pendingProtectToggle && (!activeNote || !activeNote.isProtected))">Veuillez saisir votre code PIN pour accéder à cette note.</span>
+                    </p>
                     <input type="password" x-ref="pinInputRef" x-model="pinInput" maxlength="4" pattern="[0-9]*"
                            placeholder="••••" class="form-input text-center tracking-widest text-2xl font-mono mx-auto w-32"
                            @keydown.enter="verifyPin()" :disabled="isPinVerifying">
@@ -1686,9 +1689,9 @@
                 </div>
                 <div class="note-modal-footer">
                     <button class="btn-cancel" @click="cancelPinModal()" :disabled="isPinVerifying">Annuler</button>
-                    <button class="btn-create" style="background:#e7515a;border-color:#e7515a;" @click="verifyPin()" :disabled="isPinVerifying || pinInput.length !== 4">
+                    <button class="btn-create" style="background:#f59e0b;border-color:#f59e0b;" @click="verifyPin()" :disabled="isPinVerifying || pinInput.length !== 4">
                         <span x-show="isPinVerifying" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 inline-block mr-2" style="vertical-align: middle;"></span>
-                        Déverrouiller
+                        Valider
                     </button>
                 </div>
             </div>
@@ -2062,9 +2065,13 @@ document.addEventListener('alpine:init', () => {
                         return;
                     }
                     
-                    if (confirm('Voulez-vous sécuriser cette note ? Un code PIN sera requis pour l\'ouvrir.')) {
-                        await this.executeToggleProtection();
-                    }
+                    this.pendingProtectToggle = true;
+                    this.pinInput = '';
+                    this.pinError = '';
+                    this.showPinModal = true;
+                    this.$nextTick(() => {
+                        if (this.$refs.pinInputRef) this.$refs.pinInputRef.focus();
+                    });
                 } catch (e) {
                     console.error('Erreur status', e);
                 }

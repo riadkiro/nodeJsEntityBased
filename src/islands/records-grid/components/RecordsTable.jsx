@@ -59,7 +59,8 @@ export default function RecordsTable({
     const hasSelection = selectedIds && selectedIds.size > 0
 
     return (
-        <table className="table-hover whitespace-nowrap dataTable-table w-full">
+        <>
+            <table className="table-hover whitespace-nowrap dataTable-table w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
                 <tr>
                     {/* Checkbox column header */}
@@ -171,7 +172,7 @@ export default function RecordsTable({
                 {/* Top spacer for virtual scroll */}
                 {virtualRows.length > 0 && virtualRows[0].start > 0 && (
                     <tr>
-                        <td colSpan={columns.length + 1} style={{ height: virtualRows[0].start, padding: 0 }} />
+                        <td colSpan={columns.length + (showCheckboxes ? 1 : 0)} style={{ height: virtualRows[0].start, padding: 0 }} />
                     </tr>
                 )}
 
@@ -231,11 +232,23 @@ export default function RecordsTable({
                     )
                 })}
 
+                {/* Empty State Text */}
+                {records.length === 0 && (
+                    <tr>
+                        <td 
+                            colSpan={columns.length + (showCheckboxes ? 1 : 0)} 
+                            className="text-center py-12 text-gray-500 dark:text-gray-400 font-medium"
+                        >
+                            Aucun enregistrement
+                        </td>
+                    </tr>
+                )}
+
                 {/* Bottom spacer for virtual scroll */}
                 {virtualRows.length > 0 && (
                     <tr>
                         <td
-                            colSpan={columns.length + 1}
+                            colSpan={columns.length + (showCheckboxes ? 1 : 0)}
                             style={{
                                 height: Math.max(0, virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end || 0)),
                                 padding: 0
@@ -245,6 +258,7 @@ export default function RecordsTable({
                 )}
             </tbody>
         </table>
+        </>
     )
 }
 

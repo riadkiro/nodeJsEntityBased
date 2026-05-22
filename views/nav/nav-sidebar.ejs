@@ -1255,6 +1255,23 @@
               showIconEditModal: false,
               editingIcon: '',
               editingColor: '',
+              
+              // === Records Wizard State ===
+              showRecordsWizard: false,
+              recordsWizardStep: 1,
+              recordsWizardMode: '', // 'existing' or 'new'
+              wizardExistingCollection: '',
+              wizardViewMode: 'all', // 'all' or 'segmentation'
+              wizardFilterField: '',
+              wizardFilterValue: '',
+              wizardNewName: '',
+              wizardNewPlural: '',
+              wizardNewIcon: '',
+              wizardNewColor: '',
+              wizardNewTitre: true,
+              wizardNewDesc: true,
+              isGeneratingAI: false,
+              wizardSuggestedFields: [],
 
               // Icon Picker State
               icons: [],
@@ -1299,6 +1316,166 @@
                   this.fetchHierarchy();
                 });
               },
+
+              templatesList: [
+                {
+                  nameSingular: 'Projet',
+                  namePlural: 'Projets',
+                  icon: 'solar:checklist-bold-duotone',
+                  color: '#4361ee',
+                  description: 'Suivi de projets, jalons et budgets.',
+                  fields: [
+                    { name: 'Statut', type: 'select' },
+                    { name: 'Date de début', type: 'date' },
+                    { name: 'Date de fin', type: 'date' },
+                    { name: 'Responsable', type: 'text' },
+                    { name: 'Budget', type: 'number' }
+                  ]
+                },
+                {
+                  nameSingular: 'Voiture',
+                  namePlural: 'Voitures',
+                  icon: 'solar:wheel-bold-duotone',
+                  color: '#e7515a',
+                  description: 'Flotte automobile et véhicules.',
+                  fields: [
+                    { name: 'Marque', type: 'text' },
+                    { name: 'Modèle', type: 'text' },
+                    { name: 'Immatriculation', type: 'text' },
+                    { name: 'Kilométrage', type: 'number' },
+                    { name: 'Année', type: 'number' }
+                  ]
+                },
+                {
+                  nameSingular: 'Contact',
+                  namePlural: 'Contacts',
+                  icon: 'solar:users-group-two-rounded-bold-duotone',
+                  color: '#e2a03f',
+                  description: 'Annuaire de contacts et personnes.',
+                  fields: [
+                    { name: 'Email', type: 'text' },
+                    { name: 'Téléphone', type: 'text' },
+                    { name: 'Poste', type: 'text' },
+                    { name: 'Entreprise', type: 'text' }
+                  ]
+                },
+                {
+                  nameSingular: 'Entreprise',
+                  namePlural: 'Entreprises',
+                  icon: 'solar:buildings-bold-duotone',
+                  color: '#00ab55',
+                  description: 'Fiches entreprises, clients B2B.',
+                  fields: [
+                    { name: 'Secteur', type: 'select' },
+                    { name: 'Chiffre d\'affaires', type: 'number' },
+                    { name: 'Site Web', type: 'text' },
+                    { name: 'Adresse', type: 'text' }
+                  ]
+                },
+                {
+                  nameSingular: 'Tâche',
+                  namePlural: 'Tâches',
+                  icon: 'solar:notes-bold-duotone',
+                  color: '#8b5cf6',
+                  description: 'Suivi des tâches et actions.',
+                  fields: [
+                    { name: 'Priorité', type: 'select' },
+                    { name: 'Date d\'échéance', type: 'date' },
+                    { name: 'Assigné à', type: 'text' },
+                    { name: 'Statut', type: 'select' }
+                  ]
+                }
+              ],
+
+              selectTemplate(tpl) {
+                this.recordsWizardMode = 'new';
+                this.recordsWizardStep = 2;
+                this.wizardNewName = tpl.nameSingular;
+                this.wizardNewPlural = tpl.namePlural;
+                this.wizardNewIcon = tpl.icon;
+                this.wizardNewColor = tpl.color;
+                this.wizardSuggestedFields = JSON.parse(JSON.stringify(tpl.fields));
+                
+                // Dispatch event to select icon in react picker
+                window.dispatchEvent(new CustomEvent('icon-selected', { detail: { icon: tpl.icon } }));
+              },
+
+              openRecordsWizard() {
+                this.showRecordsWizard = true;
+                this.recordsWizardStep = 1;
+                this.recordsWizardMode = '';
+                this.wizardExistingCollection = '';
+                this.wizardViewMode = 'all';
+                this.wizardNewName = '';
+                this.wizardNewPlural = '';
+                this.wizardNewIcon = '';
+                this.wizardNewColor = '';
+                this.wizardSuggestedFields = [];
+                this.loadAllEntities(); // Assumes loadAllEntities is defined
+                Alpine.store('sidebar').showEditMenu = false;
+              },
+              
+              generateAIFields() {
+                this.isGeneratingAI = true;
+                setTimeout(() => {
+                   this.wizardSuggestedFields = [
+                      { name: 'Catégorie', type: 'select' },
+                      { name: 'Statut', type: 'select' },
+                      { name: 'Secteur', type: 'select' }
+                   ];
+                   this.isGeneratingAI = false;
+                }, 1000);
+              },
+              
+              async validateRecordsWizard() {
+                 if (this.recordsWizardMode === 'existing') {
+                    if (!this.wizardExistingCollection) return alert('Veuillez sélectionner une collection');
+                    const entity = this.allEntities.find(e => e.id === this.wizardExistingCollection);
+                    if (!entity) return;
+                    
+                    if (this.wizardViewMode === 'segmentation' && !this.wizardFilterValue) {
+                       return alert('Veuillez définir le filtre pour la segmentation');
+                    }
+                    
+                    // Proceed to link existing entity
+                    this.pendingViewType = 'list';
+                    await this.linkExistingEntity(entity);
+                    this.showRecordsWizard = false;
+                 } else if (this.recordsWizardMode === 'new') {
+                    if (!this.wizardNewName) return alert('Le nom est requis');
+                    // Mock creation or redirect to a creation page
+                    const accountNum = window.location.pathname.split('/')[2];
+                    const parent = Alpine.store('sidebar').contextItem;
+                    const parentId = parent ? parent.id : null;
+                    const parentType = parent ? parent.type : null;
+                    try {
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/entity`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: this.wizardNewName,
+                                nameSingular: this.wizardNewName,
+                                namePlural: this.wizardNewPlural || (this.wizardNewName + 's'),
+                                fields: this.wizardSuggestedFields || [],
+                                parentId: parentId,
+                                parentType: parentType,
+                                viewType: 'list',
+                                icon: this.wizardNewIcon || 'solar:database-bold',
+                                color: this.wizardNewColor || ''
+                            })
+                        });
+                        if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err?.error || `HTTP ${res.status}`);
+                        }
+                        this.showRecordsWizard = false;
+                        await this.fetchHierarchy();
+                    } catch (e) {
+                        alert("Erreur de création: " + e.message);
+                    }
+                 }
+              },
+
 
               async loadLibraries() {
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
@@ -2504,44 +2681,36 @@
                   </div>
                 </li>
 
+                <!-- Records -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="menuMode = 'data'">
-                  <div class="flex items-center justify-between w-full">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:database-bold" width="18" height="18"></iconify-icon>
-                      <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Collection</span>
-                    </div>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
+                  @click="openRecordsWizard(); $store.sidebar.showMenu = false;">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:database-bold-duotone" width="18" height="18" style="color: #4361ee"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Records</span>
                   </div>
                 </li>
 
+                <!-- Deck -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'list')">
+                  @click="alert('Deck (Démo) : Bientôt disponible !'); $store.sidebar.showMenu = false;">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:list-bold" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Liste</span>
+                    <iconify-icon icon="solar:gallery-wide-bold-duotone" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Deck</span>
                   </div>
                 </li>
 
+                <!-- Document -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'note')">
+                  @click="alert('Document (Démo) : Bientôt disponible !'); $store.sidebar.showMenu = false;">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:notes-bold-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Note</span>
-                  </div>
-                </li>
-
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'dashboard')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:pie-chart-3-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Tableau de bord</span>
+                    <iconify-icon icon="solar:document-text-bold-duotone" width="18" height="18" style="color: #e2a03f"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Document</span>
                   </div>
                 </li>
 
                 <!-- Cockpit -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="$store.sidebar.showMenu = false; window.location.href = '/account/<%= account_number %>/page-builder/cockpit/new?parentId=' + $store.sidebar.contextItem.id + '&parentType=' + $store.sidebar.contextItem.type">
+                  @click="$store.sidebar.showMenu = false; window.location.href = '/account/<%= account_number %>/page-builder/cockpit/new?parentId=' + $store.sidebar.contextItem?.id + '&parentType=' + $store.sidebar.contextItem?.type">
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="18" height="18" style="color: #10b981"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Cockpit</span>
@@ -2668,99 +2837,36 @@
                   </div>
                 </li>
 
-                <!-- Collection -->
+                <!-- Records -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="menuMode = 'data'; openCreateMenu($event, $store.sidebar.contextItem)">
+                  @click="openRecordsWizard()">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:database-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Collection</span>
+                    <iconify-icon icon="solar:database-bold-duotone" width="18" height="18" style="color: #4361ee"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Records</span>
                   </div>
                 </li>
 
-                <!-- Documents -->
+                <!-- Deck -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'document')">
+                  @click="alert('Deck (Démo) : Bientôt disponible !'); $store.sidebar.showEditMenu = false;">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:document-text-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Documents</span>
+                    <iconify-icon icon="solar:gallery-wide-bold-duotone" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Deck</span>
                   </div>
                 </li>
 
-                <!-- Médias -->
+                <!-- Document -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'media')">
+                  @click="alert('Document (Démo) : Bientôt disponible !'); $store.sidebar.showEditMenu = false;">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:gallery-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Médias</span>
-                  </div>
-                </li>
-
-                <!-- Notes -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'note')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:notes-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Notes</span>
-                  </div>
-                </li>
-
-                <!-- Tâches -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'task')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:clipboard-check-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Tâches</span>
-                  </div>
-                </li>
-
-                <!-- Calendrier -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'calendar')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:calendar-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Calendrier</span>
-                  </div>
-                </li>
-
-                <!-- Contact -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'contact')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:user-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Contact</span>
-                  </div>
-                </li>
-
-                <!-- Drive -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'drive')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:folder-cloud-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Drive</span>
-                  </div>
-                </li>
-
-                <!-- Discussion -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'discussion')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:chat-round-line-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Discussion</span>
-                  </div>
-                </li>
-
-                <!-- Analyse -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('entity', 'analyse')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:chart-line-duotone" width="18" height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Analyse</span>
+                    <iconify-icon icon="solar:document-text-bold-duotone" width="18" height="18" style="color: #e2a03f"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Document</span>
                   </div>
                 </li>
 
                 <!-- Cockpit -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="$store.sidebar.showEditMenu = false; window.location.href = '/account/<%= account_number %>/page-builder/cockpit/new?parentId=' + $store.sidebar.contextItem.id + '&parentType=' + $store.sidebar.contextItem.type">
+                  @click="alert('Cockpit (Démo) : Bientôt disponible !'); $store.sidebar.showEditMenu = false;">
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="18" height="18" style="color: #10b981"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Cockpit</span>
@@ -2810,6 +2916,219 @@
               </div>
             </li>
           </ul>
+        </div>
+
+        <!-- Records Wizard Modal -->
+        <div x-show="showRecordsWizard" x-cloak
+             class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">
+             <div class="bg-white dark:bg-[#1b2e4b] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden"
+                  @click.outside="showRecordsWizard = false">
+                 <div class="p-5 border-b dark:border-gray-800 flex justify-between items-center">
+                    <h3 class="text-lg font-bold dark:text-white">Créer des Records</h3>
+                    <button @click="showRecordsWizard = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                    </button>
+                 </div>
+                 <div class="p-6">
+                    <!-- Step 1: Choix -->
+                    <template x-if="recordsWizardStep === 1">
+                       <div class="grid grid-cols-3 gap-3">
+                          <div @click="recordsWizardMode = 'existing'; recordsWizardStep = 2"
+                               class="cursor-pointer border-2 border-gray-100 dark:border-gray-800 hover:border-primary hover:bg-primary/5 rounded-xl p-4 text-center transition-all group flex flex-col justify-between">
+                             <div>
+                                <iconify-icon icon="solar:database-line-duotone" width="40" class="text-gray-400 group-hover:text-primary mb-3 mx-auto"></iconify-icon>
+                                <h4 class="font-bold text-xs dark:text-white">Collection Existante</h4>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Lier/segmenter une collection active</p>
+                             </div>
+                          </div>
+                          <div @click="recordsWizardStep = 'library'"
+                               class="cursor-pointer border-2 border-gray-100 dark:border-gray-800 hover:border-warning hover:bg-warning/5 rounded-xl p-4 text-center transition-all group flex flex-col justify-between">
+                             <div>
+                                <iconify-icon icon="solar:star-ring-bold-duotone" width="40" style="color: #e2a03f" class="group-hover:scale-110 mb-3 mx-auto transition-transform"></iconify-icon>
+                                <h4 class="font-bold text-xs dark:text-white">Modèles Prêts</h4>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Projets, Voitures, Personnes préconfigurés</p>
+                             </div>
+                          </div>
+                          <div @click="recordsWizardMode = 'new'; recordsWizardStep = 2"
+                               class="cursor-pointer border-2 border-gray-100 dark:border-gray-800 hover:border-success hover:bg-success/5 rounded-xl p-4 text-center transition-all group flex flex-col justify-between">
+                             <div>
+                                <iconify-icon icon="solar:magic-stick-3-line-duotone" width="40" class="text-gray-400 group-hover:text-success mb-3 mx-auto"></iconify-icon>
+                                <h4 class="font-bold text-xs dark:text-white">Nouvelle de Zéro</h4>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Créer une nouvelle entité personnalisée</p>
+                             </div>
+                          </div>
+                       </div>
+                    </template>
+
+                    <!-- Step 1.5: Bibliothèque de Modèles -->
+                    <template x-if="recordsWizardStep === 'library'">
+                       <div class="space-y-4">
+                          <div class="flex justify-between items-center mb-2">
+                             <p class="text-xs text-gray-500 dark:text-gray-400">Sélectionnez un modèle d'entité prêt à l'emploi :</p>
+                             <button @click="recordsWizardStep = 1" class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
+                                <iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon> Retour
+                             </button>
+                          </div>
+                          
+                          <div class="grid grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+                             <template x-for="tpl in templatesList" :key="tpl.nameSingular">
+                                <div @click="selectTemplate(tpl)"
+                                     class="cursor-pointer border border-gray-100 dark:border-gray-800 hover:border-primary bg-gray-50/50 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-[#1b2e4b] rounded-xl p-4 transition-all group relative flex flex-col justify-between shadow-sm hover:shadow">
+                                   <div>
+                                      <div class="flex items-center gap-3 mb-2">
+                                         <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :style="'background-color:' + tpl.color + '20; color:' + tpl.color">
+                                            <iconify-icon :icon="tpl.icon" width="20" height="20"></iconify-icon>
+                                         </div>
+                                         <h4 class="font-bold text-sm text-gray-800 dark:text-gray-100" x-text="tpl.namePlural"></h4>
+                                      </div>
+                                      <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-normal" x-text="tpl.description"></p>
+                                   </div>
+                                   <div class="mt-3 flex flex-wrap gap-1">
+                                      <template x-for="f in tpl.fields" :key="f.name">
+                                         <span class="text-[9px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300" x-text="f.name"></span>
+                                      </template>
+                                   </div>
+                                </div>
+                              </template>
+                          </div>
+                       </div>
+                    </template>
+
+                    <!-- Step 2A: Existante -->
+                    <template x-if="recordsWizardStep === 2 && recordsWizardMode === 'existing'">
+                       <div class="space-y-5">
+                           <div>
+                              <label class="block text-xs font-bold mb-1">Choisir une collection</label>
+                              <select x-model="wizardExistingCollection" class="form-select w-full">
+                                 <option value="">Sélectionnez...</option>
+                                 <template x-for="ent in allEntities" :key="ent.id">
+                                     <option :value="ent.id" x-text="ent.name"></option>
+                                 </template>
+                              </select>
+                           </div>
+                           
+                           <div x-show="wizardExistingCollection">
+                              <label class="block text-xs font-bold mb-2">Options d'affichage</label>
+                              <div class="space-y-2">
+                                 <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" x-model="wizardViewMode" value="all" class="form-radio text-primary" />
+                                    <span class="text-sm">Lister tous les records</span>
+                                 </label>
+                                 <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" x-model="wizardViewMode" value="segmentation" class="form-radio text-primary" />
+                                    <span class="text-sm">Segmentation (Filtre par défaut)</span>
+                                 </label>
+                              </div>
+                           </div>
+
+                           <div x-show="wizardExistingCollection && wizardViewMode === 'segmentation'" class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-3">
+                               <div>
+                                  <label class="block text-xs text-gray-500 mb-1">Champ à filtrer</label>
+                                  <select x-model="wizardFilterField" class="form-select w-full">
+                                     <option value="">Sélectionner un champ...</option>
+                                     <option value="secteur">Secteur</option>
+                                     <option value="status">Statut</option>
+                                  </select>
+                               </div>
+                               <div x-show="wizardFilterField">
+                                  <label class="block text-xs text-gray-500 mb-1">Valeur</label>
+                                  <input type="text" x-model="wizardFilterValue" class="form-input w-full" placeholder="ex: Hôtelier" />
+                               </div>
+                           </div>
+                       </div>
+                    </template>
+
+                    <!-- Step 2B: Nouvelle -->
+                    <template x-if="recordsWizardStep === 2 && recordsWizardMode === 'new'">
+                       <div class="space-y-4">
+                           <div class="grid grid-cols-2 gap-4">
+                              <div>
+                                 <label class="block text-xs font-bold mb-1">Nom (Singulier)</label>
+                                 <input type="text" x-model="wizardNewName" class="form-input w-full" placeholder="ex: Entreprise" />
+                              </div>
+                              <div>
+                                 <label class="block text-xs font-bold mb-1">Nom (Pluriel)</label>
+                                 <input type="text" x-model="wizardNewPlural" class="form-input w-full" placeholder="ex: Entreprises" />
+                              </div>
+                           </div>
+                           
+                           <div class="grid grid-cols-2 gap-4">
+                              <div>
+                                 <label class="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">Icône</label>
+                                 <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1b2e4b] shadow-sm flex items-center justify-center shrink-0" :style="wizardNewColor ? 'color:'+wizardNewColor : ''">
+                                       <div data-island="icon-picker" data-name="wizardNewIcon" @icon-selected="wizardNewIcon = $event.detail.icon"></div>
+                                    </div>
+                                    <div class="text-xs text-gray-500 flex-1">Sélectionnez une icône pour représenter cette collection.</div>
+                                 </div>
+                              </div>
+                              <div>
+                                 <label class="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">Couleur</label>
+                                 <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1b2e4b] shadow-sm flex items-center justify-center shrink-0" 
+                                         x-data="{ picker: null }" 
+                                         x-init="
+                                            setTimeout(() => {
+                                                if (window.ColorPicker) {
+                                                    picker = new ColorPicker($refs.colorContainer, {
+                                                        value: wizardNewColor,
+                                                        onSelect: (c) => wizardNewColor = c
+                                                    });
+                                                    $watch('wizardNewColor', (val) => { if (picker && picker.getValue() !== val) picker.setValue(val) });
+                                                }
+                                            }, 100);
+                                         ">
+                                        <div x-ref="colorContainer"></div>
+                                    </div>
+                                    <div class="text-xs text-gray-500 flex-1">Choisissez une couleur thématique.</div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                              <label class="block text-xs font-bold mb-2">Champs par défaut</label>
+                              <div class="flex items-center gap-4">
+                                 <label class="flex items-center gap-2 opacity-70 cursor-not-allowed">
+                                    <input type="checkbox" x-model="wizardNewTitre" disabled class="form-checkbox text-primary rounded" />
+                                    <span class="text-xs">Titre</span>
+                                 </label>
+                                 <label class="flex items-center gap-2 opacity-70 cursor-not-allowed">
+                                    <input type="checkbox" x-model="wizardNewDesc" disabled class="form-checkbox text-primary rounded" />
+                                    <span class="text-xs">Description</span>
+                                 </label>
+                              </div>
+                           </div>
+
+                           <!-- AI Premium Area -->
+                           <div class="p-4 rounded-lg bg-gray-50 dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800">
+                              <button type="button" @click="generateAIFields()" class="w-full btn btn-primary flex items-center justify-center gap-2" :disabled="!wizardNewName || isGeneratingAI">
+                                 <iconify-icon :icon="isGeneratingAI ? 'solar:spinner-bold' : 'solar:magic-stick-3-bold'" :class="isGeneratingAI ? 'animate-spin' : ''" width="18"></iconify-icon>
+                                 <span x-text="isGeneratingAI ? 'Analyse en cours...' : 'Générer des champs avec l\'IA'"></span>
+                              </button>
+                              
+                              <div x-show="wizardSuggestedFields.length > 0" x-transition class="mt-4 space-y-2">
+                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Champs suggérés</p>
+                                 <template x-for="field in wizardSuggestedFields" :key="field.name">
+                                     <div class="flex items-center justify-between bg-white dark:bg-[#1b2e4b] p-2 rounded border border-gray-200 dark:border-gray-800 shadow-sm">
+                                        <span class="text-xs font-semibold text-gray-800 dark:text-gray-100" x-text="field.name"></span>
+                                        <span class="text-[9px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 shadow-sm" x-text="field.type"></span>
+                                     </div>
+                                 </template>
+                              </div>
+                           </div>
+                       </div>
+                    </template>
+                 </div>
+                 
+                 <!-- Footer Actions -->
+                 <div x-show="recordsWizardStep === 2" class="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-[#121c2c] flex justify-between">
+                     <button @click="recordsWizardStep = 1" class="btn btn-outline-danger btn-sm">Retour</button>
+                     <button @click="validateRecordsWizard()" class="btn btn-primary btn-sm flex items-center gap-2">
+                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
+                        <span x-text="recordsWizardMode === 'existing' ? 'Valider' : 'Créer la collection'"></span>
+                     </button>
+                 </div>
+             </div>
         </div>
 
         <!-- CONFIG MODAL (Fixed at center) -->

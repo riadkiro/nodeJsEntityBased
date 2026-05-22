@@ -19,7 +19,7 @@
   width: 100%;
   color: #3b3f5c;
   font-size: 24px;
-  @apply ltr:!pr-10 rtl:!pl-10;
+  padding-right: 2.5rem !important;
 }
 
 .swal2-popup .swal2-styled {
@@ -60,7 +60,7 @@
   margin: 0 !important;
   color: #e95f2b;
   font-weight: 300;
-  @apply ltr:!pr-10 rtl:!pl-10;
+  padding-right: 2.5rem !important;
 }
 
 .swal2-popup .swal2-close {
@@ -68,7 +68,7 @@
   top: 16px;
   transition: color 0.1s ease-out;
   font-family: serif;
-  @apply ltr:right-4 rtl:left-4;
+  right: 1rem !important;
 }
 
 .dark .swal2-popup .swal2-close {
@@ -257,9 +257,11 @@
 }
 
 .sweet-alerts.swal2-popup .swal2-html-container {
-    @apply !px-0 !mt-4;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-top: 1rem !important;
 }
 
 .sweet-alerts.swal2-popup .swal2-title {
-    @apply ltr:!pr-6 rtl:!pl-6;
+    padding-right: 1.5rem !important;
 }

@@ -51,8 +51,8 @@ async function loadLibraryIcons(libraryKey, style) {
     if (!lib) return []
 
     try {
-        const module = await import(`https://esm.sh/@iconify-json/${lib.prefix}/icons.json`)
-        const data = module.default || module
+        const response = await fetch(`https://unpkg.com/@iconify-json/${lib.prefix}/icons.json`)
+        const data = await response.json()
         const iconNames = Object.keys(data.icons || {})
 
         let result

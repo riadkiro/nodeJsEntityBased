@@ -502,12 +502,66 @@ module.exports = {
     createEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
-        const { name, parentId, parentType, viewType, icon, color } = req.body;
+        const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+        
+        const { name, nameSingular, namePlural, fields, parentId, parentType, viewType, icon, color } = req.body;
         const slug = await uniqueSlug(EntityModel, name);
 
-        const newEntity = new EntityModel({ name, slug, createdBy: req.user._id });
+        // 1. Create suggested custom fields if provided
+        const customFieldIds = [];
+        if (Array.isArray(fields) && fields.length > 0) {
+            for (const f of fields) {
+                const fName = f.name;
+                const fType = f.type || 'text';
+                const fLabel = f.name;
+                
+                // Tech slug name for the field template
+                const fSlug = fName.toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_+|_+$/g, '');
+
+                const newFT = new FieldTemplateModel({
+                    name: `${slug}_${fSlug}`,
+                    label: fLabel,
+                    type: fType,
+                    required: false,
+                    isCustom: true,
+                    showOnQuickForm: true,
+                    ui: {
+                        placeholder: `Saisir ${fLabel.toLowerCase()}...`,
+                        visible: true,
+                        width: 'full',
+                        order: customFieldIds.length
+                    }
+                });
+                await newFT.save();
+                customFieldIds.push(newFT._id);
+            }
+        }
+
+        // 2. Create the Entity
+        const newEntity = new EntityModel({
+            name,
+            nameSingular: nameSingular || name,
+            namePlural: namePlural || `${name}s`,
+            slug,
+            icon,
+            color,
+            customFields: customFieldIds,
+            createdBy: req.user._id
+        });
         await newEntity.save();
 
+        // If custom fields were created, update their entity references
+        if (customFieldIds.length > 0) {
+            await FieldTemplateModel.updateMany(
+                { _id: { $in: customFieldIds } },
+                { $push: { entities: newEntity._id } }
+            );
+        }
+
+        // 3. Create the View
         const newView = new ViewModel({
             name,
             slug,

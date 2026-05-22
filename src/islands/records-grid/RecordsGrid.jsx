@@ -915,7 +915,7 @@ export default function RecordsGrid({
                         <div className="dataTable-wrapper flex-1 flex flex-col overflow-hidden">
                             {/* Table container with virtual scrolling */}
                             <div
-                                className="dataTable-container flex-1 overflow-auto"
+                                className="dataTable-container flex-1 overflow-auto relative"
                                 ref={parentRef}
                             >
                                 <RecordsTable

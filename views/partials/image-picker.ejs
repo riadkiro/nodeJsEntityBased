@@ -589,8 +589,9 @@ document.addEventListener('alpine:init', () => {
             } catch (err) {
                 console.error('[ImagePicker] Search error:', err);
                 this.searchError = true;
+            } finally {
+                this.searchLoading = false;
             }
-            this.searchLoading = false;
         },
 
         // ── URL (inline in upload tab) ──

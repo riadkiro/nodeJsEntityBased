@@ -575,7 +575,7 @@ document.addEventListener('alpine:init', () => {
                         this.searchError = true;
                         return;
                     }
-                    const results = data.output?.results || data.results || [];
+                    const results = data.data?.photos || data.data?.results || data.output?.results || data.results || [];
                     this.searchResults = results.map(photo => ({
                         id: photo.id,
                         url: photo.urls?.regular || photo.urls?.full || '',

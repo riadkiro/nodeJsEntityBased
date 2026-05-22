@@ -1,0 +1,576 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     IMAGE PICKER — Reusable across all pages
+     Usage:
+       Alpine.store('imagePicker').open({
+           accountNumber: '5096',
+           recordId: '6a0d...', // optional — pre-selects record's Drive
+           multiple: false,
+           onSelect: (image) => { // { url, alt, source, filename }
+               console.log('Selected:', image);
+           }
+       });
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Image Picker Modal ── */
+.ip-overlay { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); animation:ipFadeIn .2s ease; }
+@keyframes ipFadeIn { from { opacity:0 } to { opacity:1 } }
+@keyframes ipSlideIn { from { opacity:0; transform:translateY(12px) scale(.97) } to { opacity:1; transform:translateY(0) scale(1) } }
+
+.ip-modal { width:600px; max-width:94vw; max-height:80vh; background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.18); display:flex; flex-direction:column; overflow:hidden; animation:ipSlideIn .25s ease; font-family:inherit; }
+
+/* Header */
+.ip-header { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid #e0e6ed; flex-shrink:0; }
+.ip-header-title { flex:1; font-size:15px; font-weight:700; color:#0e1726; display:flex; align-items:center; gap:8px; }
+.ip-header-close { width:28px; height:28px; border:none; background:transparent; border-radius:8px; cursor:pointer; color:#94a3b8; display:flex; align-items:center; justify-content:center; transition:all .12s; }
+.ip-header-close:hover { background:#f1f5f9; color:#ef4444; }
+
+/* Tabs */
+.ip-tabs { display:flex; border-bottom:1px solid #e0e6ed; flex-shrink:0; padding:0 12px; }
+.ip-tab { flex:1; padding:10px 8px; text-align:center; font-size:12px; font-weight:600; color:#94a3b8; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:5px; background:none; border-left:none; border-right:none; border-top:none; }
+.ip-tab:hover { color:#64748b; background:#f8fafc; }
+.ip-tab.active { color:#8b5cf6; border-bottom-color:#8b5cf6; }
+
+/* Body */
+.ip-body { flex:1; overflow-y:auto; padding:16px; min-height:260px; }
+
+/* Grid (3 cols for Drive/Search full view) */
+.ip-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.ip-grid-item { position:relative; border:2px solid #e0e6ed; border-radius:10px; overflow:hidden; cursor:pointer; transition:all .15s; background:#f8fafc; }
+.ip-grid-item:hover { border-color:#8b5cf6; transform:translateY(-2px); box-shadow:0 4px 14px rgba(139,92,246,.15); }
+.ip-grid-item img { width:100%; height:100px; object-fit:cover; display:block; }
+.ip-grid-item-name { padding:6px 8px; font-size:10px; font-weight:500; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ip-grid-item-attr { padding:2px 8px 6px; font-size:9px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Recent images inline strip (upload tab) */
+.ip-recent-section { margin-top:16px; }
+.ip-recent-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.ip-recent-label { font-size:12px; font-weight:600; color:#94a3b8; display:flex; align-items:center; gap:5px; }
+.ip-recent-link { font-size:11px; font-weight:600; color:#8b5cf6; cursor:pointer; display:flex; align-items:center; gap:3px; background:none; border:none; padding:0; font-family:inherit; }
+.ip-recent-link:hover { text-decoration:underline; }
+.ip-recent-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+.ip-recent-strip::-webkit-scrollbar { height:4px; }
+.ip-recent-strip::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:2px; }
+.ip-recent-thumb { width:72px; height:72px; flex-shrink:0; border:2px solid #e0e6ed; border-radius:8px; overflow:hidden; cursor:pointer; transition:all .15s; background:#f8fafc; }
+.ip-recent-thumb:hover { border-color:#8b5cf6; transform:scale(1.05); box-shadow:0 3px 10px rgba(139,92,246,.15); }
+.ip-recent-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Empty / Loading */
+.ip-empty { text-align:center; padding:40px 16px; color:#94a3b8; }
+.ip-empty iconify-icon { display:block; margin:0 auto 10px; opacity:.25; }
+.ip-empty-title { font-weight:600; font-size:13px; color:#64748b; margin-bottom:4px; }
+.ip-empty-msg { font-size:12px; }
+.ip-loading { display:flex; align-items:center; justify-content:center; gap:8px; padding:40px; color:#94a3b8; font-size:12px; font-weight:500; }
+
+/* Search bar */
+.ip-search-bar { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.ip-search-input { flex:1; height:36px; border:1px solid #e0e6ed; border-radius:9px; padding:0 12px; font-size:13px; font-family:inherit; outline:none; transition:border-color .15s; background:#f8fafc; }
+.ip-search-input:focus { border-color:#8b5cf6; background:#fff; }
+.ip-search-btn { height:36px; padding:0 14px; border:none; border-radius:9px; background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:box-shadow .15s; }
+.ip-search-btn:hover { box-shadow:0 4px 12px rgba(139,92,246,.3); }
+
+/* Upload dropzone (compact) */
+.ip-dropzone { border:2px dashed #d1d5db; border-radius:12px; padding:20px 16px; text-align:center; cursor:pointer; transition:all .2s; }
+.ip-dropzone:hover, .ip-dropzone.ip-drag-over { border-color:#8b5cf6; background:rgba(139,92,246,.04); }
+.ip-dropzone-inner { display:flex; align-items:center; gap:14px; justify-content:center; }
+.ip-dropzone-icon { color:#8b5cf6; opacity:.4; flex-shrink:0; }
+.ip-dropzone-text { text-align:left; }
+.ip-dropzone-title { font-weight:600; font-size:13px; color:#64748b; margin-bottom:2px; }
+.ip-dropzone-msg { font-size:11px; color:#94a3b8; }
+
+/* Upload progress */
+.ip-upload-progress { margin-top:14px; }
+.ip-progress-bar { height:6px; border-radius:3px; background:#e0e6ed; overflow:hidden; }
+.ip-progress-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#8b5cf6,#7c3aed); transition:width .3s ease; }
+.ip-progress-text { font-size:11px; color:#64748b; margin-top:6px; text-align:center; }
+
+/* URL input inline */
+.ip-url-row { display:flex; gap:8px; margin-top:12px; }
+.ip-url-row input { flex:1; height:34px; border:1px solid #e0e6ed; border-radius:9px; padding:0 12px; font-size:12px; font-family:inherit; outline:none; transition:border-color .15s; }
+.ip-url-row input:focus { border-color:#8b5cf6; }
+.ip-url-row button { height:34px; padding:0 14px; border:none; border-radius:9px; background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; }
+
+/* Drive breadcrumb */
+.ip-breadcrumb { display:flex; align-items:center; gap:4px; margin-bottom:12px; font-size:12px; flex-wrap:wrap; }
+.ip-breadcrumb-item { color:#8b5cf6; cursor:pointer; font-weight:600; background:none; border:none; padding:0; font-family:inherit; font-size:12px; display:flex; align-items:center; gap:3px; }
+.ip-breadcrumb-item:hover { text-decoration:underline; }
+.ip-breadcrumb-sep { color:#cbd5e1; }
+.ip-breadcrumb-current { color:#64748b; font-weight:600; display:flex; align-items:center; gap:4px; }
+
+/* ── Dark mode ── */
+.dark .ip-modal { background:#0e1726; }
+.dark .ip-header { border-color:#253b5c; }
+.dark .ip-header-title { color:#e0e6ed; }
+.dark .ip-header-close:hover { background:#1b2e4b; }
+.dark .ip-tabs { border-color:#253b5c; }
+.dark .ip-tab:hover { background:#1b2e4b; }
+.dark .ip-grid-item { border-color:#253b5c; background:#0b1320; }
+.dark .ip-grid-item:hover { border-color:#8b5cf6; }
+.dark .ip-grid-item-name { color:#94a3b8; }
+.dark .ip-search-input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
+.dark .ip-search-input:focus { border-color:#8b5cf6; background:#0e1726; }
+.dark .ip-dropzone { border-color:#253b5c; }
+.dark .ip-dropzone:hover, .dark .ip-dropzone.ip-drag-over { border-color:#8b5cf6; background:rgba(139,92,246,.08); }
+.dark .ip-dropzone-title { color:#94a3b8; }
+.dark .ip-progress-bar { background:#253b5c; }
+.dark .ip-recent-thumb { border-color:#253b5c; background:#0b1320; }
+.dark .ip-recent-thumb:hover { border-color:#8b5cf6; }
+.dark .ip-recent-label { color:#64748b; }
+.dark .ip-url-row input { background:#0b1320; border-color:#253b5c; color:#e0e6ed; }
+.dark .ip-url-row input:focus { border-color:#8b5cf6; }
+.dark .ip-empty-title { color:#94a3b8; }
+</style>
+
+<!-- Image Picker Modal (Alpine.js store-driven) -->
+<template x-if="$store.imagePicker.isOpen">
+    <div class="ip-overlay" @click.self="$store.imagePicker.close()" @keydown.escape.window="$store.imagePicker.close()">
+        <div class="ip-modal" @click.stop>
+            <!-- Header -->
+            <div class="ip-header">
+                <div class="ip-header-title">
+                    <iconify-icon icon="solar:gallery-bold-duotone" width="18" style="color:#8b5cf6"></iconify-icon>
+                    Choisir une image
+                </div>
+                <button class="ip-header-close" @click="$store.imagePicker.close()">
+                    <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Tabs: Upload → Rechercher → Drive -->
+            <div class="ip-tabs">
+                <button class="ip-tab" :class="{ 'active': $store.imagePicker.activeTab === 'upload' }"
+                        @click="$store.imagePicker.switchTab('upload')">
+                    <iconify-icon icon="solar:upload-bold-duotone" width="14"></iconify-icon>
+                    Uploader
+                </button>
+                <button class="ip-tab" :class="{ 'active': $store.imagePicker.activeTab === 'search' }"
+                        @click="$store.imagePicker.switchTab('search')">
+                    <iconify-icon icon="solar:magnifer-bold-duotone" width="14"></iconify-icon>
+                    Rechercher
+                </button>
+                <button class="ip-tab" :class="{ 'active': $store.imagePicker.activeTab === 'drive' }"
+                        @click="$store.imagePicker.switchTab('drive')">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="14"></iconify-icon>
+                    Drive
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="ip-body">
+
+                <!-- ═══ UPLOAD TAB (default) ═══ -->
+                <template x-if="$store.imagePicker.activeTab === 'upload'">
+                    <div>
+                        <!-- Compact dropzone -->
+                        <div class="ip-dropzone"
+                             :class="{ 'ip-drag-over': $store.imagePicker.dragOver }"
+                             @dragover.prevent="$store.imagePicker.dragOver = true"
+                             @dragleave.prevent="$store.imagePicker.dragOver = false"
+                             @drop.prevent="$store.imagePicker.handleDrop($event)"
+                             @click="$refs.ipFileInput.click()">
+                            <div class="ip-dropzone-inner">
+                                <iconify-icon class="ip-dropzone-icon" icon="solar:cloud-upload-bold-duotone" width="32"></iconify-icon>
+                                <div class="ip-dropzone-text">
+                                    <div class="ip-dropzone-title">Glissez une image ou cliquez pour parcourir</div>
+                                    <div class="ip-dropzone-msg">PNG, JPG, GIF, WEBP — max 10 Mo</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" accept="image/*" x-ref="ipFileInput" style="display:none"
+                               @change="$store.imagePicker.handleFileSelect($event)">
+
+                        <!-- URL input inline -->
+                        <div class="ip-url-row">
+                            <input type="url" placeholder="ou collez une URL d'image..."
+                                   x-model="$store.imagePicker.urlInput"
+                                   @keydown.enter="$store.imagePicker.insertFromUrl()">
+                            <button @click="$store.imagePicker.insertFromUrl()"
+                                    x-show="$store.imagePicker.urlInput.trim()">
+                                Insérer
+                            </button>
+                        </div>
+
+                        <!-- Progress -->
+                        <div class="ip-upload-progress" x-show="$store.imagePicker.uploading">
+                            <div class="ip-progress-bar">
+                                <div class="ip-progress-fill" :style="'width:' + $store.imagePicker.uploadProgress + '%'"></div>
+                            </div>
+                            <div class="ip-progress-text" x-text="$store.imagePicker.uploadProgress + '% — Upload en cours...'"></div>
+                        </div>
+
+                        <!-- Recent Drive images -->
+                        <div class="ip-recent-section" x-show="$store.imagePicker.driveFiles.length > 0">
+                            <div class="ip-recent-header">
+                                <span class="ip-recent-label">
+                                    <iconify-icon icon="solar:clock-circle-bold-duotone" width="13"></iconify-icon>
+                                    Images récentes
+                                </span>
+                                <button class="ip-recent-link" @click="$store.imagePicker.switchTab('drive')">
+                                    Ouvrir le Drive
+                                    <iconify-icon icon="solar:arrow-right-linear" width="12"></iconify-icon>
+                                </button>
+                            </div>
+                            <div class="ip-recent-strip">
+                                <template x-for="file in $store.imagePicker.driveFiles.slice(0, 8)" :key="file._id || file.filename">
+                                    <div class="ip-recent-thumb" @click="$store.imagePicker.selectImage({ url: file.url, alt: file.originalName, source: 'drive', filename: file.filename })">
+                                        <img :src="file.url" :alt="file.originalName" loading="lazy">
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Loading drive images -->
+                        <div class="ip-recent-section" x-show="$store.imagePicker.driveLoading">
+                            <div class="ip-recent-header">
+                                <span class="ip-recent-label">
+                                    <iconify-icon icon="line-md:loading-twotone-loop" width="13"></iconify-icon>
+                                    Chargement des images...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ═══ SEARCH TAB (Unsplash) ═══ -->
+                <template x-if="$store.imagePicker.activeTab === 'search'">
+                    <div>
+                        <div class="ip-search-bar">
+                            <input class="ip-search-input" type="text" placeholder="Rechercher des images..."
+                                   x-model="$store.imagePicker.searchQuery"
+                                   @keydown.enter="$store.imagePicker.searchImages()">
+                            <button class="ip-search-btn" @click="$store.imagePicker.searchImages()">
+                                <iconify-icon icon="solar:magnifer-bold" width="14"></iconify-icon>
+                            </button>
+                        </div>
+
+                        <!-- Loading -->
+                        <div class="ip-loading" x-show="$store.imagePicker.searchLoading">
+                            <iconify-icon icon="line-md:loading-twotone-loop" width="20"></iconify-icon>
+                            Recherche en cours...
+                        </div>
+
+                        <!-- Search error (Unsplash not connected) -->
+                        <div class="ip-empty" x-show="$store.imagePicker.searchError">
+                            <iconify-icon icon="solar:link-broken-bold-duotone" width="44"></iconify-icon>
+                            <div class="ip-empty-title">Unsplash non connecté</div>
+                            <div class="ip-empty-msg">Connectez votre compte Unsplash dans les Intégrations pour rechercher des images.</div>
+                        </div>
+
+                        <!-- Empty results -->
+                        <div class="ip-empty" x-show="!$store.imagePicker.searchLoading && !$store.imagePicker.searchError && $store.imagePicker.searchResults.length === 0 && $store.imagePicker.searchQuery">
+                            <iconify-icon icon="solar:gallery-broken" width="44"></iconify-icon>
+                            <div class="ip-empty-title">Aucun résultat</div>
+                            <div class="ip-empty-msg">Essayez d'autres termes de recherche.</div>
+                        </div>
+
+                        <!-- Initial state -->
+                        <div class="ip-empty" x-show="!$store.imagePicker.searchLoading && !$store.imagePicker.searchError && $store.imagePicker.searchResults.length === 0 && !$store.imagePicker.searchQuery">
+                            <iconify-icon icon="solar:magnifer-bold-duotone" width="44"></iconify-icon>
+                            <div class="ip-empty-title">Rechercher sur Unsplash</div>
+                            <div class="ip-empty-msg">Tapez un mot-clé pour trouver des images libres de droits.</div>
+                        </div>
+
+                        <!-- Grid -->
+                        <div class="ip-grid" x-show="!$store.imagePicker.searchLoading && $store.imagePicker.searchResults.length > 0">
+                            <template x-for="photo in $store.imagePicker.searchResults" :key="photo.id">
+                                <div class="ip-grid-item" @click="$store.imagePicker.selectImage({ url: photo.url, alt: photo.alt, source: 'unsplash', credit: photo.credit })">
+                                    <img :src="photo.thumb" :alt="photo.alt" loading="lazy">
+                                    <div class="ip-grid-item-attr" x-text="'📷 ' + photo.credit"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ═══ DRIVE TAB ═══ -->
+                <template x-if="$store.imagePicker.activeTab === 'drive'">
+                    <div>
+                        <!-- Breadcrumb -->
+                        <div class="ip-breadcrumb" x-show="$store.imagePicker.driveScope !== 'record'">
+                            <button class="ip-breadcrumb-item" @click="$store.imagePicker.switchDriveScope('record')">
+                                <iconify-icon icon="solar:arrow-left-linear" width="12"></iconify-icon> Drive du record
+                            </button>
+                            <span class="ip-breadcrumb-sep">›</span>
+                            <span class="ip-breadcrumb-current">Tous les fichiers</span>
+                        </div>
+                        <div class="ip-breadcrumb" x-show="$store.imagePicker.driveScope === 'record' && $store.imagePicker.recordId">
+                            <span class="ip-breadcrumb-current">
+                                <iconify-icon icon="solar:folder-bold-duotone" width="12" style="color:#8b5cf6"></iconify-icon>
+                                Drive du record
+                            </span>
+                            <span class="ip-breadcrumb-sep">·</span>
+                            <button class="ip-breadcrumb-item" @click="$store.imagePicker.switchDriveScope('account')">
+                                Voir tous les fichiers →
+                            </button>
+                        </div>
+
+                        <!-- Loading -->
+                        <div class="ip-loading" x-show="$store.imagePicker.driveLoading">
+                            <iconify-icon icon="line-md:loading-twotone-loop" width="20"></iconify-icon>
+                            Chargement...
+                        </div>
+
+                        <!-- Empty -->
+                        <div class="ip-empty" x-show="!$store.imagePicker.driveLoading && $store.imagePicker.driveFiles.length === 0">
+                            <iconify-icon icon="solar:gallery-broken" width="44"></iconify-icon>
+                            <div class="ip-empty-title">Aucune image trouvée</div>
+                            <div class="ip-empty-msg">Uploadez des images via l'onglet "Uploader" ou le Drive du record.</div>
+                        </div>
+
+                        <!-- Grid -->
+                        <div class="ip-grid" x-show="!$store.imagePicker.driveLoading && $store.imagePicker.driveFiles.length > 0">
+                            <template x-for="file in $store.imagePicker.driveFiles" :key="file._id || file.filename">
+                                <div class="ip-grid-item" @click="$store.imagePicker.selectImage({ url: file.url, alt: file.originalName, source: 'drive', filename: file.filename })">
+                                    <img :src="file.url" :alt="file.originalName" loading="lazy">
+                                    <div class="ip-grid-item-name" x-text="file.originalName"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('imagePicker', {
+        // State
+        isOpen: false,
+        activeTab: 'upload',
+        // Config (set via open())
+        accountNumber: '',
+        recordId: null,
+        multiple: false,
+        onSelect: null,
+        // Drive
+        driveFiles: [],
+        driveLoading: false,
+        driveScope: 'record',
+        // Upload
+        uploading: false,
+        uploadProgress: 0,
+        dragOver: false,
+        // Search
+        searchQuery: '',
+        searchResults: [],
+        searchLoading: false,
+        searchError: false,
+        // URL (inline in upload tab)
+        urlInput: '',
+
+        // ── Public API ──
+        open(config) {
+            this.accountNumber = config.accountNumber || window.__ACCOUNT_NUMBER__ || '';
+            this.recordId = config.recordId || null;
+            this.multiple = config.multiple || false;
+            this.onSelect = config.onSelect || null;
+            this.activeTab = 'upload';
+            this.driveScope = this.recordId ? 'record' : 'account';
+            this.isOpen = true;
+            // Reset
+            this.driveFiles = [];
+            this.searchResults = [];
+            this.searchQuery = '';
+            this.searchError = false;
+            this.urlInput = '';
+            this.uploading = false;
+            this.uploadProgress = 0;
+            // Auto-load drive images (for recent strip in upload tab)
+            this.loadDriveFiles();
+        },
+
+        close() {
+            this.isOpen = false;
+            this.onSelect = null;
+        },
+
+        switchTab(tab) {
+            this.activeTab = tab;
+            if (tab === 'drive' && this.driveFiles.length === 0) {
+                this.loadDriveFiles();
+            }
+        },
+
+        selectImage(img) {
+            if (typeof this.onSelect === 'function') {
+                this.onSelect(img);
+            }
+            if (!this.multiple) {
+                this.close();
+            }
+        },
+
+        // ── Drive ──
+        async loadDriveFiles() {
+            this.driveLoading = true;
+            this.driveFiles = [];
+            try {
+                let url;
+                if (this.driveScope === 'record' && this.recordId) {
+                    url = '/account/' + this.accountNumber + '/api/records/' + this.recordId + '/attachments';
+                } else {
+                    url = '/account/' + this.accountNumber + '/api/drive/files';
+                }
+                const resp = await fetch(url, { credentials: 'include' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    let files;
+                    if (this.driveScope === 'record') {
+                        files = data.attachments || data.data || data || [];
+                    } else {
+                        files = data.files || data.data || data || [];
+                    }
+                    const accountNum = this.accountNumber;
+                    this.driveFiles = files.filter(f => {
+                        const mime = f.mimeType || f.type || '';
+                        return mime.startsWith('image/');
+                    }).map(f => {
+                        const filename = f.filename || f.path || '';
+                        return {
+                            ...f,
+                            url: '/account/' + accountNum + '/uploads/attachments/' + filename,
+                            originalName: f.originalName || f.name || filename.split('/').pop()
+                        };
+                    });
+                }
+            } catch (err) {
+                console.error('[ImagePicker] Drive load error:', err);
+            }
+            this.driveLoading = false;
+        },
+
+        switchDriveScope(scope) {
+            this.driveScope = scope;
+            this.loadDriveFiles();
+        },
+
+        // ── Upload ──
+        handleDrop(e) {
+            this.dragOver = false;
+            const files = e.dataTransfer?.files;
+            if (files && files.length > 0) {
+                this.uploadFile(files[0]);
+            }
+        },
+
+        handleFileSelect(e) {
+            const files = e.target?.files;
+            if (files && files.length > 0) {
+                this.uploadFile(files[0]);
+            }
+            e.target.value = '';
+        },
+
+        async uploadFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Seules les images sont acceptées.');
+                return;
+            }
+            this.uploading = true;
+            this.uploadProgress = 0;
+
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const accountNum = this.accountNumber;
+            let uploadUrl;
+            if (this.recordId) {
+                uploadUrl = '/account/' + accountNum + '/api/records/' + this.recordId + '/attachments';
+            } else {
+                uploadUrl = '/account/' + accountNum + '/api/drive/upload';
+            }
+
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', uploadUrl);
+                    xhr.withCredentials = true;
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                        }
+                    };
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(JSON.parse(xhr.responseText));
+                        } else {
+                            reject(new Error('Upload failed: ' + xhr.status));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Upload error'));
+                    xhr.send(formData);
+                });
+
+                this.uploading = false;
+                this.uploadProgress = 0;
+
+                let uploadedFile;
+                if (result.attachment) {
+                    uploadedFile = result.attachment;
+                } else if (result.attachments && result.attachments.length) {
+                    uploadedFile = result.attachments[0];
+                } else if (result.file) {
+                    uploadedFile = result.file;
+                } else if (result.files && result.files.length) {
+                    uploadedFile = result.files[0];
+                }
+
+                if (uploadedFile) {
+                    const filename = uploadedFile.filename || uploadedFile.path || '';
+                    const url = '/account/' + accountNum + '/uploads/attachments/' + filename;
+                    const alt = uploadedFile.originalName || file.name || 'image';
+                    this.selectImage({ url, alt, source: 'upload', filename });
+                }
+            } catch (err) {
+                console.error('[ImagePicker] Upload error:', err);
+                this.uploading = false;
+                this.uploadProgress = 0;
+            }
+        },
+
+        // ── Unsplash Search ──
+        async searchImages() {
+            const q = this.searchQuery.trim();
+            if (!q) return;
+            this.searchLoading = true;
+            this.searchError = false;
+            this.searchResults = [];
+
+            try {
+                const resp = await fetch('/account/' + this.accountNumber + '/integrations/unsplash/actions/search-photos/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ input: { query: q, per_page: 12, page: 1 } })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const results = data.output?.results || data.results || [];
+                    this.searchResults = results.map(photo => ({
+                        id: photo.id,
+                        url: photo.urls?.regular || photo.urls?.full || '',
+                        thumb: photo.urls?.small || photo.urls?.thumb || '',
+                        alt: photo.alt_description || q,
+                        credit: photo.user?.name || 'Unsplash'
+                    }));
+                } else {
+                    this.searchError = true;
+                }
+            } catch (err) {
+                console.error('[ImagePicker] Search error:', err);
+                this.searchError = true;
+            }
+            this.searchLoading = false;
+        },
+
+        // ── URL (inline in upload tab) ──
+        insertFromUrl() {
+            const url = this.urlInput.trim();
+            if (!url) return;
+            this.selectImage({ url, alt: 'image', source: 'url' });
+        }
+    });
+});
+</script>

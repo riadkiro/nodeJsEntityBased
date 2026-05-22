@@ -1502,13 +1502,9 @@
                         <button @mousedown.prevent="openLinkModal()" title="Insérer un lien">
                             <iconify-icon icon="solar:link-round-bold-duotone" width="16"></iconify-icon>
                         </button>
-                        <!-- Insert Image URL -->
-                        <button @mousedown.prevent="openImageModal()" title="Insérer une image (URL)">
+                        <!-- Insert Image (universal picker) -->
+                        <button @mousedown.prevent="insertImageFromPicker()" title="Insérer une image">
                             <iconify-icon icon="solar:gallery-bold-duotone" width="16"></iconify-icon>
-                        </button>
-                        <!-- Insert Image from Drive -->
-                        <button @mousedown.prevent="openDriveModal()" title="Insérer depuis le Drive">
-                            <iconify-icon icon="solar:cloud-download-bold-duotone" width="16"></iconify-icon>
                         </button>
                         <div class="sep"></div>
                         
@@ -1580,68 +1576,6 @@
         </div>
     </template>
 
-    <!-- ═══ IMAGE MODAL ═══ -->
-    <template x-if="showImageModal">
-        <div class="ne-inline-modal-overlay" @click.self="showImageModal = false">
-            <div class="ne-inline-modal">
-                <div class="ne-inline-modal-header">
-                    <iconify-icon icon="solar:gallery-bold-duotone" width="18" style="color:#8b5cf6"></iconify-icon>
-                    Insérer une image
-                </div>
-                <div class="ne-inline-modal-body">
-                    <label>URL de l’image</label>
-                    <input type="url" x-model="imageUrl" placeholder="https://..." x-ref="imageUrlInput" @keydown.enter="insertImage()">
-                    <label>Texte alternatif (optionnel)</label>
-                    <input type="text" x-model="imageAlt" placeholder="Description de l'image...">
-                </div>
-                <div class="ne-inline-modal-footer">
-                    <button class="btn-cancel" @click="showImageModal = false">Annuler</button>
-                    <button class="btn-insert" @click="insertImage()">Insérer</button>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <!-- ═══ DRIVE IMAGES MODAL ═══ -->
-    <template x-if="showDriveModal">
-        <div class="ne-inline-modal-overlay" @click.self="showDriveModal = false">
-            <div class="ne-inline-modal" style="width:520px;">
-                <div class="ne-inline-modal-header">
-                    <iconify-icon icon="solar:cloud-download-bold-duotone" width="18" style="color:#8b5cf6"></iconify-icon>
-                    Insérer depuis le Drive
-                </div>
-                <div class="ne-inline-modal-body">
-                    <template x-if="driveLoading">
-                        <div class="ne-drive-empty">
-                            <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
-                            <div>Chargement des images...</div>
-                        </div>
-                    </template>
-                    <template x-if="!driveLoading && driveImages.length === 0">
-                        <div class="ne-drive-empty">
-                            <iconify-icon icon="solar:gallery-broken" width="40"></iconify-icon>
-                            <div style="font-weight:600;color:#64748b;">Aucune image dans le Drive</div>
-                            <div style="font-size:12px;margin-top:4px;">Uploadez d'abord des images via l'onglet Drive du record.</div>
-                        </div>
-                    </template>
-                    <template x-if="!driveLoading && driveImages.length > 0">
-                        <div class="ne-drive-grid">
-                            <template x-for="img in driveImages" :key="img._id || img.filename">
-                                <div class="ne-drive-item" @click="insertDriveImage(img)">
-                                    <img :src="img.url" :alt="img.originalName" loading="lazy">
-                                    <div class="ne-drive-item-name" x-text="img.originalName"></div>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-                <div class="ne-inline-modal-footer">
-                    <button class="btn-cancel" @click="showDriveModal = false">Fermer</button>
-                </div>
-            </div>
-        </div>
-    </template>
-
     <!-- ═══ CREATE MODAL ═══ -->
     <template x-if="showCreateModal">
         <div class="note-modal-overlay" @click.self="showCreateModal = false">
@@ -1707,16 +1641,10 @@ document.addEventListener('alpine:init', () => {
         showLinkModal: false,
         linkText: '',
         linkUrl: '',
-        showImageModal: false,
-        imageUrl: '',
-        imageAlt: '',
         savedSelection: null,
         selectedImage: null,
         selectedImageSize: '',
         imageToolbarStyle: '',
-        showDriveModal: false,
-        driveImages: [],
-        driveLoading: false,
 
         async init() {
             await this.loadNotes();
@@ -2091,27 +2019,20 @@ document.addEventListener('alpine:init', () => {
             this.scheduleAutosave();
         },
 
-        // ── Image Insert ──
-        openImageModal() {
+        // ── Image Insert (Universal Picker) ──
+        insertImageFromPicker() {
             this.saveSelection();
-            this.imageUrl = '';
-            this.imageAlt = '';
-            this.showImageModal = true;
-            this.$nextTick(() => {
-                this.$refs.imageUrlInput?.focus();
+            Alpine.store('imagePicker').open({
+                accountNumber: _accountNumber,
+                recordId: _recordId,
+                onSelect: (img) => {
+                    this.$refs.editorContent?.focus();
+                    this.restoreSelection();
+                    const html = '<div><img src="' + img.url + '" alt="' + (img.alt || 'image') + '" style="max-width:100%;"></div><div><br></div>';
+                    document.execCommand('insertHTML', false, html);
+                    this.scheduleAutosave();
+                }
             });
-        },
-
-        insertImage() {
-            const url = this.imageUrl.trim();
-            if (!url) return;
-            const alt = this.imageAlt.trim() || 'image';
-            this.showImageModal = false;
-            this.$refs.editorContent?.focus();
-            this.restoreSelection();
-            const html = '<div><img src="' + url + '" alt="' + alt + '" style="max-width:100%;"></div><div><br></div>';
-            document.execCommand('insertHTML', false, html);
-            this.scheduleAutosave();
         },
 
         // ── Content Click Handler (image toolbar + link Ctrl+Click) ──
@@ -2121,7 +2042,6 @@ document.addEventListener('alpine:init', () => {
             // Image click: show floating toolbar
             if (e.target.tagName === 'IMG') {
                 e.preventDefault();
-                // Remove previous selection
                 this.$refs.editorContent?.querySelectorAll('.ne-img-selected').forEach(el => el.classList.remove('ne-img-selected'));
                 e.target.classList.add('ne-img-selected');
                 this.selectedImage = e.target;
@@ -2155,10 +2075,8 @@ document.addEventListener('alpine:init', () => {
             const toolbarW = toolbar.offsetWidth || 250;
             let left = imgRect.left - containerRect.left + (imgRect.width / 2) - (toolbarW / 2);
             let top = imgRect.top - containerRect.top - 44;
-            // Clamp left
             if (left < 4) left = 4;
             if (left + toolbarW > container.clientWidth - 4) left = container.clientWidth - toolbarW - 4;
-            // If above is negative, put below
             if (top < 0) top = imgRect.bottom - containerRect.top + 8;
             this.imageToolbarStyle = `left:${left}px;top:${top}px;`;
         },
@@ -2175,52 +2093,10 @@ document.addEventListener('alpine:init', () => {
             if (!this.selectedImage) return;
             const parent = this.selectedImage.parentElement;
             this.selectedImage.remove();
-            // Clean empty wrapper div
             if (parent && parent.tagName === 'DIV' && !parent.textContent.trim() && !parent.querySelector('img')) {
                 parent.remove();
             }
             this.selectedImage = null;
-            this.scheduleAutosave();
-        },
-
-        // ── Drive Images ──
-        async openDriveModal() {
-            this.saveSelection();
-            this.showDriveModal = true;
-            this.driveLoading = true;
-            this.driveImages = [];
-            try {
-                const resp = await fetch('/account/' + _accountNumber + '/api/records/' + _recordId + '/attachments', {
-                    credentials: 'include'
-                });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const attachments = data.attachments || data.data || data || [];
-                    // Filter to images only and build URL
-                    this.driveImages = attachments.filter(a => {
-                        const mime = a.mimeType || a.type || '';
-                        return mime.startsWith('image/');
-                    }).map(a => {
-                        const filename = a.filename || a.path || '';
-                        return {
-                            ...a,
-                            url: '/account/' + _accountNumber + '/uploads/attachments/' + filename,
-                            originalName: a.originalName || a.name || filename.split('/').pop()
-                        };
-                    });
-                }
-            } catch (err) {
-                console.error('Drive fetch error:', err);
-            }
-            this.driveLoading = false;
-        },
-
-        insertDriveImage(img) {
-            this.showDriveModal = false;
-            this.$refs.editorContent?.focus();
-            this.restoreSelection();
-            const html = '<div><img src="' + img.url + '" alt="' + (img.originalName || 'image') + '" style="max-width:100%;"></div><div><br></div>';
-            document.execCommand('insertHTML', false, html);
             this.scheduleAutosave();
         },
 

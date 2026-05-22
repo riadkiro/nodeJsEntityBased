@@ -1239,6 +1239,26 @@
 [data-theme="dark"] .notes-list::-webkit-scrollbar-thumb {
     background: #253b5c;
 }
+
+/* ── Color Picker Dots ── */
+.note-color-picker-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    display: inline-block;
+    transition: all .15s;
+}
+.note-color-picker-dot:hover {
+    transform: scale(1.15);
+}
+.note-color-picker-dot.active {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px currentColor;
+}
+[data-theme="dark"] .note-color-picker-dot.active {
+    box-shadow: 0 0 0 2px #0e1726, 0 0 0 3px currentColor;
+}
 </style>
 
 <div x-data="notesModule" x-cloak>
@@ -1401,7 +1421,25 @@
                                 <span><iconify-icon icon="solar:check-circle-bold" width="12"></iconify-icon> Sauvegardé</span>
                             </template>
                         </div>
-                        <div class="ne-topbar-actions">
+                        <div class="ne-topbar-actions" style="display:flex;align-items:center;gap:4px;">
+                            <!-- Note Color Picker -->
+                            <div class="ne-toolbar-dropdown" @click.away="showNoteColorMenu = false" style="display:inline-block;">
+                                <button class="ne-topbar-btn" @click.prevent="showNoteColorMenu = !showNoteColorMenu" title="Couleur de la note" style="padding: 5px; display: flex; align-items: center; justify-content: center;">
+                                    <span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,0.15);" :style="'background:' + activeNote.color"></span>
+                                </button>
+                                <div class="ne-toolbar-dropdown-menu" x-show="showNoteColorMenu" x-transition @click="showNoteColorMenu = false" style="min-width: 140px; padding: 10px; right: 0; left: auto; z-index: 100;">
+                                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; justify-items: center; align-items: center;">
+                                        <template x-for="c in colorOptions" :key="c">
+                                            <span class="note-color-picker-dot"
+                                                  :class="activeNote.color === c ? 'active' : ''"
+                                                  :style="'background:' + c + ';color:' + c"
+                                                  @click="updateNoteColor(c)"
+                                                  :title="c"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button class="ne-topbar-btn" :class="{ 'pin-active': activeNote.pinned }"
                                     @click="togglePinActive()" :title="activeNote.pinned ? 'Désépingler' : 'Épingler'">
                                 <iconify-icon :icon="activeNote.pinned ? 'solar:pin-bold' : 'solar:pin-linear'" width="14"></iconify-icon>
@@ -1514,14 +1552,25 @@
                         </button>
                         <div class="sep"></div>
                         
-                        <!-- Colors -->
-                        <div class="ne-toolbar-colors">
-                            <span style="background:#fef08a" @mousedown.prevent="highlight('#fef08a')" title="Jaune"></span>
-                            <span style="background:#bbf7d0" @mousedown.prevent="highlight('#bbf7d0')" title="Vert"></span>
-                            <span style="background:#bfdbfe" @mousedown.prevent="highlight('#bfdbfe')" title="Bleu"></span>
-                            <span style="background:#fecaca" @mousedown.prevent="highlight('#fecaca')" title="Rouge"></span>
-                            <span style="background:#e9d5ff" @mousedown.prevent="highlight('#e9d5ff')" title="Violet"></span>
-                            <span style="background:transparent;border:1px solid #ccc" @mousedown.prevent="highlight('transparent')" title="Effacer"></span>
+                        <!-- Highlight Color Picker -->
+                        <div class="ne-toolbar-dropdown" @click.away="showColorMenu = false">
+                            <button class="ne-toolbar-dropdown-btn" @mousedown.prevent="showColorMenu = !showColorMenu" title="Surlignage" style="display:flex;align-items:center;gap:6px;">
+                                <iconify-icon icon="solar:pen-2-bold-duotone" width="14" style="color: #8b5cf6"></iconify-icon>
+                                <span x-ref="highlightIndicator" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fef08a;border:1px solid rgba(0,0,0,0.15);"></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="10" style="opacity: .5; margin-left: 2px;"></iconify-icon>
+                            </button>
+                            <div class="ne-toolbar-dropdown-menu" x-show="showColorMenu" x-transition @click="showColorMenu = false" style="min-width: 140px; padding: 10px; z-index: 100;">
+                                <div style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                    <span class="note-color-picker-dot" style="background:#fef08a;color:#fef08a;" @mousedown.prevent="highlight('#fef08a'); $refs.highlightIndicator.style.background = '#fef08a'" title="Jaune"></span>
+                                    <span class="note-color-picker-dot" style="background:#bbf7d0;color:#bbf7d0;" @mousedown.prevent="highlight('#bbf7d0'); $refs.highlightIndicator.style.background = '#bbf7d0'" title="Vert"></span>
+                                    <span class="note-color-picker-dot" style="background:#bfdbfe;color:#bfdbfe;" @mousedown.prevent="highlight('#bfdbfe'); $refs.highlightIndicator.style.background = '#bfdbfe'" title="Bleu"></span>
+                                    <span class="note-color-picker-dot" style="background:#fecaca;color:#fecaca;" @mousedown.prevent="highlight('#fecaca'); $refs.highlightIndicator.style.background = '#fecaca'" title="Rouge"></span>
+                                    <span class="note-color-picker-dot" style="background:#e9d5ff;color:#e9d5ff;" @mousedown.prevent="highlight('#e9d5ff'); $refs.highlightIndicator.style.background = '#e9d5ff'" title="Violet"></span>
+                                    <button @mousedown.prevent="highlight('transparent'); $refs.highlightIndicator.style.background = 'transparent'" title="Effacer" style="width:20px;height:20px;border-radius:50%;border:1px solid #ccc;background:transparent;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;color:#ef4444;margin:0;">
+                                        <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1638,6 +1687,8 @@ document.addEventListener('alpine:init', () => {
         },
         showFormatMenu: false,
         showSizeMenu: false,
+        showColorMenu: false,
+        showNoteColorMenu: false,
         showLinkModal: false,
         linkText: '',
         linkUrl: '',
@@ -1797,6 +1848,32 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 console.error('[Notes] Autosave error:', e);
                 if (this.activeNote) this.saveStatus = '';
+            }
+        },
+
+        async updateNoteColor(color) {
+            if (!this.activeNote) return;
+            this.activeNote.color = color;
+            // Update local array
+            const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
+            if (idx !== -1) {
+                this.notes[idx].color = color;
+            }
+            this.saveStatus = 'saving';
+            try {
+                const res = await fetch(_apiBase + '/' + this.activeNote._id, {
+                    method: 'PUT', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ color })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.saveStatus = 'saved';
+                    setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
+                }
+            } catch (e) {
+                console.error('[Notes] Color save error:', e);
+                this.saveStatus = '';
             }
         },
 

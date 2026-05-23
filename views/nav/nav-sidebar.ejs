@@ -456,9 +456,11 @@
         </a>
 
       </div>
-      <ul
-        class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold sortable-root"
-        x-data="sidebarHierarchy()">
+      <div
+        class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold"
+        x-data="sidebarHierarchy()"
+        @contextmenu.prevent="openSidebarBackgroundMenu($event)"
+        @click="openSidebarBackgroundMenu($event)">
 
 
         <!-- ═══ SIDEBAR MODE WRAPPER (Admin vs Spaces toggle) ═══ -->
@@ -1001,6 +1003,7 @@
           </template> <!-- end !isSingleSpaceEnv -->
 
           <!-- Icon Edit Modal -->
+          <template x-teleport="body">
           <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto"
             :class="showIconEditModal && '!block'">
             <div class="flex items-start justify-center min-h-screen px-4" @click.self="showIconEditModal = false">
@@ -1116,8 +1119,10 @@
               </div>
             </div>
           </div>
+          </template>
 
           <!-- Creation Modal -->
+          <template x-teleport="body">
           <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto" :class="showCreateModal && '!block'">
             <div class="flex items-start justify-center min-h-screen px-4" @click.self="showCreateModal = false">
               <div x-show="showCreateModal" x-transition x-transition.duration.300
@@ -1193,33 +1198,34 @@
                               <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14"
                                 x-show="creationColor === color"></iconify-icon>
                             </div>
-                        </div>
-                        </template>
+                          </template>
 
-                        <!-- Custom Picker -->
-                        <div
-                          class="relative w-6 h-6 rounded-full cursor-pointer border border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400"
-                          :style="creationColor && !availableColors.includes(creationColor) ? 'background-color: ' + creationColor + '; border-color: ' + creationColor : ''">
-                          <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none"
-                            :class="creationColor && !availableColors.includes(creationColor) ? 'text-white mix-blend-difference' : 'text-gray-500'"></iconify-icon>
-                          <input type="color"
-                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-0"
-                            x-model="creationColor" title="Couleur personnalisée" />
+                          <!-- Custom Picker -->
+                          <div
+                            class="relative w-6 h-6 rounded-full cursor-pointer border border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400"
+                            :style="creationColor && !availableColors.includes(creationColor) ? 'background-color: ' + creationColor + '; border-color: ' + creationColor : ''">
+                            <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none"
+                              :class="creationColor && !availableColors.includes(creationColor) ? 'text-white mix-blend-difference' : 'text-gray-500'"></iconify-icon>
+                            <input type="color"
+                              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-0"
+                              x-model="creationColor" title="Couleur personnalisée" />
+                          </div>
+                          <span x-show="creationColor && !availableColors.includes(creationColor)" x-text="creationColor"
+                            class="text-[10px] self-center font-mono text-gray-500 uppercase"></span>
                         </div>
-                        <span x-show="creationColor && !availableColors.includes(creationColor)" x-text="creationColor"
-                          class="text-[10px] self-center font-mono text-gray-500 uppercase"></span>
                       </div>
                     </div>
+                    <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
+                      <span x-show="isSubmitting"
+                        class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
+                      Créer
+                    </button>
+                  </form>
                 </div>
-                <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
-                  <span x-show="isSubmitting"
-                    class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
-                  Créer
-                </button>
-                </form>
               </div>
             </div>
           </div>
+          </template>
         </div>
         </div><!-- end x-show spaces -->
         </div><!-- end x-data showAdmin wrapper -->
@@ -1243,6 +1249,8 @@
               savePrefsTimeout: null,
               dragOverFolderId: null,
               sortableInstances: [],
+              sidebarPopoverCloseHandler: null,
+              sidebarPopoverCloseTimer: null,
               activeEnvironmentId: null,
               activeEnvironmentName: '',
               activeEnvironmentIcon: '',
@@ -2345,13 +2353,74 @@
               },
 
               async openCreateMenu(event, item) {
+                event?.preventDefault?.();
+                event?.stopPropagation?.();
                 this.menuMode = 'main';
                 this.entitySearch = '';
                 this.pendingViewType = 'list';
                 Alpine.store('sidebar').contextItem = item;
+                Alpine.store('sidebar').openedAt = Date.now();
                 Alpine.store('sidebar').showMenu = true;
                 Alpine.store('sidebar').showEditMenu = false;
+                this.installSidebarPopoverGuard();
                 await this.loadAllEntities();
+              },
+
+              getDefaultCreateParent() {
+                if (this.isSingleSpaceEnv && this.hierarchy[0]) {
+                  return { ...this.hierarchy[0], type: 'space' };
+                }
+
+                const rootSpace = (this.hierarchy || []).find(item => item.type === 'space');
+                if (rootSpace) return rootSpace;
+
+                return (this.hierarchy || [])[0] || null;
+              },
+
+              async openSidebarBackgroundMenu(event) {
+                const target = event?.target;
+                if (target?.closest?.('[data-id][data-type], a, button, input, select, textarea, .hierarchy-popover')) {
+                  return;
+                }
+
+                const parent = this.getDefaultCreateParent();
+                if (!parent) return;
+
+                await this.openCreateMenu(event, parent);
+              },
+
+              closeSidebarPopovers() {
+                Alpine.store('sidebar').showMenu = false;
+                Alpine.store('sidebar').showEditMenu = false;
+              },
+
+              installSidebarPopoverGuard() {
+                if (this.sidebarPopoverCloseTimer) {
+                  clearTimeout(this.sidebarPopoverCloseTimer);
+                  this.sidebarPopoverCloseTimer = null;
+                }
+
+                if (this.sidebarPopoverCloseHandler) {
+                  document.removeEventListener('mousedown', this.sidebarPopoverCloseHandler);
+                  document.removeEventListener('contextmenu', this.sidebarPopoverCloseHandler);
+                  this.sidebarPopoverCloseHandler = null;
+                }
+
+                this.sidebarPopoverCloseTimer = setTimeout(() => {
+                  this.sidebarPopoverCloseHandler = (evt) => {
+                    const store = Alpine.store('sidebar');
+                    if (!store.showMenu && !store.showEditMenu) return;
+                    if (Date.now() - (store.openedAt || 0) < 350) return;
+
+                    const target = evt.target;
+                    if (target?.closest?.('.hierarchy-popover') || target?.closest?.('nav.sidebar')) return;
+
+                    this.closeSidebarPopovers();
+                  };
+
+                  document.addEventListener('mousedown', this.sidebarPopoverCloseHandler);
+                  document.addEventListener('contextmenu', this.sidebarPopoverCloseHandler);
+                }, 350);
               },
 
               async loadAllEntities() {
@@ -2398,9 +2467,13 @@
               },
 
               openEditMenu(event, type, item, parent = null) {
+                event?.preventDefault?.();
+                event?.stopPropagation?.();
                 Alpine.store('sidebar').contextItem = { ...item, type, parent };
+                Alpine.store('sidebar').openedAt = Date.now();
                 Alpine.store('sidebar').showEditMenu = true;
                 Alpine.store('sidebar').showMenu = false;
+                this.installSidebarPopoverGuard();
               },
 
               createSpace() {
@@ -2433,6 +2506,7 @@
 
                 this.showCreateModal = true;
                 Alpine.store('sidebar').showMenu = false;
+                Alpine.store('sidebar').showEditMenu = false;
 
                 await this.loadIcons(true); // Load initial icons
 
@@ -3043,9 +3117,11 @@
         </script>
 
         <!-- POPUP MENU -->
-        <div x-show="$store.sidebar.showMenu" @click.outside="$store.sidebar.showMenu = false" x-transition @click.stop
-          style="min-width: 248px; margin-left: 248px; top: 56px; border-left:0px;"
-          class="sidebar bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[100] rounded-md shadow border border-gray-200 dark:border-white/10">
+        <template x-teleport="body">
+        <div x-show="$store.sidebar.showMenu" x-transition @mousedown.stop @click.stop @contextmenu.prevent.stop
+          @keydown.escape.window="closeSidebarPopovers()"
+          style="min-width: 248px; left: 248px; top: 56px; border-left:0px; z-index:9999;"
+          class="hierarchy-popover bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[9999] rounded-md shadow border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300">
 
           <!-- Mode MAIN -->
           <template x-if="menuMode === 'main'">
@@ -3166,11 +3242,14 @@
             </div>
           </template>
         </div>
+        </template>
 
         <!-- POPUP MENU Edit -->
-        <div x-show="$store.sidebar.showEditMenu" @click.outside="$store.sidebar.showEditMenu = false" x-transition
-          @click.stop style="min-width: 248px; margin-left: 248px; top: 56px; border-left:0px;"
-          class="sidebar bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[100] rounded-md shadow border border-gray-200 dark:border-white/10">
+        <template x-teleport="body">
+        <div x-show="$store.sidebar.showEditMenu" x-transition @mousedown.stop @click.stop @contextmenu.prevent.stop
+          @keydown.escape.window="closeSidebarPopovers()"
+          style="min-width: 248px; left: 248px; top: 56px; border-left:0px; z-index:9999;"
+          class="hierarchy-popover bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[9999] rounded-md shadow border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300">
           <h2
             class="text-xs font-medium text-gray-500 dark:text-white-dark mb-3 pb-2 border-b border-gray-200 dark:border-white/10">
             <div class="flex items-center gap-2">
@@ -3302,6 +3381,7 @@
             </li>
           </ul>
         </div>
+        </template>
 
         <style>
           .records-wizard-backdrop{background:rgba(15,23,42,.54);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);}
@@ -3405,6 +3485,7 @@
         </style>
 
         <!-- Records Wizard Modal -->
+        <template x-teleport="body">
         <div x-show="showRecordsWizard" x-cloak
              class="records-wizard-backdrop fixed inset-0 z-[1000] flex items-center justify-center p-4">
              <div class="records-wizard-dialog bg-white dark:bg-[#1b2e4b] w-full max-w-5xl rounded-2xl overflow-hidden"
@@ -3805,8 +3886,10 @@
                  </div>
              </div>
         </div>
+        </template>
 
         <!-- CONFIG MODAL (Fixed at center) -->
+        <template x-teleport="body">
         <div x-show="showViewConfigModal"
           class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4" x-cloak>
           <div class="bg-white dark:bg-[#1b2e4b] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden"
@@ -3889,6 +3972,7 @@
             </div>
           </div>
         </div>
+        </template>
     </div>
 </div>
 </nav>

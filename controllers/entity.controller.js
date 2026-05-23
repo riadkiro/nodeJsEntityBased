@@ -3,6 +3,43 @@ const tenantCollection = require("../middleware/tenant").tenantCollection;
 
 const mongoose = require("mongoose");
 
+function removeFieldFromLayout(layout, fieldId) {
+  if (!layout) return layout;
+  const id = fieldId.toString();
+
+  const removeFromFields = (fields) => Array.isArray(fields)
+    ? fields.filter((field) => (field && field.fieldId ? field.fieldId.toString() : "") !== id)
+    : fields;
+
+  const clone = JSON.parse(JSON.stringify(layout));
+  if (Array.isArray(clone)) {
+    return clone
+      .filter((field) => (field && field.fieldId ? field.fieldId.toString() : "") !== id)
+      .map((row) => {
+        if (!row || !Array.isArray(row.columns)) return row;
+        return {
+          ...row,
+          columns: row.columns.map((col) => ({ ...col, fields: removeFromFields(col.fields) }))
+        };
+      });
+  }
+
+  if (Array.isArray(clone.fields)) {
+    clone.fields = removeFromFields(clone.fields);
+  }
+
+  if (Array.isArray(clone.rows)) {
+    clone.rows = clone.rows.map((row) => ({
+      ...row,
+      columns: Array.isArray(row.columns)
+        ? row.columns.map((col) => ({ ...col, fields: removeFromFields(col.fields) }))
+        : row.columns
+    }));
+  }
+
+  return clone;
+}
+
 module.exports = {
   addForm: async (req, res) => {
     res.render("entity/entity-add", {
@@ -832,23 +869,122 @@ module.exports = {
   removeFieldFromEntity_Api: async (req, res) => {
     try {
       const Entity = await tenantCollection(req, "Entity");
+      const Record = await tenantCollection(req, "Record");
+      const UserPreferences = await tenantCollection(req, "UserPreferences");
       const entityId = req.params.id;
-      const { fieldId } = req.body;
+      const { fieldId, deleteValues = true } = req.body;
 
-      if (!fieldId || !mongoose.Types.ObjectId.isValid(fieldId)) {
+      const removableStandardFields = new Set(["description", "date"]);
+      const isStandardField = removableStandardFields.has(fieldId);
+
+      if (!fieldId || (!isStandardField && !mongoose.Types.ObjectId.isValid(fieldId))) {
         return res.status(400).json({ error: "fieldId invalide" });
       }
 
+      const fieldObjectId = isStandardField ? null : new mongoose.Types.ObjectId(fieldId);
+      const fieldIdString = isStandardField ? fieldId : fieldObjectId.toString();
       const entity = await Entity.findById(entityId);
       if (!entity) return res.status(404).json({ error: "Entity not found" });
 
-      entity.customFields = entity.customFields.filter(
-        (id) => id.toString() !== fieldId.toString()
-      );
+      if (isStandardField) {
+        const enabledStandardFields = Array.isArray(entity.enabledStandardFields) && entity.enabledStandardFields.length
+          ? entity.enabledStandardFields
+          : ["title", "description", "date"];
+        entity.enabledStandardFields = enabledStandardFields.filter((key) => key !== fieldIdString);
+        if (!entity.enabledStandardFields.includes("title")) {
+          entity.enabledStandardFields.unshift("title");
+        }
+      } else {
+        entity.customFields = (entity.customFields || []).filter(
+          (id) => id.toString() !== fieldIdString
+        );
+      }
+
+      if (entity.fieldOverrides && typeof entity.fieldOverrides.delete === "function") {
+        entity.fieldOverrides.delete(fieldIdString);
+      }
+
+      entity.layout = removeFieldFromLayout(entity.layout, fieldIdString);
+      entity.formLayout = removeFieldFromLayout(entity.formLayout, fieldIdString);
+
+      if (Array.isArray(entity.referenceTitleTokens)) {
+        entity.referenceTitleTokens = entity.referenceTitleTokens.filter((token) => {
+          return !(token && token.t === "field" && token.id === fieldIdString);
+        });
+        if (entity.referenceTitleTokens.length === 0) {
+          entity.referenceTitleTokens = [{ t: "field", id: "title" }];
+        }
+      }
+
+      if (entity.headerConfig) {
+        if (Array.isArray(entity.headerConfig.heroFields)) {
+          entity.headerConfig.heroFields = entity.headerConfig.heroFields.filter((field) => field.fieldId !== fieldIdString);
+        }
+        if (Array.isArray(entity.headerConfig.metaFields)) {
+          entity.headerConfig.metaFields = entity.headerConfig.metaFields.filter((field) => field.fieldId !== fieldIdString);
+        }
+      }
+
+      if (Array.isArray(entity.relations)) {
+        entity.relations.forEach((relation) => {
+          if (Array.isArray(relation.searchFields)) {
+            relation.searchFields = relation.searchFields.filter((id) => id !== fieldIdString);
+          }
+          if (Array.isArray(relation.displayFields)) {
+            relation.displayFields = relation.displayFields.filter((id) => id !== fieldIdString);
+          }
+        });
+      }
+
+      entity.markModified("customFields");
+      entity.markModified("enabledStandardFields");
+      entity.markModified("fieldOverrides");
+      entity.markModified("layout");
+      entity.markModified("formLayout");
+      entity.markModified("referenceTitleTokens");
+      entity.markModified("headerConfig");
+      entity.markModified("relations");
       await entity.save();
 
+      let recordsCleanup = { modifiedCount: 0 };
+      if (deleteValues !== false) {
+        if (isStandardField) {
+          recordsCleanup = await Record.updateMany(
+            { entityId: entity._id },
+            { $unset: { [fieldIdString]: "" } }
+          );
+        } else {
+          recordsCleanup = await Record.updateMany(
+            { entityId: entity._id },
+            {
+              $pull: {
+                customFields: { field_id: fieldObjectId },
+                relations: { relationKey: fieldIdString },
+                "_denorm.relations": { relationKey: fieldIdString }
+              }
+            }
+          );
+        }
+      }
+
+      await UserPreferences.updateMany(
+        { viewId: `fiche-${entity.slug}` },
+        {
+          $pull: {
+            "preferences.ficheLayout.fieldOrder": fieldIdString,
+            "preferences.ficheLayout.hiddenFields": fieldIdString
+          }
+        }
+      );
+
       console.log(`✅ Field ${fieldId} removed from entity ${entity.slug}`);
-      res.json({ success: true, entity });
+      res.json({
+        success: true,
+        entity,
+        removedFieldId: fieldIdString,
+        fieldKind: isStandardField ? "standard" : "custom",
+        recordsUpdated: recordsCleanup.modifiedCount || recordsCleanup.nModified || 0
+      });
     } catch (err) {
       console.error("❌ removeFieldFromEntity error:", err);
       res.status(500).json({ error: err.message });

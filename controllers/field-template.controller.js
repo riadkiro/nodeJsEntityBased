@@ -320,6 +320,53 @@ module.exports = {
     }
   },
 
+  addOption_Api: async (req, res) => {
+    const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+    try {
+      const { label, value, color } = req.body;
+      const optionLabel = (label || value || '').trim();
+      const optionValue = (value || label || '').trim();
+
+      if (!optionLabel || !optionValue) {
+        return res.status(400).json({ success: false, error: "Option invalide" });
+      }
+
+      const field = await FieldTemplateModel.findById(req.params.id);
+      if (!field) {
+        return res.status(404).json({ success: false, error: "Champ introuvable" });
+      }
+
+      const typeConfig = field.type_config || {};
+      const options = Array.isArray(typeConfig.options) ? [...typeConfig.options] : [];
+      const sameOption = (opt) => {
+        const optValue = typeof opt === 'object' ? (opt.value || opt.label) : opt;
+        const optLabel = typeof opt === 'object' ? (opt.label || opt.value) : opt;
+        return [optValue, optLabel].some(v => (v || '').toString().trim().toLowerCase() === optionValue.toLowerCase());
+      };
+
+      const existing = options.find(sameOption);
+      if (existing) {
+        const normalizedExisting = typeof existing === 'object'
+          ? { label: existing.label || existing.value, value: existing.value || existing.label, color: existing.color }
+          : { label: existing, value: existing };
+        return res.json({ success: true, option: normalizedExisting, options, alreadyExists: true });
+      }
+
+      const option = { label: optionLabel, value: optionValue };
+      if (color) option.color = color;
+      options.push(option);
+
+      field.type_config = { ...typeConfig, options };
+      field.markModified('type_config');
+      await field.save();
+
+      res.json({ success: true, option, options });
+    } catch (err) {
+      console.error("addOption_Api error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
   singlePage: async (req, res) => {
     const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
     FieldTemplateModel.findById(req.params.id, (err, template) => {

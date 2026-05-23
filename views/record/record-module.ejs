@@ -163,7 +163,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .fiche-configuring{user-select:none;-webkit-user-select:none;}
 .fiche-configuring .ov-ef{cursor:default;}
 .fiche-configuring .ov-ef .ov-ef-body{pointer-events:none;opacity:.7;}
-.fiche-configuring .ov-ef .fiche-drag-handle,.fiche-configuring .ov-ef .fiche-vis-toggle,.fiche-configuring .ov-ef .fiche-req-badge{pointer-events:auto;}
+.fiche-configuring .ov-ef .fiche-drag-handle,.fiche-configuring .ov-ef .fiche-vis-toggle,.fiche-configuring .ov-ef .fiche-delete-field,.fiche-configuring .ov-ef .fiche-req-badge{pointer-events:auto;}
 .ov-ef .fiche-drag-handle{display:none;width:18px;height:18px;align-items:center;justify-content:center;cursor:grab;color:#bfc9d4;font-size:13px;flex-shrink:0;border-radius:4px;transition:color .15s,background .15s;margin-right:2px;}
 .fiche-configuring .ov-ef .fiche-drag-handle{display:flex;}
 .ov-ef .fiche-drag-handle:hover{color:#4361ee;background:rgba(67,97,238,.06);}
@@ -171,6 +171,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .ov-ef .fiche-vis-toggle{display:none;margin-left:auto;padding:3px;border:none;background:none;cursor:pointer;color:#bfc9d4;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;line-height:0;}
 .fiche-configuring .ov-ef .fiche-vis-toggle{display:block;}
 .ov-ef .fiche-vis-toggle:hover{color:#4361ee;background:rgba(67,97,238,.06);}
+.ov-ef .fiche-delete-field{display:none;padding:3px;border:none;background:none;cursor:pointer;color:#cbd5e1;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;line-height:0;}
+.fiche-configuring .ov-ef .fiche-delete-field{display:block;}
+.ov-ef .fiche-delete-field:hover{color:#ef4444;background:rgba(239,68,68,.08);}
+.ov-ef .fiche-delete-field:disabled{opacity:.45;cursor:wait;}
 .ov-ef--hidden{opacity:.35;background:#f8fafc;}
 .ov-ef--hidden .ov-ef-val,.ov-ef--hidden .ov-ef-text,.ov-ef--hidden .ov-placeholder{text-decoration:line-through;}
 .ov-ef .fiche-req-badge{display:none;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:rgba(67,97,238,.08);color:#4361ee;flex-shrink:0;margin-left:auto;}
@@ -3330,12 +3334,15 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
         const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
         const _prefsUrl = '/account/<%= account_number %>/api/user/view-preferences';
         const _ficheViewId = 'fiche-<%= entity.slug %>';
+        const _ficheAccountNumber = '<%= account_number %>';
+        const _ficheEntityId = '<%= entity._id %>';
         const _initialHidden = <%- JSON.stringify((typeof fichePreferences !== 'undefined' && fichePreferences.hiddenFields) ? fichePreferences.hiddenFields : []) %>;
 
         // Fiche config component (root-level)
         Alpine.data('ficheConfig', () => ({
             configMode: false,
             hiddenFields: [..._initialHidden],
+            deletingFieldKey: '',
             _sortableInstance: null,
 
             toggleConfig() {
@@ -3357,6 +3364,46 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     this.hiddenFields = this.hiddenFields.filter(k => k !== key);
                 } else {
                     this.hiddenFields.push(key);
+                }
+            },
+
+            async deleteField(key, label) {
+                if (!this.configMode || this.deletingFieldKey) return;
+                const fieldLabel = label || 'ce champ';
+                const confirmed = window.confirm(
+                    `Supprimer le champ "${fieldLabel}" ?\n\nIl sera retire de cette entite et ses valeurs seront supprimees des fiches existantes.`
+                );
+                if (!confirmed) return;
+
+                this.deletingFieldKey = key;
+                this._destroySortable();
+                try {
+                    const res = await fetch(`/account/${_ficheAccountNumber}/entity/api/${_ficheEntityId}/remove-field`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ fieldId: key, deleteValues: true })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.error || 'Suppression impossible');
+                    }
+
+                    this.hiddenFields = this.hiddenFields.filter(k => k !== key);
+                    const list = this.$refs.ficheFieldsList;
+                    const item = list ? [...list.querySelectorAll('.ov-ef[data-field-key]')].find(el => el.dataset.fieldKey === key) : null;
+                    if (item) item.remove();
+                    await this._savePreferences();
+
+                    if (window.showMessage) window.showMessage('Champ supprime', 'success');
+                    window.location.reload();
+                } catch (e) {
+                    console.error('[FicheConfig] Delete field error:', e);
+                    if (window.showMessage) window.showMessage(e.message || 'Erreur lors de la suppression', 'danger');
+                    else alert(e.message || 'Erreur lors de la suppression');
+                    if (this.configMode) this.$nextTick(() => this._initSortable());
+                } finally {
+                    this.deletingFieldKey = '';
                 }
             },
 
@@ -3705,6 +3752,163 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                     window.showMessage ? window.showMessage('Erreur: ' + e.message, 'danger') : alert('Erreur: ' + e.message);
                 } finally {
                     this.creating = false;
+                }
+            }
+        }));
+
+        // Select / multiselect editor sub-component (same interaction model as relations)
+        Alpine.data('ovChoiceEditor', (cfg) => ({
+            key: cfg.key,
+            fieldId: cfg.fieldId,
+            isMulti: !!cfg.isMulti,
+            color: cfg.color || '#4361ee',
+            options: (cfg.options || []).map(opt => {
+                if (typeof opt === 'object') {
+                    return { label: opt.label || opt.value, value: opt.value || opt.label, color: opt.color };
+                }
+                return { label: opt, value: opt };
+            }).filter(opt => opt.label && opt.value),
+            selectedValues: Array.isArray(cfg.initial) ? cfg.initial.map(v => String(v)) : (cfg.initial ? [String(cfg.initial)] : []),
+            searchQ: '',
+            showDropdown: false,
+            saving: false,
+
+            init() {
+                this.$nextTick(() => {
+                    const inp = this.$refs.choiceSearchInput;
+                    if (inp) inp.focus();
+                    this.showDropdown = true;
+                });
+            },
+
+            get selectedOptions() {
+                return this.selectedValues.map(value => {
+                    const match = this.options.find(opt => String(opt.value) === String(value));
+                    return match || { label: value, value };
+                });
+            },
+
+            get filteredOptions() {
+                const q = this.searchQ.trim().toLowerCase();
+                return this.options.filter(opt => {
+                    const alreadySelected = this.selectedValues.includes(String(opt.value));
+                    if (alreadySelected) return false;
+                    if (!q) return true;
+                    return String(opt.label || '').toLowerCase().includes(q) || String(opt.value || '').toLowerCase().includes(q);
+                });
+            },
+
+            get hasExactMatch() {
+                const q = this.searchQ.trim().toLowerCase();
+                if (!q) return false;
+                return this.options.some(opt =>
+                    String(opt.label || '').toLowerCase() === q ||
+                    String(opt.value || '').toLowerCase() === q
+                );
+            },
+
+            async addChoice(option) {
+                const opt = typeof option === 'object'
+                    ? { label: option.label || option.value, value: option.value || option.label, color: option.color }
+                    : { label: option, value: option };
+                if (!opt.value) return;
+
+                if (this.isMulti) {
+                    if (!this.selectedValues.includes(String(opt.value))) this.selectedValues.push(String(opt.value));
+                } else {
+                    this.selectedValues = [String(opt.value)];
+                }
+
+                this.searchQ = '';
+                this.showDropdown = this.isMulti;
+                await this.persist();
+                this.updateView();
+
+                if (this.isMulti) {
+                    this.$nextTick(() => this.$refs.choiceSearchInput && this.$refs.choiceSearchInput.focus());
+                } else {
+                    this.closeAndSave();
+                }
+            },
+
+            async removeChoice(value) {
+                this.selectedValues = this.selectedValues.filter(v => String(v) !== String(value));
+                await this.persist();
+                this.updateView();
+                this.$nextTick(() => this.$refs.choiceSearchInput && this.$refs.choiceSearchInput.focus());
+            },
+
+            async createNew() {
+                const label = this.searchQ.trim();
+                if (!label || this.hasExactMatch || this.saving) return;
+                this.saving = true;
+                try {
+                    const res = await fetch('/account/<%= account_number %>/field-template/api/' + this.fieldId + '/add-option', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ label, value: label })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.error || 'Creation impossible');
+
+                    const option = data.option || { label, value: label };
+                    if (!this.options.some(opt => String(opt.value) === String(option.value))) {
+                        this.options.push(option);
+                    }
+                    await this.addChoice(option);
+                } catch (e) {
+                    console.error('[ChoiceCreate]', e);
+                    window.showMessage ? window.showMessage(e.message || 'Erreur lors de la creation', 'danger') : alert(e.message || 'Erreur lors de la creation');
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            async persist() {
+                const value = this.isMulti ? [...this.selectedValues] : (this.selectedValues[0] || '');
+                try {
+                    const res = await fetch(_recUrl + '/update-field', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ fieldKey: this.key, value })
+                    });
+                    if (!res.ok) throw new Error('Sauvegarde impossible');
+                } catch (e) {
+                    console.error('[ChoicePersist]', e);
+                    window.showMessage ? window.showMessage(e.message || 'Erreur lors de la sauvegarde', 'danger') : alert(e.message || 'Erreur lors de la sauvegarde');
+                }
+            },
+
+            escapeHtml(value) {
+                return String(value || '').replace(/[&<>"']/g, ch => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[ch]));
+            },
+
+            updateView() {
+                const parent = this.$el.closest('.ov-ef');
+                const viewEl = parent ? parent.querySelector('.ov-ef-view') : null;
+                if (!viewEl) return;
+
+                if (this.selectedOptions.length > 0) {
+                    viewEl.innerHTML = '<div class="ov-tags">' + this.selectedOptions.map(opt =>
+                        '<span class="ov-tag" style="background:' + this.color + '10;border-color:' + this.color + '30;color:' + this.color + '">' + this.escapeHtml(opt.label) + '</span>'
+                    ).join('') + '</div>';
+                } else {
+                    viewEl.innerHTML = '<span class="ov-placeholder">S&eacute;lectionner...</span>';
+                }
+            },
+
+            closeAndSave() {
+                this.searchQ = '';
+                this.showDropdown = false;
+                this.updateView();
+                const grid = this.$el.closest('[x-data]');
+                if (grid && grid._x_dataStack) {
+                    const root = grid._x_dataStack.find(d => d.editingKey !== undefined);
+                    if (root) root.editingKey = '';
                 }
             }
         }));

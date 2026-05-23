@@ -2327,12 +2327,19 @@ module.exports = {
                 });
 
                 // Standard fields
+                const enabledStandardFields = new Set(
+                    Array.isArray(entity.enabledStandardFields) && entity.enabledStandardFields.length > 0
+                        ? entity.enabledStandardFields
+                        : ['title', 'description', 'date']
+                );
+                enabledStandardFields.add('title');
                 const standardFields = [
-                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '', rawValue: record.title || '', fieldType: 'standard', inputType: 'text', uiRows: 1, uiWidth: 'full', required: true },
-                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '', rawValue: record.description || '', fieldType: 'standard', inputType: 'textarea', uiRows: 3, uiWidth: 'full', required: false },
-                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '', rawValue: record.date ? new Date(record.date).toISOString().split('T')[0] : '', fieldType: 'standard', inputType: 'date', uiRows: 1, uiWidth: 'half', required: false },
+                    { key: 'title', label: 'Titre', icon: 'solar:text-bold-duotone', value: record.title || '', rawValue: record.title || '', fieldType: 'standard', inputType: 'text', uiRows: 1, uiWidth: 'full', required: true, removable: false },
+                    { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', value: record.description || '', rawValue: record.description || '', fieldType: 'standard', inputType: 'textarea', uiRows: 3, uiWidth: 'full', required: false, removable: true },
+                    { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', value: record.date ? new Date(record.date).toLocaleDateString('fr-FR') : '', rawValue: record.date ? new Date(record.date).toISOString().split('T')[0] : '', fieldType: 'standard', inputType: 'date', uiRows: 1, uiWidth: 'half', required: false, removable: true },
                 ];
-                ficheFields = moduleName === 'fiche' ? [...standardFields] : standardFields.filter(f => f.value);
+                const filteredStandardFields = standardFields.filter((field) => field.required || enabledStandardFields.has(field.key));
+                ficheFields = moduleName === 'fiche' ? [...filteredStandardFields] : filteredStandardFields.filter(f => f.value);
 
                 // Custom fields
                 for (const cf of (entity.customFields || [])) {
@@ -2393,6 +2400,7 @@ module.exports = {
                             uiRows: 1,
                             uiWidth: isMulti ? 'full' : ((cf.ui && cf.ui.width) || 'third'),
                             fieldType: 'relation',
+                            removable: true,
                             targetEntityId: targetEntityId.toString(),
                             targetEntitySlug,
                             isMulti,
@@ -2431,6 +2439,7 @@ module.exports = {
                     if (cf.type === 'text' && uiRows > 1) inputType = 'textarea';
                     else if (cf.type === 'number') inputType = 'number';
                     else if (cf.type === 'date') inputType = 'date';
+                    else if (cf.type === 'select' && (typeConfig.multiple || cf.subtype === 'multi')) inputType = 'multiselect';
                     else if (cf.type === 'select') inputType = 'select';
                     else if (cf.type === 'multiselect') inputType = 'multiselect';
                     else if (cf.type === 'boolean' || cf.type === 'checkbox') inputType = 'checkbox';
@@ -2448,6 +2457,7 @@ module.exports = {
                         uiRows,
                         uiWidth,
                         fieldType: 'custom',
+                        removable: true,
                         required: cf.required || false,
                         options: (cf.type_config && cf.type_config.options) || []
                     });
@@ -2485,6 +2495,7 @@ module.exports = {
                         uiWidth: isMulti ? 'full' : 'third',
                         fieldType: 'relation',
                         required: false,
+                        removable: false,
                         targetEntityId: (targetEntity._id || '').toString(),
                         targetEntitySlug: targetEntity.slug || '',
                         isMulti

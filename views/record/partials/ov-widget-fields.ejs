@@ -3,6 +3,9 @@ var _showHeader = (typeof _showHeader !== 'undefined') ? _showHeader : true;
 var _isFiche = (typeof _isFiche !== 'undefined') ? _isFiche : false;
 var _fieldsToRender = (typeof _ovFields !== 'undefined') ? _ovFields : (typeof _ficheFields !== 'undefined' ? _ficheFields : []);
 var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
+function _jsonAttr(value) {
+    return JSON.stringify(value).replace(/'/g, '&#39;').replace(/</g, '\\u003c');
+}
 %>
 <% if (_showHeader) { %>
 <div class="ov-card-header">
@@ -65,7 +68,7 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
                     <% } else { %>
                         <span class="ov-placeholder"><%= f.label %></span>
                     <% } %>
-                <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
+                <% } else if (f.inputType === 'select' || f.inputType === 'multiselect') { %>
                     <% var selArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
                     <% if (selArr.length > 0) { %>
                         <div class="ov-tags"><% selArr.forEach(function(sv){ var optMatch = (f.options||[]).find(function(o){ return (o.value||o.label)===sv; }); %><span class="ov-tag" style="background:<%= f.color||'#4361ee' %>10;border-color:<%= f.color||'#4361ee' %>30;color:<%= f.color||'#4361ee' %>"><%= optMatch ? (optMatch.label||optMatch.value) : sv %></span><% }); %></div>
@@ -82,10 +85,43 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
             <div class="ov-ef-edit" x-show="editingKey==='<%= f.key %>'" x-cloak @click.stop>
                 <% if (f.inputType === 'textarea') { %>
                 <textarea class="ov-input ov-textarea" name="<%= f.key %>" rows="<%= f.uiRows||3 %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" x-ref="input_<%= f.key %>"><%= f.rawValue||'' %></textarea>
-                <% } else if (f.inputType === 'multiselect' && f.options && f.options.length > 0) { %>
-                <% var mSelArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
-                <div class="ov-ms-pills" x-data='{ selected: <%- JSON.stringify(mSelArr) %>, toggle(v){ const i=this.selected.indexOf(v); if(i===-1) this.selected.push(v); else this.selected.splice(i,1); }, isSelected(v){ return this.selected.includes(v); } }' x-ref="input_<%= f.key %>">
-                    <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %><label class="ov-ms-pill" :class="isSelected('<%= ov %>') ? 'active' : ''"><input type="checkbox" value="<%= ov %>" :checked="isSelected('<%= ov %>')" @change="toggle('<%= ov %>')" class="hidden"><svg x-show="isSelected('<%= ov %>')" class="ov-ms-check" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span><%= opt.label||opt.value %></span></label><% }); %>
+                <% } else if (f.inputType === 'select' || f.inputType === 'multiselect') { %>
+                <% var choiceSelArr = Array.isArray(f.rawValue) ? f.rawValue : (f.rawValue ? [f.rawValue] : []); %>
+                <div class="ov-rel-editor" x-data='ovChoiceEditor({
+                    key: <%- _jsonAttr(f.key) %>,
+                    fieldId: <%- _jsonAttr(f.key) %>,
+                    isMulti: <%= f.inputType === 'multiselect' ? 'true' : 'false' %>,
+                    color: <%- _jsonAttr(f.color || '#4361ee') %>,
+                    options: <%- _jsonAttr(f.options || []) %>,
+                    initial: <%- _jsonAttr(choiceSelArr) %>
+                })' @click.outside="closeAndSave()">
+                    <div class="ov-rel-tags" @click="$refs.choiceSearchInput.focus()">
+                        <template x-for="tag in selectedOptions" :key="tag.value">
+                            <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
+                                <span x-text="tag.label"></span>
+                                <button type="button" class="ov-tag-x" @click.stop="removeChoice(tag.value)">&times;</button>
+                            </span>
+                        </template>
+                        <input type="text" class="ov-rel-search" placeholder="Rechercher..."
+                               x-model="searchQ" @input="showDropdown = true" @focus="showDropdown = true"
+                               @keydown.enter.prevent="filteredOptions.length ? addChoice(filteredOptions[0]) : createNew()"
+                               @keydown.escape="closeAndSave()" x-ref="choiceSearchInput">
+                    </div>
+                    <div class="ov-rel-dropdown" x-show="showDropdown" x-cloak>
+                        <template x-if="filteredOptions.length === 0 && searchQ.trim().length > 0">
+                            <div class="ov-rel-empty">Aucun r&eacute;sultat pour "<span x-text="searchQ"></span>"</div>
+                        </template>
+                        <template x-for="opt in filteredOptions" :key="opt.value">
+                            <div class="ov-rel-option" @click.stop="addChoice(opt)">
+                                <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>
+                                <span x-text="opt.label"></span>
+                            </div>
+                        </template>
+                        <div class="ov-rel-create" @click.stop="createNew()" x-show="searchQ.trim().length > 0 && !hasExactMatch">
+                            <iconify-icon icon="solar:add-square-bold" width="15"></iconify-icon>
+                            <span>Cr&eacute;er "<span x-text="searchQ.trim()"></span>"</span>
+                        </div>
+                    </div>
                 </div>
                 <% } else if (f.type === 'relation') { %>
                 <!-- Relation inline editor with search dropdown -->
@@ -442,17 +478,10 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
                             </template>
                         </div>
                     </div>
-                <% } else if (f.inputType === 'select') { %>
-                <select class="ov-input" name="<%= f.key %>" @change="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
-                    <option value="">Sélectionner...</option>
-                    <% (f.options||[]).forEach(function(opt){ var ov=opt.value||opt.label; %>
-                    <option value="<%= ov %>" <%= f.rawValue===ov?'selected':'' %>><%= opt.label %></option>
-                    <% }); %>
-                </select>
                 <% } else { %>
                 <input type="<%= f.inputType==='date'?'date':f.inputType==='number'?'number':'text' %>" class="ov-input" name="<%= f.key %>" value="<%= f.rawValue||'' %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" @keydown.enter="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
                 <% } %>
-                <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>
+                <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery' && f.inputType !== 'select' && f.inputType !== 'multiselect') { %>
                 <div class="ov-ef-btns">
                     <button type="button" class="ov-ef-ok" @click="saveCurrentField()"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
                     <button type="button" class="ov-ef-cancel" @click="cancelEdit()"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
@@ -467,6 +496,16 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
             <% } else { %>
                 <button type="button" class="fiche-vis-toggle" @click.stop="toggleFieldVisibility('<%= f.key %>')" :title="isFieldHidden('<%= f.key %>') ? 'Afficher' : 'Masquer'">
                     <iconify-icon :icon="isFieldHidden('<%= f.key %>') ? 'solar:eye-closed-bold' : 'solar:eye-bold'" width="16"></iconify-icon>
+                </button>
+            <% } %>
+            <% if (f.removable) { %>
+                <button type="button"
+                        class="fiche-delete-field"
+                        data-field-label="<%= f.label %>"
+                        @click.stop="deleteField('<%= f.key %>', $event.currentTarget.dataset.fieldLabel)"
+                        :disabled="deletingFieldKey === '<%= f.key %>'"
+                        title="Supprimer le champ">
+                    <iconify-icon :icon="deletingFieldKey === '<%= f.key %>' ? 'line-md:loading-twotone-loop' : 'solar:trash-bin-trash-bold'" width="16"></iconify-icon>
                 </button>
             <% } %>
         <% } %>

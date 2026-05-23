@@ -29,6 +29,8 @@ router.delete("/:id", fieldTemplateController.delete);
 
 //API: Create field from template
 router.post("/api/create", fieldTemplateController.createApi);
+//API: Add an option to a select/multiselect field
+router.post("/api/:id/add-option", fieldTemplateController.addOption_Api);
 
 //Generated from template
 

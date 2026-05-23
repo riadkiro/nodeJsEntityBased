@@ -6,6 +6,7 @@
 - **Animations subtiles** : `0.15s ease-out`, slide-down de 4px
 - **Fermeture intuitive** : ESC + clic extérieur
 - **Dark mode** : Toujours supporter via classes `dark:`
+- **Validation Chrome obligatoire** : AprÃ¨s chaque changement visuel, ouvrir la page concernÃ©e dans Chrome/Puppeteer et confirmer le rendu par inspection/screenshot avant de considÃ©rer la tÃ¢che terminÃ©e.
 
 ## ⚠️ RÈGLES DARK MODE STRICTES (NE JAMAIS DÉROGER)
 
@@ -99,6 +100,7 @@ border border-gray-200 dark:border-gray-800
 rounded-lg bg-white dark:bg-gray-800 
 focus:outline-none focus:ring-1 focus:ring-primary/50
 ```
+- Ne pas confondre bordure de focus et sÃ©parateur : conserver le focus bleu existant sauf demande explicite, et retirer seulement les dividers/bordures de ligne parasites.
 
 ## Animation Popover
 ```css
@@ -119,5 +121,14 @@ focus:outline-none focus:ring-1 focus:ring-primary/50
 - Text gray subtle : `text-gray-500`
 - Border default : `border-gray-200 dark:border-gray-800`
 - Background dark panel : `#1b2e4b`
+
+## Modals Records / Design Premium
+- S'aligner sur le style de `views/record/record-module.ejs` : panneaux blancs, bordures `#e8ecf1`, radius 14-18px, ombres douces, espacements denses et titres courts.
+- Les modals de creation/configuration doivent utiliser un header compact avec tuile d'icone 44-56px, un body organise en panneaux lisibles, et un footer sobre separe par une bordure fine.
+- Eviter les grands blocs plats, les radius excessifs, les cartes imbriquees inutiles et les gradients tres visibles. Le rendu attendu est CRM premium, discret, scannable.
+- Pour les controles dynamiques dans Alpine `x-if`, ne pas inserer un React island non remonte. Utiliser un controle Alpine natif ou remonter explicitement l'island.
+- Les selecteurs d'icones doivent afficher une preview, une recherche, un choix de librairie, une grille cliquable, et un champ texte fallback pour une icone personnalisable.
+- Les propositions IA doivent toujours avoir un fallback deterministe, un etat loading, des lignes modifiables/supprimables, et la possibilite d'ajouter un champ manuel.
+- Quand un filtre cible un champ existant, les valeurs proposees doivent venir des vraies options configurees ou des valeurs distinctes deja presentes dans les records.
 
 

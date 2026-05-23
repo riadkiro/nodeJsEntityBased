@@ -1,0 +1,72 @@
+<div class="ov-card-header">
+    <div class="flex items-center gap-2">
+        <iconify-icon icon="solar:notebook-bold-duotone" width="17" style="color:#8b5cf6"></iconify-icon>
+        <span>Notes</span>
+    </div>
+    <a href="<%= _recBase %>/notes" class="ov-card-link">Voir tout →</a>
+</div>
+
+<div class="ov-note-widget">
+    <template x-if="loading">
+        <div class="ov-note-empty">
+            <span>Chargement des notes...</span>
+        </div>
+    </template>
+
+    <template x-if="!loading && notes.length === 0">
+        <div class="ov-note-empty">
+            <iconify-icon icon="solar:notebook-bold-duotone" width="22"></iconify-icon>
+            <span>Aucune note pour cette fiche</span>
+            <a href="<%= _recBase %>/notes">Créer une note</a>
+        </div>
+    </template>
+
+    <template x-if="!loading && notes.length > 0">
+        <div class="ov-note-shell">
+            <div class="ov-note-selector" @click.outside="pickerOpen = false">
+                <button type="button" class="ov-note-select-btn" @click="pickerOpen = !pickerOpen">
+                    <span class="ov-note-dot" :style="'background:' + (selectedNote?.color || '#8b5cf6')"></span>
+                    <span x-text="selectedNote ? (selectedNote.title || 'Sans titre') : 'Choisir une note'"></span>
+                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14"></iconify-icon>
+                </button>
+
+                <div class="ov-note-menu" x-show="pickerOpen" x-cloak>
+                    <template x-for="note in notes" :key="note._id">
+                        <button type="button" class="ov-note-option" @click="selectNote(note)"
+                            :class="selectedNote && selectedNote._id === note._id ? 'active' : ''">
+                            <span class="ov-note-option-icon" :style="'background:' + (note.color || '#8b5cf6') + '15;color:' + (note.color || '#8b5cf6')">
+                                <iconify-icon :icon="note.isProtected ? 'solar:lock-password-bold' : (note.icon || 'solar:notebook-bold-duotone')" width="14"></iconify-icon>
+                            </span>
+                            <span class="ov-note-option-body">
+                                <strong x-text="note.title || 'Sans titre'"></strong>
+                                <small x-text="notePreview(note)"></small>
+                            </span>
+                            <iconify-icon x-show="selectedNote && selectedNote._id === note._id" icon="solar:check-circle-bold" width="15"></iconify-icon>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <template x-if="selectedNote">
+                <div class="ov-note-preview">
+                    <div class="ov-note-preview-top">
+                        <div class="ov-note-preview-icon" :style="'background:' + (selectedNote.color || '#8b5cf6') + '15;color:' + (selectedNote.color || '#8b5cf6')">
+                            <iconify-icon :icon="selectedNote.isProtected ? 'solar:lock-password-bold' : (selectedNote.icon || 'solar:notebook-bold-duotone')" width="18"></iconify-icon>
+                        </div>
+                        <div>
+                            <div class="ov-note-preview-title" x-text="selectedNote.title || 'Sans titre'"></div>
+                            <div class="ov-note-preview-meta" x-text="selectedNote.isProtected && selectedNote.contentLocked ? 'Note sécurisée' : formatDate(selectedNote.updatedAt)"></div>
+                        </div>
+                    </div>
+                    <p class="ov-note-preview-text" x-text="selectedPreview"></p>
+                    <div class="ov-note-actions">
+                        <a class="ov-note-open" :href="openUrl">
+                            Ouvrir
+                            <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
+                        </a>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+</div>

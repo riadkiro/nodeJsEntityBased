@@ -9,6 +9,8 @@
 const express = require('express')
 const router = express.Router()
 const { tenantCollection } = require('../middleware/tenant')
+const { buildRecordFilterQuery } = require('../services/record-filter-query')
+const { ensureEventsEntity } = require('../services/events-entity.service')
 
 /**
  * GET /account/:account_number/api/entity/:entityId/views/:viewId/records
@@ -51,6 +53,9 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         // Build query - use entityId field name as in Record model
         let query = { entityId: entityId }
 
+        const viewDoc = await View.findById(viewId).lean()
+        const viewFilterQuery = buildRecordFilterQuery(viewDoc?.filters || [])
+
         // Guest/External: restrict to shared records only
         const { getSharedRecordFilter } = require('../middleware/shared-records-helper')
         const sharedFilter = await getSharedRecordFilter(req, entityId)
@@ -72,6 +77,9 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                     }
                 ]
             }
+        }
+        if (Object.keys(viewFilterQuery).length > 0) {
+            query = { $and: [query, viewFilterQuery] }
         }
         console.log('[API] Search query:', JSON.stringify({ q, query }, null, 2))
 
@@ -198,6 +206,12 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             preferences = prefs?.preferences || null
 
         }
+        if (viewDoc?.settings?.viewMode) {
+            preferences = {
+                ...(preferences || {}),
+                viewMode: preferences?.viewMode || viewDoc.settings.viewMode
+            }
+        }
 
         // ═══ Compute computed field values for each record ═══
         const computedFieldDefs = (entity.customFields || []).filter(f => f.category === 'computed' && f.formula)
@@ -256,8 +270,11 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         // allClassifications already defined above (deduplicated)
 
         // Get ALL records for counting (restricted for guest/external)
-        const countQuery = { entityId }
+        let countQuery = { entityId }
         if (sharedFilter) countQuery._id = sharedFilter._id
+        if (Object.keys(viewFilterQuery).length > 0) {
+            countQuery = { $and: [countQuery, viewFilterQuery] }
+        }
         const allRecordsForCounts = await Record.find(countQuery).select('classificationValues').lean()
 
         const filterGroups = allClassifications.map(cls => {
@@ -293,7 +310,6 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         // Load view settings for titleDisplay fallback
         let viewTitleDisplay = null
         try {
-            const viewDoc = await View.findById(viewId).lean()
             if (viewDoc?.settings?.titleDisplay) {
                 viewTitleDisplay = viewDoc.settings.titleDisplay
             }
@@ -1548,6 +1564,7 @@ router.post('/api/user/view-preferences', async (req, res) => {
             'gridColumnWidths',
             // Overview layout builder
             'rows',
+            'noteWidget',
             // Record Agenda
             'agendaPrefs',
             // Fiche field layout (order + hidden fields)
@@ -2111,25 +2128,21 @@ router.patch('/api/records/:recordId/date', async (req, res) => {
  */
 router.get('/api/records/:recordId/events', async (req, res) => {
     try {
-        const Entity = await tenantCollection(req, "Entity");
         const Record = await tenantCollection(req, "Record");
-        await tenantCollection(req, "FieldTemplate");
-        await tenantCollection(req, "Classification");
 
-        // Find the events entity
-        const eventsEntity = await Entity.findOne({ slug: 'events' })
-            .populate('customFields')
-            .populate('classifications')
-            .populate('statusClassification')
-            .lean();
-        if (!eventsEntity) {
-            return res.json({ success: false, events: [], message: 'Events entity not found' });
-        }
+        const eventsEntity = await ensureEventsEntity(req);
+        const relationValues = [req.params.recordId];
+        try {
+            const mongoose = require('mongoose');
+            if (mongoose.Types.ObjectId.isValid(req.params.recordId)) {
+                relationValues.push(new mongoose.Types.ObjectId(req.params.recordId));
+            }
+        } catch (_) { }
 
         // Find events linked to this record via relations
         const events = await Record.find({
             entityId: eventsEntity._id,
-            'relations.value': req.params.recordId
+            'relations.value': { $in: relationValues }
         })
             .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })
             .sort({ date: -1 })
@@ -2155,17 +2168,10 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         const Entity = await tenantCollection(req, "Entity");
         const Record = await tenantCollection(req, "Record");
 
-        const { title, date, endDate, duration, durationFieldId, type, lieu, statusOptionId } = req.body;
+        const { title, date, endDate, duration, type, lieu, notes, statusOptionId } = req.body;
         const parentRecordId = req.params.recordId;
 
-        // Find the events entity
-        const eventsEntity = await Entity.findOne({ slug: 'events' })
-            .populate('customFields')
-            .populate('statusClassification')
-            .lean();
-        if (!eventsEntity) {
-            return res.status(404).json({ error: 'Events entity not found' });
-        }
+        const eventsEntity = await ensureEventsEntity(req);
 
         // Find the parent record to get its entityId
         const parentRecord = await Record.findById(parentRecordId).select('entityId').lean();
@@ -2192,6 +2198,9 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         }
         if (fieldMap.type_evenement && type) {
             customFields.push({ field_id: fieldMap.type_evenement, value: type });
+        }
+        if (fieldMap.notes_evenement && notes) {
+            customFields.push({ field_id: fieldMap.notes_evenement, value: notes });
         }
         if (fieldMap.heure_fin && endDate) {
             customFields.push({ field_id: fieldMap.heure_fin, value: endDate });
@@ -2269,9 +2278,6 @@ router.post('/api/records/:recordId/events', async (req, res) => {
 router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
     try {
         const Record = await tenantCollection(req, "Record");
-        const Entity = await tenantCollection(req, "Entity");
-        await tenantCollection(req, "FieldTemplate");
-        await tenantCollection(req, "Classification");
 
         const { eventId } = req.params;
         const { title, date, endDate, duration, type, lieu, notes, statusOptionId } = req.body;
@@ -2279,12 +2285,7 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
         const event = await Record.findById(eventId);
         if (!event) return res.status(404).json({ error: 'Event not found' });
 
-        // Find events entity for field mapping
-        const eventsEntity = await Entity.findOne({ slug: 'events' })
-            .populate('customFields')
-            .populate('statusClassification')
-            .lean();
-        if (!eventsEntity) return res.status(404).json({ error: 'Events entity not found' });
+        const eventsEntity = await ensureEventsEntity(req);
 
         const fieldMap = {};
         (eventsEntity.customFields || []).forEach(f => {
@@ -2370,8 +2371,6 @@ router.delete('/api/records/:recordId/events/:eventId', async (req, res) => {
 router.patch('/api/records/:recordId/events/:eventId/drag', async (req, res) => {
     try {
         const Record = await tenantCollection(req, "Record");
-        const Entity = await tenantCollection(req, "Entity");
-        await tenantCollection(req, "FieldTemplate");
 
         const { eventId } = req.params;
         const { newStart, newEnd } = req.body;
@@ -2384,9 +2383,7 @@ router.patch('/api/records/:recordId/events/:eventId/drag', async (req, res) => 
         if (newEnd) event.end_date = new Date(newEnd);
 
         // Also update heure_fin custom field
-        const eventsEntity = await Entity.findOne({ slug: 'events' })
-            .populate('customFields')
-            .lean();
+        const eventsEntity = await ensureEventsEntity(req);
         if (eventsEntity) {
             const heureFinField = (eventsEntity.customFields || []).find(f => f.name === 'heure_fin');
             if (heureFinField && newEnd) {

@@ -1260,18 +1260,37 @@
               showRecordsWizard: false,
               recordsWizardStep: 1,
               recordsWizardMode: '', // 'existing' or 'new'
+              recordsWizardSubmitting: false,
               wizardExistingCollection: '',
+              wizardListingName: '',
+              wizardViewType: 'list',
               wizardViewMode: 'all', // 'all' or 'segmentation'
               wizardFilterField: '',
               wizardFilterValue: '',
+              wizardEntityFields: [],
+              wizardFieldsLoading: false,
+              wizardFilters: [],
               wizardNewName: '',
               wizardNewPlural: '',
               wizardNewIcon: '',
               wizardNewColor: '',
+              wizardIconPickerOpen: false,
+              wizardCustomFieldName: '',
+              wizardCustomFieldType: 'text',
               wizardNewTitre: true,
               wizardNewDesc: true,
               isGeneratingAI: false,
               wizardSuggestedFields: [],
+              wizardFieldTypeOptions: [
+                { value: 'text', label: 'Texte' },
+                { value: 'textarea', label: 'Long texte' },
+                { value: 'number', label: 'Nombre' },
+                { value: 'date', label: 'Date' },
+                { value: 'select', label: 'Selection' },
+                { value: 'email', label: 'Email' },
+                { value: 'phone', label: 'Telephone' },
+                { value: 'url', label: 'Lien' }
+              ],
 
               // Icon Picker State
               icons: [],
@@ -1290,6 +1309,23 @@
                 '#2196f3', '#3b3f5c', '#818181', '#673ab7', '#ff4081'
               ],
 
+              wizardOperatorOptions: [
+                { value: 'equals', label: 'est égal à', types: ['all'] },
+                { value: 'not_equals', label: 'différent de', types: ['all'] },
+                { value: 'contains', label: 'contient', types: ['text', 'textarea', 'title', 'email', 'phone', 'url', 'select', 'classification', 'relation'] },
+                { value: 'not_contains', label: 'ne contient pas', types: ['text', 'textarea', 'title', 'email', 'phone', 'url', 'select', 'classification', 'relation'] },
+                { value: 'starts_with', label: 'commence par', types: ['text', 'textarea', 'title', 'email', 'phone', 'url'] },
+                { value: 'ends_with', label: 'se termine par', types: ['text', 'textarea', 'title', 'email', 'phone', 'url'] },
+                { value: 'gt', label: 'supérieur à', types: ['number', 'currency', 'percent', 'date', 'datetime'] },
+                { value: 'gte', label: 'supérieur ou égal', types: ['number', 'currency', 'percent', 'date', 'datetime'] },
+                { value: 'lt', label: 'inférieur à', types: ['number', 'currency', 'percent', 'date', 'datetime'] },
+                { value: 'lte', label: 'inférieur ou égal', types: ['number', 'currency', 'percent', 'date', 'datetime'] },
+                { value: 'between', label: 'entre', types: ['number', 'currency', 'percent', 'date', 'datetime'] },
+                { value: 'in', label: 'dans la liste', types: ['all'] },
+                { value: 'is_empty', label: 'est vide', types: ['all'] },
+                { value: 'is_not_empty', label: "n'est pas vide", types: ['all'] }
+              ],
+
               init() {
                 this.loadLibraries();
                 this.$watch('iconSearch', () => {
@@ -1300,6 +1336,14 @@
                 });
                 this.$watch('selectedLibrary', () => {
                   this.loadIcons(true);
+                });
+                this.$watch('wizardExistingCollection', (entityId) => {
+                  this.onWizardCollectionChange(entityId);
+                });
+                this.$watch('wizardViewMode', (mode) => {
+                  if (mode === 'segmentation' && this.wizardFilters.length === 0) {
+                    this.addWizardFilter();
+                  }
                 });
 
                 // Listen for environment changes from the mini-rail
@@ -1395,75 +1439,413 @@
                 this.wizardNewIcon = tpl.icon;
                 this.wizardNewColor = tpl.color;
                 this.wizardSuggestedFields = JSON.parse(JSON.stringify(tpl.fields));
-                
-                // Dispatch event to select icon in react picker
-                window.dispatchEvent(new CustomEvent('icon-selected', { detail: { icon: tpl.icon } }));
+                this.wizardIconPickerOpen = false;
+                this.wizardCustomFieldName = '';
+                this.wizardCustomFieldType = 'text';
+                this.iconSearch = '';
+                this.selectedLibrary = (tpl.icon || 'solar:database-bold-duotone').split(':')[0] || 'solar';
+                this.loadIcons(true);
               },
 
               openRecordsWizard() {
                 this.showRecordsWizard = true;
                 this.recordsWizardStep = 1;
                 this.recordsWizardMode = '';
+                this.recordsWizardSubmitting = false;
                 this.wizardExistingCollection = '';
+                this.wizardListingName = '';
+                this.wizardViewType = 'list';
                 this.wizardViewMode = 'all';
                 this.wizardNewName = '';
                 this.wizardNewPlural = '';
                 this.wizardNewIcon = '';
                 this.wizardNewColor = '';
+                this.wizardIconPickerOpen = false;
+                this.wizardCustomFieldName = '';
+                this.wizardCustomFieldType = 'text';
+                this.wizardEntityFields = [];
+                this.wizardFilters = [];
+                this.wizardFieldsLoading = false;
                 this.wizardSuggestedFields = [];
                 this.loadAllEntities(); // Assumes loadAllEntities is defined
                 Alpine.store('sidebar').showEditMenu = false;
               },
-              
-              generateAIFields() {
-                this.isGeneratingAI = true;
-                setTimeout(() => {
-                   this.wizardSuggestedFields = [
-                      { name: 'Catégorie', type: 'select' },
+
+              selectedWizardEntity() {
+                return this.allEntities.find(e => e.id === this.wizardExistingCollection) || null;
+              },
+
+              prepareNewRecordsWizard() {
+                this.recordsWizardMode = 'new';
+                this.recordsWizardStep = 2;
+                this.wizardIconPickerOpen = false;
+                if (!this.wizardNewIcon) this.wizardNewIcon = 'solar:database-bold-duotone';
+                if (!this.wizardNewColor) this.wizardNewColor = '#4361ee';
+                this.iconSearch = '';
+                this.selectedLibrary = (this.wizardNewIcon || 'solar:database-bold-duotone').split(':')[0] || 'solar';
+                if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                  this.selectedLibrary = this.libraries.find(l => l.id === 'solar') ? 'solar' : this.libraries[0].id;
+                }
+                this.loadIcons(true);
+              },
+
+              openWizardIconPicker() {
+                this.wizardIconPickerOpen = !this.wizardIconPickerOpen;
+                if (this.wizardIconPickerOpen) {
+                  this.iconSearch = '';
+                  this.selectedLibrary = (this.wizardNewIcon || 'solar:database-bold-duotone').split(':')[0] || this.selectedLibrary || 'solar';
+                  if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                    this.selectedLibrary = this.libraries.find(l => l.id === 'solar') ? 'solar' : this.libraries[0].id;
+                  }
+                  this.loadIcons(true);
+                }
+              },
+
+              selectWizardIcon(icon) {
+                this.wizardNewIcon = icon;
+                this.wizardIconPickerOpen = false;
+              },
+
+              normalizeWizardEntityName(value) {
+                return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+              },
+
+              wizardSuggestionPack() {
+                const name = this.normalizeWizardEntityName(`${this.wizardNewName} ${this.wizardNewPlural}`);
+                const packs = [
+                  {
+                    keys: ['marche public', 'marches publics', 'appel offre', 'appel d offre', 'tender'],
+                    icon: 'solar:case-round-bold-duotone',
+                    color: '#0ea5e9',
+                    fields: [
+                      { name: 'Autorite contractante', type: 'text' },
+                      { name: 'Reference', type: 'text' },
+                      { name: 'Type de marche', type: 'select' },
+                      { name: 'Budget estime', type: 'number' },
+                      { name: 'Date limite', type: 'date' },
                       { name: 'Statut', type: 'select' },
                       { name: 'Secteur', type: 'select' }
-                   ];
-                   this.isGeneratingAI = false;
-                }, 1000);
+                    ]
+                  },
+                  {
+                    keys: ['hotel', 'hotels', 'hebergement', 'riad', 'resort'],
+                    icon: 'solar:bedside-table-2-bold-duotone',
+                    color: '#00ab55',
+                    fields: [
+                      { name: 'Categorie', type: 'select' },
+                      { name: 'Etoiles', type: 'number' },
+                      { name: 'Ville', type: 'text' },
+                      { name: 'Adresse', type: 'text' },
+                      { name: 'Telephone', type: 'phone' },
+                      { name: 'Site web', type: 'url' },
+                      { name: 'Statut', type: 'select' }
+                    ]
+                  },
+                  {
+                    keys: ['entreprise', 'societe', 'client', 'fournisseur'],
+                    icon: 'solar:buildings-bold-duotone',
+                    color: '#00ab55',
+                    fields: [
+                      { name: 'Secteur', type: 'select' },
+                      { name: 'Statut', type: 'select' },
+                      { name: 'SIRET', type: 'text' },
+                      { name: 'Site web', type: 'url' },
+                      { name: 'Adresse complete', type: 'text' },
+                      { name: 'Contact principal', type: 'text' }
+                    ]
+                  },
+                  {
+                    keys: ['projet', 'project'],
+                    icon: 'solar:checklist-bold-duotone',
+                    color: '#4361ee',
+                    fields: [
+                      { name: 'Statut', type: 'select' },
+                      { name: 'Priorite', type: 'select' },
+                      { name: 'Date de debut', type: 'date' },
+                      { name: 'Date de fin', type: 'date' },
+                      { name: 'Responsable', type: 'text' },
+                      { name: 'Budget', type: 'number' }
+                    ]
+                  },
+                  {
+                    keys: ['vehicule', 'voiture', 'fleet', 'flotte'],
+                    icon: 'solar:wheel-bold-duotone',
+                    color: '#e7515a',
+                    fields: [
+                      { name: 'Marque', type: 'text' },
+                      { name: 'Modele', type: 'text' },
+                      { name: 'Immatriculation', type: 'text' },
+                      { name: 'Kilometrage', type: 'number' },
+                      { name: 'Annee', type: 'number' },
+                      { name: 'Statut', type: 'select' }
+                    ]
+                  },
+                  {
+                    keys: ['contact', 'personne', 'collaborateur'],
+                    icon: 'solar:users-group-two-rounded-bold-duotone',
+                    color: '#e2a03f',
+                    fields: [
+                      { name: 'Email', type: 'email' },
+                      { name: 'Telephone', type: 'phone' },
+                      { name: 'Poste', type: 'text' },
+                      { name: 'Organisation', type: 'text' },
+                      { name: 'Statut', type: 'select' }
+                    ]
+                  }
+                ];
+
+                return packs.find(pack => pack.keys.some(key => name.includes(key))) || {
+                  icon: 'solar:database-bold-duotone',
+                  color: '#4361ee',
+                  fields: [
+                    { name: 'Categorie', type: 'select' },
+                    { name: 'Statut', type: 'select' },
+                    { name: 'Responsable', type: 'text' },
+                    { name: 'Date', type: 'date' },
+                    { name: 'Notes', type: 'textarea' }
+                  ]
+                };
+              },
+
+              addSuggestedField() {
+                const name = String(this.wizardCustomFieldName || '').trim();
+                if (!name) return;
+                const exists = (this.wizardSuggestedFields || []).some(field => this.normalizeWizardEntityName(field.name) === this.normalizeWizardEntityName(name));
+                if (!exists) {
+                  this.wizardSuggestedFields.push({
+                    name,
+                    type: this.wizardCustomFieldType || 'text'
+                  });
+                }
+                this.wizardCustomFieldName = '';
+                this.wizardCustomFieldType = 'text';
+              },
+
+              removeSuggestedField(index) {
+                this.wizardSuggestedFields.splice(index, 1);
+              },
+
+              wizardViewTypes() {
+                return [
+                  { value: 'list', label: 'Liste', icon: 'solar:list-bold' },
+                  { value: 'table', label: 'Table', icon: 'solar:table-2-bold-duotone' },
+                  { value: 'kanban', label: 'Kanban', icon: 'solar:kanban-bold-duotone' },
+                  { value: 'calendar', label: 'Agenda', icon: 'solar:calendar-bold-duotone' }
+                ];
+              },
+
+              async onWizardCollectionChange(entityId) {
+                this.wizardEntityFields = [];
+                this.wizardFilters = [];
+                this.wizardFilterField = '';
+                this.wizardFilterValue = '';
+                const entity = this.allEntities.find(e => e.id === entityId);
+                if (entity && !this.wizardListingName) {
+                  this.wizardListingName = entity.namePlural || entity.name || '';
+                }
+                if (!entityId) return;
+                await this.loadWizardEntityFields(entityId);
+                if (this.wizardViewMode === 'segmentation') this.addWizardFilter();
+              },
+
+              async loadWizardEntityFields(entityId) {
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                this.wizardFieldsLoading = true;
+                try {
+                  const res = await fetch(`/account/${accountNum}/api/hierarchy/entity/${entityId}/fields`);
+                  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                  const data = await res.json();
+                  const entity = data.entity || {};
+                  this.wizardEntityFields = entity.filterFields || [
+                    { id: 'title', label: 'Titre', type: 'title', source: 'standard' },
+                    ...(entity.fields || []).map(f => ({ ...f, source: 'custom' }))
+                  ];
+                } catch (e) {
+                  console.error('[RecordsWizard] Failed to load fields', e);
+                  this.wizardEntityFields = [
+                    { id: 'title', label: 'Titre', type: 'title', source: 'standard' },
+                    { id: 'status', label: 'Statut', type: 'text', source: 'standard' }
+                  ];
+                } finally {
+                  this.wizardFieldsLoading = false;
+                }
+              },
+
+              getWizardField(fieldId) {
+                return this.wizardEntityFields.find(f => f.id === fieldId) || null;
+              },
+
+              wizardOperatorsForFilter(filter) {
+                const field = this.getWizardField(filter.field);
+                const type = field?.type || filter.fieldType || 'text';
+                return this.wizardOperatorOptions.filter(op => op.types.includes('all') || op.types.includes(type));
+              },
+
+              wizardDefaultOperator(field) {
+                const type = field?.type || 'text';
+                if ((field?.options || []).length > 0) return 'equals';
+                if (['number', 'currency', 'percent', 'date', 'datetime'].includes(type)) return 'equals';
+                if (['classification', 'select'].includes(type)) return 'equals';
+                return 'contains';
+              },
+
+              addWizardFilter() {
+                const field = this.wizardEntityFields[0] || { id: 'title', label: 'Titre', type: 'title' };
+                const filter = {
+                  field: field.id,
+                  fieldName: field.label || field.name || 'Champ',
+                  fieldType: field.type || 'text',
+                  operator: this.wizardDefaultOperator(field),
+                  value: '',
+                  value2: '',
+                  logic: this.wizardFilters.length === 0 ? 'AND' : 'AND'
+                };
+                this.wizardFilters.push(filter);
+              },
+
+              removeWizardFilter(index) {
+                this.wizardFilters.splice(index, 1);
+              },
+
+              syncWizardFilterField(filter) {
+                const field = this.getWizardField(filter.field);
+                if (!field) return;
+                filter.fieldName = field.label || field.name || 'Champ';
+                filter.fieldType = field.type || 'text';
+                const operators = this.wizardOperatorsForFilter(filter);
+                if (!operators.find(op => op.value === filter.operator)) {
+                  filter.operator = this.wizardDefaultOperator(field);
+                }
+                filter.value = '';
+                filter.value2 = '';
+              },
+
+              wizardFilterNeedsValue(filter) {
+                return !['is_empty', 'is_not_empty'].includes(filter.operator);
+              },
+
+              wizardFilterNeedsSecondValue(filter) {
+                return filter.operator === 'between';
+              },
+
+              wizardFilterInputType(filter) {
+                const type = filter.fieldType || this.getWizardField(filter.field)?.type || 'text';
+                if (['number', 'currency', 'percent'].includes(type)) return 'number';
+                if (['date', 'datetime'].includes(type)) return 'date';
+                return 'text';
+              },
+
+              wizardFilterOptions(filter) {
+                const field = this.getWizardField(filter.field);
+                return field?.options || [];
+              },
+
+              wizardFilterUsesOptions(filter) {
+                const options = this.wizardFilterOptions(filter);
+                return options.length > 0 && ['equals', 'not_equals', 'contains', 'not_contains'].includes(filter.operator);
+              },
+
+              normalizedWizardFilters() {
+                if (this.wizardViewMode !== 'segmentation') return [];
+                return this.wizardFilters
+                  .filter(filter => {
+                    if (!filter.field || !filter.operator) return false;
+                    if (!this.wizardFilterNeedsValue(filter)) return true;
+                    if (filter.operator === 'between') return filter.value !== '' && filter.value2 !== '';
+                    return filter.value !== '';
+                  })
+                  .map((filter, index) => ({
+                    field: filter.field,
+                    fieldName: filter.fieldName,
+                    fieldType: filter.fieldType,
+                    operator: filter.operator,
+                    value: filter.value,
+                    value2: filter.value2,
+                    logic: index === 0 ? 'AND' : (filter.logic || 'AND')
+                  }));
+              },
+              
+              generateAIFields() {
+                if (!String(this.wizardNewName || '').trim()) {
+                  return alert('Le nom est requis pour generer des champs');
+                }
+                this.isGeneratingAI = true;
+                setTimeout(() => {
+                  const pack = this.wizardSuggestionPack();
+                  const existing = new Set((this.wizardSuggestedFields || []).map(field => this.normalizeWizardEntityName(field.name)));
+                  const generated = pack.fields.filter(field => !existing.has(this.normalizeWizardEntityName(field.name)));
+                  this.wizardSuggestedFields = [...(this.wizardSuggestedFields || []), ...generated].slice(0, 12);
+                  if (!this.wizardNewPlural) {
+                    this.wizardNewPlural = `${this.wizardNewName}${this.wizardNewName.endsWith('s') ? '' : 's'}`;
+                  }
+                  if (!this.wizardNewIcon || this.wizardNewIcon === 'solar:database-bold-duotone') {
+                    this.wizardNewIcon = pack.icon;
+                  }
+                  if (!this.wizardNewColor || this.wizardNewColor === '#4361ee') {
+                    this.wizardNewColor = pack.color;
+                  }
+                  this.isGeneratingAI = false;
+                }, 650);
               },
               
               async validateRecordsWizard() {
+                 if (this.recordsWizardSubmitting) return;
                  if (this.recordsWizardMode === 'existing') {
                     if (!this.wizardExistingCollection) return alert('Veuillez sélectionner une collection');
                     const entity = this.allEntities.find(e => e.id === this.wizardExistingCollection);
                     if (!entity) return;
                     
-                    if (this.wizardViewMode === 'segmentation' && !this.wizardFilterValue) {
-                       return alert('Veuillez définir le filtre pour la segmentation');
+                    const filters = this.normalizedWizardFilters();
+                    if (this.wizardViewMode === 'segmentation' && filters.length === 0) {
+                       return alert('Ajoutez au moins un filtre complet pour ce listing');
                     }
                     
-                    // Proceed to link existing entity
-                    this.pendingViewType = 'list';
-                    await this.linkExistingEntity(entity);
-                    this.showRecordsWizard = false;
+                    this.recordsWizardSubmitting = true;
+                    this.pendingViewType = this.wizardViewType || 'list';
+                    try {
+                      await this.linkExistingEntity(entity, {
+                        name: this.wizardListingName || entity.namePlural || entity.name,
+                        filters,
+                        icon: entity.icon || 'solar:database-bold',
+                        color: entity.color || '',
+                        viewType: this.wizardViewType || 'list',
+                        settings: {
+                          viewMode: ['table', 'kanban', 'calendar'].includes(this.wizardViewType) ? this.wizardViewType : 'table'
+                        }
+                      });
+                      this.showRecordsWizard = false;
+                    } finally {
+                      this.recordsWizardSubmitting = false;
+                    }
                  } else if (this.recordsWizardMode === 'new') {
                     if (!this.wizardNewName) return alert('Le nom est requis');
-                    // Mock creation or redirect to a creation page
-                    const accountNum = window.location.pathname.split('/')[2];
-                    const parent = Alpine.store('sidebar').contextItem;
-                    const parentId = parent ? parent.id : null;
-                    const parentType = parent ? parent.type : null;
-                    try {
-                        const res = await fetch(`/account/${accountNum}/api/hierarchy/entity`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                name: this.wizardNewName,
-                                nameSingular: this.wizardNewName,
-                                namePlural: this.wizardNewPlural || (this.wizardNewName + 's'),
-                                fields: this.wizardSuggestedFields || [],
-                                parentId: parentId,
-                                parentType: parentType,
-                                viewType: 'list',
-                                icon: this.wizardNewIcon || 'solar:database-bold',
-                                color: this.wizardNewColor || ''
-                            })
-                        });
+                     const accountNum = window.location.pathname.split('/')[2];
+                     const parent = Alpine.store('sidebar').contextItem;
+                     const parentId = parent ? parent.id : null;
+                     const parentType = parent ? parent.type : null;
+                      const fields = (this.wizardSuggestedFields || [])
+                        .filter(field => String(field.name || '').trim())
+                        .map(field => ({
+                          name: String(field.name || '').trim(),
+                          type: field.type || 'text'
+                        }));
+                     this.recordsWizardSubmitting = true;
+                     try {
+                         const res = await fetch(`/account/${accountNum}/api/hierarchy/entity`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({
+                                 name: this.wizardNewName,
+                                 nameSingular: this.wizardNewName,
+                                 namePlural: this.wizardNewPlural || (this.wizardNewName + 's'),
+                                 fields,
+                                 parentId: parentId,
+                                 parentType: parentType,
+                                 viewType: 'list',
+                                 icon: this.wizardNewIcon || 'solar:database-bold-duotone',
+                                 color: this.wizardNewColor || '#4361ee'
+                             })
+                         });
                         if (!res.ok) {
                             const err = await res.json();
                             throw new Error(err?.error || `HTTP ${res.status}`);
@@ -1472,6 +1854,8 @@
                         await this.fetchHierarchy();
                     } catch (e) {
                         alert("Erreur de création: " + e.message);
+                    } finally {
+                        this.recordsWizardSubmitting = false;
                     }
                  }
               },
@@ -1990,7 +2374,7 @@
                 );
               },
 
-              async linkExistingEntity(entity) {
+              async linkExistingEntity(entity, options = {}) {
                 const viewType = this.pendingViewType;
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 const parent = Alpine.store('sidebar').contextItem;
@@ -2002,7 +2386,8 @@
                       entityId: entity.id,
                       parentId: parent.id,
                       parentType: parent.type,
-                      viewType: viewType
+                      viewType: viewType,
+                      ...options
                     })
                   });
                   if (res.ok) {
@@ -2918,39 +3303,148 @@
           </ul>
         </div>
 
+        <style>
+          .records-wizard-backdrop{background:rgba(15,23,42,.54);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);}
+          .records-wizard-dialog{max-height:88vh;border:1px solid rgba(226,232,240,.9);box-shadow:0 24px 70px rgba(15,23,42,.28);display:flex;flex-direction:column;}
+          .records-wizard-header{background:linear-gradient(135deg,#fff 0%,#f8fbff 58%,#eef8ff 100%);padding:20px 22px;border-bottom:1px solid #e8ecf1;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+          .rw-head-left{display:flex;align-items:center;gap:14px;min-width:0;}
+          .rw-head-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(67,97,238,.13),rgba(20,184,166,.11));color:#4361ee;border:1px solid rgba(67,97,238,.14);flex-shrink:0;}
+          .rw-title{font-size:18px;font-weight:800;color:#0e1726;margin:0;letter-spacing:0;}
+          .rw-subtitle{font-size:12px;color:#6b7280;margin-top:2px;}
+          .rw-close{width:32px;height:32px;border-radius:10px;border:none;background:#eef2f7;color:#94a3b8;display:flex;align-items:center;justify-content:center;transition:all .18s;cursor:pointer;}
+          .rw-close:hover{background:#e2e8f0;color:#0f172a;}
+          .rw-body{padding:22px;overflow-y:auto;}
+          .rw-footer{padding:14px 16px;border-top:1px solid #e8ecf1;background:#fbfcfe;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+          .rw-panel{border:1px solid #e8ecf1;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.03);}
+          .rw-panel-soft{background:linear-gradient(135deg,#fbfdff,#f7fbff);border-color:#e3edf8;}
+          .rw-label{display:block;font-size:11px;font-weight:800;color:#475569;margin-bottom:7px;}
+          .rw-input,.rw-select{height:40px;border-radius:10px!important;border-color:#dce4ee!important;background:#fff!important;font-size:13px!important;font-weight:600;color:#0f172a!important;}
+          .rw-input:focus,.rw-select:focus{border-color:#22b8ed!important;box-shadow:0 0 0 3px rgba(34,184,237,.1)!important;}
+          .rw-view-card{height:72px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;color:#64748b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:800;transition:all .18s;box-shadow:0 1px 2px rgba(15,23,42,.03);}
+          .rw-view-card:hover{border-color:#8bdff7;color:#0ea5e9;transform:translateY(-1px);}
+          .rw-view-card.is-active{border-color:#22b8ed;background:linear-gradient(135deg,rgba(34,184,237,.12),rgba(67,97,238,.06));color:#0ea5e9;box-shadow:0 10px 24px rgba(14,165,233,.12);}
+          .rw-scope-switch{display:inline-flex;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;padding:4px;}
+          .rw-scope-btn{padding:8px 12px;border-radius:9px;border:none;background:transparent;color:#64748b;font-size:12px;font-weight:800;transition:all .15s;cursor:pointer;}
+          .rw-scope-btn.is-active{background:#fff;color:#0f172a;box-shadow:0 2px 8px rgba(15,23,42,.07);}
+          .rw-scope-btn.is-accent{color:#0ea5e9;}
+          .rw-preview{padding:16px;border-radius:14px;border:1px solid #e3edf8;background:linear-gradient(135deg,#fff,#f8fcff);}
+          .rw-preview-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e2e8f0;box-shadow:0 6px 16px rgba(15,23,42,.05);}
+          .rw-chip{display:inline-flex;align-items:center;gap:5px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;padding:5px 9px;font-size:11px;font-weight:800;color:#475569;}
+          .rw-filter-panel{border:1px solid #e8ecf1;border-radius:16px;overflow:hidden;background:#fff;}
+          .rw-filter-head{padding:14px 16px;background:linear-gradient(135deg,#fbfdff,#f8fafc);border-bottom:1px solid #e8ecf1;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+          .rw-filter-row{display:grid;grid-template-columns:72px minmax(160px,1.1fr) 180px minmax(220px,1.2fr) 38px;gap:8px;align-items:center;padding:10px;border:1px solid #e8ecf1;border-radius:13px;background:#fbfdff;}
+          .rw-filter-row + .rw-filter-row{margin-top:10px;}
+          .rw-filter-token{height:38px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px;background:#eef6ff;color:#64748b;font-size:11px;font-weight:900;}
+          .rw-filter-remove{width:38px;height:38px;border:none;border-radius:10px;background:transparent;color:#ef4444;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;}
+          .rw-filter-remove:hover{background:rgba(239,68,68,.08);}
+          .dark .records-wizard-dialog{border-color:#253b5c;}
+          .dark .records-wizard-header{background:linear-gradient(135deg,#1b2e4b,#132238);border-color:#253b5c;}
+          .dark .rw-title{color:#e0e6ed;}
+          .dark .rw-subtitle{color:#94a3b8;}
+          .dark .rw-body,.dark .rw-footer{background:#0f172a;}
+          .dark .rw-panel,.dark .rw-preview,.dark .rw-filter-panel,.dark .rw-view-card{background:#1b2e4b;border-color:#253b5c;}
+          .dark .rw-panel-soft,.dark .rw-filter-head{background:#132238;border-color:#253b5c;}
+          .dark .rw-input,.dark .rw-select{background:#0f172a!important;border-color:#253b5c!important;color:#e0e6ed!important;}
+          .dark .rw-filter-row{background:#132238;border-color:#253b5c;}
+          .dark .rw-chip,.dark .rw-preview-icon,.dark .rw-scope-btn.is-active{background:#0f172a;border-color:#253b5c;color:#e0e6ed;}
+          @media(max-width:860px){.rw-filter-row{grid-template-columns:1fr}.records-wizard-dialog{max-height:94vh}.rw-body{padding:16px}.records-wizard-header{padding:16px}.rw-view-card{height:62px}}
+          .records-wizard-backdrop{background:rgba(15,23,42,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+          .records-wizard-dialog{border-radius:18px;max-height:min(88vh,860px);border:1px solid rgba(232,236,241,.95);box-shadow:0 28px 90px rgba(15,23,42,.24);background:#fff;}
+          .records-wizard-header{padding:18px 22px;background:linear-gradient(135deg,#fff 0%,#fbfdff 58%,#f2f8ff 100%);border-bottom:1px solid #e8ecf1;}
+          .rw-head-icon{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(67,97,238,.16),rgba(14,165,233,.08));border-color:rgba(67,97,238,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);}
+          .rw-close{border-radius:11px;background:#f1f5f9;color:#94a3b8;}
+          .rw-body{padding:22px;background:#fff;}
+          .rw-footer{padding:14px 16px;background:#fbfcfe;border-top:1px solid #e8ecf1;}
+          .rw-panel{border-radius:14px;border:1px solid #e8ecf1;box-shadow:0 1px 2px rgba(15,23,42,.03);}
+          .rw-panel-soft{background:linear-gradient(135deg,#fff 0%,#fbfdff 70%,#f6fbff 100%);}
+          .rw-label{letter-spacing:0;color:#475569;}
+          .rw-input,.rw-select{border-radius:9px!important;border-color:#dde5ef!important;box-shadow:none!important;font-weight:600;}
+          .rw-input:focus,.rw-select:focus{border-color:#22b8ed!important;box-shadow:0 0 0 3px rgba(34,184,237,.1)!important;}
+          .rw-choice-card{min-height:150px;border:1px solid #e8ecf1;border-radius:14px;background:#fff;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;transition:all .18s ease;box-shadow:0 1px 2px rgba(15,23,42,.03);cursor:pointer;}
+          .rw-choice-card:hover{transform:translateY(-2px);border-color:#b9e9f8;box-shadow:0 16px 36px rgba(15,23,42,.08);}
+          .rw-choice-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border:1px solid #e8ecf1;color:#94a3b8;}
+          .rw-choice-card:hover .rw-choice-icon{background:rgba(34,184,237,.1);border-color:rgba(34,184,237,.26);color:#0ea5e9;}
+          .rw-choice-title{font-size:13px;font-weight:800;color:#0f172a;}
+          .rw-choice-copy{font-size:11px;color:#64748b;line-height:1.35;max-width:165px;}
+          .rw-library-card{border:1px solid #e8ecf1;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.03);transition:all .18s ease;}
+          .rw-library-card:hover{border-color:#b9e9f8;box-shadow:0 14px 30px rgba(15,23,42,.07);transform:translateY(-1px);}
+          .rw-control-card{border:1px solid #e8ecf1;border-radius:14px;background:#fff;padding:14px;}
+          .rw-collection-preview{border:1px solid #e8ecf1;border-radius:14px;background:linear-gradient(135deg,#fff,#fbfdff);padding:14px;min-height:128px;display:flex;flex-direction:column;justify-content:space-between;}
+          .rw-icon-picker-wrap{position:relative;}
+          .rw-icon-trigger{width:100%;height:46px;border:1px solid #dde5ef;border-radius:12px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 12px;text-align:left;color:#0f172a;transition:all .16s ease;}
+          .rw-icon-trigger:hover{border-color:#b9e9f8;box-shadow:0 8px 20px rgba(15,23,42,.05);}
+          .rw-icon-tile{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f7faff;border:1px solid #e8ecf1;background:color-mix(in srgb,var(--rw-accent,#4361ee) 12%,white);border-color:color-mix(in srgb,var(--rw-accent,#4361ee) 18%,white);color:var(--rw-accent,#4361ee);flex-shrink:0;}
+          .rw-icon-popover{position:absolute;z-index:1005;top:52px;left:0;width:min(420px,calc(100vw - 48px));border:1px solid #e8ecf1;border-radius:16px;background:#fff;box-shadow:0 22px 60px rgba(15,23,42,.18);padding:12px;}
+          .rw-icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:220px;overflow:auto;padding:8px;border:1px solid #edf1f5;border-radius:12px;background:#fbfdff;}
+          .rw-icon-option{height:36px;border:1px solid transparent;border-radius:10px;background:transparent;color:#64748b;display:flex;align-items:center;justify-content:center;transition:all .15s ease;}
+          .rw-icon-option:hover,.rw-icon-option.is-active{background:#fff;border-color:#22b8ed;color:#0ea5e9;box-shadow:0 6px 14px rgba(15,23,42,.06);}
+          .rw-color-palette{display:flex;flex-wrap:wrap;gap:8px;}
+          .rw-color-swatch{width:30px;height:30px;border-radius:10px;border:2px solid transparent;display:flex;align-items:center;justify-content:center;transition:all .15s ease;box-shadow:inset 0 0 0 1px rgba(255,255,255,.44);}
+          .rw-color-swatch:hover{transform:translateY(-1px);}
+          .rw-color-swatch.is-active{border-color:#0f172a;box-shadow:0 8px 18px rgba(15,23,42,.12);}
+          .rw-default-row{border:1px solid #e8ecf1;border-radius:14px;background:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+          .rw-default-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #e8ecf1;border-radius:10px;background:#f8fafc;padding:7px 10px;font-size:12px;font-weight:700;color:#475569;}
+          .rw-ai-panel{border:1px solid #e8ecf1;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.03);}
+          .rw-ai-head{padding:14px 16px;background:linear-gradient(135deg,#fbfdff,#f8fafc);border-bottom:1px solid #e8ecf1;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+          .rw-ai-button{height:38px;border-radius:10px;border:0;background:#22b8ed;color:#fff;font-size:12px;font-weight:800;padding:0 14px;display:inline-flex;align-items:center;gap:7px;box-shadow:0 12px 24px rgba(34,184,237,.18);transition:all .16s ease;}
+          .rw-ai-button:hover{background:#0ea5e9;transform:translateY(-1px);}
+          .rw-ai-button:disabled{opacity:.62;cursor:not-allowed;transform:none;}
+          .rw-suggest-row{display:grid;grid-template-columns:minmax(0,1fr) 150px 36px;gap:8px;align-items:center;padding:8px;border:1px solid #e8ecf1;border-radius:12px;background:#fbfdff;}
+          .rw-suggest-row + .rw-suggest-row{margin-top:8px;}
+          .rw-suggest-row-add{grid-template-columns:minmax(0,1fr) 150px 98px;background:#fff;}
+          .rw-suggest-remove{width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:#ef4444;display:flex;align-items:center;justify-content:center;}
+          .rw-suggest-remove:hover{background:rgba(239,68,68,.08);}
+          .rw-empty-suggestions{border:1px dashed #dce4ee;border-radius:14px;background:#fbfdff;padding:18px;text-align:center;color:#94a3b8;font-size:12px;}
+          .dark .records-wizard-dialog,.dark .rw-control-card,.dark .rw-collection-preview,.dark .rw-choice-card,.dark .rw-library-card,.dark .rw-default-row,.dark .rw-ai-panel,.dark .rw-icon-popover{background:#1b2e4b;border-color:#253b5c;}
+          .dark .records-wizard-header,.dark .rw-panel-soft,.dark .rw-ai-head{background:linear-gradient(135deg,#1b2e4b,#132238);border-color:#253b5c;}
+          .dark .rw-body,.dark .rw-footer{background:#0f172a;border-color:#253b5c;}
+          .dark .rw-choice-title,.dark .rw-icon-trigger{color:#e0e6ed;}
+          .dark .rw-choice-icon,.dark .rw-icon-trigger,.dark .rw-default-pill,.dark .rw-suggest-row,.dark .rw-icon-grid{background:#132238;border-color:#253b5c;}
+          .dark .rw-choice-copy,.dark .rw-empty-suggestions{color:#94a3b8;}
+          @media(max-width:860px){.rw-choice-card{min-height:124px;padding:14px}.rw-icon-grid{grid-template-columns:repeat(6,1fr)}.rw-suggest-row,.rw-suggest-row-add{grid-template-columns:1fr}.rw-ai-head{align-items:flex-start;flex-direction:column}.rw-ai-button{width:100%;justify-content:center}}
+        </style>
+
         <!-- Records Wizard Modal -->
         <div x-show="showRecordsWizard" x-cloak
-             class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">
-             <div class="bg-white dark:bg-[#1b2e4b] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden"
+             class="records-wizard-backdrop fixed inset-0 z-[1000] flex items-center justify-center p-4">
+             <div class="records-wizard-dialog bg-white dark:bg-[#1b2e4b] w-full max-w-5xl rounded-2xl overflow-hidden"
                   @click.outside="showRecordsWizard = false">
-                 <div class="p-5 border-b dark:border-gray-800 flex justify-between items-center">
-                    <h3 class="text-lg font-bold dark:text-white">Créer des Records</h3>
-                    <button @click="showRecordsWizard = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                 <div class="records-wizard-header">
+                    <div class="rw-head-left">
+                       <div class="rw-head-icon">
+                          <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+                       </div>
+                       <div>
+                          <h3 class="rw-title">Créer des Records</h3>
+                          <div class="rw-subtitle" x-text="recordsWizardMode === 'existing' ? 'Listing intelligent' : recordsWizardMode === 'new' ? 'Nouvelle collection' : 'Choisissez un départ'"></div>
+                       </div>
+                    </div>
+                    <button @click="showRecordsWizard = false" class="rw-close">
+                        <iconify-icon icon="solar:close-circle-bold" width="22"></iconify-icon>
                     </button>
                  </div>
-                 <div class="p-6">
+                 <div class="rw-body">
                     <!-- Step 1: Choix -->
                     <template x-if="recordsWizardStep === 1">
-                       <div class="grid grid-cols-3 gap-3">
+                       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div @click="recordsWizardMode = 'existing'; recordsWizardStep = 2"
-                               class="cursor-pointer border-2 border-gray-100 dark:border-gray-800 hover:border-primary hover:bg-primary/5 rounded-xl p-4 text-center transition-all group flex flex-col justify-between">
+                               class="rw-choice-card group">
                              <div>
                                 <iconify-icon icon="solar:database-line-duotone" width="40" class="text-gray-400 group-hover:text-primary mb-3 mx-auto"></iconify-icon>
                                 <h4 class="font-bold text-xs dark:text-white">Collection Existante</h4>
                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Lier/segmenter une collection active</p>
                              </div>
                           </div>
-                          <div @click="recordsWizardStep = 'library'"
-                               class="cursor-pointer border-2 border-gray-100 dark:border-gray-800 hover:border-warning hover:bg-warning/5 rounded-xl p-4 text-center transition-all group flex flex-col justify-between">
+                           <div @click="recordsWizardStep = 'library'"
+                               class="rw-choice-card group">
                              <div>
                                 <iconify-icon icon="solar:star-ring-bold-duotone" width="40" style="color: #e2a03f" class="group-hover:scale-110 mb-3 mx-auto transition-transform"></iconify-icon>
                                 <h4 class="font-bold text-xs dark:text-white">Modèles Prêts</h4>
                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Projets, Voitures, Personnes préconfigurés</p>
                              </div>
                           </div>
-                          <div @click="recordsWizardMode = 'new'; recordsWizardStep = 2"
-                               class="cursor-pointer border-2 border-gray-100 dark:border-gray-800 hover:border-success hover:bg-success/5 rounded-xl p-4 text-center transition-all group flex flex-col justify-between">
+                           <div @click="prepareNewRecordsWizard()"
+                               class="rw-choice-card group">
                              <div>
                                 <iconify-icon icon="solar:magic-stick-3-line-duotone" width="40" class="text-gray-400 group-hover:text-success mb-3 mx-auto"></iconify-icon>
                                 <h4 class="font-bold text-xs dark:text-white">Nouvelle de Zéro</h4>
@@ -2972,8 +3466,8 @@
                           
                           <div class="grid grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
                              <template x-for="tpl in templatesList" :key="tpl.nameSingular">
-                                <div @click="selectTemplate(tpl)"
-                                     class="cursor-pointer border border-gray-100 dark:border-gray-800 hover:border-primary bg-gray-50/50 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-[#1b2e4b] rounded-xl p-4 transition-all group relative flex flex-col justify-between shadow-sm hover:shadow">
+                                 <div @click="selectTemplate(tpl)"
+                                      class="rw-library-card cursor-pointer p-4 group relative flex flex-col justify-between">
                                    <div>
                                       <div class="flex items-center gap-3 mb-2">
                                          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :style="'background-color:' + tpl.color + '20; color:' + tpl.color">
@@ -2997,43 +3491,151 @@
                     <!-- Step 2A: Existante -->
                     <template x-if="recordsWizardStep === 2 && recordsWizardMode === 'existing'">
                        <div class="space-y-5">
-                           <div>
-                              <label class="block text-xs font-bold mb-1">Choisir une collection</label>
-                              <select x-model="wizardExistingCollection" class="form-select w-full">
-                                 <option value="">Sélectionnez...</option>
-                                 <template x-for="ent in allEntities" :key="ent.id">
-                                     <option :value="ent.id" x-text="ent.name"></option>
-                                 </template>
-                              </select>
-                           </div>
-                           
-                           <div x-show="wizardExistingCollection">
-                              <label class="block text-xs font-bold mb-2">Options d'affichage</label>
-                              <div class="space-y-2">
-                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" x-model="wizardViewMode" value="all" class="form-radio text-primary" />
-                                    <span class="text-sm">Lister tous les records</span>
-                                 </label>
-                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" x-model="wizardViewMode" value="segmentation" class="form-radio text-primary" />
-                                    <span class="text-sm">Segmentation (Filtre par défaut)</span>
-                                 </label>
+                           <div class="rw-panel rw-panel-soft p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                 <label class="rw-label">Nom du listing</label>
+                                 <input type="text" x-model="wizardListingName" class="rw-input form-input w-full" placeholder="ex: Hôtels, Prospects chauds, Clients VIP" />
+                              </div>
+                              <div>
+                                 <label class="rw-label">Collection source</label>
+                                 <select x-model="wizardExistingCollection" class="rw-select form-select w-full">
+                                    <option value="">Sélectionner une collection...</option>
+                                    <template x-for="ent in allEntities" :key="ent.id">
+                                        <option :value="ent.id" x-text="ent.namePlural || ent.name"></option>
+                                    </template>
+                                 </select>
                               </div>
                            </div>
 
-                           <div x-show="wizardExistingCollection && wizardViewMode === 'segmentation'" class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-3">
-                               <div>
-                                  <label class="block text-xs text-gray-500 mb-1">Champ à filtrer</label>
-                                  <select x-model="wizardFilterField" class="form-select w-full">
-                                     <option value="">Sélectionner un champ...</option>
-                                     <option value="secteur">Secteur</option>
-                                     <option value="status">Statut</option>
-                                  </select>
-                               </div>
-                               <div x-show="wizardFilterField">
-                                  <label class="block text-xs text-gray-500 mb-1">Valeur</label>
-                                  <input type="text" x-model="wizardFilterValue" class="form-input w-full" placeholder="ex: Hôtelier" />
-                               </div>
+                           <div x-show="wizardExistingCollection" class="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
+                              <div class="rw-panel p-4 space-y-4">
+                                 <div>
+                                    <label class="rw-label">Affichage</label>
+                                    <div class="grid grid-cols-4 gap-2">
+                                       <template x-for="type in wizardViewTypes()" :key="type.value">
+                                          <button type="button"
+                                             @click="wizardViewType = type.value"
+                                             class="rw-view-card"
+                                             :class="wizardViewType === type.value ? 'is-active' : ''">
+                                             <iconify-icon :icon="type.icon" width="19"></iconify-icon>
+                                             <span x-text="type.label"></span>
+                                          </button>
+                                       </template>
+                                    </div>
+                                 </div>
+
+                                 <div>
+                                    <label class="rw-label">Portée du listing</label>
+                                    <div class="rw-scope-switch">
+                                       <button type="button" @click="wizardViewMode = 'all'"
+                                          class="rw-scope-btn"
+                                          :class="wizardViewMode === 'all' ? 'is-active' : ''">
+                                          Tous les records
+                                       </button>
+                                       <button type="button" @click="wizardViewMode = 'segmentation'"
+                                          class="rw-scope-btn"
+                                          :class="wizardViewMode === 'segmentation' ? 'is-active is-accent' : ''">
+                                          Filtres avancés
+                                       </button>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div class="rw-preview">
+                                 <div class="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-3">Résumé</div>
+                                 <div class="flex items-center gap-2 min-w-0">
+                                    <div class="rw-preview-icon"
+                                         :style="selectedWizardEntity()?.color ? 'color:' + selectedWizardEntity().color : ''">
+                                       <iconify-icon :icon="selectedWizardEntity()?.icon || 'solar:database-bold-duotone'" width="18"></iconify-icon>
+                                    </div>
+                                    <div class="min-w-0">
+                                       <div class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="wizardListingName || selectedWizardEntity()?.namePlural || selectedWizardEntity()?.name || 'Nouveau listing'"></div>
+                                       <div class="text-[11px] text-gray-500 truncate" x-text="selectedWizardEntity() ? 'Source : ' + (selectedWizardEntity().namePlural || selectedWizardEntity().name) : 'Choisissez une source'"></div>
+                                    </div>
+                                 </div>
+                                 <div class="mt-4 flex flex-wrap gap-2">
+                                    <span class="rw-chip" x-text="wizardViewType"></span>
+                                    <span class="rw-chip" x-text="wizardViewMode === 'segmentation' ? normalizedWizardFilters().length + ' filtre(s)' : 'sans filtre'"></span>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div x-show="wizardExistingCollection && wizardViewMode === 'segmentation'" class="rw-filter-panel">
+                              <div class="rw-filter-head">
+                                 <div>
+                                    <div class="text-sm font-bold text-gray-900 dark:text-white">Filtres du listing</div>
+                                    <div class="text-[11px] text-gray-500">Combinez plusieurs règles sur les champs standards, personnalisés, statuts ou relations.</div>
+                                 </div>
+                                 <button type="button" class="btn btn-outline-primary btn-sm shrink-0" @click="addWizardFilter()" :disabled="wizardFieldsLoading">
+                                    <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+                                    Ajouter
+                                 </button>
+                              </div>
+
+                              <div class="p-4 space-y-3">
+                                 <div x-show="wizardFieldsLoading" class="py-5 text-center text-xs text-gray-400">
+                                    Chargement des champs...
+                                 </div>
+
+                                 <template x-for="(filter, index) in wizardFilters" :key="index">
+                                    <div class="rw-filter-row">
+                                       <div>
+                                          <select x-show="index > 0" x-model="filter.logic" class="rw-select form-select text-xs h-9">
+                                             <option value="AND">ET</option>
+                                             <option value="OR">OU</option>
+                                          </select>
+                                          <span x-show="index === 0" class="rw-filter-token">SI</span>
+                                       </div>
+
+                                       <div>
+                                          <select x-model="filter.field" @change="syncWizardFilterField(filter)" class="rw-select form-select text-xs h-9">
+                                             <option value="">Champ...</option>
+                                             <template x-for="field in wizardEntityFields" :key="field.id">
+                                                <option :value="field.id" x-text="field.label || field.name"></option>
+                                             </template>
+                                          </select>
+                                       </div>
+
+                                       <div>
+                                          <select x-model="filter.operator" class="rw-select form-select text-xs h-9">
+                                             <template x-for="op in wizardOperatorsForFilter(filter)" :key="op.value">
+                                                <option :value="op.value" x-text="op.label"></option>
+                                             </template>
+                                          </select>
+                                       </div>
+
+                                       <div>
+                                          <template x-if="wizardFilterUsesOptions(filter)">
+                                             <select x-model="filter.value" class="rw-select form-select text-xs h-9">
+                                                <option value="">Valeur...</option>
+                                                <template x-for="opt in wizardFilterOptions(filter)" :key="opt.id || opt.value">
+                                                   <option :value="opt.id || opt.value" x-text="opt.label"></option>
+                                                </template>
+                                             </select>
+                                          </template>
+                                          <template x-if="!wizardFilterUsesOptions(filter) && wizardFilterNeedsValue(filter)">
+                                             <div class="flex gap-2">
+                                                <input :type="wizardFilterInputType(filter)" x-model="filter.value" class="rw-input form-input text-xs h-9 w-full" placeholder="Valeur..." />
+                                                <input x-show="wizardFilterNeedsSecondValue(filter)" :type="wizardFilterInputType(filter)" x-model="filter.value2" class="rw-input form-input text-xs h-9 w-full" placeholder="Fin..." />
+                                             </div>
+                                          </template>
+                                          <template x-if="!wizardFilterNeedsValue(filter)">
+                                             <div class="h-9 flex items-center px-3 rounded border border-dashed border-gray-200 dark:border-gray-700 text-xs text-gray-400">Aucune valeur</div>
+                                          </template>
+                                       </div>
+
+                                       <div class="flex justify-end">
+                                          <button type="button" class="rw-filter-remove" @click="removeWizardFilter(index)">
+                                             <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="17"></iconify-icon>
+                                          </button>
+                                       </div>
+                                    </div>
+                                 </template>
+
+                                 <div x-show="!wizardFieldsLoading && wizardFilters.length === 0" class="py-8 text-center text-sm text-gray-400">
+                                    Aucun filtre. Ajoutez une règle pour transformer cette collection en listing ciblé.
+                                 </div>
+                              </div>
                            </div>
                        </div>
                     </template>
@@ -3041,91 +3643,164 @@
                     <!-- Step 2B: Nouvelle -->
                     <template x-if="recordsWizardStep === 2 && recordsWizardMode === 'new'">
                        <div class="space-y-4">
-                           <div class="grid grid-cols-2 gap-4">
-                              <div>
-                                 <label class="block text-xs font-bold mb-1">Nom (Singulier)</label>
-                                 <input type="text" x-model="wizardNewName" class="form-input w-full" placeholder="ex: Entreprise" />
-                              </div>
-                              <div>
-                                 <label class="block text-xs font-bold mb-1">Nom (Pluriel)</label>
-                                 <input type="text" x-model="wizardNewPlural" class="form-input w-full" placeholder="ex: Entreprises" />
-                              </div>
-                           </div>
-                           
-                           <div class="grid grid-cols-2 gap-4">
-                              <div>
-                                 <label class="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">Icône</label>
-                                 <div class="flex items-center gap-2">
-                                    <div class="w-10 h-10 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1b2e4b] shadow-sm flex items-center justify-center shrink-0" :style="wizardNewColor ? 'color:'+wizardNewColor : ''">
-                                       <div data-island="icon-picker" data-name="wizardNewIcon" @icon-selected="wizardNewIcon = $event.detail.icon"></div>
-                                    </div>
-                                    <div class="text-xs text-gray-500 flex-1">Sélectionnez une icône pour représenter cette collection.</div>
-                                 </div>
-                              </div>
-                              <div>
-                                 <label class="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">Couleur</label>
-                                 <div class="flex items-center gap-2">
-                                    <div class="w-10 h-10 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1b2e4b] shadow-sm flex items-center justify-center shrink-0" 
-                                         x-data="{ picker: null }" 
-                                         x-init="
-                                            setTimeout(() => {
-                                                if (window.ColorPicker) {
-                                                    picker = new ColorPicker($refs.colorContainer, {
-                                                        value: wizardNewColor,
-                                                        onSelect: (c) => wizardNewColor = c
-                                                    });
-                                                    $watch('wizardNewColor', (val) => { if (picker && picker.getValue() !== val) picker.setValue(val) });
-                                                }
-                                            }, 100);
-                                         ">
-                                        <div x-ref="colorContainer"></div>
-                                    </div>
-                                    <div class="text-xs text-gray-500 flex-1">Choisissez une couleur thématique.</div>
-                                 </div>
-                              </div>
-                           </div>
+                          <div class="rw-panel rw-panel-soft p-4 space-y-4">
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                   <label class="rw-label">Nom singulier</label>
+                                   <input type="text" x-model="wizardNewName" class="rw-input form-input w-full" placeholder="ex: Marche public" />
+                                </div>
+                                <div>
+                                   <label class="rw-label">Nom pluriel</label>
+                                   <input type="text" x-model="wizardNewPlural" class="rw-input form-input w-full" placeholder="ex: Marches publics" />
+                                </div>
+                             </div>
 
-                           <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                              <label class="block text-xs font-bold mb-2">Champs par défaut</label>
-                              <div class="flex items-center gap-4">
-                                 <label class="flex items-center gap-2 opacity-70 cursor-not-allowed">
-                                    <input type="checkbox" x-model="wizardNewTitre" disabled class="form-checkbox text-primary rounded" />
-                                    <span class="text-xs">Titre</span>
-                                 </label>
-                                 <label class="flex items-center gap-2 opacity-70 cursor-not-allowed">
-                                    <input type="checkbox" x-model="wizardNewDesc" disabled class="form-checkbox text-primary rounded" />
-                                    <span class="text-xs">Description</span>
-                                 </label>
-                              </div>
-                           </div>
+                             <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                   <div class="rw-control-card">
+                                      <label class="rw-label">Icone</label>
+                                      <div class="rw-icon-picker-wrap" @click.outside="wizardIconPickerOpen = false">
+                                         <button type="button" class="rw-icon-trigger" @click="openWizardIconPicker()" :style="'--rw-accent:' + (wizardNewColor || '#4361ee')">
+                                            <span class="rw-icon-tile">
+                                               <iconify-icon :icon="wizardNewIcon || 'solar:database-bold-duotone'" width="19"></iconify-icon>
+                                            </span>
+                                            <span class="min-w-0 flex-1 truncate text-xs font-bold" x-text="wizardNewIcon || 'Choisir une icone'"></span>
+                                            <iconify-icon icon="solar:alt-arrow-down-line-duotone" width="15" class="text-gray-400"></iconify-icon>
+                                         </button>
 
-                           <!-- AI Premium Area -->
-                           <div class="p-4 rounded-lg bg-gray-50 dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800">
-                              <button type="button" @click="generateAIFields()" class="w-full btn btn-primary flex items-center justify-center gap-2" :disabled="!wizardNewName || isGeneratingAI">
-                                 <iconify-icon :icon="isGeneratingAI ? 'solar:spinner-bold' : 'solar:magic-stick-3-bold'" :class="isGeneratingAI ? 'animate-spin' : ''" width="18"></iconify-icon>
-                                 <span x-text="isGeneratingAI ? 'Analyse en cours...' : 'Générer des champs avec l\'IA'"></span>
-                              </button>
-                              
-                              <div x-show="wizardSuggestedFields.length > 0" x-transition class="mt-4 space-y-2">
-                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Champs suggérés</p>
-                                 <template x-for="field in wizardSuggestedFields" :key="field.name">
-                                     <div class="flex items-center justify-between bg-white dark:bg-[#1b2e4b] p-2 rounded border border-gray-200 dark:border-gray-800 shadow-sm">
-                                        <span class="text-xs font-semibold text-gray-800 dark:text-gray-100" x-text="field.name"></span>
-                                        <span class="text-[9px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 shadow-sm" x-text="field.type"></span>
-                                     </div>
-                                 </template>
-                              </div>
-                           </div>
+                                         <div x-show="wizardIconPickerOpen" x-transition x-cloak class="rw-icon-popover">
+                                            <div class="flex gap-2 mb-2">
+                                               <select x-model="selectedLibrary" class="rw-select form-select text-xs h-9 w-32">
+                                                  <template x-for="lib in libraries" :key="lib.id">
+                                                     <option :value="lib.id" x-text="lib.name"></option>
+                                                  </template>
+                                               </select>
+                                               <div class="relative flex-1">
+                                                  <input type="text" x-model="iconSearch" class="rw-input form-input text-xs h-9 w-full pl-8" placeholder="Rechercher..." />
+                                                  <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2.5 text-gray-400" width="14"></iconify-icon>
+                                               </div>
+                                            </div>
+
+                                            <div class="rw-icon-grid custom-scrollbar" @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
+                                               <template x-for="icon in icons" :key="icon">
+                                                  <button type="button" class="rw-icon-option" :class="wizardNewIcon === icon ? 'is-active' : ''" @click="selectWizardIcon(icon)" :title="icon">
+                                                     <iconify-icon :icon="icon" width="20"></iconify-icon>
+                                                  </button>
+                                               </template>
+                                               <div x-show="icons.length === 0 && !isLoadingIcons" class="col-span-full py-5 text-center text-xs text-gray-400">Aucune icone trouvee</div>
+                                               <div x-show="isLoadingIcons" class="col-span-full py-3 text-center">
+                                                  <span class="animate-spin border-2 border-primary border-l-transparent rounded-full w-4 h-4 inline-block"></span>
+                                               </div>
+                                            </div>
+
+                                            <input type="text" x-model="wizardNewIcon" class="rw-input form-input text-xs h-9 w-full mt-2" placeholder="solar:database-bold-duotone" />
+                                         </div>
+                                      </div>
+                                   </div>
+
+                                   <div class="rw-control-card">
+                                      <label class="rw-label">Couleur</label>
+                                      <div class="rw-color-palette">
+                                         <template x-for="color in availableColors" :key="color">
+                                            <button type="button" class="rw-color-swatch" :class="wizardNewColor === color ? 'is-active' : ''" :style="'background-color:' + color" @click="wizardNewColor = color">
+                                               <iconify-icon x-show="wizardNewColor === color" icon="solar:check-circle-bold" class="text-white" width="15"></iconify-icon>
+                                            </button>
+                                         </template>
+                                         <label class="rw-color-swatch relative overflow-hidden bg-white dark:bg-[#132238] border border-gray-200 dark:border-gray-800">
+                                            <iconify-icon icon="solar:pen-new-square-linear" width="14" class="text-gray-500"></iconify-icon>
+                                            <input type="color" x-model="wizardNewColor" class="absolute inset-0 opacity-0 cursor-pointer" title="Couleur personnalisee" />
+                                         </label>
+                                      </div>
+                                   </div>
+                                </div>
+
+                                <div class="rw-collection-preview">
+                                   <div class="flex items-center gap-3 min-w-0">
+                                      <div class="rw-preview-icon" :style="'color:' + (wizardNewColor || '#4361ee')">
+                                         <iconify-icon :icon="wizardNewIcon || 'solar:database-bold-duotone'" width="19"></iconify-icon>
+                                      </div>
+                                      <div class="min-w-0">
+                                         <div class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="wizardNewPlural || wizardNewName || 'Nouvelle collection'"></div>
+                                         <div class="text-[11px] text-gray-500 truncate" x-text="wizardNewName ? 'Entite : ' + wizardNewName : 'Entite personnalisee'"></div>
+                                      </div>
+                                   </div>
+                                   <div class="mt-4 flex flex-wrap gap-2">
+                                      <span class="rw-chip">Titre</span>
+                                      <span class="rw-chip">Description</span>
+                                      <span class="rw-chip" x-text="wizardSuggestedFields.length + ' champ(s)'"></span>
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+
+                          <div class="rw-default-row">
+                             <div>
+                                <div class="text-sm font-bold text-gray-900 dark:text-white">Champs par defaut</div>
+                                <div class="text-[11px] text-gray-500">Titre et description restent disponibles sur chaque record.</div>
+                             </div>
+                             <div class="flex flex-wrap gap-2 justify-end">
+                                <span class="rw-default-pill"><iconify-icon icon="solar:text-bold" width="14"></iconify-icon> Titre</span>
+                                <span class="rw-default-pill"><iconify-icon icon="solar:document-text-bold-duotone" width="14"></iconify-icon> Description</span>
+                             </div>
+                          </div>
+
+                          <div class="rw-ai-panel">
+                             <div class="rw-ai-head">
+                                <div>
+                                   <div class="text-sm font-bold text-gray-900 dark:text-white">Champs suggeres</div>
+                                   <div class="text-[11px] text-gray-500">Generes depuis le nom de la collection, puis modifiables avant creation.</div>
+                                </div>
+                                <button type="button" @click="generateAIFields()" class="rw-ai-button" :disabled="!wizardNewName || isGeneratingAI">
+                                   <iconify-icon :icon="isGeneratingAI ? 'solar:spinner-bold' : 'solar:magic-stick-3-bold'" :class="isGeneratingAI ? 'animate-spin' : ''" width="17"></iconify-icon>
+                                   <span x-text="isGeneratingAI ? 'Analyse...' : 'Proposer avec IA'"></span>
+                                </button>
+                             </div>
+
+                             <div class="p-4">
+                                <div x-show="wizardSuggestedFields.length === 0" class="rw-empty-suggestions">
+                                   Donnez un nom a la collection, puis genere les champs suggeres.
+                                </div>
+
+                                <div x-show="wizardSuggestedFields.length > 0" x-transition>
+                                   <template x-for="(field, index) in wizardSuggestedFields" :key="field.name + '-' + index">
+                                      <div class="rw-suggest-row">
+                                         <input type="text" x-model="field.name" class="rw-input form-input text-xs h-9 w-full" />
+                                         <select x-model="field.type" class="rw-select form-select text-xs h-9">
+                                            <template x-for="type in wizardFieldTypeOptions" :key="type.value">
+                                               <option :value="type.value" x-text="type.label"></option>
+                                            </template>
+                                         </select>
+                                         <button type="button" class="rw-suggest-remove" @click="removeSuggestedField(index)">
+                                            <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="16"></iconify-icon>
+                                         </button>
+                                      </div>
+                                   </template>
+                                </div>
+
+                                <div class="rw-suggest-row rw-suggest-row-add mt-3">
+                                   <input type="text" x-model="wizardCustomFieldName" @keydown.enter.prevent="addSuggestedField()" class="rw-input form-input text-xs h-9 w-full" placeholder="Ajouter un champ..." />
+                                   <select x-model="wizardCustomFieldType" class="rw-select form-select text-xs h-9">
+                                      <template x-for="type in wizardFieldTypeOptions" :key="type.value">
+                                         <option :value="type.value" x-text="type.label"></option>
+                                      </template>
+                                   </select>
+                                   <button type="button" class="btn btn-outline-primary btn-sm h-9" @click="addSuggestedField()" :disabled="!wizardCustomFieldName">
+                                      Ajouter
+                                   </button>
+                                </div>
+                             </div>
+                          </div>
                        </div>
                     </template>
+
                  </div>
                  
                  <!-- Footer Actions -->
-                 <div x-show="recordsWizardStep === 2" class="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-[#121c2c] flex justify-between">
+                 <div x-show="recordsWizardStep === 2" class="rw-footer">
                      <button @click="recordsWizardStep = 1" class="btn btn-outline-danger btn-sm">Retour</button>
-                     <button @click="validateRecordsWizard()" class="btn btn-primary btn-sm flex items-center gap-2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span x-text="recordsWizardMode === 'existing' ? 'Valider' : 'Créer la collection'"></span>
+                     <button @click="validateRecordsWizard()" class="btn btn-primary btn-sm flex items-center gap-2" :disabled="recordsWizardSubmitting">
+                        <iconify-icon :icon="recordsWizardSubmitting ? 'solar:spinner-bold' : 'solar:check-circle-bold'" :class="recordsWizardSubmitting ? 'animate-spin' : ''"></iconify-icon>
+                        <span x-text="recordsWizardSubmitting ? 'Creation...' : (recordsWizardMode === 'existing' ? 'Valider' : 'Créer la collection')"></span>
                      </button>
                  </div>
              </div>

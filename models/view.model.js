@@ -42,13 +42,26 @@ const ViewSchema = new mongoose.Schema({
     // Filter configuration
     // Example: [{ field: 'status', operator: 'equals', value: 'Active' }]
     filters: [{
-        field: { type: String }, // Can be standard field or custom field ID
-        operator: { type: String, enum: ['equals', 'not_equals', 'contains', 'greater_than', 'less_than', 'in'] },
-        value: { type: mongoose.Schema.Types.Mixed }
+        field: { type: String }, // Standard field, custom field ID, classif:<id>, or rel:<key>
+        fieldName: String,
+        fieldType: String,
+        operator: {
+            type: String,
+            enum: [
+                'equals', 'not_equals', 'contains', 'not_contains',
+                'starts_with', 'ends_with', 'gt', 'gte', 'lt', 'lte',
+                'greater_than', 'less_than', 'between', 'in',
+                'is_empty', 'is_not_empty'
+            ]
+        },
+        value: { type: mongoose.Schema.Types.Mixed },
+        value2: { type: mongoose.Schema.Types.Mixed },
+        logic: { type: String, enum: ['AND', 'OR'], default: 'AND' }
     }],
 
     // Visual settings (columns for kanban, hidden fields, etc.)
     settings: {
+        viewMode: { type: String, enum: ['table', 'kanban', 'notes', 'calendar', null], default: undefined },
         kanbanField: { type: String }, // For kanban, which field defines columns
         hiddenFields: [String],
         sortBy: {

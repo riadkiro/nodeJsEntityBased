@@ -19,6 +19,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     const [entityData, setEntityData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [prefsLoaded, setPrefsLoaded] = useState(false)
+    const [error, setError] = useState('')
     const [viewMode, setViewMode] = useState('calendar') // calendar | timeline | list
     const [calendarViewType, setCalendarViewType] = useState('dayGridMonth')
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -137,13 +138,19 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     const fetchEvents = useCallback(async () => {
         try {
             const res = await fetch(baseUrl, { credentials: 'include' })
-            const data = await res.json()
-            if (data.success) {
+            const data = await res.json().catch(() => ({}))
+            if (res.ok && data.success) {
                 setEvents(data.events || [])
                 setEntityData(data.entityData || null)
+                setError('')
+            } else {
+                setEvents([])
+                setEntityData(data.entityData || null)
+                setError(data.error || data.message || "Impossible de charger les evenements.")
             }
         } catch (err) {
             console.error('[RecordAgenda] Fetch error:', err)
+            setError("Impossible de charger les evenements.")
         }
         setLoading(false)
     }, [baseUrl])
@@ -314,58 +321,69 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     // ── CRUD handlers ──
     const handleCreateEvent = useCallback(async (eventData) => {
         try {
+            setError('')
             const res = await fetch(baseUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(eventData)
             })
-            const data = await res.json()
-            if (data.success) {
-                await fetchEvents()
-                setIsModalOpen(false)
-                setEditingEvent(null)
-                setPrefillDate(null)
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || data.message || "Impossible de creer l'evenement.")
             }
+            await fetchEvents()
+            setIsModalOpen(false)
+            setEditingEvent(null)
+            setPrefillDate(null)
         } catch (err) {
             console.error('[RecordAgenda] Create error:', err)
+            setError(err.message || "Impossible de creer l'evenement.")
+            throw err
         }
     }, [baseUrl, fetchEvents])
 
     const handleUpdateEvent = useCallback(async (eventId, eventData) => {
         try {
+            setError('')
             const res = await fetch(`${baseUrl}/${eventId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(eventData)
             })
-            const data = await res.json()
-            if (data.success) {
-                await fetchEvents()
-                setIsModalOpen(false)
-                setEditingEvent(null)
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || data.message || "Impossible de mettre a jour l'evenement.")
             }
+            await fetchEvents()
+            setIsModalOpen(false)
+            setEditingEvent(null)
         } catch (err) {
             console.error('[RecordAgenda] Update error:', err)
+            setError(err.message || "Impossible de mettre a jour l'evenement.")
+            throw err
         }
     }, [baseUrl, fetchEvents])
 
     const handleDeleteEvent = useCallback(async (eventId) => {
         if (!confirm('Supprimer cet événement ?')) return
         try {
+            setError('')
             const res = await fetch(`${baseUrl}/${eventId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             })
-            const data = await res.json()
-            if (data.success) {
-                await fetchEvents()
-                setIsModalOpen(false)
-                setEditingEvent(null)
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || data.message || "Impossible de supprimer l'evenement.")
             }
+            await fetchEvents()
+            setIsModalOpen(false)
+            setEditingEvent(null)
         } catch (err) {
             console.error('[RecordAgenda] Delete error:', err)
+            setError(err.message || "Impossible de supprimer l'evenement.")
         }
     }, [baseUrl, fetchEvents])
 
@@ -400,6 +418,17 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 onNewEvent={handleNewEvent}
                 eventCount={events.length}
             />
+
+            {error && (
+                <div className="ra-error-banner">
+                    <span>{error}</span>
+                    <button type="button" onClick={() => setError('')} aria-label="Fermer">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
+            )}
 
             {viewMode === 'calendar' && (
                 <div className="ra-calendar-wrap">
@@ -480,6 +509,21 @@ function getStyles() {
 .ra-loading { display:flex; align-items:center; justify-content:center; gap:12px; padding:60px 0; color:#888da8; font-size:14px; }
 .ra-spinner { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:#14b8a6; border-radius:50%; animation:raSpin .8s linear infinite; }
 @keyframes raSpin { to { transform:rotate(360deg); } }
+
+.ra-error-banner {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin:0 0 12px; padding:10px 12px;
+    border:1px solid #fecaca; border-radius:10px;
+    background:#fff7f7; color:#b91c1c;
+    font-size:12px; font-weight:700;
+}
+.ra-error-banner button {
+    width:24px; height:24px; border:0; border-radius:7px;
+    background:transparent; color:inherit; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+}
+.ra-error-banner button:hover { background:rgba(185,28,28,.08); }
+.dark .ra-error-banner { background:rgba(127,29,29,.18); border-color:#7f1d1d; color:#fecaca; }
 
 /* Calendar wrapper — fills available space */
 .ra-calendar-wrap {

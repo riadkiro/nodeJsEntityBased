@@ -19,6 +19,90 @@
         width: auto !important;
         flex-shrink: 0 !important;
     }
+    .sidebar-note-widget {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px;
+    }
+    .sidebar-note-widget__top {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        min-width: 0;
+    }
+    .sidebar-note-widget__icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+    }
+    .sidebar-note-widget__title {
+        font-size: 12px;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .sidebar-note-widget__meta {
+        margin-top: 2px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #94a3b8;
+    }
+    .sidebar-note-widget__excerpt {
+        font-size: 12px;
+        line-height: 1.55;
+        color: #64748b;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .sidebar-note-widget__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .sidebar-note-widget__open {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 9px;
+        border-radius: 8px;
+        border: 1px solid #e0e7ff;
+        background: #f8faff;
+        color: #4361ee;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+    .sidebar-note-widget__open:hover {
+        background: #eef2ff;
+    }
+    .dark .sidebar-note-widget {
+        background: #0e1726;
+        border-color: #253b5c;
+    }
+    .dark .sidebar-note-widget__title {
+        color: #e0e6ed;
+    }
+    .dark .sidebar-note-widget__excerpt {
+        color: #94a3b8;
+    }
+    .dark .sidebar-note-widget__open {
+        background: rgba(67, 97, 238, .12);
+        border-color: rgba(67, 97, 238, .25);
+    }
 </style>
 <script type="application/json" id="linesPanel-relations">
 <%- JSON.stringify({
@@ -352,9 +436,49 @@
 
                         <!-- Note Type -->
                         <template x-if="newWidget.type === 'note'">
-                            <div>
-                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Contenu de la note</label>
-                                <textarea x-model="newWidget.config.content" class="form-input text-xs w-full" rows="4" placeholder="Votre note..."></textarea>
+                            <div class="space-y-3" x-init="loadWidgetNotes()">
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Note liee a cette fiche</label>
+                                    <div class="text-[10px] text-gray-400 leading-snug">Le widget affichera un extrait de la note selectionnee et un bouton pour l'ouvrir.</div>
+                                </div>
+
+                                <div x-show="loadingWidgetNotes" class="text-[11px] text-gray-400 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/40">
+                                    Chargement des notes...
+                                </div>
+
+                                <div x-show="!loadingWidgetNotes && availableNotes.length === 0" class="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-3">
+                                    <div class="text-[12px] font-semibold text-gray-600 dark:text-gray-300">Aucune note disponible</div>
+                                    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>/notes" class="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-primary hover:text-primary/80">
+                                        <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                        Creer une note
+                                    </a>
+                                </div>
+
+                                <div x-show="!loadingWidgetNotes && availableNotes.length > 0" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                    <template x-for="note in availableNotes" :key="note._id">
+                                        <button type="button" @click="selectWidgetNote(note)"
+                                            class="w-full text-left rounded-lg border px-3 py-2 transition-all"
+                                            :class="isWidgetNoteSelected(note) ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary/30 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/40'">
+                                            <div class="flex items-start gap-2">
+                                                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-none"
+                                                    :style="'background:' + (note.color || '#8b5cf6') + '15;color:' + (note.color || '#8b5cf6')">
+                                                    <iconify-icon :icon="note.isProtected ? 'solar:lock-password-bold' : (note.icon || 'solar:notebook-bold-duotone')" width="14"></iconify-icon>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="text-[12px] font-bold text-gray-700 dark:text-gray-200 truncate" x-text="note.title || 'Sans titre'"></div>
+                                                    <div class="text-[10px] text-gray-400 truncate mt-0.5" x-text="notePreview(note)"></div>
+                                                </div>
+                                                <iconify-icon x-show="isWidgetNoteSelected(note)" icon="solar:check-circle-bold" width="15" class="text-primary flex-none"></iconify-icon>
+                                            </div>
+                                        </button>
+                                    </template>
+                                </div>
+
+                                <button type="button" x-show="getWidgetNoteId()" @click="clearWidgetNote()"
+                                    class="text-[11px] font-semibold text-gray-400 hover:text-danger inline-flex items-center gap-1">
+                                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                    Retirer la note selectionnee
+                                </button>
                             </div>
                         </template>
 
@@ -772,7 +896,7 @@
                                                                                      options: <%= JSON.stringify(cls.data.options.map(function(o) { return { _id: (o._id || '').toString(), label: o.label, color: o.color || '' }; })) %>,
                                                                                      selectedIds: <%= JSON.stringify(sidebarSelectedIds) %>
                                                                                  })"
-                                                                                 @click.away="closeDropdown()">
+                                                                                 @click.away="if (!window.__appContextMenuEl || !window.__appContextMenuEl.contains($event.target)) closeDropdown()">
 
                                                                                 <!-- Trigger: inline tag pills -->
                                                                                 <div class="tp-trigger"
@@ -783,7 +907,8 @@
                                                                                     </template>
                                                                                     <template x-for="opt in selectedOptions" :key="opt._id">
                                                                                         <span class="tp-tag"
-                                                                                              :style="'background:' + opt.bg + '; color:' + opt.text">
+                                                                                              :style="'background:' + opt.bg + '; color:' + opt.text"
+                                                                                              @contextmenu.prevent.stop="openOptionContextMenu($event, opt._id)">
                                                                                             <span x-text="opt.label"></span>
                                                                                             <button type="button" class="tp-tag-remove"
                                                                                                     @click.stop="removeTag(opt._id)">
@@ -816,7 +941,8 @@
                                                                                     <!-- Options list -->
                                                                                     <div class="tp-options" style="position: relative;">
                                                                                         <template x-for="opt in filteredOptions" :key="opt._id">
-                                                                                            <div class="tp-option" @click="toggleOption(opt._id)">
+                                                                                            <div class="tp-option" @click="toggleOption(opt._id)"
+                                                                                                 @contextmenu.prevent.stop="openOptionContextMenu($event, opt._id)">
                                                                                                 <div class="tp-option-icon"
                                                                                                      :style="'background:' + opt.bg">
                                                                                                     <iconify-icon x-show="isSelected(opt._id)"
@@ -1785,15 +1911,63 @@
                                     <% if (sw.type === 'html') { %>
                                         <div class="prose prose-sm max-w-none dark:prose-invert text-[12px]"><%- (sw.config && sw.config.content) || '' %></div>
                                     <% } else if (sw.type === 'note') { %>
-                                        <div style="display: flex; gap: 8px;" x-data="{ noteContent: decodeURIComponent('<%= encodeURIComponent((sw.config && sw.config.content) || '') %>'), saving: false }">
-                                            <div style="width: 3px; border-radius: 999px; flex-shrink: 0; background: <%= sw.color || '#4361ee' %>40;"></div>
-                                            <div style="flex: 1; min-width: 0;">
-                                                <textarea x-model="noteContent"
-                                                    @blur="saving = true; fetch('/account/<%= account_number %>/api/entity/<%= entity._id %>/sidebar-widgets/<%= sw._id %>', { method: 'PUT', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({ config: { content: noteContent } }) }).finally(() => saving = false)"
-                                                    placeholder="Écrire une note..."
-                                                    style="width: 100%; min-height: 50px; border: none; outline: none; background: transparent; font-size: 12px; color: #4b5563; line-height: 1.6; resize: vertical; padding: 0; font-family: inherit;"
-                                                    ></textarea>
-                                                <div x-show="saving" style="font-size: 9px; color: #9ca3af; margin-top: 2px;">Sauvegarde...</div>
+                                        <%
+                                            var _noteCfg = (sw.config || {});
+                                            var _noteBindings = _noteCfg.noteBindings || {};
+                                            var _selectedNoteId = _noteBindings[String(record._id)] || _noteCfg.noteId || '';
+                                            var _noteWidgetPayload = {
+                                                accountNumber: account_number,
+                                                recordId: String(record._id),
+                                                entitySlug: entity.slug,
+                                                noteId: String(_selectedNoteId || ''),
+                                                color: sw.color || '#f59e0b',
+                                                legacyContent: _noteCfg.content || ''
+                                            };
+                                        %>
+                                        <div x-data='sidebarNoteWidget(JSON.parse(decodeURIComponent("<%= encodeURIComponent(JSON.stringify(_noteWidgetPayload)) %>")))'>
+                                            <div class="sidebar-note-widget" :style="'border-left:3px solid ' + color">
+                                                <template x-if="loading">
+                                                    <div class="text-[11px] text-gray-400">Chargement de la note...</div>
+                                                </template>
+                                                <template x-if="!loading && note">
+                                                    <div>
+                                                        <div class="sidebar-note-widget__top">
+                                                            <div class="sidebar-note-widget__icon" :style="'background:' + (note.color || color) + '15;color:' + (note.color || color)">
+                                                                <iconify-icon :icon="note.isProtected ? 'solar:lock-password-bold' : (note.icon || 'solar:notebook-bold-duotone')" width="15"></iconify-icon>
+                                                            </div>
+                                                            <div class="min-w-0 flex-1">
+                                                                <div class="sidebar-note-widget__title" x-text="note.title || 'Sans titre'"></div>
+                                                                <div class="sidebar-note-widget__meta" x-text="note.isProtected && note.contentLocked ? 'Note securisee' : formatDate(note.updatedAt)"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="sidebar-note-widget__excerpt mt-2" x-text="preview"></div>
+                                                        <div class="sidebar-note-widget__actions">
+                                                            <a class="sidebar-note-widget__open" :href="openUrl">
+                                                                Ouvrir
+                                                                <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <template x-if="!loading && !note && legacyContent">
+                                                    <div>
+                                                        <div class="sidebar-note-widget__excerpt" x-text="legacyText"></div>
+                                                        <div class="sidebar-note-widget__meta mt-2">Ancien memo local</div>
+                                                    </div>
+                                                </template>
+                                                <template x-if="!loading && !note && !legacyContent">
+                                                    <div>
+                                                        <div class="sidebar-note-widget__top">
+                                                            <div class="sidebar-note-widget__icon" :style="'background:' + color + '15;color:' + color">
+                                                                <iconify-icon icon="solar:notes-bold-duotone" width="15"></iconify-icon>
+                                                            </div>
+                                                            <div class="min-w-0 flex-1">
+                                                                <div class="sidebar-note-widget__title">Aucune note selectionnee</div>
+                                                                <div class="sidebar-note-widget__meta">Configurez ce widget</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </div>
                                     <% } else if (sw.type === 'link') { %>
@@ -1926,6 +2100,66 @@
         document.addEventListener("alpine:init", () => {
             // â•â•â• Sidebar Dynamic Table Widget â•â•â•
             /* sidebarDynamicTable legacy Alpine implementation removed: replaced by React dynamic-table island */
+            Alpine.data("sidebarNoteWidget", (cfg) => ({
+                accountNumber: cfg.accountNumber,
+                recordId: cfg.recordId,
+                entitySlug: cfg.entitySlug,
+                noteId: cfg.noteId || '',
+                color: cfg.color || '#f59e0b',
+                legacyContent: cfg.legacyContent || '',
+                loading: false,
+                note: null,
+
+                async init() {
+                    if (this.noteId) await this.loadNote();
+                },
+
+                get openUrl() {
+                    const suffix = this.noteId ? ('?noteId=' + encodeURIComponent(this.noteId)) : '';
+                    return `/account/${this.accountNumber}/record/${this.entitySlug}/${this.recordId}/notes${suffix}`;
+                },
+
+                get preview() {
+                    if (!this.note) return '';
+                    if (this.note.isProtected && this.note.contentLocked) return 'Note securisee. Ouvrez-la pour saisir le PIN.';
+                    return this.toPlainText(this.note.content).slice(0, 180) || 'Note vide';
+                },
+
+                get legacyText() {
+                    return this.toPlainText(this.legacyContent).slice(0, 180) || 'Ancien memo local';
+                },
+
+                async loadNote() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/record/${this.recordId}/notes`, { credentials: 'include' });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.note = (data.notes || []).find(n => String(n._id) === String(this.noteId)) || null;
+                        }
+                    } catch (e) {
+                        console.error('[SidebarNoteWidget] load error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                toPlainText(html) {
+                    const box = document.createElement('div');
+                    box.innerHTML = html || '';
+                    return (box.textContent || box.innerText || '').replace(/\s+/g, ' ').trim();
+                },
+
+                formatDate(value) {
+                    if (!value) return '';
+                    try {
+                        return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+                    } catch (_) {
+                        return '';
+                    }
+                }
+            }));
+
             Alpine.data("recordSidebar", () => ({
                 classificationsOpen: true,
                 sidebarConfigOpen: false,
@@ -2041,6 +2275,9 @@
                 availableSchemas: [],
                 gridSchemas: [], // Track order for dynamic table tabs
                 loadingSchemaCatalog: false,
+                availableNotes: [],
+                loadingWidgetNotes: false,
+                widgetNotesLoaded: false,
 
                 widgetTypeLabels: {
                     'html': 'HTML â€” Contenu personnalisé',
@@ -2052,6 +2289,65 @@
                     'separator': 'Séparateur â€” Ligne visuelle',
                     'tasks': 'Tasks â€” Checklist de tÃ¢ches',
                     'dynamic-table': 'Tableau â€” Données structurées'
+                },
+
+                async loadWidgetNotes(force = false) {
+                    if (this.widgetNotesLoaded && !force) return;
+                    this.loadingWidgetNotes = true;
+                    try {
+                        const res = await fetch('/account/<%= account_number %>/api/record/<%= record._id %>/notes', { credentials: 'include' });
+                        const data = await res.json();
+                        this.availableNotes = data.success ? (data.notes || []) : [];
+                        this.widgetNotesLoaded = true;
+                    } catch (e) {
+                        console.error('[Sidebar-Widget] Notes load error:', e);
+                        this.availableNotes = [];
+                    } finally {
+                        this.loadingWidgetNotes = false;
+                    }
+                },
+
+                ensureNoteBindings() {
+                    this.newWidget.config = this.newWidget.config || {};
+                    if (!this.newWidget.config.noteBindings || typeof this.newWidget.config.noteBindings !== 'object') {
+                        this.newWidget.config.noteBindings = {};
+                    }
+                },
+
+                getWidgetNoteId(config = null) {
+                    const cfg = config || this.newWidget.config || {};
+                    const bindings = cfg.noteBindings || {};
+                    return String(bindings['<%= record._id %>'] || cfg.noteId || '');
+                },
+
+                isWidgetNoteSelected(note) {
+                    return String(note?._id || '') === this.getWidgetNoteId();
+                },
+
+                selectWidgetNote(note) {
+                    if (!note || !note._id) return;
+                    this.ensureNoteBindings();
+                    this.newWidget.config.noteBindings['<%= record._id %>'] = String(note._id);
+                    this.newWidget.config.noteTitle = note.title || 'Sans titre';
+                    if (!this.newWidget.label || this.newWidget.label === 'Note') {
+                        this.newWidget.label = note.title || 'Note';
+                    }
+                },
+
+                clearWidgetNote() {
+                    this.ensureNoteBindings();
+                    delete this.newWidget.config.noteBindings['<%= record._id %>'];
+                    delete this.newWidget.config.noteTitle;
+                    delete this.newWidget.config.noteId;
+                },
+
+                notePreview(note) {
+                    if (!note) return '';
+                    if (note.isProtected && note.contentLocked) return 'Note securisee';
+                    const box = document.createElement('div');
+                    box.innerHTML = note.content || '';
+                    const text = (box.textContent || box.innerText || '').replace(/\s+/g, ' ').trim();
+                    return text || 'Note vide';
                 },
 
                 async loadAvailableSchemas() {
@@ -2134,7 +2430,7 @@
                     const defaults = {
                         'html': { label: 'HTML', icon: 'solar:code-bold-duotone', color: '#f97316', config: { content: '' } },
                         'link': { label: 'Lien', icon: 'solar:link-round-bold-duotone', color: '#3b82f6', config: { url: '', description: '', newTab: true } },
-                        'note': { label: 'Note', icon: 'solar:notes-bold-duotone', color: '#f59e0b', config: { content: '' } },
+                        'note': { label: 'Note', icon: 'solar:notes-bold-duotone', color: '#f59e0b', config: { noteBindings: {}, noteTitle: '', content: '' } },
                         'iframe': { label: 'iFrame', icon: 'solar:monitor-bold-duotone', color: '#06b6d4', config: { url: '', height: 200 } },
                         'image': { label: 'Image', icon: 'solar:gallery-bold-duotone', color: '#10b981', config: { url: '', alt: '' } },
                         'links-group': { label: 'Liens Rapides', icon: 'solar:bookmark-bold-duotone', color: '#8b5cf6', config: { links: [{ label: '', url: '', icon: '', target: '_blank' }] } },
@@ -2157,6 +2453,8 @@
                         this.widgetFormStep = 'form';
                         if (type === 'dynamic-table') {
                             this.loadAvailableSchemas();
+                        } else if (type === 'note') {
+                            this.loadWidgetNotes();
                         }
                     }
                 },
@@ -2185,11 +2483,13 @@
                             // Reload page to show the new widget
                             window.location.reload();
                         } else {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = data.error || 'Erreur lors de la sauvegarde du widget';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         }
                     } catch (e) {
                         console.error('Widget create error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = e.message || 'Erreur lors de la sauvegarde du widget';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                     } finally {
                         this.widgetSaving = false;
                     }
@@ -2205,6 +2505,9 @@
                             cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
                         }
                         this.loadAvailableSchemas();
+                    } else if (type === 'note') {
+                        this.ensureNoteBindings();
+                        this.loadWidgetNotes();
                     }
                     this.widgetFormStep = 'form';
                     this.widgetCatalogOpen = true;
@@ -2550,7 +2853,8 @@
                 async handleFiles(files) {
                     if (!files || files.length === 0) return;
                     if (!this.recordId) {
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = 'Aucune fiche active pour ajouter ces fichiers';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         return;
                     }
                     this.uploading = true;
@@ -2574,11 +2878,13 @@
                                 }
                             }
                         } else {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = data.error || 'Upload impossible';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         }
                     } catch (e) {
                         console.error('Upload error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = e.message || 'Erreur lors de l upload';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                     } finally {
                         this.uploading = false;
                         // Reset file input
@@ -2812,7 +3118,8 @@
                         }
                     }
                     if (missing.length > 0) {
-                        window.showMessage ? window.showMessage(, 'danger') : alert());
+                        const message = 'Champs requis manquants : ' + missing.join(', ');
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         return;
                     }
                     this._executeGeneration(
@@ -2852,11 +3159,13 @@
                                 }
                             });
                         } else {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = data.error || 'Generation du document impossible';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Generation error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = e.message || 'Erreur lors de la generation';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                     } finally {
                         this.generatingDocId = null;
                     }
@@ -2968,14 +3277,16 @@
                 async createTemplateFromWizard() {
                     if (this.creatingTemplate) return;
                     if (!this.entityId) {
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = 'Entite introuvable';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         return;
                     }
 
                     const isLibrary = this.newTemplateMode === 'library';
                     const preset = isLibrary ? this.getSelectedLibraryPreset() : null;
                     if (isLibrary && !preset) {
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = 'Modele de bibliotheque introuvable';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         return;
                     }
 
@@ -2987,7 +3298,8 @@
 
                     if (scopeType === 'record') {
                         if (!this.recordId) {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = 'Fiche introuvable';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                             return;
                         }
                         scopeRecordId = this.recordId;
@@ -2998,7 +3310,8 @@
                         const token = this.selectedRelationTarget || '';
                         const rel = this.linkedRecords.find(r => `${r.relationKey}::${r.recordId}` === token);
                         if (!rel) {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = 'Relation cible introuvable';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                             return;
                         }
                         scopeRecordId = rel.recordId;
@@ -3010,7 +3323,8 @@
                     let docName = (this.newTemplateName || '').trim();
                     if (!docName && preset) docName = preset.name;
                     if (!docName) {
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = 'Nom du document requis';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         return;
                     }
 
@@ -3034,7 +3348,8 @@
                         this.selectedRelationTarget = '';
                     } catch (e) {
                         console.error('[SmartDoc] Wizard create error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = e.message || 'Erreur lors de la creation du modele';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                     } finally {
                         this.creatingTemplate = false;
                     }
@@ -3243,11 +3558,13 @@
                         if (data.success && data.document) {
                             window.open(`/account/${this.accountNumber}/documents/${data.document._id}/edit-react`, '_blank');
                         } else {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = data.error || 'Creation du document impossible';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Create simple doc error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = e.message || 'Erreur lors de la creation du document';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                     }
                 },
 
@@ -3274,11 +3591,13 @@
                                 window.showMessage('Document délié avec succès', 'success');
                             }
                         } else {
-                            window.showMessage ? window.showMessage(, 'danger') : alert();
+                            const message = data.error || 'Impossible de delier le document';
+                            window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Unlink error:', e);
-                        window.showMessage ? window.showMessage(, 'danger') : alert();
+                        const message = e.message || 'Erreur lors de la suppression du lien';
+                        window.showMessage ? window.showMessage(message, 'danger') : alert(message);
                     } finally {
                         this.unlinking = false;
                         this.showUnlinkConfirm = false;

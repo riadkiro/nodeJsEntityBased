@@ -48,19 +48,11 @@ router.use("/api/notes-hub", require("./api/api-notes-hub.router.js"));
 router.get("/api/agenda-hub", async (req, res) => {
     try {
         const _tc = require('../middleware/tenant').tenantCollection;
+        const { ensureEventsEntity } = require('../services/events-entity.service');
         const Entity = await _tc(req, "Entity");
         const Record = await _tc(req, "Record");
-        await _tc(req, "FieldTemplate");
-        await _tc(req, "Classification");
 
-        const eventsEntity = await Entity.findOne({ slug: 'events' })
-            .populate('customFields')
-            .populate('classifications')
-            .populate('statusClassification')
-            .lean();
-        if (!eventsEntity) {
-            return res.json({ success: true, events: [], entities: [], entityData: null });
-        }
+        const eventsEntity = await ensureEventsEntity(req);
 
         const allEvents = await Record.find({ entityId: eventsEntity._id })
             .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })

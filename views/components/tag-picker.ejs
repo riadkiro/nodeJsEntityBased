@@ -115,11 +115,18 @@
 .tp-search-input {
     width: 100%;
     padding: 6px 10px;
-    border: none;
-    outline: none;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
     font-size: 13px;
     color: #1f2937;
     background: transparent;
+}
+.tp-search-input:focus,
+.tp-search-input:focus-visible {
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 .tp-search-input::placeholder {
     color: #9ca3af;
@@ -255,6 +262,56 @@
 }
 
 /* ── Create option ── */
+/* Context menu (same interaction model as the sidebar rail menu) */
+.tp-context-menu {
+    position: fixed;
+    z-index: 99999;
+    min-width: 208px;
+    padding: 6px 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+.dark .tp-context-menu {
+    background: #1b2e4b;
+    border-color: #374151;
+}
+.tp-context-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border: 0;
+    background: transparent;
+    color: #374151;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+.dark .tp-context-menu button {
+    color: #d1d5db;
+}
+.tp-context-menu button:hover {
+    background: #f3f4f6;
+}
+.dark .tp-context-menu button:hover {
+    background: #1f2937;
+}
+.tp-context-menu button.is-danger {
+    color: #ef4444;
+}
+.tp-context-menu button.is-danger:hover,
+.tp-context-menu button.is-confirming {
+    background: #fef2f2;
+}
+.dark .tp-context-menu button.is-danger:hover,
+.dark .tp-context-menu button.is-confirming {
+    background: rgba(239, 68, 68, .15);
+}
+
 .tp-create-option {
     display: flex;
     align-items: center;
@@ -381,12 +438,10 @@
 
 /* ── Divider ── */
 .tp-divider {
-    height: 1px;
-    background: #f3f4f6;
-    margin: 4px 0;
+    display: none;
 }
 .dark .tp-divider {
-    background: #1e293b;
+    background: transparent;
 }
 </style>
 
@@ -395,6 +450,73 @@
     function registerTagPicker() {
         if (window.__tagPickerRegistered) return;
         window.__tagPickerRegistered = true;
+
+    if (!window.__destroyAppContextMenu) {
+        window.__destroyAppContextMenu = function() {
+            if (window.__appContextMenuCloseHandler) {
+                document.removeEventListener('click', window.__appContextMenuCloseHandler, true);
+                document.removeEventListener('contextmenu', window.__appContextMenuCloseHandler, true);
+                window.__appContextMenuCloseHandler = null;
+            }
+            if (window.__appContextMenuEl) {
+                window.__appContextMenuEl.remove();
+                window.__appContextMenuEl = null;
+            }
+        };
+    }
+
+    if (!window.__showAppContextMenu) {
+        window.__showAppContextMenu = function(x, y, items) {
+            window.__destroyAppContextMenu();
+
+            const menu = document.createElement('div');
+            menu.className = 'tp-context-menu';
+            document.body.appendChild(menu);
+
+            items.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                if (item.danger) btn.classList.add('is-danger');
+                btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon><span>${item.label}</span>`;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (item.danger && item.confirm !== false) {
+                        if (!btn._confirming) {
+                            btn._confirming = true;
+                            btn.classList.add('is-confirming');
+                            btn.innerHTML = '<iconify-icon icon="solar:danger-triangle-bold-duotone" width="18" style="color:#ef4444"></iconify-icon><span>Confirmer ?</span>';
+                            btn._resetTimer = setTimeout(() => {
+                                btn._confirming = false;
+                                btn.classList.remove('is-confirming');
+                                btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon><span>${item.label}</span>`;
+                            }, 3000);
+                            return;
+                        }
+                        clearTimeout(btn._resetTimer);
+                    }
+                    window.__destroyAppContextMenu();
+                    item.action();
+                });
+                menu.appendChild(btn);
+            });
+
+            const width = menu.offsetWidth || 208;
+            const height = menu.offsetHeight || 48;
+            menu.style.left = Math.max(8, Math.min(x || 8, window.innerWidth - width - 8)) + 'px';
+            menu.style.top = Math.max(8, Math.min(y || 8, window.innerHeight - height - 8)) + 'px';
+            window.__appContextMenuEl = menu;
+
+            const closeHandler = (evt) => {
+                if (!menu.contains(evt.target)) window.__destroyAppContextMenu();
+            };
+            window.__appContextMenuCloseHandler = closeHandler;
+            setTimeout(() => {
+                document.addEventListener('click', closeHandler, true);
+                document.addEventListener('contextmenu', closeHandler, true);
+            }, 0);
+        };
+    }
 
     const TAG_COLORS = [
         // Row 1 — pastel
@@ -543,14 +665,17 @@
 
         // ── Toggle ──
         toggleOpen() {
+            window.__destroyAppContextMenu?.();
             this.isOpen = !this.isOpen;
         },
 
         toggleDropdown() {
+            window.__destroyAppContextMenu?.();
             this.isOpen = !this.isOpen;
         },
 
         toggleOption(optId) {
+            window.__destroyAppContextMenu?.();
             const idx = this.selectedIds.indexOf(optId);
             if (idx >= 0) {
                 this.selectedIds.splice(idx, 1);
@@ -687,6 +812,33 @@
             }
         },
 
+        openOptionContextMenu(event, optId) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const opt = this.options.find(o => o._id === optId);
+            if (!opt) return;
+
+            const items = [];
+            if (this.isSelected(optId)) {
+                items.push({
+                    icon: 'solar:close-circle-linear',
+                    label: 'Retirer de cette fiche',
+                    action: () => this.removeTag(optId)
+                });
+            }
+            items.push({
+                icon: 'solar:trash-bin-trash-bold-duotone',
+                iconColor: '#ef4444',
+                label: 'Supprimer le choix',
+                danger: true,
+                action: () => this.deleteOption(optId)
+            });
+
+            window.__showAppContextMenu?.(event?.clientX || 0, event?.clientY || 0, items);
+        },
+
         async deleteOption(optId) {
             const idToDelete = optId || (this.editingOption ? this.editingOption._id : null);
             if (!idToDelete) return;
@@ -708,6 +860,7 @@
                 if (this.editingOption && this.editingOption._id === idToDelete) {
                     this.editingOption = null;
                 }
+                window.__destroyAppContextMenu?.();
                 if (this.saveOnSelection) this.saveToRecord();
             } catch (err) {
                 console.error('[TagPicker] Delete error:', err);
@@ -768,6 +921,7 @@
         // ── Close handlers ──
         closeDropdown() {
             this.isOpen = false;
+            window.__destroyAppContextMenu?.();
         }
     }));
     }

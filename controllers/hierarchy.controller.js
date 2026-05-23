@@ -1,6 +1,8 @@
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
+const { sanitizeViewFilters } = require('../services/record-filter-query');
 
 // Cache for loaded icon libraries
 const iconLibrariesCache = {};
@@ -345,10 +347,9 @@ module.exports = {
                             // Regular entity view
                             const entity = entities.find(e => e.id === v.entity.toString());
                             const entitySlug = entity ? entity.slug : v.slug;
-                            // Doc-listing views get a special link with viewId
-                            const viewLink = v.viewType === 'doc-listing'
-                                ? `/account/${req.account_number}/record/${entitySlug}/list?viewType=doc-listing&viewId=${v.id}`
-                                : `/account/${req.account_number}/record/${entitySlug}/list`;
+                            const viewParams = new URLSearchParams({ viewId: v.id });
+                            if (v.viewType === 'doc-listing') viewParams.set('viewType', 'doc-listing');
+                            const viewLink = `/account/${req.account_number}/record/${entitySlug}/list?${viewParams.toString()}`;
                             results.push({
                                 type: 'entity',
                                 id: v.id,
@@ -500,12 +501,19 @@ module.exports = {
     },
 
     createEntity: async (req, res) => {
+        try {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
         const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
         
         const { name, nameSingular, namePlural, fields, parentId, parentType, viewType, icon, color } = req.body;
         const slug = await uniqueSlug(EntityModel, name);
+        const normalizedViewType = ['list', 'table', 'kanban', 'calendar'].includes(viewType) ? viewType : 'list';
+        const settingsViewMode = normalizedViewType === 'kanban'
+            ? 'kanban'
+            : normalizedViewType === 'calendar'
+                ? 'calendar'
+                : 'table';
 
         // 1. Create suggested custom fields if provided
         const customFieldIds = [];
@@ -568,7 +576,8 @@ module.exports = {
             entity: newEntity._id,
             icon,
             color,
-            viewType: viewType || 'list',
+            viewType: normalizedViewType,
+            settings: { viewMode: settingsViewMode },
             createdBy: req.user._id,
             order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
@@ -576,6 +585,10 @@ module.exports = {
         });
         await newView.save();
         res.json(newView);
+        } catch (error) {
+            console.error("[Hierarchy] Create entity failed:", error);
+            res.status(500).json({ error: error.message || "Erreur lors de la creation de la collection" });
+        }
     },
 
     renameItem: async (req, res) => {
@@ -634,8 +647,11 @@ module.exports = {
             entities: entities.map(e => ({
                 id: e._id.toString(),
                 name: e.name,
+                nameSingular: e.nameSingular,
+                namePlural: e.namePlural,
                 slug: e.slug,
                 icon: e.icon,
+                color: e.color,
                 fieldsCount: (e.customFields || []).length
             }))
         });
@@ -648,12 +664,54 @@ module.exports = {
             const EntityModel = await tenantCollection(req, "Entity");
             const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
             const ClassificationModel = await tenantCollection(req, "Classification");
+            const RecordModel = await tenantCollection(req, "Record");
 
             const entity = await EntityModel.findById(entityId).lean();
 
             if (!entity) {
                 return res.status(404).json({ success: false, message: "Entity not found" });
             }
+
+            const normalizeOptions = (options) => {
+                if (!Array.isArray(options)) return [];
+                return options.map(opt => {
+                    if (typeof opt === 'string') return { id: opt, label: opt, value: opt };
+                    return {
+                        id: String(opt.id || opt._id || opt.value || opt.label || ''),
+                        label: opt.label || opt.name || opt.value || '',
+                        value: opt.value || opt.id || opt._id || opt.label || ''
+                    };
+                }).filter(opt => opt.id || opt.label);
+            };
+            const normalizeDistinctOptions = (values) => {
+                const flattened = [];
+                (values || []).forEach(value => {
+                    if (Array.isArray(value)) flattened.push(...value);
+                    else flattened.push(value);
+                });
+                const seen = new Set();
+                return flattened
+                    .map(value => {
+                        if (value === undefined || value === null || value === '') return null;
+                        if (typeof value === 'object') {
+                            if (value.label || value.name || value.value) {
+                                return String(value.label || value.name || value.value).trim();
+                            }
+                            return null;
+                        }
+                        return String(value).trim();
+                    })
+                    .filter(Boolean)
+                    .filter(value => {
+                        const key = value.toLowerCase();
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    })
+                    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+                    .slice(0, 80)
+                    .map(value => ({ id: value, label: value, value }));
+            };
 
             const fieldOverrides = entity.fieldOverrides || {};
 
@@ -677,8 +735,38 @@ module.exports = {
                         label: override.label || ft.label || ft.name,
                         type: ft.fieldType || ft.type || 'text',
                         icon: ft.ui?.icon || ft.icon || 'tabler:text',
+                        options: normalizeOptions(ft.type_config?.options || ft.ui?.options || ft.options),
                         showOnQuickForm: showOnQF
                     });
+                }
+            }
+
+            const distinctCustomOptions = {};
+            if (fields.length > 0) {
+                const fieldObjectIds = fields
+                    .map(f => f.id)
+                    .filter(id => mongoose.Types.ObjectId.isValid(id))
+                    .map(id => new mongoose.Types.ObjectId(id));
+                if (fieldObjectIds.length > 0) {
+                    const distinctRows = await RecordModel.aggregate([
+                        { $match: { entityId: entity._id } },
+                        { $unwind: '$customFields' },
+                        { $match: { 'customFields.field_id': { $in: fieldObjectIds } } },
+                        { $group: { _id: '$customFields.field_id', values: { $addToSet: '$customFields.value' } } }
+                    ]);
+                    distinctRows.forEach(row => {
+                        distinctCustomOptions[row._id.toString()] = normalizeDistinctOptions(row.values);
+                    });
+                }
+            }
+            const distinctStandardOptions = {};
+            for (const standardField of ['status', 'published', 'isDraft']) {
+                try {
+                    distinctStandardOptions[standardField] = normalizeDistinctOptions(
+                        await RecordModel.distinct(standardField, { entityId: entity._id })
+                    );
+                } catch (_) {
+                    distinctStandardOptions[standardField] = [];
                 }
             }
 
@@ -722,6 +810,44 @@ module.exports = {
                 cardinality: r.cardinality || 'one-to-many'
             }));
 
+            const standardFilterFields = [
+                { id: 'title', label: 'Titre', type: 'title', source: 'standard', icon: 'solar:text-bold' },
+                { id: 'status', label: 'Statut technique', type: 'text', source: 'standard', icon: 'solar:tag-bold-duotone', options: distinctStandardOptions.status || [] },
+                { id: 'description', label: 'Description', type: 'textarea', source: 'standard', icon: 'solar:document-text-bold-duotone' },
+                { id: 'date', label: 'Date', type: 'date', source: 'standard', icon: 'solar:calendar-bold-duotone' },
+                { id: 'createdAt', label: 'Date de création', type: 'date', source: 'standard', icon: 'solar:calendar-add-bold-duotone' },
+                { id: 'updatedAt', label: 'Date de modification', type: 'date', source: 'standard', icon: 'solar:history-bold-duotone' }
+            ];
+            const customFilterFields = fields.map(f => ({
+                id: f.id,
+                label: f.label || f.name,
+                type: f.type || 'text',
+                source: 'custom',
+                icon: f.icon,
+                options: (f.options && f.options.length > 0) ? f.options : (distinctCustomOptions[f.id] || [])
+            }));
+            const classificationFilterFields = classifications.map(c => ({
+                id: `classif:${c.id}`,
+                label: c.name,
+                type: 'classification',
+                source: 'classification',
+                icon: c.isStatus ? 'solar:flag-bold-duotone' : 'solar:tag-bold-duotone',
+                options: c.options || []
+            }));
+            const relationFilterFields = relations.map(r => ({
+                id: `rel:${r.key}`,
+                label: r.label || 'Relation',
+                type: 'relation',
+                source: 'relation',
+                icon: 'solar:link-bold-duotone'
+            }));
+            const filterFields = [
+                ...standardFilterFields,
+                ...customFilterFields,
+                ...classificationFilterFields,
+                ...relationFilterFields
+            ];
+
             res.json({
                 success: true,
                 entity: {
@@ -730,6 +856,7 @@ module.exports = {
                     slug: entity.slug,
                     icon: entity.icon || 'solar:database-broken',
                     fields,
+                    filterFields,
                     classifications,
                     relations,
                     referenceTitleTokens: entity.referenceTitleTokens || [{ t: 'field', id: 'title' }]
@@ -744,13 +871,19 @@ module.exports = {
     linkEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
-        const { entityId, parentId, parentType, viewType } = req.body;
+        const { entityId, parentId, parentType, viewType, name, icon, color, filters, settings } = req.body;
         const entity = await EntityModel.findById(entityId);
+        if (!entity) return res.status(404).json({ error: "Entity not found" });
+        const viewName = String(name || '').trim() || entity.name;
         const newView = new ViewModel({
-            name: entity.name,
-            slug: await uniqueSlug(ViewModel, entity.name),
+            name: viewName,
+            slug: await uniqueSlug(ViewModel, viewName),
             entity: entity._id,
+            icon: icon || entity.icon,
+            color: color || entity.color,
             viewType: viewType || 'list',
+            filters: sanitizeViewFilters(filters),
+            settings: settings || {},
             createdBy: req.user._id,
             order: 0,
             spaces: parentType === 'space' ? [parentId] : [],

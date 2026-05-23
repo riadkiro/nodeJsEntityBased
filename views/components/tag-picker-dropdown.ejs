@@ -21,7 +21,8 @@
     <!-- Options list -->
     <div class="tp-options" style="position: relative;">
         <template x-for="opt in filteredOptions" :key="opt._id">
-            <div class="tp-option" @click="toggleOption(opt._id)">
+            <div class="tp-option" @click="toggleOption(opt._id)"
+                 @contextmenu.prevent.stop="openOptionContextMenu($event, opt._id)">
                 <div class="tp-option-icon"
                      :style="'background:' + opt.bg">
                     <iconify-icon x-show="isSelected(opt._id)"

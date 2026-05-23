@@ -6,6 +6,7 @@ const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
 const denormService = require("../services/record-denorm.service");
+const { buildRecordFilterQuery } = require("../services/record-filter-query");
 const Account = require("../models/account.model");
 const User = require("../models/user.model");
 
@@ -119,10 +120,23 @@ module.exports = {
 
             // Get total count for mode decision (restricted for guest/external)
             const { getSharedRecordFilter } = require('../middleware/shared-records-helper');
-            const countQuery = { entityId: entity._id };
+            let countQuery = { entityId: entity._id };
             const sharedFilter = await getSharedRecordFilter(req, entity._id.toString());
             if (sharedFilter) {
                 countQuery._id = sharedFilter._id;
+            }
+            let viewDoc = null;
+            if (req.query.viewId && mongoose.Types.ObjectId.isValid(req.query.viewId)) {
+                try {
+                    const ViewModel = await tenantCollection(req, "View");
+                    viewDoc = await ViewModel.findById(req.query.viewId).lean();
+                    const viewFilterQuery = buildRecordFilterQuery(viewDoc?.filters || []);
+                    if (Object.keys(viewFilterQuery).length > 0) {
+                        countQuery = { $and: [countQuery, viewFilterQuery] };
+                    }
+                } catch (e) {
+                    console.warn('[Record list] view filter count error:', e.message);
+                }
             }
             const totalRecords = await RecordModel.countDocuments(countQuery);
 
@@ -133,9 +147,7 @@ module.exports = {
             let smartDocTemplate = null;
             if (viewType === 'doc-listing' && req.query.viewId) {
                 try {
-                    const ViewModel = await tenantCollection(req, "View");
                     const SmartDocTemplate = await tenantCollection(req, "SmartDocTemplate");
-                    const viewDoc = await ViewModel.findById(req.query.viewId).lean();
                     if (viewDoc && viewDoc.settings && viewDoc.settings.smartDocTemplateId) {
                         smartDocTemplate = await SmartDocTemplate.findById(viewDoc.settings.smartDocTemplateId).lean();
                     }

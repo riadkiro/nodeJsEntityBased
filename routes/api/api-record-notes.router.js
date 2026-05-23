@@ -16,6 +16,82 @@
 const { tenantCollection } = require('../../middleware/tenant');
 let bcrypt;
 try { bcrypt = require('bcryptjs'); } catch (e) { bcrypt = require('bcrypt'); }
+const crypto = require('crypto');
+
+function noteIdKey(noteId) {
+    return String(noteId || '');
+}
+
+function isNoteUnlocked(req, noteId) {
+    const key = noteIdKey(noteId);
+    return !!(key && req.session && req.session.unlockedRecordNotes && req.session.unlockedRecordNotes[key]);
+}
+
+function markNoteUnlocked(req, noteId) {
+    const key = noteIdKey(noteId);
+    if (!key || !req.session) return;
+    getNoteEditToken(req, key);
+}
+
+function forgetNoteUnlock(req, noteId) {
+    const key = noteIdKey(noteId);
+    if (!key || !req.session || !req.session.unlockedRecordNotes) return;
+    delete req.session.unlockedRecordNotes[key];
+    if (req.session.recordNoteEditTokens) delete req.session.recordNoteEditTokens[key];
+}
+
+function contentHash(content) {
+    return crypto.createHash('sha256').update(String(content || '')).digest('hex');
+}
+
+function getNoteEditToken(req, noteId) {
+    const key = noteIdKey(noteId);
+    if (!key || !req.session) return '';
+    req.session.recordNoteEditTokens = req.session.recordNoteEditTokens || {};
+    if (!req.session.recordNoteEditTokens[key]) {
+        req.session.recordNoteEditTokens[key] = crypto.randomBytes(24).toString('hex');
+    }
+    return req.session.recordNoteEditTokens[key];
+}
+
+function peekNoteEditToken(req, noteId) {
+    const key = noteIdKey(noteId);
+    return (key && req.session && req.session.recordNoteEditTokens && req.session.recordNoteEditTokens[key]) || '';
+}
+
+function isMeaningfullyEmptyHtml(content) {
+    const html = String(content || '');
+    const hasEmbeddedContent = /<(img|iframe|video|audio|table|ul|ol|li|input|canvas)\b/i.test(html);
+    const text = html
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return !hasEmbeddedContent && !text;
+}
+
+function redactNote(note, unlocked = false, req = null) {
+    const safeNote = note && typeof note.toObject === 'function'
+        ? note.toObject()
+        : { ...(note || {}) };
+
+    delete safeNote.pinHash;
+
+    if (safeNote.isProtected && !unlocked) {
+        safeNote.content = null;
+        safeNote.contentLocked = true;
+    } else {
+        safeNote.contentLocked = false;
+        safeNote._contentHash = contentHash(safeNote.content);
+        if (safeNote.isProtected && req) {
+            safeNote._contentEditToken = getNoteEditToken(req, safeNote._id);
+        }
+    }
+
+    return safeNote;
+}
 
 module.exports = (router) => {
 
@@ -34,14 +110,7 @@ module.exports = (router) => {
             .sort({ pinned: -1, updatedAt: -1 })
             .lean();
 
-            // Redact content for protected notes
-            const safeNotes = notes.map(n => {
-                if (n.isProtected) {
-                    return { ...n, content: null, pinHash: undefined };
-                }
-                const { pinHash, ...rest } = n;
-                return rest;
-            });
+            const safeNotes = notes.map(n => redactNote(n, false, null));
 
             res.json({ success: true, notes: safeNotes });
         } catch (err) {
@@ -85,7 +154,7 @@ module.exports = (router) => {
                 isProtected
             });
 
-            res.json({ success: true, note });
+            res.json({ success: true, note: redactNote(note, false, req) });
         } catch (err) {
             console.error('[RecordNotes] Create error:', err);
             res.status(500).json({ success: false, error: err.message });
@@ -107,7 +176,7 @@ module.exports = (router) => {
 
             if (!note) return res.status(404).json({ success: false, error: 'Note not found' });
 
-            res.json({ success: true, note });
+            res.json({ success: true, note: redactNote(note, false, null) });
         } catch (err) {
             console.error('[RecordNotes] Get error:', err);
             res.status(500).json({ success: false, error: err.message });
@@ -122,14 +191,48 @@ module.exports = (router) => {
             const RecordNote = await tenantCollection(req, 'RecordNote');
             if (!RecordNote) return res.status(500).json({ success: false, error: 'DB not ready' });
 
-            const { title, content, color, icon, isProtected } = req.body;
+            const { title, content, color, icon, contentEditToken, contentBaseHash, confirmEmptyProtectedContent } = req.body;
+
+            const existingNote = await RecordNote.findOne({
+                _id: req.params.noteId,
+                recordId: req.params.recordId
+            }).select('_id isProtected content').lean();
+
+            if (!existingNote) return res.status(404).json({ success: false, error: 'Note not found' });
 
             const updateFields = { updatedAt: new Date() };
             if (title !== undefined) updateFields.title = title;
-            if (content !== undefined) updateFields.content = content;
+            let contentIgnored = false;
+            if (content !== undefined) {
+                if (!existingNote.isProtected) {
+                    updateFields.content = content;
+                } else {
+                    const expectedToken = peekNoteEditToken(req, existingNote._id);
+                    const canEditProtectedContent =
+                        contentEditToken &&
+                        contentEditToken === expectedToken &&
+                        contentBaseHash &&
+                        contentBaseHash === contentHash(existingNote.content);
+                    const dangerousEmptyOverwrite =
+                        isMeaningfullyEmptyHtml(content) &&
+                        !isMeaningfullyEmptyHtml(existingNote.content) &&
+                        confirmEmptyProtectedContent !== true;
+
+                    if (canEditProtectedContent && !dangerousEmptyOverwrite) {
+                        updateFields.content = content;
+                    } else {
+                        contentIgnored = true;
+                        console.warn('[RecordNotes] Ignored protected note content update', {
+                            noteId: String(existingNote._id),
+                            tokenValid: !!contentEditToken && contentEditToken === expectedToken,
+                            baseHashValid: !!contentBaseHash && contentBaseHash === contentHash(existingNote.content),
+                            dangerousEmptyOverwrite
+                        });
+                    }
+                }
+            }
             if (color !== undefined) updateFields.color = color;
             if (icon !== undefined) updateFields.icon = icon;
-            if (isProtected !== undefined) updateFields.isProtected = isProtected;
 
             const note = await RecordNote.findOneAndUpdate(
                 { _id: req.params.noteId, recordId: req.params.recordId },
@@ -137,9 +240,8 @@ module.exports = (router) => {
                 { new: true, lean: true }
             );
 
-            if (!note) return res.status(404).json({ success: false, error: 'Note not found' });
-
-            res.json({ success: true, note });
+            const returnUnlocked = !!(existingNote.isProtected && updateFields.content !== undefined);
+            res.json({ success: true, note: redactNote(note, returnUnlocked, returnUnlocked ? req : null), contentIgnored });
         } catch (err) {
             console.error('[RecordNotes] Update error:', err);
             res.status(500).json({ success: false, error: err.message });
@@ -168,7 +270,13 @@ module.exports = (router) => {
             note.updatedAt = new Date();
             await note.save();
 
-            res.json({ success: true, isProtected: note.isProtected });
+            if (note.isProtected) {
+                markNoteUnlocked(req, note._id);
+            } else {
+                forgetNoteUnlock(req, note._id);
+            }
+
+            res.json({ success: true, isProtected: note.isProtected, note: redactNote(note, note.isProtected, note.isProtected ? req : null) });
         } catch (err) {
             console.error('[RecordNotes] Protect error:', err);
             res.status(500).json({ success: false, error: err.message });
@@ -189,6 +297,8 @@ module.exports = (router) => {
             });
 
             if (!note) return res.status(404).json({ success: false, error: 'Note not found' });
+
+            forgetNoteUnlock(req, note._id);
 
             res.json({ success: true });
         } catch (err) {
@@ -237,7 +347,10 @@ module.exports = (router) => {
             }).lean();
 
             if (!note) return res.status(404).json({ success: false, error: 'Note not found' });
-            if (!note.isProtected) return res.json({ success: true, content: note.content });
+            if (!note.isProtected) {
+                forgetNoteUnlock(req, note._id);
+                return res.json({ success: true, note: redactNote(note, true, req), content: note.content });
+            }
 
             const { pin } = req.body;
             if (!pin) return res.status(400).json({ success: false, error: 'PIN requis' });
@@ -252,7 +365,9 @@ module.exports = (router) => {
             if (!match) return res.status(403).json({ success: false, error: 'PIN incorrect' });
 
             // PIN correct — return full content
-            const { pinHash, ...safeNote } = note;
+            markNoteUnlocked(req, note._id);
+
+            const safeNote = redactNote(note, true, req);
             res.json({ success: true, note: safeNote, content: note.content });
         } catch (err) {
             console.error('[RecordNotes] Verify PIN error:', err);

@@ -1247,6 +1247,176 @@
     background: #253b5c;
 }
 
+/* Match the record chat dark mode, which is driven by the `.dark` class. */
+.dark .notes-layout {
+    background: #0e1726;
+    border-color: #253b5c;
+}
+
+.dark .notes-sidebar {
+    background: #0b1320;
+    border-color: #253b5c;
+}
+
+.dark .notes-sidebar-header,
+.dark .ne-topbar,
+.dark .ne-toolbar,
+.dark .ne-inline-modal-header,
+.dark .ne-inline-modal-footer,
+.dark .note-modal-header,
+.dark .note-modal-footer {
+    border-color: #253b5c;
+}
+
+.dark .notes-sidebar-title h3,
+.dark .note-list-item-title,
+.dark .notes-editor-empty h3,
+.dark .ne-title-input,
+.dark .ne-inline-modal-header,
+.dark .note-modal-header h3 {
+    color: #e0e6ed;
+}
+
+.dark .notes-sidebar-title .notes-count,
+.dark .note-list-item-actions button,
+.dark .ne-toolbar-dropdown-menu,
+.dark .ne-image-toolbar,
+.dark .ne-inline-modal-footer .btn-cancel,
+.dark .note-modal-footer .btn-cancel {
+    background: #1b2e4b;
+    color: #94a3b8;
+}
+
+.dark .notes-search-wrap,
+.dark .ne-inline-modal-body input,
+.dark .note-modal-body input {
+    background: #0e1726;
+    border-color: #253b5c;
+}
+
+.dark .notes-search-input,
+.dark .ne-inline-modal-body input,
+.dark .note-modal-body input {
+    color: #e0e6ed;
+}
+
+.dark .notes-search-input::placeholder,
+.dark .ne-title-input::placeholder,
+.dark .ne-content:empty::before,
+.dark .ne-inline-modal-body input::placeholder,
+.dark .note-modal-body input::placeholder {
+    color: #64748b;
+}
+
+.dark .note-list-item:hover,
+.dark .note-list-item.active,
+.dark .note-list-item-actions button:hover,
+.dark .ne-topbar-btn:hover,
+.dark .ne-toolbar button:hover,
+.dark .ne-toolbar-dropdown-menu button:hover,
+.dark .ne-image-toolbar button:hover {
+    background: #1b2e4b;
+}
+
+.dark .note-list-item.active {
+    border-color: #8b5cf640;
+}
+
+.dark .note-list-item-actions button:hover,
+.dark .ne-topbar-btn:hover,
+.dark .ne-toolbar button:hover,
+.dark .ne-image-toolbar button:hover {
+    color: #e0e6ed;
+}
+
+.dark .notes-editor-panel {
+    background: #0e1726;
+}
+
+.dark .ne-toolbar {
+    background: #0b1320;
+}
+
+.dark .ne-toolbar button,
+.dark .ne-image-toolbar button {
+    color: #94a3b8;
+}
+
+.dark .ne-toolbar button.active,
+.dark .ne-toolbar-dropdown-menu button.active,
+.dark .ne-image-toolbar button.active {
+    background: #8b5cf620;
+    color: #a78bfa;
+}
+
+.dark .ne-toolbar .sep,
+.dark .ne-image-toolbar .sep {
+    background: #253b5c;
+}
+
+.dark .ne-toolbar-dropdown-menu,
+.dark .ne-image-toolbar {
+    border-color: #253b5c;
+    box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+
+.dark .ne-content {
+    color: #e0e6ed;
+}
+
+.dark .ne-content blockquote {
+    color: #94a3b8;
+}
+
+.dark .ne-content a {
+    color: #a78bfa;
+}
+
+.dark .ne-content a:hover {
+    color: #c4b5fd;
+}
+
+.dark .note-checklist-item .note-checklist-delete:hover,
+.dark .ne-topbar-btn.delete-btn:hover,
+.dark .ne-image-toolbar .delete-btn:hover {
+    background: rgba(239,68,68,.12);
+    color: #f87171;
+}
+
+.dark .ne-drive-item {
+    background: #0b1320;
+    border-color: #253b5c;
+}
+
+.dark .ne-drive-item:hover {
+    border-color: #8b5cf6;
+}
+
+.dark .ne-drive-item-name,
+.dark .ne-inline-modal-body label,
+.dark .note-modal-body label {
+    color: #94a3b8;
+}
+
+.dark .ne-inline-modal,
+.dark .note-modal {
+    background: #0e1726;
+    border: 1px solid #253b5c;
+}
+
+.dark .note-color-dot.active {
+    border-color: #e0e6ed;
+}
+
+.dark .notes-sidebar-empty h4 {
+    color: #e0e6ed;
+}
+
+.dark .notes-list::-webkit-scrollbar-thumb,
+.dark .ne-content::-webkit-scrollbar-thumb {
+    background: #253b5c;
+}
+
 /* ── Color Picker Dots ── */
 .note-color-picker-dot {
     width: 20px;
@@ -1264,6 +1434,9 @@
     box-shadow: 0 0 0 2px #fff, 0 0 0 3px currentColor;
 }
 [data-theme="dark"] .note-color-picker-dot.active {
+    box-shadow: 0 0 0 2px #0e1726, 0 0 0 3px currentColor;
+}
+.dark .note-color-picker-dot.active {
     box-shadow: 0 0 0 2px #0e1726, 0 0 0 3px currentColor;
 }
 </style>
@@ -1322,10 +1495,10 @@
                                         <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-warning ml-1" title="Note sécurisée" style="color: #f59e0b;"></iconify-icon>
                                     </div>
                                     <div class="note-list-item-preview">
-                                        <template x-if="note.isProtected">
+                                        <template x-if="note.isProtected && !isNoteContentUnlocked(note)">
                                             <span style="font-style:italic; opacity:0.7;">Contenu masqué...</span>
                                         </template>
-                                        <template x-if="!note.isProtected">
+                                        <template x-if="!note.isProtected || isNoteContentUnlocked(note)">
                                             <span x-text="getPreviewText(note.content)"></span>
                                         </template>
                                     </div>
@@ -1365,10 +1538,10 @@
                                         <iconify-icon x-show="note.isProtected" icon="solar:lock-password-bold" width="12" class="text-warning ml-1" title="Note sécurisée" style="color: #f59e0b;"></iconify-icon>
                                     </div>
                                     <div class="note-list-item-preview">
-                                        <template x-if="note.isProtected">
+                                        <template x-if="note.isProtected && !isNoteContentUnlocked(note)">
                                             <span style="font-style:italic; opacity:0.7;">Contenu masqué...</span>
                                         </template>
-                                        <template x-if="!note.isProtected">
+                                        <template x-if="!note.isProtected || isNoteContentUnlocked(note)">
                                             <span x-text="getPreviewText(note.content)"></span>
                                         </template>
                                     </div>
@@ -1434,7 +1607,7 @@
                         </button>
                         <input type="text" class="ne-title-input"
                                :value="activeNote.title"
-                               @input="activeNote.title = $event.target.value; scheduleAutosave();"
+                               @input="activeNote.title = $event.target.value; scheduleAutosave('title');"
                                placeholder="Titre de la note...">
                         <div class="ne-save-status" :class="saveStatus">
                             <template x-if="saveStatus === 'saving'">
@@ -1615,8 +1788,9 @@
 
                     <!-- Content -->
                     <div class="ne-content" contenteditable="true" x-ref="editorContent"
+                         x-init="hydrateMountedEditor($el)"
                          data-placeholder="Commencez à écrire..."
-                         @input="scheduleAutosave()"
+                         @input="scheduleAutosave('content')"
                          @keyup="updateFormats()"
                          @mouseup="updateFormats()"
                          @click="handleContentClick($event)"
@@ -1743,6 +1917,9 @@ document.addEventListener('alpine:init', () => {
         notes: [],
         loading: true,
         activeNote: null,
+        editorNoteId: null,
+        isHydratingEditor: false,
+        contentDirtyNoteId: null,
         showCreateModal: false,
         showPinModal: false,
         pinInput: '',
@@ -1750,6 +1927,7 @@ document.addEventListener('alpine:init', () => {
         isPinVerifying: false,
         pendingNoteToOpen: null,
         pendingProtectToggle: false,
+        unlockedNoteIds: {},
         newTitle: '',
         newColor: '#8b5cf6',
         saveStatus: '',
@@ -1778,6 +1956,7 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             await this.loadNotes();
+            this.openInitialNoteFromUrl();
             // Auto-focus the create modal input when shown
             this.$watch('showCreateModal', (val) => {
                 if (val) {
@@ -1816,12 +1995,155 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ── API ──
+        isNoteContentUnlocked(note) {
+            if (!note || !note.isProtected) return true;
+            return !!(note._unlocked || this.unlockedNoteIds[note._id]);
+        },
+
+        noteSavePayload(note, content, includeContent = true) {
+            const payload = { title: note.title };
+            if (includeContent && this.isNoteContentUnlocked(note)) {
+                payload.content = content;
+                payload.editorNoteId = this.editorNoteId;
+                if (note.isProtected) {
+                    payload.contentEditToken = note._contentEditToken || '';
+                    payload.contentBaseHash = note._contentHash || '';
+                }
+            }
+            return payload;
+        },
+
+        syncSavedNoteMeta(noteId, savedNote) {
+            if (!savedNote) return;
+            const activeSame = !!(this.activeNote && String(this.activeNote._id) === String(noteId));
+            const idx = this.notes.findIndex(n => String(n._id) === String(noteId));
+            if (idx !== -1) {
+                const isProtected = !!(savedNote.isProtected || this.notes[idx].isProtected);
+                const canExposeContent = !isProtected || activeSame;
+                this.notes[idx] = {
+                    ...this.notes[idx],
+                    _contentHash: canExposeContent ? (savedNote._contentHash || this.notes[idx]._contentHash) : undefined,
+                    _contentEditToken: canExposeContent ? (savedNote._contentEditToken || this.notes[idx]._contentEditToken) : undefined,
+                    contentLocked: isProtected && !canExposeContent ? true : savedNote.contentLocked,
+                    ...(canExposeContent && savedNote.content !== undefined && savedNote.content !== null ? { content: savedNote.content } : {}),
+                    ...(isProtected && !canExposeContent ? { content: null, _unlocked: false, _contentRedacted: true } : {})
+                };
+            }
+            if (activeSame) {
+                this.activeNote._contentHash = savedNote._contentHash || this.activeNote._contentHash;
+                this.activeNote._contentEditToken = savedNote._contentEditToken || this.activeNote._contentEditToken;
+                this.activeNote.contentLocked = savedNote.contentLocked;
+                if (savedNote.content !== undefined && savedNote.content !== null) {
+                    this.activeNote.content = savedNote.content;
+                }
+            }
+        },
+
+        canSaveActiveContent(noteId) {
+            if (!this.activeNote || String(this.activeNote._id) !== String(noteId)) return false;
+            if (!this.isNoteContentUnlocked(this.activeNote)) return false;
+            if (!this.getEditorEl()) return false;
+            return String(this.editorNoteId || '') === String(noteId);
+        },
+
+        getEditorEl() {
+            return this.$refs.editorContent || document.querySelector('.ne-content[contenteditable="true"]');
+        },
+
+        hydrateMountedEditor(el) {
+            if (!this.activeNote || !el) return;
+            const noteId = String(this.activeNote._id);
+            const html = this.isNoteContentUnlocked(this.activeNote) ? (this.activeNote.content || '') : '';
+            this.isHydratingEditor = true;
+            requestAnimationFrame(() => {
+                if (!this.activeNote || String(this.activeNote._id) !== noteId || !el.isConnected) {
+                    this.isHydratingEditor = false;
+                    return;
+                }
+                el.innerHTML = html;
+                this.editorNoteId = noteId;
+                this.isHydratingEditor = false;
+                this.updateFormats();
+            });
+        },
+
+        showNoteInEditor(note) {
+            this.activeNote = JSON.parse(JSON.stringify(note));
+            this.mobileEditing = true;
+            this.saveStatus = '';
+            this.editorNoteId = null;
+            if (String(this.contentDirtyNoteId || '') !== String(note._id)) {
+                this.contentDirtyNoteId = null;
+            }
+            this.isHydratingEditor = true;
+            const noteId = String(note._id);
+            const html = this.isNoteContentUnlocked(note) ? (note.content || '') : '';
+            this.hydrateEditorContent(noteId, html);
+        },
+
+        hydrateEditorContent(noteId, html, attempt = 0) {
+            this.$nextTick(() => {
+                const el = this.getEditorEl();
+                if (el && this.activeNote && String(this.activeNote._id) === String(noteId)) {
+                    el.innerHTML = html;
+                    this.editorNoteId = String(noteId);
+                    this.isHydratingEditor = false;
+                    el.focus();
+                    this.updateFormats();
+                    return;
+                }
+
+                if (attempt < 12 && this.activeNote && String(this.activeNote._id) === String(noteId)) {
+                    requestAnimationFrame(() => this.hydrateEditorContent(noteId, html, attempt + 1));
+                    return;
+                }
+
+                this.isHydratingEditor = false;
+            });
+        },
+
+        markNoteUnlocked(note) {
+            if (!note || !note._id) return;
+            this.unlockedNoteIds = { ...this.unlockedNoteIds, [note._id]: true };
+            note._unlocked = true;
+            note._contentRedacted = false;
+        },
+
+        forgetNoteUnlocked(noteId) {
+            if (!noteId) return;
+            const next = { ...this.unlockedNoteIds };
+            delete next[noteId];
+            this.unlockedNoteIds = next;
+        },
+
+        lockProtectedNote(noteId) {
+            if (!noteId) return;
+            this.forgetNoteUnlocked(noteId);
+            const idx = this.notes.findIndex(n => String(n._id) === String(noteId));
+            if (idx !== -1 && this.notes[idx].isProtected) {
+                this.notes[idx] = {
+                    ...this.notes[idx],
+                    content: null,
+                    contentLocked: true,
+                    _unlocked: false,
+                    _contentRedacted: true,
+                    _contentHash: undefined,
+                    _contentEditToken: undefined
+                };
+            }
+        },
+
         async loadNotes() {
             this.loading = true;
             try {
                 const res = await fetch(_apiBase, { credentials: 'include' });
                 const data = await res.json();
-                if (data.success) this.notes = data.notes || [];
+                if (data.success) {
+                    this.notes = (data.notes || []).map(note => ({
+                        ...note,
+                        _contentRedacted: !!note.isProtected && note.content == null
+                    }));
+                }
             } catch (e) { console.error('[Notes] Load error:', e); }
             this.loading = false;
         },
@@ -1845,9 +2167,29 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { console.error('[Notes] Create error:', e); }
         },
 
+        openInitialNoteFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const noteId = params.get('noteId');
+                if (!noteId) return;
+                const note = this.notes.find(n => String(n._id) === String(noteId));
+                if (note) this.openNote(note);
+            } catch (e) {
+                console.warn('[Notes] Initial note open skipped:', e);
+            }
+        },
+
         openNote(note) {
+            // Save the currently displayed note before any lock modal can interrupt the switch.
+            if (this.activeNote && String(this.activeNote._id) !== String(note._id)) {
+                const previousNoteId = this.activeNote._id;
+                const shouldRelockPrevious = !!this.activeNote.isProtected;
+                this.saveCurrentNote();
+                if (shouldRelockPrevious) this.lockProtectedNote(previousNoteId);
+            }
+
             // Check protection FIRST
-            if (note.isProtected && (!this.activeNote || this.activeNote._id !== note._id)) {
+            if (note.isProtected && !this.isNoteContentUnlocked(note)) {
                 this.pendingNoteToOpen = note;
                 this.pinInput = '';
                 this.pinError = '';
@@ -1858,21 +2200,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            // Save current note before switching
-            if (this.activeNote && this.activeNote._id !== note._id) {
-                this.saveCurrentNote();
-            }
-
-            this.activeNote = JSON.parse(JSON.stringify(note));
-            this.mobileEditing = true;
-            this.saveStatus = '';
-            this.$nextTick(() => {
-                const el = this.$refs.editorContent;
-                if (el) {
-                    el.innerHTML = note.content || '';
-                    el.focus();
-                }
-            });
+            this.showNoteInEditor(note);
         },
 
         saveCurrentNote() {
@@ -1882,12 +2210,16 @@ document.addEventListener('alpine:init', () => {
             const content = el ? el.innerHTML : '';
             const noteId = this.activeNote._id;
             const title = this.activeNote.title;
+            const canSaveContent = this.canSaveActiveContent(noteId) && String(this.contentDirtyNoteId || '') === String(noteId);
 
             // Update local array
             const idx = this.notes.findIndex(n => n._id === noteId);
             if (idx !== -1) {
                 this.notes[idx].title = title;
-                this.notes[idx].content = content;
+                if (canSaveContent) {
+                    this.notes[idx].content = content;
+                    this.notes[idx]._contentRedacted = false;
+                }
                 this.notes[idx].updatedAt = new Date().toISOString();
             }
 
@@ -1895,18 +2227,31 @@ document.addEventListener('alpine:init', () => {
             fetch(_apiBase + '/' + noteId, {
                 method: 'PUT', credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content })
-            }).catch(e => console.error('[Notes] Save error:', e));
+                body: JSON.stringify(this.noteSavePayload(this.activeNote, content, canSaveContent))
+            })
+                .then(res => res.json().catch(() => null))
+                .then(data => {
+                    if (data?.success) this.syncSavedNoteMeta(noteId, data.note);
+                })
+                .catch(e => console.error('[Notes] Save error:', e));
         },
 
         mobileBack() {
             this.saveCurrentNote();
+            if (this.activeNote && this.activeNote.isProtected) this.lockProtectedNote(this.activeNote._id);
             this.activeNote = null;
+            this.editorNoteId = null;
+            this.contentDirtyNoteId = null;
             this.mobileEditing = false;
             this.saveStatus = '';
         },
 
-        scheduleAutosave() {
+        scheduleAutosave(source = 'content') {
+            if (this.isHydratingEditor) return;
+            if (source === 'content') {
+                if (!this.activeNote || !this.canSaveActiveContent(this.activeNote._id)) return;
+                this.contentDirtyNoteId = String(this.activeNote._id);
+            }
             clearTimeout(this.autosaveTimer);
             this.saveStatus = '';
             this.autosaveTimer = setTimeout(() => this.doAutosave(), 1200);
@@ -1919,19 +2264,28 @@ document.addEventListener('alpine:init', () => {
             const content = el ? el.innerHTML : '';
             const noteId = this.activeNote._id;
             const title = this.activeNote.title;
+            const canSaveContent = this.canSaveActiveContent(noteId) && String(this.contentDirtyNoteId || '') === String(noteId);
             try {
-                await fetch(_apiBase + '/' + noteId, {
+                const res = await fetch(_apiBase + '/' + noteId, {
                     method: 'PUT', credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, content })
+                    body: JSON.stringify(this.noteSavePayload(this.activeNote, content, canSaveContent))
                 });
+                const data = await res.json().catch(() => null);
+                if (data?.success) this.syncSavedNoteMeta(noteId, data.note);
                 if (this.activeNote && this.activeNote._id === noteId) {
                     this.saveStatus = 'saved';
                     // Update sidebar preview
                     const idx = this.notes.findIndex(n => n._id === noteId);
                     if (idx !== -1) {
                         this.notes[idx].title = title;
-                        this.notes[idx].content = content;
+                        if (canSaveContent) {
+                            this.notes[idx].content = content;
+                            this.notes[idx]._contentRedacted = false;
+                            if (this.$refs.editorContent && this.$refs.editorContent.innerHTML === content) {
+                                this.contentDirtyNoteId = null;
+                            }
+                        }
                         this.notes[idx].updatedAt = new Date().toISOString();
                     }
                     setTimeout(() => { if (this.saveStatus === 'saved') this.saveStatus = ''; }, 2000);
@@ -2013,22 +2367,26 @@ document.addEventListener('alpine:init', () => {
                     if (data.success) {
                         this.showPinModal = false;
                         const fullNote = data.note;
-                        fullNote.content = data.content; // Attach decrypted content
+                        fullNote.content = data.content || ''; // Attach decrypted content
+                        this.markNoteUnlocked(fullNote);
+                        const idx = this.notes.findIndex(n => n._id === fullNote._id);
+                        if (idx !== -1) {
+                            this.notes[idx] = {
+                                ...this.notes[idx],
+                                ...fullNote,
+                                _unlocked: true,
+                                _contentRedacted: false
+                            };
+                        }
                         
                         // Proceed to open note
-                        if (this.activeNote && this.activeNote._id !== fullNote._id) {
+                        if (this.activeNote && String(this.activeNote._id) !== String(fullNote._id)) {
+                            const previousNoteId = this.activeNote._id;
+                            const shouldRelockPrevious = !!this.activeNote.isProtected;
                             this.saveCurrentNote();
+                            if (shouldRelockPrevious) this.lockProtectedNote(previousNoteId);
                         }
-                        this.activeNote = JSON.parse(JSON.stringify(fullNote));
-                        this.mobileEditing = true;
-                        this.saveStatus = '';
-                        this.$nextTick(() => {
-                            const el = this.$refs.editorContent;
-                            if (el) {
-                                el.innerHTML = fullNote.content || '';
-                                el.focus();
-                            }
-                        });
+                        this.showNoteInEditor(fullNote);
                         this.pendingNoteToOpen = null;
                     } else {
                         this.pinError = data.error || 'PIN incorrect';
@@ -2091,12 +2449,25 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 
                 if (data.success) {
+                    const noteId = this.activeNote._id;
+                    const currentContent = this.$refs.editorContent ? this.$refs.editorContent.innerHTML : (this.activeNote.content || '');
                     this.activeNote.isProtected = newStatus;
+                    this.syncSavedNoteMeta(noteId, data.note);
+                    if (newStatus) {
+                        this.markNoteUnlocked(this.activeNote);
+                    } else {
+                        this.forgetNoteUnlocked(noteId);
+                        this.activeNote._unlocked = false;
+                        this.activeNote._contentRedacted = false;
+                    }
                     
                     // Update in list
-                    const idx = this.notes.findIndex(n => n._id === this.activeNote._id);
+                    const idx = this.notes.findIndex(n => n._id === noteId);
                     if (idx > -1) {
                         this.notes[idx].isProtected = newStatus;
+                        this.notes[idx]._contentRedacted = false;
+                        this.notes[idx]._unlocked = newStatus;
+                        this.notes[idx].content = currentContent;
                     }
                 }
             } catch (err) {
@@ -2111,9 +2482,12 @@ document.addEventListener('alpine:init', () => {
             if (this.activeNote && this.activeNote._id === noteId) {
                 clearTimeout(this.autosaveTimer);
                 this.activeNote = null;
+                this.editorNoteId = null;
+                this.contentDirtyNoteId = null;
                 this.saveStatus = '';
             }
             this.notes = this.notes.filter(n => n._id !== noteId);
+            this.forgetNoteUnlocked(noteId);
             try {
                 await fetch(_apiBase + '/' + noteId, { method: 'DELETE', credentials: 'include' });
             } catch (e) { console.error('[Notes] Delete error:', e); }
@@ -2126,9 +2500,12 @@ document.addEventListener('alpine:init', () => {
             if (!confirm('Supprimer la note "' + noteTitle + '" ?')) return;
             clearTimeout(this.autosaveTimer);
             this.activeNote = null;
+            this.editorNoteId = null;
+            this.contentDirtyNoteId = null;
             this.saveStatus = '';
             this.mobileEditing = false;
             this.notes = this.notes.filter(n => n._id !== noteId);
+            this.forgetNoteUnlocked(noteId);
             try {
                 await fetch(_apiBase + '/' + noteId, { method: 'DELETE', credentials: 'include' });
             } catch (e) { console.error('[Notes] Delete error:', e); }

@@ -94,25 +94,23 @@ function _jsonAttr(value) {
                     color: <%- _jsonAttr(f.color || '#4361ee') %>,
                     options: <%- _jsonAttr(f.options || []) %>,
                     initial: <%- _jsonAttr(choiceSelArr) %>
-                })' @click.outside="closeAndSave()">
+                })' @click.outside="if (!window.__appContextMenuEl || !window.__appContextMenuEl.contains($event.target)) closeAndSave()">
                     <div class="ov-rel-tags" @click="$refs.choiceSearchInput.focus()">
                         <template x-for="tag in selectedOptions" :key="tag.value">
-                            <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
+                            <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color"
+                                  @contextmenu.prevent.stop="openChoiceContextMenu($event, tag)">
                                 <span x-text="tag.label"></span>
                                 <button type="button" class="ov-tag-x" @click.stop="removeChoice(tag.value)">&times;</button>
                             </span>
                         </template>
                         <input type="text" class="ov-rel-search" placeholder="Rechercher..."
-                               x-model="searchQ" @input="showDropdown = true" @focus="showDropdown = true"
-                               @keydown.enter.prevent="filteredOptions.length ? addChoice(filteredOptions[0]) : createNew()"
+                               x-model="searchQ" @input="showDropdown = searchQ.trim().length > 0" @focus="if (searchQ.trim().length > 0) showDropdown = true"
+                               @keydown.enter.prevent="searchQ.trim().length && filteredOptions.length ? addChoice(filteredOptions[0]) : createNew()"
                                @keydown.escape="closeAndSave()" x-ref="choiceSearchInput">
                     </div>
-                    <div class="ov-rel-dropdown" x-show="showDropdown" x-cloak>
-                        <template x-if="filteredOptions.length === 0 && searchQ.trim().length > 0">
-                            <div class="ov-rel-empty">Aucun r&eacute;sultat pour "<span x-text="searchQ"></span>"</div>
-                        </template>
+                    <div class="ov-rel-dropdown" x-show="showDropdown && searchQ.trim().length > 0 && (filteredOptions.length > 0 || !hasExactMatch)" x-cloak>
                         <template x-for="opt in filteredOptions" :key="opt.value">
-                            <div class="ov-rel-option" @click.stop="addChoice(opt)">
+                            <div class="ov-rel-option" @click.stop="addChoice(opt)" @contextmenu.prevent.stop="openChoiceContextMenu($event, opt)">
                                 <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>
                                 <span x-text="opt.label"></span>
                             </div>
@@ -132,7 +130,7 @@ function _jsonAttr(value) {
                     isMulti: <%= f.isMulti ? 'true' : 'false' %>,
                     color: "<%= (f.color||'#4361ee').replace(/'/g, '') %>",
                     initial: <%- JSON.stringify(f.rawValue || []) %>
-                })' @click.outside="closeAndSave()">
+                })' @click.outside="if (!window.__appContextMenuEl || !window.__appContextMenuEl.contains($event.target)) closeAndSave()">
                     <div class="ov-rel-tags">
                         <template x-for="tag in tags" :key="tag._id">
                             <span class="ov-tag" :style="'background:'+color+'10;border-color:'+color+'30;color:'+color">
@@ -141,13 +139,10 @@ function _jsonAttr(value) {
                             </span>
                         </template>
                         <input type="text" class="ov-rel-search" placeholder="Rechercher..."
-                               x-model="searchQ" @input.debounce.300ms="search()" @focus="search()"
+                               x-model="searchQ" @input.debounce.300ms="search()" @focus="if (searchQ.trim().length > 0) search()"
                                @keydown.escape="closeAndSave()" x-ref="relSearchInput">
                     </div>
-                    <div class="ov-rel-dropdown" x-show="showDropdown" x-cloak>
-                        <template x-if="results.length === 0 && searchQ.trim().length > 0">
-                            <div class="ov-rel-empty">Aucun résultat pour "<span x-text="searchQ"></span>"</div>
-                        </template>
+                    <div class="ov-rel-dropdown" x-show="showDropdown && searchQ.trim().length > 0" x-cloak>
                         <template x-for="r in results" :key="r._id">
                             <div class="ov-rel-option" @click.stop="addTag(r)">
                                 <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>

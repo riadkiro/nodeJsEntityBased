@@ -367,6 +367,74 @@ module.exports = {
     }
   },
 
+  deleteOption_Api: async (req, res) => {
+    const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+    const RecordModel = await tenantCollection(req, "Record");
+    try {
+      const target = ((req.body && (req.body.value || req.body.label)) || '').toString().trim();
+      if (!target) {
+        return res.status(400).json({ success: false, error: "Option invalide" });
+      }
+
+      const field = await FieldTemplateModel.findById(req.params.id);
+      if (!field) {
+        return res.status(404).json({ success: false, error: "Champ introuvable" });
+      }
+
+      const typeConfig = field.type_config || {};
+      const options = Array.isArray(typeConfig.options) ? [...typeConfig.options] : [];
+      const optionTokens = (opt) => {
+        if (typeof opt === 'object') return [opt.value, opt.label].filter(v => v !== undefined && v !== null).map(v => String(v).trim());
+        return [opt].filter(v => v !== undefined && v !== null).map(v => String(v).trim());
+      };
+      const sameOption = (opt) => optionTokens(opt).some(v => v.toLowerCase() === target.toLowerCase());
+      const removed = options.find(sameOption);
+
+      if (!removed) {
+        return res.status(404).json({ success: false, error: "Option introuvable" });
+      }
+
+      const remainingOptions = options.filter(opt => !sameOption(opt));
+      field.type_config = { ...typeConfig, options: remainingOptions };
+      field.markModified('type_config');
+      await field.save();
+
+      const removedValues = new Set([...optionTokens(removed), target].map(v => String(v)));
+      let updatedRecords = 0;
+      const records = await RecordModel.find({ 'customFields.field_id': field._id });
+
+      for (const record of records) {
+        let changed = false;
+        (record.customFields || []).forEach(cf => {
+          const fieldId = (cf.field_id?._id || cf.field_id || '').toString();
+          if (fieldId !== field._id.toString()) return;
+
+          if (Array.isArray(cf.value)) {
+            const nextValue = cf.value.filter(v => !removedValues.has(String(v)));
+            if (nextValue.length !== cf.value.length) {
+              cf.value = nextValue;
+              changed = true;
+            }
+          } else if (removedValues.has(String(cf.value))) {
+            cf.value = '';
+            changed = true;
+          }
+        });
+
+        if (changed) {
+          record.markModified('customFields');
+          await record.save();
+          updatedRecords += 1;
+        }
+      }
+
+      res.json({ success: true, option: removed, options: remainingOptions, updatedRecords });
+    } catch (err) {
+      console.error("deleteOption_Api error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
   singlePage: async (req, res) => {
     const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
     FieldTemplateModel.findById(req.params.id, (err, template) => {

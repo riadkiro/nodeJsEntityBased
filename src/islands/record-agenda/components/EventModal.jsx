@@ -28,12 +28,14 @@ export default function EventModal({
         statusOptionId: '',
     })
     const [saving, setSaving] = useState(false)
+    const [formError, setFormError] = useState('')
 
     const isEditing = !!event
 
     // Populate form when editing
     useEffect(() => {
         if (!isOpen) return
+        setFormError('')
 
         if (event) {
             const status = getStatusInfo(event)
@@ -87,33 +89,36 @@ export default function EventModal({
     }, [isOpen, event, prefillDate, entityData])
 
     const handleChange = useCallback((field, value) => {
+        setFormError('')
         setForm(prev => ({ ...prev, [field]: value }))
     }, [])
 
     const handleSave = useCallback(async () => {
         if (!form.title.trim()) return
         setSaving(true)
-
-        // Compute endDate from date + duration if not explicitly set
-        let endDate = form.endDate
-        if (!endDate && form.date && form.duration) {
-            const start = new Date(form.date)
-            const end = new Date(start.getTime() + parseInt(form.duration) * 60000)
-            endDate = end.toISOString()
-        }
-
-        const payload = {
-            title: form.title.trim(),
-            date: form.date ? new Date(form.date).toISOString() : undefined,
-            endDate: endDate || undefined,
-            duration: parseInt(form.duration) || 30,
-            type: form.type,
-            lieu: form.lieu,
-            notes: form.notes,
-            statusOptionId: form.statusOptionId || undefined,
-        }
+        setFormError('')
 
         try {
+            const startDate = parseDateTime(form.date, 'Date')
+            let endDate = form.endDate ? parseDateTime(form.endDate, 'Date de fin').toISOString() : undefined
+
+            // Compute endDate from date + duration if not explicitly set
+            if (!endDate && startDate && form.duration) {
+                const end = new Date(startDate.getTime() + (parseInt(form.duration) || 30) * 60000)
+                endDate = end.toISOString()
+            }
+
+            const payload = {
+                title: form.title.trim(),
+                date: startDate ? startDate.toISOString() : undefined,
+                endDate,
+                duration: parseInt(form.duration) || 30,
+                type: form.type,
+                lieu: form.lieu,
+                notes: form.notes,
+                statusOptionId: form.statusOptionId || undefined,
+            }
+
             if (isEditing) {
                 await onUpdate(event._id.toString(), payload)
             } else {
@@ -121,8 +126,10 @@ export default function EventModal({
             }
         } catch (err) {
             console.error('[EventModal] Save error:', err)
+            setFormError(err.message || "Impossible d'enregistrer cet evenement.")
+        } finally {
+            setSaving(false)
         }
-        setSaving(false)
     }, [form, isEditing, event, onCreate, onUpdate])
 
     if (!isOpen) return null
@@ -264,6 +271,12 @@ export default function EventModal({
                             onChange={e => handleChange('notes', e.target.value)}
                         />
                     </div>
+
+                    {formError && (
+                        <div className="ra-modal-error" role="alert">
+                            {formError}
+                        </div>
+                    )}
                 </div>
 
                 <div className="ra-modal-footer">
@@ -306,6 +319,15 @@ function toLocalDateTime(date) {
     const h = String(date.getHours()).padStart(2, '0')
     const min = String(date.getMinutes()).padStart(2, '0')
     return `${y}-${m}-${d}T${h}:${min}`
+}
+
+function parseDateTime(value, label) {
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+        throw new Error(`${label} invalide.`)
+    }
+    return date
 }
 
 function getModalStyles() {
@@ -373,6 +395,13 @@ function getModalStyles() {
 .dark .ra-input { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
 .dark .ra-input:focus { border-color:#14b8a6; }
 .ra-textarea { resize:vertical; min-height:60px; line-height:1.45; }
+
+.ra-modal-error {
+    padding:10px 12px; border-radius:9px;
+    border:1px solid #fecaca; background:#fff7f7; color:#b91c1c;
+    font-size:12px; font-weight:700; line-height:1.4;
+}
+.dark .ra-modal-error { background:rgba(127,29,29,.18); border-color:#7f1d1d; color:#fecaca; }
 
 .ra-type-pills, .ra-status-pills { display:flex; flex-wrap:wrap; gap:6px; }
 

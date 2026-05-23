@@ -86,6 +86,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .ov-ef:hover{background:#f8fafc;border-color:#e8ecf1;}
 .ov-ef + .ov-ef{border-top:1px solid #f1f3f5;}
 .ov-ef:hover + .ov-ef{border-top-color:transparent;}
+.ov-ef:focus-within + .ov-ef{border-top-color:transparent;}
 .ov-ef-head{display:flex;align-items:center;gap:7px;width:180px;min-width:180px;flex-shrink:0;padding-top:2px;}
 .ov-ef-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ov-ef-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888da8;white-space:nowrap;}
@@ -113,7 +114,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .ov-rel-option:hover{background:#f0f3ff;}
 .ov-rel-option:first-child{border-radius:8px 8px 0 0;}
 .ov-rel-option:last-child{border-radius:0 0 8px 8px;}
-.ov-rel-create{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12px;font-weight:600;color:#4361ee;cursor:pointer;transition:background .12s;border-top:1px solid #e8ecf1;border-radius:0 0 8px 8px;}
+.ov-rel-create{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12px;font-weight:600;color:#4361ee;cursor:pointer;transition:background .12s;border-top:0;border-radius:0 0 8px 8px;}
 .ov-rel-create:hover{background:#f0f3ff;}
 .ov-rel-empty{padding:10px 12px;font-size:12px;color:#888da8;text-align:center;}
 .ov-ef-edit{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
@@ -135,6 +136,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 .dark .ov-ef:hover{background:#1b2e4b;border-color:#253b5c;}
 .dark .ov-ef + .ov-ef{border-top-color:#1b2e4b;}
 .dark .ov-ef:hover + .ov-ef{border-top-color:transparent;}
+.dark .ov-ef:focus-within + .ov-ef{border-top-color:transparent;}
 .dark .ov-ef-label{color:#506690;}
 .dark .ov-ef-val,.dark .ov-ef-text{color:#e0e6ed;}
 .dark .ov-placeholder{color:#506690;}
@@ -513,6 +515,12 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                                             <%- include('partials/ov-widget-agenda', { _recBase: _recBase }) %>
                                         </div>
                                         </template>
+                                        <!-- Widget: notes -->
+                                        <template x-if="wid === 'notes'">
+                                        <div class="ov-card ov-card-notes" x-data="ovNotesWidget()">
+                                            <%- include('partials/ov-widget-notes', { _recBase: _recBase }) %>
+                                        </div>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
@@ -618,9 +626,34 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .ov-agenda-month{font-size:10px;font-weight:700;text-transform:uppercase;color:#888da8;letter-spacing:.5px;}
     .ov-agenda-title{font-size:13px;font-weight:600;color:#0e1726;}
     .ov-agenda-time{font-size:11.5px;color:#888da8;margin-top:2px;}
+    /* Notes */
+    .ov-note-widget{position:relative;}
+    .ov-note-empty{min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed #e3e8f0;border-radius:12px;background:#fbfcff;color:#94a3b8;font-size:12px;font-weight:600;text-align:center;}
+    .ov-note-empty a{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:9px;background:#f5f0ff;color:#7c3aed;text-decoration:none;font-size:11px;font-weight:800;}
+    .ov-note-shell{display:flex;flex-direction:column;gap:12px;}
+    .ov-note-selector{position:relative;}
+    .ov-note-select-btn{width:100%;height:38px;display:flex;align-items:center;gap:9px;border:1px solid #e5eaf3;border-radius:11px;background:#fbfcff;color:#172033;font-size:12px;font-weight:800;padding:0 12px;cursor:pointer;text-align:left;}
+    .ov-note-select-btn span:nth-child(2){flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ov-note-dot{width:8px;height:8px;border-radius:999px;flex:none;box-shadow:0 0 0 3px rgba(139,92,246,.09);}
+    .ov-note-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:80;background:#fff;border:1px solid #e3e8f0;border-radius:12px;box-shadow:0 18px 44px rgba(15,23,42,.14);padding:6px;max-height:240px;overflow:auto;}
+    .ov-note-option{width:100%;display:flex;align-items:center;gap:9px;border:none;background:transparent;border-radius:10px;padding:8px;cursor:pointer;text-align:left;color:#172033;}
+    .ov-note-option:hover,.ov-note-option.active{background:#f7f4ff;}
+    .ov-note-option-icon{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none;}
+    .ov-note-option-body{display:flex;flex-direction:column;min-width:0;flex:1;}
+    .ov-note-option-body strong{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ov-note-option-body small{font-size:10.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+    .ov-note-preview{border:1px solid #ede9fe;border-radius:13px;background:linear-gradient(135deg,#fbfaff 0%,#fff 52%,#f8fafc 100%);padding:13px;}
+    .ov-note-preview-top{display:flex;align-items:flex-start;gap:10px;min-width:0;}
+    .ov-note-preview-icon{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;}
+    .ov-note-preview-title{font-size:13px;font-weight:850;color:#111827;line-height:1.25;}
+    .ov-note-preview-meta{font-size:10.5px;font-weight:700;color:#9aa5b5;margin-top:2px;}
+    .ov-note-preview-text{font-size:12.5px;line-height:1.6;color:#5f6b7a;margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+    .ov-note-actions{display:flex;justify-content:flex-end;margin-top:12px;}
+    .ov-note-open{display:inline-flex;align-items:center;gap:6px;border:1px solid #ddd6fe;border-radius:9px;background:#fff;color:#7c3aed;text-decoration:none;padding:7px 10px;font-size:11.5px;font-weight:850;}
+    .ov-note-open:hover{background:#f5f0ff;}
     /* Dark mode */
     .dark .ov-card{background:#0e1726;border-color:#253b5c;}
-    .dark .ov-card-header,.dark .ov-ef-val,.dark .ov-ef-text,.dark .ov-doc-item,.dark .ov-drive-name,.dark .ov-agenda-title{color:#e0e6ed;}
+    .dark .ov-card-header,.dark .ov-ef-val,.dark .ov-ef-text,.dark .ov-doc-item,.dark .ov-drive-name,.dark .ov-agenda-title,.dark .ov-note-preview-title,.dark .ov-note-select-btn,.dark .ov-note-option{color:#e0e6ed;}
     .dark .ov-ef:hover{background:#1b2e4b;border-color:#253b5c;}
     .dark .ov-ef + .ov-ef{border-top-color:#1b2e4b;}
     .dark .ov-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
@@ -629,6 +662,12 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     .dark .ov-ms-pill.active{background:rgba(67,97,238,.15);border-color:#4361ee;color:#4361ee;}
     .dark .ov-doc-item:hover{background:#1b2e4b;}
     .dark .ov-agenda-item{border-color:#253b5c;}
+    .dark .ov-note-empty,.dark .ov-note-select-btn{background:#0b1320;border-color:#253b5c;}
+    .dark .ov-note-menu{background:#0e1726;border-color:#253b5c;box-shadow:0 18px 44px rgba(0,0,0,.34);}
+    .dark .ov-note-option:hover,.dark .ov-note-option.active{background:#1b2e4b;}
+    .dark .ov-note-preview{background:linear-gradient(135deg,#111c2d 0%,#0e1726 55%,#0b1320 100%);border-color:#253b5c;}
+    .dark .ov-note-preview-text{color:#94a3b8;}
+    .dark .ov-note-open{background:#111c2d;border-color:#253b5c;color:#c4b5fd;}
     .dark .ov-placeholder{color:#506690;}
     .dark .ov-rel-tags{background:#0e1726;border-color:#253b5c;}
     .dark .ov-rel-search{color:#e0e6ed;}
@@ -683,6 +722,114 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     document.addEventListener('alpine:init', () => {
         const _baseUrl = window.location.pathname.replace(/\/overview$/, '');
         const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
+        const _recordNotesApi = '/account/<%= account_number %>/api/record/<%= record._id %>/notes';
+
+        Alpine.data('ovNotesWidget', () => ({
+            loading: true,
+            saving: false,
+            pickerOpen: false,
+            notes: [],
+            selectedNoteId: '',
+            selectedNote: null,
+            _prefViewId: 'overview_note_widget_<%= record._id %>',
+            _storageKey: 'overview_note_widget_<%= account_number %>_<%= record._id %>',
+
+            async init() {
+                await Promise.all([this.loadNotes(), this.loadPreference()]);
+                this.applySelection();
+            },
+
+            get selectedPreview() {
+                if (!this.selectedNote) return '';
+                if (this.selectedNote.isProtected && this.selectedNote.contentLocked) {
+                    return 'Note sécurisée. Ouvrez-la pour saisir le PIN et consulter le contenu.';
+                }
+                return this.toPlainText(this.selectedNote.content).slice(0, 220) || 'Note vide';
+            },
+
+            get openUrl() {
+                const suffix = this.selectedNoteId ? ('?noteId=' + encodeURIComponent(this.selectedNoteId)) : '';
+                return `${_recUrl}/notes${suffix}`;
+            },
+
+            async loadNotes() {
+                this.loading = true;
+                try {
+                    const res = await fetch(_recordNotesApi, { credentials: 'include' });
+                    const data = await res.json();
+                    this.notes = data.success ? (data.notes || []) : [];
+                } catch (e) {
+                    console.error('[OverviewNotes] Load error:', e);
+                    this.notes = [];
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async loadPreference() {
+                try {
+                    this.selectedNoteId = window.localStorage.getItem(this._storageKey) || '';
+                    const res = await fetch(`/account/<%= account_number %>/api/user/view-preferences/${this._prefViewId}`, { credentials: 'include' });
+                    const data = await res.json();
+                    const prefNoteId = data.success && data.preferences?.noteWidget?.selectedNoteId;
+                    if (prefNoteId) this.selectedNoteId = String(prefNoteId);
+                } catch (e) {
+                    console.warn('[OverviewNotes] Preference load skipped:', e);
+                }
+            },
+
+            applySelection() {
+                const selected = this.notes.find(n => String(n._id) === String(this.selectedNoteId));
+                this.selectedNote = selected || this.notes[0] || null;
+                this.selectedNoteId = this.selectedNote ? String(this.selectedNote._id) : '';
+            },
+
+            selectNote(note) {
+                if (!note || !note._id) return;
+                this.selectedNote = note;
+                this.selectedNoteId = String(note._id);
+                this.pickerOpen = false;
+                this.savePreference();
+            },
+
+            async savePreference() {
+                try {
+                    window.localStorage.setItem(this._storageKey, this.selectedNoteId || '');
+                    await fetch(`/account/<%= account_number %>/api/user/view-preferences`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            viewId: this._prefViewId,
+                            preferences: { noteWidget: { selectedNoteId: this.selectedNoteId } }
+                        })
+                    });
+                } catch (e) {
+                    console.warn('[OverviewNotes] Preference save skipped:', e);
+                }
+            },
+
+            notePreview(note) {
+                if (!note) return '';
+                if (note.isProtected && note.contentLocked) return 'Note sécurisée';
+                return this.toPlainText(note.content).slice(0, 90) || 'Note vide';
+            },
+
+            toPlainText(html) {
+                const box = document.createElement('div');
+                box.innerHTML = html || '';
+                return (box.textContent || box.innerText || '').replace(/\s+/g, ' ').trim();
+            },
+
+            formatDate(value) {
+                if (!value) return '';
+                try {
+                    return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+                } catch (_) {
+                    return '';
+                }
+            }
+        }));
 
         Alpine.data('ovInlineEdit', () => ({
             editingKey: '',
@@ -780,6 +927,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             async search() {
                 if (!this.targetEntityId) return;
                 const q = this.searchQ.trim();
+                if (!q) {
+                    this.results = [];
+                    this.showDropdown = false;
+                    return;
+                }
                 try {
                     const url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&q=' + encodeURIComponent(q) + '&limit=8';
                     const res = await fetch(url, { credentials: 'include' });
@@ -3330,6 +3482,77 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
     <% if (moduleName === 'fiche' || moduleName === 'overview') { %>
     <script>
+    if (!window.__destroyAppContextMenu) {
+        window.__destroyAppContextMenu = function() {
+            if (window.__appContextMenuCloseHandler) {
+                document.removeEventListener('click', window.__appContextMenuCloseHandler, true);
+                document.removeEventListener('contextmenu', window.__appContextMenuCloseHandler, true);
+                window.__appContextMenuCloseHandler = null;
+            }
+            if (window.__appContextMenuEl) {
+                window.__appContextMenuEl.remove();
+                window.__appContextMenuEl = null;
+            }
+        };
+    }
+    if (!window.__showAppContextMenu) {
+        window.__showAppContextMenu = function(x, y, items) {
+            window.__destroyAppContextMenu();
+            const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+            const menu = document.createElement('div');
+            menu.style.cssText = `position:fixed; top:${y}px; left:${x}px; z-index:99999; min-width:208px; border-radius:12px; border:1px solid ${isDark ? '#374151' : '#e5e7eb'}; background:${isDark ? '#1b2e4b' : '#fff'}; box-shadow:0 10px 25px rgba(0,0,0,0.15); padding:6px 0;`;
+            items.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.style.cssText = 'width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px; font-size:14px; border:none; background:none; cursor:pointer; transition:all .2s ease;';
+                btn.style.color = item.danger ? '#ef4444' : (isDark ? '#d1d5db' : '#374151');
+                btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon> ${item.label}`;
+                btn.addEventListener('mouseenter', () => {
+                    if (!btn._confirming) btn.style.background = item.danger ? (isDark ? 'rgba(239,68,68,.1)' : '#fef2f2') : (isDark ? '#1f2937' : '#f3f4f6');
+                });
+                btn.addEventListener('mouseleave', () => {
+                    if (!btn._confirming) btn.style.background = 'none';
+                });
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (item.danger && item.confirm !== false) {
+                        if (!btn._confirming) {
+                            btn._confirming = true;
+                            btn.innerHTML = '<iconify-icon icon="solar:danger-triangle-bold-duotone" width="18" style="color:#ef4444"></iconify-icon> Confirmer ?';
+                            btn.style.background = isDark ? 'rgba(239,68,68,.15)' : '#fef2f2';
+                            btn.style.fontWeight = '600';
+                            btn._resetTimer = setTimeout(() => {
+                                btn._confirming = false;
+                                btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon> ${item.label}`;
+                                btn.style.background = 'none';
+                                btn.style.fontWeight = 'normal';
+                            }, 3000);
+                            return;
+                        }
+                        clearTimeout(btn._resetTimer);
+                    }
+                    window.__destroyAppContextMenu();
+                    item.action();
+                });
+                menu.appendChild(btn);
+            });
+            document.body.appendChild(menu);
+            const width = menu.offsetWidth || 208;
+            const height = menu.offsetHeight || 48;
+            menu.style.left = Math.max(8, Math.min(x || 8, window.innerWidth - width - 8)) + 'px';
+            menu.style.top = Math.max(8, Math.min(y || 8, window.innerHeight - height - 8)) + 'px';
+            window.__appContextMenuEl = menu;
+            const closeHandler = (evt) => {
+                if (!menu.contains(evt.target)) window.__destroyAppContextMenu();
+            };
+            window.__appContextMenuCloseHandler = closeHandler;
+            setTimeout(() => {
+                document.addEventListener('click', closeHandler, true);
+                document.addEventListener('contextmenu', closeHandler, true);
+            }, 0);
+        };
+    }
     document.addEventListener('alpine:init', () => {
         const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
         const _prefsUrl = '/account/<%= account_number %>/api/user/view-preferences';
@@ -3777,7 +4000,6 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 this.$nextTick(() => {
                     const inp = this.$refs.choiceSearchInput;
                     if (inp) inp.focus();
-                    this.showDropdown = true;
                 });
             },
 
@@ -3807,11 +4029,18 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
                 );
             },
 
+            normalizeChoice(option) {
+                return typeof option === 'object'
+                    ? { label: option.label || option.value, value: option.value || option.label }
+                    : { label: option, value: option };
+            },
+
             async addChoice(option) {
                 const opt = typeof option === 'object'
                     ? { label: option.label || option.value, value: option.value || option.label, color: option.color }
                     : { label: option, value: option };
                 if (!opt.value) return;
+                window.__destroyAppContextMenu?.();
 
                 if (this.isMulti) {
                     if (!this.selectedValues.includes(String(opt.value))) this.selectedValues.push(String(opt.value));
@@ -3832,10 +4061,69 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             },
 
             async removeChoice(value) {
+                window.__destroyAppContextMenu?.();
                 this.selectedValues = this.selectedValues.filter(v => String(v) !== String(value));
                 await this.persist();
                 this.updateView();
                 this.$nextTick(() => this.$refs.choiceSearchInput && this.$refs.choiceSearchInput.focus());
+            },
+
+            openChoiceContextMenu(event, option) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                const opt = this.normalizeChoice(option);
+                if (!opt.value) return;
+
+                const isSelected = this.selectedValues.some(v => String(v) === String(opt.value));
+                const items = [];
+                if (isSelected) {
+                    items.push({
+                        icon: 'solar:close-circle-linear',
+                        label: 'Retirer de cette fiche',
+                        action: () => this.removeChoice(opt.value)
+                    });
+                }
+                items.push({
+                    icon: 'solar:trash-bin-trash-bold-duotone',
+                    iconColor: '#ef4444',
+                    label: 'Supprimer le choix',
+                    danger: true,
+                    action: () => this.deleteChoiceOption(opt)
+                });
+                window.__showAppContextMenu?.(event?.clientX || 0, event?.clientY || 0, items);
+            },
+
+            async deleteChoiceOption(option) {
+                const opt = this.normalizeChoice(option);
+                if (!opt.value || this.saving) return;
+
+                this.saving = true;
+                try {
+                    const res = await fetch('/account/<%= account_number %>/field-template/api/' + this.fieldId + '/delete-option', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ label: opt.label, value: opt.value })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.error || 'Suppression impossible');
+
+                    this.options = this.options.filter(o => String(o.value) !== String(opt.value) && String(o.label) !== String(opt.value));
+                    this.selectedValues = this.selectedValues.filter(v => String(v) !== String(opt.value) && String(v) !== String(opt.label));
+                    await this.persist();
+                    this.updateView();
+                    this.showDropdown = this.searchQ.trim().length > 0;
+                    window.showMessage ? window.showMessage('Choix supprime', 'success') : null;
+                } catch (e) {
+                    console.error('[ChoiceDelete]', e);
+                    window.showMessage ? window.showMessage(e.message || 'Erreur lors de la suppression', 'danger') : alert(e.message || 'Erreur lors de la suppression');
+                } finally {
+                    this.saving = false;
+                    window.__destroyAppContextMenu?.();
+                    this.$nextTick(() => this.$refs.choiceSearchInput && this.$refs.choiceSearchInput.focus());
+                }
             },
 
             async createNew() {
@@ -3902,6 +4190,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             },
 
             closeAndSave() {
+                window.__destroyAppContextMenu?.();
                 this.searchQ = '';
                 this.showDropdown = false;
                 this.updateView();
@@ -3934,6 +4223,11 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             async search() {
                 if (!this.targetEntityId) return;
                 const q = this.searchQ.trim();
+                if (!q) {
+                    this.results = [];
+                    this.showDropdown = false;
+                    return;
+                }
                 try {
                     const url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&q=' + encodeURIComponent(q) + '&limit=8';
                     const res = await fetch(url, { credentials: 'include' });

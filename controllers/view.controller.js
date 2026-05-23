@@ -1,5 +1,6 @@
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const mongoose = require("mongoose");
+const { buildRecordFilterQuery, sanitizeViewFilters } = require('../services/record-filter-query');
 
 module.exports = {
     renderView: async (req, res) => {
@@ -34,33 +35,9 @@ module.exports = {
 
             // Build dynamic query
             let query = { entityId: entity._id };
-
-            if (view.filters && view.filters.length > 0) {
-                const filterQueries = view.filters.map(f => {
-                    const isStandard = ['title', 'slug', 'status', 'createdAt'].includes(f.field);
-
-                    let operatorValue;
-                    switch (f.operator) {
-                        case 'equals': operatorValue = f.value; break;
-                        case 'not_equals': operatorValue = { $ne: f.value }; break;
-                        case 'contains': operatorValue = { $regex: f.value, $options: 'i' }; break;
-                        case 'greater_than': operatorValue = { $gt: f.value }; break;
-                        case 'less_than': operatorValue = { $lt: f.value }; break;
-                        case 'in': operatorValue = { $in: Array.isArray(f.value) ? f.value : [f.value] }; break;
-                        default: operatorValue = f.value;
-                    }
-
-                    if (isStandard) {
-                        return { [f.field]: operatorValue };
-                    } else {
-                        // Custom field filtering
-                        return { customFields: { $elemMatch: { field_id: f.field, value: operatorValue } } };
-                    }
-                });
-
-                if (filterQueries.length > 0) {
-                    query.$and = filterQueries;
-                }
+            const viewFilterQuery = buildRecordFilterQuery(view.filters || []);
+            if (Object.keys(viewFilterQuery).length > 0) {
+                query = { $and: [query, viewFilterQuery] };
             }
 
             // Sorting
@@ -135,11 +112,12 @@ module.exports = {
             const ViewModel = await tenantCollection(req, "View");
             const { viewId, viewType, filters, settings } = req.body;
 
-            const updatedView = await ViewModel.findByIdAndUpdate(viewId, {
-                viewType,
-                filters,
-                settings
-            }, { new: true });
+            const update = {};
+            if (viewType !== undefined) update.viewType = viewType;
+            if (filters !== undefined) update.filters = sanitizeViewFilters(filters);
+            if (settings !== undefined) update.settings = settings;
+
+            const updatedView = await ViewModel.findByIdAndUpdate(viewId, update, { new: true });
 
             res.json({ success: true, view: updatedView });
         } catch (error) {

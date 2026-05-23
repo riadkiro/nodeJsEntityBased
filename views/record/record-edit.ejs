@@ -5486,6 +5486,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                                             <div class="divide-y dark:divide-gray-800">
                                                                                                 <template x-for="result in modalResults" :key="result.id">
                                                                                                     <div @click="toggleModalSelect(result)"
+                                                                                                         @contextmenu.prevent.stop="openModalResultContextMenu($event, result)"
                                                                                                          class="flex items-center gap-3 px-5 py-2.5 cursor-pointer transition-colors"
                                                                                                          :class="isSelected(result.id) ? 'bg-primary/5' : 'hover:bg-gray-50 dark:hover:bg-white/5'">
                                                                                                         <div class="flex-shrink-0">
@@ -5548,7 +5549,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                             style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
                                                                         <%= field.label || rel.label || 'Relation' %>
                                                                     </label>
-                                                                    <div class="relative group" @click.away="showResults = false">
+                                                                    <div class="relative group" @click.away="showResults = false; closeContextMenu()">
                                                                         <input x-ref="searchInput" type="text" class="form-input pr-10"
                                                                             placeholder="Rechercher <%= (rel.targetEntity && rel.targetEntity.name) || '' %>..."
                                                                             x-model="searchQuery" @input.debounce.300ms="search" @focus="openDropdown" />
@@ -5562,6 +5563,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                             </template>
                                                                             <template x-for="result in results" :key="result.id">
                                                                                 <div @click="selectItem(result)"
+                                                                                     @contextmenu.prevent.stop="openContextMenu($event, result)"
                                                                                      class="px-4 py-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center border-b border-border last:border-0">
                                                                                     <span x-text="result.label" class="truncate"></span>
                                                                                     <iconify-icon icon="tabler:plus" class="text-primary/50" width="16"></iconify-icon>
@@ -5580,7 +5582,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                     </div>
                                                                     <div class="flex flex-wrap gap-1 mt-2">
                                                                         <template x-for="item in selectedItems" :key="item.id">
-                                                                            <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20">
+                                                                            <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20"
+                                                                                  @contextmenu.prevent.stop="openContextMenu($event, item)">
                                                                                 <span x-text="item.label"></span>
                                                                                 <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center transition-colors">
                                                                                     <iconify-icon icon="tabler:x" width="11"></iconify-icon>
@@ -5597,6 +5600,18 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                     </template>
                                                                     <template x-if="!multiple">
                                                                         <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+                                                                    </template>
+                                                                    <template x-if="contextMenu.open">
+                                                                        <div class="rf-context-menu" :style="'left:' + contextMenu.x + 'px; top:' + contextMenu.y + 'px;'" @click.stop>
+                                                                            <button type="button" class="rf-context-menu-item" x-show="isContextItemSelected()" @click="removeContextItem()">
+                                                                                <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                                                                Retirer de cette fiche
+                                                                            </button>
+                                                                            <button type="button" class="rf-context-menu-item rf-context-menu-item-danger" @click="deleteContextItem()">
+                                                                                <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>
+                                                                                Supprimer l'element
+                                                                            </button>
+                                                                        </div>
                                                                     </template>
                                                                 </div>
                                                             </div>
@@ -5632,7 +5647,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                          options: <%= JSON.stringify(cls.options || []) %>,
                                                                          selectedIds: <%= JSON.stringify(selectedClassIds) %>
                                                                      })"
-                                                                     @click.away="closeDropdown()">
+                                                                     @click.away="if (!window.__appContextMenuEl || !window.__appContextMenuEl.contains($event.target)) closeDropdown()">
 
                                                                     <!-- Trigger: inline tag pills -->
                                                                     <div class="tp-trigger"
@@ -5643,7 +5658,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                         </template>
                                                                         <template x-for="opt in selectedOptions" :key="opt._id">
                                                                             <span class="tp-tag"
-                                                                                  :style="'background:' + opt.bg + '; color:' + opt.text">
+                                                                                  :style="'background:' + opt.bg + '; color:' + opt.text"
+                                                                                  @contextmenu.prevent.stop="openOptionContextMenu($event, opt._id)">
                                                                                 <span x-text="opt.label"></span>
                                                                                 <button type="button" class="tp-tag-remove"
                                                                                         @click.stop="removeTag(opt._id)">
@@ -5676,7 +5692,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                         <!-- Options list -->
                                                                         <div class="tp-options" style="position: relative;">
                                                                             <template x-for="opt in filteredOptions" :key="opt._id">
-                                                                                <div class="tp-option" @click="toggleOption(opt._id)">
+                                                                                <div class="tp-option" @click="toggleOption(opt._id)"
+                                                                                     @contextmenu.prevent.stop="openOptionContextMenu($event, opt._id)">
                                                                                     <div class="tp-option-icon"
                                                                                          :style="'background:' + opt.bg">
                                                                                         <iconify-icon x-show="isSelected(opt._id)"
@@ -5897,14 +5914,15 @@ window.__syncClsInputs = function(clsId, ids) {
                                             multiple: relField.field.type_config.multiple, 
                                             isEntityRelation: true,
                                             initialValue: valuesMap[relField.field._id] || (relField.field.type_config.multiple ? [] : '') 
-                                        })" class="tp-wrapper" @click.away="showResults = false">
+                                        })" class="tp-wrapper" @click.away="showResults = false; closeContextMenu()">
                                             
                                             <!-- Trigger: inline tag pills -->
                                             <div class="tp-trigger"
                                                  :class="showResults ? 'tp-trigger--active' : ''"
                                                  @click="$refs.searchInput.focus(); openDropdown()">
                                                 <template x-for="item in selectedItems" :key="item.id">
-                                                    <span class="tp-tag" style="background: #dbeafe; color: #2563eb;">
+                                                    <span class="tp-tag" style="background: #dbeafe; color: #2563eb;"
+                                                          @contextmenu.prevent.stop="openContextMenu($event, item)">
                                                         <span x-text="item.label"></span>
                                                         <button type="button" class="tp-tag-remove" @click.stop="removeItem(item.id)">
                                                             <iconify-icon icon="tabler:x" width="10"></iconify-icon>
@@ -5946,7 +5964,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                                     </template>
 
                                                     <template x-for="result in results" :key="result.id">
-                                                        <div class="tp-option" @click="selectItem(result)">
+                                                        <div class="tp-option" @click="selectItem(result)"
+                                                             @contextmenu.prevent.stop="openContextMenu($event, result)">
                                                             <div class="tp-option-icon" style="background: #dbeafe;">
                                                                 <iconify-icon x-show="selectedItems.some(i => i.id === result.id)" icon="tabler:check" width="12" style="color: #2563eb;"></iconify-icon>
                                                             </div>
@@ -5990,6 +6009,18 @@ window.__syncClsInputs = function(clsId, ids) {
                                             </template>
                                             <template x-if="!multiple">
                                                 <input type="hidden" :name="isEntityRelation ? ('relation[' + fieldId + ']') : ('custom[' + fieldId + ']')" :value="selectedItems[0]?.id || ''">
+                                            </template>
+                                            <template x-if="contextMenu.open">
+                                                <div class="rf-context-menu" :style="'left:' + contextMenu.x + 'px; top:' + contextMenu.y + 'px;'" @click.stop>
+                                                    <button type="button" class="rf-context-menu-item" x-show="isContextItemSelected()" @click="removeContextItem()">
+                                                        <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                                        Retirer de cette fiche
+                                                    </button>
+                                                    <button type="button" class="rf-context-menu-item rf-context-menu-item-danger" @click="deleteContextItem()">
+                                                        <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>
+                                                        Supprimer l'element
+                                                    </button>
+                                                </div>
                                             </template>
                                         </div>
                                     </div>
@@ -8219,10 +8250,10 @@ window.__syncClsInputs = function(clsId, ids) {
     multiple: ${isMultiple}, 
     persistKey: '${field.relationKey || field._id}',
     isEntityRelation: ${isEntityRel}
-})" data-initval="${safeInitialValue}" class="tp-wrapper" @click.away="showResults = false">
+})" data-initval="${safeInitialValue}" class="tp-wrapper" @click.away="showResults = false; closeContextMenu()">
     ${relLabelHtml}
     
-    <div class="tp-trigger" style="padding:3px 8px;min-height:32px;gap:4px" :class="showResults ? 'tp-trigger--active' : ''" @click="$refs.searchInput.focus(); openDropdown()"><template x-for="item in selectedItems" :key="item.id"><span class="tp-tag" style="background:#dbeafe;color:#2563eb;padding:1px 8px;font-size:12px;line-height:20px;border-radius:4px"><span x-text="item.label"></span><button type="button" class="tp-tag-remove" @click.stop="removeItem(item.id)"><iconify-icon icon="tabler:x" width="10"></iconify-icon></button></span></template><template x-if="selectedItems.length === 0"><span class="tp-placeholder">Sélectionner...</span></template></div>
+    <div class="tp-trigger" style="padding:3px 8px;min-height:32px;gap:4px" :class="showResults ? 'tp-trigger--active' : ''" @click="$refs.searchInput.focus(); openDropdown()"><template x-for="item in selectedItems" :key="item.id"><span class="tp-tag" style="background:#dbeafe;color:#2563eb;padding:1px 8px;font-size:12px;line-height:20px;border-radius:4px" @contextmenu.prevent.stop="openContextMenu($event, item)"><span x-text="item.label"></span><button type="button" class="tp-tag-remove" @click.stop="removeItem(item.id)"><iconify-icon icon="tabler:x" width="10"></iconify-icon></button></span></template><template x-if="selectedItems.length === 0"><span class="tp-placeholder">Sélectionner...</span></template></div>
 
     <!-- Dropdown -->
     <div class="tp-dropdown" x-show="showResults" x-cloak
@@ -8254,7 +8285,7 @@ window.__syncClsInputs = function(clsId, ids) {
             </template>
 
             <template x-for="result in results" :key="result.id">
-                <div class="tp-option" @click="selectItem(result)">
+                <div class="tp-option" @click="selectItem(result)" @contextmenu.prevent.stop="openContextMenu($event, result)">
                     <div class="tp-option-icon" style="background: #dbeafe;">
                         <iconify-icon x-show="selectedItems.some(i => i.id === result.id)" icon="tabler:check" width="12" style="color: #2563eb;"></iconify-icon>
                     </div>
@@ -8293,6 +8324,18 @@ window.__syncClsInputs = function(clsId, ids) {
     </template>
     <template x-if="!multiple">
         <input type="hidden" :name="isEntityRelation ? ('relation[' + fieldId + ']') : ('custom[' + fieldId + ']')" :value="selectedItems[0]?.id || ''">
+    </template>
+    <template x-if="contextMenu.open">
+        <div class="rf-context-menu" :style="'left:' + contextMenu.x + 'px; top:' + contextMenu.y + 'px;'" @click.stop>
+            <button type="button" class="rf-context-menu-item" x-show="isContextItemSelected()" @click="removeContextItem()">
+                <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                Retirer de cette fiche
+            </button>
+            <button type="button" class="rf-context-menu-item rf-context-menu-item-danger" @click="deleteContextItem()">
+                <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>
+                Supprimer l'element
+            </button>
+        </div>
     </template>
 </div>`;
                     }
@@ -8718,8 +8761,19 @@ window.__syncClsInputs = function(clsId, ids) {
             page: 1,
             hasMore: false,
             loading: false,
+            contextMenu: {
+                open: false,
+                x: 0,
+                y: 0,
+                item: null
+            },
 
             async init() {
+                document.addEventListener('click', () => this.closeContextMenu());
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') this.closeContextMenu();
+                });
+
                 // Listen for sync events between multiple instances of the same relation field (e.g., inline vs side panel)
                 window.addEventListener('relation-field-sync', (e) => {
                     if (e.detail.fieldId === this.fieldId && e.detail.source !== this) {
@@ -8801,6 +8855,7 @@ window.__syncClsInputs = function(clsId, ids) {
 
             openDropdown() {
                 this.showResults = true;
+                this.closeContextMenu();
                 this.fetchSuggestions(true);
             },
 
@@ -8811,6 +8866,7 @@ window.__syncClsInputs = function(clsId, ids) {
             },
 
             selectItem(result) {
+                this.closeContextMenu();
                 if (this.multiple) {
                     if (!this.selectedItems.some(i => i.id === result.id)) {
                         this.selectedItems.push(result);
@@ -8827,7 +8883,72 @@ window.__syncClsInputs = function(clsId, ids) {
 
             removeItem(id) {
                 this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+                this.closeContextMenu();
                 this.sync();
+            },
+
+            openContextMenu(event, item) {
+                if (!item || !item.id) return;
+                const menuWidth = 220;
+                const menuHeight = this.selectedItems.some(i => i.id === item.id) ? 92 : 52;
+                this.contextMenu = {
+                    open: true,
+                    x: Math.min(event.clientX, window.innerWidth - menuWidth - 8),
+                    y: Math.min(event.clientY, window.innerHeight - menuHeight - 8),
+                    item
+                };
+            },
+
+            closeContextMenu() {
+                if (this.contextMenu.open) {
+                    this.contextMenu.open = false;
+                    this.contextMenu.item = null;
+                }
+            },
+
+            isContextItemSelected() {
+                const item = this.contextMenu.item;
+                return !!(item && this.selectedItems.some(i => i.id === item.id));
+            },
+
+            removeContextItem() {
+                const item = this.contextMenu.item;
+                if (!item) return;
+                this.removeItem(item.id);
+            },
+
+            async deleteContextItem() {
+                const item = this.contextMenu.item;
+                if (!item || !item.id) return;
+
+                const label = item.label || 'cet element';
+                if (!confirm('Supprimer "' + label + '" ? Cette action supprimera definitivement cet element.')) {
+                    this.closeContextMenu();
+                    return;
+                }
+
+                try {
+                    const acc = '<%= account_number %>';
+                    const res = await fetch(`/account/${acc}/record/api/bulk-delete`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: [item.id] })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false) {
+                        throw new Error(data.error || 'Suppression impossible');
+                    }
+
+                    this.results = this.results.filter(r => r.id !== item.id);
+                    this.selectedItems = this.selectedItems.filter(i => i.id !== item.id);
+                    this.closeContextMenu();
+                    this.sync();
+                } catch (e) {
+                    console.error('[RelationField] Delete failed:', e);
+                    alert(e.message || 'Suppression impossible');
+                    this.closeContextMenu();
+                }
             },
 
             async quickCreate() {
@@ -8980,6 +9101,51 @@ window.__syncClsInputs = function(clsId, ids) {
                 }
             },
 
+            async deleteModalResult(result, opts = {}) {
+                if (!result || !result.id) return;
+                const label = result.label || 'cet element';
+                if (!opts.skipConfirm && !confirm('Supprimer "' + label + '" ? Cette action supprimera definitivement cet element.')) return;
+
+                try {
+                    const acc = '<%= account_number %>';
+                    const res = await fetch(`/account/${acc}/record/api/bulk-delete`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: [result.id] })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false) {
+                        throw new Error(data.error || 'Suppression impossible');
+                    }
+
+                    this.modalResults = this.modalResults.filter(r => r.id !== result.id);
+                    this.tempSelected = this.tempSelected.filter(i => i.id !== result.id);
+                    this.selectedItems = this.selectedItems.filter(i => i.id !== result.id);
+                    this.modalTotal = Math.max(0, this.modalTotal - 1);
+                } catch (e) {
+                    console.error('[ModalPicker] Delete failed:', e);
+                    alert(e.message || 'Suppression impossible');
+                }
+            },
+
+            openModalResultContextMenu(event, result) {
+                if (!result || !result.id) return;
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                window.__showAppContextMenu?.(event?.clientX || 0, event?.clientY || 0, [
+                    {
+                        icon: 'solar:trash-bin-trash-bold-duotone',
+                        iconColor: '#ef4444',
+                        label: "Supprimer l'element",
+                        danger: true,
+                        action: () => this.deleteModalResult(result, { skipConfirm: true })
+                    }
+                ]);
+            },
+
             confirmSelection() {
                 this.selectedItems = [...this.tempSelected];
                 this.showModal = false;
@@ -9127,6 +9293,68 @@ window.__syncClsInputs = function(clsId, ids) {
         margin-bottom: 0 !important;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
+    }
+
+    .rf-context-menu {
+        position: fixed;
+        z-index: 100000;
+        min-width: 210px;
+        padding: 6px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    .dark .rf-context-menu {
+        background: #0e1726;
+        border-color: #26364f;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    .rf-context-menu-item {
+        width: 100% !important;
+        height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        padding: 0 9px !important;
+        border: none !important;
+        border-radius: 7px !important;
+        background: transparent !important;
+        color: #374151 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        cursor: pointer;
+        text-transform: none !important;
+    }
+
+    .rf-context-menu-item:hover {
+        background: #f3f4f6 !important;
+    }
+
+    .dark .rf-context-menu-item {
+        color: #d1d5db !important;
+    }
+
+    .dark .rf-context-menu-item:hover {
+        background: #1b2e4b !important;
+    }
+
+    .rf-context-menu-item-danger {
+        color: #ef4444 !important;
+    }
+
+    .rf-context-menu-item-danger:hover {
+        background: #fee2e2 !important;
+        color: #dc2626 !important;
+    }
+
+    .dark .rf-context-menu-item-danger:hover {
+        background: rgba(239, 68, 68, 0.16) !important;
+        color: #f87171 !important;
     }
 
     .sortable-ghost {

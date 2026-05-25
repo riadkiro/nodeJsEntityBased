@@ -585,7 +585,7 @@ router.get('/drive', async (req, res) => {
             const recordTitle = record.computedTitle || record.title || 'Sans titre';
 
             // Filter attachments
-            let attachments = record.attachments || [];
+            let attachments = (record.attachments || []).filter(a => !a.isDataRoomOnly);
             if (search) {
                 const q = search.toLowerCase();
                 attachments = attachments.filter(a =>

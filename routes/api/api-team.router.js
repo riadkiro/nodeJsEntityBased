@@ -612,7 +612,7 @@ router.post('/update-permissions', requirePerm('members.changeRole'), async (req
         // Handle module access overrides
         if (moduleAccess !== undefined && typeof moduleAccess === 'object') {
             if (!member.moduleAccess) member.moduleAccess = {};
-            const validModules = ['chat', 'tasks', 'documents', 'agenda', 'drive', 'email', 'notes', 'automations'];
+            const validModules = ['chat', 'tasks', 'documents', 'agenda', 'drive', 'dataRoom', 'email', 'notes', 'automations'];
             for (const mod of validModules) {
                 if (moduleAccess[mod] !== undefined) {
                     member.moduleAccess[mod] = moduleAccess[mod]; // true, false, or null (inherit)

@@ -83,12 +83,62 @@ const RecordSchema = new mongoose.Schema({
     isGenerated: { type: Boolean, default: false },   // Généré par SmartDoc
     generatedFrom: String,                             // ID du template de document
     generatedFromName: String,                         // Nom du template
+    isDataRoomOnly: { type: Boolean, default: false }, // Stockage Data Room caché du Drive
+    dataRoomStorageFolder: String,
     uploadedAt: { type: Date, default: Date.now },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],
 
   // 📁 Custom Drive folders (persisted empty folder names)
   driveFolders: [{ type: String }],
+
+  // 🔐 Data Room — organisation et accès avancés sans dupliquer les fichiers
+  dataRoom: {
+    folders: [{
+      name: { type: String, required: true },
+      path: { type: String, required: true },
+      parentPath: { type: String, default: '' },
+      createdAt: { type: Date, default: Date.now },
+      createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
+    items: [{
+      attachmentId: { type: mongoose.Schema.Types.ObjectId, required: true },
+      source: { type: String, enum: ['drive', 'upload'], default: 'drive' },
+      displayName: String,
+      folder: { type: String, default: '' },
+      accessMode: { type: String, enum: ['workspace', 'restricted'], default: 'workspace' },
+      permissions: {
+        view: { type: Boolean, default: true },
+        download: { type: Boolean, default: true },
+        share: { type: Boolean, default: false },
+        print: { type: Boolean, default: false },
+        watermark: { type: Boolean, default: false }
+      },
+      shares: [{
+        email: String,
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        role: { type: String, enum: ['viewer', 'reviewer', 'manager'], default: 'viewer' },
+        permissions: {
+          view: { type: Boolean, default: true },
+          download: { type: Boolean, default: false },
+          share: { type: Boolean, default: false }
+        },
+        addedAt: { type: Date, default: Date.now },
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+      }],
+      addedAt: { type: Date, default: Date.now },
+      addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
+    logs: [{
+      itemId: mongoose.Schema.Types.ObjectId,
+      attachmentId: mongoose.Schema.Types.ObjectId,
+      action: { type: String, required: true },
+      actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      actorName: String,
+      details: String,
+      at: { type: Date, default: Date.now }
+    }]
+  },
 
   // 🔧 Line Defaults (pre-encoded values for Dynamic Table columns)
   // When this record is selected as a catalog item in a TD,

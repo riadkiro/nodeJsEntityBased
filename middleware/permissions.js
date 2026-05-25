@@ -108,6 +108,8 @@ const PERMISSIONS = {
     'notes.create':            ['owner', 'admin', 'manager', 'member'],
     'drive.view':              ['owner', 'admin', 'manager', 'member', 'external'],
     'drive.upload':            ['owner', 'admin', 'manager', 'member'],
+    'dataRoom.view':           ['owner', 'admin', 'manager', 'member', 'external'],
+    'dataRoom.manage':         ['owner', 'admin', 'manager'],
     'email.view':              ['owner', 'admin', 'manager'],
     'email.send':              ['owner', 'admin', 'manager'],
 
@@ -149,7 +151,7 @@ const PERMISSION_CATEGORIES = [
     },
     {
         key: 'modules', name: 'Modules', icon: 'solar:widget-bold-duotone',
-        permissions: ['dashboard.view', 'agenda.view', 'agenda.manage', 'team.view', 'chat.view', 'chat.send', 'tasks.view', 'tasks.manage', 'documents.view', 'documents.create', 'documents.manage', 'notes.view', 'notes.create', 'drive.view', 'drive.upload', 'email.view', 'email.send'],
+        permissions: ['dashboard.view', 'agenda.view', 'agenda.manage', 'team.view', 'chat.view', 'chat.send', 'tasks.view', 'tasks.manage', 'documents.view', 'documents.create', 'documents.manage', 'notes.view', 'notes.create', 'drive.view', 'drive.upload', 'dataRoom.view', 'dataRoom.manage', 'email.view', 'email.send'],
     },
     {
         key: 'integrations', name: 'Intégrations & IA', icon: 'solar:bolt-bold-duotone',
@@ -199,6 +201,8 @@ const PERMISSION_LABELS = {
     'notes.create': 'Créer des notes',
     'drive.view': 'Voir le drive',
     'drive.upload': 'Uploader des fichiers',
+    'dataRoom.view': 'Voir les Data Rooms',
+    'dataRoom.manage': 'Gérer les Data Rooms',
     'email.view': 'Voir les emails',
     'email.send': 'Envoyer des emails',
     'automations.view': 'Voir les automations',
@@ -449,12 +453,12 @@ function getAssignableRoles(callerRole) {
 // Each role defines which modules/apps the user can access.
 // true = full access, false = no access, 'read' = read-only
 const ROLE_MODULES = {
-    owner:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
-    admin:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
-    manager:  { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: true, settings: false, billing: false, automations: false, ai: false },
-    member:   { chat: true, tasks: true, agenda: true, documents: true, drive: true, notes: true, email: false, settings: false, billing: false, automations: false, ai: false },
-    external: { chat: true, tasks: true, agenda: false, documents: true, drive: true, notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
-    guest:    { chat: false, tasks: false, agenda: false, documents: 'read', drive: 'read', notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
+    owner:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, dataRoom: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
+    admin:    { chat: true, tasks: true, agenda: true, documents: true, drive: true, dataRoom: true, notes: true, email: true, settings: true, billing: true, automations: true, ai: true },
+    manager:  { chat: true, tasks: true, agenda: true, documents: true, drive: true, dataRoom: true, notes: true, email: true, settings: false, billing: false, automations: false, ai: false },
+    member:   { chat: true, tasks: true, agenda: true, documents: true, drive: true, dataRoom: true, notes: true, email: false, settings: false, billing: false, automations: false, ai: false },
+    external: { chat: true, tasks: true, agenda: false, documents: true, drive: true, dataRoom: 'read', notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
+    guest:    { chat: false, tasks: false, agenda: false, documents: 'read', drive: 'read', dataRoom: 'read', notes: false, email: false, settings: false, billing: false, automations: false, ai: false },
 };
 
 // Module metadata for UI
@@ -464,6 +468,7 @@ const MODULE_META = {
     agenda:      { name: 'Agenda',       icon: 'solar:calendar-bold-duotone', color: '#f59e0b' },
     documents:   { name: 'Documents',    icon: 'solar:document-bold-duotone', color: '#7c3aed' },
     drive:       { name: 'Drive',        icon: 'solar:folder-bold-duotone', color: '#06b6d4' },
+    dataRoom:    { name: 'Data Room',    icon: 'solar:shield-keyhole-bold-duotone', color: '#0f766e' },
     notes:       { name: 'Notes',        icon: 'solar:notebook-bold-duotone', color: '#ec4899' },
     email:       { name: 'Email',        icon: 'solar:letter-bold-duotone', color: '#64748b' },
     settings:    { name: 'Paramètres',   icon: 'solar:settings-bold-duotone', color: '#334155' },
@@ -489,6 +494,7 @@ const ROLE_ACTIONS = {
 // Supports custom roles via baseRole inheritance
 // ═══════════════════════════════════════════
 function canAccessModule(role, moduleName, customRoles) {
+    moduleName = moduleName === 'data-room' ? 'dataRoom' : moduleName;
     // Owner always has all
     if (role === 'owner') return true;
 

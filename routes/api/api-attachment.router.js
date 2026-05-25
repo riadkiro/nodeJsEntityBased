@@ -437,7 +437,9 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             return res.status(404).json({ error: 'Record introuvable' });
         }
 
-        const attachments = (record.attachments || []).map(att => ({
+        const attachments = (record.attachments || [])
+        .filter(att => !att.isDataRoomOnly)
+        .map(att => ({
             _id: att._id,
             filename: att.filename,
             originalName: att.originalName,

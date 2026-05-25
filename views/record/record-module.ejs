@@ -5,6 +5,7 @@ const _modulesDef = {
   fiche:  { icon: 'solar:card-bold-duotone', color: '#4361ee', label: 'Fiche', desc: 'Informations et champs encodés' },
   docs:   { icon: 'solar:document-text-bold-duotone', color: '#f59e0b', label: 'Documents', desc: 'Modèles et documents générés' },
   drive:  { icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', label: 'Drive', desc: 'Fichiers et médias organisés' },
+  'data-room': { icon: 'solar:shield-keyhole-bold-duotone', color: '#0f766e', label: 'Data Room', desc: 'Partage sécurisé, accès et journal' },
   tasks:  { icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', label: 'Tâches', desc: 'Suivi des actions et rappels' },
   agenda: { icon: 'solar:calendar-bold-duotone', color: '#14b8a6', label: 'Agenda', desc: 'Rendez-vous et événements' },
   chat:   { icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316', label: 'Chat', desc: 'Conversations et échanges' },
@@ -416,6 +417,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             { key:'fiche', icon:'solar:card-bold-duotone', color:'#4361ee', label:'Fiche' },
             { key:'docs', icon:'solar:document-text-bold-duotone', color:'#f59e0b', label:'Docs' },
             { key:'drive', icon:'solar:cloud-storage-bold-duotone', color:'#ec4899', label:'Drive' },
+            { key:'data-room', icon:'solar:shield-keyhole-bold-duotone', color:'#0f766e', label:'Data Room' },
             { key:'tasks', icon:'solar:checklist-minimalistic-bold-duotone', color:'#10b981', label:'Tasks' },
             { key:'agenda', icon:'solar:calendar-bold-duotone', color:'#14b8a6', label:'Agenda' },
             { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
@@ -2044,7 +2046,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
     <% } %>
 
     <!-- ═══ OTHER MODULES (non-docs) ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda' && moduleName !== 'team') { %>
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'data-room' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda' && moduleName !== 'team') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -2221,6 +2223,10 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 
         <% if (moduleName === 'drive') { %>
         <%- include('partials/drive-shared', { driveMode: 'record' }) %>
+        <% } %>
+
+        <% if (moduleName === 'data-room') { %>
+        <%- include('../record/partials/record-data-room-module') %>
         <% } %>
 
 

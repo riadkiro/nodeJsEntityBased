@@ -2272,7 +2272,7 @@ module.exports = {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
             const moduleName = req.params.moduleName;
-            const validModules = ['overview', 'fiche', 'docs', 'drive', 'tasks', 'notes', 'chat', 'emails', 'agenda', 'team'];
+            const validModules = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'notes', 'chat', 'emails', 'agenda', 'team'];
             if (!validModules.includes(moduleName)) {
                 return res.status(404).render("errors/404", {
                     message: "Module not found",

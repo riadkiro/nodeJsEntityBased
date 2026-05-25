@@ -207,7 +207,7 @@ require('./api/api-record-notes.router')(router);
 router.use("/", require("./api.routes.js"));
 
 // Secure Attachment Download API (Simple Tenant Verification)
-router.get("/uploads/attachments/*", (req, res) => {
+router.get("/uploads/attachments/*", async (req, res) => {
     const path = require("path");
     const fs = require("fs");
     // Verify user is connected to THIS account
@@ -219,6 +219,22 @@ router.get("/uploads/attachments/*", (req, res) => {
     const relativePath = req.params[0];
     if (!relativePath || relativePath.includes('..')) {
         return res.status(400).send("Requête invalide.");
+    }
+
+    try {
+        const { tenantCollection } = require('../middleware/tenant');
+        const Record = await tenantCollection(req, 'Record');
+        if (Record) {
+            const ownerRecord = await Record.findOne({ 'attachments.filename': relativePath })
+                .select('attachments.$')
+                .lean();
+            const attachment = ownerRecord?.attachments?.[0];
+            if (attachment?.isDataRoomOnly) {
+                return res.status(403).send("Ce fichier est réservé à la Data Room.");
+            }
+        }
+    } catch (e) {
+        console.warn('[AttachmentDownload] Data Room visibility check skipped:', e.message);
     }
 
     // Try private_uploads first (new secure storage)
@@ -253,6 +269,9 @@ router.get("/uploads/attachments/*", (req, res) => {
 
 // Attachment API (file uploads for records)
 router.use("/api", require("./api/api-attachment.router.js"));
+
+// Data Room API (secure record-level file rooms)
+router.use("/api", require("./api/api-data-room.router.js"));
 
 // SmartDoc API (template-based document generation for records)
 router.use("/api", require("./api/api-smartdoc.router.js"));

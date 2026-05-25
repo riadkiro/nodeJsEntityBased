@@ -1,0 +1,628 @@
+<style>
+.dr-shell{display:flex;flex-direction:column;gap:14px;}
+.dr-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.dr-left,.dr-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.dr-search{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;min-width:260px;}
+.dr-search input{border:none;outline:none;background:transparent;font-size:12.5px;color:#0f172a;width:100%;font-family:inherit;}
+.dr-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:12px;font-weight:700;cursor:pointer;transition:all .16s;font-family:inherit;}
+.dr-btn:hover{border-color:#0f766e30;color:#0f766e;background:#0f766e06;}
+.dr-btn-primary{border:none;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;box-shadow:0 2px 10px rgba(20,184,166,.22);}
+.dr-btn-primary:hover{color:#fff;transform:translateY(-1px);box-shadow:0 4px 14px rgba(20,184,166,.28);}
+.dr-btn-danger{color:#ef4444;border-color:#fecaca;background:#fff5f5;}
+.dr-btn-danger:hover{color:#dc2626;border-color:#fca5a5;background:#fee2e2;}
+.dr-btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none;}
+.dr-breadcrumb{display:flex;align-items:center;gap:4px;flex-wrap:wrap;color:#94a3b8;font-size:12px;font-weight:700;}
+.dr-breadcrumb button{display:inline-flex;align-items:center;gap:5px;border:none;background:none;color:#94a3b8;font:inherit;cursor:pointer;padding:4px 8px;border-radius:7px;}
+.dr-breadcrumb button:hover{background:#0f766e08;color:#0f766e;}
+.dr-breadcrumb .active{color:#0f172a;cursor:default;}
+.dr-stats{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.dr-stat{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:11.5px;font-weight:700;}
+.dr-new-folder{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #dbeafe;background:#f8fbff;border-radius:10px;}
+.dr-new-folder input{flex:1;border:none;background:transparent;outline:none;font-size:13px;color:#0f172a;font-family:inherit;}
+.dr-list{display:flex;flex-direction:column;gap:2px;}
+.dr-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border-radius:10px;border:1px solid transparent;transition:all .2s;animation:rmFadeIn .35s ease both;}
+.dr-item:hover{border-color:#e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,.04);transform:translateX(2px);}
+.dr-item-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dr-item-body{flex:1;min-width:0;}
+.dr-item-title{font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dr-item-meta{display:flex;align-items:center;gap:5px;margin-top:2px;color:#94a3b8;font-size:11.5px;min-width:0;}
+.dr-item-meta span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dr-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:800;white-space:nowrap;}
+.dr-file-actions{display:flex;align-items:center;gap:2px;}
+.dr-icon-btn{width:30px;height:30px;border:none;background:none;border-radius:7px;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.dr-icon-btn:hover{background:#f1f5f9;color:#0f172a;}
+.dr-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:44px 18px;color:#94a3b8;text-align:center;}
+.dr-empty h3{margin:0;color:#334155;font-size:14px;font-weight:800;}
+.dr-empty p{margin:0;font-size:12px;}
+.dr-overlay{position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(3px);z-index:9998;}
+.dr-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:720px;max-width:94vw;max-height:86vh;background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(15,23,42,.18);z-index:9999;display:flex;flex-direction:column;overflow:hidden;}
+.dr-modal-sm{width:560px;}
+.dr-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #eef2f7;}
+.dr-modal-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:#0f172a;}
+.dr-modal-body{padding:16px 18px;overflow:auto;}
+.dr-modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #eef2f7;background:#fafbfc;}
+.dr-picker-list{display:flex;flex-direction:column;gap:4px;max-height:440px;overflow:auto;}
+.dr-picker-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;border:1px solid #eef2f7;background:#fff;cursor:pointer;transition:all .15s;}
+.dr-picker-row:hover{border-color:#0f766e30;background:#f8fffd;}
+.dr-picker-row.disabled{opacity:.46;cursor:default;background:#f8fafc;}
+.dr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dr-field{display:flex;flex-direction:column;gap:5px;}
+.dr-field.full{grid-column:1/-1;}
+.dr-label{font-size:11px;text-transform:uppercase;letter-spacing:.35px;font-weight:800;color:#64748b;}
+.dr-input,.dr-select{width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 10px;font-size:13px;color:#0f172a;background:#fff;outline:none;font-family:inherit;}
+.dr-input:focus,.dr-select:focus{border-color:#0f766e;box-shadow:0 0 0 3px #0f766e12;}
+.dr-toggles{display:flex;flex-wrap:wrap;gap:7px;}
+.dr-toggle{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:12px;font-weight:700;cursor:pointer;user-select:none;}
+.dr-toggle.active{border-color:#0f766e30;background:#0f766e08;color:#0f766e;}
+.dr-share-row,.dr-log-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.dr-share-row:last-child,.dr-log-row:last-child{border-bottom:none;}
+.dr-log-dot{width:30px;height:30px;border-radius:9px;background:#0f766e10;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dr-log-body{flex:1;min-width:0;}
+.dr-log-title{font-size:12.5px;font-weight:800;color:#0f172a;}
+.dr-log-meta{font-size:11px;color:#94a3b8;margin-top:1px;}
+.dark .dr-search,.dark .dr-stat,.dark .dr-new-folder{background:#1b2e4b;border-color:#253b5c;}
+.dark .dr-btn,.dark .dr-item,.dark .dr-modal,.dark .dr-picker-row{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .dr-item-title,.dark .dr-modal-title,.dark .dr-empty h3,.dark .dr-log-title{color:#e0e6ed;}
+.dark .dr-input,.dark .dr-select{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .dr-modal-header,.dark .dr-modal-footer,.dark .dr-share-row,.dark .dr-log-row{border-color:#253b5c;}
+.dark .dr-modal-footer{background:#1b2e4b;}
+@media(max-width:720px){.dr-toolbar{align-items:stretch}.dr-search{min-width:100%;}.dr-actions{width:100%;}.dr-actions .dr-btn{flex:1;justify-content:center}.dr-item{flex-wrap:wrap}.dr-file-actions{width:100%;justify-content:flex-end}.dr-form-grid{grid-template-columns:1fr;}}
+</style>
+
+<div x-data="dataRoomModule" x-cloak class="dr-shell">
+    <input type="file" multiple x-ref="uploadInput" @change="handleUpload($event)" style="display:none">
+
+    <div class="dr-toolbar">
+        <div class="dr-left">
+            <div class="dr-search">
+                <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#94a3b8"></iconify-icon>
+                <input type="search" x-model="search" placeholder="Rechercher...">
+            </div>
+            <div class="dr-stats">
+                <span class="dr-stat"><iconify-icon icon="solar:file-bold-duotone" width="14" style="color:#0f766e"></iconify-icon><span x-text="dataRoom.items.length + ' fichier(s)'"></span></span>
+                <span class="dr-stat"><iconify-icon icon="solar:folder-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon><span x-text="dataRoom.folders.length + ' dossier(s)'"></span></span>
+                <span class="dr-stat"><iconify-icon icon="solar:shield-check-bold-duotone" width="14" style="color:#10b981"></iconify-icon><span x-text="restrictedCount + ' restreint(s)'"></span></span>
+            </div>
+        </div>
+        <div class="dr-actions">
+            <button type="button" class="dr-btn" @click="showNewFolder = true; $nextTick(() => $refs.folderInput?.focus())">
+                <iconify-icon icon="solar:folder-add-bold-duotone" width="16"></iconify-icon>
+                Dossier
+            </button>
+            <button type="button" class="dr-btn" @click="openDrivePicker()">
+                <iconify-icon icon="solar:cloud-storage-bold-duotone" width="16"></iconify-icon>
+                Depuis Drive
+            </button>
+            <button type="button" class="dr-btn dr-btn-primary" @click="$refs.uploadInput.click()" :disabled="uploading">
+                <iconify-icon icon="solar:cloud-upload-bold-duotone" width="16"></iconify-icon>
+                Importer
+            </button>
+            <button type="button" class="dr-btn" @click="showLogs = true">
+                <iconify-icon icon="solar:history-bold-duotone" width="16"></iconify-icon>
+                Logs
+            </button>
+        </div>
+    </div>
+
+    <div class="dr-breadcrumb">
+        <button type="button" @click="navigateTo('')" :class="!currentFolder ? 'active' : ''">
+            <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="14" style="color:#0f766e"></iconify-icon>
+            Data Room
+        </button>
+        <template x-for="crumb in breadcrumbs" :key="crumb.path">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
+                <button type="button" @click="navigateTo(crumb.path)" :class="currentFolder === crumb.path ? 'active' : ''" x-text="crumb.name"></button>
+            </span>
+        </template>
+    </div>
+
+    <div x-show="showNewFolder" x-transition class="dr-new-folder">
+        <iconify-icon icon="solar:folder-bold-duotone" width="18" style="color:#f59e0b"></iconify-icon>
+        <input type="text" x-ref="folderInput" x-model="newFolderName" @keydown.enter="createFolder()" @keydown.escape="cancelFolder()" placeholder="Nom du dossier">
+        <button type="button" class="dr-btn dr-btn-primary" @click="createFolder()" :disabled="!newFolderName.trim()">Créer</button>
+        <button type="button" class="dr-icon-btn" @click="cancelFolder()"><iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon></button>
+    </div>
+
+    <div x-show="uploading" class="dr-stat" style="align-self:flex-start;">
+        <iconify-icon icon="line-md:uploading-loop" width="16" style="color:#0f766e"></iconify-icon>
+        <span x-text="'Upload Data Room... ' + uploadProgress + '%'"></span>
+    </div>
+
+    <div class="dr-list" x-show="!loading">
+        <template x-for="folder in visibleFolders" :key="folder.path">
+            <div class="dr-item" @click="navigateTo(folder.path)">
+                <div class="dr-item-icon" style="background:#f59e0b12">
+                    <iconify-icon icon="solar:folder-bold-duotone" width="21" style="color:#f59e0b"></iconify-icon>
+                </div>
+                <div class="dr-item-body">
+                    <div class="dr-item-title" x-text="folder.name"></div>
+                    <div class="dr-item-meta">
+                        <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
+                        <span x-text="folderItemCount(folder.path) + ' fichier(s)'"></span>
+                    </div>
+                </div>
+                <span class="dr-badge" style="background:#f59e0b10;color:#f59e0b">Dossier</span>
+                <button type="button" class="dr-icon-btn"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></button>
+            </div>
+        </template>
+
+        <template x-for="(item, idx) in visibleItems" :key="item._id">
+            <div class="dr-item">
+                <div class="dr-item-icon" :style="'background:' + categoryColor(item.category) + '12'">
+                    <iconify-icon :icon="categoryIcon(item.category)" width="21" :style="'color:' + categoryColor(item.category)"></iconify-icon>
+                </div>
+                <div class="dr-item-body">
+                    <div class="dr-item-title" x-text="item.displayName"></div>
+                    <div class="dr-item-meta">
+                        <span x-text="item.sizeFormatted"></span>
+                        <span>·</span>
+                        <span x-text="item.source === 'drive' ? 'Référence Drive' : 'Stockage Data Room'"></span>
+                        <span>·</span>
+                        <span x-text="formatDate(item.addedAt)"></span>
+                    </div>
+                </div>
+                <span class="dr-badge" :style="item.accessMode === 'restricted' ? 'background:#ef444410;color:#ef4444' : 'background:#10b98112;color:#10b981'" x-text="item.accessMode === 'restricted' ? 'Restreint' : 'Workspace'"></span>
+                <div class="dr-file-actions">
+                    <button type="button" class="dr-icon-btn" @click="previewItem(item, idx)" title="Aperçu"><iconify-icon icon="solar:eye-bold" width="16" style="color:#10b981"></iconify-icon></button>
+                    <a class="dr-icon-btn" :href="item.downloadUrl" title="Télécharger" @click="logAction(item, 'item.download_clicked')" x-show="item.permissions.download !== false"><iconify-icon icon="solar:download-bold" width="16" style="color:#4361ee"></iconify-icon></a>
+                    <button type="button" class="dr-icon-btn" @click="openPermissions(item)" title="Permissions"><iconify-icon icon="solar:shield-keyhole-bold" width="16" style="color:#0f766e"></iconify-icon></button>
+                    <button type="button" class="dr-icon-btn" @click="removeItem(item)" title="Retirer"><iconify-icon icon="solar:trash-bin-2-bold" width="16" style="color:#ef4444"></iconify-icon></button>
+                </div>
+            </div>
+        </template>
+
+        <div class="dr-empty" x-show="visibleFolders.length === 0 && visibleItems.length === 0">
+            <iconify-icon icon="solar:shield-keyhole-bold-duotone" width="52" style="color:#0f766e;opacity:.25"></iconify-icon>
+            <h3 x-text="search ? 'Aucun résultat' : 'Data Room vide'"></h3>
+            <p x-text="search ? 'Essayez un autre mot clé.' : 'Ajoutez des fichiers depuis le Drive ou importez des documents.'"></p>
+        </div>
+    </div>
+
+    <div x-show="loading" class="dr-empty">
+        <iconify-icon icon="line-md:loading-twotone-loop" width="30" style="color:#0f766e"></iconify-icon>
+    </div>
+
+    <!-- Drive picker -->
+    <template x-if="showDrivePicker">
+        <div>
+            <div class="dr-overlay" @click="showDrivePicker = false"></div>
+            <div class="dr-modal">
+                <div class="dr-modal-header">
+                    <div class="dr-modal-title"><iconify-icon icon="solar:cloud-storage-bold-duotone" width="18" style="color:#ec4899"></iconify-icon>Choisir depuis Drive</div>
+                    <button type="button" class="dr-icon-btn" @click="showDrivePicker = false"><iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon></button>
+                </div>
+                <div class="dr-modal-body">
+                    <div class="dr-search" style="max-width:none;margin-bottom:12px;">
+                        <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#94a3b8"></iconify-icon>
+                        <input type="search" x-model="driveSearch" placeholder="Rechercher dans le Drive...">
+                    </div>
+                    <div class="dr-picker-list">
+                        <template x-for="file in filteredDriveFiles" :key="file._id">
+                            <label class="dr-picker-row" :class="file.inDataRoom ? 'disabled' : ''">
+                                <input type="checkbox" :disabled="file.inDataRoom" :value="file._id" x-model="selectedDriveIds" style="accent-color:#0f766e">
+                                <div class="dr-item-icon" :style="'background:' + categoryColor(file.category) + '12;width:34px;height:34px;border-radius:9px'">
+                                    <iconify-icon :icon="categoryIcon(file.category)" width="18" :style="'color:' + categoryColor(file.category)"></iconify-icon>
+                                </div>
+                                <div class="dr-item-body">
+                                    <div class="dr-item-title" x-text="file.originalName"></div>
+                                    <div class="dr-item-meta">
+                                        <span x-text="file.sizeFormatted"></span>
+                                        <span x-show="file.folder">·</span>
+                                        <span x-show="file.folder" x-text="file.folder"></span>
+                                    </div>
+                                </div>
+                                <span class="dr-badge" x-show="file.inDataRoom" style="background:#0f766e10;color:#0f766e">Déjà lié</span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+                <div class="dr-modal-footer">
+                    <button type="button" class="dr-btn" @click="showDrivePicker = false">Annuler</button>
+                    <button type="button" class="dr-btn dr-btn-primary" @click="addSelectedFromDrive()" :disabled="selectedDriveIds.length === 0">Ajouter <span x-text="selectedDriveIds.length ? '(' + selectedDriveIds.length + ')' : ''"></span></button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Permissions modal -->
+    <template x-if="showPermissions && permissionItem">
+        <div>
+            <div class="dr-overlay" @click="closePermissions()"></div>
+            <div class="dr-modal dr-modal-sm">
+                <div class="dr-modal-header">
+                    <div class="dr-modal-title"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="18" style="color:#0f766e"></iconify-icon>Accès fichier</div>
+                    <button type="button" class="dr-icon-btn" @click="closePermissions()"><iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon></button>
+                </div>
+                <div class="dr-modal-body">
+                    <div class="dr-form-grid">
+                        <label class="dr-field full">
+                            <span class="dr-label">Nom affiché</span>
+                            <input class="dr-input" x-model="permissionForm.displayName">
+                        </label>
+                        <label class="dr-field">
+                            <span class="dr-label">Dossier Data Room</span>
+                            <select class="dr-select" x-model="permissionForm.folder">
+                                <option value="">Racine</option>
+                                <template x-for="folder in dataRoom.folders" :key="folder.path">
+                                    <option :value="folder.path" x-text="folder.path"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="dr-field">
+                            <span class="dr-label">Mode d'accès</span>
+                            <select class="dr-select" x-model="permissionForm.accessMode">
+                                <option value="workspace">Workspace</option>
+                                <option value="restricted">Restreint</option>
+                            </select>
+                        </label>
+                        <div class="dr-field full">
+                            <span class="dr-label">Permissions</span>
+                            <div class="dr-toggles">
+                                <button type="button" class="dr-toggle" :class="permissionForm.permissions.view ? 'active' : ''" @click="permissionForm.permissions.view = !permissionForm.permissions.view"><iconify-icon icon="solar:eye-bold" width="14"></iconify-icon>Voir</button>
+                                <button type="button" class="dr-toggle" :class="permissionForm.permissions.download ? 'active' : ''" @click="permissionForm.permissions.download = !permissionForm.permissions.download"><iconify-icon icon="solar:download-bold" width="14"></iconify-icon>Télécharger</button>
+                                <button type="button" class="dr-toggle" :class="permissionForm.permissions.share ? 'active' : ''" @click="permissionForm.permissions.share = !permissionForm.permissions.share"><iconify-icon icon="solar:share-bold" width="14"></iconify-icon>Partager</button>
+                                <button type="button" class="dr-toggle" :class="permissionForm.permissions.print ? 'active' : ''" @click="permissionForm.permissions.print = !permissionForm.permissions.print"><iconify-icon icon="solar:printer-bold" width="14"></iconify-icon>Imprimer</button>
+                                <button type="button" class="dr-toggle" :class="permissionForm.permissions.watermark ? 'active' : ''" @click="permissionForm.permissions.watermark = !permissionForm.permissions.watermark"><iconify-icon icon="solar:dropper-3-bold" width="14"></iconify-icon>Watermark</button>
+                            </div>
+                        </div>
+                        <div class="dr-field full">
+                            <span class="dr-label">Partages</span>
+                            <template x-for="(share, idx) in permissionForm.shares" :key="idx">
+                                <div class="dr-share-row">
+                                    <input class="dr-input" style="flex:1" placeholder="email@domaine.com" x-model="share.email">
+                                    <select class="dr-select" style="width:120px" x-model="share.role">
+                                        <option value="viewer">Viewer</option>
+                                        <option value="reviewer">Reviewer</option>
+                                        <option value="manager">Manager</option>
+                                    </select>
+                                    <button type="button" class="dr-icon-btn" @click="permissionForm.shares.splice(idx,1)"><iconify-icon icon="solar:trash-bin-2-bold" width="16" style="color:#ef4444"></iconify-icon></button>
+                                </div>
+                            </template>
+                            <button type="button" class="dr-btn" style="margin-top:8px;" @click="permissionForm.shares.push({ email:'', role:'viewer', permissions:{ view:true, download:false, share:false } })">
+                                <iconify-icon icon="solar:user-plus-bold-duotone" width="15"></iconify-icon>
+                                Ajouter un accès
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="dr-modal-footer">
+                    <button type="button" class="dr-btn" @click="closePermissions()">Annuler</button>
+                    <button type="button" class="dr-btn dr-btn-primary" @click="savePermissions()">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Logs modal -->
+    <template x-if="showLogs">
+        <div>
+            <div class="dr-overlay" @click="showLogs = false"></div>
+            <div class="dr-modal dr-modal-sm">
+                <div class="dr-modal-header">
+                    <div class="dr-modal-title"><iconify-icon icon="solar:history-bold-duotone" width="18" style="color:#0f766e"></iconify-icon>Journal Data Room</div>
+                    <button type="button" class="dr-icon-btn" @click="showLogs = false"><iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon></button>
+                </div>
+                <div class="dr-modal-body">
+                    <template x-for="log in dataRoom.logs" :key="log._id">
+                        <div class="dr-log-row">
+                            <div class="dr-log-dot"><iconify-icon :icon="logIcon(log.action)" width="16" style="color:#0f766e"></iconify-icon></div>
+                            <div class="dr-log-body">
+                                <div class="dr-log-title" x-text="logLabel(log.action)"></div>
+                                <div class="dr-log-meta"><span x-text="log.actorName"></span> · <span x-text="formatDateTime(log.at)"></span> <span x-show="log.details">·</span> <span x-text="log.details"></span></div>
+                            </div>
+                        </div>
+                    </template>
+                    <div class="dr-empty" x-show="dataRoom.logs.length === 0">
+                        <iconify-icon icon="solar:history-bold-duotone" width="42" style="color:#0f766e;opacity:.25"></iconify-icon>
+                        <h3>Aucun log</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dataRoomModule', () => ({
+        apiBase: '/account/<%= account_number %>/api/records/<%= record._id %>/data-room',
+        dataRoom: { folders: [], items: [], logs: [] },
+        driveFiles: [],
+        selectedDriveIds: [],
+        currentFolder: '',
+        search: '',
+        driveSearch: '',
+        loading: true,
+        uploading: false,
+        uploadProgress: 0,
+        showDrivePicker: false,
+        showPermissions: false,
+        showLogs: false,
+        showNewFolder: false,
+        newFolderName: '',
+        permissionItem: null,
+        permissionForm: null,
+
+        async init() {
+            await this.load();
+        },
+
+        get restrictedCount() {
+            return this.dataRoom.items.filter(item => item.accessMode === 'restricted').length;
+        },
+
+        get breadcrumbs() {
+            const parts = this.currentFolder ? this.currentFolder.split('/') : [];
+            let path = '';
+            return parts.map(name => {
+                path = path ? path + '/' + name : name;
+                return { name, path };
+            });
+        },
+
+        get visibleFolders() {
+            const q = this.search.trim().toLowerCase();
+            return this.dataRoom.folders
+                .filter(folder => (folder.parentPath || '') === this.currentFolder)
+                .filter(folder => !q || folder.name.toLowerCase().includes(q) || folder.path.toLowerCase().includes(q));
+        },
+
+        get visibleItems() {
+            const q = this.search.trim().toLowerCase();
+            return this.dataRoom.items
+                .filter(item => (item.folder || '') === this.currentFolder)
+                .filter(item => !q || (item.displayName || '').toLowerCase().includes(q) || (item.originalName || '').toLowerCase().includes(q));
+        },
+
+        get filteredDriveFiles() {
+            const q = this.driveSearch.trim().toLowerCase();
+            return this.driveFiles.filter(file => !q || (file.originalName || '').toLowerCase().includes(q) || (file.folder || '').toLowerCase().includes(q));
+        },
+
+        async request(url, options = {}) {
+            const res = await fetch(url, {
+                credentials: 'include',
+                headers: options.body instanceof FormData ? undefined : { 'Content-Type': 'application/json' },
+                ...options
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.error) throw new Error(data.error || 'Erreur Data Room');
+            return data;
+        },
+
+        async load() {
+            this.loading = true;
+            try {
+                const data = await this.request(this.apiBase);
+                this.dataRoom = data.dataRoom || { folders: [], items: [], logs: [] };
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        navigateTo(path) {
+            this.currentFolder = path || '';
+        },
+
+        cancelFolder() {
+            this.showNewFolder = false;
+            this.newFolderName = '';
+        },
+
+        async createFolder() {
+            const name = this.newFolderName.trim();
+            if (!name) return;
+            try {
+                const data = await this.request(this.apiBase + '/folders', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, parentPath: this.currentFolder })
+                });
+                this.dataRoom = data.dataRoom;
+                this.cancelFolder();
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        folderItemCount(path) {
+            return this.dataRoom.items.filter(item => item.folder === path || (item.folder || '').startsWith(path + '/')).length;
+        },
+
+        async openDrivePicker() {
+            this.showDrivePicker = true;
+            this.selectedDriveIds = [];
+            try {
+                const data = await this.request(this.apiBase + '/drive-files');
+                this.driveFiles = data.files || [];
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        async addSelectedFromDrive() {
+            if (this.selectedDriveIds.length === 0) return;
+            try {
+                const data = await this.request(this.apiBase + '/from-drive', {
+                    method: 'POST',
+                    body: JSON.stringify({ attachmentIds: this.selectedDriveIds, folder: this.currentFolder })
+                });
+                this.dataRoom = data.dataRoom;
+                this.showDrivePicker = false;
+                this.toast((data.added || 0) + ' fichier(s) ajouté(s)', 'success');
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        async handleUpload(e) {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            if (files.length === 0) return;
+            const formData = new FormData();
+            files.forEach(file => formData.append('files', file, file.name));
+            formData.append('folder', this.currentFolder);
+
+            this.uploading = true;
+            this.uploadProgress = 0;
+            try {
+                const data = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', evt => {
+                        if (evt.lengthComputable) this.uploadProgress = Math.round((evt.loaded / evt.total) * 100);
+                    });
+                    xhr.onload = () => {
+                        let payload = {};
+                        try { payload = JSON.parse(xhr.responseText || '{}'); } catch (err) {}
+                        if (xhr.status >= 200 && xhr.status < 300 && !payload.error) resolve(payload);
+                        else reject(new Error(payload.error || 'Erreur upload Data Room'));
+                    };
+                    xhr.onerror = () => reject(new Error('Erreur réseau'));
+                    xhr.open('POST', this.apiBase + '/upload');
+                    xhr.withCredentials = true;
+                    xhr.send(formData);
+                });
+                this.dataRoom = data.dataRoom;
+                this.toast((data.added || 0) + ' fichier(s) importé(s)', 'success');
+            } catch (err) {
+                this.toast(err.message, 'danger');
+            } finally {
+                this.uploading = false;
+                this.uploadProgress = 0;
+            }
+        },
+
+        previewItem(item, idx) {
+            this.logAction(item, 'item.previewed');
+            const files = this.visibleItems.map(file => ({ url: file.url, name: file.displayName, category: file.category }));
+            if (window.openFileViewer) {
+                window.openFileViewer(item.url, item.displayName, item.category, files, idx);
+            } else {
+                window.open(item.url, '_blank');
+            }
+        },
+
+        openPermissions(item) {
+            this.permissionItem = item;
+            this.permissionForm = {
+                displayName: item.displayName,
+                folder: item.folder || '',
+                accessMode: item.accessMode || 'workspace',
+                permissions: {
+                    view: item.permissions?.view !== false,
+                    download: item.permissions?.download !== false,
+                    share: !!item.permissions?.share,
+                    print: !!item.permissions?.print,
+                    watermark: !!item.permissions?.watermark
+                },
+                shares: JSON.parse(JSON.stringify(item.shares || []))
+            };
+            this.showPermissions = true;
+        },
+
+        closePermissions() {
+            this.showPermissions = false;
+            this.permissionItem = null;
+            this.permissionForm = null;
+        },
+
+        async savePermissions() {
+            try {
+                const data = await this.request(this.apiBase + '/items/' + this.permissionItem._id, {
+                    method: 'PATCH',
+                    body: JSON.stringify(this.permissionForm)
+                });
+                this.dataRoom = data.dataRoom;
+                this.closePermissions();
+                this.toast('Permissions sauvegardées', 'success');
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        async removeItem(item) {
+            if (!confirm('Retirer ce fichier de la Data Room ?')) return;
+            try {
+                const data = await this.request(this.apiBase + '/items/' + item._id, { method: 'DELETE' });
+                this.dataRoom = data.dataRoom;
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        async logAction(item, action) {
+            try {
+                const data = await this.request(this.apiBase + '/items/' + item._id + '/log', {
+                    method: 'POST',
+                    body: JSON.stringify({ action })
+                });
+                this.dataRoom.logs = data.dataRoom.logs || this.dataRoom.logs;
+            } catch (e) {}
+        },
+
+        categoryIcon(cat) {
+            return {
+                image: 'solar:gallery-bold-duotone',
+                pdf: 'solar:file-text-bold-duotone',
+                word: 'solar:document-bold-duotone',
+                excel: 'solar:chart-square-bold-duotone',
+                video: 'solar:videocamera-record-bold-duotone',
+                audio: 'solar:music-note-2-bold-duotone'
+            }[cat] || 'solar:file-bold-duotone';
+        },
+
+        categoryColor(cat) {
+            return {
+                image: '#8b5cf6',
+                pdf: '#ef4444',
+                word: '#3b82f6',
+                excel: '#10b981',
+                video: '#f59e0b',
+                audio: '#ec4899'
+            }[cat] || '#64748b';
+        },
+
+        logIcon(action) {
+            if (action.includes('download')) return 'solar:download-bold';
+            if (action.includes('upload')) return 'solar:cloud-upload-bold-duotone';
+            if (action.includes('linked')) return 'solar:link-bold-duotone';
+            if (action.includes('permission')) return 'solar:shield-keyhole-bold';
+            if (action.includes('folder')) return 'solar:folder-bold-duotone';
+            if (action.includes('removed')) return 'solar:trash-bin-2-bold';
+            return 'solar:eye-bold';
+        },
+
+        logLabel(action) {
+            return {
+                'item.linked': 'Fichier lié depuis Drive',
+                'item.uploaded': 'Fichier importé',
+                'item.permissions_updated': 'Permissions modifiées',
+                'item.removed': 'Fichier retiré',
+                'item.viewed': 'Fichier consulté',
+                'item.previewed': 'Aperçu ouvert',
+                'item.downloaded': 'Fichier téléchargé',
+                'item.download_clicked': 'Téléchargement demandé',
+                'folder.created': 'Dossier créé',
+                'folder.renamed': 'Dossier renommé'
+            }[action] || action;
+        },
+
+        formatDate(value) {
+            if (!value) return '';
+            return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        },
+
+        formatDateTime(value) {
+            if (!value) return '';
+            return new Date(value).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        },
+
+        toast(message, type) {
+            if (window.showMessage) window.showMessage(message, type || 'info');
+            else alert(message);
+        }
+    }));
+});
+</script>

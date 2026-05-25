@@ -692,7 +692,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
                 this.closePermissions();
-                this.toast('Permissions sauvegardées', 'success');
+                this.toast(this.notificationMessage(data.notification), data.notification?.failed ? 'danger' : 'success');
             } catch (e) {
                 this.toast(e.message, 'danger');
             }
@@ -737,10 +737,19 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(payload)
                 });
                 this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
-                this.toast(permissions.download ? 'Téléchargement autorisé' : 'Téléchargement désactivé', 'success');
+                const baseMessage = permissions.download ? 'Téléchargement autorisé' : 'Téléchargement désactivé';
+                this.toast(data.notification?.sent ? baseMessage + ', invitation envoyée' : baseMessage, data.notification?.failed ? 'danger' : 'success');
             } catch (e) {
                 this.toast(e.message, 'danger');
             }
+        },
+
+        notificationMessage(notification) {
+            if (!notification) return 'Permissions sauvegardées';
+            if (notification.sent > 0) return `Permissions sauvegardées, ${notification.sent} email(s) envoyé(s)`;
+            if (notification.dryRun > 0) return 'Permissions sauvegardées, SMTP non configuré';
+            if (notification.failed > 0) return 'Permissions sauvegardées, email non envoyé';
+            return 'Permissions sauvegardées';
         },
 
         async renameFolder(folder) {

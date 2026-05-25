@@ -112,7 +112,8 @@ const RecordSchema = new mongoose.Schema({
         share: { type: Boolean, default: false }
       },
       addedAt: { type: Date, default: Date.now },
-      addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+      addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      notifiedAt: Date
     }],
     folders: [{
       name: { type: String, required: true },
@@ -136,7 +137,8 @@ const RecordSchema = new mongoose.Schema({
           share: { type: Boolean, default: false }
         },
         addedAt: { type: Date, default: Date.now },
-        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        notifiedAt: Date
       }],
       createdAt: { type: Date, default: Date.now },
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
@@ -164,7 +166,8 @@ const RecordSchema = new mongoose.Schema({
           share: { type: Boolean, default: false }
         },
         addedAt: { type: Date, default: Date.now },
-        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        notifiedAt: Date
       }],
       addedAt: { type: Date, default: Date.now },
       addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

@@ -111,6 +111,86 @@ async function sendInvitation({ to, accountName, inviterName, role, inviteUrl })
     });
 }
 
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// ═══════════════════════════════════════════
+// Data Room Share Email
+// ═══════════════════════════════════════════
+async function sendDataRoomShare({ to, accountName, inviterName, recordTitle, scopeLabel, role, actionUrl, requiresWorkspaceAccept }) {
+    const roleLabel = { viewer: 'Lecteur', reviewer: 'Relecteur', manager: 'Manager' }[role] || 'Lecteur';
+    const title = requiresWorkspaceAccept ? 'Invitation à une Data Room' : 'Accès Data Room partagé';
+    const cta = requiresWorkspaceAccept ? 'Accepter et accéder' : 'Ouvrir la Data Room';
+    const intro = requiresWorkspaceAccept
+        ? 'vous invite à rejoindre un espace Dexapp pour accéder à une Data Room sécurisée.'
+        : 'vous a donné accès à une Data Room sécurisée.';
+
+    const safe = {
+        accountName: escapeHtml(accountName),
+        inviterName: escapeHtml(inviterName),
+        recordTitle: escapeHtml(recordTitle || 'Document'),
+        scopeLabel: escapeHtml(scopeLabel || 'Data Room'),
+        roleLabel: escapeHtml(roleLabel),
+        actionUrl: escapeHtml(actionUrl)
+    };
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="margin:0;padding:0;background:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <div style="max-width:540px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+        <div style="background:linear-gradient(135deg,#0f766e,#14b8a6);padding:32px 30px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;">Dexapp</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.78);margin-top:4px;">${title}</div>
+        </div>
+        <div style="padding:32px 30px;">
+          <h2 style="font-size:18px;font-weight:700;color:#0e1726;margin:0 0 12px;">Un accès vous a été partagé</h2>
+          <p style="font-size:14px;line-height:1.6;color:#64748b;margin:0 0 18px;">
+            <strong style="color:#0e1726;">${safe.inviterName}</strong> ${intro}
+          </p>
+          <div style="padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin:0 0 22px;">
+            <div style="font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Espace</div>
+            <div style="font-size:14px;color:#0e1726;font-weight:700;margin-top:3px;">${safe.accountName}</div>
+            <div style="font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-top:12px;">Data Room</div>
+            <div style="font-size:14px;color:#0e1726;font-weight:700;margin-top:3px;">${safe.recordTitle}</div>
+            <div style="font-size:13px;color:#64748b;margin-top:8px;">Accès: ${safe.scopeLabel} · Rôle: ${safe.roleLabel}</div>
+          </div>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${safe.actionUrl}" style="display:inline-block;padding:14px 34px;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;box-shadow:0 4px 16px rgba(20,184,166,.30);">
+              ${cta}
+            </a>
+          </div>
+          <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.5;">
+            ${requiresWorkspaceAccept ? 'Après acceptation, connectez-vous avec cette adresse email pour consulter la Data Room.' : 'Connectez-vous avec cette adresse email pour consulter les documents partagés.'}
+          </p>
+        </div>
+        <div style="padding:16px 30px;border-top:1px solid #f1f5f9;text-align:center;">
+          <p style="font-size:11px;color:#94a3b8;margin:0;">© ${new Date().getFullYear()} Dexapp</p>
+        </div>
+      </div>
+    </body>
+    </html>`;
+
+    const text = `${inviterName} vous a partagé ${scopeLabel || 'une Data Room'} dans ${accountName}. Accès: ${actionUrl}`;
+
+    return send({
+        to,
+        subject: `${title} — ${accountName}`,
+        html,
+        text,
+    });
+}
+
 // ═══════════════════════════════════════════
 // Verify SMTP connection
 // ═══════════════════════════════════════════
@@ -130,5 +210,6 @@ async function verify() {
 module.exports = {
     send,
     sendInvitation,
+    sendDataRoomShare,
     verify,
 };

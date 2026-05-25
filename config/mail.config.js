@@ -21,7 +21,7 @@ module.exports = {
 
     // Default sender
     from: {
-        name: process.env.MAIL_FROM_NAME || 'Actibox',
+        name: process.env.MAIL_FROM_NAME || 'Dexapp',
         email: process.env.MAIL_FROM_EMAIL || 'noreply@actirama.com',
     },
 };

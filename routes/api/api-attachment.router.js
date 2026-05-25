@@ -25,6 +25,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { tenantCollection } = require('../../middleware/tenant');
+const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
 
 // ============================================================================
 // Multer Configuration
@@ -96,12 +97,7 @@ const forbiddenExts = [
  * Sanitize a filename to remove dangerous characters
  */
 function sanitizeFilename(name) {
-    // Remove null bytes, path separators, and control characters
-    return name
-        .replace(/[\x00-\x1f]/g, '')  // control chars
-        .replace(/[/\\]/g, '_')        // path separators
-        .replace(/\.\./g, '_')         // double dots
-        .trim();
+    return sanitizeUploadedFilename(name);
 }
 
 const upload = multer({

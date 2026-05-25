@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { normalizeUploadedFilename } = require("../utils/filename-encoding");
 
 function uploadToDynamic(getFolder) {
   const storage = multer.diskStorage({
@@ -15,6 +16,7 @@ function uploadToDynamic(getFolder) {
       cb(null, fullPath);
     },
     filename: function (req, file, cb) {
+      file.originalname = normalizeUploadedFilename(file.originalname);
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       cb(null, uniqueSuffix + path.extname(file.originalname));
     }

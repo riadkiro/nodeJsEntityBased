@@ -3,6 +3,7 @@ const User = require("../models/user.model");
 const Account = require("../models/account.model");
 const dbConfig = require("../config/db");
 const { ensureSystemEntities } = require("../utils/system-entities");
+const { convertPendingInvitesToGrants } = require("../services/record-access-invitations");
 
 module.exports = {
   addForm: async (req, res) => {
@@ -244,6 +245,7 @@ module.exports = {
           });
           await user.save();
         }
+        await convertPendingInvitesToGrants(account.account_number, req.user.email, req.user._id);
         if ((alreadyMember.role || invitation.role) === 'guest') {
           return res.redirect(`/account/${account.account_number}/shared-with-you`);
         }
@@ -279,6 +281,7 @@ module.exports = {
       }
 
       console.log(`[Invitation] ${req.user.email} accepted invite to account ${account.account_number}`);
+      await convertPendingInvitesToGrants(account.account_number, req.user.email, req.user._id);
       if (invitation.role === 'guest') {
         return res.redirect(`/account/${account.account_number}/shared-with-you`);
       }

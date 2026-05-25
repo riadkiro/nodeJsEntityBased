@@ -11,104 +11,10 @@
  */
 const User = require("../models/user.model");
 const Account = require("../models/account.model");
-const mongoose = require('mongoose');
-const dbConfig = require('../config/db');
-
-/**
- * Convert all RecordAccess pendingInvites for an email into proper grants.
- * Called when a user accepts a workspace invitation.
- */
-async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
-    let tenantConn;
-    try {
-        const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
-        tenantConn = await mongoose.createConnection(tenantDbUrl, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        const RecordAccessSchema = require('../models/record-access.model').schema;
-        const RecordAccess = tenantConn.model('RecordAccess', RecordAccessSchema);
-
-        const pendingDocs = await RecordAccess.find({
-            'pendingInvites.email': userEmail,
-        });
-
-        for (const doc of pendingDocs) {
-            const pending = doc.pendingInvites.find(p => p.email === userEmail);
-            if (!pending) continue;
-
-            // Check if grant already exists
-            const alreadyGranted = doc.grants.some(
-                g => g.granteeType === 'user' && g.granteeId === userId.toString()
-            );
-            if (!alreadyGranted) {
-                doc.grants.push({
-                    granteeType: 'user',
-                    granteeId: userId.toString(),
-                    permissions: pending.permissions || { read: true },
-                    grantedBy: pending.invitedBy,
-                    grantedAt: new Date(),
-                });
-            }
-
-            doc.pendingInvites = doc.pendingInvites.filter(p => p.email !== userEmail);
-            await doc.save();
-            console.log(`[Invitation] Converted pending invite to grant for record ${doc.recordId}`);
-        }
-    } catch (err) {
-        console.error('[Invitation] Error converting RecordAccess pendingInvites:', err.message);
-    } finally {
-        if (tenantConn) {
-            try { await tenantConn.close(); } catch (e) { /* ignore */ }
-        }
-    }
-}
-
-async function hasDataRoomShareForUser(accountNumber, userEmail, userId) {
-    let tenantConn;
-    try {
-        const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
-        tenantConn = await mongoose.createConnection(tenantDbUrl, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        const RecordSchema = require('../models/record.model').schema;
-        const Record = tenantConn.model('Record', RecordSchema);
-        const email = String(userEmail || '').trim().toLowerCase();
-        const userObjectId = mongoose.Types.ObjectId.isValid(userId)
-            ? new mongoose.Types.ObjectId(userId)
-            : null;
-        const userMatch = userObjectId ? [
-            { 'dataRoom.shares.userId': userObjectId },
-            { 'dataRoom.folders.shares.userId': userObjectId },
-            { 'dataRoom.items.shares.userId': userObjectId },
-        ] : [];
-
-        const record = await Record.findOne({
-            $or: [
-                { 'dataRoom.shares.email': email },
-                { 'dataRoom.folders.shares.email': email },
-                { 'dataRoom.items.shares.email': email },
-                ...userMatch,
-            ],
-        }).select('_id').lean();
-
-        return !!record;
-    } catch (err) {
-        console.error('[Invitation] Error checking Data Room share:', err.message);
-        return false;
-    } finally {
-        if (tenantConn) {
-            try { await tenantConn.close(); } catch (e) { /* ignore */ }
-        }
-    }
-}
-
-async function invitationRedirectUrl(account, userEmail, userId) {
-    const hasDataRoomShare = await hasDataRoomShareForUser(account.account_number, userEmail, userId);
-    if (hasDataRoomShare) return `/account/${account.account_number}/shared-with-you`;
-    return '/user/accounts';
-}
+const {
+    convertPendingInvitesToGrants,
+    invitationRedirectUrl,
+} = require("../services/record-access-invitations");
 
 module.exports = {
 

@@ -3,6 +3,7 @@ const User = require("../models/user.model");
 const Account = require("../models/account.model");
 const crypto = require("crypto");
 const mailer = require("../services/mailer");
+const { convertPendingInvitesToGrants } = require("../services/record-access-invitations");
 
 const PASSWORD_RESET_TTL_MINUTES = 60;
 const PASSWORD_RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
@@ -334,6 +335,7 @@ module.exports = {
               await newUser.save();
               acceptedInviteAccountNumber = invAcc.account_number;
               acceptedInviteRole = inv.role;
+              await convertPendingInvitesToGrants(invAcc.account_number, newUser.email, newUser._id);
               console.log(`[Register] Auto-accepted invitation for ${newUser.email} → account ${invAcc.account_number}`);
             }
           }

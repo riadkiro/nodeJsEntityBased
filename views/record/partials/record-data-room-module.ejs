@@ -65,6 +65,11 @@
 .dr-share-row{flex-wrap:wrap;}
 .dr-share-row:last-child,.dr-log-row:last-child{border-bottom:none;}
 .dr-share-perms{display:flex;align-items:center;gap:4px;}
+.dr-share-status{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-size:10.5px;font-weight:800;white-space:nowrap;background:#f1f5f9;color:#64748b;}
+.dr-share-status.pending{background:#f59e0b12;color:#d97706;}
+.dr-share-status.accepted{background:#10b98112;color:#059669;}
+.dr-share-status.sent{background:#4361ee12;color:#4361ee;}
+.dr-share-status.expired{background:#ef444412;color:#dc2626;}
 .dr-mini-toggle{width:28px;height:28px;border:1px solid #e2e8f0;background:#fff;color:#94a3b8;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 .dr-mini-toggle.active{border-color:#0f766e30;background:#0f766e08;color:#0f766e;}
 .dr-log-dot{width:30px;height:30px;border-radius:9px;background:#0f766e10;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -354,6 +359,7 @@
                                         <button type="button" class="dr-mini-toggle" :class="share.permissions.download ? 'active' : ''" @click="share.permissions.download = !share.permissions.download" title="Télécharger"><iconify-icon icon="solar:download-bold" width="14"></iconify-icon></button>
                                         <button type="button" class="dr-mini-toggle" :class="share.permissions.share ? 'active' : ''" @click="share.permissions.share = !share.permissions.share" title="Partager"><iconify-icon icon="solar:share-bold" width="14"></iconify-icon></button>
                                     </div>
+                                    <span class="dr-share-status" :class="shareStatusClass(share)" x-show="share.email" x-text="shareStatusLabel(share)"></span>
                                     <button type="button" class="dr-icon-btn" @click="permissionForm.shares.splice(idx,1)"><iconify-icon icon="solar:trash-bin-2-bold" width="16" style="color:#ef4444"></iconify-icon></button>
                                 </div>
                             </template>
@@ -656,6 +662,8 @@ document.addEventListener('alpine:init', () => {
                     email: share.email || '',
                     userId: share.userId,
                     role: share.role || 'viewer',
+                    notifiedAt: share.notifiedAt,
+                    status: share.status || null,
                     permissions: { view: true, download: false, share: false, ...(share.permissions || {}) }
                 }))
             };
@@ -750,6 +758,24 @@ document.addEventListener('alpine:init', () => {
             if (notification.dryRun > 0) return 'Permissions sauvegardées, SMTP non configuré';
             if (notification.failed > 0) return 'Permissions sauvegardées, email non envoyé';
             return 'Permissions sauvegardées';
+        },
+
+        shareStatusClass(share) {
+            const status = share.status?.inviteStatus || (share.notifiedAt ? 'sent' : 'none');
+            if (status === 'accepted') return 'accepted';
+            if (status === 'pending') return 'pending';
+            if (status === 'expired') return 'expired';
+            if (status === 'sent') return 'sent';
+            return '';
+        },
+
+        shareStatusLabel(share) {
+            const status = share.status || {};
+            if (status.inviteStatus === 'accepted' || status.workspaceStatus === 'active') return 'Accepté';
+            if (status.inviteStatus === 'pending' || status.recordAccessStatus === 'pending') return 'En attente';
+            if (status.inviteStatus === 'expired') return 'Expiré';
+            if (share.notifiedAt) return 'Envoyé';
+            return 'Non envoyé';
         },
 
         async renameFolder(folder) {

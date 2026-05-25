@@ -16,6 +16,7 @@ const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
 const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
 const Account = require('../../models/account.model');
+const User = require('../../models/user.model');
 const mailer = require('../../services/mailer');
 
 const DATA_ROOM_STORAGE_FOLDER = '__data_room';
@@ -232,27 +233,31 @@ function mergeSharesWithExisting(existingShares, nextShares) {
     });
 }
 
-function normalizeShares(shares) {
-    return (shares || []).map(share => ({
-        _id: share._id,
-        email: share.email,
-        userId: share.userId,
-        role: share.role || 'viewer',
-        permissions: {
-            view: share.permissions?.view !== false,
-            download: !!share.permissions?.download,
-            share: !!share.permissions?.share
-        },
-        addedAt: share.addedAt,
-        notifiedAt: share.notifiedAt
-    }));
+function normalizeShares(shares, shareStatus = {}) {
+    return (shares || []).map(share => {
+        const email = String(share.email || '').trim().toLowerCase();
+        return {
+            _id: share._id,
+            email: share.email,
+            userId: share.userId,
+            role: share.role || 'viewer',
+            permissions: {
+                view: share.permissions?.view !== false,
+                download: !!share.permissions?.download,
+                share: !!share.permissions?.share
+            },
+            addedAt: share.addedAt,
+            notifiedAt: share.notifiedAt,
+            status: shareStatus[email] || { inviteStatus: share.notifiedAt ? 'sent' : 'none' }
+        };
+    });
 }
 
-function normalizeAccess(target) {
+function normalizeAccess(target, shareStatus) {
     return {
         accessMode: target?.accessMode || 'workspace',
         permissions: permissionsFromStored(target?.permissions),
-        shares: normalizeShares(target?.shares || [])
+        shares: normalizeShares(target?.shares || [], shareStatus)
     };
 }
 
@@ -395,10 +400,10 @@ function canUseDataRoomItem(req, record, item, capability) {
     return canUseDataRoomScopes(req, accessScopesForItem(record, item), capability);
 }
 
-function normalizeFolder(record, folder, req) {
+function normalizeFolder(record, folder, req, shareStatus) {
     const scopes = accessScopesForFolder(record, folder);
     const canManage = canManageDataRoomFolder(req, record, folder);
-    const access = normalizeAccess(folder);
+    const access = normalizeAccess(folder, shareStatus);
     if (!canManage) access.shares = [];
     return {
         _id: folder._id,
@@ -413,13 +418,13 @@ function normalizeFolder(record, folder, req) {
     };
 }
 
-function normalizeItem(record, item, req) {
+function normalizeItem(record, item, req, shareStatus) {
     const att = attachmentById(record, item.attachmentId);
     if (!att) return null;
     const scopes = accessScopesForItem(record, item);
     const effective = effectivePermissions(scopes);
     const canManage = canManageDataRoomItem(req, record, item);
-    const access = normalizeAccess(item);
+    const access = normalizeAccess(item, shareStatus);
     if (!canManage) access.shares = [];
     return {
         _id: item._id,
@@ -444,11 +449,11 @@ function normalizeItem(record, item, req) {
     };
 }
 
-function normalizeDataRoom(record, req) {
+function normalizeDataRoom(record, req, shareStatus = {}) {
     ensureDataRoom(record);
     const items = (record.dataRoom.items || [])
         .filter(item => canUseDataRoomItem(req, record, item, 'view'))
-        .map(item => normalizeItem(record, item, req))
+        .map(item => normalizeItem(record, item, req, shareStatus))
         .filter(Boolean)
         .sort((a, b) => new Date(b.addedAt || 0) - new Date(a.addedAt || 0));
     const visibleItemIds = new Set(items.map(item => String(item._id)));
@@ -473,7 +478,7 @@ function normalizeDataRoom(record, req) {
 
     const folders = (record.dataRoom.folders || [])
         .filter(folder => visibleFolderPaths.has(cleanPath(folder.path || '')))
-        .map(folder => normalizeFolder(record, folder, req))
+        .map(folder => normalizeFolder(record, folder, req, shareStatus))
         .sort((a, b) => a.path.localeCompare(b.path));
 
     const logs = (record.dataRoom.logs || [])
@@ -491,7 +496,7 @@ function normalizeDataRoom(record, req) {
         }));
 
     const roomCanManage = canManageDataRoom(req, record);
-    const roomAccess = normalizeAccess(record.dataRoom);
+    const roomAccess = normalizeAccess(record.dataRoom, shareStatus);
     if (!roomCanManage) roomAccess.shares = [];
 
     return {
@@ -502,6 +507,98 @@ function normalizeDataRoom(record, req) {
         folders,
         items,
         logs
+    };
+}
+
+function collectDataRoomShareEmails(record) {
+    ensureDataRoom(record);
+    const emails = new Set();
+    const collect = shares => (shares || []).forEach(share => {
+        const email = String(share.email || '').trim().toLowerCase();
+        if (email) emails.add(email);
+    });
+    collect(record.dataRoom.shares);
+    (record.dataRoom.folders || []).forEach(folder => collect(folder.shares));
+    (record.dataRoom.items || []).forEach(item => collect(item.shares));
+    return [...emails];
+}
+
+async function buildShareStatus(req, record) {
+    const emails = collectDataRoomShareEmails(record);
+    if (emails.length === 0) return {};
+
+    const status = Object.fromEntries(emails.map(email => [email, {
+        email,
+        inviteStatus: 'none',
+        workspaceStatus: 'none',
+        recordAccessStatus: 'none'
+    }]));
+
+    const account = await Account.findOne({ account_number: req.account_number })
+        .select('users invitations')
+        .lean();
+    const users = await User.find({ email: { $in: emails } }).select('_id email').lean();
+    const usersByEmail = Object.fromEntries(users.map(user => [String(user.email || '').trim().toLowerCase(), user]));
+
+    if (account) {
+        emails.forEach(email => {
+            const member = (account.users || []).find(user =>
+                String(user.email || '').trim().toLowerCase() === email && user.status === 'active'
+            );
+            const invite = (account.invitations || []).find(entry =>
+                String(entry.email || '').trim().toLowerCase() === email &&
+                ['pending', 'accepted', 'expired'].includes(entry.status)
+            );
+
+            if (member) {
+                status[email].workspaceStatus = 'active';
+                status[email].workspaceRole = member.role || 'guest';
+                status[email].inviteStatus = 'accepted';
+            } else if (invite) {
+                status[email].workspaceStatus = invite.status || 'pending';
+                status[email].workspaceRole = invite.role || 'guest';
+                status[email].inviteStatus = invite.status === 'accepted' ? 'accepted' : invite.status === 'expired' ? 'expired' : 'pending';
+            }
+        });
+    }
+
+    const RecordAccess = await tenantCollection(req, 'RecordAccess');
+    const access = RecordAccess
+        ? await RecordAccess.findOne({ recordId: record._id }).lean()
+        : null;
+
+    if (access) {
+        emails.forEach(email => {
+            const user = usersByEmail[email];
+            const hasGrant = user && (access.grants || []).some(grant =>
+                grant.granteeType === 'user' &&
+                String(grant.granteeId) === String(user._id) &&
+                grant.permissions?.read !== false &&
+                (!grant.expiresAt || new Date(grant.expiresAt) > new Date())
+            );
+            const hasPending = (access.pendingInvites || []).some(invite =>
+                String(invite.email || '').trim().toLowerCase() === email
+            );
+
+            if (hasGrant) {
+                status[email].recordAccessStatus = 'grant';
+                status[email].inviteStatus = 'accepted';
+                status[email].userId = String(user._id);
+            } else if (hasPending) {
+                status[email].recordAccessStatus = 'pending';
+                if (status[email].inviteStatus === 'none') status[email].inviteStatus = 'pending';
+            }
+        });
+    }
+
+    return status;
+}
+
+async function dataRoomPayload(req, record, extra = {}) {
+    return {
+        success: true,
+        dataRoom: normalizeDataRoom(record, req, await buildShareStatus(req, record)),
+        ...extra
     };
 }
 
@@ -558,6 +655,95 @@ async function ensureWorkspaceAccessInvite(req, account, email) {
         requiresWorkspaceAccept: true,
         actionUrl: `${req.protocol}://${req.get('host')}/auth/invite/${invite.token}`
     };
+}
+
+function recordPermissionsFromShare(share) {
+    return {
+        read: share.permissions?.view !== false,
+        update: false,
+        delete: false,
+        share: !!share.permissions?.share || share.role === 'manager'
+    };
+}
+
+async function ensureRecordAccessForShares(req, record, shares) {
+    const emails = [...new Set((shares || [])
+        .map(share => String(share.email || '').trim().toLowerCase())
+        .filter(Boolean))];
+    if (emails.length === 0) return;
+
+    const [RecordAccess, account, users] = await Promise.all([
+        tenantCollection(req, 'RecordAccess'),
+        Account.findOne({ account_number: req.account_number }).select('users').lean(),
+        User.find({ email: { $in: emails } }).select('_id email').lean()
+    ]);
+    if (!RecordAccess) return;
+
+    const usersByEmail = Object.fromEntries(users.map(user => [String(user.email || '').trim().toLowerCase(), user]));
+    let access = await RecordAccess.findOne({ recordId: record._id });
+    if (!access) access = new RecordAccess({ recordId: record._id, entityId: String(record.entityId || '') });
+
+    let changed = false;
+    for (const share of shares || []) {
+        const email = String(share.email || '').trim().toLowerCase();
+        if (!email) continue;
+        const permissions = recordPermissionsFromShare(share);
+        const user = usersByEmail[email];
+        const isActiveMember = (account?.users || []).some(member =>
+            String(member.email || '').trim().toLowerCase() === email && member.status === 'active'
+        );
+
+        if (user && isActiveMember) {
+            const granteeId = String(user._id);
+            const grantIdx = (access.grants || []).findIndex(grant =>
+                grant.granteeType === 'user' && String(grant.granteeId) === granteeId
+            );
+            const grant = {
+                granteeType: 'user',
+                granteeId,
+                permissions,
+                grantedBy: req.user?._id,
+                grantedAt: new Date(),
+                expiresAt: null,
+                note: 'Data Room'
+            };
+
+            if (grantIdx >= 0) {
+                access.grants[grantIdx].permissions = permissions;
+                access.grants[grantIdx].grantedBy = req.user?._id;
+                access.grants[grantIdx].grantedAt = new Date();
+                access.grants[grantIdx].expiresAt = null;
+                access.grants[grantIdx].note = 'Data Room';
+            } else {
+                access.grants.push(grant);
+            }
+            access.pendingInvites = (access.pendingInvites || []).filter(invite =>
+                String(invite.email || '').trim().toLowerCase() !== email
+            );
+            changed = true;
+            continue;
+        }
+
+        const pendingIdx = (access.pendingInvites || []).findIndex(invite =>
+            String(invite.email || '').trim().toLowerCase() === email
+        );
+        const pendingInvite = {
+            email,
+            permissions,
+            invitedBy: req.user?._id,
+            invitedAt: new Date()
+        };
+
+        if (pendingIdx >= 0) {
+            access.pendingInvites[pendingIdx].permissions = permissions;
+        } else {
+            access.pendingInvites = access.pendingInvites || [];
+            access.pendingInvites.push(pendingInvite);
+        }
+        changed = true;
+    }
+
+    if (changed) await access.save();
 }
 
 async function notifyDataRoomShares(req, record, shares, scope, target) {
@@ -644,7 +830,7 @@ router.get('/records/:recordId/data-room', async (req, res) => {
         const record = await loadRecord(req);
         if (!record) return res.status(404).json({ error: 'Record introuvable' });
         ensureDataRoom(record);
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record));
     } catch (err) {
         console.error('[DataRoom] list error:', err);
         res.status(500).json({ error: err.message });
@@ -676,6 +862,7 @@ router.patch('/records/:recordId/data-room/access', async (req, res) => {
         await record.save();
 
         if (req.body.shares !== undefined) {
+            await ensureRecordAccessForShares(req, record, record.dataRoom.shares);
             notification = await notifyDataRoomShares(req, record, record.dataRoom.shares, 'room', record.dataRoom);
             if (notification.sent > 0) {
                 record.markModified('dataRoom');
@@ -683,7 +870,7 @@ router.patch('/records/:recordId/data-room/access', async (req, res) => {
             }
         }
 
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req), notification });
+        res.json(await dataRoomPayload(req, record, { notification }));
     } catch (err) {
         console.error('[DataRoom] room access error:', err);
         res.status(500).json({ error: err.message });
@@ -747,7 +934,7 @@ router.post('/records/:recordId/data-room/folders', async (req, res) => {
         });
         pushLog(record, null, req, 'folder.created', folderPath);
         await record.save();
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record));
     } catch (err) {
         console.error('[DataRoom] create folder error:', err);
         res.status(500).json({ error: err.message });
@@ -789,7 +976,7 @@ router.patch('/records/:recordId/data-room/folders/:folderId', async (req, res) 
         pushLog(record, null, req, 'folder.renamed', `${oldPath} -> ${newPath}`);
         record.markModified('dataRoom');
         await record.save();
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record));
     } catch (err) {
         console.error('[DataRoom] rename folder error:', err);
         res.status(500).json({ error: err.message });
@@ -820,6 +1007,7 @@ router.patch('/records/:recordId/data-room/folders/:folderId/access', async (req
         await record.save();
 
         if (req.body.shares !== undefined) {
+            await ensureRecordAccessForShares(req, record, folder.shares);
             notification = await notifyDataRoomShares(req, record, folder.shares, 'folder', folder);
             if (notification.sent > 0) {
                 record.markModified('dataRoom');
@@ -827,7 +1015,7 @@ router.patch('/records/:recordId/data-room/folders/:folderId/access', async (req
             }
         }
 
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req), notification });
+        res.json(await dataRoomPayload(req, record, { notification }));
     } catch (err) {
         console.error('[DataRoom] folder access error:', err);
         res.status(500).json({ error: err.message });
@@ -870,7 +1058,7 @@ router.post('/records/:recordId/data-room/from-drive', async (req, res) => {
         });
 
         await record.save();
-        res.json({ success: true, added, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record, { added }));
     } catch (err) {
         console.error('[DataRoom] add from drive error:', err);
         res.status(500).json({ error: err.message });
@@ -945,7 +1133,7 @@ router.post('/records/:recordId/data-room/upload', (req, res, next) => {
         }
 
         await record.save();
-        res.json({ success: true, added: addedItems.length, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record, { added: addedItems.length }));
     } catch (err) {
         cleanupUploadedFiles(req.files);
         console.error('[DataRoom] upload error:', err);
@@ -981,6 +1169,7 @@ router.patch('/records/:recordId/data-room/items/:itemId', async (req, res) => {
         await record.save();
 
         if (req.body.shares !== undefined) {
+            await ensureRecordAccessForShares(req, record, item.shares);
             notification = await notifyDataRoomShares(req, record, item.shares, 'item', item);
             if (notification.sent > 0) {
                 record.markModified('dataRoom');
@@ -988,7 +1177,7 @@ router.patch('/records/:recordId/data-room/items/:itemId', async (req, res) => {
             }
         }
 
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req), notification });
+        res.json(await dataRoomPayload(req, record, { notification }));
     } catch (err) {
         console.error('[DataRoom] update item error:', err);
         res.status(500).json({ error: err.message });
@@ -1008,7 +1197,7 @@ router.delete('/records/:recordId/data-room/items/:itemId', async (req, res) => 
         record.dataRoom.items = record.dataRoom.items.filter(i => String(i._id) !== String(req.params.itemId));
         record.markModified('dataRoom');
         await record.save();
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record));
     } catch (err) {
         console.error('[DataRoom] delete item error:', err);
         res.status(500).json({ error: err.message });
@@ -1025,7 +1214,7 @@ router.post('/records/:recordId/data-room/items/:itemId/log', async (req, res) =
         const action = String(req.body.action || 'item.viewed').slice(0, 60);
         pushLog(record, item, req, action, String(req.body.details || '').slice(0, 300));
         await record.save();
-        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+        res.json(await dataRoomPayload(req, record));
     } catch (err) {
         console.error('[DataRoom] log error:', err);
         res.status(500).json({ error: err.message });

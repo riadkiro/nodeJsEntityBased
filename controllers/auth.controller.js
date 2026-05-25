@@ -2,12 +2,181 @@ const passport = require("passport");
 const User = require("../models/user.model");
 const Account = require("../models/account.model");
 const crypto = require("crypto");
+const mailer = require("../services/mailer");
+
+const PASSWORD_RESET_TTL_MINUTES = 60;
+const PASSWORD_RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
+const PASSWORD_RESET_SENT_MESSAGE = "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.";
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(String(token || "")).digest("hex");
+}
+
+function getAppUrl(req) {
+  const configuredUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+  return configuredUrl.replace(/\/+$/, "");
+}
 
 module.exports = {
   // ── Login Form ────────────────────────────────────────────
   loginForm: async (req, res) => {
     const error = req.query.error || null;
-    res.render("auth/auth-login", { layout: false, error_msg: error, error: null });
+    const success = req.query.success || null;
+    res.render("auth/auth-login", { layout: false, error_msg: error, success_msg: success, error: null });
+  },
+
+  // ── Forgot Password Form ──────────────────────────────────
+  forgotPasswordForm: async (req, res) => {
+    res.render("auth/auth-forgot-password", {
+      layout: false,
+      error_msg: null,
+      success_msg: null,
+      email: "",
+    });
+  },
+
+  // ── Forgot Password (POST) ────────────────────────────────
+  forgotPassword: async (req, res) => {
+    const email = normalizeEmail(req.body.email);
+
+    if (!email) {
+      return res.render("auth/auth-forgot-password", {
+        layout: false,
+        error_msg: "L'email est requis",
+        success_msg: null,
+        email: "",
+      });
+    }
+
+    try {
+      const user = await User.findOne({ email });
+
+      if (user && !['inactive', 'suspended'].includes(user.status)) {
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        user.resetPasswordToken = hashResetToken(rawToken);
+        user.resetPasswordExpires = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+        await user.save({ validateBeforeSave: false });
+
+        const resetUrl = `${getAppUrl(req)}/auth/reset-password/${rawToken}`;
+        try {
+          await mailer.sendPasswordReset({
+            to: user.email,
+            name: user.name || user.email,
+            resetUrl,
+            expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+          });
+        } catch (mailError) {
+          console.error("[Auth] Password reset email error:", mailError.message);
+        }
+      }
+
+      return res.render("auth/auth-forgot-password", {
+        layout: false,
+        error_msg: null,
+        success_msg: PASSWORD_RESET_SENT_MESSAGE,
+        email: "",
+      });
+    } catch (error) {
+      console.error("[Auth] Forgot password error:", error);
+      return res.render("auth/auth-forgot-password", {
+        layout: false,
+        error_msg: "Erreur serveur. Veuillez réessayer.",
+        success_msg: null,
+        email,
+      });
+    }
+  },
+
+  // ── Reset Password Form ───────────────────────────────────
+  resetPasswordForm: async (req, res) => {
+    const token = String(req.params.token || "");
+
+    try {
+      const user = await User.findOne({
+        resetPasswordToken: hashResetToken(token),
+        resetPasswordExpires: { $gt: new Date() },
+      }).select("email");
+
+      if (!user) {
+        return res.render("auth/auth-reset-password", {
+          layout: false,
+          error_msg: "Ce lien de réinitialisation est invalide ou expiré.",
+          success_msg: null,
+          token: "",
+          email: "",
+          invalidToken: true,
+        });
+      }
+
+      return res.render("auth/auth-reset-password", {
+        layout: false,
+        error_msg: null,
+        success_msg: null,
+        token,
+        email: user.email,
+        invalidToken: false,
+      });
+    } catch (error) {
+      console.error("[Auth] Reset password form error:", error);
+      return res.render("auth/auth-reset-password", {
+        layout: false,
+        error_msg: "Erreur serveur. Veuillez réessayer.",
+        success_msg: null,
+        token: "",
+        email: "",
+        invalidToken: true,
+      });
+    }
+  },
+
+  // ── Reset Password (POST) ─────────────────────────────────
+  resetPassword: async (req, res) => {
+    const token = String(req.params.token || "");
+    const { password, confirmPassword } = req.body;
+
+    const renderResetError = (message, invalidToken = false) => res.render("auth/auth-reset-password", {
+      layout: false,
+      error_msg: message,
+      success_msg: null,
+      token: invalidToken ? "" : token,
+      email: "",
+      invalidToken,
+    });
+
+    if (!password || password.length < 6) {
+      return renderResetError("Le mot de passe doit contenir au moins 6 caractères");
+    }
+
+    if (password !== confirmPassword) {
+      return renderResetError("Les mots de passe ne correspondent pas");
+    }
+
+    try {
+      const user = await User.findOne({
+        resetPasswordToken: hashResetToken(token),
+        resetPasswordExpires: { $gt: new Date() },
+      });
+
+      if (!user) {
+        return renderResetError("Ce lien de réinitialisation est invalide ou expiré.", true);
+      }
+
+      user.password = password;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      if (!user.authProvider) user.authProvider = 'local';
+      await user.save();
+
+      const success = encodeURIComponent("Votre mot de passe a été mis à jour. Vous pouvez vous connecter.");
+      return res.redirect(`/auth/login?success=${success}`);
+    } catch (error) {
+      console.error("[Auth] Reset password error:", error);
+      return renderResetError("Erreur serveur. Veuillez réessayer.");
+    }
   },
 
   // ── Register Form ────────────────────────────────────────

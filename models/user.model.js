@@ -69,6 +69,8 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
+UserSchema.index({ resetPasswordToken: 1, resetPasswordExpires: 1 });
+
 // Hash password before save
 UserSchema.pre("save", function (next) {
   const user = this;

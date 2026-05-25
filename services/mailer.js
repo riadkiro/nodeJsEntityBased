@@ -192,6 +192,60 @@ async function sendDataRoomShare({ to, accountName, inviterName, recordTitle, sc
 }
 
 // ═══════════════════════════════════════════
+// Password Reset Email
+// ═══════════════════════════════════════════
+async function sendPasswordReset({ to, name, resetUrl, expiresInMinutes = 60 }) {
+    const safe = {
+        name: escapeHtml(name || 'Bonjour'),
+        resetUrl: escapeHtml(resetUrl),
+        expiresInMinutes: escapeHtml(String(expiresInMinutes)),
+    };
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="margin:0;padding:0;background:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <div style="max-width:540px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+        <div style="background:linear-gradient(135deg,#4361ee,#7c3aed);padding:32px 30px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;">Dexapp</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.78);margin-top:4px;">Réinitialisation du mot de passe</div>
+        </div>
+        <div style="padding:32px 30px;">
+          <h2 style="font-size:18px;font-weight:700;color:#0e1726;margin:0 0 12px;">${safe.name}</h2>
+          <p style="font-size:14px;line-height:1.6;color:#64748b;margin:0 0 18px;">
+            Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte Dexapp.
+          </p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${safe.resetUrl}" style="display:inline-block;padding:14px 34px;background:linear-gradient(135deg,#4361ee,#7c3aed);color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;box-shadow:0 4px 16px rgba(67,97,238,.30);">
+              Créer un nouveau mot de passe
+            </a>
+          </div>
+          <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.5;">
+            Ce lien expire dans ${safe.expiresInMinutes} minutes. Si vous n'avez pas demandé cette opération, ignorez simplement cet email.
+          </p>
+        </div>
+        <div style="padding:16px 30px;border-top:1px solid #f1f5f9;text-align:center;">
+          <p style="font-size:11px;color:#94a3b8;margin:0;">© ${new Date().getFullYear()} Dexapp</p>
+        </div>
+      </div>
+    </body>
+    </html>`;
+
+    const text = `Réinitialisation Dexapp: ouvrez ce lien pour créer un nouveau mot de passe. Le lien expire dans ${expiresInMinutes} minutes: ${resetUrl}`;
+
+    return send({
+        to,
+        subject: 'Réinitialisation de votre mot de passe — Dexapp',
+        html,
+        text,
+    });
+}
+
+// ═══════════════════════════════════════════
 // Verify SMTP connection
 // ═══════════════════════════════════════════
 async function verify() {
@@ -211,5 +265,6 @@ module.exports = {
     send,
     sendInvitation,
     sendDataRoomShare,
+    sendPasswordReset,
     verify,
 };

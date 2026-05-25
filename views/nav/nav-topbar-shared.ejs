@@ -1,0 +1,89 @@
+<%
+  const _sharedRooms = locals.sharedDataRooms || (typeof sharedDataRooms !== 'undefined' ? sharedDataRooms : []);
+%>
+<div class="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-[#0e1726]">
+  <style>
+    .shared-topbar-breadcrumb{display:flex;align-items:center;gap:8px;min-width:0;}
+    .shared-topbar-back{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;text-decoration:none;transition:all .15s ease;}
+    .shared-topbar-back:hover{background:#f1f5f9;color:#475569;}
+    .shared-topbar-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#ecfdf5;color:#0f766e;font-size:12px;font-weight:800;white-space:nowrap;}
+    .shared-topbar-title{font-size:13px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;}
+    .dark .shared-topbar-back:hover{background:#1e293b;color:#e2e8f0;}
+    .dark .shared-topbar-badge{background:rgba(20,184,166,.14);color:#5eead4;}
+    .dark .shared-topbar-title{color:#e2e8f0;}
+  </style>
+
+  <div class="hidden ltr:mr-2 rtl:ml-2 sm:block">
+    <div class="shared-topbar-breadcrumb">
+      <a href="/account/<%= account_number %>/shared-with-you" class="shared-topbar-back" title="Shared with you">
+        <iconify-icon icon="solar:arrow-left-linear" width="17"></iconify-icon>
+      </a>
+      <a href="/account/<%= account_number %>/shared-with-you" class="shared-topbar-badge">
+        <iconify-icon icon="solar:share-bold-duotone" width="15"></iconify-icon>
+        Shared with you
+      </a>
+      <% if (typeof record !== 'undefined' && record) { %>
+        <span style="color:#cbd5e1;">›</span>
+        <span class="shared-topbar-title"><%= record.computedTitle || record.title || 'Data Room' %></span>
+      <% } else if (_sharedRooms.length > 0) { %>
+        <span style="color:#cbd5e1;">›</span>
+        <span class="shared-topbar-title"><%= _sharedRooms.length %> Data Room<%= _sharedRooms.length > 1 ? 's' : '' %></span>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="flex items-center space-x-1.5 ltr:ml-auto rtl:space-x-reverse dark:text-[#d0d2d6] lg:space-x-2">
+    <div>
+      <a href="javascript:;" x-cloak x-show="$store.app.theme === 'light'"
+         class="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+         @click="$store.app.toggleTheme('dark')" title="Dark mode">
+        <iconify-icon icon="solar:sun-2-linear" width="20"></iconify-icon>
+      </a>
+      <a href="javascript:;" x-cloak x-show="$store.app.theme === 'dark'"
+         class="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+         @click="$store.app.toggleTheme('light')" title="Light mode">
+        <iconify-icon icon="solar:moon-linear" width="20"></iconify-icon>
+      </a>
+    </div>
+
+    <div class="dropdown flex-shrink-0" x-data="dropdown" @click.outside="open = false">
+      <a href="javascript:;" class="group relative" @click="toggle()">
+        <span>
+          <% if (user && user.avatar) { %>
+            <img class="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="<%= user.avatar %>" alt="avatar" />
+          <% } else { %>
+            <div class="h-9 w-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold text-sm saturate-50 group-hover:saturate-100">
+              <%= user && user.email ? user.email.charAt(0).toUpperCase() : 'U' %>
+            </div>
+          <% } %>
+        </span>
+      </a>
+      <ul x-cloak x-show="open" x-transition x-transition.duration.300ms
+          class="top-11 w-[280px] !py-0 font-semibold text-dark ltr:right-0 rtl:left-0 dark:text-white-dark dark:text-white-light/90">
+        <li>
+          <div class="flex items-center px-4 py-4">
+            <div class="h-10 w-10 rounded-md bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
+              <%= user && user.email ? user.email.charAt(0).toUpperCase() : 'U' %>
+            </div>
+            <div class="ltr:pl-4 rtl:pr-4 truncate">
+              <h4 class="text-base truncate"><%= user && user.name ? user.name : (user && user.email ? user.email.split('@')[0] : 'User') %></h4>
+              <div class="text-black/60 dark:text-dark-light/60 text-xs truncate"><%= user && user.email ? user.email : '' %></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <a href="/account/<%= account_number %>/shared-with-you" class="dark:hover:text-white flex items-center" @click="toggle">
+            <iconify-icon icon="solar:share-bold-duotone" width="18" class="ltr:mr-2 rtl:ml-2" style="vertical-align:-3px;"></iconify-icon>
+            Shared with you
+          </a>
+        </li>
+        <li class="border-t border-white-light dark:border-white-light/10">
+          <a href="/auth/logout" class="!py-3 text-danger" @click="toggle">
+            <iconify-icon icon="solar:logout-2-bold-duotone" width="18" class="ltr:mr-2 rtl:ml-2" style="vertical-align:-3px;"></iconify-icon>
+            Sign Out
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

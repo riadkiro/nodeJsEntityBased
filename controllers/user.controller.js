@@ -244,6 +244,9 @@ module.exports = {
           });
           await user.save();
         }
+        if ((alreadyMember.role || invitation.role) === 'guest') {
+          return res.redirect(`/account/${account.account_number}/shared-with-you`);
+        }
         return res.redirect("/user/accounts");
       }
 
@@ -276,6 +279,9 @@ module.exports = {
       }
 
       console.log(`[Invitation] ${req.user.email} accepted invite to account ${account.account_number}`);
+      if (invitation.role === 'guest') {
+        return res.redirect(`/account/${account.account_number}/shared-with-you`);
+      }
       res.redirect("/user/accounts");
     } catch (error) {
       console.error("[Invitation] Accept error:", error);

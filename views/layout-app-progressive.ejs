@@ -51,17 +51,27 @@ window.__ACCOUNT_NUMBER__ = '<%= typeof account_number !== "undefined" ? account
 
         <div class="main-container min-h-screen text-black dark:text-white-dark" :class="[$store.app.navbar]">
           <!-- sidebar section -->
-          <%- include("nav/nav-sidebar") %>
+          <% if (locals.sharedDataRoomMode) { %>
+            <%- include("nav/nav-sidebar-shared") %>
+          <% } else { %>
+            <%- include("nav/nav-sidebar") %>
+          <% } %>
 
             <div class="main-content">
               <!-- header section -->
               <header :class="{'dark' : $store.app.semidark && $store.app.menu === 'horizontal'}">
                 <div class="shadow-sm">
                   <!-- top bar menu -->
-                  <%- include("nav/nav-topbar") %>
+                  <% if (locals.sharedDataRoomMode) { %>
+                    <%- include("nav/nav-topbar-shared") %>
+                  <% } else { %>
+                    <%- include("nav/nav-topbar") %>
+                  <% } %>
 
                     <!-- horizontal menu -->
-                    <%- include("nav/nav-horizontal") %>
+                    <% if (!locals.sharedDataRoomMode) { %>
+                      <%- include("nav/nav-horizontal") %>
+                    <% } %>
                 </div>
               </header>
               <!-- end header section -->

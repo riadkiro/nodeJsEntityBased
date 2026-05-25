@@ -1,0 +1,78 @@
+<%
+  const _sharedRooms = locals.sharedDataRooms || (typeof sharedDataRooms !== 'undefined' ? sharedDataRooms : []);
+  const _currentPath = typeof path !== 'undefined' ? path : '';
+%>
+<div>
+  <nav class="sidebar fixed top-0 bottom-0 z-50 h-full min-h-screen transition-all duration-300"
+       style="width:248px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);">
+    <style>
+      .shared-rail{width:48px;background:#f1f5f9;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;align-items:center;padding:12px 6px;gap:8px;}
+      .shared-rail-item{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#0f766e;background:rgba(15,118,110,.1);}
+      .shared-sidebar-main{width:200px;background:#fff;display:flex;flex-direction:column;border-right:1px solid #eef2f7;}
+      .shared-sidebar-head{padding:16px 14px;border-bottom:1px solid #eef2f7;}
+      .shared-brand{display:flex;align-items:center;gap:8px;color:#0f172a;font-weight:800;font-size:15px;}
+      .shared-brand-icon{width:28px;height:28px;border-radius:8px;background:#0f766e;color:#fff;display:flex;align-items:center;justify-content:center;}
+      .shared-subtitle{margin-top:3px;color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+      .shared-room-list{padding:12px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;flex:1;}
+      .shared-room-link{display:flex;align-items:center;gap:10px;padding:10px 9px;border-radius:8px;color:#475569;text-decoration:none;border:1px solid transparent;transition:all .15s ease;}
+      .shared-room-link:hover{background:#f8fafc;color:#0f172a;}
+      .shared-room-link.active{background:#ecfdf5;border-color:#bbf7d0;color:#0f766e;}
+      .shared-room-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+      .shared-room-title{font-size:12.5px;font-weight:800;color:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;}
+      .shared-room-meta{font-size:10.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+      .shared-empty{padding:18px 12px;color:#94a3b8;font-size:12px;text-align:center;line-height:1.4;}
+      .shared-sidebar-foot{padding:10px 12px;border-top:1px solid #eef2f7;}
+      .shared-user{display:flex;align-items:center;gap:8px;min-width:0;}
+      .shared-user-avatar{width:28px;height:28px;border-radius:8px;background:#e0f2fe;color:#0284c7;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+      .shared-user-email{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .dark .shared-rail{background:#0f172a;border-color:#1e293b;}
+      .dark .shared-sidebar-main{background:#0e1726;border-color:#1e293b;}
+      .dark .shared-sidebar-head,.dark .shared-sidebar-foot{border-color:#1e293b;}
+      .dark .shared-brand{color:#e2e8f0;}
+      .dark .shared-room-link{color:#94a3b8;}
+      .dark .shared-room-link:hover{background:#172033;color:#e2e8f0;}
+      .dark .shared-room-link.active{background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.24);color:#5eead4;}
+    </style>
+
+    <div class="shared-rail">
+      <a href="/account/<%= account_number %>/shared-with-you" class="shared-rail-item" title="Shared with you">
+        <iconify-icon icon="solar:share-bold-duotone" width="20"></iconify-icon>
+      </a>
+    </div>
+
+    <div class="shared-sidebar-main">
+      <div class="shared-sidebar-head">
+        <a href="/account/<%= account_number %>/shared-with-you" class="shared-brand">
+          <span class="shared-brand-icon"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="17"></iconify-icon></span>
+          <span>Dexapp</span>
+        </a>
+        <div class="shared-subtitle">Shared with you</div>
+      </div>
+
+      <div class="shared-room-list">
+        <% if (_sharedRooms.length === 0) { %>
+          <div class="shared-empty">Aucune Data Room partagee.</div>
+        <% } %>
+        <% _sharedRooms.forEach(function(room) { %>
+          <% const _active = _currentPath.indexOf(room.url) === 0; %>
+          <a href="<%= room.url %>" class="shared-room-link <%= _active ? 'active' : '' %>">
+            <span class="shared-room-icon" style="background:<%= room.entityColor || '#0f766e' %>12;color:<%= room.entityColor || '#0f766e' %>;">
+              <iconify-icon icon="<%= room.entityIcon || 'solar:shield-keyhole-bold-duotone' %>" width="17"></iconify-icon>
+            </span>
+            <span style="min-width:0;">
+              <span class="shared-room-title"><%= room.title %></span>
+              <span class="shared-room-meta"><%= room.entityName %></span>
+            </span>
+          </a>
+        <% }); %>
+      </div>
+
+      <div class="shared-sidebar-foot">
+        <div class="shared-user">
+          <div class="shared-user-avatar"><%= user && user.email ? user.email.charAt(0).toUpperCase() : 'U' %></div>
+          <div class="shared-user-email"><%= user && user.email ? user.email : '' %></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</div>

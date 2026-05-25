@@ -2328,6 +2328,10 @@ module.exports = {
                 });
             }
 
+            if (req.sharedDataRoomMode && moduleName !== 'data-room') {
+                return res.redirect(`/account/${req.account_number}/record/${entity.slug}/${record._id}/data-room`);
+            }
+
             // Build field values map for fiche
             let ficheFields = [];
             let overviewFields = []; // ordered layout fields for overview edit mode
@@ -2681,6 +2685,8 @@ module.exports = {
                 account_number: req.account_number,
                 user: req.user,
                 workspaceRole: req.workspaceRole,
+                sharedDataRoomMode: !!req.sharedDataRoomMode,
+                sharedDataRooms: req.sharedDataRooms || [],
                 layout: "layout-app"
             });
         } catch (error) {

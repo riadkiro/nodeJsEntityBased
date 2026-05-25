@@ -300,6 +300,8 @@ module.exports = {
 
       // Auto-accept invitation if invite token is present
       const inviteToken = req.body.inviteToken;
+      let acceptedInviteAccountNumber = null;
+      let acceptedInviteRole = null;
       if (inviteToken) {
         try {
           const invAcc = await Account.findOne({
@@ -330,6 +332,8 @@ module.exports = {
                 joinedAt: new Date(),
               });
               await newUser.save();
+              acceptedInviteAccountNumber = invAcc.account_number;
+              acceptedInviteRole = inv.role;
               console.log(`[Register] Auto-accepted invitation for ${newUser.email} → account ${invAcc.account_number}`);
             }
           }
@@ -343,6 +347,9 @@ module.exports = {
         if (err) {
           console.error('[Register] Auto-login error:', err);
           return res.redirect("/auth/login?error=Registration successful. Please login.");
+        }
+        if (acceptedInviteAccountNumber && acceptedInviteRole === 'guest') {
+          return res.redirect(`/account/${acceptedInviteAccountNumber}/shared-with-you`);
         }
         res.redirect("/user/accounts");
       });

@@ -1,0 +1,62 @@
+<%
+  const rooms = locals.sharedDataRooms || (typeof sharedDataRooms !== 'undefined' ? sharedDataRooms : []);
+%>
+<style>
+  .shared-page{max-width:1120px;margin:0 auto;padding:24px 28px;}
+  .shared-page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;}
+  .shared-page-title{display:flex;align-items:center;gap:12px;min-width:0;}
+  .shared-page-icon{width:42px;height:42px;border-radius:8px;background:#ecfdf5;color:#0f766e;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .shared-page-title h1{margin:0;font-size:22px;font-weight:800;color:#0f172a;line-height:1.15;}
+  .shared-page-title p{margin:3px 0 0;color:#64748b;font-size:13px;}
+  .shared-room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+  .shared-room-card{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;text-decoration:none;color:#0f172a;transition:all .15s ease;}
+  .shared-room-card:hover{border-color:#99f6e4;box-shadow:0 8px 20px rgba(15,118,110,.08);transform:translateY(-1px);}
+  .shared-room-card-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .shared-room-card-main{min-width:0;flex:1;}
+  .shared-room-card-title{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .shared-room-card-meta{margin-top:3px;color:#64748b;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .shared-room-card-arrow{color:#94a3b8;flex-shrink:0;}
+  .shared-empty-state{display:flex;align-items:center;gap:12px;padding:18px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc;color:#64748b;}
+  .dark .shared-page-title h1{color:#e2e8f0;}
+  .dark .shared-page-title p,.dark .shared-room-card-meta,.dark .shared-empty-state{color:#94a3b8;}
+  .dark .shared-room-card{background:#0e1726;border-color:#1e293b;color:#e2e8f0;}
+  .dark .shared-room-card:hover{border-color:rgba(45,212,191,.35);box-shadow:none;}
+  .dark .shared-empty-state{background:#0e1726;border-color:#334155;}
+  @media (max-width:640px){.shared-page{padding:16px 8px}.shared-page-head{align-items:flex-start;flex-direction:column}.shared-room-grid{grid-template-columns:1fr}}
+</style>
+
+<main class="shared-page">
+  <div class="shared-page-head">
+    <div class="shared-page-title">
+      <div class="shared-page-icon">
+        <iconify-icon icon="solar:share-bold-duotone" width="22"></iconify-icon>
+      </div>
+      <div>
+        <h1>Shared with you</h1>
+        <p><%= rooms.length %> Data Room<%= rooms.length > 1 ? 's' : '' %> disponible<%= rooms.length > 1 ? 's' : '' %></p>
+      </div>
+    </div>
+  </div>
+
+  <% if (rooms.length === 0) { %>
+    <div class="shared-empty-state">
+      <iconify-icon icon="solar:shield-warning-bold-duotone" width="24"></iconify-icon>
+      <div>Aucune Data Room partagee avec ce compte.</div>
+    </div>
+  <% } else { %>
+    <div class="shared-room-grid">
+      <% rooms.forEach(function(room) { %>
+        <a href="<%= room.url %>" class="shared-room-card">
+          <span class="shared-room-card-icon" style="background:<%= room.entityColor || '#0f766e' %>12;color:<%= room.entityColor || '#0f766e' %>;">
+            <iconify-icon icon="<%= room.entityIcon || 'solar:shield-keyhole-bold-duotone' %>" width="21"></iconify-icon>
+          </span>
+          <span class="shared-room-card-main">
+            <span class="shared-room-card-title"><%= room.title %></span>
+            <span class="shared-room-card-meta"><%= room.entityName %></span>
+          </span>
+          <iconify-icon class="shared-room-card-arrow" icon="solar:alt-arrow-right-linear" width="18"></iconify-icon>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+</main>

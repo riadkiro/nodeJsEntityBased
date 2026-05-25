@@ -1,5 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const {
+    attachSharedDataRoomMode,
+    enforceSharedDataRoomMode,
+    renderSharedWithYou,
+} = require("../middleware/shared-data-room-mode");
+
+router.use(attachSharedDataRoomMode);
+router.get("/shared-with-you", renderSharedWithYou);
+router.use(enforceSharedDataRoomMode);
 
 router.use("/dashboard", require("./account.router.js"));
 

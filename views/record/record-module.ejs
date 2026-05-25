@@ -17,6 +17,7 @@ const _mod = _modulesDef[moduleName];
 const _modColor = _mod.color;
 const _ficheFields = (typeof ficheFields !== 'undefined') ? ficheFields : [];
 const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" + record._id;
+const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRoomMode !== 'undefined' && sharedDataRoomMode));
 %>
 
 <style>
@@ -376,9 +377,9 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
 </style>
 
 <div class="rm-page" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } %>>
-    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list" class="rm-back">
+    <a href="<%= _sharedDataRoomOnly ? ('/account/' + account_number + '/shared-with-you') : ('/account/' + account_number + '/record/' + entity.slug + '/list') %>" class="rm-back">
         <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
-        Retour à <strong><%= entity.name %></strong>
+        Retour à <strong><%= _sharedDataRoomOnly ? 'Shared with you' : entity.name %></strong>
         <% if (moduleName === 'agenda') { %>
         <span style="color:#bfc9d4;margin:0 4px">·</span>
         <span style="font-weight:600;color:#0e1726"><%= record.title || 'Sans titre' %></span>
@@ -394,7 +395,7 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             <h1 id="record-hero-title"><%= record.title || 'Sans titre' %></h1>
             <p><%= entity.nameSingular || entity.name %></p>
         </div>
-        <% if (moduleName !== 'team') { %>
+        <% if (moduleName !== 'team' && !_sharedDataRoomOnly) { %>
         <div class="rm-hero-actions" style="display:flex;align-items:center;gap:8px;z-index:1;">
             <button type="button" onclick="createDraftRecord()" class="rm-btn-primary" style="background:linear-gradient(135deg,<%= entity.color || '#4361ee' %>,<%= entity.color || '#4361ee' %>dd);font-size:12px;padding:7px 14px;border:none;cursor:pointer;">
                 <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
@@ -425,7 +426,8 @@ const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" +
             { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
             { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Accès' }
         ]; %>
-        <% _allMods.forEach(function(m) { %>
+        <% const _visibleMods = _sharedDataRoomOnly ? _allMods.filter(function(m){ return m.key === 'data-room'; }) : _allMods; %>
+        <% _visibleMods.forEach(function(m) { %>
         <a href="<%= _recBase %>/<%= m.key %>" class="<%= moduleName === m.key ? 'active' : '' %>"
            style="<%= moduleName === m.key ? 'color:' + m.color : '' %>">
             <iconify-icon icon="<%= m.icon %>" width="16" style="color:<%= m.color %>"></iconify-icon>

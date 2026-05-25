@@ -64,6 +64,52 @@ async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
     }
 }
 
+async function hasDataRoomShareForUser(accountNumber, userEmail, userId) {
+    let tenantConn;
+    try {
+        const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+        tenantConn = await mongoose.createConnection(tenantDbUrl, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        const RecordSchema = require('../models/record.model').schema;
+        const Record = tenantConn.model('Record', RecordSchema);
+        const email = String(userEmail || '').trim().toLowerCase();
+        const userObjectId = mongoose.Types.ObjectId.isValid(userId)
+            ? new mongoose.Types.ObjectId(userId)
+            : null;
+        const userMatch = userObjectId ? [
+            { 'dataRoom.shares.userId': userObjectId },
+            { 'dataRoom.folders.shares.userId': userObjectId },
+            { 'dataRoom.items.shares.userId': userObjectId },
+        ] : [];
+
+        const record = await Record.findOne({
+            $or: [
+                { 'dataRoom.shares.email': email },
+                { 'dataRoom.folders.shares.email': email },
+                { 'dataRoom.items.shares.email': email },
+                ...userMatch,
+            ],
+        }).select('_id').lean();
+
+        return !!record;
+    } catch (err) {
+        console.error('[Invitation] Error checking Data Room share:', err.message);
+        return false;
+    } finally {
+        if (tenantConn) {
+            try { await tenantConn.close(); } catch (e) { /* ignore */ }
+        }
+    }
+}
+
+async function invitationRedirectUrl(account, userEmail, userId) {
+    const hasDataRoomShare = await hasDataRoomShareForUser(account.account_number, userEmail, userId);
+    if (hasDataRoomShare) return `/account/${account.account_number}/shared-with-you`;
+    return '/user/accounts';
+}
+
 module.exports = {
 
     // ── Dashboard ─────────────────────────────────────────────
@@ -542,7 +588,7 @@ module.exports = {
                 }
                 // Convert any pending record invites → grants
                 await convertPendingInvitesToGrants(account.account_number, userEmail, req.user._id);
-                return res.redirect("/user/accounts");
+                return res.redirect(await invitationRedirectUrl(account, userEmail, req.user._id));
             }
 
             // Add user to account
@@ -580,7 +626,7 @@ module.exports = {
             // Convert any pending record invites → grants
             await convertPendingInvitesToGrants(account.account_number, userEmail, req.user._id);
 
-            res.redirect("/user/accounts");
+            res.redirect(await invitationRedirectUrl(account, userEmail, req.user._id));
         } catch (error) {
             console.error("[SuperAdmin] Accept invite error:", error);
             res.redirect("/auth/login?error=Erreur lors de l'acceptation");

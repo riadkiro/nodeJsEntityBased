@@ -1,6 +1,6 @@
 /**
  * One-time fix: Convert existing pendingInvites to grants for contact@belgawebsite.be
- * in account 9194 (Actirama/Cyberbox).
+ * in account 9194 (Actirama/Dexapp).
  */
 const mongoose = require('mongoose');
 

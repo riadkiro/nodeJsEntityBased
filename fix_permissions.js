@@ -33,7 +33,7 @@ async function fixPermissions() {
                 // Verify structure of account object from existing
                 const newAccount = {
                     account_number: 5001,
-                    name: "Cyberbox Dev",
+                    name: "Dexapp Dev",
                     role: "owner"
                 };
 

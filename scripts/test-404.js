@@ -15,7 +15,7 @@ async function test404() {
         }
 
         const html = response.data;
-        const hasTitle = html.includes("<title>Page Non Trouvée | Cyberbox</title>");
+        const hasTitle = html.includes("<title>Page Non Trouvée | Dexapp</title>");
         const has404Text = html.includes("Page introuvable");
         const hasLoginBtn = html.includes('href="/auth/login"');
         const hasBackBtn = html.includes('window.history.back()');

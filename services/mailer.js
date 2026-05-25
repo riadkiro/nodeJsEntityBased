@@ -67,7 +67,7 @@ async function sendInvitation({ to, accountName, inviterName, role, inviteUrl })
       <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
         <!-- Header -->
         <div style="background:linear-gradient(135deg,#4361ee,#7c3aed);padding:32px 30px;text-align:center;">
-          <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;">Cyberbox</div>
+          <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;">Dexapp</div>
           <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Invitation à rejoindre une équipe</div>
         </div>
 
@@ -94,7 +94,7 @@ async function sendInvitation({ to, accountName, inviterName, role, inviteUrl })
         <!-- Footer -->
         <div style="padding:16px 30px;border-top:1px solid #f1f5f9;text-align:center;">
           <p style="font-size:11px;color:#94a3b8;margin:0;">
-            © ${new Date().getFullYear()} Cyberbox — Plateforme SaaS
+            © ${new Date().getFullYear()} Dexapp — Plateforme SaaS
           </p>
         </div>
       </div>
@@ -105,7 +105,7 @@ async function sendInvitation({ to, accountName, inviterName, role, inviteUrl })
 
     return send({
         to,
-        subject: `Invitation à rejoindre ${accountName} — Cyberbox`,
+        subject: `Invitation à rejoindre ${accountName} — Dexapp`,
         html,
         text,
     });

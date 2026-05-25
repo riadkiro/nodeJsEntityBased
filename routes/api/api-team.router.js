@@ -201,11 +201,11 @@ router.post('/invite', async (req, res) => {
                 try {
                     await mailer.send({
                         to: existingUser.email,
-                        subject: `Vous avez été réajouté(e) à ${account.name || 'un espace'} — Cyberbox`,
+                        subject: `Vous avez été réajouté(e) à ${account.name || 'un espace'} — Dexapp`,
                         html: `
                         <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
                           <div style="background:linear-gradient(135deg,#4361ee,#7c3aed);padding:32px 30px;text-align:center;">
-                            <div style="font-size:28px;font-weight:800;color:#fff;">Cyberbox</div>
+                            <div style="font-size:28px;font-weight:800;color:#fff;">Dexapp</div>
                           </div>
                           <div style="padding:32px 30px;">
                             <h2 style="font-size:18px;font-weight:700;color:#0e1726;margin:0 0 12px;">Accès restauré 🎉</h2>
@@ -276,11 +276,11 @@ router.post('/invite', async (req, res) => {
             try {
                 await mailer.send({
                     to: existingUser.email,
-                    subject: `Vous avez été ajouté(e) à ${account.name || 'un espace'} — Cyberbox`,
+                    subject: `Vous avez été ajouté(e) à ${account.name || 'un espace'} — Dexapp`,
                     html: `
                     <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
                       <div style="background:linear-gradient(135deg,#4361ee,#7c3aed);padding:32px 30px;text-align:center;">
-                        <div style="font-size:28px;font-weight:800;color:#fff;">Cyberbox</div>
+                        <div style="font-size:28px;font-weight:800;color:#fff;">Dexapp</div>
                         <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Nouvel accès à un espace</div>
                       </div>
                       <div style="padding:32px 30px;">
@@ -296,7 +296,7 @@ router.post('/invite', async (req, res) => {
                         </div>
                       </div>
                       <div style="padding:16px 30px;border-top:1px solid #f1f5f9;text-align:center;">
-                        <p style="font-size:11px;color:#94a3b8;margin:0;">© ${new Date().getFullYear()} Cyberbox</p>
+                        <p style="font-size:11px;color:#94a3b8;margin:0;">© ${new Date().getFullYear()} Dexapp</p>
                       </div>
                     </div>`,
                     text: `${req.user?.name || 'Un administrateur'} vous a ajouté(e) à ${account.name} en tant que ${targetRole}. Connectez-vous : ${loginUrl}`,

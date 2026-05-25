@@ -356,7 +356,7 @@ function buildSystemPrompt(context, pageContext) {
         pageHint = `\nL'utilisateur est sur ${pageNames[pageContext.page] || pageContext.page}.`;
     }
 
-    return `Tu es l'assistant IA de la plateforme SaaS "Cyberbox", un espace de travail intelligent.
+    return `Tu es l'assistant IA de la plateforme SaaS "Dexapp", un espace de travail intelligent.
 
 📅 Date: ${dateStr}
 🕐 Heure: ${timeStr}

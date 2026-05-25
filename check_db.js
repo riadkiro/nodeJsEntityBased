@@ -6,7 +6,7 @@ const req = { account_number: '5001' }; // Assuming default account number from 
 
 async function checkData() {
     try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/cyberbox', {
+        await mongoose.connect('mongodb://127.0.0.1:27017/dexapp', {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });

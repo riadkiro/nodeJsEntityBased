@@ -6,7 +6,7 @@ const req = { account_number: '5001' };
 
 async function checkData() {
     try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/cyberbox');
+        await mongoose.connect('mongodb://127.0.0.1:27017/dexapp');
         console.log("Connected to MongoDB");
 
         // Wait a bit for connection to stabilize

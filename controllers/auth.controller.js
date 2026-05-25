@@ -4,10 +4,14 @@ const Account = require("../models/account.model");
 const crypto = require("crypto");
 const mailer = require("../services/mailer");
 const { convertPendingInvitesToGrants } = require("../services/record-access-invitations");
+const { ensureTenantDatabase } = require("../services/tenant-provisioning");
 
 const PASSWORD_RESET_TTL_MINUTES = 60;
 const PASSWORD_RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
 const PASSWORD_RESET_SENT_MESSAGE = "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.";
+const EMAIL_VERIFICATION_TTL_HOURS = 24;
+const EMAIL_VERIFICATION_TTL_MS = EMAIL_VERIFICATION_TTL_HOURS * 60 * 60 * 1000;
+const EMAIL_VERIFICATION_SENT_MESSAGE = "Si un compte existe avec cet email, un lien de confirmation vient d'être envoyé.";
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
@@ -22,12 +26,42 @@ function getAppUrl(req) {
   return configuredUrl.replace(/\/+$/, "");
 }
 
+function buildVerificationUrl(req, rawToken) {
+  return `${getAppUrl(req)}/auth/verify-email/${rawToken}`;
+}
+
+async function issueVerificationEmail(req, user) {
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  user.verificationToken = hashResetToken(rawToken);
+  user.verificationTokenExpires = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+  user.emailVerified = false;
+  user.status = 'pending';
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await mailer.sendEmailVerification({
+      to: user.email,
+      name: user.name || user.email,
+      verifyUrl: buildVerificationUrl(req, rawToken),
+      expiresInHours: EMAIL_VERIFICATION_TTL_HOURS,
+    });
+  } catch (mailError) {
+    console.error("[Auth] Email verification send error:", mailError.message);
+  }
+}
+
 module.exports = {
   // ── Login Form ────────────────────────────────────────────
   loginForm: async (req, res) => {
     const error = req.query.error || null;
     const success = req.query.success || null;
-    res.render("auth/auth-login", { layout: false, error_msg: error, success_msg: success, error: null });
+    res.render("auth/auth-login", {
+      layout: false,
+      error_msg: error,
+      success_msg: success,
+      error: null,
+      unverifiedEmail: req.query.unverified ? normalizeEmail(req.query.email) : "",
+    });
   },
 
   // ── Forgot Password Form ──────────────────────────────────
@@ -180,6 +214,61 @@ module.exports = {
     }
   },
 
+  // ── Verify Email ──────────────────────────────────────────
+  verifyEmail: async (req, res) => {
+    const token = String(req.params.token || "");
+
+    try {
+      const user = await User.findOne({
+        verificationToken: hashResetToken(token),
+        verificationTokenExpires: { $gt: new Date() },
+      });
+
+      if (!user) {
+        const error = encodeURIComponent("Ce lien de confirmation est invalide ou expiré.");
+        return res.redirect(`/auth/login?error=${error}`);
+      }
+
+      user.emailVerified = true;
+      user.status = user.status === 'pending' ? 'active' : user.status;
+      user.verificationToken = undefined;
+      user.verificationTokenExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      const success = encodeURIComponent("Votre compte est confirmé. Vous pouvez vous connecter.");
+      return res.redirect(`/auth/login?success=${success}`);
+    } catch (error) {
+      console.error("[Auth] Verify email error:", error);
+      const message = encodeURIComponent("Erreur serveur. Veuillez réessayer.");
+      return res.redirect(`/auth/login?error=${message}`);
+    }
+  },
+
+  // ── Resend Email Verification ─────────────────────────────
+  resendVerification: async (req, res) => {
+    const email = normalizeEmail(req.body.email);
+
+    if (!email) {
+      const error = encodeURIComponent("L'email est requis");
+      return res.redirect(`/auth/login?error=${error}`);
+    }
+
+    try {
+      const user = await User.findOne({ email });
+
+      if (user && (user.status === 'pending' || user.emailVerified === false)) {
+        await issueVerificationEmail(req, user);
+      }
+
+      const success = encodeURIComponent(EMAIL_VERIFICATION_SENT_MESSAGE);
+      return res.redirect(`/auth/login?success=${success}&unverified=1&email=${encodeURIComponent(email)}`);
+    } catch (error) {
+      console.error("[Auth] Resend verification error:", error);
+      const message = encodeURIComponent("Erreur serveur. Veuillez réessayer.");
+      return res.redirect(`/auth/login?error=${message}`);
+    }
+  },
+
   // ── Register Form ────────────────────────────────────────
   registerForm: async (req, res) => {
     const { invite, account } = req.query;
@@ -216,6 +305,7 @@ module.exports = {
   register: async (req, res) => {
     try {
       const { name, email, password, confirmPassword } = req.body;
+      const normalizedEmail = normalizeEmail(email);
       const errors = [];
 
       if (!name || !name.trim()) errors.push("Le nom est requis");
@@ -233,7 +323,7 @@ module.exports = {
       }
 
       // Check if email already exists
-      const existing = await User.findOne({ email: email.toLowerCase().trim() });
+      const existing = await User.findOne({ email: normalizedEmail });
       if (existing) {
         return res.render("auth/auth-register", {
           layout: false,
@@ -246,10 +336,11 @@ module.exports = {
       // Create user with free plan
       const newUser = new User({
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         password,
         authProvider: 'local',
-        status: 'active',
+        status: 'pending',
+        emailVerified: false,
         role: 'user',
         membership: {
           plan: 'free',
@@ -258,11 +349,8 @@ module.exports = {
           maxUsersPerAccount: 3,
           storageLimit: 500,
         },
-        lastLogin: new Date(),
-        loginCount: 1,
+        loginCount: 0,
       });
-
-      await newUser.save();
 
       // Auto-create first account/workspace
       let account_number;
@@ -273,6 +361,18 @@ module.exports = {
         if (!existing) break;
         attempts++;
       } while (attempts < 100);
+
+      if (attempts >= 100) {
+        return res.render("auth/auth-register", {
+          layout: false,
+          error_msg: "Impossible de générer un numéro d'espace unique",
+          error: null,
+          name, email
+        });
+      }
+
+      await ensureTenantDatabase(account_number);
+      await newUser.save();
 
       const newAccount = new Account({
         name: `${name.trim()}'s Workspace`,
@@ -301,8 +401,6 @@ module.exports = {
 
       // Auto-accept invitation if invite token is present
       const inviteToken = req.body.inviteToken;
-      let acceptedInviteAccountNumber = null;
-      let acceptedInviteRole = null;
       if (inviteToken) {
         try {
           const invAcc = await Account.findOne({
@@ -333,8 +431,6 @@ module.exports = {
                 joinedAt: new Date(),
               });
               await newUser.save();
-              acceptedInviteAccountNumber = invAcc.account_number;
-              acceptedInviteRole = inv.role;
               await convertPendingInvitesToGrants(invAcc.account_number, newUser.email, newUser._id);
               console.log(`[Register] Auto-accepted invitation for ${newUser.email} → account ${invAcc.account_number}`);
             }
@@ -344,17 +440,10 @@ module.exports = {
         }
       }
 
-      // Auto-login after registration
-      req.login(newUser, (err) => {
-        if (err) {
-          console.error('[Register] Auto-login error:', err);
-          return res.redirect("/auth/login?error=Registration successful. Please login.");
-        }
-        if (acceptedInviteAccountNumber && acceptedInviteRole === 'guest') {
-          return res.redirect(`/account/${acceptedInviteAccountNumber}/shared-with-you`);
-        }
-        res.redirect("/user/accounts");
-      });
+      await issueVerificationEmail(req, newUser);
+
+      const success = encodeURIComponent("Compte créé. Vérifiez votre email pour confirmer votre compte avant connexion.");
+      return res.redirect(`/auth/login?success=${success}&unverified=1&email=${encodeURIComponent(newUser.email)}`);
     } catch (error) {
       console.error("[Register] Error:", error);
       res.render("auth/auth-register", {
@@ -366,11 +455,23 @@ module.exports = {
   },
 
   // ── Login (POST) ─────────────────────────────────────────
-  authenticate: async (req, res, done) => {
-    passport.authenticate("local", {
-      successRedirect: "/user/accounts",
-      failureRedirect: "/auth/login?error=Email ou mot de passe incorrect",
-    })(req, res, done);
+  authenticate: async (req, res, next) => {
+    passport.authenticate("local", (err, user, info = {}) => {
+      if (err) return next(err);
+
+      if (!user) {
+        const message = encodeURIComponent(info.message || "Email ou mot de passe incorrect");
+        const unverified = info.code === 'EMAIL_NOT_VERIFIED' && req.body.email
+          ? `&unverified=1&email=${encodeURIComponent(normalizeEmail(req.body.email))}`
+          : "";
+        return res.redirect(`/auth/login?error=${message}${unverified}`);
+      }
+
+      req.logIn(user, (loginError) => {
+        if (loginError) return next(loginError);
+        return res.redirect("/user/accounts");
+      });
+    })(req, res, next);
   },
 
   // ── Google OAuth ──────────────────────────────────────────

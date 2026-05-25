@@ -22,7 +22,7 @@ const startPassport = require("./auth/startPassport");
 startPassport(app);
 //Auto generated passport end
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 var server = app.listen(PORT, console.log(`Server started on port ${PORT}`));
 
 // Initialize Socket.IO for real-time chat
@@ -44,7 +44,7 @@ mongoose
       const WorkflowWorker = require('./src/integrations/services/WorkflowWorker');
       const dbConfig = require('./config/db');
       const defaultTenant = process.env.DEFAULT_TENANT || '5001';
-      const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${defaultTenant}`;
+      const tenantDbUrl = dbConfig.tenantDbUri(defaultTenant);
       const tenantConn = await mongoose.createConnection(tenantDbUrl, { useNewUrlParser: true });
       console.log(`[WorkflowWorker] Connected to tenant DB: saas_app_rb_${defaultTenant}`);
       WorkflowWorker.start(tenantConn);

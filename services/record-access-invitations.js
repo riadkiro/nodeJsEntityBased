@@ -51,7 +51,7 @@ function dataRoomOnlyPermissions(permissions = {}) {
 async function hasDataRoomShareForUser(accountNumber, userEmail, userId) {
     let tenantConn;
     try {
-        const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+        const tenantDbUrl = dbConfig.tenantDbUri(accountNumber);
         tenantConn = await mongoose.createConnection(tenantDbUrl, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
@@ -79,7 +79,7 @@ async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
     if (!accountNumber || !email || !userIdString) return result;
 
     try {
-        const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+        const tenantDbUrl = dbConfig.tenantDbUri(accountNumber);
         tenantConn = await mongoose.createConnection(tenantDbUrl, {
             useNewUrlParser: true,
             useUnifiedTopology: true,

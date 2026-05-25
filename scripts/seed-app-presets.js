@@ -7,6 +7,7 @@
  * =============================================
  */
 const mongoose = require('mongoose');
+const dbConfig = require('../config/db');
 
 // ============================================
 // Preset definitions
@@ -86,7 +87,7 @@ const PRESETS = [
 // Global DB: seed preset list
 // ============================================
 async function seedAppPresets() {
-    const globalConn = mongoose.createConnection('mongodb://127.0.0.1:27017/saasDemo');
+    const globalConn = mongoose.createConnection(dbConfig.globalDbUri);
     await new Promise(r => globalConn.once('open', r));
     console.log('[AppPresets] Connected to global DB');
 
@@ -196,8 +197,11 @@ async function installPreset({ tenantDbName, presetSlug, userId, mode = 'factory
     const preset = PRESETS.find(p => p.slug === presetSlug);
     if (!preset) throw new Error(`Unknown preset: ${presetSlug}`);
 
+    const tenantMatch = /^saas_app_rb_(.+)$/.exec(tenantDbName);
+    const tenantConnUri = tenantMatch ? dbConfig.tenantDbUri(tenantMatch[1]) : dbConfig.globalDbUri;
+
     // Connect to tenant DB
-    const tenantConn = mongoose.createConnection(`mongodb://127.0.0.1:27017/${tenantDbName}`);
+    const tenantConn = mongoose.createConnection(tenantConnUri);
     await new Promise(r => tenantConn.once('open', r));
     console.log(`Connected to tenant DB: ${tenantDbName}`);
 
@@ -239,7 +243,7 @@ if (require.main === module) {
             const tenantDbName = args.includes('--db') ? args[args.indexOf('--db') + 1] : 'saas_app_rb_9194';
 
             // Get userId
-            const globalConn = mongoose.createConnection('mongodb://127.0.0.1:27017/saasDemo');
+            const globalConn = mongoose.createConnection(dbConfig.globalDbUri);
             await new Promise(r => globalConn.once('open', r));
             const User = globalConn.model('User_seed', new mongoose.Schema({}, { strict: false }), 'users');
             const user = await User.findOne({ email: 'boukirou6@hotmail.com' });

@@ -2,7 +2,6 @@
  * preset.controller.js
  * Handles the "Modèles prédéfinis d'app" page + install API
  */
-const mongoose = require('mongoose');
 const { installPreset, PRESETS } = require('../scripts/seed-app-presets');
 
 module.exports = {

@@ -426,7 +426,7 @@ module.exports = {
             const mongoose = require('mongoose');
             const dbConfig = require('../config/db');
             try {
-                const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+                const tenantDbUrl = dbConfig.tenantDbUri(accountNumber);
                 const tenantConn = await mongoose.createConnection(tenantDbUrl, {
                     useNewUrlParser: true,
                     useUnifiedTopology: true,

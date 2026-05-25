@@ -15,6 +15,7 @@ const {
     convertPendingInvitesToGrants,
     invitationRedirectUrl,
 } = require("../services/record-access-invitations");
+const { ensureTenantDatabase } = require("../services/tenant-provisioning");
 
 module.exports = {
 
@@ -286,8 +287,6 @@ module.exports = {
                 },
             });
 
-            await newUser.save();
-
             // Auto-create first workspace
             let account_number;
             let attempts = 0;
@@ -297,6 +296,13 @@ module.exports = {
                 if (!exists) break;
                 attempts++;
             } while (attempts < 100);
+
+            if (attempts >= 100) {
+                return res.status(500).json({ error: 'Could not generate unique account number' });
+            }
+
+            await ensureTenantDatabase(account_number);
+            await newUser.save();
 
             const newAccount = new Account({
                 name: `${name.trim()}'s Workspace`,

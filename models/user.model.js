@@ -51,6 +51,7 @@ const UserSchema = new mongoose.Schema({
   // Email verification
   emailVerified: { type: Boolean, default: false },
   verificationToken: { type: String },
+  verificationTokenExpires: { type: Date },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 
@@ -70,6 +71,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 UserSchema.index({ resetPasswordToken: 1, resetPasswordExpires: 1 });
+UserSchema.index({ verificationToken: 1, verificationTokenExpires: 1 });
 
 // Hash password before save
 UserSchema.pre("save", function (next) {

@@ -39,7 +39,7 @@ async function getTenantConnection(accountNumber) {
     if (cachedConnections[accountNumber]) {
         return cachedConnections[accountNumber];
     }
-    const dbUrl = `${dbConfig.uri}saas_app_rb_${accountNumber}`;
+    const dbUrl = dbConfig.tenantDbUri(accountNumber);
     console.log(`[Socket.IO] Connecting to tenant DB: ${dbUrl}`);
     const conn = await mongoose.createConnection(dbUrl, {
         useNewUrlParser: true,

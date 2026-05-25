@@ -65,7 +65,7 @@ const connectToTenantDb = async (req, res, next) => {
         }
 
         const tenantId = req.account_number;
-        const dbUrl = `${dbConfig.uri}saas_app_rb_${tenantId}`;
+        const dbUrl = dbConfig.tenantDbUri(tenantId);
 
         if (!cachedConnections[tenantId]) {
           console.log(`[Tenant] Initializing NEW connection to ${redactMongoUri(dbUrl)}`);
@@ -111,3 +111,4 @@ const connectToTenantDb = async (req, res, next) => {
 };
 
 module.exports = { connectToTenantDb, tenantCollection };
+

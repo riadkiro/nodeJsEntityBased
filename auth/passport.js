@@ -22,6 +22,13 @@ module.exports = function () {
           return done(null, false, { message: "Votre compte est désactivé." });
         }
 
+        if (user.status === 'pending' || (user.emailVerified === false && user.verificationToken)) {
+          return done(null, false, {
+            message: "Compte non encore confirmé. Vérifiez votre email ou renvoyez le lien de confirmation.",
+            code: "EMAIL_NOT_VERIFIED",
+          });
+        }
+
         if (!user.password) {
           return done(null, false, { message: "Ce compte utilise Google. Connectez-vous avec Google." });
         }

@@ -13,6 +13,8 @@ router.get("/forgot-password", forwardAuthenticated, loginController.forgotPassw
 router.post("/forgot-password", forwardAuthenticated, loginController.forgotPassword);
 router.get("/reset-password/:token", loginController.resetPasswordForm);
 router.post("/reset-password/:token", loginController.resetPassword);
+router.get("/verify-email/:token", loginController.verifyEmail);
+router.post("/resend-verification", forwardAuthenticated, loginController.resendVerification);
 
 // Register
 router.get("/register", forwardAuthenticated, loginController.registerForm);

@@ -246,6 +246,60 @@ async function sendPasswordReset({ to, name, resetUrl, expiresInMinutes = 60 }) 
 }
 
 // ═══════════════════════════════════════════
+// Email Verification
+// ═══════════════════════════════════════════
+async function sendEmailVerification({ to, name, verifyUrl, expiresInHours = 24 }) {
+    const safe = {
+        name: escapeHtml(name || 'Bonjour'),
+        verifyUrl: escapeHtml(verifyUrl),
+        expiresInHours: escapeHtml(String(expiresInHours)),
+    };
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="margin:0;padding:0;background:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <div style="max-width:540px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+        <div style="background:linear-gradient(135deg,#22c1dc,#4361ee);padding:32px 30px;text-align:center;">
+          <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;">Dexapp</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.82);margin-top:4px;">Confirmation de votre compte</div>
+        </div>
+        <div style="padding:32px 30px;">
+          <h2 style="font-size:18px;font-weight:700;color:#0e1726;margin:0 0 12px;">${safe.name}</h2>
+          <p style="font-size:14px;line-height:1.6;color:#64748b;margin:0 0 18px;">
+            Confirmez votre adresse email pour activer votre compte Dexapp.
+          </p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${safe.verifyUrl}" style="display:inline-block;padding:14px 34px;background:linear-gradient(135deg,#22c1dc,#4361ee);color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;box-shadow:0 4px 16px rgba(67,97,238,.30);">
+              Confirmer mon compte
+            </a>
+          </div>
+          <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.5;">
+            Ce lien expire dans ${safe.expiresInHours} heures. Si vous n'avez pas créé ce compte, ignorez simplement cet email.
+          </p>
+        </div>
+        <div style="padding:16px 30px;border-top:1px solid #f1f5f9;text-align:center;">
+          <p style="font-size:11px;color:#94a3b8;margin:0;">© ${new Date().getFullYear()} Dexapp</p>
+        </div>
+      </div>
+    </body>
+    </html>`;
+
+    const text = `Confirmation Dexapp: ouvrez ce lien pour confirmer votre compte. Le lien expire dans ${expiresInHours} heures: ${verifyUrl}`;
+
+    return send({
+        to,
+        subject: 'Confirmez votre compte — Dexapp',
+        html,
+        text,
+    });
+}
+
+// ═══════════════════════════════════════════
 // Verify SMTP connection
 // ═══════════════════════════════════════════
 async function verify() {
@@ -266,5 +320,6 @@ module.exports = {
     sendInvitation,
     sendDataRoomShare,
     sendPasswordReset,
+    sendEmailVerification,
     verify,
 };

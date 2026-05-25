@@ -72,6 +72,21 @@
                             <span class="ltr:pl-9 rtl:pr-9"><%= success_msg %></span>
                         </div>
                     <% } %>
+                    <% if (locals.unverifiedEmail) { %>
+                        <form method="POST" action="/auth/resend-verification" class="rounded-lg border border-warning/30 bg-warning-light p-3.5 text-warning mb-4">
+                            <input type="hidden" name="email" value="<%= unverifiedEmail %>" />
+                            <div class="flex items-start gap-3">
+                                <iconify-icon icon="solar:letter-unread-bold-duotone" width="22" class="mt-0.5 shrink-0"></iconify-icon>
+                                <div class="flex-1">
+                                    <p class="font-bold">Compte non encore confirmé</p>
+                                    <p class="text-xs mt-1 text-warning/80">Confirmez <span class="font-semibold"><%= unverifiedEmail %></span> pour activer l'accès.</p>
+                                    <button type="submit" class="btn btn-warning btn-sm mt-3">
+                                        Renvoyer l'email de confirmation
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    <% } %>
 
                     <!-- Google Button -->
                     <a href="/auth/google" class="flex items-center justify-center gap-3 w-full p-3 rounded-lg border border-gray-200 dark:border-[#1b2e4b] hover:border-primary hover:bg-primary/5 transition-all group mb-5">
@@ -95,7 +110,7 @@
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                                     <iconify-icon icon="solar:letter-bold" width="16"></iconify-icon>
                                 </span>
-                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required />
+                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required value="<%= locals.unverifiedEmail || '' %>" />
                             </div>
                         </div>
                         <div>

@@ -808,6 +808,12 @@
                                 @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                 x-text="subChild.name"></a>
                             </template>
+                            <template x-if="editingId === subChild.id">
+                              <input x-ref="editInput" type="text"
+                                class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                                x-model="editingName" @keyup.enter="saveRename(subChild)"
+                                @blur="saveRename(subChild)" x-init="$nextTick(() => $el.focus())">
+                            </template>
                           </div>
                         </div>
                       </li>

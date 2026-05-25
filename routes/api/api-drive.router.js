@@ -24,7 +24,17 @@ const multer = require('multer');
 const crypto = require('crypto');
 const { tenantCollection } = require('../../middleware/tenant');
 const Account = require('../../models/account.model');
-const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
+const {
+    sanitizeUploadedFilename,
+    normalizeFieldArray,
+    uploadPathBasename,
+    uploadPathDirname,
+    joinUploadFolder,
+} = require('../../utils/filename-encoding');
+
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // ============================================================================
 // Multer Configuration (same security as api-attachment.router.js)
@@ -172,7 +182,7 @@ router.get('/drive/files', async (req, res) => {
         const DriveFile = await tenantCollection(req, 'DriveFile');
         const account = await Account.findOne({ account_number: req.account_number }).lean();
         const query = {};
-        if (req.query.folder) query.folder = req.query.folder;
+        if (req.query.folder) query.folder = { $regex: `^${escapeRegex(req.query.folder)}($|/)` };
         else query.folder = { $in: ['', null] }; // root files
         const files = await DriveFile.find(query).sort({ uploadedAt: -1 }).lean();
         // Format files
@@ -281,19 +291,27 @@ router.post('/drive/upload', (req, res, next) => {
     try {
         if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Aucun fichier' });
         const DriveFile = await tenantCollection(req, 'DriveFile');
-        const folder = req.body.folder || '';
+        const baseFolder = req.body.folder || '';
+        const relativePaths = normalizeFieldArray(req.body.relativePaths);
+        const foldersToPersist = new Set();
         const saved = [];
-        for (const file of req.files) {
+        for (const [index, file] of req.files.entries()) {
             // Get the UUID/filename path for DB storage
             const uuid = path.basename(path.dirname(file.path));
             const dbFilename = `${uuid}/${file.filename}`;
+            const relativePath = relativePaths[index] || file.originalname;
+            const relativeFolder = uploadPathDirname(relativePath);
+            const targetFolder = joinUploadFolder(baseFolder, relativeFolder);
+            const originalName = uploadPathBasename(relativePath, file.originalname);
+            if (targetFolder) foldersToPersist.add(targetFolder);
+
             const doc = await DriveFile.create({
                 filename: dbFilename,
-                originalName: file.originalname,
+                originalName,
                 mimeType: file.mimetype,
                 size: file.size,
                 category: detectCategory(file.mimetype),
-                folder,
+                folder: targetFolder,
                 uploadedAt: new Date(),
             });
             saved.push({
@@ -309,7 +327,13 @@ router.post('/drive/upload', (req, res, next) => {
                 uploadedAt: doc.uploadedAt,
             });
         }
-        res.json({ success: true, files: saved });
+        if (foldersToPersist.size > 0) {
+            await Account.updateOne(
+                { account_number: req.account_number },
+                { $addToSet: { driveFolders: { $each: Array.from(foldersToPersist) } } }
+            );
+        }
+        res.json({ success: true, files: saved, folders: Array.from(foldersToPersist) });
     } catch(err) {
         console.error('[Drive] upload error:', err);
         res.status(500).json({ error: err.message });

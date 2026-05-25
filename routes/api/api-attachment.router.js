@@ -25,7 +25,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { tenantCollection } = require('../../middleware/tenant');
-const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
+const {
+    sanitizeUploadedFilename,
+    normalizeFieldArray,
+    uploadPathBasename,
+    uploadPathDirname,
+    joinUploadFolder,
+} = require('../../utils/filename-encoding');
 
 // ============================================================================
 // Multer Configuration
@@ -233,20 +239,34 @@ router.post('/records/:recordId/attachments', (req, res, next) => {
             }
         }
 
-        const folder = req.body.folder !== undefined ? req.body.folder : 'uploads';
+        const baseFolder = req.body.folder !== undefined ? req.body.folder : 'uploads';
+        const relativePaths = normalizeFieldArray(req.body.relativePaths);
+        const foldersToPersist = new Set();
 
-        const newAttachments = req.files.map(file => ({
-            filename: file.dbFilename || file.filename,
-            originalName: file.originalname,
-            mimeType: file.mimetype,
-            size: file.size,
-            category: detectCategory(file.mimetype),
-            folder: folder,
-            uploadedAt: new Date(),
-            uploadedBy: req.user?._id
-        }));
+        const newAttachments = req.files.map((file, index) => {
+            const relativePath = relativePaths[index] || file.originalname;
+            const relativeFolder = uploadPathDirname(relativePath);
+            const targetFolder = joinUploadFolder(baseFolder, relativeFolder);
+            const originalName = uploadPathBasename(relativePath, file.originalname);
+            if (targetFolder) foldersToPersist.add(targetFolder);
+
+            return {
+                filename: file.dbFilename || file.filename,
+                originalName,
+                mimeType: file.mimetype,
+                size: file.size,
+                category: detectCategory(file.mimetype),
+                folder: targetFolder,
+                uploadedAt: new Date(),
+                uploadedBy: req.user?._id
+            };
+        });
 
         record.attachments = record.attachments || [];
+        record.driveFolders = record.driveFolders || [];
+        foldersToPersist.forEach(folderName => {
+            if (!record.driveFolders.includes(folderName)) record.driveFolders.push(folderName);
+        });
         record.attachments.push(...newAttachments);
         await record.save();
 

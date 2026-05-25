@@ -43,8 +43,49 @@ function normalizeStoredFilePath(filename) {
   return parts.join('/');
 }
 
+function sanitizeUploadPathSegments(value) {
+  return String(normalizeUploadedFilename(value || ''))
+    .replace(/\\/g, '/')
+    .split('/')
+    .map(segment => sanitizeUploadedFilename(segment, ''))
+    .filter(segment => segment && segment !== '.');
+}
+
+function sanitizeUploadRelativePath(value) {
+  return sanitizeUploadPathSegments(value).join('/');
+}
+
+function uploadPathBasename(value, fallback = 'file') {
+  const parts = sanitizeUploadPathSegments(value);
+  return parts.length > 0 ? parts[parts.length - 1] : sanitizeUploadedFilename(fallback);
+}
+
+function uploadPathDirname(value) {
+  const parts = sanitizeUploadPathSegments(value);
+  parts.pop();
+  return parts.join('/');
+}
+
+function joinUploadFolder(baseFolder, relativeFolder) {
+  return [
+    ...sanitizeUploadPathSegments(baseFolder),
+    ...sanitizeUploadPathSegments(relativeFolder),
+  ].join('/');
+}
+
+function normalizeFieldArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null) return [];
+  return [value];
+}
+
 module.exports = {
   normalizeUploadedFilename,
   sanitizeUploadedFilename,
   normalizeStoredFilePath,
+  sanitizeUploadRelativePath,
+  uploadPathBasename,
+  uploadPathDirname,
+  joinUploadFolder,
+  normalizeFieldArray,
 };

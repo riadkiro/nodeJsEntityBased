@@ -20,6 +20,15 @@
 .rt-perm-badge:hover{transform:scale(1.08);box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .rt-perm-on{background:rgba(34,197,94,.08);color:#22c55e;}
 .rt-perm-off{background:#f1f5f9;color:#bfc9d4;}
+.rt-module-panel{margin-top:10px;padding-top:10px;border-top:1px solid #edf2f7;}
+.rt-module-title{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#94a3b8;margin-bottom:7px;}
+.rt-module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.rt-module-grid-modal{grid-template-columns:repeat(4,minmax(0,1fr));}
+.rt-module-chip{display:flex;align-items:center;justify-content:flex-start;gap:5px;min-width:0;padding:6px 8px;border:1px solid #e8ecf1;border-radius:8px;background:#fff;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;}
+.rt-module-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rt-module-chip:hover{border-color:rgba(124,58,237,.3);background:#faf8ff;}
+.rt-module-chip.active{background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.24);color:#4c1d95;}
+.rt-app-summary{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;background:#f1f5f9;color:#64748b;white-space:nowrap;}
 .rt-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;border:none;}
 .rt-btn-assign{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;}
 .rt-btn-assign:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.3);}
@@ -93,6 +102,11 @@
 .dark .rt-create-input{background:#1b2e4b;border-color:#253b5c;color:#e0e6ed;}
 .dark .rt-member-option:hover{background:rgba(124,58,237,.08);}
 .dark .rt-perm-off{background:#1b2e4b;color:#506690;}
+.dark .rt-module-panel{border-top-color:#253b5c;}
+.dark .rt-module-chip{background:#0e1726;border-color:#253b5c;color:#94a3b8;}
+.dark .rt-module-chip:hover{background:#1b2e4b;border-color:rgba(124,58,237,.35);}
+.dark .rt-module-chip.active{background:rgba(124,58,237,.16);border-color:rgba(124,58,237,.35);color:#c4b5fd;}
+.dark .rt-app-summary{background:#1b2e4b;color:#94a3b8;}
 .dark .rt-modal-tabs{background:#0b1320;border-color:#253b5c;}
 .dark .rt-modal-tab{color:#94a3b8;}
 .dark .rt-group-header-line{background:#253b5c;}

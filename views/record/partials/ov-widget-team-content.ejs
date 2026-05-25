@@ -44,6 +44,8 @@
                                     <span x-text="team.memberCount + ' membre(s)'"></span>
                                     <span style="color:#d1d5db">·</span>
                                     <span x-text="formatDate(team.grantedAt)"></span>
+                                    <span style="color:#d1d5db">·</span>
+                                    <span x-text="moduleSummary(team.permissions)"></span>
                                 </div>
                                 <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px;">
                                     <template x-for="(mid, idx) in (team.memberIds || []).slice(0, 6)" :key="mid">
@@ -68,12 +70,23 @@
                                     <span style="pointer-events:none;margin-left:2px;border-left:1px solid #e2e8f0;padding-left:6px;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="12" style="pointer-events:none"></iconify-icon>Permissions</span>
                                 </button>
                                 <!-- Permissions dropdown -->
-                                <div x-show="showPermsId === 'team-' + team._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:8px 10px;">
+                                <div x-show="showPermsId === 'team-' + team._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:10px;width:360px;">
                                     <div class="rt-perm-badges" style="gap:5px;flex-wrap:nowrap;">
                                         <span class="rt-perm-badge" :class="team.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'read')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Lire</span>
                                         <span class="rt-perm-badge" :class="team.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'update')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Éditer</span>
                                         <span class="rt-perm-badge" :class="team.permissions?.delete ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'delete')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Supp.</span>
                                         <span class="rt-perm-badge" :class="team.permissions?.share ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'share')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Partager</span>
+                                    </div>
+                                    <div class="rt-module-panel">
+                                        <div class="rt-module-title">Apps accessibles</div>
+                                        <div class="rt-module-grid">
+                                            <template x-for="app in moduleOptions" :key="'team-app-' + team._id + '-' + app.key">
+                                                <button type="button" class="rt-module-chip" :class="moduleAllowed(team.permissions, app.key) ? 'active' : ''" @click="toggleModule('team', team._id, app.key)" :title="app.requiresShare && !team.permissions?.share ? 'Nécessite Partager' : app.label">
+                                                    <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
+                                                    <span x-text="app.label"></span>
+                                                </button>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -105,6 +118,8 @@
                                     <span x-text="user.email"></span>
                                     <span style="color:#d1d5db">·</span>
                                     <span x-text="formatDate(user.grantedAt)"></span>
+                                    <span style="color:#d1d5db">·</span>
+                                    <span x-text="moduleSummary(user.permissions)"></span>
                                 </div>
                             </div>
                             <div style="position:relative;">
@@ -116,12 +131,23 @@
                                     <span style="pointer-events:none;margin-left:2px;border-left:1px solid #e2e8f0;padding-left:6px;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="12" style="pointer-events:none"></iconify-icon>Permissions</span>
                                 </button>
                                 <!-- Permissions dropdown -->
-                                <div x-show="showPermsId === 'user-' + user._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:8px 10px;">
+                                <div x-show="showPermsId === 'user-' + user._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:10px;width:360px;">
                                     <div class="rt-perm-badges" style="gap:5px;flex-wrap:nowrap;">
                                         <span class="rt-perm-badge" :class="user.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'read')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Lire</span>
                                         <span class="rt-perm-badge" :class="user.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'update')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Éditer</span>
                                         <span class="rt-perm-badge" :class="user.permissions?.delete ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'delete')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Supp.</span>
                                         <span class="rt-perm-badge" :class="user.permissions?.share ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'share')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Partager</span>
+                                    </div>
+                                    <div class="rt-module-panel">
+                                        <div class="rt-module-title">Apps accessibles</div>
+                                        <div class="rt-module-grid">
+                                            <template x-for="app in moduleOptions" :key="'user-app-' + user._id + '-' + app.key">
+                                                <button type="button" class="rt-module-chip" :class="moduleAllowed(user.permissions, app.key) ? 'active' : ''" @click="toggleModule('user', user._id, app.key)" :title="app.requiresShare && !user.permissions?.share ? 'Nécessite Partager' : app.label">
+                                                    <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
+                                                    <span x-text="app.label"></span>
+                                                </button>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -164,9 +190,7 @@
                                 </div>
                             </div>
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <iconify-icon x-show="invite.permissions?.read" icon="solar:eye-bold" width="13" style="color:#22c55e"></iconify-icon>
-                                <iconify-icon x-show="invite.permissions?.update" icon="solar:pen-bold" width="13" style="color:#f97316"></iconify-icon>
-                                <iconify-icon x-show="invite.permissions?.delete" icon="solar:trash-bin-trash-bold" width="13" style="color:#ef4444"></iconify-icon>
+                                <span class="rt-app-summary" x-text="moduleSummary(invite.permissions)"></span>
                             </div>
                             <button class="rt-btn rt-btn-sm" @click="cancelPendingInvite(invite.email)" title="Annuler l'invitation" style="gap:4px;transition:all .2s;"
                                 :style="confirmCancelEmail === invite.email ? 'background:#ef4444;color:#fff;border-color:#ef4444;' : ''">

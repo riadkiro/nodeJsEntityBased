@@ -662,7 +662,20 @@ function recordPermissionsFromShare(share) {
         read: share.permissions?.view !== false,
         update: false,
         delete: false,
-        share: !!share.permissions?.share || share.role === 'manager'
+        share: !!share.permissions?.share || share.role === 'manager',
+        modules: {
+            overview: false,
+            fiche: false,
+            docs: false,
+            drive: false,
+            dataRoom: true,
+            tasks: false,
+            agenda: false,
+            chat: false,
+            emails: false,
+            notes: false,
+            team: false,
+        },
     };
 }
 

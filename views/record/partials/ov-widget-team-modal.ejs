@@ -36,26 +36,41 @@
                         Permissions
                     </div>
                     <div class="rt-perms-inline">
-                        <label class="rt-perm-switch" :class="assignPerms.read && 'active'" @click="assignPerms.read = !assignPerms.read" style="padding:6px 10px;">
+                        <label class="rt-perm-switch" :class="assignPerms.read && 'active'" @click="toggleAssignPermission('read')" style="padding:6px 10px;">
                             <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(34,197,94,.1);"><iconify-icon icon="solar:eye-bold" width="12" style="color:#22c55e"></iconify-icon></div>
                             <span style="font-size:11px;font-weight:600;color:#22c55e;">Lire</span>
                             <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.read"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
                         </label>
-                        <label class="rt-perm-switch" :class="assignPerms.update && 'active'" @click="assignPerms.update = !assignPerms.update" style="padding:6px 10px;">
+                        <label class="rt-perm-switch" :class="assignPerms.update && 'active'" @click="toggleAssignPermission('update')" style="padding:6px 10px;">
                             <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(249,115,22,.1);"><iconify-icon icon="solar:pen-bold" width="12" style="color:#f97316"></iconify-icon></div>
                             <span style="font-size:11px;font-weight:600;color:#f97316;">Éditer</span>
                             <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.update"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
                         </label>
-                        <label class="rt-perm-switch" :class="assignPerms.delete && 'active'" @click="assignPerms.delete = !assignPerms.delete" style="padding:6px 10px;">
+                        <label class="rt-perm-switch" :class="assignPerms.delete && 'active'" @click="toggleAssignPermission('delete')" style="padding:6px 10px;">
                             <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.1);"><iconify-icon icon="solar:trash-bin-trash-bold" width="12" style="color:#ef4444"></iconify-icon></div>
                             <span style="font-size:11px;font-weight:600;color:#ef4444;">Supp.</span>
                             <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.delete"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
                         </label>
-                        <label class="rt-perm-switch" :class="assignPerms.share && 'active'" @click="assignPerms.share = !assignPerms.share" style="padding:6px 10px;">
+                        <label class="rt-perm-switch" :class="assignPerms.share && 'active'" @click="toggleAssignPermission('share')" style="padding:6px 10px;">
                             <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(67,97,238,.1);"><iconify-icon icon="solar:share-bold" width="12" style="color:#4361ee"></iconify-icon></div>
                             <span style="font-size:11px;font-weight:600;color:#4361ee;">Partager</span>
                             <div class="rt-switch" style="width:32px;height:18px;"><input type="checkbox" :checked="assignPerms.share"><span class="rt-switch-slider" style="border-radius:9px;"></span></div>
                         </label>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                        <iconify-icon icon="solar:widget-5-bold-duotone" width="13" style="color:#7c3aed"></iconify-icon>
+                        Apps accessibles
+                    </div>
+                    <div class="rt-module-grid rt-module-grid-modal">
+                        <template x-for="app in moduleOptions" :key="'assign-app-' + app.key">
+                            <button type="button" class="rt-module-chip" :class="assignPerms.modules[app.key] ? 'active' : ''" @click="toggleAssignModule(app.key)" :title="app.requiresShare && !assignPerms.share ? 'Activez Partager pour l’onglet Accès' : app.label">
+                                <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
+                                <span x-text="app.label"></span>
+                            </button>
+                        </template>
                     </div>
                 </div>
 

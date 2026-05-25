@@ -25,6 +25,28 @@ function buildDataRoomShareQuery(email, userId) {
     };
 }
 
+function dataRoomOnlyPermissions(permissions = {}) {
+    return {
+        read: permissions.read !== false,
+        update: permissions.update === true,
+        delete: permissions.delete === true,
+        share: permissions.share === true,
+        modules: {
+            overview: false,
+            fiche: false,
+            docs: false,
+            drive: false,
+            dataRoom: true,
+            tasks: false,
+            agenda: false,
+            chat: false,
+            emails: false,
+            notes: false,
+            team: false,
+        },
+    };
+}
+
 async function hasDataRoomShareForUser(accountNumber, userEmail, userId) {
     let tenantConn;
     try {
@@ -75,19 +97,22 @@ async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
                 ...buildDataRoomShareQuery(email, userIdString),
             }).select('_id').lean();
             const isDataRoomInvite = !!dataRoomRecord;
+            const permissions = isDataRoomInvite
+                ? dataRoomOnlyPermissions(pending.permissions || { read: true })
+                : (pending.permissions || { read: true });
 
             const existingGrant = (doc.grants || []).find(grant =>
                 grant.granteeType === 'user' && String(grant.granteeId) === userIdString
             );
 
             if (existingGrant) {
-                existingGrant.permissions = pending.permissions || existingGrant.permissions || { read: true };
+                existingGrant.permissions = permissions || existingGrant.permissions || { read: true };
                 if (isDataRoomInvite) existingGrant.note = 'Data Room';
             } else {
                 doc.grants.push({
                     granteeType: 'user',
                     granteeId: userIdString,
-                    permissions: pending.permissions || { read: true },
+                    permissions,
                     grantedBy: pending.invitedBy,
                     grantedAt: new Date(),
                     expiresAt: null,

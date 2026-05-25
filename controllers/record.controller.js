@@ -2318,9 +2318,14 @@ module.exports = {
             });
 
             // Guest/External: verify access via RecordAccess grants
-            const { canAccessRecord } = require('../middleware/shared-records-helper');
-            const hasAccess = await canAccessRecord(req, record._id, entity._id.toString());
+            const { canAccessRecord, getAccessibleRecordModules } = require('../middleware/shared-records-helper');
+            const accessibleRecordModules = await getAccessibleRecordModules(req, record._id);
+            const hasAccess = await canAccessRecord(req, record._id, entity._id.toString(), moduleName);
             if (!hasAccess) {
+                if (Array.isArray(accessibleRecordModules) && accessibleRecordModules.length > 0) {
+                    const fallbackModule = validModules.find(mod => accessibleRecordModules.includes(mod)) || accessibleRecordModules[0];
+                    return res.redirect(`/account/${req.account_number}/record/${entity.slug}/${record._id}/${fallbackModule}`);
+                }
                 return res.status(403).render("errors/404", {
                     message: "Vous n'avez pas accès à cette fiche",
                     account_number: req.account_number,
@@ -2687,6 +2692,7 @@ module.exports = {
                 workspaceRole: req.workspaceRole,
                 sharedDataRoomMode: !!req.sharedDataRoomMode,
                 sharedDataRooms: req.sharedDataRooms || [],
+                accessibleRecordModules,
                 layout: "layout-app"
             });
         } catch (error) {

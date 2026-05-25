@@ -7,6 +7,33 @@ const { requirePerm } = require('../../middleware/permissions');
 const { tenantCollection } = require('../../middleware/tenant');
 const mailer = require('../../services/mailer');
 
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'team'];
+
+function defaultModules() {
+    return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [key, key !== 'team']));
+}
+
+function sanitizePermissions(permissions = {}) {
+    const modules = { ...defaultModules() };
+    if (permissions.modules && typeof permissions.modules === 'object') {
+        RECORD_MODULE_KEYS.forEach(key => {
+            if (Object.prototype.hasOwnProperty.call(permissions.modules, key)) {
+                modules[key] = permissions.modules[key] !== false;
+            }
+        });
+    }
+
+    if (permissions.share !== true) modules.team = false;
+
+    return {
+        read: permissions.read !== false,
+        update: permissions.update === true,
+        delete: permissions.delete === true,
+        share: permissions.share === true,
+        modules,
+    };
+}
+
 // ── GET /api/record-access/:recordId ──────────────────
 // Get access grants for a specific record
 router.get('/:recordId', async (req, res) => {
@@ -57,19 +84,15 @@ router.post('/:recordId/grant', requirePerm('records.share'), async (req, res) =
             g => g.granteeType === granteeType && g.granteeId === granteeId
         );
 
+        const existingGrant = existingIdx >= 0 ? access.grants[existingIdx] : null;
         const grant = {
             granteeType,
             granteeId,
-            permissions: {
-                read: permissions?.read !== false,
-                update: permissions?.update || false,
-                delete: permissions?.delete || false,
-                share: permissions?.share || false,
-            },
+            permissions: sanitizePermissions(permissions),
             grantedBy: req.user._id,
             grantedAt: new Date(),
             expiresAt: expiresAt ? new Date(expiresAt) : null,
-            note: note || '',
+            note: note !== undefined ? note : (existingGrant?.note || ''),
         };
 
         if (existingIdx >= 0) {
@@ -161,12 +184,7 @@ router.post('/:recordId/pending-invite', requirePerm('records.share'), async (re
         access.pendingInvites = access.pendingInvites || [];
         access.pendingInvites.push({
             email: cleanEmail,
-            permissions: {
-                read: permissions?.read !== false,
-                update: permissions?.update || false,
-                delete: permissions?.delete || false,
-                share: permissions?.share || false,
-            },
+            permissions: sanitizePermissions(permissions),
             invitedBy: req.user._id,
             invitedAt: new Date(),
         });

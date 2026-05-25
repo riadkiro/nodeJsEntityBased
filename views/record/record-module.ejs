@@ -18,6 +18,7 @@ const _modColor = _mod.color;
 const _ficheFields = (typeof ficheFields !== 'undefined') ? ficheFields : [];
 const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" + record._id;
 const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRoomMode !== 'undefined' && sharedDataRoomMode));
+const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? locals.accessibleRecordModules : null;
 %>
 
 <style>
@@ -426,7 +427,9 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
             { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
             { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Accès' }
         ]; %>
-        <% const _visibleMods = _sharedDataRoomOnly ? _allMods.filter(function(m){ return m.key === 'data-room'; }) : _allMods; %>
+        <% const _visibleMods = _sharedDataRoomOnly
+            ? _allMods.filter(function(m){ return m.key === 'data-room'; })
+            : (_allowedRecordModules ? _allMods.filter(function(m){ return _allowedRecordModules.includes(m.key); }) : _allMods); %>
         <% _visibleMods.forEach(function(m) { %>
         <a href="<%= _recBase %>/<%= m.key %>" class="<%= moduleName === m.key ? 'active' : '' %>"
            style="<%= moduleName === m.key ? 'color:' + m.color : '' %>">
@@ -2321,6 +2324,20 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
             const _recordId = '<%= record._id %>';
             const _entityId = '<%= entity._id || '' %>';
             const _recordTitle = '<%= (record.title || "Sans titre").replace(/'/g, "\\'") %>';
+            const _recordModuleOptions = [
+                { key: 'overview', routeKey: 'overview', label: 'Overview', icon: 'solar:widget-5-bold-duotone', color: '#6366f1' },
+                { key: 'fiche', routeKey: 'fiche', label: 'Fiche', icon: 'solar:card-bold-duotone', color: '#4361ee' },
+                { key: 'docs', routeKey: 'docs', label: 'Docs', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
+                { key: 'drive', routeKey: 'drive', label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899' },
+                { key: 'dataRoom', routeKey: 'data-room', label: 'Data Room', icon: 'solar:shield-keyhole-bold-duotone', color: '#0f766e' },
+                { key: 'tasks', routeKey: 'tasks', label: 'Tasks', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981' },
+                { key: 'agenda', routeKey: 'agenda', label: 'Agenda', icon: 'solar:calendar-bold-duotone', color: '#14b8a6' },
+                { key: 'chat', routeKey: 'chat', label: 'Chat', icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316' },
+                { key: 'emails', routeKey: 'emails', label: 'Emails', icon: 'solar:letter-bold-duotone', color: '#0ea5e9' },
+                { key: 'notes', routeKey: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' },
+                { key: 'team', routeKey: 'team', label: 'Accès', icon: 'solar:users-group-rounded-bold-duotone', color: '#7c3aed', requiresShare: true },
+            ];
+            const _defaultRecordModules = Object.fromEntries(_recordModuleOptions.map(m => [m.key, m.key !== 'team']));
 
             Alpine.data('recordTeam', () => ({
                 allTeams: _teamData.workspaceTeams || [],
@@ -2330,7 +2347,8 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                 assignedUserIds: [...(_teamData.assignedUserIds || [])],
                 pendingInvites: [...(_teamData.pendingInvites || [])],
                 recordTitle: _recordTitle,
-                assignPerms: { read: true, update: true, delete: false, share: false },
+                moduleOptions: _recordModuleOptions,
+                assignPerms: { read: true, update: true, delete: false, share: false, modules: { ..._defaultRecordModules } },
                 showCreateModal: false,
                 showAddModal: false,
                 modalSearch: '',
@@ -2346,7 +2364,81 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                 confirmRevokeId: null,
                 showPermsId: null,
 
-                init() {},
+                init() {
+                    this.assignPerms = this.normalizePermissions(this.assignPerms);
+                },
+
+                defaultModules() {
+                    return { ..._defaultRecordModules };
+                },
+
+                normalizePermissions(perms = {}) {
+                    const modules = this.defaultModules();
+                    if (perms.modules && typeof perms.modules === 'object') {
+                        this.moduleOptions.forEach(opt => {
+                            if (Object.prototype.hasOwnProperty.call(perms.modules, opt.key)) {
+                                modules[opt.key] = perms.modules[opt.key] !== false;
+                            }
+                        });
+                    }
+                    if (perms.share !== true) modules.team = false;
+                    return {
+                        read: perms.read !== false,
+                        update: perms.update === true,
+                        delete: perms.delete === true,
+                        share: perms.share === true,
+                        modules,
+                    };
+                },
+
+                modulesFor(perms = {}) {
+                    return this.normalizePermissions(perms).modules;
+                },
+
+                moduleAllowed(perms, moduleKey) {
+                    return this.modulesFor(perms)[moduleKey] === true;
+                },
+
+                moduleSummary(perms) {
+                    const modules = this.modulesFor(perms);
+                    const count = this.moduleOptions.filter(opt => modules[opt.key]).length;
+                    if (count === this.moduleOptions.length - 1 && !modules.team) return 'Toutes les apps';
+                    if (count === 0) return 'Aucune app';
+                    return count + ' app' + (count > 1 ? 's' : '');
+                },
+
+                toggleAssignPermission(key) {
+                    if (key === 'read' && this.assignPerms.read) {
+                        this.showToast('Lire reste actif. Limitez plutôt les apps accessibles.', 'error');
+                        return;
+                    }
+                    this.assignPerms[key] = !this.assignPerms[key];
+                    if (key === 'share' && !this.assignPerms.share) {
+                        this.assignPerms.modules.team = false;
+                    }
+                },
+
+                toggleAssignModule(moduleKey) {
+                    const option = this.moduleOptions.find(opt => opt.key === moduleKey);
+                    if (option?.requiresShare && !this.assignPerms.share) {
+                        this.showToast('Activez Partager pour donner accès à l’onglet Accès', 'error');
+                        return;
+                    }
+                    const nextValue = !this.assignPerms.modules[moduleKey];
+                    if (!nextValue) {
+                        const remaining = this.moduleOptions.filter(opt => opt.key !== moduleKey && this.assignPerms.modules[opt.key]).length;
+                        if (remaining === 0) {
+                            this.showToast('Gardez au moins une app accessible', 'error');
+                            return;
+                        }
+                    }
+                    this.assignPerms.modules[moduleKey] = nextValue;
+                    if (nextValue) this.assignPerms.read = true;
+                },
+
+                payloadAssignPerms() {
+                    return this.normalizePermissions(this.assignPerms);
+                },
 
                 // ─── Computed: assigned teams with permissions ───
                 get assignedTeams() {
@@ -2356,7 +2448,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                             const grant = this.recordGrants.find(g => g.granteeType === 'team' && g.granteeId === t._id);
                             return {
                                 ...t,
-                                permissions: grant?.permissions || {},
+                                permissions: this.normalizePermissions(grant?.permissions || {}),
                                 grantedAt: grant?.grantedAt || null,
                             };
                         });
@@ -2373,7 +2465,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                             email: member?.email || '',
                             avatar: member?.avatar || null,
                             role: member?.role || 'member',
-                            permissions: grant?.permissions || {},
+                            permissions: this.normalizePermissions(grant?.permissions || {}),
                             grantedAt: grant?.grantedAt || null,
                         };
                     }).filter(u => u.name);
@@ -2458,7 +2550,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                                 granteeType: 'team',
                                 granteeId: teamId,
                                 entityId: _entityId,
-                                permissions: { ...this.assignPerms },
+                                permissions: this.payloadAssignPerms(),
                             })
                         });
                         const data = await res.json();
@@ -2467,7 +2559,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                             this.recordGrants.push({
                                 granteeType: 'team',
                                 granteeId: teamId,
-                                permissions: { ...this.assignPerms },
+                                permissions: this.payloadAssignPerms(),
                                 grantedAt: new Date().toISOString(),
                             });
                             this.showToast('Équipe assignée', 'success');
@@ -2480,12 +2572,9 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                     }
                 },
 
-                // ─── Toggle a single permission on an existing grant ───
-                async togglePermission(granteeType, granteeId, permKey) {
+                async saveGrantPermissions(granteeType, granteeId, newPerms) {
                     const grant = this.recordGrants.find(g => g.granteeType === granteeType && g.granteeId === granteeId);
                     if (!grant) return;
-                    const newPerms = { ...(grant.permissions || {}) };
-                    newPerms[permKey] = !newPerms[permKey];
                     try {
                         const res = await fetch(`/account/${_accountNumber}/api/record-access/${_recordId}/grant`, {
                             method: 'POST',
@@ -2495,15 +2584,53 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                         });
                         const data = await res.json();
                         if (data.success) {
-                            grant.permissions = newPerms;
+                            grant.permissions = this.normalizePermissions(newPerms);
                             this.showToast('Permission mise à jour', 'success');
                         } else {
                             this.showToast(data.error || 'Erreur', 'error');
                         }
                     } catch (e) {
-                        console.error('[RecordTeam] togglePermission error:', e);
+                        console.error('[RecordTeam] save permissions error:', e);
                         this.showToast('Erreur réseau', 'error');
                     }
+                },
+
+                // ─── Toggle a single CRUD permission on an existing grant ───
+                async togglePermission(granteeType, granteeId, permKey) {
+                    const grant = this.recordGrants.find(g => g.granteeType === granteeType && g.granteeId === granteeId);
+                    if (!grant) return;
+                    const newPerms = this.normalizePermissions(grant.permissions || {});
+                    if (permKey === 'read' && newPerms.read) {
+                        this.showToast('Retirez l’accès ou limitez les apps plutôt que de couper Lire', 'error');
+                        return;
+                    }
+                    newPerms[permKey] = !newPerms[permKey];
+                    if (permKey === 'share' && !newPerms.share) newPerms.modules.team = false;
+                    await this.saveGrantPermissions(granteeType, granteeId, newPerms);
+                },
+
+                async toggleModule(granteeType, granteeId, moduleKey) {
+                    const grant = this.recordGrants.find(g => g.granteeType === granteeType && g.granteeId === granteeId);
+                    if (!grant) return;
+                    const option = this.moduleOptions.find(opt => opt.key === moduleKey);
+                    const newPerms = this.normalizePermissions(grant.permissions || {});
+
+                    if (option?.requiresShare && !newPerms.share) {
+                        this.showToast('Activez Partager pour donner accès à l’onglet Accès', 'error');
+                        return;
+                    }
+
+                    const nextValue = !newPerms.modules[moduleKey];
+                    if (!nextValue) {
+                        const remaining = this.moduleOptions.filter(opt => opt.key !== moduleKey && newPerms.modules[opt.key]).length;
+                        if (remaining === 0) {
+                            this.showToast('Gardez au moins une app accessible', 'error');
+                            return;
+                        }
+                    }
+                    newPerms.modules[moduleKey] = nextValue;
+                    if (nextValue) newPerms.read = true;
+                    await this.saveGrantPermissions(granteeType, granteeId, newPerms);
                 },
 
                 async revokeTeam(teamId) {
@@ -2545,7 +2672,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                                 granteeType: 'user',
                                 granteeId: userId,
                                 entityId: _entityId,
-                                permissions: { ...this.assignPerms },
+                                permissions: this.payloadAssignPerms(),
                             })
                         });
                         const data = await res.json();
@@ -2554,7 +2681,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                             this.recordGrants.push({
                                 granteeType: 'user',
                                 granteeId: userId,
-                                permissions: { ...this.assignPerms },
+                                permissions: this.payloadAssignPerms(),
                                 grantedAt: new Date().toISOString(),
                             });
                             this.showToast('Utilisateur ajouté', 'success');
@@ -2689,7 +2816,7 @@ const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRo
                             body: JSON.stringify({
                                 email,
                                 entityId: _entityId,
-                                permissions: this.assignPerms,
+                                permissions: this.payloadAssignPerms(),
                                 recordTitle: _recordTitle,
                             })
                         });

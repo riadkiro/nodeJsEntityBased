@@ -70,7 +70,7 @@
                                     <span style="pointer-events:none;margin-left:2px;border-left:1px solid #e2e8f0;padding-left:6px;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="12" style="pointer-events:none"></iconify-icon>Permissions</span>
                                 </button>
                                 <!-- Permissions dropdown -->
-                                <div x-show="showPermsId === 'team-' + team._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:10px;width:360px;">
+                                <div x-show="showPermsId === 'team-' + team._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:10px;width:430px;max-width:calc(100vw - 40px);">
                                     <div class="rt-perm-badges" style="gap:5px;flex-wrap:nowrap;">
                                         <span class="rt-perm-badge" :class="team.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'read')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Lire</span>
                                         <span class="rt-perm-badge" :class="team.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('team', team._id, 'update')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Éditer</span>
@@ -79,12 +79,18 @@
                                     </div>
                                     <div class="rt-module-panel">
                                         <div class="rt-module-title">Apps accessibles</div>
-                                        <div class="rt-module-grid">
+                                        <div class="rt-module-matrix">
                                             <template x-for="app in moduleOptions" :key="'team-app-' + team._id + '-' + app.key">
-                                                <button type="button" class="rt-module-chip" :class="moduleAllowed(team.permissions, app.key) ? 'active' : ''" @click="toggleModule('team', team._id, app.key)" :title="app.requiresShare && !team.permissions?.share ? 'Nécessite Partager' : app.label">
-                                                    <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
-                                                    <span x-text="app.label"></span>
-                                                </button>
+                                                <div class="rt-module-row" :class="app.requiresShare && !team.permissions?.share ? 'disabled' : ''">
+                                                    <div class="rt-module-row-name">
+                                                        <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
+                                                        <span x-text="app.label"></span>
+                                                    </div>
+                                                    <div class="rt-module-actions">
+                                                        <button type="button" class="rt-module-toggle" :class="moduleAllowed(team.permissions, app.key) ? 'active' : ''" @click="toggleModule('team', team._id, app.key, 'view')" :title="app.requiresShare && !team.permissions?.share ? 'Nécessite Partager' : 'Voir ' + app.label">View</button>
+                                                        <button type="button" class="rt-module-toggle edit" :class="moduleCanEdit(team.permissions, app.key) ? 'active' : ''" @click="toggleModule('team', team._id, app.key, 'edit')" :title="app.requiresShare && !team.permissions?.share ? 'Nécessite Partager' : 'Éditer ' + app.label">Edit</button>
+                                                    </div>
+                                                </div>
                                             </template>
                                         </div>
                                     </div>
@@ -131,7 +137,7 @@
                                     <span style="pointer-events:none;margin-left:2px;border-left:1px solid #e2e8f0;padding-left:6px;display:inline-flex;align-items:center;gap:4px;"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="12" style="pointer-events:none"></iconify-icon>Permissions</span>
                                 </button>
                                 <!-- Permissions dropdown -->
-                                <div x-show="showPermsId === 'user-' + user._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:10px;width:360px;">
+                                <div x-show="showPermsId === 'user-' + user._id" x-transition @click.outside="showPermsId = null" style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:10px;width:430px;max-width:calc(100vw - 40px);">
                                     <div class="rt-perm-badges" style="gap:5px;flex-wrap:nowrap;">
                                         <span class="rt-perm-badge" :class="user.permissions?.read ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'read')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Lire</span>
                                         <span class="rt-perm-badge" :class="user.permissions?.update ? 'rt-perm-on' : 'rt-perm-off'" @click="togglePermission('user', user._id, 'update')" style="cursor:pointer;padding:4px 12px;white-space:nowrap;">Éditer</span>
@@ -140,12 +146,18 @@
                                     </div>
                                     <div class="rt-module-panel">
                                         <div class="rt-module-title">Apps accessibles</div>
-                                        <div class="rt-module-grid">
+                                        <div class="rt-module-matrix">
                                             <template x-for="app in moduleOptions" :key="'user-app-' + user._id + '-' + app.key">
-                                                <button type="button" class="rt-module-chip" :class="moduleAllowed(user.permissions, app.key) ? 'active' : ''" @click="toggleModule('user', user._id, app.key)" :title="app.requiresShare && !user.permissions?.share ? 'Nécessite Partager' : app.label">
-                                                    <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
-                                                    <span x-text="app.label"></span>
-                                                </button>
+                                                <div class="rt-module-row" :class="app.requiresShare && !user.permissions?.share ? 'disabled' : ''">
+                                                    <div class="rt-module-row-name">
+                                                        <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
+                                                        <span x-text="app.label"></span>
+                                                    </div>
+                                                    <div class="rt-module-actions">
+                                                        <button type="button" class="rt-module-toggle" :class="moduleAllowed(user.permissions, app.key) ? 'active' : ''" @click="toggleModule('user', user._id, app.key, 'view')" :title="app.requiresShare && !user.permissions?.share ? 'Nécessite Partager' : 'Voir ' + app.label">View</button>
+                                                        <button type="button" class="rt-module-toggle edit" :class="moduleCanEdit(user.permissions, app.key) ? 'active' : ''" @click="toggleModule('user', user._id, app.key, 'edit')" :title="app.requiresShare && !user.permissions?.share ? 'Nécessite Partager' : 'Éditer ' + app.label">Edit</button>
+                                                    </div>
+                                                </div>
                                             </template>
                                         </div>
                                     </div>

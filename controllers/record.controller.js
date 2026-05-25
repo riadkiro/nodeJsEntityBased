@@ -2087,6 +2087,13 @@ module.exports = {
             const record = await RecordModel.findById(req.params.id);
             if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
 
+            const { canEditRecordModule } = require('../middleware/shared-records-helper');
+            const canEditFields = await canEditRecordModule(req, record._id, 'overview')
+                || await canEditRecordModule(req, record._id, 'fiche');
+            if (!canEditFields) {
+                return res.status(403).json({ success: false, error: 'Accès en lecture seule' });
+            }
+
             // Standard fields
             if (['title', 'description', 'date'].includes(fieldKey)) {
                 record[fieldKey] = value;
@@ -2210,6 +2217,13 @@ module.exports = {
             const record = await RecordModel.findById(req.params.id);
             if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
 
+            const { canEditRecordModule } = require('../middleware/shared-records-helper');
+            const canEditRelations = await canEditRecordModule(req, record._id, 'overview')
+                || await canEditRecordModule(req, record._id, 'fiche');
+            if (!canEditRelations) {
+                return res.status(403).json({ success: false, error: 'Accès en lecture seule' });
+            }
+
             record.relations = record.relations || [];
             // Clean up any orphan entries missing relationKey (from old seed data)
             record.relations = record.relations.filter(r => r.relationKey);
@@ -2318,8 +2332,13 @@ module.exports = {
             });
 
             // Guest/External: verify access via RecordAccess grants
-            const { canAccessRecord, getAccessibleRecordModules } = require('../middleware/shared-records-helper');
+            const {
+                canAccessRecord,
+                getAccessibleRecordModules,
+                getAccessibleRecordModulePermissions,
+            } = require('../middleware/shared-records-helper');
             const accessibleRecordModules = await getAccessibleRecordModules(req, record._id);
+            const accessibleRecordModulePermissions = await getAccessibleRecordModulePermissions(req, record._id);
             const hasAccess = await canAccessRecord(req, record._id, entity._id.toString(), moduleName);
             if (!hasAccess) {
                 if (Array.isArray(accessibleRecordModules) && accessibleRecordModules.length > 0) {
@@ -2693,6 +2712,7 @@ module.exports = {
                 sharedDataRoomMode: !!req.sharedDataRoomMode,
                 sharedDataRooms: req.sharedDataRooms || [],
                 accessibleRecordModules,
+                accessibleRecordModulePermissions,
                 layout: "layout-app"
             });
         } catch (error) {

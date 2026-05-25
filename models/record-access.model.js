@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
 
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'team'];
+
+function defaultModulePermissions() {
+    return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [
+        key,
+        { view: key !== 'team', edit: false },
+    ]));
+}
+
 /**
  * RecordAccess — Per-record permission overrides
  * ────────────────────────────────────────────────
@@ -25,17 +34,8 @@ const RecordAccessSchema = new mongoose.Schema({
             delete: { type: Boolean, default: false },
             share:  { type: Boolean, default: false },
             modules: {
-                overview: { type: Boolean, default: true },
-                fiche:    { type: Boolean, default: true },
-                docs:     { type: Boolean, default: true },
-                drive:    { type: Boolean, default: true },
-                dataRoom: { type: Boolean, default: true },
-                tasks:    { type: Boolean, default: true },
-                agenda:   { type: Boolean, default: true },
-                chat:     { type: Boolean, default: true },
-                emails:   { type: Boolean, default: true },
-                notes:    { type: Boolean, default: true },
-                team:     { type: Boolean, default: false },
+                type: mongoose.Schema.Types.Mixed,
+                default: defaultModulePermissions,
             },
         },
         grantedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -53,17 +53,8 @@ const RecordAccessSchema = new mongoose.Schema({
             delete: { type: Boolean, default: false },
             share:  { type: Boolean, default: false },
             modules: {
-                overview: { type: Boolean, default: true },
-                fiche:    { type: Boolean, default: true },
-                docs:     { type: Boolean, default: true },
-                drive:    { type: Boolean, default: true },
-                dataRoom: { type: Boolean, default: true },
-                tasks:    { type: Boolean, default: true },
-                agenda:   { type: Boolean, default: true },
-                chat:     { type: Boolean, default: true },
-                emails:   { type: Boolean, default: true },
-                notes:    { type: Boolean, default: true },
-                team:     { type: Boolean, default: false },
+                type: mongoose.Schema.Types.Mixed,
+                default: defaultModulePermissions,
             },
         },
         invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

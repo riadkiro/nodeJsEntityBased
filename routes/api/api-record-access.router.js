@@ -9,27 +9,69 @@ const mailer = require('../../services/mailer');
 
 const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'team'];
 
-function defaultModules() {
-    return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [key, key !== 'team']));
+function defaultModules(permissions = {}) {
+    return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [
+        key,
+        {
+            view: key === 'team' ? permissions.share === true : true,
+            edit: permissions.update === true && (key !== 'team' || permissions.share === true),
+        },
+    ]));
+}
+
+function normalizeModulePermission(value, fallback, permissions = {}) {
+    if (typeof value === 'boolean') {
+        return {
+            view: value,
+            edit: value === true && permissions.update === true,
+        };
+    }
+
+    if (value && typeof value === 'object') {
+        const explicitView = Object.prototype.hasOwnProperty.call(value, 'view');
+        const edit = value.edit === true;
+        return {
+            view: explicitView ? value.view !== false : (fallback.view || edit),
+            edit,
+        };
+    }
+
+    return { ...fallback };
 }
 
 function sanitizePermissions(permissions = {}) {
-    const modules = { ...defaultModules() };
+    const read = permissions.read !== false;
+    const update = permissions.update === true;
+    const share = permissions.share === true;
+    const modules = defaultModules({ update, share });
     if (permissions.modules && typeof permissions.modules === 'object') {
         RECORD_MODULE_KEYS.forEach(key => {
             if (Object.prototype.hasOwnProperty.call(permissions.modules, key)) {
-                modules[key] = permissions.modules[key] !== false;
+                modules[key] = normalizeModulePermission(permissions.modules[key], modules[key], { update, share });
             }
         });
     }
 
-    if (permissions.share !== true) modules.team = false;
+    RECORD_MODULE_KEYS.forEach(key => {
+        if (!read) {
+            modules[key] = { view: false, edit: false };
+            return;
+        }
+        if (key === 'team' && !share) {
+            modules[key] = { view: false, edit: false };
+            return;
+        }
+        if (modules[key].edit) modules[key].view = true;
+        if (!modules[key].view) modules[key].edit = false;
+    });
+
+    const hasModuleEdit = RECORD_MODULE_KEYS.some(key => modules[key].edit === true);
 
     return {
-        read: permissions.read !== false,
-        update: permissions.update === true,
+        read,
+        update: update || hasModuleEdit,
         delete: permissions.delete === true,
-        share: permissions.share === true,
+        share,
         modules,
     };
 }

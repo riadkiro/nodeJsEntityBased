@@ -26,23 +26,24 @@ function buildDataRoomShareQuery(email, userId) {
 }
 
 function dataRoomOnlyPermissions(permissions = {}) {
+    const app = (view, edit = false) => ({ view, edit });
     return {
         read: permissions.read !== false,
         update: permissions.update === true,
         delete: permissions.delete === true,
         share: permissions.share === true,
         modules: {
-            overview: false,
-            fiche: false,
-            docs: false,
-            drive: false,
-            dataRoom: true,
-            tasks: false,
-            agenda: false,
-            chat: false,
-            emails: false,
-            notes: false,
-            team: false,
+            overview: app(false),
+            fiche: app(false),
+            docs: app(false),
+            drive: app(false),
+            dataRoom: app(true, permissions.update === true),
+            tasks: app(false),
+            agenda: app(false),
+            chat: app(false),
+            emails: app(false),
+            notes: app(false),
+            team: app(false),
         },
     };
 }

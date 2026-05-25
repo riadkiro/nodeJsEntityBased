@@ -31,12 +31,38 @@ function routeModuleKey(moduleKey) {
 function defaultModules(permissions = {}) {
     return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [
         key,
-        key === 'team' ? permissions.share === true : true,
+        {
+            view: key === 'team' ? permissions.share === true : true,
+            edit: permissions.update === true && (key !== 'team' || permissions.share === true),
+        },
     ]));
 }
 
+function normalizeModuleAccess(value, fallback, permissions = {}) {
+    if (typeof value === 'boolean') {
+        return {
+            view: value,
+            edit: value === true && permissions.update === true,
+        };
+    }
+
+    if (value && typeof value === 'object') {
+        const explicitView = Object.prototype.hasOwnProperty.call(value, 'view');
+        const edit = value.edit === true;
+        return {
+            view: explicitView ? value.view !== false : (fallback.view || edit),
+            edit,
+        };
+    }
+
+    return { ...fallback };
+}
+
 function modulesFromPermissions(permissions = {}) {
-    const modules = { ...defaultModules(permissions) };
+    const read = permissions.read !== false;
+    const share = permissions.share === true;
+    const update = permissions.update === true;
+    const modules = defaultModules({ share, update });
     const source = permissions.modules && typeof permissions.modules === 'object'
         ? permissions.modules
         : null;
@@ -44,12 +70,24 @@ function modulesFromPermissions(permissions = {}) {
     if (source) {
         RECORD_MODULE_KEYS.forEach(key => {
             if (Object.prototype.hasOwnProperty.call(source, key)) {
-                modules[key] = source[key] !== false;
+                modules[key] = normalizeModuleAccess(source[key], modules[key], { share, update });
             }
         });
     }
 
-    if (permissions.share !== true) modules.team = false;
+    RECORD_MODULE_KEYS.forEach(key => {
+        if (!read) {
+            modules[key] = { view: false, edit: false };
+            return;
+        }
+        if (key === 'team' && !share) {
+            modules[key] = { view: false, edit: false };
+            return;
+        }
+        if (modules[key].edit) modules[key].view = true;
+        if (!modules[key].view) modules[key].edit = false;
+    });
+
     return modules;
 }
 
@@ -57,15 +95,43 @@ function modulesAllowedByPermissions(permissions = {}) {
     if (permissions.read === false) return [];
     const modules = modulesFromPermissions(permissions);
     return RECORD_MODULE_KEYS
-        .filter(key => modules[key] === true)
+        .filter(key => modules[key]?.view === true)
         .map(routeModuleKey);
+}
+
+function moduleAccessByPermissions(permissions = {}, moduleName) {
+    const key = normalizeModuleKey(moduleName);
+    return modulesFromPermissions(permissions)[key] || { view: false, edit: false };
 }
 
 function permissionAllowsModule(permissions = {}, moduleName) {
     if (!moduleName) return modulesAllowedByPermissions(permissions).length > 0;
-    const key = normalizeModuleKey(moduleName);
     if (permissions.read === false) return false;
-    return modulesFromPermissions(permissions)[key] === true;
+    return moduleAccessByPermissions(permissions, moduleName).view === true;
+}
+
+function permissionAllowsModuleEdit(permissions = {}, moduleName) {
+    if (!moduleName || permissions.read === false) return false;
+    return moduleAccessByPermissions(permissions, moduleName).edit === true;
+}
+
+function emptyRouteModulePermissions() {
+    return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [
+        routeModuleKey(key),
+        { view: false, edit: false },
+    ]));
+}
+
+function mergeModulePermissions(target, permissions = {}) {
+    if (permissions.read === false) return;
+    const modules = modulesFromPermissions(permissions);
+    RECORD_MODULE_KEYS.forEach(key => {
+        const routeKey = routeModuleKey(key);
+        const access = modules[key] || { view: false, edit: false };
+        if (!target[routeKey]) target[routeKey] = { view: false, edit: false };
+        target[routeKey].view = target[routeKey].view || access.view === true || access.edit === true;
+        target[routeKey].edit = target[routeKey].edit || access.edit === true;
+    });
 }
 
 function currentUserTeamIds(req) {
@@ -198,44 +264,72 @@ async function canAccessRecord(req, recordId, entityId, moduleName = null) {
     }
 }
 
-async function getAccessibleRecordModules(req, recordId) {
+async function canEditRecordModule(req, recordId, moduleName) {
     const role = req.workspaceRole;
 
-    // null means unrestricted at record-grant level.
+    if (!role || !['guest', 'external'].includes(role)) return true;
+    if (req.user?.role === 'superadmin') return true;
+
+    try {
+        const modulePermissions = await getAccessibleRecordModulePermissions(req, recordId);
+        if (!modulePermissions) return true;
+        const routeKey = routeModuleKey(normalizeModuleKey(moduleName));
+        return modulePermissions[routeKey]?.edit === true;
+    } catch (error) {
+        console.error('[SharedRecords] Error checking module edit access:', error.message);
+        return false;
+    }
+}
+
+async function getAccessibleRecordModulePermissions(req, recordId) {
+    const role = req.workspaceRole;
+
     if (!role || !['guest', 'external'].includes(role)) return null;
     if (req.user?.role === 'superadmin') return null;
 
     try {
         const RecordAccess = await tenantCollection(req, 'RecordAccess');
         const access = await RecordAccess.findOne({ recordId }).lean();
-        if (!access) return [];
+        if (!access) return emptyRouteModulePermissions();
 
         const now = new Date();
         const teamIds = currentUserTeamIds(req);
-        const allowed = new Set();
+        const modulePermissions = emptyRouteModulePermissions();
 
         (access.grants || []).forEach(grant => {
             if (!grantMatches(req, grant, teamIds, now)) return;
-            modulesAllowedByPermissions(grant.permissions || {}).forEach(moduleName => allowed.add(moduleName));
+            mergeModulePermissions(modulePermissions, grant.permissions || {});
         });
 
         const email = req.user.email?.toLowerCase();
         (access.pendingInvites || []).forEach(invite => {
             if (!email || invite.email !== email) return;
-            modulesAllowedByPermissions(invite.permissions || {}).forEach(moduleName => allowed.add(moduleName));
+            mergeModulePermissions(modulePermissions, invite.permissions || {});
         });
 
-        return [...allowed];
+        return modulePermissions;
     } catch (error) {
-        console.error('[SharedRecords] Error resolving record modules:', error.message);
-        return [];
+        console.error('[SharedRecords] Error resolving record module permissions:', error.message);
+        return emptyRouteModulePermissions();
     }
+}
+
+async function getAccessibleRecordModules(req, recordId) {
+    const modulePermissions = await getAccessibleRecordModulePermissions(req, recordId);
+    if (!modulePermissions) return null;
+    return Object.entries(modulePermissions)
+        .filter(([, access]) => access?.view === true)
+        .map(([moduleName]) => moduleName);
 }
 
 module.exports = {
     getSharedRecordFilter,
     canAccessRecord,
+    canEditRecordModule,
     getAccessibleRecordModules,
+    getAccessibleRecordModulePermissions,
     permissionAllowsModule,
+    permissionAllowsModuleEdit,
     modulesAllowedByPermissions,
+    modulesFromPermissions,
 };

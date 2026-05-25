@@ -19,6 +19,9 @@ const _ficheFields = (typeof ficheFields !== 'undefined') ? ficheFields : [];
 const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" + record._id;
 const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRoomMode !== 'undefined' && sharedDataRoomMode));
 const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? locals.accessibleRecordModules : null;
+const _recordModulePermissions = (locals.accessibleRecordModulePermissions && typeof locals.accessibleRecordModulePermissions === 'object') ? locals.accessibleRecordModulePermissions : null;
+const _currentModulePermissions = _recordModulePermissions ? (_recordModulePermissions[moduleName] || { view: false, edit: false }) : { view: true, edit: true };
+const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissions.edit === true : true;
 %>
 
 <style>
@@ -396,7 +399,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
             <h1 id="record-hero-title"><%= record.title || 'Sans titre' %></h1>
             <p><%= entity.nameSingular || entity.name %></p>
         </div>
-        <% if (moduleName !== 'team' && !_sharedDataRoomOnly) { %>
+        <% if (moduleName !== 'team' && !_sharedDataRoomOnly && _canEditCurrentModule) { %>
         <div class="rm-hero-actions" style="display:flex;align-items:center;gap:8px;z-index:1;">
             <button type="button" onclick="createDraftRecord()" class="rm-btn-primary" style="background:linear-gradient(135deg,<%= entity.color || '#4361ee' %>,<%= entity.color || '#4361ee' %>dd);font-size:12px;padding:7px 14px;border:none;cursor:pointer;">
                 <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
@@ -730,6 +733,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
         const _baseUrl = window.location.pathname.replace(/\/overview$/, '');
         const _recUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>';
         const _recordNotesApi = '/account/<%= account_number %>/api/record/<%= record._id %>/notes';
+        const _overviewRecordModuleCanEdit = <%= _canEditCurrentModule ? 'true' : 'false' %>;
 
         Alpine.data('ovNotesWidget', () => ({
             loading: true,
@@ -842,6 +846,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
             editingKey: '',
             saving: false,
             startEdit(key, e) {
+                if (!_overviewRecordModuleCanEdit) return;
                 if (this.editingKey === key) return;
                 // If another field was being edited, auto-save it first
                 if (this.editingKey) this._doSave(this.editingKey);
@@ -875,6 +880,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                 this.saveField(key, ref.value);
             },
             async saveField(key, value) {
+                if (!_overviewRecordModuleCanEdit) return;
                 if (this.saving) return;
                 this.saving = true;
                 const editingK = key;
@@ -1878,12 +1884,14 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
     %>
     <div x-data="ficheConfig()" style="border:none;box-shadow:none;padding:0;">
         <!-- Config toolbar -->
+        <% if (_canEditCurrentModule) { %>
         <div class="fiche-toolbar">
             <button type="button" class="fiche-config-btn" :class="configMode ? 'active' : ''" @click="toggleConfig()">
                 <iconify-icon :icon="configMode ? 'solar:check-circle-bold' : 'solar:settings-bold-duotone'" width="14"></iconify-icon>
                 <span x-text="configMode ? 'Terminé' : 'Configurer'"></span>
             </button>
         </div>
+        <% } %>
 
         <!-- Config bar (visible in config mode) -->
         <template x-if="configMode">
@@ -1917,12 +1925,14 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
         <% } %>
 
         <!-- ═══ ADD FIELD BUTTON ═══ -->
+        <% if (_canEditCurrentModule) { %>
         <div style="display:flex;justify-content:center;padding:16px 0 8px;">
             <button type="button" class="fiche-add-field-btn" @click="$dispatch('open-field-picker')">
                 <iconify-icon icon="solar:add-circle-bold-duotone" width="16"></iconify-icon>
                 Ajouter un champ
             </button>
         </div>
+        <% } %>
     </div>
 
     <!-- ═══ FIELD PICKER MODAL ═══ -->
@@ -2337,7 +2347,11 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                 { key: 'notes', routeKey: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' },
                 { key: 'team', routeKey: 'team', label: 'Accès', icon: 'solar:users-group-rounded-bold-duotone', color: '#7c3aed', requiresShare: true },
             ];
-            const _defaultRecordModules = Object.fromEntries(_recordModuleOptions.map(m => [m.key, m.key !== 'team']));
+            const _defaultRecordModules = Object.fromEntries(_recordModuleOptions.map(m => [
+                m.key,
+                { view: m.key !== 'team', edit: false },
+            ]));
+            const _cloneDefaultRecordModules = () => JSON.parse(JSON.stringify(_defaultRecordModules));
 
             Alpine.data('recordTeam', () => ({
                 allTeams: _teamData.workspaceTeams || [],
@@ -2348,7 +2362,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                 pendingInvites: [...(_teamData.pendingInvites || [])],
                 recordTitle: _recordTitle,
                 moduleOptions: _recordModuleOptions,
-                assignPerms: { read: true, update: true, delete: false, share: false, modules: { ..._defaultRecordModules } },
+                assignPerms: { read: true, update: false, delete: false, share: false, modules: _cloneDefaultRecordModules() },
                 showCreateModal: false,
                 showAddModal: false,
                 modalSearch: '',
@@ -2368,25 +2382,65 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                     this.assignPerms = this.normalizePermissions(this.assignPerms);
                 },
 
-                defaultModules() {
-                    return { ..._defaultRecordModules };
+                defaultModules(perms = {}) {
+                    const modules = _cloneDefaultRecordModules();
+                    if (perms.share === true) {
+                        modules.team.view = true;
+                    }
+                    if (perms.update === true) {
+                        this.moduleOptions.forEach(opt => {
+                            if (opt.requiresShare && perms.share !== true) return;
+                            if (modules[opt.key].view) modules[opt.key].edit = true;
+                        });
+                    }
+                    return modules;
+                },
+
+                normalizeModuleAccess(value, fallback, perms = {}) {
+                    if (typeof value === 'boolean') {
+                        return { view: value, edit: value === true && perms.update === true };
+                    }
+                    if (value && typeof value === 'object') {
+                        const explicitView = Object.prototype.hasOwnProperty.call(value, 'view');
+                        const edit = value.edit === true;
+                        return {
+                            view: explicitView ? value.view !== false : (fallback.view || edit),
+                            edit,
+                        };
+                    }
+                    return { ...fallback };
                 },
 
                 normalizePermissions(perms = {}) {
-                    const modules = this.defaultModules();
+                    const read = perms.read !== false;
+                    const share = perms.share === true;
+                    const update = perms.update === true;
+                    const modules = this.defaultModules({ update, share });
                     if (perms.modules && typeof perms.modules === 'object') {
                         this.moduleOptions.forEach(opt => {
                             if (Object.prototype.hasOwnProperty.call(perms.modules, opt.key)) {
-                                modules[opt.key] = perms.modules[opt.key] !== false;
+                                modules[opt.key] = this.normalizeModuleAccess(perms.modules[opt.key], modules[opt.key], { update, share });
                             }
                         });
                     }
-                    if (perms.share !== true) modules.team = false;
+                    this.moduleOptions.forEach(opt => {
+                        if (!read) {
+                            modules[opt.key] = { view: false, edit: false };
+                            return;
+                        }
+                        if (opt.requiresShare && !share) {
+                            modules[opt.key] = { view: false, edit: false };
+                            return;
+                        }
+                        if (modules[opt.key].edit) modules[opt.key].view = true;
+                        if (!modules[opt.key].view) modules[opt.key].edit = false;
+                    });
+                    const hasModuleEdit = this.moduleOptions.some(opt => modules[opt.key].edit === true);
                     return {
-                        read: perms.read !== false,
-                        update: perms.update === true,
+                        read,
+                        update: update || hasModuleEdit,
                         delete: perms.delete === true,
-                        share: perms.share === true,
+                        share,
                         modules,
                     };
                 },
@@ -2396,15 +2450,20 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                 },
 
                 moduleAllowed(perms, moduleKey) {
-                    return this.modulesFor(perms)[moduleKey] === true;
+                    return this.modulesFor(perms)[moduleKey]?.view === true;
+                },
+
+                moduleCanEdit(perms, moduleKey) {
+                    return this.modulesFor(perms)[moduleKey]?.edit === true;
                 },
 
                 moduleSummary(perms) {
                     const modules = this.modulesFor(perms);
-                    const count = this.moduleOptions.filter(opt => modules[opt.key]).length;
-                    if (count === this.moduleOptions.length - 1 && !modules.team) return 'Toutes les apps';
-                    if (count === 0) return 'Aucune app';
-                    return count + ' app' + (count > 1 ? 's' : '');
+                    const viewCount = this.moduleOptions.filter(opt => modules[opt.key]?.view).length;
+                    const editCount = this.moduleOptions.filter(opt => modules[opt.key]?.edit).length;
+                    if (viewCount === 0) return 'Aucune app';
+                    if (editCount === 0) return viewCount + ' en lecture';
+                    return viewCount + ' vue' + (viewCount > 1 ? 's' : '') + ' · ' + editCount + ' edit';
                 },
 
                 toggleAssignPermission(key) {
@@ -2412,28 +2471,101 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                         this.showToast('Lire reste actif. Limitez plutôt les apps accessibles.', 'error');
                         return;
                     }
+                    this.assignPerms = this.normalizePermissions(this.assignPerms);
                     this.assignPerms[key] = !this.assignPerms[key];
-                    if (key === 'share' && !this.assignPerms.share) {
-                        this.assignPerms.modules.team = false;
+                    if (key === 'update') {
+                        this.moduleOptions.forEach(opt => {
+                            if (opt.requiresShare && !this.assignPerms.share) return;
+                            if (!this.assignPerms.modules[opt.key].view) return;
+                            this.assignPerms.modules[opt.key].edit = this.assignPerms.update;
+                        });
                     }
+                    if (key === 'share' && !this.assignPerms.share) {
+                        this.assignPerms.modules.team = { view: false, edit: false };
+                    }
+                    this.assignPerms = this.normalizePermissions(this.assignPerms);
                 },
 
-                toggleAssignModule(moduleKey) {
+                toggleAssignModule(moduleKey, mode = 'view') {
+                    this.assignPerms = this.normalizePermissions(this.assignPerms);
                     const option = this.moduleOptions.find(opt => opt.key === moduleKey);
                     if (option?.requiresShare && !this.assignPerms.share) {
                         this.showToast('Activez Partager pour donner accès à l’onglet Accès', 'error');
                         return;
                     }
-                    const nextValue = !this.assignPerms.modules[moduleKey];
-                    if (!nextValue) {
-                        const remaining = this.moduleOptions.filter(opt => opt.key !== moduleKey && this.assignPerms.modules[opt.key]).length;
-                        if (remaining === 0) {
-                            this.showToast('Gardez au moins une app accessible', 'error');
-                            return;
+                    const current = this.assignPerms.modules[moduleKey] || { view: false, edit: false };
+                    if (mode === 'edit') {
+                        const nextEdit = !current.edit;
+                        current.edit = nextEdit;
+                        if (nextEdit) {
+                            current.view = true;
+                            this.assignPerms.update = true;
                         }
+                    } else {
+                        const nextView = !current.view;
+                        if (!nextView) {
+                            const remaining = this.moduleOptions.filter(opt => opt.key !== moduleKey && this.assignPerms.modules[opt.key]?.view).length;
+                            if (remaining === 0) {
+                                this.showToast('Gardez au moins une app accessible', 'error');
+                                return;
+                            }
+                            current.edit = false;
+                        }
+                        current.view = nextView;
                     }
-                    this.assignPerms.modules[moduleKey] = nextValue;
-                    if (nextValue) this.assignPerms.read = true;
+                    this.assignPerms.modules[moduleKey] = current;
+                    if (current.view) this.assignPerms.read = true;
+                    if (!this.moduleOptions.some(opt => this.assignPerms.modules[opt.key]?.edit)) {
+                        this.assignPerms.update = false;
+                    }
+                    this.assignPerms = this.normalizePermissions(this.assignPerms);
+                },
+
+                applyUpdateToModules(perms) {
+                    this.moduleOptions.forEach(opt => {
+                        if (opt.requiresShare && !perms.share) return;
+                        if (!perms.modules[opt.key]?.view) return;
+                        perms.modules[opt.key].edit = perms.update === true;
+                    });
+                    return perms;
+                },
+
+                applyShareToModules(perms) {
+                    if (!perms.share) {
+                        perms.modules.team = { view: false, edit: false };
+                    }
+                    return perms;
+                },
+
+                ensureAtLeastOneView(perms, blockedKey = '') {
+                    if (this.moduleOptions.some(opt => opt.key !== blockedKey && perms.modules[opt.key]?.view)) return true;
+                    this.showToast('Gardez au moins une app accessible', 'error');
+                    return false;
+                },
+
+                syncUpdateFromModuleEdits(perms) {
+                    perms.update = this.moduleOptions.some(opt => perms.modules[opt.key]?.edit);
+                    return perms;
+                },
+
+                toggleModuleAccess(perms, moduleKey, mode = 'view') {
+                    const option = this.moduleOptions.find(opt => opt.key === moduleKey);
+                    if (option?.requiresShare && !perms.share) {
+                        this.showToast('Activez Partager pour donner accès à l’onglet Accès', 'error');
+                        return null;
+                    }
+                    const current = perms.modules[moduleKey] || { view: false, edit: false };
+                    if (mode === 'edit') {
+                        current.edit = !current.edit;
+                        if (current.edit) current.view = true;
+                    } else {
+                        const nextView = !current.view;
+                        if (!nextView && !this.ensureAtLeastOneView(perms, moduleKey)) return null;
+                        current.view = nextView;
+                        if (!nextView) current.edit = false;
+                    }
+                    perms.modules[moduleKey] = current;
+                    return this.normalizePermissions(this.syncUpdateFromModuleEdits(perms));
                 },
 
                 payloadAssignPerms() {
@@ -2605,32 +2737,22 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                         return;
                     }
                     newPerms[permKey] = !newPerms[permKey];
-                    if (permKey === 'share' && !newPerms.share) newPerms.modules.team = false;
-                    await this.saveGrantPermissions(granteeType, granteeId, newPerms);
+                    if (permKey === 'update') {
+                        this.applyUpdateToModules(newPerms);
+                    }
+                    if (permKey === 'share') {
+                        this.applyShareToModules(newPerms);
+                    }
+                    await this.saveGrantPermissions(granteeType, granteeId, this.normalizePermissions(newPerms));
                 },
 
-                async toggleModule(granteeType, granteeId, moduleKey) {
+                async toggleModule(granteeType, granteeId, moduleKey, mode = 'view') {
                     const grant = this.recordGrants.find(g => g.granteeType === granteeType && g.granteeId === granteeId);
                     if (!grant) return;
-                    const option = this.moduleOptions.find(opt => opt.key === moduleKey);
                     const newPerms = this.normalizePermissions(grant.permissions || {});
-
-                    if (option?.requiresShare && !newPerms.share) {
-                        this.showToast('Activez Partager pour donner accès à l’onglet Accès', 'error');
-                        return;
-                    }
-
-                    const nextValue = !newPerms.modules[moduleKey];
-                    if (!nextValue) {
-                        const remaining = this.moduleOptions.filter(opt => opt.key !== moduleKey && newPerms.modules[opt.key]).length;
-                        if (remaining === 0) {
-                            this.showToast('Gardez au moins une app accessible', 'error');
-                            return;
-                        }
-                    }
-                    newPerms.modules[moduleKey] = nextValue;
-                    if (nextValue) newPerms.read = true;
-                    await this.saveGrantPermissions(granteeType, granteeId, newPerms);
+                    const nextPerms = this.toggleModuleAccess(newPerms, moduleKey, mode);
+                    if (!nextPerms) return;
+                    await this.saveGrantPermissions(granteeType, granteeId, nextPerms);
                 },
 
                 async revokeTeam(teamId) {
@@ -3695,6 +3817,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
         const _ficheAccountNumber = '<%= account_number %>';
         const _ficheEntityId = '<%= entity._id %>';
         const _initialHidden = <%- JSON.stringify((typeof fichePreferences !== 'undefined' && fichePreferences.hiddenFields) ? fichePreferences.hiddenFields : []) %>;
+        const _ficheRecordModuleCanEdit = <%= _canEditCurrentModule ? 'true' : 'false' %>;
 
         // Fiche config component (root-level)
         Alpine.data('ficheConfig', () => ({
@@ -3704,6 +3827,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
             _sortableInstance: null,
 
             toggleConfig() {
+                if (!_ficheRecordModuleCanEdit) return;
                 this.configMode = !this.configMode;
                 if (this.configMode) {
                     this.$nextTick(() => this._initSortable());
@@ -3840,6 +3964,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
             editingKey: '',
             saving: false,
             startEdit(key, e) {
+                if (!_ficheRecordModuleCanEdit) return;
                 if (this.configMode) return;
                 if (this.editingKey === key) return;
                 if (this.editingKey) this._doSave(this.editingKey);
@@ -3864,6 +3989,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
                 this.saveField(key, ref.value);
             },
             async saveField(key, value) {
+                if (!_ficheRecordModuleCanEdit) return;
                 if (this.saving) return;
                 this.saving = true;
                 const editingK = key;
@@ -3949,6 +4075,7 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
             },
 
             openModal() {
+                if (!_ficheRecordModuleCanEdit) return;
                 this.isOpen = true;
                 this.step = 1;
                 this.selectedType = {};

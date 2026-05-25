@@ -64,12 +64,18 @@
                         <iconify-icon icon="solar:widget-5-bold-duotone" width="13" style="color:#7c3aed"></iconify-icon>
                         Apps accessibles
                     </div>
-                    <div class="rt-module-grid rt-module-grid-modal">
+                    <div class="rt-module-matrix">
                         <template x-for="app in moduleOptions" :key="'assign-app-' + app.key">
-                            <button type="button" class="rt-module-chip" :class="assignPerms.modules[app.key] ? 'active' : ''" @click="toggleAssignModule(app.key)" :title="app.requiresShare && !assignPerms.share ? 'Activez Partager pour l’onglet Accès' : app.label">
-                                <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
-                                <span x-text="app.label"></span>
-                            </button>
+                            <div class="rt-module-row" :class="app.requiresShare && !assignPerms.share ? 'disabled' : ''">
+                                <div class="rt-module-row-name">
+                                    <iconify-icon :icon="app.icon" width="13" :style="'color:' + app.color"></iconify-icon>
+                                    <span x-text="app.label"></span>
+                                </div>
+                                <div class="rt-module-actions">
+                                    <button type="button" class="rt-module-toggle" :class="moduleAllowed(assignPerms, app.key) ? 'active' : ''" @click="toggleAssignModule(app.key, 'view')" :title="app.requiresShare && !assignPerms.share ? 'Activez Partager pour l’onglet Accès' : 'Voir ' + app.label">View</button>
+                                    <button type="button" class="rt-module-toggle edit" :class="moduleCanEdit(assignPerms, app.key) ? 'active' : ''" @click="toggleAssignModule(app.key, 'edit')" :title="app.requiresShare && !assignPerms.share ? 'Activez Partager pour l’onglet Accès' : 'Éditer ' + app.label">Edit</button>
+                                </div>
+                            </div>
                         </template>
                     </div>
                 </div>

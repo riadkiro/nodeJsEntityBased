@@ -658,23 +658,25 @@ async function ensureWorkspaceAccessInvite(req, account, email) {
 }
 
 function recordPermissionsFromShare(share) {
+    const app = (view, edit = false) => ({ view, edit });
+    const canManage = !!share.permissions?.share || share.role === 'manager';
     return {
         read: share.permissions?.view !== false,
-        update: false,
+        update: canManage,
         delete: false,
-        share: !!share.permissions?.share || share.role === 'manager',
+        share: canManage,
         modules: {
-            overview: false,
-            fiche: false,
-            docs: false,
-            drive: false,
-            dataRoom: true,
-            tasks: false,
-            agenda: false,
-            chat: false,
-            emails: false,
-            notes: false,
-            team: false,
+            overview: app(false),
+            fiche: app(false),
+            docs: app(false),
+            drive: app(false),
+            dataRoom: app(true, canManage),
+            tasks: app(false),
+            agenda: app(false),
+            chat: app(false),
+            emails: app(false),
+            notes: app(false),
+            team: app(false),
         },
     };
 }

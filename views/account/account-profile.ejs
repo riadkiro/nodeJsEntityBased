@@ -53,6 +53,52 @@
                         </ul>
                     </div>
                 </div>
+
+                <!-- Security Card -->
+                <div class="panel" x-data="passwordForm"
+                     data-has-password="<%= user && user.password ? 'true' : 'false' %>">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="p-2.5 bg-danger/10 text-danger rounded-xl">
+                            <iconify-icon icon="solar:lock-password-bold-duotone" width="22"></iconify-icon>
+                        </div>
+                        <div>
+                            <h5 class="text-base font-bold dark:text-white-light">Sécurité</h5>
+                            <p class="text-xs text-gray-500 mt-0.5" x-text="hasPassword ? 'Changer le mot de passe' : 'Définir un mot de passe'"></p>
+                        </div>
+                    </div>
+
+                    <form @submit.prevent="savePassword" class="space-y-4">
+                        <template x-if="hasPassword">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Ancien mot de passe</label>
+                                <input type="password" x-model="form.currentPassword" class="form-input" autocomplete="current-password" required />
+                            </div>
+                        </template>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Nouveau mot de passe</label>
+                            <input type="password" x-model="form.newPassword" class="form-input" autocomplete="new-password" minlength="6" required />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Confirmation</label>
+                            <input type="password" x-model="form.confirmPassword" class="form-input" autocomplete="new-password" minlength="6" required />
+                        </div>
+
+                        <div x-show="message" x-transition x-cloak class="p-3 rounded-lg text-sm" :class="success ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'">
+                            <span x-text="message"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger w-full flex items-center justify-center gap-2" :disabled="loading">
+                            <iconify-icon x-show="!loading" icon="solar:shield-check-bold" width="16"></iconify-icon>
+                            <svg x-show="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="loading ? 'Mise à jour...' : (hasPassword ? 'Changer le mot de passe' : 'Définir le mot de passe')"></span>
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <!-- ═══ Right Column: Workspaces + Invitations ═══ -->
@@ -279,6 +325,64 @@
 
         <script>
             document.addEventListener('alpine:init', () => {
+                Alpine.data('passwordForm', () => ({
+                    loading: false,
+                    message: '',
+                    success: true,
+                    hasPassword: true,
+                    form: {
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                    },
+                    init() {
+                        this.hasPassword = this.$el.dataset.hasPassword === 'true';
+                    },
+                    resetForm() {
+                        this.form.currentPassword = '';
+                        this.form.newPassword = '';
+                        this.form.confirmPassword = '';
+                    },
+                    async savePassword() {
+                        this.loading = true;
+                        this.message = '';
+                        try {
+                            const res = await fetch('/account/<%= account_number %>/profile/password/update', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(this.form)
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.success) {
+                                this.success = true;
+                                this.message = data.message;
+                                this.hasPassword = true;
+                                this.resetForm();
+                                if (window.showMessage) {
+                                    window.showMessage(data.message, 'success');
+                                }
+                            } else {
+                                this.success = false;
+                                this.message = data.message || "Une erreur est survenue";
+                                if (window.showMessage) {
+                                    window.showMessage(this.message, 'error');
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Save password error:", e);
+                            this.success = false;
+                            this.message = "Erreur réseau. Veuillez réessayer.";
+                            if (window.showMessage) {
+                                window.showMessage(this.message, 'error');
+                            }
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }));
+
                 Alpine.data('companyForm', () => ({
                     loading: false,
                     message: '',

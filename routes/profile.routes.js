@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Account = require("../models/account.model");
+const User = require("../models/user.model");
 
 // Profile Page — user info + workspaces + invitations
 router.get("/", async (req, res) => {
@@ -56,6 +57,77 @@ router.post("/update", async (req, res) => {
     } catch (error) {
         console.error("Profile update error:", error);
         res.status(500).json({ success: false, message: "Error updating profile" });
+    }
+});
+
+// Update Password
+router.post("/password/update", async (req, res) => {
+    try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ success: false, message: "Non authentifié" });
+        }
+
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Le nouveau mot de passe doit contenir au moins 6 caractères"
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "La confirmation ne correspond pas au nouveau mot de passe"
+            });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Utilisateur introuvable" });
+        }
+
+        const hasExistingPassword = Boolean(user.password);
+        if (hasExistingPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: "L'ancien mot de passe est requis"
+                });
+            }
+
+            const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+            if (!isCurrentPasswordValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: "L'ancien mot de passe est incorrect"
+                });
+            }
+
+            if (currentPassword === newPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Le nouveau mot de passe doit être différent de l'ancien"
+                });
+            }
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: hasExistingPassword
+                ? "Mot de passe mis à jour avec succès"
+                : "Mot de passe défini avec succès"
+        });
+    } catch (error) {
+        console.error("Password update error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Erreur lors de la mise à jour du mot de passe"
+        });
     }
 });
 

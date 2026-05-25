@@ -1047,22 +1047,25 @@ document.addEventListener('alpine:init', () => {
             this.uploadProgress = 0;
             this.uploadCount = uploadItems.length;
             const isAccountDriveUpload = this.driveMode === 'global' && ['root', 'custom-folder'].includes(this.globalLevel);
-            const maxFilesPerRequest = isAccountDriveUpload ? 20 : 10;
+            const maxFilesPerRequest = 1;
             const chunks = this.chunkUploadItems(uploadItems, maxFilesPerRequest);
             let completedFiles = 0;
-            try {
-                for (const chunk of chunks) {
-                    const formData = new FormData();
-                    for (const item of chunk) {
-                        formData.append('files', item.file, item.file.name);
-                        formData.append('relativePaths', item.relativePath || item.file.name);
-                    }
+            let uploadedCount = 0;
+            const failedItems = [];
 
-                    let uploadUrl;
-                    const folderBase = options.folderOverride !== undefined
-                        ? options.folderOverride
-                        : (isAccountDriveUpload ? (this.globalCurrentFolder || '') : this.currentFolder);
+            for (const chunk of chunks) {
+                const formData = new FormData();
+                for (const item of chunk) {
+                    formData.append('files', item.file, item.file.name);
+                    formData.append('relativePaths', item.relativePath || item.file.name);
+                }
 
+                let uploadUrl;
+                const folderBase = options.folderOverride !== undefined
+                    ? options.folderOverride
+                    : (isAccountDriveUpload ? (this.globalCurrentFolder || '') : this.currentFolder);
+
+                try {
                     if (isAccountDriveUpload) {
                         formData.append('folder', folderBase);
                         uploadUrl = `/account/${this._accountNumber}/api/drive/upload`;
@@ -1116,18 +1119,48 @@ document.addEventListener('alpine:init', () => {
                         xhr.withCredentials = true;
                         xhr.send(formData);
                     });
+                    uploadedCount += chunk.length;
+                } catch (e) {
+                    const message = e.message || 'Erreur lors de l\'upload';
+                    failedItems.push(...chunk.map(item => ({ item, message })));
+                    console.warn('[Drive] Upload item skipped:', message, chunk.map(item => item.relativePath || item.file.name));
+                } finally {
                     completedFiles += chunk.length;
                     this.uploadProgress = Math.round((completedFiles / uploadItems.length) * 100);
                 }
-                if (window.showMessage) window.showMessage(uploadItems.length + ' fichier(s) ajouté(s)', 'success');
-            } catch (e) {
-                console.error('[Drive] Upload error:', e);
-                const msg = e.message || 'Erreur lors de l\'upload';
-                const isSecurity = msg.includes('interdit') || msg.includes('falsifié') || msg.includes('corrompu') || msg.includes('sécurité') || msg.includes('autorisé');
+            }
+
+            if (uploadedCount > 0 && window.showMessage) {
+                window.showMessage(uploadedCount + ' fichier(s) ajouté(s)', 'success');
+            }
+
+            if (failedItems.length > 0) {
+                const firstMessage = failedItems[0].message || 'Erreur lors de l\'upload';
+                const blockedFiles = failedItems.slice(0, 25).map(({ item, message }) => {
+                    return (item.relativePath || item.file.name) + ' — ' + message;
+                });
+                if (failedItems.length > blockedFiles.length) {
+                    blockedFiles.push('+ ' + (failedItems.length - blockedFiles.length) + ' autre(s) élément(s)');
+                }
+                const isSecurity = firstMessage.includes('interdit') || firstMessage.includes('falsifié') || firstMessage.includes('corrompu') || firstMessage.includes('sécurité') || firstMessage.includes('autorisé');
                 if (isSecurity) {
-                    this.uploadWarning = { show: true, title: 'Fichier bloqué par la sécurité', message: msg, files: uploadItems.map(item => item.relativePath || item.file.name) };
+                    this.uploadWarning = {
+                        show: true,
+                        title: uploadedCount > 0 ? 'Certains fichiers bloqués' : 'Fichier bloqué par la sécurité',
+                        message: uploadedCount > 0
+                            ? uploadedCount + ' fichier(s) importé(s). ' + failedItems.length + ' élément(s) bloqué(s) par la sécurité.'
+                            : firstMessage,
+                        files: blockedFiles
+                    };
                 } else {
-                    this.uploadWarning = { show: true, title: 'Erreur d\'upload', message: msg, files: [] };
+                    this.uploadWarning = {
+                        show: true,
+                        title: uploadedCount > 0 ? 'Upload partiel' : 'Erreur d\'upload',
+                        message: uploadedCount > 0
+                            ? uploadedCount + ' fichier(s) importé(s). ' + failedItems.length + ' élément(s) non importé(s).'
+                            : firstMessage,
+                        files: blockedFiles
+                    };
                 }
             }
             this.uploading = false;

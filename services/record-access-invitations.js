@@ -48,6 +48,19 @@ function dataRoomOnlyPermissions(permissions = {}) {
     };
 }
 
+function permissionsAllowNonDataRoomModule(permissions = {}) {
+    const modules = permissions.modules && typeof permissions.modules === 'object'
+        ? permissions.modules
+        : null;
+    if (!modules) return false;
+
+    return Object.entries(modules).some(([key, value]) => {
+        if (key === 'dataRoom') return false;
+        if (typeof value === 'boolean') return value === true;
+        return value && typeof value === 'object' && (value.view === true || value.edit === true);
+    });
+}
+
 async function hasDataRoomShareForUser(accountNumber, userEmail, userId) {
     let tenantConn;
     try {
@@ -98,7 +111,7 @@ async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
                 ...buildDataRoomShareQuery(email, userIdString),
             }).select('_id').lean();
             const isDataRoomInvite = !!dataRoomRecord;
-            const permissions = isDataRoomInvite
+            const permissions = isDataRoomInvite && !permissionsAllowNonDataRoomModule(pending.permissions || {})
                 ? dataRoomOnlyPermissions(pending.permissions || { read: true })
                 : (pending.permissions || { read: true });
 
@@ -108,7 +121,7 @@ async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
 
             if (existingGrant) {
                 existingGrant.permissions = permissions || existingGrant.permissions || { read: true };
-                if (isDataRoomInvite) existingGrant.note = 'Data Room';
+                if (isDataRoomInvite && !permissionsAllowNonDataRoomModule(permissions)) existingGrant.note = 'Data Room';
             } else {
                 doc.grants.push({
                     granteeType: 'user',
@@ -117,7 +130,7 @@ async function convertPendingInvitesToGrants(accountNumber, userEmail, userId) {
                     grantedBy: pending.invitedBy,
                     grantedAt: new Date(),
                     expiresAt: null,
-                    note: isDataRoomInvite ? 'Data Room' : undefined,
+                    note: isDataRoomInvite && !permissionsAllowNonDataRoomModule(permissions) ? 'Data Room' : undefined,
                 });
                 result.converted++;
             }

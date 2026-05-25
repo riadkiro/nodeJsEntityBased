@@ -18,6 +18,7 @@ const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
 const Account = require('../../models/account.model');
 const User = require('../../models/user.model');
 const mailer = require('../../services/mailer');
+const { modulesAllowedByPermissions } = require('../../middleware/shared-records-helper');
 
 const DATA_ROOM_STORAGE_FOLDER = '__data_room';
 const DEFAULT_DATA_ROOM_PERMISSIONS = Object.freeze({
@@ -681,6 +682,35 @@ function recordPermissionsFromShare(share) {
     };
 }
 
+function permissionsAllowNonDataRoomModule(permissions = {}) {
+    return modulesAllowedByPermissions(permissions)
+        .some(moduleName => moduleName !== 'data-room');
+}
+
+function mergeDataRoomRecordPermissions(existingPermissions, dataRoomPermissions) {
+    if (!permissionsAllowNonDataRoomModule(existingPermissions || {})) {
+        return dataRoomPermissions;
+    }
+
+    const existingModules = existingPermissions?.modules || {};
+    const dataRoomModule = dataRoomPermissions?.modules?.dataRoom || { view: true, edit: false };
+    const existingDataRoomModule = existingModules.dataRoom || {};
+
+    return {
+        read: existingPermissions?.read !== false || dataRoomPermissions?.read !== false,
+        update: existingPermissions?.update === true || dataRoomPermissions?.update === true,
+        delete: existingPermissions?.delete === true || dataRoomPermissions?.delete === true,
+        share: existingPermissions?.share === true || dataRoomPermissions?.share === true,
+        modules: {
+            ...existingModules,
+            dataRoom: {
+                view: existingDataRoomModule.view !== false || dataRoomModule.view !== false,
+                edit: existingDataRoomModule.edit === true || dataRoomModule.edit === true,
+            },
+        },
+    };
+}
+
 async function ensureRecordAccessForShares(req, record, shares) {
     const emails = [...new Set((shares || [])
         .map(share => String(share.email || '').trim().toLowerCase())
@@ -724,11 +754,13 @@ async function ensureRecordAccessForShares(req, record, shares) {
             };
 
             if (grantIdx >= 0) {
-                access.grants[grantIdx].permissions = permissions;
+                access.grants[grantIdx].permissions = mergeDataRoomRecordPermissions(access.grants[grantIdx].permissions, permissions);
                 access.grants[grantIdx].grantedBy = req.user?._id;
                 access.grants[grantIdx].grantedAt = new Date();
                 access.grants[grantIdx].expiresAt = null;
-                access.grants[grantIdx].note = 'Data Room';
+                if (!permissionsAllowNonDataRoomModule(access.grants[grantIdx].permissions)) {
+                    access.grants[grantIdx].note = 'Data Room';
+                }
             } else {
                 access.grants.push(grant);
             }
@@ -750,7 +782,7 @@ async function ensureRecordAccessForShares(req, record, shares) {
         };
 
         if (pendingIdx >= 0) {
-            access.pendingInvites[pendingIdx].permissions = permissions;
+            access.pendingInvites[pendingIdx].permissions = mergeDataRoomRecordPermissions(access.pendingInvites[pendingIdx].permissions, permissions);
         } else {
             access.pendingInvites = access.pendingInvites || [];
             access.pendingInvites.push(pendingInvite);

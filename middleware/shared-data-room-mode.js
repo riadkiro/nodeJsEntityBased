@@ -1,6 +1,8 @@
 const { tenantCollection } = require('./tenant');
+const { modulesAllowedByPermissions } = require('./shared-records-helper');
 
 const SHARED_ROLES = new Set(['guest', 'external']);
+const DATA_ROOM_ROUTE_KEY = 'data-room';
 
 function normalizeEmail(value) {
     return String(value || '').trim().toLowerCase();
@@ -71,6 +73,28 @@ function accessHasDataRoomGrant(req, accessDoc, teamIds, now) {
         if (String(grant.note || '').trim().toLowerCase() !== 'data room') return false;
         return grantMatchesUser(req, grant, teamIds, now);
     });
+}
+
+function permissionsAllowNonDataRoomModule(permissions = {}) {
+    return modulesAllowedByPermissions(permissions)
+        .some(moduleName => moduleName !== DATA_ROOM_ROUTE_KEY);
+}
+
+function accessHasNonDataRoomModule(req, accessDoc, teamIds, now) {
+    if (!accessDoc) return false;
+    const email = normalizeEmail(req.user?.email);
+
+    const matchingGrantHasModule = (accessDoc.grants || []).some(grant => (
+        grantMatchesUser(req, grant, teamIds, now) &&
+        permissionsAllowNonDataRoomModule(grant.permissions || {})
+    ));
+    if (matchingGrantHasModule) return true;
+
+    return (accessDoc.pendingInvites || []).some(invite => (
+        email &&
+        normalizeEmail(invite.email) === email &&
+        permissionsAllowNonDataRoomModule(invite.permissions || {})
+    ));
 }
 
 function titleForRecord(record) {
@@ -176,13 +200,15 @@ async function resolveSharedDataRoomMode(req) {
         records.forEach(record => {
             const recordId = stringId(record._id);
             const accessDoc = accessByRecordId.get(recordId);
+            const hasNonDataRoomModule = accessHasNonDataRoomModule(req, accessDoc, teamIds, now);
             const isDataRoomShare = recordHasMatchingDataRoomShare(req, record)
                 || accessHasDataRoomGrant(req, accessDoc, teamIds, now);
 
-            if (!isDataRoomShare) {
+            if (!isDataRoomShare || hasNonDataRoomModule) {
                 nonDataRoomRecordIds.push(recordId);
-                return;
             }
+
+            if (!isDataRoomShare) return;
 
             const entity = entityById.get(stringId(record.entityId)) || {};
             dataRooms.push({

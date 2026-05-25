@@ -76,6 +76,14 @@ function sanitizePermissions(permissions = {}) {
     };
 }
 
+function permissionsAllowNonDataRoomModule(permissions = {}) {
+    if (permissions.read === false) return false;
+    return RECORD_MODULE_KEYS.some(key => (
+        key !== 'dataRoom' &&
+        (permissions.modules?.[key]?.view === true || permissions.modules?.[key]?.edit === true)
+    ));
+}
+
 // ── GET /api/record-access/:recordId ──────────────────
 // Get access grants for a specific record
 router.get('/:recordId', async (req, res) => {
@@ -127,14 +135,17 @@ router.post('/:recordId/grant', requirePerm('records.share'), async (req, res) =
         );
 
         const existingGrant = existingIdx >= 0 ? access.grants[existingIdx] : null;
+        const sanitizedPermissions = sanitizePermissions(permissions);
         const grant = {
             granteeType,
             granteeId,
-            permissions: sanitizePermissions(permissions),
+            permissions: sanitizedPermissions,
             grantedBy: req.user._id,
             grantedAt: new Date(),
             expiresAt: expiresAt ? new Date(expiresAt) : null,
-            note: note !== undefined ? note : (existingGrant?.note || ''),
+            note: note !== undefined
+                ? note
+                : (permissionsAllowNonDataRoomModule(sanitizedPermissions) ? '' : (existingGrant?.note || '')),
         };
 
         if (existingIdx >= 0) {

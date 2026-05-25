@@ -43,6 +43,24 @@
     .drive-upload-progress { display:flex; align-items:center; gap:10px; padding:10px 14px; margin-bottom:12px; background:#4361ee08; border:1px solid #4361ee20; border-radius:10px; font-size:12px; color:#4361ee; font-weight:500; }
     .drive-progress-bar { flex:1; height:4px; background:#e2e8f0; border-radius:4px; overflow:hidden; }
     .drive-progress-fill { height:100%; background:linear-gradient(90deg,#4361ee,#3b82f6); border-radius:4px; transition:width 0.3s; }
+    .drive-upload-queue { display:flex; flex-direction:column; gap:8px; padding:10px; margin-bottom:14px; background:#f8fbff; border:1px solid #dbe7ff; border-radius:12px; box-shadow:0 8px 24px rgba(67,97,238,0.06); }
+    .drive-upload-queue-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 2px 2px; font-size:12px; font-weight:700; color:#334155; }
+    .drive-upload-queue-clear { border:none; background:#fff; color:#64748b; border:1px solid #e2e8f0; border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; }
+    .drive-upload-queue-clear:hover { color:#4361ee; border-color:#4361ee30; background:#4361ee06; }
+    .drive-upload-queue-list { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow:auto; padding-right:2px; }
+    .drive-upload-queue-item { display:flex; align-items:center; gap:12px; min-height:52px; padding:9px 12px; border-radius:10px; background:rgba(255,255,255,.68); border:1px solid rgba(226,232,240,.78); opacity:.72; transition:opacity .2s, border-color .2s, box-shadow .2s, background .2s; }
+    .drive-upload-queue-item--uploading { opacity:.95; border-color:#4361ee35; background:#fff; box-shadow:0 2px 10px rgba(67,97,238,.10); }
+    .drive-upload-queue-item--done { opacity:.55; }
+    .drive-upload-queue-item--error { opacity:1; background:#fff5f5; border-color:#fecaca; }
+    .drive-upload-queue-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#4361ee10; }
+    .drive-upload-queue-body { flex:1; min-width:0; }
+    .drive-upload-queue-top { display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:0; }
+    .drive-upload-queue-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px; font-weight:700; color:#0f172a; }
+    .drive-upload-queue-status { flex-shrink:0; max-width:38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:700; color:#64748b; text-align:right; }
+    .drive-upload-queue-meta { display:flex; align-items:center; gap:6px; margin-top:2px; min-width:0; font-size:10.5px; color:#94a3b8; }
+    .drive-upload-queue-path { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .drive-upload-queue-mini { height:5px; margin-top:7px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+    .drive-upload-queue-mini-fill { height:100%; border-radius:999px; transition:width .25s ease; }
     .drive-file-actions { display:flex; gap:2px; }
     .drive-folder-item:hover { background:#f8fafc; }
     .drive-folder-item--drop-target { background:#4361ee0a !important; box-shadow:inset 0 0 0 2px #4361ee40; border-radius:12px; }
@@ -132,6 +150,10 @@
     .drive-hero-info { flex:1; z-index:1; }
     .drive-hero-info h1 { font-size:20px; font-weight:700; color:#0e1726; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
     .drive-hero-info p { font-size:13px; color:#888da8; margin:0; }
+    @media (max-width:640px) {
+        .drive-upload-queue-top { flex-direction:column; align-items:flex-start; gap:3px; }
+        .drive-upload-queue-status { max-width:100%; text-align:left; white-space:normal; }
+    }
 </style>
 
 <script>
@@ -158,6 +180,9 @@ document.addEventListener('alpine:init', () => {
         uploading: false,
         uploadProgress: 0,
         uploadCount: 0,
+        uploadQueue: [],
+        uploadConcurrency: 2,
+        _uploadQueueSeq: 0,
         isDragging: false,
         draggedFileId: null,
         dropTargetFolder: null,
@@ -949,6 +974,198 @@ document.addEventListener('alpine:init', () => {
             return Math.max(60000, Math.min(300000, sizeBasedMs));
         },
 
+        cleanUploadPath(value) {
+            return String(value || '')
+                .replace(/\\/g, '/')
+                .replace(/^\/+|\/+$/g, '')
+                .split('/')
+                .filter(Boolean)
+                .join('/');
+        },
+
+        uploadPathBasename(value, fallback) {
+            const clean = this.cleanUploadPath(value);
+            if (!clean) return fallback || '';
+            return clean.split('/').pop() || fallback || clean;
+        },
+
+        uploadPathDirname(value) {
+            const clean = this.cleanUploadPath(value);
+            const parts = clean.split('/').filter(Boolean);
+            parts.pop();
+            return parts.join('/');
+        },
+
+        joinUploadFolder(baseFolder, relativeFolder) {
+            const parts = [baseFolder, relativeFolder]
+                .map(part => this.cleanUploadPath(part))
+                .filter(Boolean);
+            return parts.join('/');
+        },
+
+        getUploadFolderBase(options, isAccountDriveUpload) {
+            if (options.folderOverride !== undefined) return options.folderOverride || '';
+            return isAccountDriveUpload ? (this.globalCurrentFolder || '') : (this.currentFolder || '');
+        },
+
+        formatQueueSize(bytes) {
+            const value = Number(bytes) || 0;
+            if (value < 1024) return value + ' o';
+            if (value < 1024 * 1024) return (value / 1024).toFixed(1) + ' Ko';
+            if (value < 1024 * 1024 * 1024) return (value / (1024 * 1024)).toFixed(1) + ' Mo';
+            return (value / (1024 * 1024 * 1024)).toFixed(2) + ' Go';
+        },
+
+        detectUploadCategory(file) {
+            const mime = (file && file.type || '').toLowerCase();
+            const name = (file && file.name || '').toLowerCase();
+            if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(name)) return 'image';
+            if (mime === 'application/pdf' || /\.pdf$/.test(name)) return 'pdf';
+            if (mime.includes('word') || /\.(doc|docx)$/.test(name)) return 'word';
+            if (mime.includes('excel') || mime.includes('spreadsheet') || /\.(xls|xlsx|csv)$/.test(name)) return 'excel';
+            if (mime.startsWith('video/') || /\.(mp4|webm|ogg|mov|avi)$/.test(name)) return 'video';
+            if (mime.startsWith('audio/') || /\.(mp3|wav|ogg|m4a)$/.test(name)) return 'audio';
+            return 'other';
+        },
+
+        createUploadQueueItems(uploadItems, options, isAccountDriveUpload) {
+            const folderBase = this.cleanUploadPath(this.getUploadFolderBase(options, isAccountDriveUpload));
+            return uploadItems.map(item => {
+                const file = item.file;
+                const relativePath = this.cleanUploadPath(item.relativePath || file.name);
+                const fileName = this.uploadPathBasename(relativePath, file.name);
+                const targetFolder = this.joinUploadFolder(folderBase, this.uploadPathDirname(relativePath));
+                const displayPath = targetFolder ? targetFolder + '/' + fileName : (relativePath || fileName);
+
+                return {
+                    id: 'upload-' + Date.now() + '-' + (++this._uploadQueueSeq),
+                    file,
+                    relativePath: relativePath || fileName,
+                    fileName,
+                    targetFolder,
+                    displayPath,
+                    folderBase,
+                    category: this.detectUploadCategory(file),
+                    size: file.size || 0,
+                    sizeFormatted: this.formatQueueSize(file.size || 0),
+                    progress: 0,
+                    status: 'pending',
+                    message: ''
+                };
+            });
+        },
+
+        get uploadQueueSummary() {
+            const total = this.uploadQueue.length;
+            if (!total) return '';
+            const uploading = this.uploadQueue.filter(item => item.status === 'uploading').length;
+            const pending = this.uploadQueue.filter(item => item.status === 'pending').length;
+            const done = this.uploadQueue.filter(item => item.status === 'done').length;
+            const failed = this.uploadQueue.filter(item => item.status === 'error').length;
+            const processed = done + failed;
+            if (uploading || pending) {
+                return 'File d\'upload - ' + processed + '/' + total + ' traité(s), ' + uploading + ' en cours, 2 max en parallèle';
+            }
+            if (failed) return done + ' terminé(s), ' + failed + ' bloqué(s)';
+            return total + ' fichier(s) terminé(s)';
+        },
+
+        get canClearUploadQueue() {
+            return this.uploadQueue.length > 0 && !this.uploadQueue.some(item => ['pending', 'uploading'].includes(item.status));
+        },
+
+        clearUploadQueue() {
+            if (this.canClearUploadQueue) this.uploadQueue = [];
+        },
+
+        uploadQueueStatusLabel(item) {
+            if (item.status === 'pending') return 'En attente';
+            if (item.status === 'uploading') return Math.max(1, item.progress || 0) + '%';
+            if (item.status === 'done') return 'Terminé';
+            const message = item.message || 'Bloqué';
+            return message.length > 80 ? message.slice(0, 77) + '...' : message;
+        },
+
+        uploadQueueProgressColor(item) {
+            if (item.status === 'error') return '#ef4444';
+            if (item.status === 'done') return '#10b981';
+            return 'linear-gradient(90deg,#4361ee,#3b82f6)';
+        },
+
+        async uploadQueueItem(queueItem, isAccountDriveUpload, onProgress) {
+            const formData = new FormData();
+            formData.append('files', queueItem.file, queueItem.file.name);
+            formData.append('relativePaths', queueItem.relativePath || queueItem.fileName);
+            formData.append('folder', queueItem.folderBase || '');
+
+            let uploadUrl;
+            if (isAccountDriveUpload) {
+                uploadUrl = `/account/${this._accountNumber}/api/drive/upload`;
+            } else {
+                const targetRecordId = this.driveMode === 'global' && this.globalLevel === 'app-files' && this.selectedRecord
+                    ? this.selectedRecord.recordId
+                    : this._recordId;
+                if (!targetRecordId) throw new Error('Fiche introuvable pour l\'upload');
+                uploadUrl = `/account/${this._accountNumber}/api/records/${targetRecordId}/attachments`;
+            }
+
+            queueItem.status = 'uploading';
+            queueItem.progress = Math.max(1, queueItem.progress || 0);
+            if (onProgress) onProgress();
+
+            const xhr = new XMLHttpRequest();
+            xhr.timeout = this.getUploadTimeout(queueItem.file);
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    queueItem.progress = Math.min(99, Math.max(1, Math.round((e.loaded / e.total) * 100)));
+                    if (onProgress) onProgress();
+                }
+            });
+
+            const data = await new Promise((resolve, reject) => {
+                xhr.onload = () => {
+                    let response = {};
+                    try {
+                        response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                    } catch (e) {
+                        reject(new Error('Réponse serveur invalide'));
+                        return;
+                    }
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        if (response.error || response.success === false) {
+                            reject(new Error(response.error || 'Erreur lors de l\'upload'));
+                            return;
+                        }
+                        resolve(response);
+                    } else {
+                        reject(new Error(response.error || 'Erreur lors de l\'upload'));
+                    }
+                };
+                xhr.onerror = () => reject(new Error('Erreur réseau'));
+                xhr.ontimeout = () => reject(new Error('Délai dépassé pendant l\'upload'));
+                xhr.onabort = () => reject(new Error('Upload interrompu'));
+                xhr.open('POST', uploadUrl);
+                xhr.withCredentials = true;
+                xhr.send(formData);
+            });
+
+            if (isAccountDriveUpload) {
+                if (data.files) {
+                    this.globalDriveFiles.push(...data.files);
+                    data.files.forEach(file => {
+                        if (file.folder && !this.globalDriveFolders.includes(file.folder)) this.globalDriveFolders.push(file.folder);
+                    });
+                }
+                (data.folders || []).forEach(folder => {
+                    if (folder && !this.globalDriveFolders.includes(folder)) this.globalDriveFolders.push(folder);
+                });
+            } else if (data.attachments) {
+                data.attachments.forEach(a => { if (a.folder && !this.customFolders.includes(a.folder)) this.customFolders.push(a.folder); });
+                this.allFiles.push(...data.attachments);
+            }
+        },
+
         async uploadDroppedData(dataTransfer, options = {}) {
             const uploadItems = await this.collectDroppedUploadItems(dataTransfer);
             if (uploadItems.length === 0) {
@@ -1037,6 +1254,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         async uploadFiles(fileList, options = {}) {
+            if (this.uploading) {
+                window.showMessage ? window.showMessage('Un upload est déjà en cours. Attendez la fin de la file.', 'info') : null;
+                return;
+            }
+
             const uploadItems = this.normalizeUploadItems(fileList);
             if (uploadItems.length === 0) {
                 this.uploadWarning = {
@@ -1052,92 +1274,45 @@ document.addEventListener('alpine:init', () => {
             this.uploadProgress = 0;
             this.uploadCount = uploadItems.length;
             const isAccountDriveUpload = this.driveMode === 'global' && ['root', 'custom-folder'].includes(this.globalLevel);
-            const maxFilesPerRequest = 1;
-            const chunks = this.chunkUploadItems(uploadItems, maxFilesPerRequest);
-            let completedFiles = 0;
+            if (!this.uploadQueue.some(item => ['pending', 'uploading'].includes(item.status))) this.uploadQueue = [];
+            const queueItems = this.createUploadQueueItems(uploadItems, options, isAccountDriveUpload);
+            this.uploadQueue.push(...queueItems);
+
             let uploadedCount = 0;
             const failedItems = [];
+            let nextIndex = 0;
 
-            try {
-                for (const chunk of chunks) {
-                    const formData = new FormData();
-                    for (const item of chunk) {
-                        formData.append('files', item.file, item.file.name);
-                        formData.append('relativePaths', item.relativePath || item.file.name);
-                    }
+            const updateBatchProgress = () => {
+                const totalProgress = queueItems.reduce((sum, item) => sum + (Number(item.progress) || 0), 0);
+                this.uploadProgress = Math.round(totalProgress / queueItems.length);
+            };
 
-                    let uploadUrl;
-                    const folderBase = options.folderOverride !== undefined
-                        ? options.folderOverride
-                        : (isAccountDriveUpload ? (this.globalCurrentFolder || '') : this.currentFolder);
-
+            const worker = async () => {
+                while (nextIndex < queueItems.length) {
+                    const queueItem = queueItems[nextIndex++];
                     try {
-                        if (isAccountDriveUpload) {
-                            formData.append('folder', folderBase);
-                            uploadUrl = `/account/${this._accountNumber}/api/drive/upload`;
-                        } else {
-                            const targetRecordId = this.driveMode === 'global' && this.globalLevel === 'app-files' && this.selectedRecord
-                                ? this.selectedRecord.recordId
-                                : this._recordId;
-                            if (!targetRecordId) throw new Error('Fiche introuvable pour l\'upload');
-                            formData.append('folder', folderBase);
-                            uploadUrl = `/account/${this._accountNumber}/api/records/${targetRecordId}/attachments`;
-                        }
-
-                        const xhr = new XMLHttpRequest();
-                        xhr.timeout = this.getUploadTimeout(chunk[0] && chunk[0].file);
-                        xhr.upload.addEventListener('progress', (e) => {
-                            if (e.lengthComputable) {
-                                const currentChunkProgress = e.loaded / e.total;
-                                this.uploadProgress = Math.round(((completedFiles + (chunk.length * currentChunkProgress)) / uploadItems.length) * 100);
-                            }
-                        });
-                        await new Promise((resolve, reject) => {
-                            xhr.onload = () => {
-                                if (xhr.status >= 200 && xhr.status < 300) {
-                                    try {
-                                        const data = JSON.parse(xhr.responseText);
-                                        if (isAccountDriveUpload) {
-                                            if (data.success && data.files) {
-                                                this.globalDriveFiles.push(...data.files);
-                                                data.files.forEach(file => {
-                                                    if (file.folder && !this.globalDriveFolders.includes(file.folder)) this.globalDriveFolders.push(file.folder);
-                                                });
-                                            }
-                                            (data.folders || []).forEach(folder => {
-                                                if (folder && !this.globalDriveFolders.includes(folder)) this.globalDriveFolders.push(folder);
-                                            });
-                                        } else {
-                                            if (data.success && data.attachments) {
-                                                data.attachments.forEach(a => { if (a.folder && !this.customFolders.includes(a.folder)) this.customFolders.push(a.folder); });
-                                                this.allFiles.push(...data.attachments);
-                                            }
-                                        }
-                                    } catch (e) { /* ignore */ }
-                                    resolve();
-                                } else {
-                                    let errMsg = 'Erreur lors de l\'upload';
-                                    try { const errData = JSON.parse(xhr.responseText); if (errData.error) errMsg = errData.error; } catch(e) {}
-                                    reject(new Error(errMsg));
-                                }
-                            };
-                            xhr.onerror = () => reject(new Error('Erreur réseau'));
-                            xhr.ontimeout = () => reject(new Error('Délai dépassé pendant l\'upload'));
-                            xhr.onabort = () => reject(new Error('Upload interrompu'));
-                            xhr.open('POST', uploadUrl);
-                            xhr.withCredentials = true;
-                            xhr.send(formData);
-                        });
-                        uploadedCount += chunk.length;
+                        await this.uploadQueueItem(queueItem, isAccountDriveUpload, updateBatchProgress);
+                        queueItem.status = 'done';
+                        queueItem.progress = 100;
+                        queueItem.message = '';
+                        uploadedCount += 1;
                     } catch (e) {
                         const message = e.message || 'Erreur lors de l\'upload';
-                        failedItems.push(...chunk.map(item => ({ item, message })));
-                        console.warn('[Drive] Upload item skipped:', message, chunk.map(item => item.relativePath || item.file.name));
+                        queueItem.status = 'error';
+                        queueItem.progress = 100;
+                        queueItem.message = message;
+                        failedItems.push({ item: { relativePath: queueItem.displayPath || queueItem.relativePath, file: { name: queueItem.fileName } }, message });
+                        console.warn('[Drive] Upload item skipped:', message, queueItem.displayPath || queueItem.relativePath);
                     } finally {
-                        completedFiles += chunk.length;
-                        this.uploadProgress = Math.round((completedFiles / uploadItems.length) * 100);
+                        queueItem.file = null;
+                        updateBatchProgress();
                     }
                 }
+            };
+
+            try {
+                const workerCount = Math.min(this.uploadConcurrency || 2, queueItems.length);
+                await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
                 if (uploadedCount > 0 && window.showMessage) {
                     window.showMessage(uploadedCount + ' fichier(s) ajouté(s)', 'success');
@@ -1421,6 +1596,37 @@ document.addEventListener('alpine:init', () => {
         <div class="drive-progress-bar"><div class="drive-progress-fill" :style="'width:' + uploadProgress + '%'"></div></div>
     </div>
 
+    <!-- Upload queue (global root/custom folder) -->
+    <div x-show="uploadQueue.length > 0 && (globalLevel === 'root' || globalLevel === 'custom-folder')" class="drive-upload-queue" style="display:none;" x-transition>
+        <div class="drive-upload-queue-head">
+            <span x-text="uploadQueueSummary"></span>
+            <button type="button" class="drive-upload-queue-clear" x-show="canClearUploadQueue" @click="clearUploadQueue()">Effacer</button>
+        </div>
+        <div class="drive-upload-queue-list">
+            <template x-for="item in uploadQueue" :key="item.id">
+                <div class="drive-upload-queue-item" :class="'drive-upload-queue-item--' + item.status">
+                    <div class="drive-upload-queue-icon" :style="'background:' + getCategoryColor(item.category) + '12'">
+                        <iconify-icon :icon="getCategoryIcon(item.category)" width="18" :style="'color:' + getCategoryColor(item.category)"></iconify-icon>
+                    </div>
+                    <div class="drive-upload-queue-body">
+                        <div class="drive-upload-queue-top">
+                            <div class="drive-upload-queue-name" x-text="item.fileName"></div>
+                            <div class="drive-upload-queue-status" x-text="uploadQueueStatusLabel(item)"></div>
+                        </div>
+                        <div class="drive-upload-queue-meta">
+                            <span x-text="item.sizeFormatted"></span>
+                            <span>·</span>
+                            <span class="drive-upload-queue-path" x-text="item.displayPath"></span>
+                        </div>
+                        <div class="drive-upload-queue-mini">
+                            <div class="drive-upload-queue-mini-fill" :style="'width:' + item.progress + '%;background:' + uploadQueueProgressColor(item)"></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
     <!-- ═══ ROOT LEVEL: App folder + Custom folders + Root files ═══ -->
     <template x-if="globalLevel === 'root'">
         <div class="rm-items-list">
@@ -1679,6 +1885,37 @@ document.addEventListener('alpine:init', () => {
             <iconify-icon icon="line-md:uploading-loop" width="20" style="color:#4361ee"></iconify-icon>
             <span x-text="'Upload en cours... ' + uploadCount + ' fichier(s)'"></span>
             <div class="drive-progress-bar"><div class="drive-progress-fill" :style="'width:' + uploadProgress + '%'"></div></div>
+        </div>
+
+        <!-- Upload queue -->
+        <div x-show="uploadQueue.length > 0" class="drive-upload-queue" style="display:none;" x-transition>
+            <div class="drive-upload-queue-head">
+                <span x-text="uploadQueueSummary"></span>
+                <button type="button" class="drive-upload-queue-clear" x-show="canClearUploadQueue" @click="clearUploadQueue()">Effacer</button>
+            </div>
+            <div class="drive-upload-queue-list">
+                <template x-for="item in uploadQueue" :key="item.id">
+                    <div class="drive-upload-queue-item" :class="'drive-upload-queue-item--' + item.status">
+                        <div class="drive-upload-queue-icon" :style="'background:' + getCategoryColor(item.category) + '12'">
+                            <iconify-icon :icon="getCategoryIcon(item.category)" width="18" :style="'color:' + getCategoryColor(item.category)"></iconify-icon>
+                        </div>
+                        <div class="drive-upload-queue-body">
+                            <div class="drive-upload-queue-top">
+                                <div class="drive-upload-queue-name" x-text="item.fileName"></div>
+                                <div class="drive-upload-queue-status" x-text="uploadQueueStatusLabel(item)"></div>
+                            </div>
+                            <div class="drive-upload-queue-meta">
+                                <span x-text="item.sizeFormatted"></span>
+                                <span>·</span>
+                                <span class="drive-upload-queue-path" x-text="item.displayPath"></span>
+                            </div>
+                            <div class="drive-upload-queue-mini">
+                                <div class="drive-upload-queue-mini-fill" :style="'width:' + item.progress + '%;background:' + uploadQueueProgressColor(item)"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
 
         <!-- Loading -->

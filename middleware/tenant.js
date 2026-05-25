@@ -5,6 +5,17 @@ const { hydrateWorkspaceRole } = require('./permissions');
 
 const cachedConnections = {};
 
+const redactMongoUri = (uri) => {
+  try {
+    const parsed = new URL(uri);
+    if (parsed.username) parsed.username = "***";
+    if (parsed.password) parsed.password = "***";
+    return parsed.toString();
+  } catch (_) {
+    return String(uri || "").replace(/\/\/([^:@/]+):([^@/]+)@/, "//***:***@");
+  }
+};
+
 const tenantCollection = async (req, collection) => {
   const { tenantDbConnection, tenantDbReady } = req;
 
@@ -57,7 +68,7 @@ const connectToTenantDb = async (req, res, next) => {
         const dbUrl = `${dbConfig.uri}saas_app_rb_${tenantId}`;
 
         if (!cachedConnections[tenantId]) {
-          console.log(`[Tenant] Initializing NEW connection to ${dbUrl}`);
+          console.log(`[Tenant] Initializing NEW connection to ${redactMongoUri(dbUrl)}`);
           const connection = await mongoose.createConnection(dbUrl, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
@@ -100,4 +111,3 @@ const connectToTenantDb = async (req, res, next) => {
 };
 
 module.exports = { connectToTenantDb, tenantCollection };
-

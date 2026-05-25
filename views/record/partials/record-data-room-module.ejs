@@ -31,6 +31,13 @@
 .dr-file-actions{display:flex;align-items:center;gap:2px;}
 .dr-icon-btn{width:30px;height:30px;border:none;background:none;border-radius:7px;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .dr-icon-btn:hover{background:#f1f5f9;color:#0f172a;}
+.dr-icon-btn.disabled{opacity:.38;cursor:default;pointer-events:none;}
+.dr-context-menu{position:fixed;z-index:10001;width:228px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 18px 48px rgba(15,23,42,.18);padding:6px;}
+.dr-context-menu button,.dr-context-menu a{width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;border:none;background:transparent;color:#334155;border-radius:8px;font-size:12.5px;font-weight:700;text-decoration:none;cursor:pointer;font-family:inherit;text-align:left;}
+.dr-context-menu button:hover,.dr-context-menu a:hover{background:#f8fafc;color:#0f766e;}
+.dr-context-menu .danger{color:#ef4444;}
+.dr-context-menu .danger:hover{background:#fff5f5;color:#dc2626;}
+.dr-context-sep{height:1px;background:#eef2f7;margin:5px 2px;}
 .dr-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:44px 18px;color:#94a3b8;text-align:center;}
 .dr-empty h3{margin:0;color:#334155;font-size:14px;font-weight:800;}
 .dr-empty p{margin:0;font-size:12px;}
@@ -55,13 +62,21 @@
 .dr-toggle{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:12px;font-weight:700;cursor:pointer;user-select:none;}
 .dr-toggle.active{border-color:#0f766e30;background:#0f766e08;color:#0f766e;}
 .dr-share-row,.dr-log-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.dr-share-row{flex-wrap:wrap;}
 .dr-share-row:last-child,.dr-log-row:last-child{border-bottom:none;}
+.dr-share-perms{display:flex;align-items:center;gap:4px;}
+.dr-mini-toggle{width:28px;height:28px;border:1px solid #e2e8f0;background:#fff;color:#94a3b8;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.dr-mini-toggle.active{border-color:#0f766e30;background:#0f766e08;color:#0f766e;}
 .dr-log-dot{width:30px;height:30px;border-radius:9px;background:#0f766e10;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .dr-log-body{flex:1;min-width:0;}
 .dr-log-title{font-size:12.5px;font-weight:800;color:#0f172a;}
 .dr-log-meta{font-size:11px;color:#94a3b8;margin-top:1px;}
 .dark .dr-search,.dark .dr-stat,.dark .dr-new-folder{background:#1b2e4b;border-color:#253b5c;}
 .dark .dr-btn,.dark .dr-item,.dark .dr-modal,.dark .dr-picker-row{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
+.dark .dr-context-menu{background:#0e1726;border-color:#253b5c;}
+.dark .dr-context-menu button,.dark .dr-context-menu a{color:#e0e6ed;}
+.dark .dr-context-menu button:hover,.dark .dr-context-menu a:hover{background:#1b2e4b;color:#2dd4bf;}
+.dark .dr-context-sep{background:#253b5c;}
 .dark .dr-item-title,.dark .dr-modal-title,.dark .dr-empty h3,.dark .dr-log-title{color:#e0e6ed;}
 .dark .dr-input,.dark .dr-select{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
 .dark .dr-modal-header,.dark .dr-modal-footer,.dark .dr-share-row,.dark .dr-log-row{border-color:#253b5c;}
@@ -69,7 +84,7 @@
 @media(max-width:720px){.dr-toolbar{align-items:stretch}.dr-search{min-width:100%;}.dr-actions{width:100%;}.dr-actions .dr-btn{flex:1;justify-content:center}.dr-item{flex-wrap:wrap}.dr-file-actions{width:100%;justify-content:flex-end}.dr-form-grid{grid-template-columns:1fr;}}
 </style>
 
-<div x-data="dataRoomModule" x-cloak class="dr-shell">
+<div x-data="dataRoomModule" x-cloak class="dr-shell" @click="closeContextMenu()" @keydown.escape.window="closeContextMenu(); closePermissions()" @scroll.window="closeContextMenu()">
     <input type="file" multiple x-ref="uploadInput" @change="handleUpload($event)" style="display:none">
 
     <div class="dr-toolbar">
@@ -85,15 +100,19 @@
             </div>
         </div>
         <div class="dr-actions">
-            <button type="button" class="dr-btn" @click="showNewFolder = true; $nextTick(() => $refs.folderInput?.focus())">
+            <button type="button" class="dr-btn" @click.stop="openPermissions('room')" x-show="dataRoom.access?.canManage">
+                <iconify-icon icon="solar:share-circle-bold-duotone" width="16"></iconify-icon>
+                Partager
+            </button>
+            <button type="button" class="dr-btn" @click="showNewFolder = true; $nextTick(() => $refs.folderInput?.focus())" x-show="canManageCurrentFolder">
                 <iconify-icon icon="solar:folder-add-bold-duotone" width="16"></iconify-icon>
                 Dossier
             </button>
-            <button type="button" class="dr-btn" @click="openDrivePicker()">
+            <button type="button" class="dr-btn" @click="openDrivePicker()" x-show="canManageCurrentFolder">
                 <iconify-icon icon="solar:cloud-storage-bold-duotone" width="16"></iconify-icon>
                 Depuis Drive
             </button>
-            <button type="button" class="dr-btn dr-btn-primary" @click="$refs.uploadInput.click()" :disabled="uploading">
+            <button type="button" class="dr-btn dr-btn-primary" @click="$refs.uploadInput.click()" :disabled="uploading" x-show="canManageCurrentFolder">
                 <iconify-icon icon="solar:cloud-upload-bold-duotone" width="16"></iconify-icon>
                 Importer
             </button>
@@ -117,7 +136,7 @@
         </template>
     </div>
 
-    <div x-show="showNewFolder" x-transition class="dr-new-folder">
+    <div x-show="showNewFolder && canManageCurrentFolder" x-transition class="dr-new-folder">
         <iconify-icon icon="solar:folder-bold-duotone" width="18" style="color:#f59e0b"></iconify-icon>
         <input type="text" x-ref="folderInput" x-model="newFolderName" @keydown.enter="createFolder()" @keydown.escape="cancelFolder()" placeholder="Nom du dossier">
         <button type="button" class="dr-btn dr-btn-primary" @click="createFolder()" :disabled="!newFolderName.trim()">Créer</button>
@@ -131,7 +150,7 @@
 
     <div class="dr-list" x-show="!loading">
         <template x-for="folder in visibleFolders" :key="folder.path">
-            <div class="dr-item" @click="navigateTo(folder.path)">
+            <div class="dr-item" @click="navigateTo(folder.path)" @contextmenu.prevent.stop="openContextMenu($event, 'folder', folder)">
                 <div class="dr-item-icon" style="background:#f59e0b12">
                     <iconify-icon icon="solar:folder-bold-duotone" width="21" style="color:#f59e0b"></iconify-icon>
                 </div>
@@ -140,15 +159,17 @@
                     <div class="dr-item-meta">
                         <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
                         <span x-text="folderItemCount(folder.path) + ' fichier(s)'"></span>
+                        <span>·</span>
+                        <span x-text="folder.effectivePermissions?.download === false ? 'Téléchargement désactivé' : 'Téléchargement autorisé'"></span>
                     </div>
                 </div>
-                <span class="dr-badge" style="background:#f59e0b10;color:#f59e0b">Dossier</span>
-                <button type="button" class="dr-icon-btn"><iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon></button>
+                <span class="dr-badge" :style="folder.effectiveAccessMode === 'restricted' ? 'background:#ef444410;color:#ef4444' : 'background:#f59e0b10;color:#f59e0b'" x-text="folder.effectiveAccessMode === 'restricted' ? 'Restreint' : 'Dossier'"></span>
+                <button type="button" class="dr-icon-btn" @click.stop="openContextMenu($event, 'folder', folder)"><iconify-icon icon="solar:menu-dots-bold" width="18"></iconify-icon></button>
             </div>
         </template>
 
         <template x-for="(item, idx) in visibleItems" :key="item._id">
-            <div class="dr-item">
+            <div class="dr-item" @contextmenu.prevent.stop="openContextMenu($event, 'item', item, idx)">
                 <div class="dr-item-icon" :style="'background:' + categoryColor(item.category) + '12'">
                     <iconify-icon :icon="categoryIcon(item.category)" width="21" :style="'color:' + categoryColor(item.category)"></iconify-icon>
                 </div>
@@ -162,12 +183,14 @@
                         <span x-text="formatDate(item.addedAt)"></span>
                     </div>
                 </div>
-                <span class="dr-badge" :style="item.accessMode === 'restricted' ? 'background:#ef444410;color:#ef4444' : 'background:#10b98112;color:#10b981'" x-text="item.accessMode === 'restricted' ? 'Restreint' : 'Workspace'"></span>
+                <span class="dr-badge" :style="item.effectiveAccessMode === 'restricted' ? 'background:#ef444410;color:#ef4444' : 'background:#10b98112;color:#10b981'" x-text="item.effectiveAccessMode === 'restricted' ? 'Restreint' : 'Workspace'"></span>
+                <span class="dr-badge" x-show="item.effectivePermissions?.download === false" style="background:#64748b10;color:#64748b">No download</span>
                 <div class="dr-file-actions">
                     <button type="button" class="dr-icon-btn" @click="previewItem(item, idx)" title="Aperçu"><iconify-icon icon="solar:eye-bold" width="16" style="color:#10b981"></iconify-icon></button>
-                    <a class="dr-icon-btn" :href="item.downloadUrl" title="Télécharger" @click="logAction(item, 'item.download_clicked')" x-show="item.permissions.download !== false"><iconify-icon icon="solar:download-bold" width="16" style="color:#4361ee"></iconify-icon></a>
-                    <button type="button" class="dr-icon-btn" @click="openPermissions(item)" title="Permissions"><iconify-icon icon="solar:shield-keyhole-bold" width="16" style="color:#0f766e"></iconify-icon></button>
-                    <button type="button" class="dr-icon-btn" @click="removeItem(item)" title="Retirer"><iconify-icon icon="solar:trash-bin-2-bold" width="16" style="color:#ef4444"></iconify-icon></button>
+                    <a class="dr-icon-btn" :href="item.downloadUrl" title="Télécharger" @click="logAction(item, 'item.download_clicked')" x-show="item.effectivePermissions?.download !== false"><iconify-icon icon="solar:download-bold" width="16" style="color:#4361ee"></iconify-icon></a>
+                    <button type="button" class="dr-icon-btn" @click="openPermissions('item', item)" title="Permissions" x-show="item.canManage"><iconify-icon icon="solar:shield-keyhole-bold" width="16" style="color:#0f766e"></iconify-icon></button>
+                    <button type="button" class="dr-icon-btn" @click.stop="openContextMenu($event, 'item', item, idx)" title="Menu"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
+                    <button type="button" class="dr-icon-btn" @click="removeItem(item)" title="Retirer" x-show="item.canManage"><iconify-icon icon="solar:trash-bin-2-bold" width="16" style="color:#ef4444"></iconify-icon></button>
                 </div>
             </div>
         </template>
@@ -182,6 +205,56 @@
     <div x-show="loading" class="dr-empty">
         <iconify-icon icon="line-md:loading-twotone-loop" width="30" style="color:#0f766e"></iconify-icon>
     </div>
+
+    <template x-if="contextMenu.open">
+        <div class="dr-context-menu" :style="'left:' + contextMenu.x + 'px;top:' + contextMenu.y + 'px;'" @click.stop>
+            <template x-if="contextMenu.type === 'folder'">
+                <div>
+                    <button type="button" @click="navigateTo(contextMenu.target.path); closeContextMenu()">
+                        <iconify-icon icon="solar:folder-open-bold-duotone" width="16"></iconify-icon>
+                        Ouvrir
+                    </button>
+                    <button type="button" @click="openPermissions('folder', contextMenu.target); closeContextMenu()" x-show="contextMenu.target?.canManage">
+                        <iconify-icon icon="solar:shield-keyhole-bold" width="16"></iconify-icon>
+                        Accès dossier
+                    </button>
+                    <button type="button" @click="toggleDownload('folder', contextMenu.target); closeContextMenu()" x-show="contextMenu.target?.canManage">
+                        <iconify-icon :icon="contextMenu.target?.permissions?.download === false ? 'solar:download-bold' : 'solar:download-minimalistic-bold'" width="16"></iconify-icon>
+                        <span x-text="contextMenu.target?.permissions?.download === false ? 'Autoriser téléchargement' : 'Désactiver téléchargement'"></span>
+                    </button>
+                    <button type="button" @click="renameFolder(contextMenu.target); closeContextMenu()" x-show="contextMenu.target?.canManage">
+                        <iconify-icon icon="solar:pen-bold" width="16"></iconify-icon>
+                        Renommer
+                    </button>
+                </div>
+            </template>
+            <template x-if="contextMenu.type === 'item'">
+                <div>
+                    <button type="button" @click="previewItem(contextMenu.target, contextMenu.index || 0); closeContextMenu()">
+                        <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
+                        Aperçu
+                    </button>
+                    <a :href="contextMenu.target.downloadUrl" @click="logAction(contextMenu.target, 'item.download_clicked'); closeContextMenu()" x-show="contextMenu.target?.effectivePermissions?.download !== false">
+                        <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
+                        Télécharger
+                    </a>
+                    <div class="dr-context-sep"></div>
+                    <button type="button" @click="openPermissions('item', contextMenu.target); closeContextMenu()" x-show="contextMenu.target?.canManage">
+                        <iconify-icon icon="solar:shield-keyhole-bold" width="16"></iconify-icon>
+                        Accès fichier
+                    </button>
+                    <button type="button" @click="toggleDownload('item', contextMenu.target); closeContextMenu()" x-show="contextMenu.target?.canManage">
+                        <iconify-icon :icon="contextMenu.target?.permissions?.download === false ? 'solar:download-bold' : 'solar:download-minimalistic-bold'" width="16"></iconify-icon>
+                        <span x-text="contextMenu.target?.permissions?.download === false ? 'Autoriser téléchargement' : 'Désactiver téléchargement'"></span>
+                    </button>
+                    <button type="button" class="danger" @click="removeItem(contextMenu.target); closeContextMenu()" x-show="contextMenu.target?.canManage">
+                        <iconify-icon icon="solar:trash-bin-2-bold" width="16"></iconify-icon>
+                        Retirer
+                    </button>
+                </div>
+            </template>
+        </div>
+    </template>
 
     <!-- Drive picker -->
     <template x-if="showDrivePicker">
@@ -226,21 +299,21 @@
     </template>
 
     <!-- Permissions modal -->
-    <template x-if="showPermissions && permissionItem">
+    <template x-if="showPermissions && permissionForm">
         <div>
             <div class="dr-overlay" @click="closePermissions()"></div>
             <div class="dr-modal dr-modal-sm">
                 <div class="dr-modal-header">
-                    <div class="dr-modal-title"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="18" style="color:#0f766e"></iconify-icon>Accès fichier</div>
+                    <div class="dr-modal-title"><iconify-icon icon="solar:shield-keyhole-bold-duotone" width="18" style="color:#0f766e"></iconify-icon><span x-text="permissionTitle"></span></div>
                     <button type="button" class="dr-icon-btn" @click="closePermissions()"><iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon></button>
                 </div>
                 <div class="dr-modal-body">
                     <div class="dr-form-grid">
-                        <label class="dr-field full">
+                        <label class="dr-field full" x-show="permissionScope === 'item'">
                             <span class="dr-label">Nom affiché</span>
                             <input class="dr-input" x-model="permissionForm.displayName">
                         </label>
-                        <label class="dr-field">
+                        <label class="dr-field" x-show="permissionScope === 'item'">
                             <span class="dr-label">Dossier Data Room</span>
                             <select class="dr-select" x-model="permissionForm.folder">
                                 <option value="">Racine</option>
@@ -249,7 +322,7 @@
                                 </template>
                             </select>
                         </label>
-                        <label class="dr-field">
+                        <label class="dr-field" :class="permissionScope !== 'item' ? 'full' : ''">
                             <span class="dr-label">Mode d'accès</span>
                             <select class="dr-select" x-model="permissionForm.accessMode">
                                 <option value="workspace">Workspace</option>
@@ -276,6 +349,11 @@
                                         <option value="reviewer">Reviewer</option>
                                         <option value="manager">Manager</option>
                                     </select>
+                                    <div class="dr-share-perms">
+                                        <button type="button" class="dr-mini-toggle" :class="share.permissions.view ? 'active' : ''" @click="share.permissions.view = !share.permissions.view" title="Voir"><iconify-icon icon="solar:eye-bold" width="14"></iconify-icon></button>
+                                        <button type="button" class="dr-mini-toggle" :class="share.permissions.download ? 'active' : ''" @click="share.permissions.download = !share.permissions.download" title="Télécharger"><iconify-icon icon="solar:download-bold" width="14"></iconify-icon></button>
+                                        <button type="button" class="dr-mini-toggle" :class="share.permissions.share ? 'active' : ''" @click="share.permissions.share = !share.permissions.share" title="Partager"><iconify-icon icon="solar:share-bold" width="14"></iconify-icon></button>
+                                    </div>
                                     <button type="button" class="dr-icon-btn" @click="permissionForm.shares.splice(idx,1)"><iconify-icon icon="solar:trash-bin-2-bold" width="16" style="color:#ef4444"></iconify-icon></button>
                                 </div>
                             </template>
@@ -327,7 +405,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('dataRoomModule', () => ({
         apiBase: '/account/<%= account_number %>/api/records/<%= record._id %>/data-room',
-        dataRoom: { folders: [], items: [], logs: [] },
+        dataRoom: { access: { accessMode: 'workspace', permissions: { view: true, download: true, share: false, print: false, watermark: false }, shares: [] }, folders: [], items: [], logs: [] },
         driveFiles: [],
         selectedDriveIds: [],
         currentFolder: '',
@@ -341,15 +419,28 @@ document.addEventListener('alpine:init', () => {
         showLogs: false,
         showNewFolder: false,
         newFolderName: '',
-        permissionItem: null,
+        permissionScope: null,
+        permissionTarget: null,
         permissionForm: null,
+        contextMenu: { open: false, x: 0, y: 0, type: null, target: null, index: 0 },
 
         async init() {
             await this.load();
         },
 
         get restrictedCount() {
-            return this.dataRoom.items.filter(item => item.accessMode === 'restricted').length;
+            const room = this.dataRoom.access?.accessMode === 'restricted' ? 1 : 0;
+            const folders = this.dataRoom.folders.filter(folder => folder.effectiveAccessMode === 'restricted').length;
+            const items = this.dataRoom.items.filter(item => item.effectiveAccessMode === 'restricted').length;
+            return room + folders + items;
+        },
+
+        get permissionTitle() {
+            return {
+                room: 'Accès Data Room',
+                folder: 'Accès dossier',
+                item: 'Accès fichier'
+            }[this.permissionScope] || 'Accès';
         },
 
         get breadcrumbs() {
@@ -375,6 +466,12 @@ document.addEventListener('alpine:init', () => {
                 .filter(item => !q || (item.displayName || '').toLowerCase().includes(q) || (item.originalName || '').toLowerCase().includes(q));
         },
 
+        get canManageCurrentFolder() {
+            if (!this.currentFolder) return this.dataRoom.access?.canManage !== false;
+            const folder = this.dataRoom.folders.find(row => row.path === this.currentFolder);
+            return !!folder?.canManage;
+        },
+
         get filteredDriveFiles() {
             const q = this.driveSearch.trim().toLowerCase();
             return this.driveFiles.filter(file => !q || (file.originalName || '').toLowerCase().includes(q) || (file.folder || '').toLowerCase().includes(q));
@@ -391,11 +488,48 @@ document.addEventListener('alpine:init', () => {
             return data;
         },
 
+        defaultPermissions() {
+            return { view: true, download: true, share: false, print: false, watermark: false };
+        },
+
+        normalizeAccess(access = {}) {
+            return {
+                accessMode: access.accessMode || 'workspace',
+                permissions: { ...this.defaultPermissions(), ...(access.permissions || {}) },
+                shares: (access.shares || []).map(share => ({
+                    ...share,
+                    role: share.role || 'viewer',
+                    permissions: { view: true, download: false, share: false, ...(share.permissions || {}) }
+                })),
+                canManage: access.canManage !== false
+            };
+        },
+
+        normalizeDataRoomPayload(payload) {
+            const base = payload || {};
+            return {
+                access: this.normalizeAccess(base.access),
+                folders: (base.folders || []).map(folder => ({
+                    ...folder,
+                    ...this.normalizeAccess(folder),
+                    effectivePermissions: { ...this.defaultPermissions(), ...(folder.effectivePermissions || folder.permissions || {}) },
+                    effectiveAccessMode: folder.effectiveAccessMode || folder.accessMode || 'workspace'
+                })),
+                items: (base.items || []).map(item => ({
+                    ...item,
+                    ...this.normalizeAccess(item),
+                    effectivePermissions: { ...this.defaultPermissions(), ...(item.effectivePermissions || item.permissions || {}) },
+                    effectiveAccessMode: item.effectiveAccessMode || item.accessMode || 'workspace'
+                })),
+                logs: base.logs || []
+            };
+        },
+
         async load() {
             this.loading = true;
             try {
                 const data = await this.request(this.apiBase);
-                this.dataRoom = data.dataRoom || { folders: [], items: [], logs: [] };
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
             } catch (e) {
                 this.toast(e.message, 'danger');
             } finally {
@@ -420,7 +554,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     body: JSON.stringify({ name, parentPath: this.currentFolder })
                 });
-                this.dataRoom = data.dataRoom;
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
                 this.cancelFolder();
             } catch (e) {
                 this.toast(e.message, 'danger');
@@ -435,7 +569,7 @@ document.addEventListener('alpine:init', () => {
             this.showDrivePicker = true;
             this.selectedDriveIds = [];
             try {
-                const data = await this.request(this.apiBase + '/drive-files');
+                const data = await this.request(this.apiBase + '/drive-files?folder=' + encodeURIComponent(this.currentFolder));
                 this.driveFiles = data.files || [];
             } catch (e) {
                 this.toast(e.message, 'danger');
@@ -449,7 +583,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     body: JSON.stringify({ attachmentIds: this.selectedDriveIds, folder: this.currentFolder })
                 });
-                this.dataRoom = data.dataRoom;
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
                 this.showDrivePicker = false;
                 this.toast((data.added || 0) + ' fichier(s) ajouté(s)', 'success');
             } catch (e) {
@@ -461,6 +595,10 @@ document.addEventListener('alpine:init', () => {
             const files = Array.from(e.target.files || []);
             e.target.value = '';
             if (files.length === 0) return;
+            if (!this.canManageCurrentFolder) {
+                this.toast('Permission refusée', 'danger');
+                return;
+            }
             const formData = new FormData();
             files.forEach(file => formData.append('files', file, file.name));
             formData.append('folder', this.currentFolder);
@@ -484,7 +622,7 @@ document.addEventListener('alpine:init', () => {
                     xhr.withCredentials = true;
                     xhr.send(formData);
                 });
-                this.dataRoom = data.dataRoom;
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
                 this.toast((data.added || 0) + ' fichier(s) importé(s)', 'success');
             } catch (err) {
                 this.toast(err.message, 'danger');
@@ -504,39 +642,120 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        openPermissions(item) {
-            this.permissionItem = item;
+        openPermissions(scope, target = null) {
+            const access = scope === 'room' ? (this.dataRoom.access || {}) : (target || {});
+            if (scope !== 'room' && !target) return;
+            this.permissionScope = scope;
+            this.permissionTarget = target;
             this.permissionForm = {
-                displayName: item.displayName,
-                folder: item.folder || '',
-                accessMode: item.accessMode || 'workspace',
-                permissions: {
-                    view: item.permissions?.view !== false,
-                    download: item.permissions?.download !== false,
-                    share: !!item.permissions?.share,
-                    print: !!item.permissions?.print,
-                    watermark: !!item.permissions?.watermark
-                },
-                shares: JSON.parse(JSON.stringify(item.shares || []))
+                displayName: target?.displayName || '',
+                folder: target?.folder || '',
+                accessMode: access.accessMode || 'workspace',
+                permissions: { ...this.defaultPermissions(), ...(access.permissions || {}) },
+                shares: (access.shares || []).map(share => ({
+                    email: share.email || '',
+                    userId: share.userId,
+                    role: share.role || 'viewer',
+                    permissions: { view: true, download: false, share: false, ...(share.permissions || {}) }
+                }))
             };
             this.showPermissions = true;
         },
 
         closePermissions() {
             this.showPermissions = false;
-            this.permissionItem = null;
+            this.permissionScope = null;
+            this.permissionTarget = null;
             this.permissionForm = null;
+        },
+
+        permissionEndpoint() {
+            if (this.permissionScope === 'room') return this.apiBase + '/access';
+            if (this.permissionScope === 'folder') return this.apiBase + '/folders/' + this.permissionTarget._id + '/access';
+            return this.apiBase + '/items/' + this.permissionTarget._id;
         },
 
         async savePermissions() {
             try {
-                const data = await this.request(this.apiBase + '/items/' + this.permissionItem._id, {
+                const payload = {
+                    accessMode: this.permissionForm.accessMode,
+                    permissions: this.permissionForm.permissions,
+                    shares: this.permissionForm.shares
+                };
+                if (this.permissionScope === 'item') {
+                    payload.displayName = this.permissionForm.displayName;
+                    payload.folder = this.permissionForm.folder;
+                }
+                const data = await this.request(this.permissionEndpoint(), {
                     method: 'PATCH',
-                    body: JSON.stringify(this.permissionForm)
+                    body: JSON.stringify(payload)
                 });
-                this.dataRoom = data.dataRoom;
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
                 this.closePermissions();
                 this.toast('Permissions sauvegardées', 'success');
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        openContextMenu(event, type, target, index = 0) {
+            const width = 228;
+            const height = type === 'item' ? 260 : 190;
+            this.contextMenu = {
+                open: true,
+                x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
+                y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8)),
+                type,
+                target,
+                index
+            };
+        },
+
+        closeContextMenu() {
+            this.contextMenu.open = false;
+        },
+
+        async toggleDownload(scope, target) {
+            if (!target) return;
+            const permissions = { ...this.defaultPermissions(), ...(target.permissions || {}) };
+            permissions.download = permissions.download === false;
+            try {
+                const endpoint = scope === 'folder'
+                    ? this.apiBase + '/folders/' + target._id + '/access'
+                    : this.apiBase + '/items/' + target._id;
+                const payload = {
+                    accessMode: target.accessMode || 'workspace',
+                    permissions,
+                    shares: target.shares || []
+                };
+                if (scope === 'item') {
+                    payload.displayName = target.displayName;
+                    payload.folder = target.folder || '';
+                }
+                const data = await this.request(endpoint, {
+                    method: 'PATCH',
+                    body: JSON.stringify(payload)
+                });
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
+                this.toast(permissions.download ? 'Téléchargement autorisé' : 'Téléchargement désactivé', 'success');
+            } catch (e) {
+                this.toast(e.message, 'danger');
+            }
+        },
+
+        async renameFolder(folder) {
+            const nextName = prompt('Nouveau nom du dossier', folder?.name || '');
+            if (!nextName || !nextName.trim() || nextName.trim() === folder.name) return;
+            try {
+                const data = await this.request(this.apiBase + '/folders/' + folder._id, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: nextName.trim() })
+                });
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
+                if (this.currentFolder === folder.path) {
+                    const updated = data.dataRoom.folders.find(row => String(row._id) === String(folder._id));
+                    this.currentFolder = updated?.path || this.currentFolder;
+                }
             } catch (e) {
                 this.toast(e.message, 'danger');
             }
@@ -546,7 +765,7 @@ document.addEventListener('alpine:init', () => {
             if (!confirm('Retirer ce fichier de la Data Room ?')) return;
             try {
                 const data = await this.request(this.apiBase + '/items/' + item._id, { method: 'DELETE' });
-                this.dataRoom = data.dataRoom;
+                this.dataRoom = this.normalizeDataRoomPayload(data.dataRoom);
             } catch (e) {
                 this.toast(e.message, 'danger');
             }
@@ -558,7 +777,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     body: JSON.stringify({ action })
                 });
-                this.dataRoom.logs = data.dataRoom.logs || this.dataRoom.logs;
+                this.dataRoom.logs = this.normalizeDataRoomPayload(data.dataRoom).logs || this.dataRoom.logs;
             } catch (e) {}
         },
 
@@ -588,7 +807,7 @@ document.addEventListener('alpine:init', () => {
             if (action.includes('download')) return 'solar:download-bold';
             if (action.includes('upload')) return 'solar:cloud-upload-bold-duotone';
             if (action.includes('linked')) return 'solar:link-bold-duotone';
-            if (action.includes('permission')) return 'solar:shield-keyhole-bold';
+            if (action.includes('permission') || action.includes('access')) return 'solar:shield-keyhole-bold';
             if (action.includes('folder')) return 'solar:folder-bold-duotone';
             if (action.includes('removed')) return 'solar:trash-bin-2-bold';
             return 'solar:eye-bold';
@@ -605,7 +824,9 @@ document.addEventListener('alpine:init', () => {
                 'item.downloaded': 'Fichier téléchargé',
                 'item.download_clicked': 'Téléchargement demandé',
                 'folder.created': 'Dossier créé',
-                'folder.renamed': 'Dossier renommé'
+                'folder.renamed': 'Dossier renommé',
+                'folder.access_updated': 'Accès dossier modifié',
+                'room.access_updated': 'Accès Data Room modifié'
             }[action] || action;
         },
 

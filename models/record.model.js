@@ -94,10 +94,50 @@ const RecordSchema = new mongoose.Schema({
 
   // 🔐 Data Room — organisation et accès avancés sans dupliquer les fichiers
   dataRoom: {
+    accessMode: { type: String, enum: ['workspace', 'restricted'], default: 'workspace' },
+    permissions: {
+      view: { type: Boolean, default: true },
+      download: { type: Boolean, default: true },
+      share: { type: Boolean, default: false },
+      print: { type: Boolean, default: false },
+      watermark: { type: Boolean, default: false }
+    },
+    shares: [{
+      email: String,
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      role: { type: String, enum: ['viewer', 'reviewer', 'manager'], default: 'viewer' },
+      permissions: {
+        view: { type: Boolean, default: true },
+        download: { type: Boolean, default: false },
+        share: { type: Boolean, default: false }
+      },
+      addedAt: { type: Date, default: Date.now },
+      addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
     folders: [{
       name: { type: String, required: true },
       path: { type: String, required: true },
       parentPath: { type: String, default: '' },
+      accessMode: { type: String, enum: ['workspace', 'restricted'], default: 'workspace' },
+      permissions: {
+        view: { type: Boolean, default: true },
+        download: { type: Boolean, default: true },
+        share: { type: Boolean, default: false },
+        print: { type: Boolean, default: false },
+        watermark: { type: Boolean, default: false }
+      },
+      shares: [{
+        email: String,
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        role: { type: String, enum: ['viewer', 'reviewer', 'manager'], default: 'viewer' },
+        permissions: {
+          view: { type: Boolean, default: true },
+          download: { type: Boolean, default: false },
+          share: { type: Boolean, default: false }
+        },
+        addedAt: { type: Date, default: Date.now },
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+      }],
       createdAt: { type: Date, default: Date.now },
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     }],

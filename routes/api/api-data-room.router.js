@@ -17,6 +17,13 @@ const { tenantCollection } = require('../../middleware/tenant');
 const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
 
 const DATA_ROOM_STORAGE_FOLDER = '__data_room';
+const DEFAULT_DATA_ROOM_PERMISSIONS = Object.freeze({
+    view: true,
+    download: true,
+    share: false,
+    print: false,
+    watermark: false
+});
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -121,6 +128,9 @@ function detectCategory(mimeType) {
 
 function ensureDataRoom(record) {
     if (!record.dataRoom) record.dataRoom = {};
+    if (!record.dataRoom.accessMode) record.dataRoom.accessMode = 'workspace';
+    if (!record.dataRoom.permissions) record.dataRoom.permissions = { ...DEFAULT_DATA_ROOM_PERMISSIONS };
+    if (!record.dataRoom.shares) record.dataRoom.shares = [];
     if (!record.dataRoom.folders) record.dataRoom.folders = [];
     if (!record.dataRoom.items) record.dataRoom.items = [];
     if (!record.dataRoom.logs) record.dataRoom.logs = [];
@@ -166,6 +176,17 @@ function permissionsFromBody(value) {
     };
 }
 
+function permissionsFromStored(value) {
+    const source = value || {};
+    return {
+        view: source.view !== false,
+        download: source.download !== false,
+        share: !!source.share,
+        print: !!source.print,
+        watermark: !!source.watermark
+    };
+}
+
 function sharePermissionsFromBody(value) {
     const source = value || {};
     return {
@@ -188,9 +209,194 @@ function normalizeShare(raw, req) {
     };
 }
 
+function normalizeShares(shares) {
+    return (shares || []).map(share => ({
+        _id: share._id,
+        email: share.email,
+        userId: share.userId,
+        role: share.role || 'viewer',
+        permissions: {
+            view: share.permissions?.view !== false,
+            download: !!share.permissions?.download,
+            share: !!share.permissions?.share
+        },
+        addedAt: share.addedAt
+    }));
+}
+
+function normalizeAccess(target) {
+    return {
+        accessMode: target?.accessMode || 'workspace',
+        permissions: permissionsFromStored(target?.permissions),
+        shares: normalizeShares(target?.shares || [])
+    };
+}
+
+function folderById(record, folderId) {
+    ensureDataRoom(record);
+    return (record.dataRoom.folders || []).find(folder => String(folder._id) === String(folderId));
+}
+
+function folderByPath(record, folderPath) {
+    ensureDataRoom(record);
+    const clean = cleanPath(folderPath || '');
+    return (record.dataRoom.folders || []).find(folder => cleanPath(folder.path || '') === clean);
+}
+
+function folderChainForPath(record, folderPath) {
+    const clean = cleanPath(folderPath || '');
+    if (!clean) return [];
+    const folders = record.dataRoom?.folders || [];
+    let pathSoFar = '';
+    return clean.split('/').map(part => {
+        pathSoFar = pathSoFar ? pathSoFar + '/' + part : part;
+        return folders.find(folder => cleanPath(folder.path || '') === pathSoFar);
+    }).filter(Boolean);
+}
+
+function roomScope(record) {
+    return { type: 'room', label: 'Data Room', target: record.dataRoom };
+}
+
+function folderScopesForPath(record, folderPath) {
+    return folderChainForPath(record, folderPath).map(folder => ({
+        type: 'folder',
+        label: folder.path || folder.name || 'Dossier',
+        target: folder
+    }));
+}
+
+function accessScopesForFolder(record, folder) {
+    return [roomScope(record), ...folderScopesForPath(record, folder.path || '')];
+}
+
+function accessScopesForItem(record, item) {
+    return [
+        roomScope(record),
+        ...folderScopesForPath(record, item.folder || ''),
+        { type: 'item', label: item.displayName || 'Fichier', target: item }
+    ];
+}
+
+function isDataRoomManager(req) {
+    return ['owner', 'admin', 'manager'].includes(req.workspaceRole);
+}
+
+function shareMatchesUser(req, share) {
+    const userId = req.user?._id ? String(req.user._id) : '';
+    const email = String(req.user?.email || '').trim().toLowerCase();
+    const shareUserId = share.userId ? String(share.userId) : '';
+    const shareEmail = String(share.email || '').trim().toLowerCase();
+    return (userId && shareUserId === userId) || (email && shareEmail === email);
+}
+
+function matchingShares(req, scopes) {
+    return scopes.flatMap(scope =>
+        (scope.target?.shares || [])
+            .filter(share => shareMatchesUser(req, share))
+            .map(share => ({ scope, share }))
+    );
+}
+
+function shareAllowsCapability(share, capability) {
+    if (capability === 'download') return !!share.permissions?.download;
+    if (capability === 'share') return !!share.permissions?.share || share.role === 'manager';
+    return share.permissions?.view !== false;
+}
+
+function permissionChainAllows(scopes, capability) {
+    return scopes.every(scope => permissionsFromStored(scope.target?.permissions)[capability] !== false);
+}
+
+function hasRestrictedScope(scopes) {
+    return scopes.some(scope => (scope.target?.accessMode || 'workspace') === 'restricted');
+}
+
+function effectivePermissions(scopes) {
+    return {
+        view: permissionChainAllows(scopes, 'view'),
+        download: permissionChainAllows(scopes, 'download'),
+        share: permissionChainAllows(scopes, 'share'),
+        print: permissionChainAllows(scopes, 'print'),
+        watermark: permissionChainAllows(scopes, 'watermark')
+    };
+}
+
+function effectiveAccessMode(scopes) {
+    return hasRestrictedScope(scopes) ? 'restricted' : 'workspace';
+}
+
+function canUseDataRoomScopes(req, scopes, capability) {
+    if (isDataRoomManager(req)) return true;
+    if (!permissionChainAllows(scopes, capability)) return false;
+    if (!hasRestrictedScope(scopes)) return true;
+    return matchingShares(req, scopes).some(({ share }) => shareAllowsCapability(share, capability));
+}
+
+function hasManagerShare(req, scopes) {
+    return matchingShares(req, scopes).some(({ share }) => share.role === 'manager');
+}
+
+function canManageDataRoom(req, record) {
+    if (isDataRoomManager(req)) return true;
+    return hasManagerShare(req, [roomScope(record)]);
+}
+
+function canManageDataRoomFolder(req, record, folder) {
+    if (isDataRoomManager(req)) return true;
+    const userId = req.user?._id ? String(req.user._id) : '';
+    if (folder.createdBy && userId && String(folder.createdBy) === userId) return true;
+    return hasManagerShare(req, accessScopesForFolder(record, folder));
+}
+
+function canManageDataRoomPath(req, record, folderPath) {
+    if (isDataRoomManager(req)) return true;
+    const folder = folderPath ? folderByPath(record, folderPath) : null;
+    if (!folder) return canManageDataRoom(req, record);
+    return canManageDataRoomFolder(req, record, folder);
+}
+
+function canManageDataRoomItem(req, record, item) {
+    if (isDataRoomManager(req)) return true;
+    const userId = req.user?._id ? String(req.user._id) : '';
+    if (item.addedBy && userId && String(item.addedBy) === userId) return true;
+    return hasManagerShare(req, accessScopesForItem(record, item));
+}
+
+function canUseDataRoomFolder(req, record, folder, capability) {
+    return canUseDataRoomScopes(req, accessScopesForFolder(record, folder), capability);
+}
+
+function canUseDataRoomItem(req, record, item, capability) {
+    return canUseDataRoomScopes(req, accessScopesForItem(record, item), capability);
+}
+
+function normalizeFolder(record, folder, req) {
+    const scopes = accessScopesForFolder(record, folder);
+    const canManage = canManageDataRoomFolder(req, record, folder);
+    const access = normalizeAccess(folder);
+    if (!canManage) access.shares = [];
+    return {
+        _id: folder._id,
+        name: folder.name,
+        path: folder.path || '',
+        parentPath: folder.parentPath || '',
+        createdAt: folder.createdAt,
+        ...access,
+        effectiveAccessMode: effectiveAccessMode(scopes),
+        effectivePermissions: effectivePermissions(scopes),
+        canManage
+    };
+}
+
 function normalizeItem(record, item, req) {
     const att = attachmentById(record, item.attachmentId);
     if (!att) return null;
+    const scopes = accessScopesForItem(record, item);
+    const effective = effectivePermissions(scopes);
+    const canManage = canManageDataRoomItem(req, record, item);
+    const access = normalizeAccess(item);
+    if (!canManage) access.shares = [];
     return {
         _id: item._id,
         attachmentId: item.attachmentId,
@@ -203,26 +409,10 @@ function normalizeItem(record, item, req) {
         sizeFormatted: formatSize(att.size || 0),
         category: att.category || detectCategory(att.mimeType),
         folder: item.folder || '',
-        accessMode: item.accessMode || 'workspace',
-        permissions: {
-            view: item.permissions?.view !== false,
-            download: item.permissions?.download !== false,
-            share: !!item.permissions?.share,
-            print: !!item.permissions?.print,
-            watermark: !!item.permissions?.watermark
-        },
-        shares: (item.shares || []).map(share => ({
-            _id: share._id,
-            email: share.email,
-            userId: share.userId,
-            role: share.role || 'viewer',
-            permissions: {
-                view: share.permissions?.view !== false,
-                download: !!share.permissions?.download,
-                share: !!share.permissions?.share
-            },
-            addedAt: share.addedAt
-        })),
+        ...access,
+        effectiveAccessMode: effectiveAccessMode(scopes),
+        effectivePermissions: effective,
+        canManage,
         url: `/account/${req.account_number}/api/records/${record._id}/data-room/items/${item._id}/file`,
         downloadUrl: `/account/${req.account_number}/api/records/${record._id}/data-room/items/${item._id}/file?dl=1`,
         addedAt: item.addedAt,
@@ -230,61 +420,40 @@ function normalizeItem(record, item, req) {
     };
 }
 
-function canUseDataRoomItem(req, item, capability) {
-    const permissions = item.permissions || {};
-    if (capability === 'view' && permissions.view === false) return false;
-    if (capability === 'download' && permissions.download === false) return false;
-
-    if (['owner', 'admin'].includes(req.workspaceRole)) return true;
-    if ((item.accessMode || 'workspace') !== 'restricted') return true;
-
-    const userId = req.user?._id ? String(req.user._id) : '';
-    const email = String(req.user?.email || '').trim().toLowerCase();
-    if (item.addedBy && userId && String(item.addedBy) === userId) return true;
-
-    const share = (item.shares || []).find(entry => {
-        const shareUserId = entry.userId ? String(entry.userId) : '';
-        const shareEmail = String(entry.email || '').trim().toLowerCase();
-        return (userId && shareUserId === userId) || (email && shareEmail === email);
-    });
-    if (!share) return false;
-    if (capability === 'download') return !!share.permissions?.download;
-    return share.permissions?.view !== false;
-}
-
-function canManageDataRoomItem(req, item) {
-    if (['owner', 'admin'].includes(req.workspaceRole)) return true;
-    const userId = req.user?._id ? String(req.user._id) : '';
-    const email = String(req.user?.email || '').trim().toLowerCase();
-    if (item.addedBy && userId && String(item.addedBy) === userId) return true;
-    return (item.shares || []).some(entry => {
-        const shareUserId = entry.userId ? String(entry.userId) : '';
-        const shareEmail = String(entry.email || '').trim().toLowerCase();
-        return entry.role === 'manager' && ((userId && shareUserId === userId) || (email && shareEmail === email));
-    });
-}
-
 function normalizeDataRoom(record, req) {
     ensureDataRoom(record);
-    const folders = (record.dataRoom.folders || [])
-        .map(folder => ({
-            _id: folder._id,
-            name: folder.name,
-            path: folder.path || '',
-            parentPath: folder.parentPath || '',
-            createdAt: folder.createdAt
-        }))
-        .sort((a, b) => a.path.localeCompare(b.path));
-
     const items = (record.dataRoom.items || [])
-        .filter(item => canUseDataRoomItem(req, item, 'view'))
+        .filter(item => canUseDataRoomItem(req, record, item, 'view'))
         .map(item => normalizeItem(record, item, req))
         .filter(Boolean)
         .sort((a, b) => new Date(b.addedAt || 0) - new Date(a.addedAt || 0));
     const visibleItemIds = new Set(items.map(item => String(item._id)));
+    const visibleFolderPaths = new Set();
+
+    items.forEach(item => {
+        let pathSoFar = '';
+        cleanPath(item.folder || '').split('/').filter(Boolean).forEach(part => {
+            pathSoFar = pathSoFar ? pathSoFar + '/' + part : part;
+            visibleFolderPaths.add(pathSoFar);
+        });
+    });
+
+    (record.dataRoom.folders || []).forEach(folder => {
+        if (!canUseDataRoomFolder(req, record, folder, 'view')) return;
+        let pathSoFar = '';
+        cleanPath(folder.path || '').split('/').filter(Boolean).forEach(part => {
+            pathSoFar = pathSoFar ? pathSoFar + '/' + part : part;
+            visibleFolderPaths.add(pathSoFar);
+        });
+    });
+
+    const folders = (record.dataRoom.folders || [])
+        .filter(folder => visibleFolderPaths.has(cleanPath(folder.path || '')))
+        .map(folder => normalizeFolder(record, folder, req))
+        .sort((a, b) => a.path.localeCompare(b.path));
 
     const logs = (record.dataRoom.logs || [])
-        .filter(log => !log.itemId || visibleItemIds.has(String(log.itemId)))
+        .filter(log => canManageDataRoom(req, record) || (log.itemId && visibleItemIds.has(String(log.itemId))))
         .slice(-120)
         .reverse()
         .map(log => ({
@@ -297,7 +466,19 @@ function normalizeDataRoom(record, req) {
             at: log.at
         }));
 
-    return { folders, items, logs };
+    const roomCanManage = canManageDataRoom(req, record);
+    const roomAccess = normalizeAccess(record.dataRoom);
+    if (!roomCanManage) roomAccess.shares = [];
+
+    return {
+        access: {
+            ...roomAccess,
+            canManage: roomCanManage
+        },
+        folders,
+        items,
+        logs
+    };
 }
 
 async function validateFilesOrFail(files) {
@@ -346,11 +527,40 @@ router.get('/records/:recordId/data-room', async (req, res) => {
     }
 });
 
+router.patch('/records/:recordId/data-room/access', async (req, res) => {
+    try {
+        const record = await loadRecord(req);
+        if (!record) return res.status(404).json({ error: 'Record introuvable' });
+        ensureDataRoom(record);
+        if (!canManageDataRoom(req, record)) return res.status(403).json({ error: 'Permission refusée' });
+
+        if (req.body.accessMode !== undefined) {
+            record.dataRoom.accessMode = req.body.accessMode === 'restricted' ? 'restricted' : 'workspace';
+        }
+        if (req.body.permissions !== undefined) {
+            record.dataRoom.permissions = permissionsFromBody(req.body.permissions);
+        }
+        if (req.body.shares !== undefined) {
+            const shares = Array.isArray(req.body.shares) ? req.body.shares : [];
+            record.dataRoom.shares = shares.map(share => normalizeShare(share, req)).filter(Boolean);
+        }
+
+        pushLog(record, null, req, 'room.access_updated', 'Data Room');
+        record.markModified('dataRoom');
+        await record.save();
+        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+    } catch (err) {
+        console.error('[DataRoom] room access error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/records/:recordId/data-room/drive-files', async (req, res) => {
     try {
         const record = await loadRecord(req);
         if (!record) return res.status(404).json({ error: 'Record introuvable' });
         ensureDataRoom(record);
+        if (!canManageDataRoomPath(req, record, cleanPath(req.query.folder || ''))) return res.status(403).json({ error: 'Permission refusée' });
         const linked = new Set((record.dataRoom.items || []).map(item => String(item.attachmentId)));
         const files = (record.attachments || [])
             .filter(att => !att.isDataRoomOnly)
@@ -385,6 +595,9 @@ router.post('/records/:recordId/data-room/folders', async (req, res) => {
         if (name.includes('/') || name.includes('\\')) return res.status(400).json({ error: 'Le nom du dossier ne peut pas contenir /' });
 
         const parentPath = cleanPath(req.body.parentPath || '');
+        if (!canManageDataRoomPath(req, record, parentPath)) {
+            return res.status(403).json({ error: 'Permission refusée' });
+        }
         const folderPath = cleanPath(parentPath ? parentPath + '/' + name : name);
         if ((record.dataRoom.folders || []).some(folder => folder.path === folderPath)) {
             return res.status(400).json({ error: 'Ce dossier existe déjà dans la Data Room' });
@@ -414,6 +627,7 @@ router.patch('/records/:recordId/data-room/folders/:folderId', async (req, res) 
 
         const folder = (record.dataRoom.folders || []).find(f => String(f._id) === String(req.params.folderId));
         if (!folder) return res.status(404).json({ error: 'Dossier introuvable' });
+        if (!canManageDataRoomFolder(req, record, folder)) return res.status(403).json({ error: 'Permission refusée' });
         const oldPath = folder.path;
         const name = String(req.body.name || '').trim();
         if (!name) return res.status(400).json({ error: 'Nom de dossier requis' });
@@ -447,6 +661,33 @@ router.patch('/records/:recordId/data-room/folders/:folderId', async (req, res) 
     }
 });
 
+router.patch('/records/:recordId/data-room/folders/:folderId/access', async (req, res) => {
+    try {
+        const record = await loadRecord(req);
+        if (!record) return res.status(404).json({ error: 'Record introuvable' });
+        ensureDataRoom(record);
+
+        const folder = folderById(record, req.params.folderId);
+        if (!folder) return res.status(404).json({ error: 'Dossier introuvable' });
+        if (!canManageDataRoomFolder(req, record, folder)) return res.status(403).json({ error: 'Permission refusée' });
+
+        if (req.body.accessMode !== undefined) folder.accessMode = req.body.accessMode === 'restricted' ? 'restricted' : 'workspace';
+        if (req.body.permissions !== undefined) folder.permissions = permissionsFromBody(req.body.permissions);
+        if (req.body.shares !== undefined) {
+            const shares = Array.isArray(req.body.shares) ? req.body.shares : [];
+            folder.shares = shares.map(share => normalizeShare(share, req)).filter(Boolean);
+        }
+
+        pushLog(record, null, req, 'folder.access_updated', folder.path || folder.name || '');
+        record.markModified('dataRoom');
+        await record.save();
+        res.json({ success: true, dataRoom: normalizeDataRoom(record, req) });
+    } catch (err) {
+        console.error('[DataRoom] folder access error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.post('/records/:recordId/data-room/from-drive', async (req, res) => {
     try {
         const record = await loadRecord(req);
@@ -457,6 +698,9 @@ router.post('/records/:recordId/data-room/from-drive', async (req, res) => {
             ? req.body.attachmentIds
             : [req.body.attachmentId || req.body.attachmentIds].filter(Boolean);
         const folder = cleanPath(req.body.folder || '');
+        if (!canManageDataRoomPath(req, record, folder)) {
+            return res.status(403).json({ error: 'Permission refusée' });
+        }
         const existing = new Set((record.dataRoom.items || []).map(item => String(item.attachmentId)));
         let added = 0;
 
@@ -505,6 +749,10 @@ router.post('/records/:recordId/data-room/upload', (req, res, next) => {
         await validateFilesOrFail(req.files);
 
         const folder = cleanPath(req.body.folder || '');
+        if (!canManageDataRoomPath(req, record, folder)) {
+            cleanupUploadedFiles(req.files);
+            return res.status(403).json({ error: 'Permission refusée' });
+        }
         const existingItems = new Set((record.dataRoom.items || []).map(item => String(item.attachmentId)));
         const addedItems = [];
 
@@ -565,10 +813,14 @@ router.patch('/records/:recordId/data-room/items/:itemId', async (req, res) => {
         if (!record) return res.status(404).json({ error: 'Record introuvable' });
         const item = dataRoomItemById(record, req.params.itemId);
         if (!item) return res.status(404).json({ error: 'Élément introuvable' });
-        if (!canManageDataRoomItem(req, item)) return res.status(403).json({ error: 'Permission refusée' });
+        if (!canManageDataRoomItem(req, record, item)) return res.status(403).json({ error: 'Permission refusée' });
 
         if (req.body.displayName !== undefined) item.displayName = String(req.body.displayName || '').trim();
-        if (req.body.folder !== undefined) item.folder = cleanPath(req.body.folder || '');
+        if (req.body.folder !== undefined) {
+            const nextFolder = cleanPath(req.body.folder || '');
+            if (!canManageDataRoomPath(req, record, nextFolder)) return res.status(403).json({ error: 'Permission refusée' });
+            item.folder = nextFolder;
+        }
         if (req.body.accessMode !== undefined) item.accessMode = req.body.accessMode === 'restricted' ? 'restricted' : 'workspace';
         if (req.body.permissions !== undefined) item.permissions = permissionsFromBody(req.body.permissions);
         if (req.body.shares !== undefined) {
@@ -593,7 +845,7 @@ router.delete('/records/:recordId/data-room/items/:itemId', async (req, res) => 
         ensureDataRoom(record);
         const item = dataRoomItemById(record, req.params.itemId);
         if (!item) return res.status(404).json({ error: 'Élément introuvable' });
-        if (!canManageDataRoomItem(req, item)) return res.status(403).json({ error: 'Permission refusée' });
+        if (!canManageDataRoomItem(req, record, item)) return res.status(403).json({ error: 'Permission refusée' });
 
         pushLog(record, item, req, 'item.removed', item.displayName || '');
         record.dataRoom.items = record.dataRoom.items.filter(i => String(i._id) !== String(req.params.itemId));
@@ -612,6 +864,7 @@ router.post('/records/:recordId/data-room/items/:itemId/log', async (req, res) =
         if (!record) return res.status(404).json({ error: 'Record introuvable' });
         const item = dataRoomItemById(record, req.params.itemId);
         if (!item) return res.status(404).json({ error: 'Élément introuvable' });
+        if (!canUseDataRoomItem(req, record, item, 'view')) return res.status(403).json({ error: 'Permission refusée' });
         const action = String(req.body.action || 'item.viewed').slice(0, 60);
         pushLog(record, item, req, action, String(req.body.details || '').slice(0, 300));
         await record.save();
@@ -632,7 +885,7 @@ router.get('/records/:recordId/data-room/items/:itemId/file', async (req, res) =
         if (!att) return res.status(404).send('Fichier introuvable');
 
         const isDownload = req.query.dl !== undefined;
-        if (!canUseDataRoomItem(req, item, isDownload ? 'download' : 'view')) {
+        if (!canUseDataRoomItem(req, record, item, isDownload ? 'download' : 'view')) {
             return res.status(403).send(isDownload ? 'Téléchargement interdit' : 'Accès interdit');
         }
 

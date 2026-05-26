@@ -856,7 +856,7 @@ export default function AIChatSidebar({
                                 return `=== PAGE ${pageNum}/${totalPages} ===\n${pageContent}`
                             }).join('\n\n')
 
-                            const summaryPrompt = `Tu es un assistant de résumé. Extrais les points clés des pages suivantes en 2-3 phrases maximum. 
+                            const summaryPrompt = `Tu es un assistant de résumé. Extrais les points clés des pages suivantes en 2-3 phrases maximum.
 Ne formate pas, donne juste les idées principales de manière concise.
 
 ${batchContent}`
@@ -894,7 +894,7 @@ ${batchContent}`
                             .map(ps => `[Pages ${ps.pages}]: ${ps.summary}`)
                             .join('\n\n')
 
-                        const mergePrompt = `Voici des résumés partiels d'un document de ${totalPages} pages. 
+                        const mergePrompt = `Voici des résumés partiels d'un document de ${totalPages} pages.
 Fusionne-les en UN SEUL résumé cohérent et structuré.
 Format: utilise des paragraphes HTML (<p>, <strong> si besoin) pour une mise en forme propre.
 Longueur cible: 1 paragraphe par tranche de 5 pages environ.

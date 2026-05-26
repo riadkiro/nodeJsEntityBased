@@ -933,6 +933,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this.$nextTick(() => {
                     const inp = this.$refs.relSearchInput;
                     if (inp) inp.focus();
+                    this.search();
                     // Delay _ready to survive the full mousedown→mouseup→click cycle
                     setTimeout(() => { this._ready = true; }, 300);
                 });
@@ -940,18 +941,14 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             async search() {
                 if (!this.targetEntityId) return;
                 const q = this.searchQ.trim();
-                if (!q) {
-                    this.results = [];
-                    this.showDropdown = false;
-                    return;
-                }
                 try {
-                    const url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&q=' + encodeURIComponent(q) + '&limit=8';
+                    let url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&limit=8';
+                    if (q) url += '&q=' + encodeURIComponent(q);
                     const res = await fetch(url, { credentials: 'include' });
                     const data = await res.json();
                     // Exclude already-selected tags
-                    const tagIds = this.tags.map(t => t._id);
-                    this.results = (data.data || []).filter(r => !tagIds.includes(r.id)).map(r => ({
+                    const tagIds = this.tags.map(t => String(t._id));
+                    this.results = (data.data || []).filter(r => !tagIds.includes(String(r.id))).map(r => ({
                         _id: r.id,
                         title: r.label || 'Sans titre'
                     }));
@@ -1147,7 +1144,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
-                        body: JSON.stringify({ recordId: this._recordId, pagesContent })
+                        body: JSON.stringify({ recordId: this._recordId, pagesContent, outputName: this.previewName || null })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -1566,6 +1563,11 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             finalizing: false,
             finalized: false,
             downloadUrl: '',
+            renamingDocId: null,
+            docContextMenu: { show: false, x: 0, y: 0, doc: null },
+            editingAttachmentId: null,
+            deleteDraftOnCancel: true,
+            copyingDocId: null,
             creatingTemplate: false,
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
@@ -1729,6 +1731,47 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             },
 
+            openDocContext(event, doc) {
+                this.docContextMenu = {
+                    show: true,
+                    x: event.clientX,
+                    y: event.clientY,
+                    doc
+                };
+            },
+
+            closeDocContext() {
+                this.docContextMenu.show = false;
+            },
+
+            async renameGeneratedDoc(doc) {
+                this.closeDocContext();
+                if (!doc || this.renamingDocId) return;
+                const current = (doc.originalName || doc.generatedFromName || 'Document').replace(/\.pdf$/i, '');
+                const next = prompt('Nom du document', current);
+                if (next === null) return;
+                const clean = next.trim();
+                if (!clean) return;
+                const originalName = clean.toLowerCase().endsWith('.pdf') ? clean : clean + '.pdf';
+                this.renamingDocId = doc._id;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ originalName })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.error) throw new Error(data.error || 'Renommage impossible');
+                    doc.originalName = originalName;
+                    if (window.showMessage) window.showMessage('Document renommé', 'success');
+                } catch (e) {
+                    console.error('[DocsModule] Rename error:', e);
+                    window.showMessage ? window.showMessage(e.message || 'Erreur lors du renommage', 'danger') : alert(e.message || 'Erreur lors du renommage');
+                }
+                this.renamingDocId = null;
+            },
+
             async generateDoc(tpl) {
                 this.generatingId = tpl._id;
                 try {
@@ -1745,6 +1788,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         this.showPreview = true;
                         this.finalized = false;
                         this.downloadUrl = '';
+                        this.editingAttachmentId = null;
+                        this.deleteDraftOnCancel = true;
                         this.$nextTick(() => {
                             const iframe = document.getElementById('docs-smartdoc-preview-iframe');
                             if (iframe) {
@@ -1759,6 +1804,63 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     window.showMessage ? window.showMessage('Erreur de connexion', 'danger') : alert('Erreur de connexion');
                 }
                 this.generatingId = null;
+            },
+
+            editGeneratedDoc(doc) {
+                if (!doc?.snapshotDocumentId) {
+                    window.showMessage ? window.showMessage('Aucun snapshot éditable pour ce PDF', 'warning') : alert('Aucun snapshot éditable pour ce PDF');
+                    return;
+                }
+                this.draftDocId = doc.snapshotDocumentId;
+                this.previewName = doc.originalName || doc.generatedFromName || 'Document';
+                this.showPreview = true;
+                this.finalized = false;
+                this.downloadUrl = '';
+                this.editingAttachmentId = doc._id;
+                this.deleteDraftOnCancel = false;
+                this.$nextTick(() => {
+                    const iframe = document.getElementById('docs-smartdoc-preview-iframe');
+                    if (iframe) {
+                        iframe.src = `/account/${this._accountNumber}/documents/${doc.snapshotDocumentId}/edit-react?minimal=true`;
+                    }
+                });
+            },
+
+            async copyGeneratedDoc(doc) {
+                if (!doc?.snapshotDocumentId || this.copyingDocId) {
+                    if (!doc?.snapshotDocumentId) {
+                        window.showMessage ? window.showMessage('Aucun snapshot à copier pour ce PDF', 'warning') : alert('Aucun snapshot à copier pour ce PDF');
+                    }
+                    return;
+                }
+                this.copyingDocId = doc._id;
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/snapshot/${doc.snapshotDocumentId}/copy`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ recordId: this._recordId })
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error || 'Copie impossible');
+                    this.draftDocId = data.draftDocumentId;
+                    this.previewName = data.outputName || doc.originalName || 'Document';
+                    this.showPreview = true;
+                    this.finalized = false;
+                    this.downloadUrl = '';
+                    this.editingAttachmentId = null;
+                    this.deleteDraftOnCancel = true;
+                    this.$nextTick(() => {
+                        const iframe = document.getElementById('docs-smartdoc-preview-iframe');
+                        if (iframe) {
+                            iframe.src = `/account/${this._accountNumber}/documents/${data.draftDocumentId}/edit-react?minimal=true`;
+                        }
+                    });
+                } catch (e) {
+                    console.error('[DocsModule] Copy generated doc error:', e);
+                    window.showMessage ? window.showMessage(e.message || 'Erreur lors de la copie', 'danger') : alert(e.message || 'Erreur lors de la copie');
+                }
+                this.copyingDocId = null;
             },
 
             async finalizePreview() {
@@ -1795,13 +1897,28 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
-                        body: JSON.stringify({ recordId: this._recordId, pagesContent })
+                        body: JSON.stringify({
+                            recordId: this._recordId,
+                            pagesContent,
+                            outputName: this.previewName || null,
+                            replaceAttachmentId: this.editingAttachmentId || null
+                        })
                     });
                     const data = await res.json();
                     if (data.success) {
                         this.downloadUrl = data.attachment?.url ? (data.attachment.url + '?dl=' + encodeURIComponent(data.attachment.originalName || 'document.pdf')) : '';
                         this.finalized = true;
+                        if (data.attachment) {
+                            if (this.editingAttachmentId) {
+                                const idx = this.generatedDocs.findIndex(d => d._id === this.editingAttachmentId);
+                                if (idx !== -1) this.generatedDocs.splice(idx, 1, data.attachment);
+                            } else {
+                                this.generatedDocs.unshift(data.attachment);
+                            }
+                        }
                         this.draftDocId = null;
+                        this.editingAttachmentId = null;
+                        this.deleteDraftOnCancel = false;
                         if (window.showMessage) {
                             window.showMessage('Document généré avec succès !', 'success');
                         }
@@ -1820,6 +1937,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this.finalized = false;
                 this.downloadUrl = '';
                 this.draftDocId = null;
+                this.editingAttachmentId = null;
+                this.deleteDraftOnCancel = true;
                 this.previewName = '';
                 const iframe = document.getElementById('docs-smartdoc-preview-iframe');
                 if (iframe) iframe.src = '';
@@ -1827,7 +1946,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             },
 
             async cancelPreview() {
-                if (this.draftDocId) {
+                if (this.draftDocId && this.deleteDraftOnCancel) {
                     try {
                         await fetch(`/account/${this._accountNumber}/api/smartdoc/draft/${this.draftDocId}`, {
                             method: 'DELETE',
@@ -1840,6 +1959,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this.previewName = '';
                 this.finalized = false;
                 this.downloadUrl = '';
+                this.editingAttachmentId = null;
+                this.deleteDraftOnCancel = true;
                 const iframe = document.getElementById('docs-smartdoc-preview-iframe');
                 if (iframe) iframe.src = 'about:blank';
             },
@@ -2141,7 +2262,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                             </template>
                             <template x-for="(doc, dIdx) in getVisibleDocs(tpl.name, tpl._id)" :key="doc._id || dIdx">
                                 <div class="docs-tpl-file"
-                                     @click="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf')">
+                                     @contextmenu.prevent.stop="openDocContext($event, doc)"
+                                     @click="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf', null, null, { onEdit: () => editGeneratedDoc(doc) })">
                                     <span class="docs-tpl-file-date" style="margin-right:8px;">
                                         <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
                                         <span x-text="formatDate(doc.uploadedAt)"></span>
@@ -2151,10 +2273,26 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                     </div>
                                     <span class="docs-tpl-file-name" x-text="doc.originalName || 'Document'"></span>
                                     <span class="docs-tpl-file-size" x-text="doc.sizeFormatted || ''"></span>
+                                    <button @click.stop="renameGeneratedDoc(doc)" class="docs-tpl-file-dl"
+                                        title="Renommer" style="color:#64748b;">
+                                        <iconify-icon :icon="renamingDocId === doc._id ? 'line-md:loading-twotone-loop' : 'solar:text-field-focus-bold'" width="13"></iconify-icon>
+                                    </button>
+                                    <button @click.stop="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf', null, null, { onEdit: () => editGeneratedDoc(doc) })"
+                                        class="docs-tpl-file-dl" title="Voir">
+                                        <iconify-icon icon="solar:eye-bold" width="13"></iconify-icon>
+                                    </button>
                                     <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename + '?dl=' + encodeURIComponent(doc.originalName || 'document')" 
                                        download class="docs-tpl-file-dl" title="Télécharger" @click.stop>
                                         <iconify-icon icon="solar:download-bold" width="13"></iconify-icon>
                                     </a>
+                                    <button @click.stop="editGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="doc.snapshotDocumentId"
+                                        title="Modifier le snapshot" style="color:#4361ee;">
+                                        <iconify-icon icon="solar:pen-bold" width="13"></iconify-icon>
+                                    </button>
+                                    <button @click.stop="copyGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="doc.snapshotDocumentId"
+                                        :disabled="copyingDocId === doc._id" title="Copier vers un nouveau document" style="color:#10b981;">
+                                        <iconify-icon :icon="copyingDocId === doc._id ? 'line-md:loading-twotone-loop' : 'solar:copy-bold'" width="13"></iconify-icon>
+                                    </button>
                                     <button @click.stop="deleteDoc(doc)" class="docs-tpl-file-dl" x-show="confirmingDocDelete !== doc._id"
                                         title="Supprimer" style="color:#ef4444;">
                                         <iconify-icon icon="solar:trash-bin-2-bold" width="13"></iconify-icon>
@@ -2177,6 +2315,28 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 </template>
             </div>
 
+            <template x-teleport="body">
+                <div x-show="docContextMenu.show" x-cloak
+                     @click.outside="closeDocContext()"
+                     :style="'position:fixed;left:' + docContextMenu.x + 'px;top:' + docContextMenu.y + 'px;z-index:99999;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:4px;min-width:170px;'">
+                    <button type="button" @click="renameGeneratedDoc(docContextMenu.doc)"
+                        style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
+                        <iconify-icon icon="solar:text-field-focus-bold" width="14"></iconify-icon>
+                        Renommer
+                    </button>
+                    <button type="button" @click="editGeneratedDoc(docContextMenu.doc); closeDocContext()"
+                        style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
+                        <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+                        Modifier
+                    </button>
+                    <button type="button" @click="copyGeneratedDoc(docContextMenu.doc); closeDocContext()"
+                        style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
+                        <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
+                        Copier vers
+                    </button>
+                </div>
+            </template>
+
             <!-- Full-screen editor overlay (teleported to body) -->
             <template x-teleport="body">
                 <div x-show="showPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
@@ -2189,7 +2349,11 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                 <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
                             </button>
                             <div>
-                                <h3 class="text-[13px] font-bold text-gray-800" x-text="previewName || 'Document'"></h3>
+                                <input type="text" x-model="previewName"
+                                    class="text-[13px] font-bold text-gray-800 bg-transparent border-0 outline-none px-0 py-0"
+                                    style="min-width:320px;max-width:520px;"
+                                    :readonly="finalized"
+                                    placeholder="Nom du document">
                                 <p class="text-[10px] text-gray-400 flex items-center gap-1" x-show="!finalized">
                                     <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
                                     Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
@@ -4262,6 +4426,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this.$nextTick(() => {
                     const inp = this.$refs.choiceSearchInput;
                     if (inp) inp.focus();
+                    this.showDropdown = true;
                 });
             },
 
@@ -4376,7 +4541,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     this.selectedValues = this.selectedValues.filter(v => String(v) !== String(opt.value) && String(v) !== String(opt.label));
                     await this.persist();
                     this.updateView();
-                    this.showDropdown = this.searchQ.trim().length > 0;
+                    this.showDropdown = true;
                     window.showMessage ? window.showMessage('Choix supprime', 'success') : null;
                 } catch (e) {
                     console.error('[ChoiceDelete]', e);
@@ -4480,22 +4645,19 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this.$nextTick(() => {
                     const inp = this.$refs.relSearchInput;
                     if (inp) inp.focus();
+                    this.search();
                 });
             },
             async search() {
                 if (!this.targetEntityId) return;
                 const q = this.searchQ.trim();
-                if (!q) {
-                    this.results = [];
-                    this.showDropdown = false;
-                    return;
-                }
                 try {
-                    const url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&q=' + encodeURIComponent(q) + '&limit=8';
+                    let url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&limit=8';
+                    if (q) url += '&q=' + encodeURIComponent(q);
                     const res = await fetch(url, { credentials: 'include' });
                     const data = await res.json();
-                    const tagIds = this.tags.map(t => t._id);
-                    this.results = (data.data || []).filter(r => !tagIds.includes(r.id)).map(r => ({
+                    const tagIds = this.tags.map(t => String(t._id));
+                    this.results = (data.data || []).filter(r => !tagIds.includes(String(r.id))).map(r => ({
                         _id: r.id,
                         title: r.label || 'Sans titre'
                     }));

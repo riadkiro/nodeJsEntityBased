@@ -1,8 +1,9 @@
 <!-- ═══════════════════════════════════════════════════════════════
      FILE VIEWER MODAL — Reusable across all pages
      Usage:
-       window.openFileViewer(url, filename, category, fileList, currentIndex)
-       fileList = [{url, name, category}, ...]  (optional — enables prev/next)
+       window.openFileViewer(url, filename, category, fileList, currentIndex, options)
+       fileList = [{url, name, category, editUrl|onEdit}, ...]  (optional — enables prev/next)
+       options = { editUrl, onEdit } (optional — shows the Modifier action)
      ═══════════════════════════════════════════════════════════════ -->
 <style>
 /* ── File Viewer Modal ── */
@@ -71,6 +72,9 @@
                     <iconify-icon icon="solar:alt-arrow-right-bold" width="16"></iconify-icon>
                 </button>
                 <span id="fvNavSep" class="fv-sep" style="display:none;"></span>
+                <button id="fvEdit" class="fv-btn" title="Modifier" style="display:none;">
+                    <iconify-icon icon="solar:pen-bold" width="16"></iconify-icon>
+                </button>
                 <a id="fvDownload" class="fv-btn" title="Télécharger" download>
                     <iconify-icon icon="solar:download-bold" width="16"></iconify-icon>
                 </a>
@@ -102,6 +106,7 @@
     var fnEl = document.getElementById('fvFilename');
     var badgeEl = document.getElementById('fvBadge');
     var iconEl = document.getElementById('fvTypeIcon');
+    var editEl = document.getElementById('fvEdit');
     var dlEl = document.getElementById('fvDownload');
     var ntEl = document.getElementById('fvNewTab');
     var counterEl = document.getElementById('fvCounter');
@@ -115,6 +120,7 @@
     var _zoomCallback = null;
     var _fileList = [];
     var _currentIdx = -1;
+    var _options = {};
 
     function getCat(url, filename) {
         var ext = (filename || url || '').split('.').pop().split('?')[0].toLowerCase();
@@ -137,11 +143,16 @@
     }
 
     // ── Public API ──
-    // openFileViewer(url, filename, category, fileList?, currentIndex?)
-    // fileList: [{url, name, category}, ...]
-    window.openFileViewer = function(url, filename, category, fileList, currentIndex) {
+    // openFileViewer(url, filename, category, fileList?, currentIndex?, options?)
+    // fileList: [{url, name, category, editUrl|onEdit}, ...]
+    window.openFileViewer = function(url, filename, category, fileList, currentIndex, options) {
+        if (currentIndex && typeof currentIndex === 'object' && !Array.isArray(currentIndex)) {
+            options = currentIndex;
+            currentIndex = -1;
+        }
         _fileList = fileList || [];
         _currentIdx = (typeof currentIndex === 'number') ? currentIndex : -1;
+        _options = options || {};
 
         // If fileList provided but no currentIndex, find it
         if (_fileList.length > 0 && _currentIdx < 0) {
@@ -151,12 +162,14 @@
             if (_currentIdx < 0) _currentIdx = 0;
         }
 
-        _renderFile(url, filename, category);
+        _renderFile(url, filename, category, _options);
         modal.classList.add('fv-open');
         document.body.style.overflow = 'hidden';
     };
 
-    function _renderFile(url, filename, category) {
+    function _renderFile(url, filename, category, options) {
+        var fileMeta = (_fileList.length > 0 && _currentIdx >= 0) ? (_fileList[_currentIdx] || {}) : {};
+        var editAction = (options && (options.onEdit || options.editUrl)) || fileMeta.onEdit || fileMeta.editUrl || null;
         var cat = category || getCat(url, filename);
         fnEl.textContent = filename || url.split('/').pop();
         iconEl.setAttribute('icon', getIcon(cat));
@@ -165,6 +178,16 @@
         dlEl.href = url + '?dl=' + encodeURIComponent(dlName);
         dlEl.download = dlName;
         ntEl.href = url;
+        editEl.style.display = editAction ? '' : 'none';
+        editEl.onclick = editAction ? function(e) {
+            e.preventDefault();
+            window.closeFileViewer();
+            if (typeof editAction === 'function') {
+                editAction();
+            } else {
+                window.location.href = editAction;
+            }
+        } : null;
 
         // Badge
         var badgeMap = { image:'Image', pdf:'PDF', word:'Word', excel:'Excel', video:'Vidéo' };
@@ -211,7 +234,7 @@
         if (next < 0 || next >= _fileList.length) return;
         _currentIdx = next;
         var f = _fileList[_currentIdx];
-        _renderFile(f.url, f.name, f.category);
+        _renderFile(f.url, f.name, f.category, {});
     };
 
     window.closeFileViewer = function() {
@@ -220,6 +243,7 @@
         body.innerHTML = '';
         _fileList = [];
         _currentIdx = -1;
+        _options = {};
         _zoomCallback = null;
     };
 

@@ -215,7 +215,7 @@ const DocumentSchema = new mongoose.Schema({
     tags: [String],
     status: {
         type: String,
-        enum: ['draft', 'published', 'archived'],
+        enum: ['draft', 'published', 'archived', 'finalized'],
         default: 'draft'
     },
 
@@ -238,6 +238,8 @@ const DocumentSchema = new mongoose.Schema({
     draftRecordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record', default: null },
     draftOutputName: { type: String, default: '' },
     draftOutputFormat: { type: String, default: 'pdf' },
+    isGenerationSnapshot: { type: Boolean, default: false },
+    sourceGeneratedAttachmentId: { type: mongoose.Schema.Types.ObjectId, default: null },
 
     // ============================================
     // Structured Generation Metadata (v2)
@@ -269,6 +271,19 @@ const DocumentSchema = new mongoose.Schema({
         default: {}
     },
 
+    generatedFile: {
+        filename: String,
+        originalName: String,
+        mimeType: String,
+        size: Number,
+        generatedAt: Date,
+        generatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        generatedFromName: String,
+        downloadUrl: String,
+        recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record' },
+        attachmentId: { type: mongoose.Schema.Types.ObjectId }
+    },
+
     // Uploaded file info (for uploaded documents, not editor-created)
     uploadedFile: {
         originalName: String,
@@ -290,6 +305,7 @@ DocumentSchema.index({ folderId: 1 });
 DocumentSchema.index({ 'linkedRecords.recordId': 1 });
 DocumentSchema.index({ 'generatedFrom.templateId': 1 });
 DocumentSchema.index({ 'linkedRecords.entitySlug': 1 });
+DocumentSchema.index({ isGenerationSnapshot: 1, sourceGeneratedAttachmentId: 1 });
 
 // Virtual pour compter les pages
 DocumentSchema.virtual('pageCount').get(function () {
@@ -305,6 +321,10 @@ DocumentSchema.methods.duplicate = function (userId) {
     doc.name = `${doc.name} (Copie)`;
     doc.createdBy = userId;
     doc.isTemplate = false;
+    doc.isDraft = false;
+    doc.isGenerationSnapshot = false;
+    doc.sourceGeneratedAttachmentId = null;
+    doc.generatedFile = undefined;
     return doc;
 };
 

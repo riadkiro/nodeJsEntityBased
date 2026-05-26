@@ -125,6 +125,7 @@
     %>"
     data-account-number="<%= account_number %>"
     data-is-new="<%= isNew ? 'true' : 'false' %>"
+    data-is-minimal="<%= locals.isMinimal ? 'true' : 'false' %>"
     <% if (locals.contextFreeBindings) { %>
     data-bindings="<%-
         Buffer.from(JSON.stringify(contextFreeBindings)).toString('base64')

@@ -419,6 +419,8 @@ router.get('/smartdoc/generated-docs', async (req, res) => {
                     mimeType: att.mimeType,
                     size: att.size,
                     category: att.category,
+                    generatedFromDocumentId: att.generatedFromDocumentId,
+                    snapshotDocumentId: att.snapshotDocumentId,
                     uploadedAt: att.uploadedAt,
                     createdAt: att.uploadedAt || record.createdAt,
                     recordId: record._id,
@@ -1403,6 +1405,7 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
     try {
         const Document = await tenantCollection(req, 'Document');
         const Record = await tenantCollection(req, 'Record');
+        const replaceAttachmentId = req.body.replaceAttachmentId || req.body.attachmentId || null;
 
         // 1. Load the draft document
         const draftDoc = await Document.findById(req.params.draftDocId);
@@ -1454,6 +1457,15 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         // Match editor: reduce content padding when header/footer present
         const contentPaddingTop = hasHeader ? 8 : docMargins.top;
         const contentPaddingBottom = hasFooter ? 8 : docMargins.bottom;
+
+        if (domPagesContent && draftDoc.pages && draftDoc.pages.length > 0) {
+            for (let i = 0; i < draftDoc.pages.length; i++) {
+                if (domPagesContent[i] !== undefined) {
+                    draftDoc.pages[i].content = stripEditorArtifacts(domPagesContent[i] || '');
+                }
+            }
+            draftDoc.markModified('pages');
+        }
 
         let pagesHtml = '';
         if (draftDoc.pages && draftDoc.pages.length > 0) {
@@ -1514,8 +1526,8 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             size: ${docDims.width}px ${docDims.height}px;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             font-size: 16px;
             line-height: 1.6;
             color: #000000;
@@ -1622,7 +1634,8 @@ ${pagesHtml}
 </html>`;
 
         // 4. Generate output file
-        const outputName = draftDoc.draftOutputName || draftDoc.name || 'Document';
+        const requestedOutputName = typeof req.body.outputName === 'string' ? req.body.outputName.trim() : '';
+        const outputName = requestedOutputName || draftDoc.draftOutputName || draftDoc.name || 'Document';
         const outputFormat = draftDoc.draftOutputFormat || 'pdf';
         let savedFilename;
         let savedSize;
@@ -1665,34 +1678,84 @@ ${pagesHtml}
 
         if (record) {
             // PATH A: Save as record attachment
+            const originalName = outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html');
+            const mimeType = savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html';
+            const category = savedFilename.endsWith('.pdf') ? 'pdf' : 'other';
             const newAttachment = {
                 filename: savedFilename,
-                originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
-                mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
+                originalName,
+                mimeType,
                 size: savedSize,
-                category: savedFilename.endsWith('.pdf') ? 'pdf' : 'other',
+                category,
                 isGenerated: true,
                 generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
                 generatedFromName: generatedFromName,
+                generatedFromDocumentId: draftDoc.generatedFrom?.templateId || null,
+                snapshotDocumentId: draftDoc._id,
                 uploadedAt: new Date(),
                 uploadedBy: req.user?._id
             };
 
             record.attachments = record.attachments || [];
-            record.attachments.push(newAttachment);
-            await record.save();
+            let addedAttachment;
+            let oldFilename = '';
 
-            const addedAttachment = record.attachments[record.attachments.length - 1];
-
-            // Delete draft
-            try {
-                const DocumentLine = await tenantCollection(req, 'DocumentLine');
-                if (DocumentLine) {
-                    await DocumentLine.deleteMany({ documentId: draftDoc._id });
+            if (replaceAttachmentId) {
+                addedAttachment = typeof record.attachments.id === 'function'
+                    ? record.attachments.id(replaceAttachmentId)
+                    : null;
+                if (!addedAttachment) {
+                    addedAttachment = record.attachments.find(att => String(att._id) === String(replaceAttachmentId));
                 }
-            } catch (e) { /* non-critical */ }
-            await Document.findByIdAndDelete(draftDoc._id);
-            console.log(`[SmartDoc] Draft ${draftDoc._id} finalized as record attachment and deleted`);
+
+                if (!addedAttachment) {
+                    return res.status(404).json({ error: 'PDF généré introuvable' });
+                }
+
+                const linkedSnapshotId = addedAttachment.snapshotDocumentId ? String(addedAttachment.snapshotDocumentId) : '';
+                if (linkedSnapshotId && linkedSnapshotId !== String(draftDoc._id)) {
+                    return res.status(403).json({ error: 'Ce snapshot ne correspond pas au PDF à modifier' });
+                }
+
+                oldFilename = addedAttachment.filename || '';
+                const preservedFolder = addedAttachment.folder || '';
+                Object.assign(addedAttachment, newAttachment);
+                addedAttachment.folder = preservedFolder;
+                record.markModified('attachments');
+                await record.save();
+                console.log(`[SmartDoc] Snapshot ${draftDoc._id} regenerated attachment ${replaceAttachmentId}`);
+            } else {
+                record.attachments.push(newAttachment);
+                await record.save();
+                addedAttachment = record.attachments[record.attachments.length - 1];
+                console.log(`[SmartDoc] Snapshot ${draftDoc._id} finalized as new record attachment ${addedAttachment._id}`);
+            }
+
+            draftDoc.isDraft = false;
+            draftDoc.isGenerationSnapshot = true;
+            draftDoc.status = 'finalized';
+            draftDoc.sourceGeneratedAttachmentId = addedAttachment._id;
+            draftDoc.name = outputName;
+            draftDoc.draftRecordId = record._id;
+            draftDoc.draftOutputName = outputName;
+            draftDoc.draftOutputFormat = outputFormat;
+            draftDoc.generatedFile = {
+                filename: savedFilename,
+                originalName,
+                mimeType,
+                size: savedSize,
+                generatedAt: new Date(),
+                generatedBy: req.user?._id,
+                generatedFromName,
+                downloadUrl: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
+                recordId: record._id,
+                attachmentId: addedAttachment._id
+            };
+            await draftDoc.save();
+
+            if (oldFilename && oldFilename !== savedFilename) {
+                removeGeneratedFile(req.account_number, oldFilename);
+            }
 
             responsePayload = {
                 success: true,
@@ -1709,7 +1772,10 @@ ${pagesHtml}
             // PATH B: No record — convert draft to a standalone finalized document
             // Instead of deleting the draft, convert it to a finalized document with file metadata.
             // This allows it to appear in the "Générés" tab of the Docs Hub.
+            const oldStandaloneFilename = draftDoc.generatedFile?.filename || '';
+            draftDoc.name = outputName;
             draftDoc.isDraft = false;
+            draftDoc.isGenerationSnapshot = true;
             draftDoc.status = 'finalized';
             draftDoc.generatedFile = {
                 filename: savedFilename,
@@ -1719,9 +1785,14 @@ ${pagesHtml}
                 generatedAt: new Date(),
                 generatedBy: req.user?._id,
                 generatedFromName: generatedFromName,
-                downloadUrl: `/account/${req.account_number}/uploads/attachments/${savedFilename}`
+                downloadUrl: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
+                recordId: null,
+                attachmentId: null
             };
             await draftDoc.save();
+            if (oldStandaloneFilename && oldStandaloneFilename !== savedFilename) {
+                removeGeneratedFile(req.account_number, oldStandaloneFilename);
+            }
             console.log(`[SmartDoc] Draft ${draftDoc._id} finalized as standalone document (no record)`);
 
             responsePayload = {
@@ -1731,6 +1802,13 @@ ${pagesHtml}
                     _id: draftDoc._id,
                     filename: savedFilename,
                     originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
+                    mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
+                    size: savedSize,
+                    category: savedFilename.endsWith('.pdf') ? 'pdf' : 'other',
+                    isGenerated: true,
+                    generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
+                    generatedFromName,
+                    snapshotDocumentId: draftDoc._id,
                     url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
                     sizeFormatted: formatSize(savedSize)
                 },
@@ -1747,16 +1825,102 @@ ${pagesHtml}
 });
 
 /**
+ * POST /api/smartdoc/snapshot/:snapshotDocId/copy
+ * Create a new editable draft from an existing generated snapshot.
+ */
+router.post('/smartdoc/snapshot/:snapshotDocId/copy', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        const sourceDoc = await Document.findById(req.params.snapshotDocId);
+
+        if (!sourceDoc) {
+            return res.status(404).json({ error: 'Snapshot introuvable' });
+        }
+
+        const source = sourceDoc.toObject();
+        delete source._id;
+        delete source.__v;
+        delete source.createdAt;
+        delete source.updatedAt;
+        delete source.generatedFile;
+        delete source.sourceGeneratedAttachmentId;
+
+        const recordId = req.body.recordId || sourceDoc.draftRecordId || sourceDoc.linkedRecords?.[0]?.recordId || null;
+        const outputName = `${sourceDoc.draftOutputName || sourceDoc.name || 'Document'} (copie)`;
+
+        source.name = outputName;
+        source.isTemplate = false;
+        source.isDraft = true;
+        source.isGenerationSnapshot = false;
+        source.status = 'draft';
+        source.draftRecordId = recordId;
+        source.draftOutputName = outputName;
+        source.createdBy = req.user?._id;
+
+        const copyDoc = new Document(source);
+        await copyDoc.save();
+
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            if (DocumentLine) {
+                const lines = await DocumentLine.find({ documentId: sourceDoc._id }).lean();
+                if (lines.length > 0) {
+                    const copies = lines.map((line, i) => {
+                        delete line._id;
+                        delete line.__v;
+                        return {
+                            ...line,
+                            documentId: copyDoc._id,
+                            order: line.order != null ? line.order : i,
+                            createdBy: req.user?._id,
+                            createdAt: new Date(),
+                            updatedAt: new Date()
+                        };
+                    });
+                    await DocumentLine.insertMany(copies);
+                }
+            }
+        } catch (lineErr) {
+            console.warn('[SmartDoc] Snapshot copy: could not copy document lines:', lineErr.message);
+        }
+
+        res.json({
+            success: true,
+            draftDocumentId: copyDoc._id.toString(),
+            outputName
+        });
+    } catch (error) {
+        console.error('[SmartDoc] Snapshot copy error:', error);
+        res.status(500).json({ error: error.message || 'Erreur lors de la copie du snapshot' });
+    }
+});
+
+/**
  * DELETE /api/smartdoc/draft/:draftDocId
  * Cancel and delete a draft document without generating anything
  */
 router.delete('/smartdoc/draft/:draftDocId', async (req, res) => {
     try {
         const Document = await tenantCollection(req, 'Document');
-        const result = await Document.findByIdAndDelete(req.params.draftDocId);
-        if (!result) {
+        const doc = await Document.findById(req.params.draftDocId);
+        if (!doc) {
             return res.status(404).json({ error: 'Document brouillon introuvable' });
         }
+
+        if (doc.isGenerationSnapshot && !doc.isDraft) {
+            return res.status(409).json({ error: 'Ce document est le snapshot du PDF genere et ne peut pas etre supprime comme brouillon' });
+        }
+
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            if (DocumentLine) {
+                await DocumentLine.deleteMany({ documentId: doc._id });
+            }
+        } catch (lineErr) {
+            console.warn('[SmartDoc] Draft delete: could not delete document lines:', lineErr.message);
+        }
+
+        await Document.findByIdAndDelete(doc._id);
         console.log(`[SmartDoc] Draft ${req.params.draftDocId} cancelled and deleted`);
         res.json({ success: true });
     } catch (error) {
@@ -2527,8 +2691,8 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
             size: ${docDims.width}px ${docDims.height}px;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             font-size: 16px;
             line-height: 1.6;
             color: #000000;
@@ -2826,6 +2990,16 @@ function formatSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
 }
 
+function removeGeneratedFile(accountNumber, filename) {
+    if (!accountNumber || !filename) return;
+    const filePath = path.join(__dirname, '../../private_uploads/attachments', String(accountNumber), filename);
+    fs.unlink(filePath, (err) => {
+        if (err && err.code !== 'ENOENT') {
+            console.warn('[SmartDoc] Could not remove replaced generated file:', err.message);
+        }
+    });
+}
+
 function stripEditorArtifacts(html = '') {
     return String(html)
         .replace(/<span\b[^>]*class=["'][^"']*\bdoc-block-delete-btn\b[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
@@ -2879,8 +3053,8 @@ async function generatePDF(html, outputPath, docTemplate) {
                             size: ${dims.width}px ${dims.height}px;
                         }
                         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-                        body { 
-                            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+                        body {
+                            font-family: 'Inter', system-ui, -apple-system, sans-serif;
                             font-size: 16px;
                             line-height: 1.6;
                             color: #000000;

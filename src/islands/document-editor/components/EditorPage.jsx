@@ -34,6 +34,7 @@ export default function EditorPage({
     sourceRecordId
 }) {
     const contentRef = useRef(null)
+    const blockCaretRef = useRef(null)
 
     // Table toolbar for edition mode
     const tableToolbarProps = useTableToolbar(
@@ -208,12 +209,61 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const ESCAPE_BLOCKS = 'blockquote, pre, div[style], table'
+        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre'
+
+        const isAtomicBlock = (node) => node?.nodeType === 1 && node.matches?.(ATOMIC_BLOCKS)
+
+        const placeCursorIn = (element) => {
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(element)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            element.focus?.()
+        }
+
+        const getAdjacentAtomicBlock = (range) => {
+            if (!range.collapsed || range.startContainer !== el) return null
+            const children = Array.from(el.childNodes)
+            const before = children[range.startOffset - 1]
+            const after = children[range.startOffset]
+            if (isAtomicBlock(before)) return { block: before, side: 'after' }
+            if (isAtomicBlock(after)) return { block: after, side: 'before' }
+            return blockCaretRef.current?.block && el.contains(blockCaretRef.current.block)
+                ? blockCaretRef.current
+                : null
+        }
 
         const handleKeyDown = (e) => {
             if (e.key !== 'Enter' || e.shiftKey) return
 
             const sel = window.getSelection()
             if (!sel || sel.rangeCount === 0) return
+
+            const range = sel.getRangeAt(0)
+            const adjacent = getAdjacentAtomicBlock(range)
+            if (adjacent?.block) {
+                e.preventDefault()
+                e.stopPropagation()
+
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                p.style.cssText = ''
+
+                if (adjacent.side === 'before') {
+                    el.insertBefore(p, adjacent.block)
+                } else {
+                    adjacent.block.after(p)
+                }
+
+                blockCaretRef.current = null
+                placeCursorIn(p)
+                if (handlePageInput) {
+                    handlePageInput({ target: el }, pageIndex)
+                }
+                return
+            }
 
             let node = sel.getRangeAt(0).commonAncestorContainer
             if (node.nodeType === 3) node = node.parentElement
@@ -228,7 +278,6 @@ export default function EditorPage({
             if (block === el) return
 
             // Check if cursor is at the end of the block content
-            const range = sel.getRangeAt(0)
             const testRange = document.createRange()
             testRange.selectNodeContents(block)
             testRange.setStart(range.endContainer, range.endOffset)
@@ -269,6 +318,7 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
+        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre'
 
         // Track mousedown to distinguish genuine clicks from drag-selections
         let mouseDownTarget = null
@@ -277,6 +327,10 @@ export default function EditorPage({
         const handleMouseDown = (e) => {
             mouseDownTarget = e.target
             mouseDownPos = { x: e.clientX, y: e.clientY }
+            const atomicBlock = e.target.closest?.(ATOMIC_BLOCKS)
+            if (atomicBlock && el.contains(atomicBlock)) {
+                e.preventDefault()
+            }
         }
 
         const handleClick = (e) => {
@@ -297,6 +351,37 @@ export default function EditorPage({
             // If click is directly on the contenteditable container
             // or on a simple <p>/<br> (non-block), no action needed - browser handles it
             if (target !== el) {
+                const placeholder = target.closest?.('.doc-image-placeholder')
+                if (placeholder && el.contains(placeholder)) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
+                        detail: { placeholder, pageIndex }
+                    }))
+                    return
+                }
+
+                const atomicBlock = target.closest?.(ATOMIC_BLOCKS)
+                if (atomicBlock && el.contains(atomicBlock)) {
+                    e.preventDefault()
+                    e.stopPropagation()
+
+                    const rect = atomicBlock.getBoundingClientRect()
+                    const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+                    const range = document.createRange()
+                    if (side === 'before') {
+                        range.setStartBefore(atomicBlock)
+                    } else {
+                        range.setStartAfter(atomicBlock)
+                    }
+                    range.collapse(true)
+                    sel.removeAllRanges()
+                    sel.addRange(range)
+                    blockCaretRef.current = { block: atomicBlock, side }
+                    el.focus()
+                    return
+                }
+
                 // Check if click is inside a block
                 const clickedBlock = target.closest(BLOCK_SELECTORS)
                 if (!clickedBlock || !el.contains(clickedBlock)) return // not in a block, browser handles fine

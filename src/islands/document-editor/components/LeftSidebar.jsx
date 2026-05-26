@@ -206,7 +206,7 @@ export default function LeftSidebar({
                             <TextPanel />
                         )}
                         {activeTab === 'gallery' && (
-                            <GalleryPanel />
+                            <GalleryPanel accountNumber={accountNumber} doc={doc} />
                         )}
                         {activeTab === 'blocks' && (
                             <BlocksPanel insertDynamicTable={insertDynamicTable} accountNumber={accountNumber} doc={doc} />
@@ -1190,14 +1190,18 @@ function PageSettingsPanel({ doc, setDoc, triggerSave, settingsPanelProps }) {
 }
 
 // Gallery Panel Component with Integration Engine Search
-function GalleryPanel() {
+function GalleryPanel({ accountNumber: accountNumberProp, doc }) {
     const [searchQuery, setSearchQuery] = React.useState('')
     const [photos, setPhotos] = React.useState([])
+    const [recordImages, setRecordImages] = React.useState([])
+    const [driveImages, setDriveImages] = React.useState([])
     const [loading, setLoading] = React.useState(false)
+    const [libraryLoading, setLibraryLoading] = React.useState(false)
     const [page, setPage] = React.useState(1)
     const [hasMore, setHasMore] = React.useState(false)
     const [searched, setSearched] = React.useState(false)
     const [error, setError] = React.useState(null)
+    const uploadInputRef = React.useRef(null)
 
     const demoImages = [
         '/images/blog_1st.png',
@@ -1212,8 +1216,83 @@ function GalleryPanel() {
 
     // Get account number from URL
     const getAccountNumber = () => {
+        if (accountNumberProp) return accountNumberProp
         const match = window.location.pathname.match(/\/account\/([^/]+)/)
         return match ? match[1] : null
+    }
+
+    const sourceRecordId = doc?.draftRecordId || doc?.generatedFile?.recordId || doc?.linkedRecords?.[0]?.recordId || null
+
+    const placeholderHtml = `<div class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" style="width:320px;height:180px;resize:both;overflow:hidden;display:flex;align-items:center;justify-content:center;border:2px dashed #93c5fd;border-radius:10px;background:#eff6ff;color:#2563eb;font:600 13px Inter,Arial,sans-serif;margin:12px 0;cursor:pointer;box-sizing:border-box;">
+        <div style="text-align:center;pointer-events:none;">
+            <div style="font-size:22px;line-height:1;margin-bottom:6px;">+</div>
+            <div>Cliquer pour choisir une image</div>
+        </div>
+    </div><p><br></p>`
+
+    const imageHtml = (url, alt = '') => `<img src="${url}" alt="${String(alt || '').replace(/"/g, '&quot;')}" style="max-width: 100%; height: auto; display: block;" /><p><br></p>`
+
+    React.useEffect(() => {
+        const accountNumber = getAccountNumber()
+        if (!accountNumber) return
+        let cancelled = false
+
+        const loadLibraries = async () => {
+            setLibraryLoading(true)
+            try {
+                const requests = [
+                    fetch(`/account/${accountNumber}/api/drive/files`, { credentials: 'include' }).then(r => r.json()).catch(() => null)
+                ]
+                if (sourceRecordId) {
+                    requests.unshift(
+                        fetch(`/account/${accountNumber}/api/records/${sourceRecordId}/attachments`, { credentials: 'include' }).then(r => r.json()).catch(() => null)
+                    )
+                }
+                const results = await Promise.all(requests)
+                if (cancelled) return
+
+                const recordData = sourceRecordId ? results[0] : null
+                const driveData = sourceRecordId ? results[1] : results[0]
+
+                setRecordImages((recordData?.attachments || []).filter(f => f.category === 'image' || String(f.mimeType || '').startsWith('image/')).slice(0, 8))
+                setDriveImages((driveData?.files || []).filter(f => f.category === 'image' || String(f.mimeType || '').startsWith('image/')).slice(0, 8))
+            } finally {
+                if (!cancelled) setLibraryLoading(false)
+            }
+        }
+
+        loadLibraries()
+        return () => { cancelled = true }
+    }, [accountNumberProp, sourceRecordId])
+
+    const uploadFiles = async (files) => {
+        const file = files?.[0]
+        const accountNumber = getAccountNumber()
+        if (!file || !accountNumber) return
+
+        setLibraryLoading(true)
+        try {
+            const formData = new FormData()
+            formData.append('files', file)
+            const url = sourceRecordId
+                ? `/account/${accountNumber}/api/records/${sourceRecordId}/attachments`
+                : `/account/${accountNumber}/api/drive/upload`
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            })
+            const data = await res.json()
+            const uploaded = sourceRecordId ? data.attachments?.[0] : data.files?.[0]
+            if (uploaded) {
+                if (sourceRecordId) setRecordImages(prev => [uploaded, ...prev])
+                else setDriveImages(prev => [uploaded, ...prev])
+            }
+        } catch (e) {
+            setError(e.message || 'Erreur upload')
+        } finally {
+            setLibraryLoading(false)
+        }
     }
 
     const searchPhotos = async (query, pageNum = 1, append = false) => {
@@ -1296,6 +1375,18 @@ function GalleryPanel() {
 
     return (
         <div className="space-y-4">
+            <TouchableImage
+                html={placeholderHtml}
+                className="group border-2 border-dashed border-primary/40 rounded-lg p-4 flex flex-col items-center justify-center gap-2 hover:bg-primary/5 transition-colors cursor-move"
+                title="Glisser un placeholder image"
+            >
+                <iconify-icon icon="solar:gallery-add-bold-duotone" width="24" className="text-primary"></iconify-icon>
+                <div className="text-center">
+                    <p className="text-sm font-semibold dark:text-white-light">Zone image</p>
+                    <p className="text-[11px] text-gray-500">Glissez, redimensionnez, puis cliquez</p>
+                </div>
+            </TouchableImage>
+
             {/* Search Input */}
             <form onSubmit={handleSearch} className="relative">
                 <input
@@ -1345,7 +1436,7 @@ function GalleryPanel() {
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                         {photos.map((photo) => {
-                            const imgHtml = `<img src="${photo.url}" alt="${photo.alt}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                            const imgHtml = imageHtml(photo.url, photo.alt)
                             return (
                                 <TouchableImage
                                     key={photo.id}
@@ -1406,21 +1497,67 @@ function GalleryPanel() {
             {/* Demo Images (shown when no search) */}
             {!searched && (
                 <>
-                    <p className="text-xs text-gray-500">
-                        Glissez une image sur la page.
-                    </p>
+                    <p className="text-xs text-gray-500">Record drive</p>
+                    {libraryLoading && (
+                        <div className="text-xs text-gray-400 flex items-center gap-2">
+                            <iconify-icon icon="tabler:loader-2" width="14" className="animate-spin"></iconify-icon>
+                            Chargement...
+                        </div>
+                    )}
+                    {recordImages.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2">
+                            {recordImages.map((file) => (
+                                <TouchableImage
+                                    key={file._id || file.url}
+                                    html={imageHtml(file.url, file.originalName)}
+                                    className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+                                    title={file.originalName}
+                                >
+                                    <img src={file.url} alt={file.originalName || ''} className="w-full h-full object-cover" style={{ pointerEvents: 'none' }} />
+                                </TouchableImage>
+                            ))}
+                        </div>
+                    )}
 
-                    <button className="w-full p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors">
+                    <input
+                        ref={uploadInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                            uploadFiles(e.target.files)
+                            e.target.value = ''
+                        }}
+                    />
+                    <button type="button" onClick={() => uploadInputRef.current?.click()} className="w-full p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors">
                         <div className="flex items-center justify-between gap-2 text-gray-500">
                             <iconify-icon icon="tabler:upload" width="20"></iconify-icon>
                             <span className="text-sm">Importer</span>
                         </div>
                     </button>
 
+                    {driveImages.length > 0 && (
+                        <>
+                            <p className="text-xs text-gray-500 mt-3">Drive global</p>
+                            <div className="grid grid-cols-4 gap-2">
+                                {driveImages.map((file) => (
+                                    <TouchableImage
+                                        key={file._id || file.url}
+                                        html={imageHtml(file.url, file.originalName)}
+                                        className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+                                        title={file.originalName}
+                                    >
+                                        <img src={file.url} alt={file.originalName || ''} className="w-full h-full object-cover" style={{ pointerEvents: 'none' }} />
+                                    </TouchableImage>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
                     {/* Demo Images Grid */}
                     <div className="grid grid-cols-4 gap-2 mt-4">
                         {demoImages.map((imageSrc, index) => {
-                            const imgHtml = `<img src="${imageSrc}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                            const imgHtml = imageHtml(imageSrc, `Demo ${index + 1}`)
                             return (
                                 <TouchableImage
                                     key={index}

@@ -110,17 +110,19 @@ export async function exportPdf(docId, docName, html, accountNumber) {
  * @param {string}   recordId     - The source record ID (from doc.draftRecordId)
  * @param {string}   accountNumber - Account number
  * @param {string[]} pagesContent - Array of innerHTML strings, one per page (from DOM)
+ * @param {string|null} replaceAttachmentId - Existing generated attachment to replace
+ * @param {string|null} outputName - Requested generated PDF title
  * @returns {Promise<{success: boolean, downloadUrl?: string, outputName?: string, error?: string}>}
  */
-export async function finalizeDraft(draftDocId, recordId, accountNumber, pagesContent) {
-    console.log('[SmartDoc] Finalizing draft:', draftDocId, 'for record:', recordId, 'pages:', pagesContent?.length)
+export async function finalizeDraft(draftDocId, recordId, accountNumber, pagesContent, replaceAttachmentId = null, outputName = null) {
+    console.log('[SmartDoc] Finalizing draft:', draftDocId, 'for record:', recordId, 'pages:', pagesContent?.length, 'replace:', replaceAttachmentId)
 
     try {
         const response = await fetch(`/account/${accountNumber}/api/smartdoc/finalize-draft/${draftDocId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ recordId, pagesContent })
+            body: JSON.stringify({ recordId, pagesContent, replaceAttachmentId, outputName })
         })
 
         const data = await response.json()

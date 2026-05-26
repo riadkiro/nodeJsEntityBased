@@ -451,6 +451,8 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             isGenerated: att.isGenerated,
             generatedFrom: att.generatedFrom,
             generatedFromName: att.generatedFromName,
+            generatedFromDocumentId: att.generatedFromDocumentId,
+            snapshotDocumentId: att.snapshotDocumentId,
             url: `/account/${req.account_number}/uploads/attachments/${att.filename}`,
             uploadedAt: att.uploadedAt,
             uploadedBy: att.uploadedBy

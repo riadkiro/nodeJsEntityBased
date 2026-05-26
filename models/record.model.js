@@ -83,6 +83,8 @@ const RecordSchema = new mongoose.Schema({
     isGenerated: { type: Boolean, default: false },   // Généré par SmartDoc
     generatedFrom: String,                             // ID du template de document
     generatedFromName: String,                         // Nom du template
+    generatedFromDocumentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
+    snapshotDocumentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
     isDataRoomOnly: { type: Boolean, default: false }, // Stockage Data Room caché du Drive
     dataRoomStorageFolder: String,
     uploadedAt: { type: Date, default: Date.now },

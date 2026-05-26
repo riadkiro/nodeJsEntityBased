@@ -70,6 +70,7 @@ function mountIslands() {
             accountNumber: container.dataset.accountNumber,
             initialDocument: initialDocument,
             isNew: container.dataset.isNew === 'true',
+            isMinimal: container.dataset.isMinimal === 'true',
             isTemplateMode: container.dataset.isTemplateMode === 'true'
         }
 
@@ -89,6 +90,7 @@ function mountIslands() {
             isNew: props.isNew,
             docId: props.initialDocument?._id,
             hasBindings: !!props.contextFreeBindings,
+            isMinimal: props.isMinimal,
             isTemplateMode: props.isTemplateMode
         })
 

@@ -171,12 +171,12 @@
 
     .sidebar .nav-item>button.active>div>span,
     .sidebar .nav-item>a.active>div>span {
-        @apply dark: !text-white-dark;
+        @apply dark:!text-white-dark;
     }
 
     .sidebar ul.sub-menu li button,
     .sidebar ul.sub-menu li a {
-        @apply flex w-full items-center px-9 py-2.5 before:h-0.5 before:w-2 before:rounded before:bg-gray-300 hover:bg-gray-100 hover:text-primary hover:before: !bg-primary ltr:before:mr-2 rtl:before:ml-2 dark:before:bg-gray-500 dark:hover:bg-gray-900 dark:hover:text-primary;
+        @apply flex w-full items-center px-9 py-2.5 before:h-0.5 before:w-2 before:rounded before:bg-gray-300 hover:bg-gray-100 hover:text-primary hover:before:!bg-primary ltr:before:mr-2 rtl:before:ml-2 dark:before:bg-gray-500 dark:hover:bg-gray-900 dark:hover:text-primary;
     }
 
     .sidebar ul.sub-menu li button.active,
@@ -643,7 +643,7 @@
 
     table thead tr,
     table tfoot tr {
-        @apply border-b-0 !bg-[#f6f8fa] dark: !bg-[#1a2941];
+        @apply border-b-0 !bg-[#f6f8fa] dark:!bg-[#1a2941];
     }
 
     table thead tr th,
@@ -658,15 +658,15 @@
     }
 
     table tbody tr {
-        @apply border-b !border-white-light/40 dark: !border-[#191e3a];
+        @apply border-b !border-white-light/40 dark:!border-[#191e3a];
     }
 
     table.table-hover tbody tr {
-        @apply hover: !bg-white-light/20 dark:hover: !bg-[#1a2941]/40;
+        @apply hover:!bg-white-light/20 dark:hover:!bg-[#1a2941]/40;
     }
 
     table.table-striped tbody tr:nth-child(odd) {
-        @apply !bg-white-light/20 dark: !bg-[#1a2941]/40;
+        @apply !bg-white-light/20 dark:!bg-[#1a2941]/40;
     }
 
     table.dataTable-table tbody tr th,
@@ -687,7 +687,7 @@
 /* perfect scrollbar */
 .ps__rail-y>.ps__thumb-y,
 .ps__rail-y>.ps__thumb-y {
-    @apply !w-1.5 !bg-[#DDDDDD] dark: !bg-[#2d334c];
+    @apply !w-1.5 !bg-[#DDDDDD] dark:!bg-[#2d334c];
 }
 
 .ps .ps__rail-x:hover,
@@ -767,7 +767,7 @@
 }
 
 .apexcharts-legend-series {
-    @apply ltr: !mr-2 rtl: !ml-2;
+    @apply ltr:!mr-2 rtl:!ml-2;
 }
 
 .dark .apexcharts-title-text {
@@ -808,7 +808,7 @@
 }
 
 .apexcharts-canvas .apexcharts-legend-marker {
-    @apply ltr: !mr-1.5 rtl:ml-1.5 rtl: !mr-0;
+    @apply ltr:!mr-1.5 rtl:ml-1.5 rtl:!mr-0;
 }
 
 [dir='rtl'] .apexcharts-tooltip-marker {

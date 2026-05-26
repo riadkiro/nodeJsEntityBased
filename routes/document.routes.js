@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
         const documents = await Document.find({
             isTemplate: false,
             createdBy: req.user._id,
+            isGenerationSnapshot: { $ne: true },
             'uploadedFile.path': { $exists: false }
         })
             .sort({ updatedAt: -1 })
@@ -155,6 +156,8 @@ router.get('/', async (req, res) => {
                             mimeType: '$attachments.mimeType',
                             size: '$attachments.size',
                             generatedFromName: '$attachments.generatedFromName',
+                            generatedFromDocumentId: '$attachments.generatedFromDocumentId',
+                            snapshotDocumentId: '$attachments.snapshotDocumentId',
                             uploadedAt: '$attachments.uploadedAt',
                             uploadedBy: '$attachments.uploadedBy',
                             recordId: '$_id',
@@ -186,6 +189,8 @@ router.get('/', async (req, res) => {
                         templateName: doc.generatedFromName || '',
                         createdAt: doc.uploadedAt,
                         downloadUrl: `/account/${req.account_number}/uploads/attachments/${doc.filename}`,
+                        snapshotDocumentId: doc.snapshotDocumentId || null,
+                        generatedFromDocumentId: doc.generatedFromDocumentId || null,
                         recordId: doc.recordId,
                         recordTitle: doc.recordTitle || '',
                         entityName: entity?.name || '',
@@ -202,7 +207,11 @@ router.get('/', async (req, res) => {
             if (Document) {
                 const standaloneDocs = await Document.find({
                     status: 'finalized',
-                    'generatedFile.filename': { $exists: true }
+                    'generatedFile.filename': { $exists: true },
+                    $or: [
+                        { 'generatedFile.recordId': { $exists: false } },
+                        { 'generatedFile.recordId': null }
+                    ]
                 }).sort({ updatedAt: -1 }).limit(50).lean();
 
                 for (const sdoc of standaloneDocs) {
@@ -214,6 +223,8 @@ router.get('/', async (req, res) => {
                         templateName: gf.generatedFromName || sdoc.generatedFrom?.templateName || '',
                         createdAt: gf.generatedAt || sdoc.updatedAt,
                         downloadUrl: gf.downloadUrl || `/account/${req.account_number}/uploads/attachments/${gf.filename}`,
+                        snapshotDocumentId: sdoc._id,
+                        generatedFromDocumentId: sdoc.generatedFrom?.templateId || null,
                         recordId: null,
                         recordTitle: '',
                         entityName: '',

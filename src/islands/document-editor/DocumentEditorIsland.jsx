@@ -29,51 +29,48 @@ function sanitizeEditorPageHtml(html) {
         .forEach(el => el.remove())
 
     template.content.querySelectorAll('[contenteditable]').forEach(el => {
-        el.removeAttribute('contenteditable')
+        if (el.classList?.contains('doc-image-placeholder') || el.classList?.contains('dynamic-table')) {
+            el.setAttribute('contenteditable', 'false')
+        } else {
+            el.removeAttribute('contenteditable')
+        }
         el.removeAttribute('suppresscontenteditablewarning')
     })
 
     return template.innerHTML
 }
 
+function escapeAttr(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+}
+
+function isImageFile(file) {
+    const mime = String(file?.mimeType || file?.type || '')
+    const name = String(file?.originalName || file?.name || file?.filename || file?.url || '')
+    return file?.category === 'image' || mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(name)
+}
+
+function getMediaUrl(file) {
+    return file?.url || file?.downloadUrl || file?.src || ''
+}
+
 // ========== WORD-LIKE SELECTION HELPERS ==========
 function selectAllDocument(editorRootEl, pageRefs) {
     const sel = window.getSelection()
     if (!sel) return
+    sel.removeAllRanges()
 
-    // Get all page contenteditable elements (sorted by index)
     const pages = pageRefs ? Object.entries(pageRefs)
         .sort(([a], [b]) => Number(a) - Number(b))
         .map(([, el]) => el)
         .filter(Boolean) : []
 
-    if (pages.length === 0 && editorRootEl) {
-        // Fallback: select editorRoot contents
-        const range = document.createRange()
-        range.selectNodeContents(editorRootEl)
-        sel.removeAllRanges()
-        sel.addRange(range)
-        return
-    }
-
-    if (pages.length === 1) {
-        // Single page: select all within that contenteditable
-        const range = document.createRange()
-        range.selectNodeContents(pages[0])
-        sel.removeAllRanges()
-        sel.addRange(range)
-        return
-    }
-
-    // Multi-page: select from start of first page to end of last page
-    // Note: Selection ranges may only span within a single contenteditable,
-    // so we select the editorRoot container which wraps all pages
-    if (editorRootEl) {
-        const range = document.createRange()
-        range.selectNodeContents(editorRootEl)
-        sel.removeAllRanges()
-        sel.addRange(range)
-    }
+    const firstPage = pages[0] || editorRootEl
+    if (firstPage?.focus) firstPage.focus({ preventScroll: true })
 }
 
 function isSelectionCoversAll(editorRootEl) {
@@ -86,6 +83,40 @@ function isSelectionCoversAll(editorRootEl) {
         range.compareBoundaryPoints(Range.START_TO_START, docRange) === 0 &&
         range.compareBoundaryPoints(Range.END_TO_END, docRange) === 0
     )
+}
+
+function getLivePagePayload(pageRefs, docRef) {
+    const refs = pageRefs?.current || pageRefs || {}
+    const refEntries = Object.entries(refs)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([idx, el]) => ({ idx: Number(idx), el }))
+        .filter(item => item.el)
+
+    if (refEntries.length > 0) {
+        const htmlParts = []
+        const textParts = []
+        refEntries.forEach(({ el }) => {
+            const html = sanitizeEditorPageHtml(el.innerHTML || '')
+            htmlParts.push(html)
+            const div = document.createElement('div')
+            div.innerHTML = html
+            textParts.push(div.textContent || '')
+        })
+        return {
+            html: htmlParts.join('<div style="page-break-after: always;"></div>'),
+            text: textParts.join('\n\n')
+        }
+    }
+
+    const pages = docRef?.current?.pages || []
+    return {
+        html: pages.map(page => page.content || '').join('<div style="page-break-after: always;"></div>'),
+        text: pages.map(page => {
+            const div = document.createElement('div')
+            div.innerHTML = page.content || ''
+            return div.textContent || ''
+        }).join('\n\n')
+    }
 }
 
 // Components
@@ -149,7 +180,7 @@ const mergeWithDefaults = (initialDoc) => {
     }
 }
 
-export default function DocumentEditorIsland({ accountNumber, initialDocument, isNew, contextFreeBindings, isTemplateMode }) {
+export default function DocumentEditorIsland({ accountNumber, initialDocument, isNew, contextFreeBindings, isTemplateMode, isMinimal = false }) {
     const isContextFree = useMemo(() => {
         const urlParams = new URLSearchParams(window.location.search)
         return urlParams.get('contextFree') === '1'
@@ -197,6 +228,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // Date Picker Popup
     const [datePickerState, setDatePickerState] = useState(null) // { textNode, offset, length, rect }
+    const [imagePickerTarget, setImagePickerTarget] = useState(null)
 
     // ========== REFS (Critical for stability) ==========
     const saveTimeoutRef = useRef(null)
@@ -290,6 +322,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== UNSAVED CHANGES WARNING (manual save mode) ==========
     useEffect(() => {
+        if (isMinimal) return
         const handler = (e) => {
             if (!autoSaveRef.current && hasUnsavedChangesRef.current) {
                 // Modern browsers require preventDefault and returnValue
@@ -301,13 +334,22 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
         window.addEventListener('beforeunload', handler)
         return () => window.removeEventListener('beforeunload', handler)
-    }, [])
+    }, [isMinimal])
 
     // Listen for template panel toggle from header button
     useEffect(() => {
         const handler = () => setShowTemplatePanel(prev => !prev)
         window.addEventListener('toggle-template-panel', handler)
         return () => window.removeEventListener('toggle-template-panel', handler)
+    }, [])
+
+    useEffect(() => {
+        const handler = (event) => {
+            const placeholder = event.detail?.placeholder
+            if (placeholder) setImagePickerTarget(placeholder)
+        }
+        window.addEventListener('document-image-placeholder-click', handler)
+        return () => window.removeEventListener('document-image-placeholder-click', handler)
     }, [])
 
     // ========== POSTMESSAGE BRIDGE (iframe mode) ==========
@@ -1351,6 +1393,25 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         triggerSave()
     }, [triggerSave])
 
+    const applyImageToPlaceholder = useCallback((url, alt = '') => {
+        const target = imagePickerTarget
+        if (!target || !url) return
+
+        target.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" style="width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;" />`
+        target.dataset.imageSrc = url
+        target.setAttribute('contenteditable', 'false')
+        target.style.border = 'none'
+        target.style.background = 'transparent'
+        target.style.color = 'inherit'
+        target.style.padding = '0'
+        target.style.resize = 'both'
+        target.style.overflow = 'hidden'
+        target.style.cursor = 'pointer'
+
+        setImagePickerTarget(null)
+        triggerSave()
+    }, [imagePickerTarget, triggerSave])
+
     // ========== GLOBAL SELECTION ==========
     const handleGlobalSelection = useCallback(() => {
         setIsGlobalSelection(true)
@@ -1359,20 +1420,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const handleGlobalCopy = useCallback((e) => {
         if (!isGlobalSelection) return
 
-        const fullHtml = docRef.current.pages
-            .map(page => page.content || '')
-            .join('<div style="page-break-after: always;"></div>')
+        const payload = getLivePagePayload(pageRefs, docRef)
 
-        const fullText = docRef.current.pages
-            .map(page => {
-                const div = document.createElement('div')
-                div.innerHTML = page.content || ''
-                return div.textContent
-            })
-            .join('\n\n')
-
-        e.clipboardData.setData('text/html', fullHtml)
-        e.clipboardData.setData('text/plain', fullText)
+        e.clipboardData.setData('text/html', payload.html)
+        e.clipboardData.setData('text/plain', payload.text)
         e.preventDefault()
     }, [isGlobalSelection])
 
@@ -1757,7 +1808,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Previously this checked `doc.isDraft && doc.draftRecordId`, which skipped
         // context-free drafts (Docs Hub flow) causing PDFs to only blob-download
         // without persisting anywhere, and drafts to accumulate in the DB.
-        if (doc.isDraft) {
+        const isRegenerableSnapshot = doc.isGenerationSnapshot || doc.sourceGeneratedAttachmentId || doc.generatedFile?.attachmentId
+        if (doc.isDraft || isRegenerableSnapshot) {
             setIsGeneratingPdf(true)
             try {
                 // CRITICAL: Extract CURRENT DOM content from pageRefs (contenteditable is uncontrolled)
@@ -1772,8 +1824,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     return sanitizeEditorPageHtml(page.content || '')
                 })
 
-                const targetRecordId = doc.draftRecordId || (doc.linkedRecords && doc.linkedRecords.length > 0 ? doc.linkedRecords[0].recordId : null)
-                const result = await finalizeDraft(doc._id, targetRecordId, accountNumber, pagesContent)
+                const targetRecordId = doc.draftRecordId || doc.generatedFile?.recordId || (doc.linkedRecords && doc.linkedRecords.length > 0 ? doc.linkedRecords[0].recordId : null)
+                const replaceAttachmentId = doc.sourceGeneratedAttachmentId || doc.generatedFile?.attachmentId || null
+                const result = await finalizeDraft(doc._id, targetRecordId, accountNumber, pagesContent, replaceAttachmentId, doc.name)
                 if (!result.success) {
                     console.error('[SmartDoc] Finalize-draft failed:', result.error)
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
@@ -1852,8 +1905,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             size: ${docDims.width}px ${docDims.height}px;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             font-size: 16px;
             line-height: 1.6;
             color: #000000;
@@ -2844,6 +2897,15 @@ ${pagesHtml}
                 ` }} />
             )}
 
+            {imagePickerTarget && (
+                <ImagePickerModal
+                    accountNumber={accountNumber}
+                    sourceRecordId={doc.draftRecordId || doc.generatedFile?.recordId || doc.linkedRecords?.[0]?.recordId || null}
+                    onClose={() => setImagePickerTarget(null)}
+                    onSelect={applyImageToPlaceholder}
+                />
+            )}
+
             {/* Floating Date Picker */}
             {datePickerState && (
                 <div
@@ -3045,8 +3107,296 @@ ${pagesHtml}
                 .animate-modal-scale-in {
                     animation: modalScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
                 }
+                .doc-image-placeholder {
+                    min-width: 96px;
+                    min-height: 72px;
+                    outline: 1px solid transparent;
+                    outline-offset: 2px;
+                }
+                .doc-image-placeholder:hover {
+                    outline-color: #3b82f6;
+                }
+                .doc-image-placeholder img {
+                    user-select: none;
+                }
                 `
             }} />
+        </div>
+    )
+}
+function ImagePickerModal({ accountNumber, sourceRecordId, onClose, onSelect }) {
+    const [activeSource, setActiveSource] = useState(sourceRecordId ? 'record' : 'drive')
+    const [recordImages, setRecordImages] = useState([])
+    const [driveImages, setDriveImages] = useState([])
+    const [unsplashImages, setUnsplashImages] = useState([])
+    const [query, setQuery] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [uploading, setUploading] = useState(false)
+    const [error, setError] = useState('')
+    const uploadRef = useRef(null)
+
+    const loadLibraries = useCallback(async () => {
+        if (!accountNumber) return
+        setLoading(true)
+        setError('')
+        try {
+            const requests = [
+                fetch(`/account/${accountNumber}/api/drive/files`, { credentials: 'include' })
+                    .then(res => res.json())
+                    .catch(() => null)
+            ]
+
+            if (sourceRecordId) {
+                requests.unshift(
+                    fetch(`/account/${accountNumber}/api/records/${sourceRecordId}/attachments`, { credentials: 'include' })
+                        .then(res => res.json())
+                        .catch(() => null)
+                )
+            }
+
+            const results = await Promise.all(requests)
+            const recordData = sourceRecordId ? results[0] : null
+            const driveData = sourceRecordId ? results[1] : results[0]
+
+            setRecordImages((recordData?.attachments || []).filter(isImageFile))
+            setDriveImages((driveData?.files || []).filter(isImageFile))
+        } catch (err) {
+            setError(err.message || 'Impossible de charger les images.')
+        } finally {
+            setLoading(false)
+        }
+    }, [accountNumber, sourceRecordId])
+
+    useEffect(() => {
+        loadLibraries()
+    }, [loadLibraries])
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') onClose()
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [onClose])
+
+    const searchUnsplash = async (event) => {
+        event?.preventDefault()
+        if (!query.trim()) return
+
+        setActiveSource('unsplash')
+        setLoading(true)
+        setError('')
+        try {
+            const response = await fetch(`/account/${accountNumber}/integrations/unsplash/actions/search-photos/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    input: {
+                        query: query.trim(),
+                        per_page: 18,
+                        page: 1
+                    }
+                })
+            })
+            const result = await response.json()
+            if (!result.success) throw new Error(result.error || 'Recherche impossible.')
+
+            const rawPhotos = result.data?.photos || result.data?.results || []
+            setUnsplashImages(rawPhotos.map(photo => ({
+                id: photo.id,
+                url: photo.urls?.regular || photo.urls?.small,
+                thumb: photo.urls?.thumb || photo.urls?.small,
+                name: photo.alt_description || photo.description || 'Photo Unsplash',
+                author: photo.user?.name || ''
+            })).filter(photo => photo.url))
+        } catch (err) {
+            setError(err.message || 'Erreur Unsplash.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const uploadImageFile = async (files) => {
+        const file = files?.[0]
+        if (!file || !accountNumber) return
+
+        setUploading(true)
+        setError('')
+        try {
+            const formData = new FormData()
+            formData.append('files', file)
+            const url = sourceRecordId
+                ? `/account/${accountNumber}/api/records/${sourceRecordId}/attachments`
+                : `/account/${accountNumber}/api/drive/upload`
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            })
+            const data = await response.json()
+            if (!data.success) throw new Error(data.error || 'Upload impossible.')
+
+            const uploaded = sourceRecordId ? data.attachments?.[0] : data.files?.[0]
+            if (!uploaded) throw new Error('Image uploadée introuvable.')
+
+            if (sourceRecordId) {
+                setRecordImages(prev => [uploaded, ...prev])
+                setActiveSource('record')
+            } else {
+                setDriveImages(prev => [uploaded, ...prev])
+                setActiveSource('drive')
+            }
+            onSelect(getMediaUrl(uploaded), uploaded.originalName || uploaded.name || file.name)
+        } catch (err) {
+            setError(err.message || 'Erreur upload.')
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const selectImage = (file) => {
+        const url = getMediaUrl(file)
+        if (!url) return
+        onSelect(url, file.originalName || file.name || file.filename || file.author || '')
+    }
+
+    const renderGrid = (items, emptyLabel) => {
+        if (loading) {
+            return (
+                <div className="flex items-center justify-center py-12 text-slate-400">
+                    <iconify-icon icon="tabler:loader-2" width="24" className="animate-spin"></iconify-icon>
+                </div>
+            )
+        }
+
+        if (!items.length) {
+            return (
+                <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400">
+                    <iconify-icon icon="solar:gallery-minimalistic-bold-duotone" width="32"></iconify-icon>
+                    <p className="mt-2 text-sm">{emptyLabel}</p>
+                </div>
+            )
+        }
+
+        return (
+            <div className="grid grid-cols-3 gap-3">
+                {items.map((file, index) => {
+                    const url = getMediaUrl(file)
+                    const thumb = file.thumb || url
+                    const name = file.originalName || file.name || file.filename || 'Image'
+                    return (
+                        <button
+                            key={file._id || file.id || `${url}-${index}`}
+                            type="button"
+                            onClick={() => selectImage(file)}
+                            className="group relative aspect-video overflow-hidden rounded-lg border border-slate-200 bg-slate-50 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            title={name}
+                        >
+                            <img src={thumb} alt={name} className="h-full w-full object-cover" loading="lazy" />
+                            <span className="absolute inset-x-0 bottom-0 truncate bg-slate-950/65 px-2 py-1 text-left text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                {name}
+                            </span>
+                        </button>
+                    )
+                })}
+            </div>
+        )
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/50 p-4"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose()
+            }}
+        >
+            <div className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                    <div>
+                        <h3 className="m-0 text-base font-semibold text-slate-900">Choisir une image</h3>
+                        <p className="m-0 mt-1 text-xs text-slate-500">L'image remplace le placeholder sélectionné.</p>
+                    </div>
+                    <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                        <iconify-icon icon="tabler:x" width="20"></iconify-icon>
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
+                    {sourceRecordId && (
+                        <button
+                            type="button"
+                            onClick={() => setActiveSource('record')}
+                            className={`rounded-lg px-3 py-2 text-sm font-medium ${activeSource === 'record' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                        >
+                            Record drive
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => setActiveSource('drive')}
+                        className={`rounded-lg px-3 py-2 text-sm font-medium ${activeSource === 'drive' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                        Drive global
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveSource('unsplash')}
+                        className={`rounded-lg px-3 py-2 text-sm font-medium ${activeSource === 'unsplash' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                        Unsplash
+                    </button>
+                    <div className="ml-auto">
+                        <input
+                            ref={uploadRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(event) => {
+                                uploadImageFile(event.target.files)
+                                event.target.value = ''
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => uploadRef.current?.click()}
+                            disabled={uploading}
+                            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-60"
+                        >
+                            <iconify-icon icon={uploading ? 'tabler:loader-2' : 'tabler:upload'} width="16" className={uploading ? 'animate-spin' : ''}></iconify-icon>
+                            Importer
+                        </button>
+                    </div>
+                </div>
+
+                {activeSource === 'unsplash' && (
+                    <form onSubmit={searchUnsplash} className="flex gap-2 border-b border-slate-200 px-5 py-3">
+                        <input
+                            type="text"
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            placeholder="Rechercher sur Unsplash..."
+                            className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
+                        <button type="submit" disabled={loading || !query.trim()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                            <iconify-icon icon="tabler:search" width="16"></iconify-icon>
+                            Rechercher
+                        </button>
+                    </form>
+                )}
+
+                {error && (
+                    <div className="mx-5 mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        {error}
+                    </div>
+                )}
+
+                <div className="min-h-0 flex-1 overflow-auto p-5">
+                    {activeSource === 'record' && renderGrid(recordImages, 'Aucune image dans le drive de ce record.')}
+                    {activeSource === 'drive' && renderGrid(driveImages, 'Aucune image dans le drive global.')}
+                    {activeSource === 'unsplash' && renderGrid(unsplashImages, query ? 'Aucun résultat Unsplash.' : 'Lancez une recherche pour voir les images.')}
+                </div>
+            </div>
         </div>
     )
 }

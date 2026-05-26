@@ -634,6 +634,8 @@ router.get('/drive', async (req, res) => {
                     folder: att.folder || '',
                     isGenerated: att.isGenerated || false,
                     generatedFromName: att.generatedFromName,
+                    generatedFromDocumentId: att.generatedFromDocumentId,
+                    snapshotDocumentId: att.snapshotDocumentId,
                     url: `/account/${req.account_number}/uploads/attachments/${att.filename}`,
                     uploadedAt: att.uploadedAt,
                     recordId: record._id,

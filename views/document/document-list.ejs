@@ -134,7 +134,7 @@
             <div x-show="openGenTemplates.includes(tplName)" x-transition.duration.200ms>
               <template x-for="(gdoc, dIdx) in getVisibleGenDocs(tplName)" :key="gdoc._id || dIdx">
                 <div class="docs-tpl-file"
-                     @click="gdoc.downloadUrl && window.openFileViewer(gdoc.downloadUrl, gdoc.name, 'pdf')">
+                     @click="gdoc.downloadUrl && window.openFileViewer(gdoc.downloadUrl, gdoc.name, 'pdf', null, null, { onEdit: () => editGeneratedDoc(gdoc) })">
                   <div class="docs-tpl-file-icon">
                     <iconify-icon icon="solar:file-text-bold-duotone" width="14" style="color:#10b981"></iconify-icon>
                   </div>
@@ -149,10 +149,23 @@
                     <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
                     <span x-text="formatRelativeDate(gdoc.createdAt)"></span>
                   </span>
+                  <button x-show="gdoc.downloadUrl" @click.stop="window.openFileViewer(gdoc.downloadUrl, gdoc.name, 'pdf', null, null, { onEdit: () => editGeneratedDoc(gdoc) })"
+                     class="docs-tpl-file-dl" title="Voir">
+                    <iconify-icon icon="solar:eye-bold" width="13"></iconify-icon>
+                  </button>
                   <a x-show="gdoc.downloadUrl" :href="gdoc.downloadUrl + '?dl=' + encodeURIComponent(gdoc.name || 'document')" 
                      download class="docs-tpl-file-dl" title="Télécharger" @click.stop>
                     <iconify-icon icon="solar:download-bold" width="13"></iconify-icon>
                   </a>
+                  <button x-show="gdoc.snapshotDocumentId" @click.stop="editGeneratedDoc(gdoc)"
+                     class="docs-tpl-file-dl" title="Modifier le snapshot" style="color:#4361ee;">
+                    <iconify-icon icon="solar:pen-bold" width="13"></iconify-icon>
+                  </button>
+                  <button x-show="gdoc.snapshotDocumentId" @click.stop="copyGeneratedDoc(gdoc)"
+                     class="docs-tpl-file-dl" :disabled="copyingGeneratedId === gdoc._id"
+                     title="Copier vers un nouveau document" style="color:#10b981;">
+                    <iconify-icon :icon="copyingGeneratedId === gdoc._id ? 'line-md:loading-twotone-loop' : 'solar:copy-bold'" width="13"></iconify-icon>
+                  </button>
                 </div>
               </template>
               <!-- Load more -->
@@ -734,6 +747,7 @@ document.addEventListener('alpine:init', () => {
     deleting: false,
     openGenTemplates: [],
     expandedGenTemplates: [],
+    copyingGeneratedId: null,
 
     init() {
       // Auto-open all templates that have generated docs
@@ -818,6 +832,38 @@ document.addEventListener('alpine:init', () => {
 
     confirmDelete(doc) {
       this.deleteTarget = doc;
+    },
+
+    editGeneratedDoc(gdoc) {
+      if (!gdoc?.snapshotDocumentId) {
+        alert('Aucun snapshot éditable pour ce PDF');
+        return;
+      }
+      window.location.href = '/account/<%= account_number %>/documents/' + gdoc.snapshotDocumentId + '/edit-react';
+    },
+
+    async copyGeneratedDoc(gdoc) {
+      if (!gdoc?.snapshotDocumentId || this.copyingGeneratedId) {
+        if (!gdoc?.snapshotDocumentId) alert('Aucun snapshot à copier pour ce PDF');
+        return;
+      }
+      this.copyingGeneratedId = gdoc._id;
+      try {
+        const res = await fetch('/account/<%= account_number %>/api/smartdoc/snapshot/' + gdoc.snapshotDocumentId + '/copy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ recordId: gdoc.recordId || null })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Copie impossible');
+        window.location.href = '/account/<%= account_number %>/documents/' + data.draftDocumentId + '/edit-react';
+      } catch (e) {
+        console.error('Copy generated doc error:', e);
+        alert(e.message || 'Erreur lors de la copie');
+      } finally {
+        this.copyingGeneratedId = null;
+      }
     },
 
     async executeDelete() {

@@ -126,11 +126,13 @@ export default function EditorPage({
 
         const sel = window.getSelection()
         const range = document.createRange()
+        const spacer = document.createTextNode('\u2009')
         if (side === 'before') {
-            range.setStartBefore(block)
+            block.parentNode.insertBefore(spacer, block)
         } else {
-            range.setStartAfter(block)
+            block.parentNode.insertBefore(spacer, block.nextSibling)
         }
+        range.setStart(spacer, side === 'before' ? 0 : spacer.length)
         range.collapse(true)
         sel.removeAllRanges()
         sel.addRange(range)
@@ -158,8 +160,16 @@ export default function EditorPage({
             placeholder.style.minWidth = '96px'
             placeholder.style.minHeight = '72px'
             placeholder.style.margin = '12px 0'
-            if (!placeholder.style.width) placeholder.style.width = '320px'
-            if (!placeholder.style.height) placeholder.style.height = '190px'
+            if (!placeholder.style.width) placeholder.style.width = '100%'
+            if (!placeholder.style.height) placeholder.style.height = 'auto'
+            const numericWidth = parseFloat(placeholder.style.width || '')
+            if (!placeholder.style.width.includes('%') && numericWidth && numericWidth < 300) {
+                placeholder.style.width = '100%'
+            }
+            if (placeholder.style.height === 'auto') {
+                const width = placeholder.offsetWidth || el.clientWidth || 320
+                placeholder.style.height = `${Math.round(width * 9 / 16)}px`
+            }
 
             const next = placeholder.nextElementSibling
             if (next?.tagName === 'P' && !next.textContent.trim() && next.innerHTML.replace(/<br\s*\/?>/gi, '').trim() === '') {

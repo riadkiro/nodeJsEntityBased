@@ -21,12 +21,9 @@ const isMod = (e) => e.ctrlKey || e.metaKey
 function sanitizeEditorPageHtml(html) {
     if (!html) return ''
 
+    const cleanHtml = stripEditorRuntimeArtifacts(html)
     const template = document.createElement('template')
-    template.innerHTML = html
-
-    template.content
-        .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay]')
-        .forEach(el => el.remove())
+    template.innerHTML = cleanHtml
 
     template.content.querySelectorAll('[contenteditable]').forEach(el => {
         if (el.classList?.contains('doc-image-placeholder') || el.classList?.contains('dynamic-table')) {
@@ -37,6 +34,17 @@ function sanitizeEditorPageHtml(html) {
         el.removeAttribute('suppresscontenteditablewarning')
     })
 
+    return template.innerHTML
+}
+
+function stripEditorRuntimeArtifacts(html) {
+    if (!html) return ''
+
+    const template = document.createElement('template')
+    template.innerHTML = html
+    template.content
+        .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay], [data-placeholder-resize-overlay], [data-atomic-caret], .doc-image-placeholder-handle')
+        .forEach(el => el.remove())
     return template.innerHTML
 }
 
@@ -374,10 +382,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             const pagesContent = pages.map((page, i) => {
                 const pageEl = pageRefs.current[i]
                 if (pageEl) {
-                    let html = pageEl.innerHTML
-                    // Strip temporary markers that should not go into PDF
-                    html = html.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
-                    html = html.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+                    const html = stripEditorRuntimeArtifacts(pageEl.innerHTML)
                     return html
                 }
                 return page.content || ''
@@ -408,10 +413,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             const pageRef = pageRefs.current[i]
             if (page.mode === 'edition') {
                 if (pageRef) {
-                    // Clean any temporary markers before saving
-                    let content = pageRef.innerHTML
-                    content = content.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
-                    content = content.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+                    const content = stripEditorRuntimeArtifacts(pageRef.innerHTML)
                     return { ...page, content }
                 } else {
                     // CRITICAL: pageRef is null but page is in edition mode
@@ -1400,11 +1402,13 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         target.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" style="width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;" />`
         target.dataset.imageSrc = url
         target.setAttribute('contenteditable', 'false')
+        target.classList.add('has-image')
         target.style.border = 'none'
-        target.style.background = 'transparent'
+        target.style.backgroundColor = 'transparent'
+        target.style.backgroundImage = 'none'
         target.style.color = 'inherit'
         target.style.padding = '0'
-        target.style.resize = 'both'
+        target.style.resize = 'none'
         target.style.overflow = 'hidden'
         target.style.cursor = 'pointer'
 
@@ -3101,6 +3105,10 @@ ${pagesHtml}
                     from { opacity: 0; transform: scale(0.95); }
                     to { opacity: 1; transform: scale(1); }
                 }
+                @keyframes docAtomicCaretBlink {
+                    0%, 45% { opacity: 1; }
+                    46%, 100% { opacity: 0.25; }
+                }
                 .animate-modal-fade-in {
                     animation: modalFadeIn 0.2s ease-out forwards;
                 }
@@ -3110,11 +3118,22 @@ ${pagesHtml}
                 .doc-image-placeholder {
                     min-width: 96px;
                     min-height: 72px;
+                    position: relative;
+                    display: inline-flex;
+                    vertical-align: top;
+                    box-sizing: border-box;
+                    resize: none !important;
                     outline: 1px solid transparent;
                     outline-offset: 2px;
+                    user-select: none;
                 }
                 .doc-image-placeholder:hover {
                     outline-color: #3b82f6;
+                }
+                .doc-image-placeholder:not(.has-image) {
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
                 }
                 .doc-image-placeholder img {
                     user-select: none;

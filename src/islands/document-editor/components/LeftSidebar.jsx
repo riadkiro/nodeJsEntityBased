@@ -1223,10 +1223,12 @@ function GalleryPanel({ accountNumber: accountNumberProp, doc }) {
 
     const sourceRecordId = doc?.draftRecordId || doc?.generatedFile?.recordId || doc?.linkedRecords?.[0]?.recordId || null
 
-    const placeholderHtml = `<div class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" style="width:320px;height:180px;resize:both;overflow:hidden;display:flex;align-items:center;justify-content:center;border:2px dashed #93c5fd;border-radius:10px;background:#eff6ff;color:#2563eb;font:600 13px Inter,Arial,sans-serif;margin:12px 0;cursor:pointer;box-sizing:border-box;">
-        <div style="text-align:center;pointer-events:none;">
-            <div style="font-size:22px;line-height:1;margin-bottom:6px;">+</div>
-            <div>Cliquer pour choisir une image</div>
+    const placeholderBg = `linear-gradient(rgba(248,250,252,.84),rgba(248,250,252,.84)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect width='640' height='360' fill='%23e2e8f0'/%3E%3Cpath d='M0 285 155 158l102 84 70-58 313 101v75H0z' fill='%2394a3b8'/%3E%3Ccircle cx='480' cy='95' r='42' fill='%23cbd5e1'/%3E%3Crect x='68' y='52' width='504' height='256' rx='24' fill='none' stroke='%2364748b' stroke-width='10' stroke-dasharray='22 18'/%3E%3C/svg%3E")`
+
+    const placeholderHtml = `<div class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" style="width:320px;height:190px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;vertical-align:top;border:1.5px dashed #64748b;border-radius:8px;background-color:#f8fafc;background-image:${placeholderBg};background-size:cover;background-position:center;color:#0f172a;font:600 13px Inter,Arial,sans-serif;margin:12px 0;cursor:pointer;box-sizing:border-box;position:relative;resize:none;">
+        <div data-placeholder-label="1" style="text-align:center;pointer-events:none;background:rgba(255,255,255,.86);border:1px solid rgba(148,163,184,.55);border-radius:8px;padding:10px 14px;box-shadow:0 6px 18px rgba(15,23,42,.08);">
+            <div style="font-size:20px;line-height:1;margin-bottom:5px;">+</div>
+            <div>Choisir une image</div>
         </div>
     </div><p><br></p>`
 

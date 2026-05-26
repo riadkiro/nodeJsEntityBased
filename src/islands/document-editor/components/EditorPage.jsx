@@ -35,6 +35,9 @@ export default function EditorPage({
 }) {
     const contentRef = useRef(null)
     const blockCaretRef = useRef(null)
+    const atomicCaretElRef = useRef(null)
+    const placeholderOverlayRef = useRef(null)
+    const placeholderResizeRef = useRef(null)
 
     // Table toolbar for edition mode
     const tableToolbarProps = useTableToolbar(
@@ -111,6 +114,252 @@ export default function EditorPage({
     }, [handlePageInput, pageIndex])
 
     useImageResize(contentRef, handleContentChange)
+
+    const removeAtomicCaret = useCallback(() => {
+        if (atomicCaretElRef.current) {
+            atomicCaretElRef.current.remove()
+            atomicCaretElRef.current = null
+        }
+        blockCaretRef.current = null
+    }, [])
+
+    const showAtomicCaret = useCallback((block, side) => {
+        const el = contentRef.current
+        if (!el || !block || !el.contains(block)) return
+
+        removeAtomicCaret()
+
+        const blockRect = block.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        const marker = document.createElement('span')
+        marker.contentEditable = 'false'
+        marker.setAttribute('data-atomic-caret', '1')
+        marker.style.cssText = `
+            position:absolute;
+            left:${side === 'before' ? blockRect.left - elRect.left + el.scrollLeft - 5 : blockRect.right - elRect.left + el.scrollLeft + 5}px;
+            top:${blockRect.top - elRect.top + el.scrollTop}px;
+            width:2px;
+            height:${Math.max(24, blockRect.height)}px;
+            background:#111827;
+            border-radius:2px;
+            box-shadow:0 0 0 2px rgba(255,255,255,.85),0 0 0 4px rgba(59,130,246,.25);
+            pointer-events:none;
+            z-index:1002;
+            animation:docAtomicCaretBlink 1s steps(2,start) infinite;
+        `
+
+        el.appendChild(marker)
+        atomicCaretElRef.current = marker
+        blockCaretRef.current = { block, side }
+
+        const sel = window.getSelection()
+        const range = document.createRange()
+        if (side === 'before') {
+            range.setStartBefore(block)
+        } else {
+            range.setStartAfter(block)
+        }
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+        el.focus()
+    }, [removeAtomicCaret])
+
+    // ========== IMAGE PLACEHOLDER RESIZE ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const PLACEHOLDER_BG = `linear-gradient(rgba(248,250,252,.84),rgba(248,250,252,.84)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect width='640' height='360' fill='%23e2e8f0'/%3E%3Cpath d='M0 285 155 158l102 84 70-58 313 101v75H0z' fill='%2394a3b8'/%3E%3Ccircle cx='480' cy='95' r='42' fill='%23cbd5e1'/%3E%3Crect x='68' y='52' width='504' height='256' rx='24' fill='none' stroke='%2364748b' stroke-width='10' stroke-dasharray='22 18'/%3E%3C/svg%3E")`
+
+        const normalizePlaceholder = (placeholder) => {
+            if (!placeholder) return
+            const hasImage = !!placeholder.querySelector('img')
+            placeholder.setAttribute('contenteditable', 'false')
+            placeholder.style.position = 'relative'
+            placeholder.style.display = 'inline-flex'
+            placeholder.style.verticalAlign = 'top'
+            placeholder.style.boxSizing = 'border-box'
+            placeholder.style.resize = 'none'
+            placeholder.style.overflow = 'hidden'
+            placeholder.style.cursor = 'pointer'
+            placeholder.style.minWidth = '96px'
+            placeholder.style.minHeight = '72px'
+            if (!placeholder.style.width) placeholder.style.width = '320px'
+            if (!placeholder.style.height) placeholder.style.height = '190px'
+
+            if (hasImage) {
+                placeholder.classList.add('has-image')
+                placeholder.style.backgroundImage = 'none'
+                placeholder.style.backgroundColor = 'transparent'
+                placeholder.style.padding = '0'
+            } else {
+                placeholder.classList.remove('has-image')
+                placeholder.style.border = '1.5px dashed #64748b'
+                placeholder.style.borderRadius = placeholder.style.borderRadius || '8px'
+                placeholder.style.backgroundColor = '#f8fafc'
+                placeholder.style.backgroundImage = PLACEHOLDER_BG
+                placeholder.style.backgroundSize = 'cover'
+                placeholder.style.backgroundPosition = 'center'
+                if (!placeholder.querySelector('[data-placeholder-label]')) {
+                    placeholder.innerHTML = `
+                        <div data-placeholder-label="1" style="text-align:center;pointer-events:none;background:rgba(255,255,255,.86);border:1px solid rgba(148,163,184,.55);border-radius:8px;padding:10px 14px;box-shadow:0 6px 18px rgba(15,23,42,.08);">
+                            <div style="font-size:20px;line-height:1;margin-bottom:5px;">+</div>
+                            <div>Choisir une image</div>
+                        </div>
+                    `
+                }
+            }
+        }
+
+        const removeOverlay = () => {
+            if (placeholderOverlayRef.current?.overlay) {
+                placeholderOverlayRef.current.overlay.remove()
+            }
+            placeholderOverlayRef.current = null
+        }
+
+        const positionOverlay = () => {
+            const state = placeholderOverlayRef.current
+            if (!state?.overlay || !state.placeholder || !el.contains(state.placeholder)) return
+            const rect = state.placeholder.getBoundingClientRect()
+            const elRect = el.getBoundingClientRect()
+            state.overlay.style.left = `${rect.left - elRect.left + el.scrollLeft}px`
+            state.overlay.style.top = `${rect.top - elRect.top + el.scrollTop}px`
+            state.overlay.style.width = `${rect.width}px`
+            state.overlay.style.height = `${rect.height}px`
+        }
+
+        const showOverlay = (placeholder) => {
+            normalizePlaceholder(placeholder)
+            removeOverlay()
+
+            const overlay = document.createElement('div')
+            overlay.contentEditable = 'false'
+            overlay.setAttribute('data-placeholder-resize-overlay', '1')
+            overlay.style.cssText = `
+                position:absolute;
+                border:2px solid #2563eb;
+                border-radius:8px;
+                box-sizing:border-box;
+                pointer-events:none;
+                z-index:1001;
+                box-shadow:0 0 0 2px rgba(255,255,255,.9);
+            `
+
+            const handles = ['nw', 'ne', 'sw', 'se']
+            handles.forEach(pos => {
+                const handle = document.createElement('span')
+                handle.className = `doc-image-placeholder-handle doc-image-placeholder-handle-${pos}`
+                handle.setAttribute('data-placeholder-resize-handle', pos)
+                handle.style.cssText = `
+                    position:absolute;
+                    width:16px;
+                    height:16px;
+                    background:#2563eb;
+                    border:2px solid #fff;
+                    border-radius:4px;
+                    box-sizing:border-box;
+                    pointer-events:auto;
+                    cursor:${pos === 'nw' || pos === 'se' ? 'nwse-resize' : 'nesw-resize'};
+                    touch-action:none;
+                `
+                if (pos.includes('n')) handle.style.top = '-9px'
+                if (pos.includes('s')) handle.style.bottom = '-9px'
+                if (pos.includes('w')) handle.style.left = '-9px'
+                if (pos.includes('e')) handle.style.right = '-9px'
+                overlay.appendChild(handle)
+            })
+
+            if (window.getComputedStyle(el).position === 'static') el.style.position = 'relative'
+            el.appendChild(overlay)
+            placeholderOverlayRef.current = { overlay, placeholder }
+            positionOverlay()
+        }
+
+        const startResize = (event, handle) => {
+            const state = placeholderOverlayRef.current
+            if (!state?.placeholder) return
+
+            event.preventDefault()
+            event.stopPropagation()
+
+            const pointer = event.touches ? event.touches[0] : event
+            placeholderResizeRef.current = {
+                placeholder: state.placeholder,
+                handle,
+                startX: pointer.clientX,
+                startY: pointer.clientY,
+                startWidth: state.placeholder.offsetWidth,
+                startHeight: state.placeholder.offsetHeight
+            }
+
+            document.addEventListener('pointermove', handleResizeMove)
+            document.addEventListener('pointerup', endResize)
+            document.addEventListener('pointercancel', endResize)
+        }
+
+        const handleResizeMove = (event) => {
+            const state = placeholderResizeRef.current
+            if (!state) return
+            const dx = event.clientX - state.startX
+            const dy = event.clientY - state.startY
+
+            let width = state.startWidth
+            let height = state.startHeight
+            if (state.handle.includes('e')) width = state.startWidth + dx
+            if (state.handle.includes('w')) width = state.startWidth - dx
+            if (state.handle.includes('s')) height = state.startHeight + dy
+            if (state.handle.includes('n')) height = state.startHeight - dy
+
+            state.placeholder.style.width = `${Math.max(96, Math.round(width))}px`
+            state.placeholder.style.height = `${Math.max(72, Math.round(height))}px`
+            positionOverlay()
+            event.preventDefault()
+        }
+
+        const endResize = () => {
+            if (!placeholderResizeRef.current) return
+            placeholderResizeRef.current = null
+            document.removeEventListener('pointermove', handleResizeMove)
+            document.removeEventListener('pointerup', endResize)
+            document.removeEventListener('pointercancel', endResize)
+            handleContentChange()
+        }
+
+        const handlePointerDown = (event) => {
+            const handle = event.target.closest?.('[data-placeholder-resize-handle]')
+            if (handle) {
+                startResize(event, handle.getAttribute('data-placeholder-resize-handle'))
+                return
+            }
+
+            const placeholder = event.target.closest?.('.doc-image-placeholder')
+            if (placeholder && el.contains(placeholder)) {
+                normalizePlaceholder(placeholder)
+                showOverlay(placeholder)
+                event.preventDefault()
+                return
+            }
+
+            if (!event.target.closest?.('[data-placeholder-resize-overlay]')) {
+                removeOverlay()
+            }
+        }
+
+        el.querySelectorAll('.doc-image-placeholder').forEach(normalizePlaceholder)
+        el.addEventListener('pointerdown', handlePointerDown, true)
+        window.addEventListener('resize', positionOverlay)
+
+        return () => {
+            el.removeEventListener('pointerdown', handlePointerDown, true)
+            window.removeEventListener('resize', positionOverlay)
+            document.removeEventListener('pointermove', handleResizeMove)
+            document.removeEventListener('pointerup', endResize)
+            document.removeEventListener('pointercancel', endResize)
+            removeOverlay()
+        }
+    }, [page.mode, handleContentChange])
 
     // ========== BLOCK INTERACTION: Hover Delete Button ==========
     useEffect(() => {
@@ -257,7 +506,7 @@ export default function EditorPage({
                     adjacent.block.after(p)
                 }
 
-                blockCaretRef.current = null
+                removeAtomicCaret()
                 placeCursorIn(p)
                 if (handlePageInput) {
                     handlePageInput({ target: el }, pageIndex)
@@ -310,7 +559,7 @@ export default function EditorPage({
 
         el.addEventListener('keydown', handleKeyDown)
         return () => el.removeEventListener('keydown', handleKeyDown)
-    }, [page.mode, pageIndex, handlePageInput])
+    }, [page.mode, pageIndex, handlePageInput, removeAtomicCaret])
 
     // ========== CLICK OUTSIDE BLOCK: Place cursor in free area ==========
     useEffect(() => {
@@ -319,6 +568,25 @@ export default function EditorPage({
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
         const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre'
+        const RUNTIME_OVERLAYS = '[data-atomic-caret], [data-placeholder-resize-overlay], [data-image-resize-overlay]'
+
+        const findSideAtomicBlock = (x, y) => {
+            const children = Array.from(el.children || [])
+                .filter(child => !child.matches?.(RUNTIME_OVERLAYS))
+            for (const child of children) {
+                const atomic = child.matches?.(ATOMIC_BLOCKS)
+                    ? child
+                    : child.querySelector?.(ATOMIC_BLOCKS)
+                if (!atomic || !el.contains(atomic)) continue
+
+                const rect = atomic.getBoundingClientRect()
+                if (y < rect.top || y > rect.bottom) continue
+                if (x < rect.left || x > rect.right) {
+                    return { block: atomic, side: x < rect.left + rect.width / 2 ? 'before' : 'after' }
+                }
+            }
+            return null
+        }
 
         // Track mousedown to distinguish genuine clicks from drag-selections
         let mouseDownTarget = null
@@ -347,6 +615,7 @@ export default function EditorPage({
             // Only handle direct clicks on the contenteditable itself
             // (clicks on the padding/empty area, not on children)
             const target = e.target
+            if (target.closest?.(RUNTIME_OVERLAYS)) return
 
             // If click is directly on the contenteditable container
             // or on a simple <p>/<br> (non-block), no action needed - browser handles it
@@ -355,6 +624,7 @@ export default function EditorPage({
                 if (placeholder && el.contains(placeholder)) {
                     e.preventDefault()
                     e.stopPropagation()
+                    removeAtomicCaret()
                     window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
                         detail: { placeholder, pageIndex }
                     }))
@@ -368,17 +638,7 @@ export default function EditorPage({
 
                     const rect = atomicBlock.getBoundingClientRect()
                     const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
-                    const range = document.createRange()
-                    if (side === 'before') {
-                        range.setStartBefore(atomicBlock)
-                    } else {
-                        range.setStartAfter(atomicBlock)
-                    }
-                    range.collapse(true)
-                    sel.removeAllRanges()
-                    sel.addRange(range)
-                    blockCaretRef.current = { block: atomicBlock, side }
-                    el.focus()
+                    showAtomicCaret(atomicBlock, side)
                     return
                 }
 
@@ -386,6 +646,7 @@ export default function EditorPage({
                 const clickedBlock = target.closest(BLOCK_SELECTORS)
                 if (!clickedBlock || !el.contains(clickedBlock)) return // not in a block, browser handles fine
                 // User clicked inside a block - that's normal editing, do nothing
+                removeAtomicCaret()
                 return
             }
 
@@ -393,13 +654,20 @@ export default function EditorPage({
             // This happens when clicking in the padding or between/after blocks
             e.preventDefault()
 
+            const sideAtomic = findSideAtomicBlock(e.clientX, e.clientY)
+            if (sideAtomic?.block) {
+                showAtomicCaret(sideAtomic.block, sideAtomic.side)
+                return
+            }
+
             const clickY = e.clientY
 
             // Find all top-level children
-            const children = Array.from(el.children)
+            const children = Array.from(el.children).filter(child => !child.matches?.(RUNTIME_OVERLAYS))
 
             if (children.length === 0) {
                 // No children at all - create a paragraph
+                removeAtomicCaret()
                 const p = document.createElement('p')
                 p.innerHTML = '<br>'
                 el.appendChild(p)
@@ -428,10 +696,12 @@ export default function EditorPage({
                 // If the previous sibling is already a non-block paragraph, place cursor there
                 const prev = insertBefore.previousElementSibling
                 if (prev && !prev.matches(BLOCK_SELECTORS) && (prev.tagName === 'P' || prev.tagName === 'H1' || prev.tagName === 'H2' || prev.tagName === 'H3')) {
+                    removeAtomicCaret()
                     placeCursorIn(prev)
                     return
                 }
                 // Insert a new paragraph before the element
+                removeAtomicCaret()
                 const p = document.createElement('p')
                 p.innerHTML = '<br>'
                 el.insertBefore(p, insertBefore)
@@ -441,14 +711,17 @@ export default function EditorPage({
                 // If the last element is not a block, reuse it
                 const next = insertAfter.nextElementSibling
                 if (next && !next.matches(BLOCK_SELECTORS) && (next.tagName === 'P' || next.tagName === 'H1' || next.tagName === 'H2' || next.tagName === 'H3')) {
+                    removeAtomicCaret()
                     placeCursorIn(next)
                     return
                 }
                 if (!insertAfter.matches(BLOCK_SELECTORS) && (insertAfter.tagName === 'P' || insertAfter.tagName === 'H1' || insertAfter.tagName === 'H2' || insertAfter.tagName === 'H3')) {
+                    removeAtomicCaret()
                     placeCursorIn(insertAfter)
                     return
                 }
                 // Append a new paragraph after the last element
+                removeAtomicCaret()
                 const p = document.createElement('p')
                 p.innerHTML = '<br>'
                 insertAfter.after(p)
@@ -477,7 +750,7 @@ export default function EditorPage({
             el.removeEventListener('mousedown', handleMouseDown)
             el.removeEventListener('click', handleClick)
         }
-    }, [page.mode, pageIndex, handlePageInput])
+    }, [page.mode, pageIndex, handlePageInput, removeAtomicCaret, showAtomicCaret])
 
     // ========== CHECKBOX TOGGLE: Click ☐ ↔ ☑ ==========
     useEffect(() => {

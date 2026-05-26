@@ -236,9 +236,11 @@ export function useImageResize(containerRef, onContentChange) {
 
             const img = e.target?.closest?.('img')
             const isOverlay = e.target?.closest?.('[data-image-resize-overlay]')
+            const isImagePlaceholder = e.target?.closest?.('.doc-image-placeholder')
 
             // Click on resize handles => let handleResizeStart manage it
             if (isOverlay) return
+            if (isImagePlaceholder && container.contains(isImagePlaceholder)) return
 
             if (img && container.contains(img)) {
                 // Single click select

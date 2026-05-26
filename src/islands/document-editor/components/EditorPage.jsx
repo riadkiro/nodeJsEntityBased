@@ -264,6 +264,37 @@ export default function EditorPage({
             state.overlay.style.height = `${rect.height}px`
         }
 
+        const placeCaretIn = (node) => {
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(node)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            el.focus()
+        }
+
+        const deletePlaceholder = (placeholder) => {
+            if (!placeholder || !el.contains(placeholder)) return
+
+            const next = placeholder.nextSibling
+            const prev = placeholder.previousSibling
+            placeholder.remove()
+            removeOverlay()
+            clearAtomicCaret()
+
+            const target = next?.nodeType === 1 ? next : prev?.nodeType === 1 ? prev : null
+            if (target && el.contains(target)) {
+                placeCaretIn(target)
+            } else {
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                el.appendChild(p)
+                placeCaretIn(p)
+            }
+            handleContentChange()
+        }
+
         const showOverlay = (placeholder) => {
             normalizePlaceholder(placeholder)
             removeOverlay()
@@ -323,20 +354,44 @@ export default function EditorPage({
                 overlay.appendChild(handle)
             })
 
+            const deleteButton = document.createElement('button')
+            deleteButton.type = 'button'
+            deleteButton.contentEditable = 'false'
+            deleteButton.title = 'Supprimer le frame image'
+            deleteButton.setAttribute('data-placeholder-delete', '1')
+            deleteButton.innerHTML = '×'
+            deleteButton.style.cssText = `
+                position:absolute;
+                top:-12px;
+                right:-12px;
+                width:24px;
+                height:24px;
+                border-radius:999px;
+                border:2px solid #fff;
+                background:#ef4444;
+                color:#fff;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                padding:0;
+                font-size:16px;
+                font-weight:700;
+                line-height:1;
+                cursor:pointer;
+                pointer-events:auto;
+                box-shadow:0 2px 8px rgba(15,23,42,.22);
+            `
+            deleteButton.addEventListener('pointerdown', (event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                deletePlaceholder(placeholder)
+            })
+            overlay.appendChild(deleteButton)
+
             if (window.getComputedStyle(el).position === 'static') el.style.position = 'relative'
             el.appendChild(overlay)
             placeholderOverlayRef.current = { overlay, placeholder }
             positionOverlay()
-        }
-
-        const placeCaretIn = (node) => {
-            const sel = window.getSelection()
-            const range = document.createRange()
-            range.selectNodeContents(node)
-            range.collapse(true)
-            sel.removeAllRanges()
-            sel.addRange(range)
-            el.focus()
         }
 
         const insertParagraphAfter = (placeholder) => {
@@ -519,21 +574,30 @@ export default function EditorPage({
             if (event.key === 'Delete' || event.key === 'Backspace') {
                 event.preventDefault()
                 event.stopPropagation()
-                const next = placeholder.nextSibling
-                const prev = placeholder.previousSibling
-                placeholder.remove()
-                removeOverlay()
-                clearAtomicCaret()
-
-                const target = next?.nodeType === 1 ? next : prev?.nodeType === 1 ? prev : null
-                if (target && el.contains(target)) {
-                    placeCaretIn(target)
-                }
-                handleContentChange()
+                deletePlaceholder(placeholder)
             }
         }
 
-        el.querySelectorAll('.doc-image-placeholder').forEach(normalizePlaceholder)
+        let normalizeAnimationFrame = null
+        const normalizeAllPlaceholders = () => {
+            normalizeAnimationFrame = null
+            el.querySelectorAll('.doc-image-placeholder').forEach(normalizePlaceholder)
+            positionOverlay()
+        }
+        const schedulePlaceholderNormalize = () => {
+            if (normalizeAnimationFrame) cancelAnimationFrame(normalizeAnimationFrame)
+            normalizeAnimationFrame = requestAnimationFrame(normalizeAllPlaceholders)
+        }
+        const placeholderObserver = new MutationObserver((mutations) => {
+            const hasNewPlaceholder = mutations.some(mutation => Array.from(mutation.addedNodes || []).some(node => (
+                node.nodeType === 1 &&
+                (node.matches?.('.doc-image-placeholder') || node.querySelector?.('.doc-image-placeholder'))
+            )))
+            if (hasNewPlaceholder) schedulePlaceholderNormalize()
+        })
+
+        normalizeAllPlaceholders()
+        placeholderObserver.observe(el, { childList: true, subtree: true })
         el.addEventListener('pointerdown', handlePointerDown, true)
         el.addEventListener('dblclick', handleDoubleClick, true)
         el.addEventListener('dragover', handleFrameDragOver, true)
@@ -551,6 +615,8 @@ export default function EditorPage({
             document.removeEventListener('pointermove', handleResizeMove)
             document.removeEventListener('pointerup', endResize)
             document.removeEventListener('pointercancel', endResize)
+            placeholderObserver.disconnect()
+            if (normalizeAnimationFrame) cancelAnimationFrame(normalizeAnimationFrame)
             removeOverlay()
         }
     }, [page.mode, handleContentChange])
@@ -602,7 +668,10 @@ export default function EditorPage({
             btn.title = 'Supprimer ce bloc'
             btn.setAttribute('data-no-drag', 'true')
 
-            btn.addEventListener('mousedown', (ev) => {
+            let blockDeleted = false
+            const deleteBlockElement = (ev) => {
+                if (blockDeleted || !block.isConnected) return
+                blockDeleted = true
                 ev.preventDefault()
                 ev.stopPropagation()
                 // Insert a <p><br></p> where the block was, so cursor has somewhere to go
@@ -620,7 +689,11 @@ export default function EditorPage({
                 if (handlePageInput) {
                     handlePageInput({ target: el }, pageIndex)
                 }
-            })
+            }
+
+            btn.addEventListener('pointerdown', deleteBlockElement)
+            btn.addEventListener('mousedown', deleteBlockElement)
+            btn.addEventListener('click', deleteBlockElement)
 
             block.appendChild(btn)
         }

@@ -157,7 +157,7 @@ export default function EditorPage({
             placeholder.style.cursor = 'pointer'
             placeholder.style.minWidth = '96px'
             placeholder.style.minHeight = '72px'
-            placeholder.style.margin = '12px 8px'
+            placeholder.style.margin = '12px 0'
             if (!placeholder.style.width) placeholder.style.width = '320px'
             if (!placeholder.style.height) placeholder.style.height = '190px'
 
@@ -266,6 +266,76 @@ export default function EditorPage({
             positionOverlay()
         }
 
+        const placeCaretIn = (node) => {
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(node)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            el.focus()
+        }
+
+        const insertParagraphAfter = (placeholder) => {
+            const p = document.createElement('p')
+            p.innerHTML = '<br>'
+            placeholder.after(p)
+            removeOverlay()
+            clearAtomicCaret()
+            placeCaretIn(p)
+            handleContentChange()
+        }
+
+        const applyImageToFrame = (placeholder, url, alt = '') => {
+            if (!placeholder || !url) return
+            placeholder.innerHTML = ''
+            const img = document.createElement('img')
+            img.src = url
+            img.alt = alt || ''
+            img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;'
+            placeholder.appendChild(img)
+            placeholder.dataset.imageSrc = url
+            placeholder.classList.add('has-image')
+            placeholder.style.backgroundImage = 'none'
+            placeholder.style.backgroundColor = 'transparent'
+            placeholder.style.border = 'none'
+            placeholder.style.padding = '0'
+            placeholder.style.margin = '12px 0'
+            normalizePlaceholder(placeholder)
+            showOverlay(placeholder)
+            handleContentChange()
+        }
+
+        const extractDroppedImage = (event) => {
+            const html = event.dataTransfer?.getData('text/html') || ''
+            if (html) {
+                const template = document.createElement('template')
+                template.innerHTML = html
+                const img = template.content.querySelector('img')
+                if (img?.src) return { url: img.src, alt: img.alt || '' }
+            }
+
+            const text = (event.dataTransfer?.getData('text/uri-list') || event.dataTransfer?.getData('text/plain') || '').trim()
+            if (/^https?:\/\//i.test(text) || text.startsWith('/')) {
+                return { url: text.split('\n')[0], alt: '' }
+            }
+
+            const file = Array.from(event.dataTransfer?.files || []).find(f => String(f.type || '').startsWith('image/'))
+            if (file) {
+                return { url: URL.createObjectURL(file), alt: file.name || '' }
+            }
+
+            return null
+        }
+
+        const getEventPlaceholder = (event) => {
+            const direct = event.target.closest?.('.doc-image-placeholder')
+            if (direct && el.contains(direct)) return direct
+            const overlay = event.target.closest?.('[data-placeholder-resize-overlay], [data-placeholder-resize-handle]')
+            if (overlay && placeholderOverlayRef.current?.placeholder) return placeholderOverlayRef.current.placeholder
+            return null
+        }
+
         const startResize = (event, handle) => {
             const state = placeholderOverlayRef.current
             if (!state?.placeholder) return
@@ -336,12 +406,82 @@ export default function EditorPage({
             }
         }
 
+        const handleDoubleClick = (event) => {
+            const placeholder = getEventPlaceholder(event)
+            if (!placeholder) return
+            event.preventDefault()
+            event.stopPropagation()
+            normalizePlaceholder(placeholder)
+            showOverlay(placeholder)
+            window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
+                detail: { placeholder, pageIndex }
+            }))
+        }
+
+        const handleFrameDragOver = (event) => {
+            const placeholder = getEventPlaceholder(event)
+            if (!placeholder) return
+            event.preventDefault()
+            event.stopPropagation()
+            event.dataTransfer.dropEffect = 'copy'
+            showOverlay(placeholder)
+        }
+
+        const handleFrameDrop = (event) => {
+            const placeholder = getEventPlaceholder(event)
+            if (!placeholder) return
+            const image = extractDroppedImage(event)
+            if (!image?.url) return
+            event.preventDefault()
+            event.stopPropagation()
+            applyImageToFrame(placeholder, image.url, image.alt)
+        }
+
+        const handleFrameKeyDown = (event) => {
+            const state = placeholderOverlayRef.current
+            const placeholder = state?.placeholder
+            if (!placeholder || !el.contains(placeholder)) return
+            const activeInsideEditor = document.activeElement === el || el.contains(document.activeElement)
+            if (!activeInsideEditor) return
+
+            if (event.key === 'Enter') {
+                event.preventDefault()
+                event.stopPropagation()
+                insertParagraphAfter(placeholder)
+                return
+            }
+
+            if (event.key === 'Delete' || event.key === 'Backspace') {
+                event.preventDefault()
+                event.stopPropagation()
+                const next = placeholder.nextSibling
+                const prev = placeholder.previousSibling
+                placeholder.remove()
+                removeOverlay()
+                clearAtomicCaret()
+
+                const target = next?.nodeType === 1 ? next : prev?.nodeType === 1 ? prev : null
+                if (target && el.contains(target)) {
+                    placeCaretIn(target)
+                }
+                handleContentChange()
+            }
+        }
+
         el.querySelectorAll('.doc-image-placeholder').forEach(normalizePlaceholder)
         el.addEventListener('pointerdown', handlePointerDown, true)
+        el.addEventListener('dblclick', handleDoubleClick, true)
+        el.addEventListener('dragover', handleFrameDragOver, true)
+        el.addEventListener('drop', handleFrameDrop, true)
+        document.addEventListener('keydown', handleFrameKeyDown, true)
         window.addEventListener('resize', positionOverlay)
 
         return () => {
             el.removeEventListener('pointerdown', handlePointerDown, true)
+            el.removeEventListener('dblclick', handleDoubleClick, true)
+            el.removeEventListener('dragover', handleFrameDragOver, true)
+            el.removeEventListener('drop', handleFrameDrop, true)
+            document.removeEventListener('keydown', handleFrameKeyDown, true)
             window.removeEventListener('resize', positionOverlay)
             document.removeEventListener('pointermove', handleResizeMove)
             document.removeEventListener('pointerup', endResize)
@@ -615,11 +755,6 @@ export default function EditorPage({
                     e.preventDefault()
                     e.stopPropagation()
                     clearAtomicCaret()
-                    if (!placeholder.querySelector('img')) {
-                        window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
-                            detail: { placeholder, pageIndex }
-                        }))
-                    }
                     return
                 }
 

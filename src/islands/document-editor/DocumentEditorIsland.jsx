@@ -1407,7 +1407,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         target.style.backgroundColor = 'transparent'
         target.style.backgroundImage = 'none'
         target.style.color = 'inherit'
-        target.style.margin = '12px 8px'
+        target.style.margin = '12px 0'
         target.style.padding = '0'
         target.style.resize = 'none'
         target.style.overflow = 'hidden'

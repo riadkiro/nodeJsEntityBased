@@ -253,15 +253,23 @@ export default function EditorPage({
             placeholderOverlayRef.current = null
         }
 
+        const getEditorZoom = () => {
+            const scaledAncestor = el.closest('[style*="scale"]')
+            const match = scaledAncestor?.style.transform?.match(/scale\(([\d.]+)\)/)
+            const zoom = match ? parseFloat(match[1]) : 1
+            return Number.isFinite(zoom) && zoom > 0 ? zoom : 1
+        }
+
         const positionOverlay = () => {
             const state = placeholderOverlayRef.current
             if (!state?.overlay || !state.placeholder || !el.contains(state.placeholder)) return
             const rect = state.placeholder.getBoundingClientRect()
             const elRect = el.getBoundingClientRect()
-            state.overlay.style.left = `${rect.left - elRect.left + el.scrollLeft}px`
-            state.overlay.style.top = `${rect.top - elRect.top + el.scrollTop}px`
-            state.overlay.style.width = `${rect.width}px`
-            state.overlay.style.height = `${rect.height}px`
+            const zoom = getEditorZoom()
+            state.overlay.style.left = `${(rect.left - elRect.left) / zoom + el.scrollLeft}px`
+            state.overlay.style.top = `${(rect.top - elRect.top) / zoom + el.scrollTop}px`
+            state.overlay.style.width = `${rect.width / zoom}px`
+            state.overlay.style.height = `${rect.height / zoom}px`
         }
 
         const placeCaretIn = (node) => {
@@ -449,7 +457,7 @@ export default function EditorPage({
         const getEventPlaceholder = (event) => {
             const direct = event.target.closest?.('.doc-image-placeholder')
             if (direct && el.contains(direct)) return direct
-            const overlay = event.target.closest?.('[data-placeholder-resize-overlay], [data-placeholder-resize-handle]')
+            const overlay = event.target.closest?.('[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete]')
             if (overlay && placeholderOverlayRef.current?.placeholder) return placeholderOverlayRef.current.placeholder
             return null
         }
@@ -468,7 +476,8 @@ export default function EditorPage({
                 startX: pointer.clientX,
                 startY: pointer.clientY,
                 startWidth: state.placeholder.offsetWidth,
-                startHeight: state.placeholder.offsetHeight
+                startHeight: state.placeholder.offsetHeight,
+                zoom: getEditorZoom()
             }
 
             document.addEventListener('pointermove', handleResizeMove)
@@ -479,8 +488,9 @@ export default function EditorPage({
         const handleResizeMove = (event) => {
             const state = placeholderResizeRef.current
             if (!state) return
-            const dx = event.clientX - state.startX
-            const dy = event.clientY - state.startY
+            const zoom = state.zoom || getEditorZoom()
+            const dx = (event.clientX - state.startX) / zoom
+            const dy = (event.clientY - state.startY) / zoom
 
             let width = state.startWidth
             let height = state.startHeight
@@ -507,6 +517,14 @@ export default function EditorPage({
         }
 
         const handlePointerDown = (event) => {
+            const deleteButton = event.target.closest?.('[data-placeholder-delete]')
+            if (deleteButton) {
+                event.preventDefault()
+                event.stopPropagation()
+                deletePlaceholder(placeholderOverlayRef.current?.placeholder)
+                return
+            }
+
             const handle = event.target.closest?.('[data-placeholder-resize-handle]')
             if (handle) {
                 startResize(event, handle.getAttribute('data-placeholder-resize-handle'))
@@ -627,16 +645,20 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
+        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay]'
 
         // Find the top-level block ancestor within the contenteditable
         const findTopBlock = (target) => {
             if (target.closest?.('.doc-image-placeholder')) return null
+            if (target.closest?.(RUNTIME_OVERLAYS)) return null
             const block = target.closest(BLOCK_SELECTORS)
             if (!block) return null
+            if (block.matches?.(RUNTIME_OVERLAYS)) return null
             // Walk up to find the outermost block that is still inside the contenteditable
             let topBlock = block
             let parent = block.parentElement
             while (parent && parent !== el) {
+                if (parent.matches?.(RUNTIME_OVERLAYS)) return null
                 if (parent.matches(BLOCK_SELECTORS)) {
                     topBlock = parent
                 }

@@ -124,7 +124,7 @@ export default function LeftSidebar({
                     title="Tools"
                     onClick={() => toggleTab('tools')}
                 >
-                    <iconify-icon icon="solar:shapes-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="tabler:tools" width="18"></iconify-icon>
                 </button>
 
                 {/* Gallery Tool */}
@@ -232,7 +232,7 @@ export default function LeftSidebar({
                     {/* Panel Body */}
                     <div className="flex-1 overflow-auto" style={{ padding: '16px', scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin', background: panelBg }}>
                         {activeTab === 'tools' && (
-                            <DesignerToolsPanel />
+                            <DesignerToolsPanel isDesignerMode={isDesignerMode} />
                         )}
                         {activeTab === 'text' && (
                             isDesignerMode ? <DesignerTextPanel /> : <TextPanel />
@@ -352,13 +352,36 @@ function TouchableImage({ html, children, className, style, title }) {
 }
 
 const DESIGNER_ADD_EVENT = 'document-designer-add-element'
+const EDITOR_INSERT_HTML_EVENT = 'document-editor-insert-html'
+const TOOL_ICON_COLOR = '#64748b'
+const TOOL_CARD_BG = '#f3f4f6'
+const TOOL_CARD_BG_DARK = '#1f2937'
+const DOC_FRAME_PLACEHOLDER_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dbeafe'/%3E%3Cstop offset='1' stop-color='%23f8fafc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23sky)'/%3E%3Ccircle cx='500' cy='80' r='46' fill='%23ffffff' fill-opacity='.88'/%3E%3Cpath d='M0 260 105 178l83 58 128-108 134 132 83-68 107 86v82H0z' fill='%23cbd5e1'/%3E%3Cpath d='M0 304 160 214l118 64 92-46 100 54 170-90v164H0z' fill='%2394a3b8' fill-opacity='.72'/%3E%3C/svg%3E")`
 
 function emitDesignerAdd(detail) {
     if (typeof window === 'undefined') return
     window.dispatchEvent(new CustomEvent(DESIGNER_ADD_EVENT, { detail }))
 }
 
-function DesignerToolGrid({ items }) {
+function emitEditorInsertHtml(html) {
+    if (typeof window === 'undefined' || !html) return
+    window.dispatchEvent(new CustomEvent(EDITOR_INSERT_HTML_EVENT, { detail: { html } }))
+}
+
+function buildImageFrameHtml(frameShape = 'rect') {
+    const dims = {
+        rect: { width: 500, height: 281, radius: 8 },
+        rounded: { width: 500, height: 281, radius: 24 },
+        circle: { width: 260, height: 260, radius: 999 },
+        square: { width: 260, height: 260, radius: 8 },
+        portrait: { width: 240, height: 320, radius: 8 },
+        wide: { width: 500, height: 180, radius: 8 },
+    }[frameShape] || { width: 500, height: 281, radius: 8 }
+
+    return `<span class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" data-frame-shape="${frameShape}" style="width:${dims.width}px;max-width:100%;height:${dims.height}px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;vertical-align:top;border:0;border-radius:${dims.radius}px;background-color:#f8fafc;background-image:${DOC_FRAME_PLACEHOLDER_BG};background-size:cover;background-position:center;margin:12px 0;cursor:pointer;box-sizing:border-box;position:relative;resize:none;"></span>`
+}
+
+function DesignerToolGrid({ items, isDesignerMode }) {
     return (
         <div style={{
             display: 'grid',
@@ -366,28 +389,45 @@ function DesignerToolGrid({ items }) {
             gap: '8px',
         }}>
             {items.map(item => (
-                <DesignerToolCard key={`${item.detail.type}-${item.detail.frameShape || item.detail.variant || item.label}`} item={item} />
+                <DesignerToolCard
+                    key={`${item.detail.type}-${item.detail.frameShape || item.detail.variant || item.label}`}
+                    item={item}
+                    isDesignerMode={isDesignerMode}
+                />
             ))}
         </div>
     )
 }
 
-function DesignerToolCard({ item }) {
+function DesignerToolCard({ item, isDesignerMode }) {
     const isDark = useDarkMode()
-    const cardBg = isDark ? '#111827' : '#ffffff'
-    const cardHover = isDark ? '#172033' : '#f8fafc'
-    const borderColor = isDark ? '#273449' : '#e5e7eb'
+    const cardBg = isDark ? TOOL_CARD_BG_DARK : TOOL_CARD_BG
+    const cardHover = isDark ? '#263244' : '#e5e7eb'
+    const borderColor = isDark ? '#334155' : '#e5e7eb'
 
-    const addTool = () => emitDesignerAdd(item.detail)
+    const addTool = () => {
+        if (isDesignerMode) {
+            emitDesignerAdd(item.detail)
+            return
+        }
+        if (item.html) {
+            emitEditorInsertHtml(item.html)
+        }
+    }
 
     return (
         <button
             type="button"
             draggable
             aria-label={item.label}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={addTool}
             onDragStart={(e) => {
-                e.dataTransfer.setData('application/x-designer-tool', JSON.stringify(item.detail))
+                if (isDesignerMode) {
+                    e.dataTransfer.setData('application/x-designer-tool', JSON.stringify(item.detail))
+                } else if (item.html) {
+                    e.dataTransfer.setData('text/html', item.html)
+                }
                 e.dataTransfer.setData('text/plain', item.label)
                 e.dataTransfer.effectAllowed = 'copy'
             }}
@@ -407,7 +447,7 @@ function DesignerToolCard({ item }) {
             }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.background = cardHover
-                e.currentTarget.style.borderColor = '#4361ee'
+                e.currentTarget.style.borderColor = isDark ? '#475569' : '#cbd5e1'
                 e.currentTarget.style.transform = 'translateY(-1px)'
             }}
             onMouseLeave={(e) => {
@@ -422,7 +462,7 @@ function DesignerToolCard({ item }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: item.color || '#4361ee',
+                color: TOOL_ICON_COLOR,
             }}>
                 {item.preview ? item.preview(isDark) : (
                     <iconify-icon icon={item.icon} width="18"></iconify-icon>
@@ -432,7 +472,8 @@ function DesignerToolCard({ item }) {
     )
 }
 
-function ShapePreview({ shape, color = '#4361ee' }) {
+function ShapePreview({ shape }) {
+    const color = TOOL_ICON_COLOR
     if (shape === 'circle') {
         return <div style={{ width: 18, height: 18, borderRadius: '50%', background: color }} />
     }
@@ -461,8 +502,8 @@ function FramePreview({ shape }) {
         width: 18,
         height: 13,
         overflow: 'hidden',
-        border: '1px solid #93c5fd',
-        background: 'linear-gradient(180deg, #dbeafe 0 46%, #bfdbfe 46% 100%)',
+        border: `1px solid ${TOOL_ICON_COLOR}`,
+        background: 'linear-gradient(180deg, #e5e7eb 0 46%, #cbd5e1 46% 100%)',
         position: 'relative',
     }
     const radius = shape === 'circle' ? '50%' : shape === 'rounded' ? 6 : 3
@@ -477,7 +518,7 @@ function FramePreview({ shape }) {
                 bottom: 0,
                 width: '56%',
                 height: '46%',
-                background: '#93a4bb',
+                background: '#94a3b8',
                 clipPath: 'polygon(0 100%, 50% 10%, 100% 100%)',
                 opacity: 0.78,
             }} />
@@ -495,9 +536,10 @@ function FramePreview({ shape }) {
     )
 }
 
-function DesignerTextPanel() {
+function DesignerTextPanel({ isDesignerMode = true }) {
     return (
         <DesignerToolGrid
+            isDesignerMode={isDesignerMode}
             items={[
                 { label: 'Titre', icon: 'tabler:heading', color: '#8b5cf6', detail: { type: 'heading' } },
                 { label: 'Texte', icon: 'tabler:text-size', color: '#4361ee', detail: { type: 'text' } },
@@ -506,27 +548,29 @@ function DesignerTextPanel() {
     )
 }
 
-function DesignerToolsPanel() {
+function DesignerToolsPanel({ isDesignerMode }) {
     return (
         <div>
             <DesignerToolGrid
+                isDesignerMode={isDesignerMode}
                 items={[
-                    { label: 'Rectangle', color: '#4361ee', detail: { type: 'rect' }, preview: () => <ShapePreview shape="rect" color="#4361ee" /> },
-                    { label: 'Cercle', color: '#f59e0b', detail: { type: 'circle' }, preview: () => <ShapePreview shape="circle" color="#f59e0b" /> },
-                    { label: 'Triangle', color: '#10b981', detail: { type: 'triangle' }, preview: () => <ShapePreview shape="triangle" color="#10b981" /> },
-                    { label: 'Étoile', color: '#ef4444', detail: { type: 'star' }, preview: () => <ShapePreview shape="star" color="#ef4444" /> },
-                    { label: 'Ligne', color: '#64748b', detail: { type: 'line' }, preview: () => <ShapePreview shape="line" color="#64748b" /> },
+                    { label: 'Rectangle', detail: { type: 'rect' }, preview: () => <ShapePreview shape="rect" /> },
+                    { label: 'Cercle', detail: { type: 'circle' }, preview: () => <ShapePreview shape="circle" /> },
+                    { label: 'Triangle', detail: { type: 'triangle' }, preview: () => <ShapePreview shape="triangle" /> },
+                    { label: 'Étoile', detail: { type: 'star' }, preview: () => <ShapePreview shape="star" /> },
+                    { label: 'Ligne', detail: { type: 'line' }, preview: () => <ShapePreview shape="line" /> },
                 ]}
             />
             <div style={{ height: '1px', background: 'rgba(148, 163, 184, 0.28)', margin: '12px 0' }} />
             <DesignerToolGrid
+                isDesignerMode={isDesignerMode}
                 items={[
-                    { label: 'Cadre rectangle', detail: { type: 'frame', frameShape: 'rect' }, preview: () => <FramePreview shape="rect" /> },
-                    { label: 'Cadre arrondi', detail: { type: 'frame', frameShape: 'rounded' }, preview: () => <FramePreview shape="rounded" /> },
-                    { label: 'Cadre cercle', detail: { type: 'frame', frameShape: 'circle' }, preview: () => <FramePreview shape="circle" /> },
-                    { label: 'Cadre carré', detail: { type: 'frame', frameShape: 'square' }, preview: () => <FramePreview shape="square" /> },
-                    { label: 'Cadre portrait', detail: { type: 'frame', frameShape: 'portrait' }, preview: () => <FramePreview shape="portrait" /> },
-                    { label: 'Cadre bannière', detail: { type: 'frame', frameShape: 'wide' }, preview: () => <FramePreview shape="wide" /> },
+                    { label: 'Cadre rectangle', detail: { type: 'frame', frameShape: 'rect' }, html: buildImageFrameHtml('rect'), preview: () => <FramePreview shape="rect" /> },
+                    { label: 'Cadre arrondi', detail: { type: 'frame', frameShape: 'rounded' }, html: buildImageFrameHtml('rounded'), preview: () => <FramePreview shape="rounded" /> },
+                    { label: 'Cadre cercle', detail: { type: 'frame', frameShape: 'circle' }, html: buildImageFrameHtml('circle'), preview: () => <FramePreview shape="circle" /> },
+                    { label: 'Cadre carré', detail: { type: 'frame', frameShape: 'square' }, html: buildImageFrameHtml('square'), preview: () => <FramePreview shape="square" /> },
+                    { label: 'Cadre portrait', detail: { type: 'frame', frameShape: 'portrait' }, html: buildImageFrameHtml('portrait'), preview: () => <FramePreview shape="portrait" /> },
+                    { label: 'Cadre bannière', detail: { type: 'frame', frameShape: 'wide' }, html: buildImageFrameHtml('wide'), preview: () => <FramePreview shape="wide" /> },
                 ]}
             />
         </div>

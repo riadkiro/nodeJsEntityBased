@@ -1441,6 +1441,46 @@ export default function EditorPage({
         }
     }, [hideDropIndicator])
 
+    useEffect(() => {
+        if (page.mode !== 'edition') return
+
+        const handleExternalHtmlInsert = (event) => {
+            if (!isSelected) return
+            const html = event.detail?.html
+            const el = contentRef.current
+            if (!html || !el) return
+
+            el.focus()
+
+            const sel = window.getSelection()
+            if (!sel) return
+            let range = null
+            if (sel?.rangeCount) {
+                const currentRange = sel.getRangeAt(0)
+                const ancestor = currentRange.commonAncestorContainer.nodeType === 1
+                    ? currentRange.commonAncestorContainer
+                    : currentRange.commonAncestorContainer.parentElement
+                if (ancestor && el.contains(ancestor)) {
+                    range = currentRange
+                }
+            }
+
+            if (!range) {
+                range = document.createRange()
+                range.selectNodeContents(el)
+                range.collapse(false)
+                sel.removeAllRanges()
+                sel.addRange(range)
+            }
+
+            document.execCommand('insertHTML', false, html)
+            handlePageInput?.({ target: el }, pageIndex)
+        }
+
+        window.addEventListener('document-editor-insert-html', handleExternalHtmlInsert)
+        return () => window.removeEventListener('document-editor-insert-html', handleExternalHtmlInsert)
+    }, [page.mode, isSelected, handlePageInput, pageIndex])
+
     const handleDragOver = useCallback((e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'

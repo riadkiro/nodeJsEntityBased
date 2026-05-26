@@ -126,13 +126,11 @@ export default function EditorPage({
 
         const sel = window.getSelection()
         const range = document.createRange()
-        const spacer = document.createTextNode('\u2009')
         if (side === 'before') {
-            block.parentNode.insertBefore(spacer, block)
+            range.setStartBefore(block)
         } else {
-            block.parentNode.insertBefore(spacer, block.nextSibling)
+            range.setStartAfter(block)
         }
-        range.setStart(spacer, side === 'before' ? 0 : spacer.length)
         range.collapse(true)
         sel.removeAllRanges()
         sel.addRange(range)
@@ -146,12 +144,48 @@ export default function EditorPage({
 
         const PLACEHOLDER_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dbeafe'/%3E%3Cstop offset='1' stop-color='%23f8fafc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23sky)'/%3E%3Ccircle cx='500' cy='80' r='46' fill='%23ffffff' fill-opacity='.88'/%3E%3Cpath d='M0 260 105 178l83 58 128-108 134 132 83-68 107 86v82H0z' fill='%23cbd5e1'/%3E%3Cpath d='M0 304 160 214l118 64 92-46 100 54 170-90v164H0z' fill='%2394a3b8' fill-opacity='.72'/%3E%3C/svg%3E")`
 
+        const removeLegacyCaretSpacers = (placeholder) => {
+            const siblings = [placeholder.previousSibling, placeholder.nextSibling]
+            siblings.forEach(node => {
+                if (node?.nodeType === 3 && node.nodeValue === '\u2009') {
+                    node.remove()
+                }
+            })
+        }
+
+        const applyFrameImageSizing = (placeholder) => {
+            const img = placeholder?.querySelector('img')
+            if (!img) return
+
+            const frameWidth = placeholder.offsetWidth || parseFloat(placeholder.style.width || '') || 0
+            const frameHeight = placeholder.offsetHeight || parseFloat(placeholder.style.height || '') || 0
+            const fillByHeight = frameHeight > frameWidth
+
+            img.style.display = 'block'
+            img.style.pointerEvents = 'none'
+            img.style.maxWidth = 'none'
+            img.style.maxHeight = 'none'
+            img.style.objectFit = 'initial'
+            img.style.flex = '0 0 auto'
+
+            if (fillByHeight) {
+                img.style.width = 'auto'
+                img.style.height = '100%'
+            } else {
+                img.style.width = '100%'
+                img.style.height = 'auto'
+            }
+        }
+
         const normalizePlaceholder = (placeholder) => {
             if (!placeholder) return
             const hasImage = !!placeholder.querySelector('img')
+            removeLegacyCaretSpacers(placeholder)
             placeholder.setAttribute('contenteditable', 'false')
             placeholder.style.position = 'relative'
             placeholder.style.display = 'inline-flex'
+            placeholder.style.alignItems = 'center'
+            placeholder.style.justifyContent = 'center'
             placeholder.style.verticalAlign = 'top'
             placeholder.style.boxSizing = 'border-box'
             placeholder.style.resize = 'none'
@@ -181,6 +215,7 @@ export default function EditorPage({
                 placeholder.style.backgroundImage = 'none'
                 placeholder.style.backgroundColor = 'transparent'
                 placeholder.style.padding = '0'
+                applyFrameImageSizing(placeholder)
             } else {
                 placeholder.classList.remove('has-image')
                 placeholder.innerHTML = ''
@@ -302,7 +337,7 @@ export default function EditorPage({
             const img = document.createElement('img')
             img.src = url
             img.alt = alt || ''
-            img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;'
+            img.style.cssText = 'display:block;pointer-events:none;max-width:none;max-height:none;'
             placeholder.appendChild(img)
             placeholder.dataset.imageSrc = url
             placeholder.classList.add('has-image')
@@ -383,12 +418,14 @@ export default function EditorPage({
 
             state.placeholder.style.width = `${Math.max(96, Math.round(width))}px`
             state.placeholder.style.height = `${Math.max(72, Math.round(height))}px`
+            applyFrameImageSizing(state.placeholder)
             positionOverlay()
             event.preventDefault()
         }
 
         const endResize = () => {
             if (!placeholderResizeRef.current) return
+            applyFrameImageSizing(placeholderResizeRef.current.placeholder)
             placeholderResizeRef.current = null
             document.removeEventListener('pointermove', handleResizeMove)
             document.removeEventListener('pointerup', endResize)

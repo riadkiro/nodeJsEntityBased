@@ -45,6 +45,16 @@ function stripEditorRuntimeArtifacts(html) {
     template.content
         .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay], [data-placeholder-resize-overlay], [data-atomic-caret], .doc-image-placeholder-handle')
         .forEach(el => el.remove())
+
+    const legacySpacerWalker = document.createTreeWalker(template.content, 4)
+    const legacySpacers = []
+    let textNode = legacySpacerWalker.nextNode()
+    while (textNode) {
+        if (textNode.nodeValue === '\u2009') legacySpacers.push(textNode)
+        textNode = legacySpacerWalker.nextNode()
+    }
+    legacySpacers.forEach(node => node.remove())
+
     return template.innerHTML
 }
 
@@ -64,6 +74,30 @@ function isImageFile(file) {
 
 function getMediaUrl(file) {
     return file?.url || file?.downloadUrl || file?.src || ''
+}
+
+function applyFrameImageSizing(frame) {
+    const img = frame?.querySelector?.('img')
+    if (!img) return
+
+    const frameWidth = frame.offsetWidth || parseFloat(frame.style.width || '') || 0
+    const frameHeight = frame.offsetHeight || parseFloat(frame.style.height || '') || 0
+    const fillByHeight = frameHeight > frameWidth
+
+    img.style.display = 'block'
+    img.style.pointerEvents = 'none'
+    img.style.maxWidth = 'none'
+    img.style.maxHeight = 'none'
+    img.style.objectFit = 'initial'
+    img.style.flex = '0 0 auto'
+
+    if (fillByHeight) {
+        img.style.width = 'auto'
+        img.style.height = '100%'
+    } else {
+        img.style.width = '100%'
+        img.style.height = 'auto'
+    }
 }
 
 // ========== WORD-LIKE SELECTION HELPERS ==========
@@ -1399,10 +1433,13 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         const target = imagePickerTarget
         if (!target || !url) return
 
-        target.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" style="width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;" />`
+        target.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" style="display:block;pointer-events:none;max-width:none;max-height:none;" />`
         target.dataset.imageSrc = url
         target.setAttribute('contenteditable', 'false')
         target.classList.add('has-image')
+        target.style.display = 'inline-flex'
+        target.style.alignItems = 'center'
+        target.style.justifyContent = 'center'
         target.style.border = 'none'
         target.style.backgroundColor = 'transparent'
         target.style.backgroundImage = 'none'
@@ -1413,6 +1450,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         target.style.overflow = 'hidden'
         target.style.cursor = 'pointer'
 
+        applyFrameImageSizing(target)
         setImagePickerTarget(null)
         triggerSave()
     }, [imagePickerTarget, triggerSave])
@@ -3130,6 +3168,10 @@ ${pagesHtml}
                     background-repeat: no-repeat;
                 }
                 .doc-image-placeholder img {
+                    display: block;
+                    max-width: none;
+                    max-height: none;
+                    pointer-events: none;
                     user-select: none;
                 }
                 `

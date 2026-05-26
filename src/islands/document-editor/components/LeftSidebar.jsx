@@ -82,155 +82,120 @@ export default function LeftSidebar({
 
     useEffect(() => {
         if (!activeTab) return
-        const designerTabs = ['designer-text', 'designer-tools', 'designer-frames']
-        const standardTabs = ['text', 'gallery', 'blocks', 'layouts', 'dynamic-nav', 'page-settings']
+        const validTabs = ['text', 'tools', 'gallery', 'blocks', 'layouts', 'dynamic-nav', 'page-settings']
 
-        if (isDesignerMode && !designerTabs.includes(activeTab)) {
-            setActiveTab(null)
-        } else if (!isDesignerMode && !standardTabs.includes(activeTab)) {
+        if (!validTabs.includes(activeTab)) {
             setActiveTab(null)
         }
-    }, [activeTab, isDesignerMode, setActiveTab])
+    }, [activeTab, setActiveTab])
 
-    const panelTitle = isDesignerMode
-        ? {
-            'designer-text': 'Texte',
-            'designer-tools': 'Tools',
-            'designer-frames': 'Cadres',
-        }[activeTab]
-        : {
-            text: 'Texte et Contenu',
-            gallery: 'Médiathèque',
-            blocks: 'Blocs de contenu',
-            layouts: 'Mises en page',
-            'dynamic-nav': 'Contenu Dynamique',
-            'page-settings': 'Paramètres de page',
-        }[activeTab]
+    const panelTitle = {
+        text: isDesignerMode ? 'Texte' : 'Texte et Contenu',
+        tools: 'Tools',
+        gallery: 'Médiathèque',
+        blocks: 'Blocs de contenu',
+        layouts: 'Mises en page',
+        'dynamic-nav': 'Contenu Dynamique',
+        'page-settings': 'Paramètres de page',
+    }[activeTab]
 
     return (
         <div className="relative flex" style={{ zIndex: 30 }}>
             {/* Toolbar (Left) */}
             <div className="w-12 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-2 gap-1.5">
-                {isDesignerMode ? (
-                    <>
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'designer-text'
+                {/* Text Tool */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'text'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title={isDesignerMode ? 'Texte' : 'Texte et Contenu'}
+                    onClick={() => toggleTab('text')}
+                >
+                    <iconify-icon icon="solar:text-bold-duotone" width="18"></iconify-icon>
+                </button>
+
+                {/* Tools */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'tools'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Tools"
+                    onClick={() => toggleTab('tools')}
+                >
+                    <iconify-icon icon="solar:shapes-bold-duotone" width="18"></iconify-icon>
+                </button>
+
+                {/* Gallery Tool */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'gallery'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Médiathèque"
+                    onClick={() => toggleTab('gallery')}
+                >
+                    <iconify-icon icon="solar:gallery-bold-duotone" width="18"></iconify-icon>
+                </button>
+
+                <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
+
+                {/* Blocks Tool */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'blocks'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Blocs de contenu"
+                    onClick={() => toggleTab('blocks')}
+                >
+                    <iconify-icon icon="solar:widget-4-bold-duotone" width="18"></iconify-icon>
+                </button>
+
+                {/* Layout Tools */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'layouts'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Mises en page"
+                    onClick={() => toggleTab('layouts')}
+                >
+                    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18"></iconify-icon>
+                </button>
+
+                <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
+
+                {/* Dynamic Content */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
+                        !isTemplateMode
+                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            : activeTab === 'dynamic-nav'
                                 ? 'bg-primary/20 text-primary'
                                 : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Texte"
-                            onClick={() => toggleTab('designer-text')}
-                        >
-                            <iconify-icon icon="solar:text-bold-duotone" width="18"></iconify-icon>
-                        </button>
+                    }`}
+                    title={isTemplateMode ? 'Contenu Dynamique' : 'Disponible uniquement en mode template'}
+                    onClick={() => isTemplateMode && toggleTab('dynamic-nav')}
+                    style={!isTemplateMode ? { opacity: 0.5 } : {}}
+                >
+                    <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
+                </button>
 
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'designer-tools'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Tools"
-                            onClick={() => toggleTab('designer-tools')}
-                        >
-                            <iconify-icon icon="solar:shapes-bold-duotone" width="18"></iconify-icon>
-                        </button>
+                <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
 
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'designer-frames'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Cadres"
-                            onClick={() => toggleTab('designer-frames')}
-                        >
-                            <iconify-icon icon="solar:gallery-bold-duotone" width="18"></iconify-icon>
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        {/* Text Tool */}
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'text'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Texte et Contenu"
-                            onClick={() => toggleTab('text')}
-                        >
-                            <iconify-icon icon="solar:text-bold-duotone" width="18"></iconify-icon>
-                        </button>
-
-                        {/* Gallery Tool */}
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'gallery'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Médiathèque"
-                            onClick={() => toggleTab('gallery')}
-                        >
-                            <iconify-icon icon="solar:gallery-bold-duotone" width="18"></iconify-icon>
-                        </button>
-
-                        <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
-
-                        {/* Blocks Tool */}
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'blocks'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Blocs de contenu"
-                            onClick={() => toggleTab('blocks')}
-                        >
-                            <iconify-icon icon="solar:widget-4-bold-duotone" width="18"></iconify-icon>
-                        </button>
-
-                        {/* Layout Tools */}
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'layouts'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Mises en page"
-                            onClick={() => toggleTab('layouts')}
-                        >
-                            <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18"></iconify-icon>
-                        </button>
-
-                        <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
-
-                        {/* Dynamic Content */}
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
-                                !isTemplateMode
-                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                    : activeTab === 'dynamic-nav'
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                            }`}
-                            title={isTemplateMode ? 'Contenu Dynamique' : 'Disponible uniquement en mode template'}
-                            onClick={() => isTemplateMode && toggleTab('dynamic-nav')}
-                            style={!isTemplateMode ? { opacity: 0.5 } : {}}
-                        >
-                            <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
-                        </button>
-
-                        <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
-
-                        {/* Page Settings */}
-                        <button
-                            className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'page-settings'
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
-                                }`}
-                            title="Paramètres de page"
-                            onClick={() => toggleTab('page-settings')}
-                        >
-                            <iconify-icon icon="solar:settings-minimalistic-bold-duotone" width="18"></iconify-icon>
-                        </button>
-                    </>
-                )}
+                {/* Page Settings */}
+                <button
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'page-settings'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Paramètres de page"
+                    onClick={() => toggleTab('page-settings')}
+                >
+                    <iconify-icon icon="solar:settings-minimalistic-bold-duotone" width="18"></iconify-icon>
+                </button>
 
                 {/* Spacer to push settings to bottom */}
                 <div className="flex-1"></div>
@@ -266,17 +231,11 @@ export default function LeftSidebar({
 
                     {/* Panel Body */}
                     <div className="flex-1 overflow-auto" style={{ padding: '16px', scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin', background: panelBg }}>
-                        {activeTab === 'designer-text' && (
-                            <DesignerTextPanel />
-                        )}
-                        {activeTab === 'designer-tools' && (
+                        {activeTab === 'tools' && (
                             <DesignerToolsPanel />
                         )}
-                        {activeTab === 'designer-frames' && (
-                            <DesignerFramesPanel />
-                        )}
                         {activeTab === 'text' && (
-                            <TextPanel />
+                            isDesignerMode ? <DesignerTextPanel /> : <TextPanel />
                         )}
                         {activeTab === 'gallery' && (
                             <GalleryPanel accountNumber={accountNumber} doc={doc} />
@@ -403,8 +362,8 @@ function DesignerToolGrid({ items }) {
     return (
         <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: '10px',
+            gridTemplateColumns: 'repeat(4, 38px)',
+            gap: '8px',
         }}>
             {items.map(item => (
                 <DesignerToolCard key={`${item.detail.type}-${item.detail.frameShape || item.detail.variant || item.label}`} item={item} />
@@ -418,7 +377,6 @@ function DesignerToolCard({ item }) {
     const cardBg = isDark ? '#111827' : '#ffffff'
     const cardHover = isDark ? '#172033' : '#f8fafc'
     const borderColor = isDark ? '#273449' : '#e5e7eb'
-    const labelColor = isDark ? '#d1d5db' : '#475569'
 
     const addTool = () => emitDesignerAdd(item.detail)
 
@@ -426,6 +384,7 @@ function DesignerToolCard({ item }) {
         <button
             type="button"
             draggable
+            aria-label={item.label}
             onClick={addTool}
             onDragStart={(e) => {
                 e.dataTransfer.setData('application/x-designer-tool', JSON.stringify(item.detail))
@@ -434,17 +393,16 @@ function DesignerToolCard({ item }) {
             }}
             title={item.label}
             style={{
-                height: '92px',
-                padding: '10px 8px',
+                width: '38px',
+                height: '38px',
+                padding: 0,
                 border: `1px solid ${borderColor}`,
                 borderRadius: '8px',
                 background: cardBg,
                 cursor: 'pointer',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
                 transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
             }}
             onMouseEnter={(e) => {
@@ -459,60 +417,57 @@ function DesignerToolCard({ item }) {
             }}
         >
             <div style={{
-                width: '42px',
-                height: '34px',
+                width: '18px',
+                height: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: item.color || '#4361ee',
             }}>
                 {item.preview ? item.preview(isDark) : (
-                    <iconify-icon icon={item.icon} width="28"></iconify-icon>
+                    <iconify-icon icon={item.icon} width="18"></iconify-icon>
                 )}
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 600, color: labelColor, lineHeight: 1.2 }}>
-                {item.label}
-            </span>
         </button>
     )
 }
 
 function ShapePreview({ shape, color = '#4361ee' }) {
     if (shape === 'circle') {
-        return <div style={{ width: 30, height: 30, borderRadius: '50%', background: color }} />
+        return <div style={{ width: 18, height: 18, borderRadius: '50%', background: color }} />
     }
     if (shape === 'triangle') {
         return (
             <div style={{
                 width: 0,
                 height: 0,
-                borderLeft: '16px solid transparent',
-                borderRight: '16px solid transparent',
-                borderBottom: `30px solid ${color}`,
+                borderLeft: '9px solid transparent',
+                borderRight: '9px solid transparent',
+                borderBottom: `18px solid ${color}`,
             }} />
         )
     }
     if (shape === 'star') {
-        return <iconify-icon icon="solar:star-bold" width="32" style={{ color }}></iconify-icon>
+        return <iconify-icon icon="solar:star-bold" width="18" style={{ color }}></iconify-icon>
     }
     if (shape === 'line') {
-        return <div style={{ width: 34, height: 4, borderRadius: 2, background: color }} />
+        return <div style={{ width: 18, height: 3, borderRadius: 2, background: color }} />
     }
-    return <div style={{ width: 34, height: 26, borderRadius: 5, background: color }} />
+    return <div style={{ width: 18, height: 14, borderRadius: 4, background: color }} />
 }
 
 function FramePreview({ shape }) {
     const common = {
-        width: 38,
-        height: 26,
+        width: 18,
+        height: 13,
         overflow: 'hidden',
         border: '1px solid #93c5fd',
         background: 'linear-gradient(180deg, #dbeafe 0 46%, #bfdbfe 46% 100%)',
         position: 'relative',
     }
-    const radius = shape === 'circle' ? '50%' : shape === 'rounded' ? 10 : 5
-    const size = shape === 'circle' || shape === 'square' ? 30 : shape === 'portrait' ? 28 : 38
-    const height = shape === 'circle' || shape === 'square' ? 30 : shape === 'portrait' ? 36 : 26
+    const radius = shape === 'circle' ? '50%' : shape === 'rounded' ? 6 : 3
+    const size = shape === 'circle' || shape === 'square' ? 18 : shape === 'portrait' ? 14 : 18
+    const height = shape === 'circle' || shape === 'square' ? 18 : shape === 'portrait' ? 18 : shape === 'wide' ? 10 : 13
 
     return (
         <div style={{ ...common, width: size, height, borderRadius: radius }}>
@@ -530,8 +485,8 @@ function FramePreview({ shape }) {
                 position: 'absolute',
                 right: '10%',
                 top: '14%',
-                width: 7,
-                height: 7,
+                width: 4,
+                height: 4,
                 borderRadius: '50%',
                 background: '#ffffff',
                 opacity: 0.9,
@@ -553,30 +508,28 @@ function DesignerTextPanel() {
 
 function DesignerToolsPanel() {
     return (
-        <DesignerToolGrid
-            items={[
-                { label: 'Rectangle', color: '#4361ee', detail: { type: 'rect' }, preview: () => <ShapePreview shape="rect" color="#4361ee" /> },
-                { label: 'Cercle', color: '#f59e0b', detail: { type: 'circle' }, preview: () => <ShapePreview shape="circle" color="#f59e0b" /> },
-                { label: 'Triangle', color: '#10b981', detail: { type: 'triangle' }, preview: () => <ShapePreview shape="triangle" color="#10b981" /> },
-                { label: 'Étoile', color: '#ef4444', detail: { type: 'star' }, preview: () => <ShapePreview shape="star" color="#ef4444" /> },
-                { label: 'Ligne', color: '#64748b', detail: { type: 'line' }, preview: () => <ShapePreview shape="line" color="#64748b" /> },
-            ]}
-        />
-    )
-}
-
-function DesignerFramesPanel() {
-    return (
-        <DesignerToolGrid
-            items={[
-                { label: 'Rectangle', detail: { type: 'frame', frameShape: 'rect' }, preview: () => <FramePreview shape="rect" /> },
-                { label: 'Arrondi', detail: { type: 'frame', frameShape: 'rounded' }, preview: () => <FramePreview shape="rounded" /> },
-                { label: 'Cercle', detail: { type: 'frame', frameShape: 'circle' }, preview: () => <FramePreview shape="circle" /> },
-                { label: 'Carré', detail: { type: 'frame', frameShape: 'square' }, preview: () => <FramePreview shape="square" /> },
-                { label: 'Portrait', detail: { type: 'frame', frameShape: 'portrait' }, preview: () => <FramePreview shape="portrait" /> },
-                { label: 'Bannière', detail: { type: 'frame', frameShape: 'wide' }, preview: () => <FramePreview shape="wide" /> },
-            ]}
-        />
+        <div>
+            <DesignerToolGrid
+                items={[
+                    { label: 'Rectangle', color: '#4361ee', detail: { type: 'rect' }, preview: () => <ShapePreview shape="rect" color="#4361ee" /> },
+                    { label: 'Cercle', color: '#f59e0b', detail: { type: 'circle' }, preview: () => <ShapePreview shape="circle" color="#f59e0b" /> },
+                    { label: 'Triangle', color: '#10b981', detail: { type: 'triangle' }, preview: () => <ShapePreview shape="triangle" color="#10b981" /> },
+                    { label: 'Étoile', color: '#ef4444', detail: { type: 'star' }, preview: () => <ShapePreview shape="star" color="#ef4444" /> },
+                    { label: 'Ligne', color: '#64748b', detail: { type: 'line' }, preview: () => <ShapePreview shape="line" color="#64748b" /> },
+                ]}
+            />
+            <div style={{ height: '1px', background: 'rgba(148, 163, 184, 0.28)', margin: '12px 0' }} />
+            <DesignerToolGrid
+                items={[
+                    { label: 'Cadre rectangle', detail: { type: 'frame', frameShape: 'rect' }, preview: () => <FramePreview shape="rect" /> },
+                    { label: 'Cadre arrondi', detail: { type: 'frame', frameShape: 'rounded' }, preview: () => <FramePreview shape="rounded" /> },
+                    { label: 'Cadre cercle', detail: { type: 'frame', frameShape: 'circle' }, preview: () => <FramePreview shape="circle" /> },
+                    { label: 'Cadre carré', detail: { type: 'frame', frameShape: 'square' }, preview: () => <FramePreview shape="square" /> },
+                    { label: 'Cadre portrait', detail: { type: 'frame', frameShape: 'portrait' }, preview: () => <FramePreview shape="portrait" /> },
+                    { label: 'Cadre bannière', detail: { type: 'frame', frameShape: 'wide' }, preview: () => <FramePreview shape="wide" /> },
+                ]}
+            />
+        </div>
     )
 }
 

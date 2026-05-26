@@ -143,6 +143,33 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const PLACEHOLDER_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dbeafe'/%3E%3Cstop offset='1' stop-color='%23f8fafc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23sky)'/%3E%3Ccircle cx='500' cy='80' r='46' fill='%23ffffff' fill-opacity='.88'/%3E%3Cpath d='M0 260 105 178l83 58 128-108 134 132 83-68 107 86v82H0z' fill='%23cbd5e1'/%3E%3Cpath d='M0 304 160 214l118 64 92-46 100 54 170-90v164H0z' fill='%2394a3b8' fill-opacity='.72'/%3E%3C/svg%3E")`
+        const DEFAULT_FRAME_WIDTH = 500
+        const DEFAULT_FRAME_RATIO = 9 / 16
+
+        const getDefaultFrameWidth = () => {
+            const availableWidth = el.clientWidth || DEFAULT_FRAME_WIDTH
+            return Math.max(96, Math.min(DEFAULT_FRAME_WIDTH, availableWidth))
+        }
+
+        const ensureFrameSize = (placeholder) => {
+            const widthStyle = (placeholder.style.width || '').trim()
+            const heightStyle = (placeholder.style.height || '').trim()
+            const shouldUseDefaultWidth = !widthStyle || widthStyle === 'auto' || widthStyle === '100%'
+
+            placeholder.style.maxWidth = '100%'
+
+            if (shouldUseDefaultWidth) {
+                const width = getDefaultFrameWidth()
+                placeholder.style.width = `${width}px`
+                placeholder.style.height = `${Math.round(width * DEFAULT_FRAME_RATIO)}px`
+                return
+            }
+
+            if (!heightStyle || heightStyle === 'auto') {
+                const width = Math.max(96, placeholder.offsetWidth || parseFloat(widthStyle) || getDefaultFrameWidth())
+                placeholder.style.height = `${Math.round(width * DEFAULT_FRAME_RATIO)}px`
+            }
+        }
 
         const removeLegacyCaretSpacers = (placeholder) => {
             const siblings = [placeholder.previousSibling, placeholder.nextSibling]
@@ -194,16 +221,7 @@ export default function EditorPage({
             placeholder.style.minWidth = '96px'
             placeholder.style.minHeight = '72px'
             placeholder.style.margin = '12px 0'
-            if (!placeholder.style.width) placeholder.style.width = '100%'
-            if (!placeholder.style.height) placeholder.style.height = 'auto'
-            const numericWidth = parseFloat(placeholder.style.width || '')
-            if (!placeholder.style.width.includes('%') && numericWidth && numericWidth < 300) {
-                placeholder.style.width = '100%'
-            }
-            if (placeholder.style.height === 'auto') {
-                const width = placeholder.offsetWidth || el.clientWidth || 320
-                placeholder.style.height = `${Math.round(width * 9 / 16)}px`
-            }
+            ensureFrameSize(placeholder)
 
             const next = placeholder.nextElementSibling
             if (next?.tagName === 'P' && !next.textContent.trim() && next.innerHTML.replace(/<br\s*\/?>/gi, '').trim() === '') {

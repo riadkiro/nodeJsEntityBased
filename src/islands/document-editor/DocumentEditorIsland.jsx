@@ -76,6 +76,31 @@ function getMediaUrl(file) {
     return file?.url || file?.downloadUrl || file?.src || ''
 }
 
+const DEFAULT_IMAGE_FRAME_WIDTH = 500
+const DEFAULT_IMAGE_FRAME_RATIO = 9 / 16
+
+function ensureImageFrameSize(frame) {
+    if (!frame) return
+    const widthStyle = (frame.style.width || '').trim()
+    const heightStyle = (frame.style.height || '').trim()
+    const parentWidth = frame.parentElement?.clientWidth || DEFAULT_IMAGE_FRAME_WIDTH
+    const defaultWidth = Math.max(96, Math.min(DEFAULT_IMAGE_FRAME_WIDTH, parentWidth))
+    const shouldUseDefaultWidth = !widthStyle || widthStyle === 'auto' || widthStyle === '100%'
+
+    frame.style.maxWidth = '100%'
+
+    if (shouldUseDefaultWidth) {
+        frame.style.width = `${defaultWidth}px`
+        frame.style.height = `${Math.round(defaultWidth * DEFAULT_IMAGE_FRAME_RATIO)}px`
+        return
+    }
+
+    if (!heightStyle || heightStyle === 'auto') {
+        const width = Math.max(96, frame.offsetWidth || parseFloat(widthStyle) || defaultWidth)
+        frame.style.height = `${Math.round(width * DEFAULT_IMAGE_FRAME_RATIO)}px`
+    }
+}
+
 function applyFrameImageSizing(frame) {
     const img = frame?.querySelector?.('img')
     if (!img) return
@@ -1450,6 +1475,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         target.style.overflow = 'hidden'
         target.style.cursor = 'pointer'
 
+        ensureImageFrameSize(target)
         applyFrameImageSizing(target)
         setImagePickerTarget(null)
         triggerSave()

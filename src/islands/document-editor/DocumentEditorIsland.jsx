@@ -18,6 +18,24 @@ import { getSelectedImage } from './hooks/useImageResize'
 // Native keyboard detection - NO external library, CANNOT fail
 const isMod = (e) => e.ctrlKey || e.metaKey
 
+function sanitizeEditorPageHtml(html) {
+    if (!html) return ''
+
+    const template = document.createElement('template')
+    template.innerHTML = html
+
+    template.content
+        .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay]')
+        .forEach(el => el.remove())
+
+    template.content.querySelectorAll('[contenteditable]').forEach(el => {
+        el.removeAttribute('contenteditable')
+        el.removeAttribute('suppresscontenteditablewarning')
+    })
+
+    return template.innerHTML
+}
+
 // ========== WORD-LIKE SELECTION HELPERS ==========
 function selectAllDocument(editorRootEl, pageRefs) {
     const sel = window.getSelection()
@@ -1749,13 +1767,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 const pagesContent = pages.map((page, i) => {
                     const pageEl = pageRefs.current[i]
                     if (pageEl) {
-                        // Clean reflow markers before sending
-                        let html = pageEl.innerHTML
-                        html = html.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
-                        html = html.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
-                        return html
+                        return sanitizeEditorPageHtml(pageEl.innerHTML)
                     }
-                    return page.content || ''
+                    return sanitizeEditorPageHtml(page.content || '')
                 })
 
                 const targetRecordId = doc.draftRecordId || (doc.linkedRecords && doc.linkedRecords.length > 0 ? doc.linkedRecords[0].recordId : null)
@@ -1802,7 +1816,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         for (let i = 0; i < pages.length; i++) {
             const pageEl = pageRefs.current[i]
             // Get content from DOM (source of truth for contenteditable)
-            const pageContent = pageEl ? pageEl.innerHTML : (pages[i].content || '')
+            const pageContent = sanitizeEditorPageHtml(pageEl ? pageEl.innerHTML : (pages[i].content || ''))
             const isLastPage = i === pages.length - 1
 
             pagesHtml += `<div class="doc-page" ${!isLastPage ? 'style="page-break-after: always;"' : ''}>`
@@ -1826,7 +1840,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     <base href="${baseUrl}">
     <link rel="stylesheet" href="themes/default/assets/css/style.css">
     <link rel="stylesheet" href="css/app/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' };
@@ -1840,7 +1854,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-            font-size: 12pt; 
+            font-size: 16px;
             line-height: 1.6;
             color: #000000;
             margin: 0;
@@ -1848,18 +1862,63 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        /* Tailwind Preflight resets — match editor environment */
+        /* Same default document styles as the live editor, scoped so inline template styles keep priority. */
         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
-        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
-        
-        /* Base typography matching the React Document Editor */
-        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
-        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
-        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
-        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
-        ul { list-style-type: disc !important; padding-left: 40px !important; }
-        ol { list-style-type: decimal !important; padding-left: 40px !important; }
-        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+        .doc-content h1:not([style]) {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 0.67em;
+            margin-bottom: 0.67em;
+            line-height: 1.2;
+        }
+        .doc-content h2:not([style]) {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 0.83em;
+            margin-bottom: 0.83em;
+            line-height: 1.3;
+        }
+        .doc-content h3:not([style]) {
+            font-size: 1.17em;
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 1em;
+            line-height: 1.4;
+        }
+        .doc-content p:not([style]) {
+            margin-top: 0;
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+        .doc-content p:empty::before {
+            content: "\\00a0";
+        }
+        .doc-content ul:not([style]),
+        .doc-content ol:not([style]) {
+            margin-top: 0;
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+        .doc-content li:not([style]) {
+            margin-bottom: 0.5em;
+            line-height: 1.5;
+        }
+        .doc-content ul li { list-style-type: disc; }
+        .doc-content ol li { list-style-type: decimal; }
+        strong, b { font-weight: bold; }
+        em, i { font-style: italic; }
+        u { text-decoration: underline; }
+        .doc-content a:not([style]) {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        .doc-content blockquote:not([style]) {
+            margin: 1em 0;
+            padding-left: 1em;
+            border-left: 4px solid #d1d5db;
+            color: #6b7280;
+            font-style: italic;
+        }
         
         img, svg { display: block; max-width: 100%; }
         .doc-page {
@@ -2991,4 +3050,3 @@ ${pagesHtml}
         </div>
     )
 }
-

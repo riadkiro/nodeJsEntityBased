@@ -917,12 +917,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
                 savedSize = fs.statSync(pdfPath).size;
             } catch (pdfErr) {
                 console.error('[SmartDoc] PDF generation error:', pdfErr);
-                // Fallback: save as HTML
-                const htmlFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.html';
-                const htmlPath = path.join(outputDir, htmlFilename);
-                fs.writeFileSync(htmlPath, resolvedHtml, 'utf8');
-                savedFilename = htmlFilename;
-                savedSize = fs.statSync(htmlPath).size;
+                throw new Error('Generation PDF echouee: ' + (pdfErr.message || 'erreur inconnue'));
             }
         } else {
             // HTML output
@@ -939,7 +934,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
             mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
             size: savedSize,
-            category: 'pdf',
+            category: savedFilename.endsWith('.pdf') ? 'pdf' : 'other',
             isGenerated: true,
             generatedFrom: smartDocTemplate._id.toString(),
             generatedFromName: smartDocTemplate.name,
@@ -1468,12 +1463,12 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
 
                 if (domPagesContent && domPagesContent[i] !== undefined) {
                     // Use live DOM content from React editor — this is what the user sees
-                    pageContent = domPagesContent[i] || '';
+                    pageContent = stripEditorArtifacts(domPagesContent[i] || '');
                     // Still resolve dynamic tables in the DOM content (interactive tables may have been added)
                     pageContent = resolveDynamicTables(pageContent, draftLines, lineSchemas);
                 } else if (page.content) {
                     // Fallback: DB content (only if no DOM content was sent)
-                    pageContent = resolveDynamicTables(page.content, draftLines, lineSchemas);
+                    pageContent = resolveDynamicTables(stripEditorArtifacts(page.content), draftLines, lineSchemas);
                 }
 
                 if (page.elements) {
@@ -1507,7 +1502,7 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
     <base href="${baseUrl}">
     <link rel="stylesheet" href="themes/default/assets/css/style.css">
     <link rel="stylesheet" href="css/app/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' };
@@ -1521,7 +1516,7 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-            font-size: 12pt; 
+            font-size: 16px;
             line-height: 1.6;
             color: #000000;
             margin: 0;
@@ -1529,18 +1524,63 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        /* Tailwind Preflight resets — match editor environment */
+        /* Same default document styles as the live editor, scoped so inline template styles keep priority. */
         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
-        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
-        
-        /* Base typography matching the React Document Editor */
-        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
-        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
-        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
-        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
-        ul { list-style-type: disc !important; padding-left: 40px !important; }
-        ol { list-style-type: decimal !important; padding-left: 40px !important; }
-        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+        .doc-content h1:not([style]) {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 0.67em;
+            margin-bottom: 0.67em;
+            line-height: 1.2;
+        }
+        .doc-content h2:not([style]) {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 0.83em;
+            margin-bottom: 0.83em;
+            line-height: 1.3;
+        }
+        .doc-content h3:not([style]) {
+            font-size: 1.17em;
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 1em;
+            line-height: 1.4;
+        }
+        .doc-content p:not([style]) {
+            margin-top: 0;
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+        .doc-content p:empty::before {
+            content: "\\00a0";
+        }
+        .doc-content ul:not([style]),
+        .doc-content ol:not([style]) {
+            margin-top: 0;
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+        .doc-content li:not([style]) {
+            margin-bottom: 0.5em;
+            line-height: 1.5;
+        }
+        .doc-content ul li { list-style-type: disc; }
+        .doc-content ol li { list-style-type: decimal; }
+        strong, b { font-weight: bold; }
+        em, i { font-style: italic; }
+        u { text-decoration: underline; }
+        .doc-content a:not([style]) {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        .doc-content blockquote:not([style]) {
+            margin: 1em 0;
+            padding-left: 1em;
+            border-left: 4px solid #d1d5db;
+            color: #6b7280;
+            font-style: italic;
+        }
         
         img, svg { display: block; max-width: 100%; }
         .doc-page {
@@ -1599,11 +1639,7 @@ ${pagesHtml}
                 console.log(`[SmartDoc] PDF generated: ${pdfFilename} (${savedSize} bytes)`);
             } catch (pdfErr) {
                 console.error('[SmartDoc] PDF generation error:', pdfErr);
-                const htmlFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.html';
-                const htmlPath = path.join(outputDir, htmlFilename);
-                fs.writeFileSync(htmlPath, fullHtml, 'utf8');
-                savedFilename = htmlFilename;
-                savedSize = fs.statSync(htmlPath).size;
+                throw new Error('Generation PDF echouee: ' + (pdfErr.message || 'erreur inconnue'));
             }
         } else {
             const htmlFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.html';
@@ -1634,7 +1670,7 @@ ${pagesHtml}
                 originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
                 mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
                 size: savedSize,
-                category: 'pdf',
+                category: savedFilename.endsWith('.pdf') ? 'pdf' : 'other',
                 isGenerated: true,
                 generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
                 generatedFromName: generatedFromName,
@@ -2479,7 +2515,7 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
     <base href="${baseUrl}">
     <link rel="stylesheet" href="themes/default/assets/css/style.css">
     <link rel="stylesheet" href="css/app/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' };
@@ -2493,7 +2529,7 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-            font-size: 12pt; 
+            font-size: 16px;
             line-height: 1.6;
             color: #000000;
             margin: 0;
@@ -2501,18 +2537,63 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        /* Tailwind Preflight resets — match editor environment */
+        /* Same default document styles as the live editor, scoped so inline template styles keep priority. */
         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
-        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
-        
-        /* Base typography matching the React Document Editor */
-        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
-        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
-        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
-        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
-        ul { list-style-type: disc !important; padding-left: 40px !important; }
-        ol { list-style-type: decimal !important; padding-left: 40px !important; }
-        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+        .doc-content h1:not([style]) {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 0.67em;
+            margin-bottom: 0.67em;
+            line-height: 1.2;
+        }
+        .doc-content h2:not([style]) {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 0.83em;
+            margin-bottom: 0.83em;
+            line-height: 1.3;
+        }
+        .doc-content h3:not([style]) {
+            font-size: 1.17em;
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 1em;
+            line-height: 1.4;
+        }
+        .doc-content p:not([style]) {
+            margin-top: 0;
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+        .doc-content p:empty::before {
+            content: "\\00a0";
+        }
+        .doc-content ul:not([style]),
+        .doc-content ol:not([style]) {
+            margin-top: 0;
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+        .doc-content li:not([style]) {
+            margin-bottom: 0.5em;
+            line-height: 1.5;
+        }
+        .doc-content ul li { list-style-type: disc; }
+        .doc-content ol li { list-style-type: decimal; }
+        strong, b { font-weight: bold; }
+        em, i { font-style: italic; }
+        u { text-decoration: underline; }
+        .doc-content a:not([style]) {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        .doc-content blockquote:not([style]) {
+            margin: 1em 0;
+            padding-left: 1em;
+            border-left: 4px solid #d1d5db;
+            color: #6b7280;
+            font-style: italic;
+        }
         
         img, svg { display: block; max-width: 100%; }
         .doc-page {
@@ -2745,6 +2826,14 @@ function formatSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
 }
 
+function stripEditorArtifacts(html = '') {
+    return String(html)
+        .replace(/<span\b[^>]*class=["'][^"']*\bdoc-block-delete-btn\b[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
+        .replace(/<[^>]*\bdata-reflow-caret\b[^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+        .replace(/<[^>]*\bdata-caret-marker\b[^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+        .replace(/<[^>]*\bdata-image-resize-overlay\b[^>]*>[\s\S]*?<\/[^>]+>/gi, '');
+}
+
 /**
  * Generate a PDF from HTML using Puppeteer
  * Margins are expected to be embedded as CSS padding in the HTML content
@@ -2763,6 +2852,7 @@ async function generatePDF(html, outputPath, docTemplate) {
         // This ensures 1:1 pixel rendering with the editor canvas
         const dims = docTemplate.dimensions || { width: 794, height: 1123 };
         await page.setViewport({ width: dims.width, height: dims.height });
+        await page.emulateMediaType('screen');
 
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
         const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
@@ -2777,7 +2867,7 @@ async function generatePDF(html, outputPath, docTemplate) {
                     <base href="${baseUrl}">
                     <link rel="stylesheet" href="themes/default/assets/css/style.css">
                     <link rel="stylesheet" href="css/app/main.css">
-                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                     <script src="https://cdn.tailwindcss.com"></script>
                     <script>
                         tailwind.config = { darkMode: 'class' };
@@ -2791,7 +2881,7 @@ async function generatePDF(html, outputPath, docTemplate) {
                         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
                         body { 
                             font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-                            font-size: 12pt; 
+                            font-size: 16px;
                             line-height: 1.6;
                             color: #000000;
                             margin: 0;
@@ -2799,18 +2889,63 @@ async function generatePDF(html, outputPath, docTemplate) {
                             -webkit-print-color-adjust: exact;
                             print-color-adjust: exact;
                         }
-                        /* Tailwind Preflight resets — match editor environment */
+                        /* Same default document styles as the live editor, scoped so inline template styles keep priority. */
                         p, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, figure, hr { margin: 0; }
-                        h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
-                        
-                        /* Base typography matching the React Document Editor */
-                        h1 { font-size: 2em !important; font-weight: bold !important; margin-top: 0.67em !important; margin-bottom: 0.67em !important; line-height: 1.2 !important; color: #000000 !important; }
-                        h2 { font-size: 1.5em !important; font-weight: bold !important; margin-top: 0.83em !important; margin-bottom: 0.83em !important; line-height: 1.3 !important; color: #000000 !important; }
-                        h3 { font-size: 1.17em !important; font-weight: bold !important; margin-top: 1em !important; margin-bottom: 1em !important; line-height: 1.4 !important; color: #000000 !important; }
-                        p { margin-top: 0 !important; margin-bottom: 0 !important; line-height: 1.6 !important; }
-                        ul { list-style-type: disc !important; padding-left: 40px !important; }
-                        ol { list-style-type: decimal !important; padding-left: 40px !important; }
-                        blockquote { border-left: 4px solid #cbd5e1 !important; margin: 1em 0 !important; padding-left: 1em !important; color: #475569 !important; }
+                        .doc-content h1:not([style]) {
+                            font-size: 2em;
+                            font-weight: bold;
+                            margin-top: 0.67em;
+                            margin-bottom: 0.67em;
+                            line-height: 1.2;
+                        }
+                        .doc-content h2:not([style]) {
+                            font-size: 1.5em;
+                            font-weight: bold;
+                            margin-top: 0.83em;
+                            margin-bottom: 0.83em;
+                            line-height: 1.3;
+                        }
+                        .doc-content h3:not([style]) {
+                            font-size: 1.17em;
+                            font-weight: bold;
+                            margin-top: 1em;
+                            margin-bottom: 1em;
+                            line-height: 1.4;
+                        }
+                        .doc-content p:not([style]) {
+                            margin-top: 0;
+                            margin-bottom: 1em;
+                            line-height: 1.6;
+                        }
+                        .doc-content p:empty::before {
+                            content: "\\00a0";
+                        }
+                        .doc-content ul:not([style]),
+                        .doc-content ol:not([style]) {
+                            margin-top: 0;
+                            margin-bottom: 1em;
+                            padding-left: 2em;
+                        }
+                        .doc-content li:not([style]) {
+                            margin-bottom: 0.5em;
+                            line-height: 1.5;
+                        }
+                        .doc-content ul li { list-style-type: disc; }
+                        .doc-content ol li { list-style-type: decimal; }
+                        strong, b { font-weight: bold; }
+                        em, i { font-style: italic; }
+                        u { text-decoration: underline; }
+                        .doc-content a:not([style]) {
+                            color: #2563eb;
+                            text-decoration: underline;
+                        }
+                        .doc-content blockquote:not([style]) {
+                            margin: 1em 0;
+                            padding-left: 1em;
+                            border-left: 4px solid #d1d5db;
+                            color: #6b7280;
+                            font-style: italic;
+                        }
                         
                         img, svg { display: block; max-width: 100%; }
                         .doc-page {
@@ -2854,6 +2989,7 @@ async function generatePDF(html, outputPath, docTemplate) {
         }
 
         await page.setContent(wrappedHtml, { waitUntil: ['networkidle0', 'load'], timeout: 30000 });
+        await page.evaluate(() => document.fonts ? document.fonts.ready : Promise.resolve()).catch(() => {});
 
         const format = docTemplate.format || 'A4';
         const landscape = docTemplate.orientation === 'landscape';
@@ -3585,4 +3721,3 @@ router.post('/smartdoc/render-table', async (req, res) => {
 });
 
 module.exports = router;
-

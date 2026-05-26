@@ -43,7 +43,7 @@ function stripEditorRuntimeArtifacts(html) {
     const template = document.createElement('template')
     template.innerHTML = html
     template.content
-        .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay], [data-placeholder-resize-overlay], [data-atomic-caret], .doc-image-placeholder-handle')
+        .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay], [data-placeholder-resize-overlay], [data-placeholder-crop-overlay], [data-placeholder-context-menu], [data-atomic-caret], .doc-image-placeholder-handle, .doc-image-crop-handle')
         .forEach(el => el.remove())
 
     const legacySpacerWalker = document.createTreeWalker(template.content, 4)
@@ -101,6 +101,17 @@ function ensureImageFrameSize(frame) {
     }
 }
 
+function applyImageCropTransform(frame) {
+    const img = frame?.querySelector?.('img')
+    if (!img) return
+    const x = Number.parseFloat(frame.dataset.imageX || '0') || 0
+    const y = Number.parseFloat(frame.dataset.imageY || '0') || 0
+    const scale = Math.max(0.2, Number.parseFloat(frame.dataset.imageScale || '1') || 1)
+    img.style.transformOrigin = 'center center'
+    img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+    img.style.willChange = 'transform'
+}
+
 function applyFrameImageSizing(frame) {
     const img = frame?.querySelector?.('img')
     if (!img) return
@@ -123,6 +134,7 @@ function applyFrameImageSizing(frame) {
         img.style.width = '100%'
         img.style.height = 'auto'
     }
+    applyImageCropTransform(frame)
 }
 
 // ========== WORD-LIKE SELECTION HELPERS ==========
@@ -1460,6 +1472,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         target.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" style="display:block;pointer-events:none;max-width:none;max-height:none;" />`
         target.dataset.imageSrc = url
+        target.dataset.imageX = '0'
+        target.dataset.imageY = '0'
+        target.dataset.imageScale = '1'
         target.setAttribute('contenteditable', 'false')
         target.classList.add('has-image')
         target.style.display = 'inline-flex'

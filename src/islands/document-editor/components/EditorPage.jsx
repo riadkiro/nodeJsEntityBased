@@ -37,6 +37,8 @@ export default function EditorPage({
     const blockCaretRef = useRef(null)
     const placeholderOverlayRef = useRef(null)
     const placeholderResizeRef = useRef(null)
+    const imageCropRef = useRef(null)
+    const imageContextMenuRef = useRef(null)
 
     // Table toolbar for edition mode
     const tableToolbarProps = useTableToolbar(
@@ -180,6 +182,34 @@ export default function EditorPage({
             })
         }
 
+        const getImageCropTransform = (placeholder) => ({
+            x: Number.parseFloat(placeholder?.dataset?.imageX || '0') || 0,
+            y: Number.parseFloat(placeholder?.dataset?.imageY || '0') || 0,
+            scale: Math.max(0.2, Number.parseFloat(placeholder?.dataset?.imageScale || '1') || 1)
+        })
+
+        const setImageCropTransform = (placeholder, transform) => {
+            if (!placeholder) return
+            const next = {
+                x: Math.round((Number.isFinite(transform.x) ? transform.x : 0) * 10) / 10,
+                y: Math.round((Number.isFinite(transform.y) ? transform.y : 0) * 10) / 10,
+                scale: Math.max(0.2, Math.min(6, Number.isFinite(transform.scale) ? transform.scale : 1))
+            }
+            placeholder.dataset.imageX = String(next.x)
+            placeholder.dataset.imageY = String(next.y)
+            placeholder.dataset.imageScale = String(Math.round(next.scale * 1000) / 1000)
+            applyImageCropTransform(placeholder)
+        }
+
+        const applyImageCropTransform = (placeholder) => {
+            const img = placeholder?.querySelector('img')
+            if (!img) return
+            const { x, y, scale } = getImageCropTransform(placeholder)
+            img.style.transformOrigin = 'center center'
+            img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+            img.style.willChange = 'transform'
+        }
+
         const applyFrameImageSizing = (placeholder) => {
             const img = placeholder?.querySelector('img')
             if (!img) return
@@ -202,6 +232,7 @@ export default function EditorPage({
                 img.style.width = '100%'
                 img.style.height = 'auto'
             }
+            applyImageCropTransform(placeholder)
         }
 
         const normalizePlaceholder = (placeholder) => {
@@ -272,6 +303,172 @@ export default function EditorPage({
             state.overlay.style.height = `${rect.height / zoom}px`
         }
 
+        const removeContextMenu = () => {
+            const menu = imageContextMenuRef.current
+            if (!menu) return
+            document.removeEventListener('pointerdown', menu._closeOnOutside, true)
+            document.removeEventListener('keydown', menu._closeOnEscape, true)
+            menu.remove()
+            imageContextMenuRef.current = null
+        }
+
+        const positionCropOverlay = () => {
+            const state = imageCropRef.current
+            if (!state?.overlay || !state.placeholder || !el.contains(state.placeholder)) return
+            const rect = state.placeholder.getBoundingClientRect()
+            const elRect = el.getBoundingClientRect()
+            const zoom = getEditorZoom()
+            state.overlay.style.left = `${(rect.left - elRect.left) / zoom + el.scrollLeft}px`
+            state.overlay.style.top = `${(rect.top - elRect.top) / zoom + el.scrollTop}px`
+            state.overlay.style.width = `${rect.width / zoom}px`
+            state.overlay.style.height = `${rect.height / zoom}px`
+        }
+
+        const removeCropOverlay = (save = false) => {
+            const state = imageCropRef.current
+            if (!state) return
+            document.removeEventListener('pointermove', handleCropPointerMove)
+            document.removeEventListener('pointerup', endCropInteraction)
+            document.removeEventListener('pointercancel', endCropInteraction)
+            if (state.overlay) state.overlay.remove()
+            if (state.placeholder && el.contains(state.placeholder)) {
+                state.placeholder.style.cursor = 'pointer'
+            }
+            imageCropRef.current = null
+            if (save) handleContentChange()
+        }
+
+        const showCropOverlay = (placeholder) => {
+            const img = placeholder?.querySelector('img')
+            if (!placeholder || !img) return
+            normalizePlaceholder(placeholder)
+            removeOverlay()
+            removeContextMenu()
+            removeCropOverlay()
+
+            placeholder.style.cursor = 'grab'
+
+            const overlay = document.createElement('div')
+            overlay.contentEditable = 'false'
+            overlay.setAttribute('data-placeholder-crop-overlay', '1')
+            overlay.style.cssText = `
+                position:absolute;
+                border:1.5px solid #2563eb;
+                border-radius:8px;
+                box-sizing:border-box;
+                pointer-events:none;
+                z-index:1002;
+                box-shadow:0 0 0 1px rgba(37,99,235,.15);
+            `
+
+            const handles = ['nw', 'ne', 'se', 'sw']
+            handles.forEach(pos => {
+                const handle = document.createElement('span')
+                handle.className = `doc-image-crop-handle doc-image-crop-handle-${pos}`
+                handle.setAttribute('data-image-crop-handle', pos)
+                handle.style.cssText = `
+                    position:absolute;
+                    width:12px;
+                    height:12px;
+                    background:#2563eb;
+                    border:2px solid #fff;
+                    border-radius:999px;
+                    box-sizing:border-box;
+                    pointer-events:auto;
+                    cursor:${pos === 'nw' || pos === 'se' ? 'nwse-resize' : 'nesw-resize'};
+                    touch-action:none;
+                    box-shadow:0 1px 4px rgba(15,23,42,.24);
+                `
+                if (pos.includes('n')) handle.style.top = '-7px'
+                if (pos.includes('s')) handle.style.bottom = '-7px'
+                if (pos.includes('w')) handle.style.left = '-7px'
+                if (pos.includes('e')) handle.style.right = '-7px'
+                handle.addEventListener('pointerdown', event => startCropScale(event, placeholder, pos))
+                overlay.appendChild(handle)
+            })
+
+            if (window.getComputedStyle(el).position === 'static') el.style.position = 'relative'
+            el.appendChild(overlay)
+            imageCropRef.current = { overlay, placeholder, mode: null }
+            positionCropOverlay()
+        }
+
+        const openImageContextMenu = (placeholder, event) => {
+            if (!placeholder || !el.contains(placeholder)) return
+            event.preventDefault()
+            event.stopPropagation()
+            normalizePlaceholder(placeholder)
+            showOverlay(placeholder)
+            removeContextMenu()
+
+            const menu = document.createElement('div')
+            menu.setAttribute('data-placeholder-context-menu', '1')
+            menu.style.cssText = `
+                position:fixed;
+                left:${event.clientX}px;
+                top:${event.clientY}px;
+                z-index:100000;
+                min-width:176px;
+                padding:6px;
+                background:#fff;
+                color:#0f172a;
+                border:1px solid #e2e8f0;
+                border-radius:8px;
+                box-shadow:0 12px 28px rgba(15,23,42,.18);
+                font-family:Inter,system-ui,sans-serif;
+            `
+
+            const addItem = (label, onSelect) => {
+                const item = document.createElement('button')
+                item.type = 'button'
+                item.textContent = label
+                item.style.cssText = `
+                    width:100%;
+                    display:block;
+                    border:0;
+                    background:transparent;
+                    color:inherit;
+                    padding:8px 10px;
+                    border-radius:6px;
+                    text-align:left;
+                    font-size:13px;
+                    cursor:pointer;
+                `
+                item.addEventListener('mouseenter', () => { item.style.background = '#f1f5f9' })
+                item.addEventListener('mouseleave', () => { item.style.background = 'transparent' })
+                item.addEventListener('pointerdown', e => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    removeContextMenu()
+                    onSelect()
+                })
+                menu.appendChild(item)
+            }
+
+            addItem("Changer l'image", () => {
+                window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
+                    detail: { placeholder, pageIndex }
+                }))
+            })
+            if (placeholder.querySelector('img')) {
+                addItem("Ajuster l'image", () => showCropOverlay(placeholder))
+            }
+            addItem('Supprimer le frame', () => deletePlaceholder(placeholder))
+
+            menu._closeOnOutside = e => {
+                if (!menu.contains(e.target)) removeContextMenu()
+            }
+            menu._closeOnEscape = e => {
+                if (e.key === 'Escape') removeContextMenu()
+            }
+            document.body.appendChild(menu)
+            imageContextMenuRef.current = menu
+            requestAnimationFrame(() => {
+                document.addEventListener('pointerdown', menu._closeOnOutside, true)
+                document.addEventListener('keydown', menu._closeOnEscape, true)
+            })
+        }
+
         const placeCaretIn = (node) => {
             const sel = window.getSelection()
             const range = document.createRange()
@@ -304,6 +501,7 @@ export default function EditorPage({
         }
 
         const showOverlay = (placeholder) => {
+            removeCropOverlay(true)
             normalizePlaceholder(placeholder)
             removeOverlay()
 
@@ -421,6 +619,9 @@ export default function EditorPage({
             img.style.cssText = 'display:block;pointer-events:none;max-width:none;max-height:none;'
             placeholder.appendChild(img)
             placeholder.dataset.imageSrc = url
+            placeholder.dataset.imageX = '0'
+            placeholder.dataset.imageY = '0'
+            placeholder.dataset.imageScale = '1'
             placeholder.classList.add('has-image')
             placeholder.style.backgroundImage = 'none'
             placeholder.style.backgroundColor = 'transparent'
@@ -516,12 +717,130 @@ export default function EditorPage({
             handleContentChange()
         }
 
+        const startCropMove = (event, placeholder) => {
+            const state = imageCropRef.current
+            if (!state?.overlay || state.placeholder !== placeholder) return
+            event.preventDefault()
+            event.stopPropagation()
+
+            const current = getImageCropTransform(placeholder)
+            placeholder.style.cursor = 'grabbing'
+            imageCropRef.current = {
+                ...state,
+                mode: 'move',
+                startX: event.clientX,
+                startY: event.clientY,
+                startImageX: current.x,
+                startImageY: current.y,
+                startScale: current.scale,
+                zoom: getEditorZoom()
+            }
+            document.addEventListener('pointermove', handleCropPointerMove)
+            document.addEventListener('pointerup', endCropInteraction)
+            document.addEventListener('pointercancel', endCropInteraction)
+        }
+
+        const startCropScale = (event, placeholder, handle) => {
+            const state = imageCropRef.current
+            if (!state?.overlay || state.placeholder !== placeholder) return
+            event.preventDefault()
+            event.stopPropagation()
+
+            const rect = placeholder.getBoundingClientRect()
+            const current = getImageCropTransform(placeholder)
+            imageCropRef.current = {
+                ...state,
+                mode: 'scale',
+                handle,
+                centerX: rect.left + rect.width / 2,
+                centerY: rect.top + rect.height / 2,
+                startDistance: Math.max(1, Math.hypot(event.clientX - (rect.left + rect.width / 2), event.clientY - (rect.top + rect.height / 2))),
+                startImageX: current.x,
+                startImageY: current.y,
+                startScale: current.scale,
+                zoom: getEditorZoom()
+            }
+            document.addEventListener('pointermove', handleCropPointerMove)
+            document.addEventListener('pointerup', endCropInteraction)
+            document.addEventListener('pointercancel', endCropInteraction)
+        }
+
+        const handleCropPointerMove = (event) => {
+            const state = imageCropRef.current
+            if (!state?.placeholder || !state.mode) return
+
+            if (state.mode === 'move') {
+                const zoom = state.zoom || getEditorZoom()
+                setImageCropTransform(state.placeholder, {
+                    x: state.startImageX + (event.clientX - state.startX) / zoom,
+                    y: state.startImageY + (event.clientY - state.startY) / zoom,
+                    scale: state.startScale
+                })
+            }
+
+            if (state.mode === 'scale') {
+                const distance = Math.max(1, Math.hypot(event.clientX - state.centerX, event.clientY - state.centerY))
+                setImageCropTransform(state.placeholder, {
+                    x: state.startImageX,
+                    y: state.startImageY,
+                    scale: state.startScale * (distance / state.startDistance)
+                })
+            }
+
+            positionCropOverlay()
+            if (event.cancelable) event.preventDefault()
+        }
+
+        const endCropInteraction = () => {
+            const state = imageCropRef.current
+            if (!state) return
+            document.removeEventListener('pointermove', handleCropPointerMove)
+            document.removeEventListener('pointerup', endCropInteraction)
+            document.removeEventListener('pointercancel', endCropInteraction)
+            if (state.placeholder && el.contains(state.placeholder)) {
+                state.placeholder.style.cursor = 'grab'
+            }
+            imageCropRef.current = { ...state, mode: null }
+            handleContentChange()
+        }
+
+        const handleCropWheel = (event) => {
+            const state = imageCropRef.current
+            if (!state?.placeholder || !el.contains(state.placeholder)) return
+            const targetInsideCrop = state.placeholder.contains(event.target) || state.overlay?.contains(event.target)
+            if (!targetInsideCrop) return
+
+            event.preventDefault()
+            event.stopPropagation()
+            const current = getImageCropTransform(state.placeholder)
+            const factor = event.deltaY < 0 ? 1.06 : 0.94
+            setImageCropTransform(state.placeholder, {
+                x: current.x,
+                y: current.y,
+                scale: current.scale * factor
+            })
+            handleContentChange()
+        }
+
         const handlePointerDown = (event) => {
             const deleteButton = event.target.closest?.('[data-placeholder-delete]')
             if (deleteButton) {
                 event.preventDefault()
                 event.stopPropagation()
                 deletePlaceholder(placeholderOverlayRef.current?.placeholder)
+                return
+            }
+
+            const cropHandle = event.target.closest?.('[data-image-crop-handle]')
+            if (cropHandle) {
+                const placeholder = imageCropRef.current?.placeholder
+                if (placeholder) startCropScale(event, placeholder, cropHandle.getAttribute('data-image-crop-handle'))
+                return
+            }
+
+            const cropPlaceholder = event.target.closest?.('.doc-image-placeholder')
+            if (imageCropRef.current?.placeholder && cropPlaceholder === imageCropRef.current.placeholder) {
+                startCropMove(event, cropPlaceholder)
                 return
             }
 
@@ -533,6 +852,7 @@ export default function EditorPage({
 
             const placeholder = event.target.closest?.('.doc-image-placeholder')
             if (placeholder && el.contains(placeholder)) {
+                removeCropOverlay(true)
                 normalizePlaceholder(placeholder)
                 showOverlay(placeholder)
                 event.preventDefault()
@@ -541,6 +861,7 @@ export default function EditorPage({
 
             if (!event.target.closest?.('[data-placeholder-resize-overlay]')) {
                 removeOverlay()
+                removeCropOverlay(true)
             }
         }
 
@@ -549,11 +870,15 @@ export default function EditorPage({
             if (!placeholder) return
             event.preventDefault()
             event.stopPropagation()
-            normalizePlaceholder(placeholder)
-            showOverlay(placeholder)
-            window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
-                detail: { placeholder, pageIndex }
-            }))
+            if (placeholder.querySelector('img')) {
+                showCropOverlay(placeholder)
+            }
+        }
+
+        const handleContextMenu = (event) => {
+            const placeholder = getEventPlaceholder(event)
+            if (!placeholder) return
+            openImageContextMenu(placeholder, event)
         }
 
         const handleFrameDragOver = (event) => {
@@ -596,11 +921,21 @@ export default function EditorPage({
             }
         }
 
+        const handleCropKeyDown = (event) => {
+            if (!imageCropRef.current) return
+            if (event.key === 'Escape' || event.key === 'Enter') {
+                event.preventDefault()
+                event.stopPropagation()
+                removeCropOverlay(true)
+            }
+        }
+
         let normalizeAnimationFrame = null
         const normalizeAllPlaceholders = () => {
             normalizeAnimationFrame = null
             el.querySelectorAll('.doc-image-placeholder').forEach(normalizePlaceholder)
             positionOverlay()
+            positionCropOverlay()
         }
         const schedulePlaceholderNormalize = () => {
             if (normalizeAnimationFrame) cancelAnimationFrame(normalizeAnimationFrame)
@@ -618,23 +953,33 @@ export default function EditorPage({
         placeholderObserver.observe(el, { childList: true, subtree: true })
         el.addEventListener('pointerdown', handlePointerDown, true)
         el.addEventListener('dblclick', handleDoubleClick, true)
+        el.addEventListener('contextmenu', handleContextMenu, true)
         el.addEventListener('dragover', handleFrameDragOver, true)
         el.addEventListener('drop', handleFrameDrop, true)
+        el.addEventListener('wheel', handleCropWheel, { passive: false, capture: true })
         document.addEventListener('keydown', handleFrameKeyDown, true)
+        document.addEventListener('keydown', handleCropKeyDown, true)
         window.addEventListener('resize', positionOverlay)
+        window.addEventListener('resize', positionCropOverlay)
 
         return () => {
             el.removeEventListener('pointerdown', handlePointerDown, true)
             el.removeEventListener('dblclick', handleDoubleClick, true)
+            el.removeEventListener('contextmenu', handleContextMenu, true)
             el.removeEventListener('dragover', handleFrameDragOver, true)
             el.removeEventListener('drop', handleFrameDrop, true)
+            el.removeEventListener('wheel', handleCropWheel, true)
             document.removeEventListener('keydown', handleFrameKeyDown, true)
+            document.removeEventListener('keydown', handleCropKeyDown, true)
             window.removeEventListener('resize', positionOverlay)
+            window.removeEventListener('resize', positionCropOverlay)
             document.removeEventListener('pointermove', handleResizeMove)
             document.removeEventListener('pointerup', endResize)
             document.removeEventListener('pointercancel', endResize)
             placeholderObserver.disconnect()
             if (normalizeAnimationFrame) cancelAnimationFrame(normalizeAnimationFrame)
+            removeContextMenu()
+            removeCropOverlay(false)
             removeOverlay()
         }
     }, [page.mode, handleContentChange])

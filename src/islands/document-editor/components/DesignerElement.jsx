@@ -18,6 +18,8 @@ const HANDLES = [
     { id: 'br', cursor: 'nwse-resize', x: 1, y: 1 },
 ]
 
+const FRAME_PLACEHOLDER_BG = 'url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 500 320%27 preserveAspectRatio=%27none%27%3E%3Crect width=%27500%27 height=%27320%27 fill=%27%23dbeafe%27/%3E%3Ccircle cx=%27392%27 cy=%2774%27 r=%2733%27 fill=%27%23ffffff%27 fill-opacity=%27.92%27/%3E%3Cpath d=%27M0 238 104 154 220 245 330 146 500 267V320H0Z%27 fill=%27%23c4cfdd%27/%3E%3Cpath d=%27M0 282 150 206 292 288 500 184V320H0Z%27 fill=%27%2394a3b8%27 fill-opacity=%27.68%27/%3E%3C/svg%3E")'
+
 export default function DesignerElement({
     element,
     isSelected,
@@ -295,6 +297,9 @@ export default function DesignerElement({
                     />
                 )
 
+            case 'frame':
+                return renderFrame()
+
             case 'shape':
                 return renderShape()
 
@@ -318,6 +323,45 @@ export default function DesignerElement({
             default:
                 return <div style={{ width: '100%', height: '100%', background: '#f0f0f0' }} />
         }
+    }
+
+    const renderFrame = () => {
+        const frameShape = element.frameShape || 'rect'
+        const radius = frameShape === 'circle'
+            ? '50%'
+            : frameShape === 'rounded'
+                ? '26px'
+                : '8px'
+
+        return (
+            <div style={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: radius,
+                backgroundColor: '#f8fafc',
+                backgroundImage: element.src ? 'none' : FRAME_PLACEHOLDER_BG,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                pointerEvents: 'none',
+            }}>
+                {element.src && (
+                    <img
+                        src={element.src}
+                        alt={element.alt || ''}
+                        draggable={false}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: element.objectPosition || '50% 50%',
+                            pointerEvents: 'none',
+                        }}
+                    />
+                )}
+            </div>
+        )
     }
 
     const renderShape = () => {

@@ -2920,6 +2920,7 @@ ${pagesHtml}
                     triggerSave={triggerSave}
                     accountNumber={accountNumber}
                     isTemplateMode={effectiveTemplateMode}
+                    currentPageMode={doc?.pages?.[selectedPageIndex]?.mode || editorMode}
                     settingsPanelProps={{
                         isOpen: isSettingsOpen,
                         onClose: () => setIsSettingsOpen(false),

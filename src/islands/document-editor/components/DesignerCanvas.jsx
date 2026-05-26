@@ -3,9 +3,8 @@
  * 
  * Renders all page.elements[] with absolute positioning on the A4 canvas.
  * Manages selection state, keyboard shortcuts, and element CRUD.
- * Includes an inline element insertion toolbar.
  */
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import DesignerElement from './DesignerElement'
 import DesignerToolbar from './DesignerToolbar'
 
@@ -17,8 +16,8 @@ const ELEMENT_DEFAULTS = {
     text: (x, y) => ({
         id: uid(),
         type: 'text',
-        x: x || 60,
-        y: y || 60,
+        x: x ?? 60,
+        y: y ?? 60,
         width: 300,
         height: 60,
         rotation: 0,
@@ -33,8 +32,8 @@ const ELEMENT_DEFAULTS = {
     heading: (x, y) => ({
         id: uid(),
         type: 'text',
-        x: x || 60,
-        y: y || 60,
+        x: x ?? 60,
+        y: y ?? 60,
         width: 500,
         height: 60,
         rotation: 0,
@@ -49,8 +48,8 @@ const ELEMENT_DEFAULTS = {
     image: (x, y, src) => ({
         id: uid(),
         type: 'image',
-        x: x || 100,
-        y: y || 100,
+        x: x ?? 100,
+        y: y ?? 100,
         width: 300,
         height: 200,
         rotation: 0,
@@ -65,8 +64,8 @@ const ELEMENT_DEFAULTS = {
         id: uid(),
         type: 'shape',
         shape: 'rect',
-        x: x || 100,
-        y: y || 100,
+        x: x ?? 100,
+        y: y ?? 100,
         width: 200,
         height: 150,
         rotation: 0,
@@ -82,8 +81,8 @@ const ELEMENT_DEFAULTS = {
         id: uid(),
         type: 'shape',
         shape: 'circle',
-        x: x || 100,
-        y: y || 100,
+        x: x ?? 100,
+        y: y ?? 100,
         width: 150,
         height: 150,
         rotation: 0,
@@ -98,8 +97,8 @@ const ELEMENT_DEFAULTS = {
         id: uid(),
         type: 'shape',
         shape: 'triangle',
-        x: x || 100,
-        y: y || 100,
+        x: x ?? 100,
+        y: y ?? 100,
         width: 160,
         height: 140,
         rotation: 0,
@@ -114,8 +113,8 @@ const ELEMENT_DEFAULTS = {
         id: uid(),
         type: 'shape',
         shape: 'star',
-        x: x || 100,
-        y: y || 100,
+        x: x ?? 100,
+        y: y ?? 100,
         width: 150,
         height: 150,
         rotation: 0,
@@ -129,8 +128,8 @@ const ELEMENT_DEFAULTS = {
     line: (x, y) => ({
         id: uid(),
         type: 'line',
-        x: x || 60,
-        y: y || 200,
+        x: x ?? 60,
+        y: y ?? 200,
         width: 400,
         height: 6,
         rotation: 0,
@@ -140,6 +139,33 @@ const ELEMENT_DEFAULTS = {
         zIndex: 1,
         locked: false
     }),
+    frame: (x, y, frameShape = 'rect') => {
+        const dims = {
+            rect: { width: 280, height: 180 },
+            rounded: { width: 280, height: 180 },
+            circle: { width: 180, height: 180 },
+            square: { width: 180, height: 180 },
+            portrait: { width: 180, height: 240 },
+            wide: { width: 360, height: 140 },
+        }[frameShape] || { width: 280, height: 180 }
+
+        return {
+            id: uid(),
+            type: 'frame',
+            frameShape,
+            x: x ?? 100,
+            y: y ?? 100,
+            width: dims.width,
+            height: dims.height,
+            rotation: 0,
+            src: '',
+            alt: 'Cadre image',
+            objectPosition: '50% 50%',
+            opacity: 1,
+            zIndex: 1,
+            locked: false
+        }
+    },
 }
 
 export default function DesignerCanvas({
@@ -150,9 +176,6 @@ export default function DesignerCanvas({
     zoom = 1
 }) {
     const [selectedId, setSelectedId] = useState(null)
-    const [showImageInput, setShowImageInput] = useState(false)
-    const [imageUrl, setImageUrl] = useState('')
-    const [showShapeMenu, setShowShapeMenu] = useState(false)
     const canvasRef = useRef(null)
 
     const elements = page.elements || []
@@ -166,7 +189,7 @@ export default function DesignerCanvas({
         })
     }, [pageIndex, setDoc])
 
-    const addElement = useCallback((type, extra) => {
+    const addElement = useCallback((type, extra, position) => {
         const factory = ELEMENT_DEFAULTS[type]
         if (!factory) return
 
@@ -175,14 +198,13 @@ export default function DesignerCanvas({
         const offsetX = (count % 5) * 20
         const offsetY = (count % 5) * 20
 
-        const newEl = factory(60 + offsetX, 60 + offsetY, extra)
+        const newEl = factory(position?.x ?? (60 + offsetX), position?.y ?? (60 + offsetY), extra)
         // Set zIndex to max + 1
         const maxZ = elements.reduce((max, el) => Math.max(max, el.zIndex || 0), 0)
         newEl.zIndex = maxZ + 1
 
         updateElements([...elements, newEl])
         setSelectedId(newEl.id)
-        setShowShapeMenu(false)
     }, [elements, updateElements])
 
     const updateElement = useCallback((updatedEl) => {
@@ -217,218 +239,60 @@ export default function DesignerCanvas({
     const handleCanvasClick = useCallback((e) => {
         if (e.target === canvasRef.current || e.target.dataset.designerBg !== undefined) {
             setSelectedId(null)
-            setShowShapeMenu(false)
         }
     }, [])
 
-    // ==================== IMAGE URL SUBMIT ====================
-    const handleImageSubmit = useCallback(() => {
-        if (imageUrl.trim()) {
-            addElement('image', imageUrl.trim())
-            setImageUrl('')
-            setShowImageInput(false)
+    // ==================== SIDEBAR INSERTION ====================
+    useEffect(() => {
+        const handleDesignerAddElement = (event) => {
+            const detail = event.detail || {}
+            if (!detail.type) return
+            addElement(detail.type, detail.frameShape || detail.src || null)
         }
-    }, [imageUrl, addElement])
+
+        window.addEventListener('document-designer-add-element', handleDesignerAddElement)
+        return () => window.removeEventListener('document-designer-add-element', handleDesignerAddElement)
+    }, [addElement])
+
+    const getDropPosition = useCallback((event) => {
+        const rect = canvasRef.current?.getBoundingClientRect()
+        if (!rect) return null
+        return {
+            x: Math.max(0, Math.round((event.clientX - rect.left) / zoom)),
+            y: Math.max(0, Math.round((event.clientY - rect.top) / zoom)),
+        }
+    }, [zoom])
+
+    const handleDragOver = useCallback((e) => {
+        if (!e.dataTransfer.types.includes('application/x-designer-tool')) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+    }, [])
+
+    const handleDrop = useCallback((e) => {
+        if (!e.dataTransfer.types.includes('application/x-designer-tool')) return
+        e.preventDefault()
+
+        try {
+            const detail = JSON.parse(e.dataTransfer.getData('application/x-designer-tool') || '{}')
+            if (!detail.type) return
+            addElement(detail.type, detail.frameShape || detail.src || null, getDropPosition(e))
+        } catch (error) {
+            console.warn('[DesignerCanvas] Invalid designer tool payload:', error)
+        }
+    }, [addElement, getDropPosition])
 
     const selectedElement = elements.find(el => el.id === selectedId)
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            {/* ==================== INSERTION TOOLBAR ==================== */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: '8px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '2px',
-                    zIndex: 200,
-                    pointerEvents: 'auto'
-                }}
-                data-print-hide="true"
-            >
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '2px',
-                    background: 'rgba(255,255,255,0.95)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    borderRadius: '10px',
-                    padding: '4px 6px',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-                }}>
-                    {/* Text */}
-                    <button
-                        onClick={() => addElement('text')}
-                        title="Ajouter un texte"
-                        style={toolBtnStyle}
-                    >
-                        <iconify-icon icon="solar:text-bold-duotone" width="18" style={{ color: '#6366f1' }}></iconify-icon>
-                    </button>
-
-                    {/* Heading */}
-                    <button
-                        onClick={() => addElement('heading')}
-                        title="Ajouter un titre"
-                        style={toolBtnStyle}
-                    >
-                        <iconify-icon icon="solar:text-bold" width="18" style={{ color: '#8b5cf6' }}></iconify-icon>
-                    </button>
-
-                    {/* Divider */}
-                    <div style={{ width: '1px', height: '20px', background: 'rgba(0,0,0,0.08)', margin: '0 4px' }} />
-
-                    {/* Image */}
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            onClick={() => setShowImageInput(!showImageInput)}
-                            title="Ajouter une image"
-                            style={toolBtnStyle}
-                        >
-                            <iconify-icon icon="solar:gallery-bold-duotone" width="18" style={{ color: '#f59e0b' }}></iconify-icon>
-                        </button>
-
-                        {/* Image URL Input Dropdown */}
-                        {showImageInput && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                marginTop: '8px',
-                                background: 'white',
-                                border: '1px solid rgba(0,0,0,0.1)',
-                                borderRadius: '10px',
-                                padding: '12px',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                zIndex: 300,
-                                width: '280px'
-                            }}>
-                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', display: 'block' }}>
-                                    URL de l'image
-                                </label>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    <input
-                                        type="text"
-                                        value={imageUrl}
-                                        onChange={(e) => setImageUrl(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') handleImageSubmit() }}
-                                        placeholder="https://..."
-                                        autoFocus
-                                        style={{
-                                            flex: 1,
-                                            padding: '6px 10px',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '8px',
-                                            fontSize: '12px',
-                                            outline: 'none',
-                                        }}
-                                    />
-                                    <button
-                                        onClick={handleImageSubmit}
-                                        style={{
-                                            padding: '6px 12px',
-                                            background: '#4361ee',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '8px',
-                                            fontSize: '11px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        OK
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Divider */}
-                    <div style={{ width: '1px', height: '20px', background: 'rgba(0,0,0,0.08)', margin: '0 4px' }} />
-
-                    {/* Shapes */}
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            onClick={() => setShowShapeMenu(!showShapeMenu)}
-                            title="Formes"
-                            style={toolBtnStyle}
-                        >
-                            <iconify-icon icon="solar:shapes-bold-duotone" width="18" style={{ color: '#4361ee' }}></iconify-icon>
-                            <iconify-icon icon="tabler:chevron-down" width="10" style={{ color: '#94a3b8', marginLeft: '-2px' }}></iconify-icon>
-                        </button>
-
-                        {/* Shapes Dropdown */}
-                        {showShapeMenu && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                marginTop: '8px',
-                                background: 'white',
-                                border: '1px solid rgba(0,0,0,0.1)',
-                                borderRadius: '10px',
-                                padding: '8px',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                zIndex: 300,
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(2, 1fr)',
-                                gap: '4px',
-                                width: '160px'
-                            }}>
-                                {[
-                                    { type: 'rect', icon: 'solar:square-bold-duotone', label: 'Rectangle', color: '#4361ee' },
-                                    { type: 'circle', icon: 'solar:round-sort-horizontal-bold-duotone', label: 'Cercle', color: '#f59e0b' },
-                                    { type: 'triangle', icon: 'solar:sort-from-bottom-to-top-bold-duotone', label: 'Triangle', color: '#10b981' },
-                                    { type: 'star', icon: 'solar:star-bold-duotone', label: 'Étoile', color: '#ef4444' },
-                                ].map(s => (
-                                    <button
-                                        key={s.type}
-                                        onClick={() => addElement(s.type)}
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            padding: '10px 6px',
-                                            border: 'none',
-                                            background: 'transparent',
-                                            borderRadius: '8px',
-                                            cursor: 'pointer',
-                                            transition: 'background 0.15s',
-                                        }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9' }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-                                    >
-                                        <iconify-icon icon={s.icon} width="24" style={{ color: s.color }}></iconify-icon>
-                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 500 }}>{s.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Line */}
-                    <button
-                        onClick={() => addElement('line')}
-                        title="Ajouter une ligne"
-                        style={toolBtnStyle}
-                    >
-                        <iconify-icon icon="solar:minus-circle-bold-duotone" width="18" style={{ color: '#64748b' }}></iconify-icon>
-                    </button>
-                </div>
-            </div>
-
             {/* ==================== CANVAS ==================== */}
             <div
                 ref={canvasRef}
                 data-designer-bg
                 onClick={handleCanvasClick}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
                 style={{
                     position: 'relative',
                     width: '100%',
@@ -482,10 +346,10 @@ export default function DesignerCanvas({
                     >
                         <iconify-icon icon="solar:pallete-2-bold-duotone" width="48" style={{ color: '#cbd5e1' }}></iconify-icon>
                         <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>
-                            Utilisez la barre d'outils pour ajouter des éléments
+                            Utilisez la barre gauche pour ajouter des éléments
                         </span>
                         <span style={{ fontSize: '11px', color: '#cbd5e1' }}>
-                            Texte · Images · Formes · Lignes
+                            Texte · Formes · Cadres
                         </span>
                     </div>
                 )}
@@ -504,17 +368,4 @@ export default function DesignerCanvas({
             )}
         </div>
     )
-}
-
-// Shared style for toolbar buttons
-const toolBtnStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2px',
-    padding: '6px 8px',
-    border: 'none',
-    background: 'transparent',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background 0.15s',
 }

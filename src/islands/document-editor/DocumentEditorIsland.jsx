@@ -1407,6 +1407,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         target.style.backgroundColor = 'transparent'
         target.style.backgroundImage = 'none'
         target.style.color = 'inherit'
+        target.style.margin = '12px 8px'
         target.style.padding = '0'
         target.style.resize = 'none'
         target.style.overflow = 'hidden'
@@ -3119,12 +3120,9 @@ ${pagesHtml}
                     vertical-align: top;
                     box-sizing: border-box;
                     resize: none !important;
-                    outline: 1px solid transparent;
-                    outline-offset: 2px;
+                    border: 0;
+                    outline: none;
                     user-select: none;
-                }
-                .doc-image-placeholder:hover {
-                    outline-color: #3b82f6;
                 }
                 .doc-image-placeholder:not(.has-image) {
                     background-size: cover;

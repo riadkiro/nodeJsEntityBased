@@ -142,7 +142,7 @@ export default function EditorPage({
         const el = contentRef.current
         if (!el || page.mode !== 'edition') return
 
-        const PLACEHOLDER_BG = `linear-gradient(rgba(248,250,252,.84),rgba(248,250,252,.84)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect width='640' height='360' fill='%23e2e8f0'/%3E%3Cpath d='M0 285 155 158l102 84 70-58 313 101v75H0z' fill='%2394a3b8'/%3E%3Ccircle cx='480' cy='95' r='42' fill='%23cbd5e1'/%3E%3Crect x='68' y='52' width='504' height='256' rx='24' fill='none' stroke='%2364748b' stroke-width='10' stroke-dasharray='22 18'/%3E%3C/svg%3E")`
+        const PLACEHOLDER_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dbeafe'/%3E%3Cstop offset='1' stop-color='%23f8fafc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23sky)'/%3E%3Ccircle cx='500' cy='80' r='46' fill='%23ffffff' fill-opacity='.88'/%3E%3Cpath d='M0 260 105 178l83 58 128-108 134 132 83-68 107 86v82H0z' fill='%23cbd5e1'/%3E%3Cpath d='M0 304 160 214l118 64 92-46 100 54 170-90v164H0z' fill='%2394a3b8' fill-opacity='.72'/%3E%3C/svg%3E")`
 
         const normalizePlaceholder = (placeholder) => {
             if (!placeholder) return
@@ -157,6 +157,7 @@ export default function EditorPage({
             placeholder.style.cursor = 'pointer'
             placeholder.style.minWidth = '96px'
             placeholder.style.minHeight = '72px'
+            placeholder.style.margin = '12px 8px'
             if (!placeholder.style.width) placeholder.style.width = '320px'
             if (!placeholder.style.height) placeholder.style.height = '190px'
 
@@ -173,7 +174,7 @@ export default function EditorPage({
             } else {
                 placeholder.classList.remove('has-image')
                 placeholder.innerHTML = ''
-                placeholder.style.border = '1px solid transparent'
+                placeholder.style.border = '0'
                 placeholder.style.borderRadius = placeholder.style.borderRadius || '8px'
                 placeholder.style.backgroundColor = '#f8fafc'
                 placeholder.style.backgroundImage = PLACEHOLDER_BG
@@ -209,35 +210,53 @@ export default function EditorPage({
             overlay.setAttribute('data-placeholder-resize-overlay', '1')
             overlay.style.cssText = `
                 position:absolute;
-                border:2px solid #2563eb;
+                border:1.5px solid #7c3aed;
                 border-radius:8px;
                 box-sizing:border-box;
                 pointer-events:none;
                 z-index:1001;
-                box-shadow:0 0 0 2px rgba(255,255,255,.9);
+                box-shadow:none;
             `
 
-            const handles = ['nw', 'ne', 'sw', 'se']
+            const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
             handles.forEach(pos => {
                 const handle = document.createElement('span')
                 handle.className = `doc-image-placeholder-handle doc-image-placeholder-handle-${pos}`
                 handle.setAttribute('data-placeholder-resize-handle', pos)
+                const cursorMap = {
+                    n: 'ns-resize',
+                    s: 'ns-resize',
+                    e: 'ew-resize',
+                    w: 'ew-resize',
+                    nw: 'nwse-resize',
+                    se: 'nwse-resize',
+                    ne: 'nesw-resize',
+                    sw: 'nesw-resize'
+                }
                 handle.style.cssText = `
                     position:absolute;
-                    width:16px;
-                    height:16px;
-                    background:#2563eb;
-                    border:2px solid #fff;
-                    border-radius:4px;
+                    width:${pos.length === 1 ? 14 : 11}px;
+                    height:${pos.length === 1 ? 6 : 11}px;
+                    background:#fff;
+                    border:1.5px solid #7c3aed;
+                    border-radius:${pos.length === 1 ? 6 : 999}px;
                     box-sizing:border-box;
                     pointer-events:auto;
-                    cursor:${pos === 'nw' || pos === 'se' ? 'nwse-resize' : 'nesw-resize'};
+                    cursor:${cursorMap[pos]};
                     touch-action:none;
                 `
-                if (pos.includes('n')) handle.style.top = '-9px'
-                if (pos.includes('s')) handle.style.bottom = '-9px'
-                if (pos.includes('w')) handle.style.left = '-9px'
-                if (pos.includes('e')) handle.style.right = '-9px'
+                if (pos.includes('n')) handle.style.top = '-6px'
+                if (pos.includes('s')) handle.style.bottom = '-6px'
+                if (pos.includes('w')) handle.style.left = '-6px'
+                if (pos.includes('e')) handle.style.right = '-6px'
+                if (pos === 'n' || pos === 's') {
+                    handle.style.left = '50%'
+                    handle.style.transform = 'translateX(-50%)'
+                }
+                if (pos === 'e' || pos === 'w') {
+                    handle.style.top = '50%'
+                    handle.style.transform = 'translateY(-50%)'
+                }
                 overlay.appendChild(handle)
             })
 

@@ -35,7 +35,6 @@ export default function EditorPage({
 }) {
     const contentRef = useRef(null)
     const blockCaretRef = useRef(null)
-    const atomicCaretElRef = useRef(null)
     const placeholderOverlayRef = useRef(null)
     const placeholderResizeRef = useRef(null)
 
@@ -115,41 +114,14 @@ export default function EditorPage({
 
     useImageResize(contentRef, handleContentChange)
 
-    const removeAtomicCaret = useCallback(() => {
-        if (atomicCaretElRef.current) {
-            atomicCaretElRef.current.remove()
-            atomicCaretElRef.current = null
-        }
+    const clearAtomicCaret = useCallback(() => {
         blockCaretRef.current = null
     }, [])
 
-    const showAtomicCaret = useCallback((block, side) => {
+    const setCaretAroundAtomic = useCallback((block, side) => {
         const el = contentRef.current
         if (!el || !block || !el.contains(block)) return
 
-        removeAtomicCaret()
-
-        const blockRect = block.getBoundingClientRect()
-        const elRect = el.getBoundingClientRect()
-        const marker = document.createElement('span')
-        marker.contentEditable = 'false'
-        marker.setAttribute('data-atomic-caret', '1')
-        marker.style.cssText = `
-            position:absolute;
-            left:${side === 'before' ? blockRect.left - elRect.left + el.scrollLeft - 5 : blockRect.right - elRect.left + el.scrollLeft + 5}px;
-            top:${blockRect.top - elRect.top + el.scrollTop}px;
-            width:2px;
-            height:${Math.max(24, blockRect.height)}px;
-            background:#111827;
-            border-radius:2px;
-            box-shadow:0 0 0 2px rgba(255,255,255,.85),0 0 0 4px rgba(59,130,246,.25);
-            pointer-events:none;
-            z-index:1002;
-            animation:docAtomicCaretBlink 1s steps(2,start) infinite;
-        `
-
-        el.appendChild(marker)
-        atomicCaretElRef.current = marker
         blockCaretRef.current = { block, side }
 
         const sel = window.getSelection()
@@ -163,7 +135,7 @@ export default function EditorPage({
         sel.removeAllRanges()
         sel.addRange(range)
         el.focus()
-    }, [removeAtomicCaret])
+    }, [])
 
     // ========== IMAGE PLACEHOLDER RESIZE ==========
     useEffect(() => {
@@ -188,6 +160,11 @@ export default function EditorPage({
             if (!placeholder.style.width) placeholder.style.width = '320px'
             if (!placeholder.style.height) placeholder.style.height = '190px'
 
+            const next = placeholder.nextElementSibling
+            if (next?.tagName === 'P' && !next.textContent.trim() && next.innerHTML.replace(/<br\s*\/?>/gi, '').trim() === '') {
+                next.remove()
+            }
+
             if (hasImage) {
                 placeholder.classList.add('has-image')
                 placeholder.style.backgroundImage = 'none'
@@ -195,20 +172,13 @@ export default function EditorPage({
                 placeholder.style.padding = '0'
             } else {
                 placeholder.classList.remove('has-image')
-                placeholder.style.border = '1.5px dashed #64748b'
+                placeholder.innerHTML = ''
+                placeholder.style.border = '1px solid transparent'
                 placeholder.style.borderRadius = placeholder.style.borderRadius || '8px'
                 placeholder.style.backgroundColor = '#f8fafc'
                 placeholder.style.backgroundImage = PLACEHOLDER_BG
                 placeholder.style.backgroundSize = 'cover'
                 placeholder.style.backgroundPosition = 'center'
-                if (!placeholder.querySelector('[data-placeholder-label]')) {
-                    placeholder.innerHTML = `
-                        <div data-placeholder-label="1" style="text-align:center;pointer-events:none;background:rgba(255,255,255,.86);border:1px solid rgba(148,163,184,.55);border-radius:8px;padding:10px 14px;box-shadow:0 6px 18px rgba(15,23,42,.08);">
-                            <div style="font-size:20px;line-height:1;margin-bottom:5px;">+</div>
-                            <div>Choisir une image</div>
-                        </div>
-                    `
-                }
             }
         }
 
@@ -370,6 +340,7 @@ export default function EditorPage({
 
         // Find the top-level block ancestor within the contenteditable
         const findTopBlock = (target) => {
+            if (target.closest?.('.doc-image-placeholder')) return null
             const block = target.closest(BLOCK_SELECTORS)
             if (!block) return null
             // Walk up to find the outermost block that is still inside the contenteditable
@@ -506,7 +477,7 @@ export default function EditorPage({
                     adjacent.block.after(p)
                 }
 
-                removeAtomicCaret()
+                clearAtomicCaret()
                 placeCursorIn(p)
                 if (handlePageInput) {
                     handlePageInput({ target: el }, pageIndex)
@@ -559,7 +530,7 @@ export default function EditorPage({
 
         el.addEventListener('keydown', handleKeyDown)
         return () => el.removeEventListener('keydown', handleKeyDown)
-    }, [page.mode, pageIndex, handlePageInput, removeAtomicCaret])
+    }, [page.mode, pageIndex, handlePageInput, clearAtomicCaret])
 
     // ========== CLICK OUTSIDE BLOCK: Place cursor in free area ==========
     useEffect(() => {
@@ -568,7 +539,7 @@ export default function EditorPage({
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
         const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre'
-        const RUNTIME_OVERLAYS = '[data-atomic-caret], [data-placeholder-resize-overlay], [data-image-resize-overlay]'
+        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-image-resize-overlay]'
 
         const findSideAtomicBlock = (x, y) => {
             const children = Array.from(el.children || [])
@@ -624,10 +595,12 @@ export default function EditorPage({
                 if (placeholder && el.contains(placeholder)) {
                     e.preventDefault()
                     e.stopPropagation()
-                    removeAtomicCaret()
-                    window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
-                        detail: { placeholder, pageIndex }
-                    }))
+                    clearAtomicCaret()
+                    if (!placeholder.querySelector('img')) {
+                        window.dispatchEvent(new CustomEvent('document-image-placeholder-click', {
+                            detail: { placeholder, pageIndex }
+                        }))
+                    }
                     return
                 }
 
@@ -638,7 +611,7 @@ export default function EditorPage({
 
                     const rect = atomicBlock.getBoundingClientRect()
                     const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
-                    showAtomicCaret(atomicBlock, side)
+                    setCaretAroundAtomic(atomicBlock, side)
                     return
                 }
 
@@ -646,102 +619,18 @@ export default function EditorPage({
                 const clickedBlock = target.closest(BLOCK_SELECTORS)
                 if (!clickedBlock || !el.contains(clickedBlock)) return // not in a block, browser handles fine
                 // User clicked inside a block - that's normal editing, do nothing
-                removeAtomicCaret()
+                clearAtomicCaret()
                 return
             }
-
-            // Click was on the contenteditable container itself (empty area)
-            // This happens when clicking in the padding or between/after blocks
-            e.preventDefault()
 
             const sideAtomic = findSideAtomicBlock(e.clientX, e.clientY)
             if (sideAtomic?.block) {
-                showAtomicCaret(sideAtomic.block, sideAtomic.side)
+                e.preventDefault()
+                setCaretAroundAtomic(sideAtomic.block, sideAtomic.side)
                 return
             }
 
-            const clickY = e.clientY
-
-            // Find all top-level children
-            const children = Array.from(el.children).filter(child => !child.matches?.(RUNTIME_OVERLAYS))
-
-            if (children.length === 0) {
-                // No children at all - create a paragraph
-                removeAtomicCaret()
-                const p = document.createElement('p')
-                p.innerHTML = '<br>'
-                el.appendChild(p)
-                placeCursorIn(p)
-                return
-            }
-
-            // Find the right position based on click Y coordinate
-            let insertBefore = null
-            let insertAfter = null
-
-            for (let i = 0; i < children.length; i++) {
-                const child = children[i]
-                const rect = child.getBoundingClientRect()
-
-                if (clickY < rect.top) {
-                    // Click is above this child — insert before it
-                    insertBefore = child
-                    break
-                }
-                insertAfter = child
-            }
-
-            // Check if there's already a non-block element at the target position we can use
-            if (insertBefore) {
-                // If the previous sibling is already a non-block paragraph, place cursor there
-                const prev = insertBefore.previousElementSibling
-                if (prev && !prev.matches(BLOCK_SELECTORS) && (prev.tagName === 'P' || prev.tagName === 'H1' || prev.tagName === 'H2' || prev.tagName === 'H3')) {
-                    removeAtomicCaret()
-                    placeCursorIn(prev)
-                    return
-                }
-                // Insert a new paragraph before the element
-                removeAtomicCaret()
-                const p = document.createElement('p')
-                p.innerHTML = '<br>'
-                el.insertBefore(p, insertBefore)
-                placeCursorIn(p)
-            } else if (insertAfter) {
-                // Click is below the last element
-                // If the last element is not a block, reuse it
-                const next = insertAfter.nextElementSibling
-                if (next && !next.matches(BLOCK_SELECTORS) && (next.tagName === 'P' || next.tagName === 'H1' || next.tagName === 'H2' || next.tagName === 'H3')) {
-                    removeAtomicCaret()
-                    placeCursorIn(next)
-                    return
-                }
-                if (!insertAfter.matches(BLOCK_SELECTORS) && (insertAfter.tagName === 'P' || insertAfter.tagName === 'H1' || insertAfter.tagName === 'H2' || insertAfter.tagName === 'H3')) {
-                    removeAtomicCaret()
-                    placeCursorIn(insertAfter)
-                    return
-                }
-                // Append a new paragraph after the last element
-                removeAtomicCaret()
-                const p = document.createElement('p')
-                p.innerHTML = '<br>'
-                insertAfter.after(p)
-                placeCursorIn(p)
-            }
-
-            // Trigger save
-            if (handlePageInput) {
-                handlePageInput({ target: el }, pageIndex)
-            }
-        }
-
-        function placeCursorIn(element) {
-            const sel = window.getSelection()
-            const range = document.createRange()
-            range.selectNodeContents(element)
-            range.collapse(true)
-            sel.removeAllRanges()
-            sel.addRange(range)
-            element.focus()
+            clearAtomicCaret()
         }
 
         el.addEventListener('mousedown', handleMouseDown)
@@ -750,7 +639,7 @@ export default function EditorPage({
             el.removeEventListener('mousedown', handleMouseDown)
             el.removeEventListener('click', handleClick)
         }
-    }, [page.mode, pageIndex, handlePageInput, removeAtomicCaret, showAtomicCaret])
+    }, [page.mode, pageIndex, clearAtomicCaret, setCaretAroundAtomic])
 
     // ========== CHECKBOX TOGGLE: Click ☐ ↔ ☑ ==========
     useEffect(() => {

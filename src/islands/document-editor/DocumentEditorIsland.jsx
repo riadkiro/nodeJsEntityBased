@@ -3105,10 +3105,6 @@ ${pagesHtml}
                     from { opacity: 0; transform: scale(0.95); }
                     to { opacity: 1; transform: scale(1); }
                 }
-                @keyframes docAtomicCaretBlink {
-                    0%, 45% { opacity: 1; }
-                    46%, 100% { opacity: 0.25; }
-                }
                 .animate-modal-fade-in {
                     animation: modalFadeIn 0.2s ease-out forwards;
                 }

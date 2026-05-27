@@ -7,6 +7,11 @@
 import React, { useState, useEffect } from 'react'
 import SettingsPanel from './SettingsPanel'
 import useTouchDrag from '../hooks/useTouchDrag'
+import {
+    FOOTER_PRESETS,
+    HEADER_PRESETS,
+    normalizeHeaderFooterHtml
+} from '../utils/headerFooterPresets'
 
 // Detect dark mode reliably - checks localStorage first (Alpine.$persist stores theme there)
 // then falls back to DOM class detection. Uses MutationObserver for reactivity.
@@ -674,7 +679,7 @@ function BlocksPanel({ insertDynamicTable, accountNumber, doc }) {
                 icon="tabler:table"
                 label="Tableau simple"
                 description="3 colonnes × 4 lignes"
-                html={`<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                html={`<table style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #d1d5db;margin:16px 0;border-radius:4px;overflow:hidden;">
                     <thead><tr>
                         <th style="border:1px solid #d1d5db;padding:8px 12px;background:#f3f4f6;text-align:left;font-weight:600;font-size:14px;">Colonne 1</th>
                         <th style="border:1px solid #d1d5db;padding:8px 12px;background:#f3f4f6;text-align:left;font-weight:600;font-size:14px;">Colonne 2</th>
@@ -807,7 +812,7 @@ function example() {
                 icon="tabler:receipt-2"
                 label="Tableau de prix"
                 description="Tableau tarifaire professionnel"
-                html={`<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                html={`<table style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #d1d5db;margin:16px 0;border-radius:4px;overflow:hidden;">
                     <thead><tr>
                         <th style="border:1px solid #d1d5db;padding:10px 14px;background:#1e40af;color:white;text-align:left;font-weight:600;font-size:14px;">Désignation</th>
                         <th style="border:1px solid #d1d5db;padding:10px 14px;background:#1e40af;color:white;text-align:center;font-weight:600;font-size:14px;width:80px;">Qté</th>
@@ -842,37 +847,34 @@ function example() {
 // Layouts Panel - Pre-built page section layouts
 function LayoutsPanel({ doc, setDoc, triggerSave }) {
     const isDark = useDarkMode()
+    const [showHeaderChoices, setShowHeaderChoices] = useState(false)
+    const [showFooterChoices, setShowFooterChoices] = useState(false)
     const hasHeader = !!doc?.headerHtml
     const hasFooter = !!doc?.footerHtml
 
-    const HEADER_HTML = `<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:2px solid #1e40af;margin-bottom:0;">
-        <div>
-            <h2 style="margin:0;font-size:24px;font-weight:700;color:#1e40af;">Nom de l'entreprise</h2>
-            <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Slogan ou activité</p>
-        </div>
-        <div style="text-align:right;font-size:12px;color:#6b7280;">
-            <p style="margin:0;">123 Rue Exemple, 75000 Paris</p>
-            <p style="margin:2px 0;">Tél : 01 23 45 67 89</p>
-            <p style="margin:0;">contact@entreprise.fr</p>
-        </div>
-    </div>`
-
-    const FOOTER_HTML = `<div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:0;text-align:center;font-size:11px;color:#9ca3af;">
-        <p style="margin:0;">Nom de l'entreprise — SIRET : 000 000 000 00000 — TVA : FR00 000000000</p>
-        <p style="margin:4px 0 0;">123 Rue Exemple, 75000 Paris — Tél : 01 23 45 67 89 — contact@entreprise.fr</p>
-    </div>`
-
     const setHeader = (html) => {
         if (setDoc) {
-            setDoc(prev => ({ ...prev, headerHtml: html }))
-            triggerSave?.()
+            const normalizedHtml = html ? normalizeHeaderFooterHtml('header', html) : ''
+            setDoc(prev => {
+                const nextDoc = { ...prev, headerHtml: normalizedHtml }
+                triggerSave?.(nextDoc)
+                return nextDoc
+            })
+            setShowHeaderChoices(false)
+            setShowFooterChoices(false)
         }
     }
 
     const setFooter = (html) => {
         if (setDoc) {
-            setDoc(prev => ({ ...prev, footerHtml: html }))
-            triggerSave?.()
+            const normalizedHtml = html ? normalizeHeaderFooterHtml('footer', html) : ''
+            setDoc(prev => {
+                const nextDoc = { ...prev, footerHtml: normalizedHtml }
+                triggerSave?.(nextDoc)
+                return nextDoc
+            })
+            setShowHeaderChoices(false)
+            setShowFooterChoices(false)
         }
     }
 
@@ -889,7 +891,14 @@ function LayoutsPanel({ doc, setDoc, triggerSave }) {
 
             {/* Header toggle */}
             <button
-                onClick={() => setHeader(hasHeader ? '' : HEADER_HTML)}
+                onClick={() => {
+                    if (hasHeader) {
+                        setHeader('')
+                    } else {
+                        setShowHeaderChoices(prev => !prev)
+                        setShowFooterChoices(false)
+                    }
+                }}
                 style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -917,17 +926,59 @@ function LayoutsPanel({ doc, setDoc, triggerSave }) {
                     <span style={{
                         fontSize: '13px', fontWeight: 500, display: 'block',
                         color: hasHeader ? '#3b82f6' : (isDark ? '#e5e7eb' : '#374151')
-                    }}>{hasHeader ? 'En-tête activé ✓' : 'Ajouter un en-tête'}</span>
+                    }}>{hasHeader ? 'En-tête activé ✓' : 'Choisir un en-tête'}</span>
                     <span style={{
                         fontSize: '10px', display: 'block', marginTop: '2px',
                         color: isDark ? '#6b7280' : '#9ca3af'
-                    }}>{hasHeader ? 'Cliquez pour retirer' : 'Apparaît sur toutes les pages'}</span>
+                    }}>{hasHeader ? 'Cliquez pour retirer' : 'Vide ou modèle, sur toutes les pages'}</span>
                 </div>
             </button>
 
+            {!hasHeader && showHeaderChoices && (
+                <div style={{
+                    display: 'grid',
+                    gap: '6px',
+                    margin: '-2px 0 10px 44px'
+                }}>
+                    {HEADER_PRESETS.map(preset => (
+                        <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setHeader(preset.html)}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                                borderRadius: '6px',
+                                background: isDark ? '#111827' : '#ffffff',
+                                color: isDark ? '#e5e7eb' : '#334155',
+                                padding: '7px 8px',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                            }}
+                        >
+                            <iconify-icon icon={preset.icon} width="15" style={{ color: '#3b82f6', flexShrink: 0 }}></iconify-icon>
+                            <span style={{ minWidth: 0 }}>
+                                <span style={{ display: 'block', fontSize: '11px', fontWeight: 700 }}>{preset.name}</span>
+                                <span style={{ display: 'block', fontSize: '9px', color: isDark ? '#9ca3af' : '#94a3b8', marginTop: '1px' }}>{preset.description}</span>
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Footer toggle */}
             <button
-                onClick={() => setFooter(hasFooter ? '' : FOOTER_HTML)}
+                onClick={() => {
+                    if (hasFooter) {
+                        setFooter('')
+                    } else {
+                        setShowFooterChoices(prev => !prev)
+                        setShowHeaderChoices(false)
+                    }
+                }}
                 style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -955,13 +1006,48 @@ function LayoutsPanel({ doc, setDoc, triggerSave }) {
                     <span style={{
                         fontSize: '13px', fontWeight: 500, display: 'block',
                         color: hasFooter ? '#3b82f6' : (isDark ? '#e5e7eb' : '#374151')
-                    }}>{hasFooter ? 'Pied de page activé ✓' : 'Ajouter un pied de page'}</span>
+                    }}>{hasFooter ? 'Pied de page activé ✓' : 'Choisir un pied de page'}</span>
                     <span style={{
                         fontSize: '10px', display: 'block', marginTop: '2px',
                         color: isDark ? '#6b7280' : '#9ca3af'
-                    }}>{hasFooter ? 'Cliquez pour retirer' : 'Apparaît sur toutes les pages'}</span>
+                    }}>{hasFooter ? 'Cliquez pour retirer' : 'Vide ou modèle, sur toutes les pages'}</span>
                 </div>
             </button>
+
+            {!hasFooter && showFooterChoices && (
+                <div style={{
+                    display: 'grid',
+                    gap: '6px',
+                    margin: '-12px 0 16px 44px'
+                }}>
+                    {FOOTER_PRESETS.map(preset => (
+                        <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setFooter(preset.html)}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                                borderRadius: '6px',
+                                background: isDark ? '#111827' : '#ffffff',
+                                color: isDark ? '#e5e7eb' : '#334155',
+                                padding: '7px 8px',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                            }}
+                        >
+                            <iconify-icon icon={preset.icon} width="15" style={{ color: '#3b82f6', flexShrink: 0 }}></iconify-icon>
+                            <span style={{ minWidth: 0 }}>
+                                <span style={{ display: 'block', fontSize: '11px', fontWeight: 700 }}>{preset.name}</span>
+                                <span style={{ display: 'block', fontSize: '9px', color: isDark ? '#9ca3af' : '#94a3b8', marginTop: '1px' }}>{preset.description}</span>
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* ===== DRAGGABLE BLOCKS (dropped per-page) ===== */}
             <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>

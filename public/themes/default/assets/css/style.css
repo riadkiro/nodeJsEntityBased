@@ -3897,10 +3897,6 @@ pre {
   top: -1.25rem;
 }
 
-.-top-6 {
-  top: -1.5rem;
-}
-
 .-top-8 {
   top: -2rem;
 }
@@ -6538,6 +6534,10 @@ pre {
   border-color: rgb(255 255 255 / 0.5);
 }
 
+.border-white\/70 {
+  border-color: rgb(255 255 255 / 0.7);
+}
+
 .border-yellow-300 {
   --tw-border-opacity: 1;
   border-color: rgb(253 224 71 / var(--tw-border-opacity, 1));
@@ -7144,6 +7144,10 @@ pre {
 
 .bg-white\/80 {
   background-color: rgb(255 255 255 / 0.8);
+}
+
+.bg-white\/85 {
+  background-color: rgb(255 255 255 / 0.85);
 }
 
 .bg-white\/90 {
@@ -11673,6 +11677,10 @@ pre {
 
 .dark\:bg-gray-900\/50:is(.dark *) {
   background-color: rgb(17 24 39 / 0.5);
+}
+
+.dark\:bg-gray-900\/85:is(.dark *) {
+  background-color: rgb(17 24 39 / 0.85);
 }
 
 .dark\:bg-gray-900\/90:is(.dark *) {

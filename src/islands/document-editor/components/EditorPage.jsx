@@ -15,6 +15,13 @@ import TableToolbar, { useTableToolbar } from './TableToolbar'
 import { useDynamicTableOverlay, DynamicTableOverlay } from './DynamicTableModal'
 import DynamicTableModal from './DynamicTableModalReact'
 import DesignerCanvas from './DesignerCanvas'
+import {
+    FOOTER_PRESETS,
+    HEADER_PRESETS,
+    headerFooterHasLine,
+    normalizeHeaderFooterHtml,
+    stripHeaderFooterLineFromElement
+} from '../utils/headerFooterPresets'
 
 export default function EditorPage({
     page,
@@ -31,7 +38,8 @@ export default function EditorPage({
     panelMode,
     accountNumber,
     documentId,
-    sourceRecordId
+    sourceRecordId,
+    triggerSave
 }) {
     const contentRef = useRef(null)
     const blockCaretRef = useRef(null)
@@ -39,12 +47,15 @@ export default function EditorPage({
     const placeholderResizeRef = useRef(null)
     const imageCropRef = useRef(null)
     const imageContextMenuRef = useRef(null)
+    const selectedTableRef = useRef(null)
+    const [headerFooterChooser, setHeaderFooterChooser] = useState(null)
 
     // Table toolbar for edition mode
     const tableToolbarProps = useTableToolbar(
         contentRef,
         () => handlePageInput?.({ target: contentRef.current }, pageIndex)
     )
+    const { selectTable: selectTableForToolbar, clearToolbar: clearTableToolbar } = tableToolbarProps
 
     // Dynamic table overlay for edition mode
     const dtOverlay = useDynamicTableOverlay(contentRef)
@@ -117,13 +128,64 @@ export default function EditorPage({
     useImageResize(contentRef, handleContentChange)
 
     const clearAtomicCaret = useCallback(() => {
+        contentRef.current?.querySelectorAll?.('[data-atomic-caret]').forEach(marker => marker.remove())
         blockCaretRef.current = null
     }, [])
+
+    const clearSelectedTable = useCallback((options = {}) => {
+        if (selectedTableRef.current) {
+            selectedTableRef.current.removeAttribute('data-table-selected')
+            selectedTableRef.current = null
+        }
+        if (options.clearToolbar) {
+            clearTableToolbar?.()
+        }
+    }, [clearTableToolbar])
+
+    const getEditorZoom = useCallback(() => {
+        const el = contentRef.current
+        const scaledAncestor = el?.closest('[style*="scale"]')
+        const match = scaledAncestor?.style?.transform?.match(/scale\(([\d.]+)\)/)
+        const zoom = match ? parseFloat(match[1]) : 1
+        return Number.isFinite(zoom) && zoom > 0 ? zoom : 1
+    }, [])
+
+    const positionAtomicCaret = useCallback(() => {
+        const el = contentRef.current
+        const state = blockCaretRef.current
+        const marker = state?.marker || el?.querySelector?.('[data-atomic-caret]')
+        const block = state?.block
+
+        if (!el || !state || !marker || !block || !el.contains(block) || !el.contains(marker)) {
+            el?.querySelectorAll?.('[data-atomic-caret]').forEach(node => node.remove())
+            blockCaretRef.current = null
+            return
+        }
+
+        el.querySelectorAll?.('[data-atomic-caret]').forEach(node => {
+            if (node !== marker) node.remove()
+        })
+
+        const pageWrapper = el.parentElement
+        const blockRect = block.getBoundingClientRect()
+        const wrapperRect = pageWrapper?.getBoundingClientRect?.() || el.getBoundingClientRect()
+        const contentRect = el.getBoundingClientRect()
+        const zoom = getEditorZoom()
+        const rawLeft = state.side === 'before' ? blockRect.left - 6 : blockRect.right + 4
+        const clampedLeft = Math.max(contentRect.left + 2, Math.min(rawLeft, contentRect.right - 4))
+
+        marker.style.top = `${(blockRect.top - wrapperRect.top) / zoom}px`
+        marker.style.left = `${(clampedLeft - wrapperRect.left) / zoom}px`
+        marker.style.height = `${Math.max(18, blockRect.height / zoom)}px`
+        marker.style.display = 'block'
+    }, [getEditorZoom])
 
     const setCaretAroundAtomic = useCallback((block, side) => {
         const el = contentRef.current
         if (!el || !block || !el.contains(block)) return
 
+        clearSelectedTable({ clearToolbar: true })
+        clearAtomicCaret()
         blockCaretRef.current = { block, side }
 
         const sel = window.getSelection()
@@ -136,8 +198,105 @@ export default function EditorPage({
         range.collapse(true)
         sel.removeAllRanges()
         sel.addRange(range)
+
+        const marker = document.createElement('span')
+        marker.setAttribute('data-atomic-caret', '1')
+        marker.contentEditable = 'false'
+        marker.setAttribute('aria-hidden', 'true')
+        marker.style.cssText = `
+            position: absolute;
+            width: 2px;
+            background: #2563eb;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 95;
+            display: none;
+            transition: top 0.06s ease-out, left 0.06s ease-out, height 0.06s ease-out;
+        `
+        el.appendChild(marker)
+        blockCaretRef.current = { block, side, marker }
+        positionAtomicCaret()
+        requestAnimationFrame(positionAtomicCaret)
         el.focus()
-    }, [])
+    }, [clearAtomicCaret, clearSelectedTable, positionAtomicCaret])
+
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        let frame = null
+        const schedulePosition = () => {
+            if (frame) return
+            frame = requestAnimationFrame(() => {
+                frame = null
+                positionAtomicCaret()
+            })
+        }
+
+        const observer = new MutationObserver((mutations) => {
+            const shouldReposition = mutations.some(mutation => {
+                const target = mutation.target?.nodeType === 1 ? mutation.target : mutation.target?.parentElement
+                return !target?.closest?.('[data-atomic-caret]')
+            })
+            if (shouldReposition) schedulePosition()
+        })
+        observer.observe(el, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        })
+
+        const resizeObserver = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(schedulePosition)
+            : null
+        resizeObserver?.observe(el)
+        Array.from(el.children || []).forEach(child => {
+            if (!child.matches?.('[data-atomic-caret]')) resizeObserver?.observe(child)
+        })
+
+        const canvas = el.closest('.overflow-auto')
+        window.addEventListener('resize', schedulePosition)
+        window.addEventListener('scroll', schedulePosition, true)
+        canvas?.addEventListener('scroll', schedulePosition, { passive: true })
+        el.addEventListener('input', schedulePosition)
+        el.addEventListener('keyup', schedulePosition)
+        el.addEventListener('mouseup', schedulePosition)
+
+        return () => {
+            if (frame) cancelAnimationFrame(frame)
+            observer.disconnect()
+            resizeObserver?.disconnect()
+            window.removeEventListener('resize', schedulePosition)
+            window.removeEventListener('scroll', schedulePosition, true)
+            canvas?.removeEventListener('scroll', schedulePosition)
+            el.removeEventListener('input', schedulePosition)
+            el.removeEventListener('keyup', schedulePosition)
+            el.removeEventListener('mouseup', schedulePosition)
+        }
+    }, [page.mode, positionAtomicCaret])
+
+    const selectAtomicTable = useCallback((table, cell = null) => {
+        const el = contentRef.current
+        if (!el || !table || !el.contains(table)) return
+
+        clearAtomicCaret()
+        if (selectedTableRef.current && selectedTableRef.current !== table) {
+            selectedTableRef.current.removeAttribute('data-table-selected')
+        }
+        selectedTableRef.current = table
+        table.setAttribute('data-table-selected', '1')
+        selectTableForToolbar?.(table, cell || table.querySelector('td, th'))
+
+        const sel = window.getSelection()
+        if (sel) sel.removeAllRanges()
+        el.focus({ preventScroll: true })
+    }, [clearAtomicCaret, selectTableForToolbar])
+
+    useEffect(() => {
+        return () => clearSelectedTable({ clearToolbar: true })
+    }, [clearSelectedTable])
 
     // ========== IMAGE PLACEHOLDER RESIZE ==========
     useEffect(() => {
@@ -990,7 +1149,7 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
-        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay]'
+        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay], [data-atomic-caret]'
 
         // Find the top-level block ancestor within the contenteditable
         const findTopBlock = (target) => {
@@ -1093,9 +1252,103 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const ESCAPE_BLOCKS = 'blockquote, pre, div[style], table'
-        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre'
+        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre, blockquote, div[style], ul, ol, .doc-separator-container'
+        const TABLE_CELL_SELECTOR = 'td, th'
 
         const isAtomicBlock = (node) => node?.nodeType === 1 && node.matches?.(ATOMIC_BLOCKS)
+        const isInsideTableCell = (node) => {
+            const element = node?.nodeType === 3 ? node.parentElement : node
+            const cell = element?.closest?.(TABLE_CELL_SELECTOR)
+            return !!(cell && el.contains(cell))
+        }
+        const getContainingTableCell = (node) => {
+            const element = node?.nodeType === 3 ? node.parentElement : node
+            const cell = element?.closest?.(TABLE_CELL_SELECTOR)
+            return cell && el.contains(cell) ? cell : null
+        }
+        const isCaretAtCellBoundary = (cell, range, boundary) => {
+            if (!cell || !range.collapsed) return false
+
+            const probe = range.cloneRange()
+            probe.selectNodeContents(cell)
+            if (boundary === 'start') {
+                probe.setEnd(range.startContainer, range.startOffset)
+            } else {
+                probe.setStart(range.endContainer, range.endOffset)
+            }
+
+            return probe.toString().replace(/\u00A0/g, ' ').trim() === ''
+        }
+        const isFirstTableCell = (table, cell) => {
+            const first = table?.querySelector?.(TABLE_CELL_SELECTOR)
+            return first === cell
+        }
+        const isLastTableCell = (table, cell) => {
+            const cells = table ? Array.from(table.querySelectorAll(TABLE_CELL_SELECTOR)) : []
+            return cells.length > 0 && cells[cells.length - 1] === cell
+        }
+        const getContainingEditableBlock = (node) => {
+            const element = node?.nodeType === 3 ? node.parentElement : node
+            const block = element?.closest?.('p, div')
+            return block && block.parentElement === el ? block : null
+        }
+        const isEmptyEditableBlock = (block) => {
+            if (!block || block === el || block.matches?.(ATOMIC_BLOCKS)) return false
+            if (block.querySelector?.('table, img, .doc-image-placeholder, .dynamic-table, input, textarea, select, button')) return false
+            const text = (block.textContent || '').replace(/\u200B/g, '').replace(/\u00A0/g, ' ').trim()
+            if (text) return false
+            return block.innerHTML.replace(/<br\s*\/?>/gi, '').replace(/&nbsp;/gi, '').trim() === ''
+        }
+        const getAdjacentTableForEmptyBlock = (block) => {
+            if (!isEmptyEditableBlock(block)) return null
+
+            const next = block.nextElementSibling
+            if (next?.tagName === 'TABLE') return { emptyBlock: block, table: next, side: 'before' }
+
+            const prev = block.previousElementSibling
+            if (prev?.tagName === 'TABLE') return { emptyBlock: block, table: prev, side: 'after' }
+
+            return null
+        }
+        const getRootElementBeforeOffset = (offset) => {
+            const nodes = Array.from(el.childNodes)
+            for (let i = offset - 1; i >= 0; i--) {
+                if (nodes[i]?.nodeType === 1) return nodes[i]
+            }
+            return null
+        }
+        const getRootElementAfterOffset = (offset) => {
+            const nodes = Array.from(el.childNodes)
+            for (let i = offset; i < nodes.length; i++) {
+                if (nodes[i]?.nodeType === 1) return nodes[i]
+            }
+            return null
+        }
+        const getEmptyBlockBesideRootTableCaret = (range) => {
+            if (!range.collapsed || range.startContainer !== el) return null
+
+            const before = getRootElementBeforeOffset(range.startOffset)
+            const after = getRootElementAfterOffset(range.startOffset)
+
+            if (after?.tagName === 'TABLE' && isEmptyEditableBlock(before)) {
+                return { emptyBlock: before, table: after, side: 'before' }
+            }
+
+            if (before?.tagName === 'TABLE' && isEmptyEditableBlock(after)) {
+                return { emptyBlock: after, table: before, side: 'after' }
+            }
+
+            return null
+        }
+        const removeTableTopSpacing = (table) => {
+            if (!table || table.tagName !== 'TABLE') return false
+            const computedTop = Number.parseFloat(window.getComputedStyle(table).marginTop || '0') || 0
+            const inlineTop = Number.parseFloat(table.style.marginTop || '0') || 0
+            if (computedTop <= 0 && inlineTop <= 0) return false
+
+            table.style.marginTop = '0px'
+            return true
+        }
 
         const placeCursorIn = (element) => {
             const sel = window.getSelection()
@@ -1107,42 +1360,170 @@ export default function EditorPage({
             element.focus?.()
         }
 
+        const insertParagraphAround = (block, side) => {
+            const p = document.createElement('p')
+            p.innerHTML = '<br>'
+            p.style.cssText = ''
+
+            if (side === 'before') {
+                el.insertBefore(p, block)
+            } else {
+                block.after(p)
+            }
+
+            clearAtomicCaret()
+            clearSelectedTable({ clearToolbar: true })
+            placeCursorIn(p)
+            return p
+        }
+
+        const deleteSelectedTable = (table) => {
+            if (!table || !el.contains(table)) return
+
+            const next = table.nextElementSibling
+            const prev = table.previousElementSibling
+            table.remove()
+            clearAtomicCaret()
+            clearSelectedTable({ clearToolbar: true })
+
+            let target = null
+            if (next?.tagName === 'P') target = next
+            else if (prev?.tagName === 'P') target = prev
+            else {
+                target = document.createElement('p')
+                target.innerHTML = '<br>'
+                if (next && el.contains(next)) {
+                    el.insertBefore(target, next)
+                } else {
+                    el.appendChild(target)
+                }
+            }
+
+            placeCursorIn(target)
+            handlePageInput?.({ target: el }, pageIndex)
+        }
+
         const getAdjacentAtomicBlock = (range) => {
-            if (!range.collapsed || range.startContainer !== el) return null
+            if (!range.collapsed) return null
+            if (blockCaretRef.current?.block && el.contains(blockCaretRef.current.block)) {
+                return blockCaretRef.current
+            }
+            if (range.startContainer !== el) return null
             const children = Array.from(el.childNodes)
             const before = children[range.startOffset - 1]
             const after = children[range.startOffset]
             if (isAtomicBlock(before)) return { block: before, side: 'after' }
             if (isAtomicBlock(after)) return { block: after, side: 'before' }
-            return blockCaretRef.current?.block && el.contains(blockCaretRef.current.block)
-                ? blockCaretRef.current
-                : null
+            return null
         }
 
         const handleKeyDown = (e) => {
-            if (e.key !== 'Enter' || e.shiftKey) return
+            const selectedTable = selectedTableRef.current
+            if (selectedTable && el.contains(selectedTable)) {
+                if (e.key === 'Escape') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    clearSelectedTable({ clearToolbar: true })
+                    return
+                }
+
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    insertParagraphAround(selectedTable, 'after')
+                    handlePageInput?.({ target: el }, pageIndex)
+                    return
+                }
+
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    deleteSelectedTable(selectedTable)
+                    return
+                }
+            }
 
             const sel = window.getSelection()
             if (!sel || sel.rangeCount === 0) return
 
             const range = sel.getRangeAt(0)
+            const tableCell = getContainingTableCell(range.startContainer)
+            if (tableCell) {
+                const table = tableCell.closest('table')
+                const shouldSelectTableFromCellBoundary =
+                    (e.key === 'Backspace' && isFirstTableCell(table, tableCell) && isCaretAtCellBoundary(tableCell, range, 'start')) ||
+                    (e.key === 'Delete' && isLastTableCell(table, tableCell) && isCaretAtCellBoundary(tableCell, range, 'end'))
+
+                if (shouldSelectTableFromCellBoundary) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    selectAtomicTable(table, tableCell)
+                    return
+                }
+
+                clearAtomicCaret()
+                if (selectedTableRef.current) clearSelectedTable()
+                return
+            }
+
+            if ((e.key === 'Backspace' || e.key === 'Delete') && range.collapsed) {
+                const emptyBlock = getContainingEditableBlock(range.startContainer)
+                const adjacentEmptyBlockTable =
+                    getAdjacentTableForEmptyBlock(emptyBlock) ||
+                    getEmptyBlockBesideRootTableCaret(range)
+                if (adjacentEmptyBlockTable?.table) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    adjacentEmptyBlockTable.emptyBlock.remove()
+                    if (adjacentEmptyBlockTable.side === 'before') {
+                        removeTableTopSpacing(adjacentEmptyBlockTable.table)
+                    }
+                    setCaretAroundAtomic(adjacentEmptyBlockTable.table, adjacentEmptyBlockTable.side)
+                    handlePageInput?.({ target: el }, pageIndex)
+                    return
+                }
+            }
+
             const adjacent = getAdjacentAtomicBlock(range)
+
+            if (adjacent?.block?.tagName === 'TABLE') {
+                if (
+                    e.key === 'Delete' &&
+                    adjacent.side === 'before' &&
+                    removeTableTopSpacing(adjacent.block)
+                ) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCaretAroundAtomic(adjacent.block, 'before')
+                    handlePageInput?.({ target: el }, pageIndex)
+                    return
+                }
+
+                const shouldSelectForDelete =
+                    (e.key === 'Backspace' && adjacent.side === 'after') ||
+                    (e.key === 'Delete' && adjacent.side === 'before')
+
+                if (shouldSelectForDelete) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    selectAtomicTable(adjacent.block)
+                    return
+                }
+            }
+
+            const isPlainTyping = e.key?.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
+            if (isPlainTyping && adjacent?.block) {
+                insertParagraphAround(adjacent.block, adjacent.side)
+                return
+            }
+
+            if (e.key !== 'Enter' || e.shiftKey) return
+
             if (adjacent?.block) {
                 e.preventDefault()
                 e.stopPropagation()
 
-                const p = document.createElement('p')
-                p.innerHTML = '<br>'
-                p.style.cssText = ''
-
-                if (adjacent.side === 'before') {
-                    el.insertBefore(p, adjacent.block)
-                } else {
-                    adjacent.block.after(p)
-                }
-
-                clearAtomicCaret()
-                placeCursorIn(p)
+                insertParagraphAround(adjacent.block, adjacent.side)
                 if (handlePageInput) {
                     handlePageInput({ target: el }, pageIndex)
                 }
@@ -1152,8 +1533,16 @@ export default function EditorPage({
             let node = sel.getRangeAt(0).commonAncestorContainer
             if (node.nodeType === 3) node = node.parentElement
 
-            // Find the outermost escape block
-            const block = node.closest(ESCAPE_BLOCKS)
+            // Find the outermost escape block so Enter exits the whole styled block,
+            // not an inner div/p that belongs to the block's visual design.
+            let block = node.closest(ESCAPE_BLOCKS)
+            let parent = block?.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches?.(ESCAPE_BLOCKS)) {
+                    block = parent
+                }
+                parent = parent.parentElement
+            }
             if (!block || !el.contains(block)) return
 
             // CRITICAL: div[style] matches the contenteditable container itself!
@@ -1192,18 +1581,52 @@ export default function EditorPage({
             }
         }
 
+        const handlePasteIntoAtomicCaret = () => {
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+
+            const range = sel.getRangeAt(0)
+            if (isInsideTableCell(range.startContainer)) return
+
+            const adjacent = getAdjacentAtomicBlock(range)
+            if (adjacent?.block) {
+                insertParagraphAround(adjacent.block, adjacent.side)
+            }
+        }
+
         el.addEventListener('keydown', handleKeyDown)
-        return () => el.removeEventListener('keydown', handleKeyDown)
-    }, [page.mode, pageIndex, handlePageInput, clearAtomicCaret])
+        el.addEventListener('paste', handlePasteIntoAtomicCaret)
+        return () => {
+            el.removeEventListener('keydown', handleKeyDown)
+            el.removeEventListener('paste', handlePasteIntoAtomicCaret)
+        }
+    }, [page.mode, pageIndex, handlePageInput, clearAtomicCaret, clearSelectedTable, selectAtomicTable, setCaretAroundAtomic])
 
     // ========== CLICK OUTSIDE BLOCK: Place cursor in free area ==========
     useEffect(() => {
         const el = contentRef.current
         if (!el || page.mode !== 'edition') return
 
-        const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
-        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre'
-        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-image-resize-overlay]'
+        const BLOCK_SELECTORS = 'blockquote, table, div[style], pre, ul, ol, .doc-separator-container'
+        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre, blockquote, div[style], ul, ol, .doc-separator-container'
+        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-image-resize-overlay], [data-atomic-caret]'
+        const TABLE_CELL_SELECTOR = 'td, th'
+        const TABLE_EDGE_TOLERANCE = 6
+        const BLOCK_EDGE_TOLERANCE = 12
+
+        const getTopEditableBlock = (target, selector = ATOMIC_BLOCKS) => {
+            const element = target?.nodeType === 3 ? target.parentElement : target
+            const block = element?.closest?.(selector)
+            if (!block || block === el || !el.contains(block)) return null
+
+            let topBlock = block
+            let parent = block.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches?.(selector)) topBlock = parent
+                parent = parent.parentElement
+            }
+            return topBlock === el ? null : topBlock
+        }
 
         const findSideAtomicBlock = (x, y) => {
             const children = Array.from(el.children || [])
@@ -1223,6 +1646,71 @@ export default function EditorPage({
             return null
         }
 
+        const getBlockSideHit = (event) => {
+            const block = getTopEditableBlock(event.target)
+            if (!block || block.tagName === 'TABLE') return null
+            if (event.target.closest?.(TABLE_CELL_SELECTOR)) return null
+
+            const rect = block.getBoundingClientRect()
+            const onSideEdge =
+                event.clientX <= rect.left + BLOCK_EDGE_TOLERANCE ||
+                event.clientX >= rect.right - BLOCK_EDGE_TOLERANCE
+
+            if (!onSideEdge) return null
+
+            return {
+                block,
+                side: event.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+            }
+        }
+
+        const findTableAboveClick = (x, y) => {
+            let candidate = null
+            const tables = Array.from(el.children || []).filter(child => child.tagName === 'TABLE')
+            for (const table of tables) {
+                const rect = table.getBoundingClientRect()
+                if (y < rect.top) break
+                if (y >= rect.bottom && x >= rect.left - 12 && x <= rect.right + 12) {
+                    candidate = table
+                }
+            }
+            return candidate
+        }
+
+        const placeCursorIn = (node) => {
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(node)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            el.focus()
+        }
+
+        const getTableHit = (event) => {
+            const table = event.target.closest?.('table')
+            if (!table || !el.contains(table)) return null
+
+            const resizeHandle = event.target.closest?.('.tt-col-resize-handle, .tt-table-resize-handle')
+            if (resizeHandle) {
+                return { table, cell: null, selectTable: true }
+            }
+
+            const rect = table.getBoundingClientRect()
+            const onOuterEdge =
+                event.clientX <= rect.left + TABLE_EDGE_TOLERANCE ||
+                event.clientX >= rect.right - TABLE_EDGE_TOLERANCE ||
+                event.clientY <= rect.top + TABLE_EDGE_TOLERANCE ||
+                event.clientY >= rect.bottom - TABLE_EDGE_TOLERANCE
+
+            const cell = event.target.closest?.(TABLE_CELL_SELECTOR)
+            if (cell && table.contains(cell) && !onOuterEdge) {
+                return { table, cell, selectTable: false }
+            }
+
+            return { table, cell: cell && table.contains(cell) ? cell : null, selectTable: true }
+        }
+
         // Track mousedown to distinguish genuine clicks from drag-selections
         let mouseDownTarget = null
         let mouseDownPos = { x: 0, y: 0 }
@@ -1230,8 +1718,27 @@ export default function EditorPage({
         const handleMouseDown = (e) => {
             mouseDownTarget = e.target
             mouseDownPos = { x: e.clientX, y: e.clientY }
-            const atomicBlock = e.target.closest?.(ATOMIC_BLOCKS)
-            if (atomicBlock && el.contains(atomicBlock)) {
+
+            const tableHit = getTableHit(e)
+            if (tableHit) {
+                if (tableHit.selectTable) {
+                    e.preventDefault()
+                } else {
+                    clearAtomicCaret()
+                    clearSelectedTable()
+                }
+                return
+            }
+
+            const blockSideHit = getBlockSideHit(e)
+            if (blockSideHit) {
+                e.preventDefault()
+                return
+            }
+
+            const atomicBlock = getTopEditableBlock(e.target)
+            const editableTextBlock = getTopEditableBlock(e.target, 'blockquote, div[style], ul, ol')
+            if (atomicBlock && atomicBlock !== el && el.contains(atomicBlock) && atomicBlock !== editableTextBlock) {
                 e.preventDefault()
             }
         }
@@ -1255,16 +1762,45 @@ export default function EditorPage({
             // If click is directly on the contenteditable container
             // or on a simple <p>/<br> (non-block), no action needed - browser handles it
             if (target !== el) {
+                const tableHit = getTableHit(e)
+                if (tableHit) {
+                    if (!tableHit.selectTable) {
+                        clearAtomicCaret()
+                        clearSelectedTable()
+                        return
+                    }
+
+                    e.preventDefault()
+                    e.stopPropagation()
+                    selectAtomicTable(tableHit.table, tableHit.cell)
+                    return
+                }
+
+                const blockSideHit = getBlockSideHit(e)
+                if (blockSideHit) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCaretAroundAtomic(blockSideHit.block, blockSideHit.side)
+                    return
+                }
+
                 const placeholder = target.closest?.('.doc-image-placeholder')
                 if (placeholder && el.contains(placeholder)) {
                     e.preventDefault()
                     e.stopPropagation()
                     clearAtomicCaret()
+                    clearSelectedTable({ clearToolbar: true })
                     return
                 }
 
-                const atomicBlock = target.closest?.(ATOMIC_BLOCKS)
-                if (atomicBlock && el.contains(atomicBlock)) {
+                const atomicBlock = getTopEditableBlock(target)
+                if (atomicBlock && atomicBlock !== el && el.contains(atomicBlock)) {
+                    const editableTextBlock = getTopEditableBlock(target, 'blockquote, div[style], ul, ol')
+                    if (atomicBlock === editableTextBlock) {
+                        clearAtomicCaret()
+                        clearSelectedTable({ clearToolbar: true })
+                        return
+                    }
                     e.preventDefault()
                     e.stopPropagation()
 
@@ -1279,6 +1815,7 @@ export default function EditorPage({
                 if (!clickedBlock || !el.contains(clickedBlock)) return // not in a block, browser handles fine
                 // User clicked inside a block - that's normal editing, do nothing
                 clearAtomicCaret()
+                clearSelectedTable({ clearToolbar: true })
                 return
             }
 
@@ -1289,7 +1826,22 @@ export default function EditorPage({
                 return
             }
 
+            const tableAbove = findTableAboveClick(e.clientX, e.clientY)
+            if (tableAbove) {
+                const next = tableAbove.nextElementSibling
+                e.preventDefault()
+                if (next?.tagName === 'P') {
+                    clearAtomicCaret()
+                    clearSelectedTable({ clearToolbar: true })
+                    placeCursorIn(next)
+                } else {
+                    setCaretAroundAtomic(tableAbove, 'after')
+                }
+                return
+            }
+
             clearAtomicCaret()
+            clearSelectedTable({ clearToolbar: true })
         }
 
         el.addEventListener('mousedown', handleMouseDown)
@@ -1298,7 +1850,166 @@ export default function EditorPage({
             el.removeEventListener('mousedown', handleMouseDown)
             el.removeEventListener('click', handleClick)
         }
-    }, [page.mode, pageIndex, clearAtomicCaret, setCaretAroundAtomic])
+    }, [page.mode, pageIndex, clearAtomicCaret, clearSelectedTable, selectAtomicTable, setCaretAroundAtomic])
+
+    // ========== TABLE COPY: keep selected tables semantic ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const handleCopy = (event) => {
+            const table = selectedTableRef.current
+            if (!table || !el.contains(table)) return
+
+            const clone = table.cloneNode(true)
+            clone.querySelectorAll('.doc-block-delete-btn, .tt-col-resize-handle, .tt-table-resize-handle, [data-atomic-caret]').forEach(node => node.remove())
+            clone.removeAttribute('data-table-selected')
+
+            event.clipboardData.setData('text/html', clone.outerHTML)
+            event.clipboardData.setData('text/plain', clone.textContent || '')
+            event.preventDefault()
+        }
+
+        document.addEventListener('copy', handleCopy)
+        return () => document.removeEventListener('copy', handleCopy)
+    }, [page.mode])
+
+    // ========== TABLE STRUCTURE GUARD: keep block drops out of cells ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        let repairFrame = null
+        let isRepairing = false
+
+        const getOwningCell = (node) => {
+            let parent = node?.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches?.('td, th')) return parent
+                parent = parent.parentElement
+            }
+            return null
+        }
+
+        const isProtectedStyledCellDiv = (node) => {
+            if (!node?.matches?.('div[style]')) return false
+            const cell = getOwningCell(node)
+            if (!cell || node.parentElement !== cell) return false
+            const style = node.getAttribute('style') || ''
+            return /(?:^|;)\s*(margin|background|border|border-radius|display|padding)\s*:/i.test(style)
+        }
+
+        const styleKey = (node) => String(node?.getAttribute?.('style') || '')
+            .replace(/\s+/g, '')
+            .replace(/;$/, '')
+            .toLowerCase()
+
+        const isCustomCardFragment = (node) => {
+            if (!node?.matches?.('div[style]') || node.parentElement !== el) return false
+            const style = node.getAttribute('style') || ''
+            return /background\s*:/i.test(style) && /border\s*:/i.test(style) && /border-radius\s*:/i.test(style)
+        }
+
+        const isLikelySplitCardFragment = (node) => {
+            const text = (node.textContent || '').replace(/\u00A0/g, ' ').trim()
+            if (!text) return true
+            return text.length <= 4 && node.children.length <= 1
+        }
+
+        const mergeSplitCustomCardFragments = () => {
+            let changed = false
+            Array.from(el.children || []).forEach(node => {
+                if (!node.isConnected || !isCustomCardFragment(node)) return
+
+                let next = node.nextElementSibling
+                while (
+                    next &&
+                    isCustomCardFragment(next) &&
+                    styleKey(next) === styleKey(node) &&
+                    (isLikelySplitCardFragment(node) || isLikelySplitCardFragment(next))
+                ) {
+                    while (next.firstChild) node.appendChild(next.firstChild)
+                    const removed = next
+                    next = next.nextElementSibling
+                    removed.remove()
+                    changed = true
+                }
+            })
+            return changed
+        }
+
+        const repairTableStructure = () => {
+            if (isRepairing) return
+            isRepairing = true
+
+            const selector = [
+                'td table',
+                'th table',
+                'td .dynamic-table',
+                'th .dynamic-table',
+                'td .doc-image-placeholder',
+                'th .doc-image-placeholder',
+                'td .doc-separator-container',
+                'th .doc-separator-container',
+                'td blockquote',
+                'th blockquote',
+                'td pre',
+                'th pre',
+                'td figure',
+                'th figure',
+                'td > div[style]',
+                'th > div[style]'
+            ].join(', ')
+
+            const anchors = new Map()
+            let changed = false
+
+            Array.from(el.querySelectorAll(selector)).forEach(node => {
+                if (!node.isConnected || node.closest?.('[data-table-context-menu], [data-atomic-caret]')) return
+                if (node.matches?.('div[style]') && !isProtectedStyledCellDiv(node)) return
+
+                const cell = getOwningCell(node)
+                const outerTable = cell?.closest?.('table')
+                if (!cell || !outerTable || !el.contains(outerTable) || outerTable === node) return
+
+                const anchor = anchors.get(outerTable) || outerTable
+                anchor.after(node)
+                anchors.set(outerTable, node)
+
+                const cellText = (cell.textContent || '').replace(/\u00A0/g, ' ').trim()
+                if (!cellText && !cell.querySelector('br')) {
+                    cell.innerHTML = '&nbsp;'
+                }
+                changed = true
+            })
+
+            if (mergeSplitCustomCardFragments()) {
+                changed = true
+            }
+
+            isRepairing = false
+            if (changed) {
+                handlePageInput?.({ target: el }, pageIndex)
+            }
+        }
+
+        const scheduleRepair = () => {
+            if (repairFrame) cancelAnimationFrame(repairFrame)
+            repairFrame = requestAnimationFrame(() => {
+                repairFrame = null
+                repairTableStructure()
+            })
+        }
+
+        const observer = new MutationObserver(scheduleRepair)
+        observer.observe(el, { childList: true, subtree: true })
+        scheduleRepair()
+
+        return () => {
+            if (repairFrame) cancelAnimationFrame(repairFrame)
+            observer.disconnect()
+        }
+    }, [page.mode, pageIndex, handlePageInput])
 
     // ========== CHECKBOX TOGGLE: Click ☐ ↔ ☑ ==========
     useEffect(() => {
@@ -1358,27 +2069,28 @@ export default function EditorPage({
         const pageRect = pageWrapper.getBoundingClientRect()
         const elRect = el.getBoundingClientRect()
 
-        // Detect zoom level from ancestor transform: scale(N)
-        // getBoundingClientRect returns screen coords (post-transform),
-        // but position:absolute uses local coords (pre-transform)
-        let zoom = 1
-        const scaledAncestor = el.closest('[style*="scale"]')
-        if (scaledAncestor) {
-            const match = scaledAncestor.style.transform?.match(/scale\(([\d.]+)\)/)
-            if (match) zoom = parseFloat(match[1])
-        }
+        // getBoundingClientRect returns screen coords after zoom, while the
+        // absolutely positioned indicator uses local page coordinates.
+        const zoom = getEditorZoom()
 
         // Find the node and closest block element
         let node = range.startContainer
         if (node.nodeType === 3) node = node.parentNode
 
-        // CRITICAL: Do NOT include 'div' — it matches the contenteditable container itself
-        // which would position the indicator at the top of the entire editor
-        const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, blockquote, pre, table, ul, ol, li, hr'
+        const PROTECTED_DROP_SELECTOR = 'table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
+        const BLOCK_SELECTOR = `${PROTECTED_DROP_SELECTOR}, hr`
         let blockEl = node?.closest?.(BLOCK_SELECTOR)
 
+        if (blockEl && blockEl !== el && el.contains(blockEl)) {
+            let parent = blockEl.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches?.(PROTECTED_DROP_SELECTOR)) blockEl = parent
+                parent = parent.parentElement
+            }
+        }
+
         // Make sure the block is inside the contenteditable
-        if (blockEl && !el.contains(blockEl)) blockEl = null
+        if (blockEl && (!el.contains(blockEl) || blockEl === el)) blockEl = null
 
         let lineTop
 
@@ -1404,15 +2116,23 @@ export default function EditorPage({
             }
         }
 
-        const lineLeft = (elRect.left - pageRect.left) / zoom
-        const lineWidth = elRect.width / zoom
+        const contentLeft = (elRect.left - pageRect.left) / zoom
+        const contentWidth = elRect.width / zoom
+        const lineInset = 10
+        const lineLeft = contentLeft + lineInset
+        const lineWidth = Math.max(48, contentWidth - lineInset * 2)
+        const cursorLeft = Math.max(
+            lineLeft,
+            Math.min((x - pageRect.left) / zoom, lineLeft + lineWidth)
+        )
 
         // Show the indicator
         indicator.style.display = 'block'
         indicator.style.top = `${lineTop}px`
         indicator.style.left = `${lineLeft}px`
         indicator.style.width = `${lineWidth}px`
-    }, [])
+        indicator.style.setProperty('--drop-caret-x', `${cursorLeft - lineLeft}px`)
+    }, [getEditorZoom])
 
     const hideDropIndicator = useCallback(() => {
         if (dropIndicatorRef.current) {
@@ -1420,26 +2140,143 @@ export default function EditorPage({
         }
     }, [])
 
+    const getRangeFromPoint = useCallback((x, y) => {
+        if (document.caretRangeFromPoint) {
+            return document.caretRangeFromPoint(x, y)
+        }
+        if (document.caretPositionFromPoint) {
+            const pos = document.caretPositionFromPoint(x, y)
+            if (pos) {
+                const range = document.createRange()
+                range.setStart(pos.offsetNode, pos.offset)
+                range.collapse(true)
+                return range
+            }
+        }
+        return null
+    }, [])
+
+    const isStructuralBlockHtml = useCallback((html) => {
+        if (!html) return false
+        const template = document.createElement('template')
+        template.innerHTML = html
+        if (template.content.querySelector('table, blockquote, pre, figure, img, .dynamic-table, .doc-image-placeholder, .doc-separator-container, p, h1, h2, h3, h4, h5, h6, ul, ol, li')) {
+            return true
+        }
+        return Array.from(template.content.querySelectorAll('div[style]')).some(div => {
+            const style = div.getAttribute('style') || ''
+            return /(?:^|;)\s*(margin|background|border|border-radius|display|padding|gap|box-shadow|width)\s*:/i.test(style)
+        })
+    }, [])
+
+    const insertHtmlAroundProtectedBlock = useCallback((block, side, html, text = '') => {
+        const el = contentRef.current
+        if (!el || !block || !el.contains(block)) return false
+
+        const template = document.createElement('template')
+        if (html && html.trim()) {
+            template.innerHTML = html
+        } else {
+            const p = document.createElement('p')
+            p.textContent = text || ''
+            template.content.appendChild(p)
+        }
+
+        const nodes = Array.from(template.content.childNodes)
+        if (!nodes.length) return false
+
+        if (side === 'before') {
+            block.before(...nodes)
+        } else {
+            block.after(...nodes)
+        }
+
+        const target = nodes[nodes.length - 1]
+        const sel = window.getSelection()
+        const range = document.createRange()
+        if (target) {
+            range.setStartAfter(target)
+            range.collapse(true)
+        }
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        clearAtomicCaret()
+        clearSelectedTable({ clearToolbar: true })
+        return true
+    }, [clearAtomicCaret, clearSelectedTable])
+
+    const getProtectedDropBlock = useCallback((range, x, y) => {
+        const el = contentRef.current
+        if (!el || !range) return null
+        const hasPoint = Number.isFinite(x) && Number.isFinite(y) && (x !== 0 || y !== 0)
+
+        const rangeElement = range.startContainer.nodeType === 3
+            ? range.startContainer.parentElement
+            : range.startContainer
+        const target = hasPoint ? document.elementFromPoint(x, y) : null
+        const element = target && target !== el && el.contains(target) ? target : rangeElement
+
+        const cell = element?.closest?.('td, th') || rangeElement?.closest?.('td, th')
+        if (cell && el.contains(cell)) {
+            const table = cell.closest('table')
+            if (table && el.contains(table)) {
+                const rect = table.getBoundingClientRect()
+                return { block: table, side: hasPoint && y < rect.top + rect.height / 2 ? 'before' : 'after' }
+            }
+        }
+
+        const protectedSelector = 'table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
+        const protectedBlock = element?.closest?.(protectedSelector) || rangeElement?.closest?.(protectedSelector)
+        if (protectedBlock && protectedBlock !== el && el.contains(protectedBlock)) {
+            let topBlock = protectedBlock
+            let parent = protectedBlock.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches?.(protectedSelector)) {
+                    topBlock = parent
+                }
+                parent = parent.parentElement
+            }
+            const rect = topBlock.getBoundingClientRect()
+            return { block: topBlock, side: hasPoint && y < rect.top + rect.height / 2 ? 'before' : 'after' }
+        }
+
+        return null
+    }, [])
+
     // Handle edition mode drop from sidebar
     const handleEditionDrop = useCallback((e) => {
         e.preventDefault()
         dragCounterRef.current = 0
         hideDropIndicator()
+        clearAtomicCaret()
+        clearSelectedTable({ clearToolbar: true })
 
         const html = e.dataTransfer.getData('text/html')
         const text = e.dataTransfer.getData('text/plain')
 
         if (html || text) {
             // Get drop position
-            const range = document.caretRangeFromPoint(e.clientX, e.clientY)
+            const range = getRangeFromPoint(e.clientX, e.clientY)
             if (range) {
+                const protectedDrop = isStructuralBlockHtml(html)
+                    ? getProtectedDropBlock(range, e.clientX, e.clientY)
+                    : null
+
+                if (protectedDrop?.block) {
+                    if (insertHtmlAroundProtectedBlock(protectedDrop.block, protectedDrop.side, html, text)) {
+                        handlePageInput?.({ target: contentRef.current }, pageIndex)
+                    }
+                    return
+                }
+
                 const sel = window.getSelection()
                 sel.removeAllRanges()
                 sel.addRange(range)
                 document.execCommand('insertHTML', false, html || text)
             }
         }
-    }, [hideDropIndicator])
+    }, [clearAtomicCaret, clearSelectedTable, getRangeFromPoint, handlePageInput, hideDropIndicator, insertHtmlAroundProtectedBlock, isStructuralBlockHtml, getProtectedDropBlock, pageIndex])
 
     useEffect(() => {
         if (page.mode !== 'edition') return
@@ -1473,13 +2310,22 @@ export default function EditorPage({
                 sel.addRange(range)
             }
 
+            const protectedInsert = isStructuralBlockHtml(html)
+                ? getProtectedDropBlock(range, 0, 0)
+                : null
+            if (protectedInsert?.block) {
+                insertHtmlAroundProtectedBlock(protectedInsert.block, protectedInsert.side || 'after', html)
+                handlePageInput?.({ target: el }, pageIndex)
+                return
+            }
+
             document.execCommand('insertHTML', false, html)
             handlePageInput?.({ target: el }, pageIndex)
         }
 
         window.addEventListener('document-editor-insert-html', handleExternalHtmlInsert)
         return () => window.removeEventListener('document-editor-insert-html', handleExternalHtmlInsert)
-    }, [page.mode, isSelected, handlePageInput, pageIndex])
+    }, [page.mode, isSelected, handlePageInput, pageIndex, getProtectedDropBlock, insertHtmlAroundProtectedBlock, isStructuralBlockHtml])
 
     const handleDragOver = useCallback((e) => {
         e.preventDefault()
@@ -1489,8 +2335,10 @@ export default function EditorPage({
 
     const handleDragEnter = useCallback((e) => {
         e.preventDefault()
+        clearAtomicCaret()
+        clearSelectedTable({ clearToolbar: true })
         dragCounterRef.current++
-    }, [])
+    }, [clearAtomicCaret, clearSelectedTable])
 
     const handleDragLeave = useCallback((e) => {
         e.preventDefault()
@@ -1512,6 +2360,64 @@ export default function EditorPage({
     const contentPaddingTop = hasHeader ? 8 : top
     const contentPaddingBottom = hasFooter ? 8 : bottom
 
+    const clearBrowserSelection = useCallback(() => {
+        const selection = window.getSelection?.()
+        if (selection && selection.rangeCount > 0) {
+            selection.removeAllRanges()
+        }
+    }, [])
+
+    const openHeaderFooterChooser = useCallback((type) => {
+        clearBrowserSelection()
+        setHeaderFooterChooser(type)
+        requestAnimationFrame(clearBrowserSelection)
+    }, [clearBrowserSelection])
+
+    const handleHeaderFooterChange = useCallback((type, nextHtml) => {
+        const key = type === 'header' ? 'headerHtml' : 'footerHtml'
+        const normalizedHtml = normalizeHeaderFooterHtml(type, nextHtml)
+        setDoc(prev => {
+            if (prev[key] === normalizedHtml) return prev
+            const nextDoc = { ...prev, [key]: normalizedHtml }
+            triggerSave?.(nextDoc)
+            return nextDoc
+        })
+    }, [setDoc, triggerSave])
+
+    const handleHeaderFooterRemove = useCallback((type) => {
+        const key = type === 'header' ? 'headerHtml' : 'footerHtml'
+        setDoc(prev => {
+            if (!prev[key]) return prev
+            const nextDoc = { ...prev, [key]: '' }
+            triggerSave?.(nextDoc)
+            return nextDoc
+        })
+    }, [setDoc, triggerSave])
+
+    const applyHeaderFooterPreset = useCallback((type, html) => {
+        const key = type === 'footer' ? 'footerHtml' : 'headerHtml'
+        const normalizedHtml = normalizeHeaderFooterHtml(type, html)
+        setDoc(prev => {
+            const nextDoc = { ...prev, [key]: normalizedHtml }
+            triggerSave?.(nextDoc)
+            return nextDoc
+        })
+        setHeaderFooterChooser(null)
+
+        requestAnimationFrame(() => {
+            const pageNode = contentRef.current?.parentElement
+            const targetEl = pageNode?.querySelector?.(`[data-doc-header-footer-editable="${type}"]`)
+            if (!targetEl) return
+            targetEl.focus({ preventScroll: true })
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(targetEl)
+            range.collapse(false)
+            sel.removeAllRanges()
+            sel.addRange(range)
+        })
+    }, [setDoc, triggerSave])
+
     return (
         <div
             className={`bg-white shadow-2xl relative transition-shadow ${isSelected ? 'ring-2 ring-primary/20' : ''
@@ -1525,12 +2431,33 @@ export default function EditorPage({
             }}
             onClick={onSelect}
         >
+            {!hasHeader && page.mode === 'edition' && (
+                <HeaderFooterDoubleClickZone
+                    type="header"
+                    height={top}
+                    onOpen={() => openHeaderFooterChooser('header')}
+                />
+            )}
+
+            {!hasHeader && headerFooterChooser === 'header' && page.mode === 'edition' && (
+                <HeaderFooterPresetChooser
+                    type="header"
+                    presets={HEADER_PRESETS}
+                    top={top}
+                    left={left}
+                    right={right}
+                    onSelect={(html) => applyHeaderFooterPreset('header', html)}
+                    onClose={() => setHeaderFooterChooser(null)}
+                />
+            )}
+
             {/* Global Header (non-editable, all pages) */}
             {hasHeader && page.mode === 'edition' && (
                 <DocHeaderFooter
                     type="header"
                     html={doc.headerHtml}
-                    onRemove={() => setDoc(prev => ({ ...prev, headerHtml: '' }))}
+                    onChange={handleHeaderFooterChange}
+                    onRemove={() => handleHeaderFooterRemove('header')}
                     paddingLeft={left}
                     paddingRight={right}
                     paddingTop={top}
@@ -1573,36 +2500,25 @@ export default function EditorPage({
                     style={{
                         display: 'none',
                         position: 'absolute',
-                        height: '2px',
-                        background: '#4361ee',
-                        borderRadius: '1px',
+                        height: '1px',
+                        background: 'rgba(37, 99, 235, 0.42)',
+                        borderRadius: '999px',
                         pointerEvents: 'none',
                         zIndex: 50,
-                        transition: 'top 0.08s ease-out, left 0.08s ease-out, width 0.08s ease-out',
-                        boxShadow: '0 0 6px rgba(67, 97, 238, 0.4)',
+                        transition: 'top 0.06s ease-out, left 0.06s ease-out, width 0.06s ease-out',
+                        boxShadow: 'none',
                     }}
                 >
-                    {/* Left endpoint circle */}
                     <div style={{
                         position: 'absolute',
-                        left: '-3px',
-                        top: '-3px',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: '#4361ee',
-                        boxShadow: '0 0 4px rgba(67, 97, 238, 0.5)',
-                    }} />
-                    {/* Right endpoint circle */}
-                    <div style={{
-                        position: 'absolute',
-                        right: '-3px',
-                        top: '-3px',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: '#4361ee',
-                        boxShadow: '0 0 4px rgba(67, 97, 238, 0.5)',
+                        left: 'var(--drop-caret-x, 0px)',
+                        top: '-10px',
+                        width: '2px',
+                        height: '20px',
+                        borderRadius: '999px',
+                        background: '#2563eb',
+                        transform: 'translateX(-1px)',
+                        boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.85)',
                     }} />
                 </div>
             )}
@@ -1640,10 +2556,31 @@ export default function EditorPage({
                 <DocHeaderFooter
                     type="footer"
                     html={doc.footerHtml}
-                    onRemove={() => setDoc(prev => ({ ...prev, footerHtml: '' }))}
+                    onChange={handleHeaderFooterChange}
+                    onRemove={() => handleHeaderFooterRemove('footer')}
                     paddingLeft={left}
                     paddingRight={right}
                     paddingBottom={bottom}
+                />
+            )}
+
+            {!hasFooter && page.mode === 'edition' && (
+                <HeaderFooterDoubleClickZone
+                    type="footer"
+                    height={bottom}
+                    onOpen={() => openHeaderFooterChooser('footer')}
+                />
+            )}
+
+            {!hasFooter && headerFooterChooser === 'footer' && page.mode === 'edition' && (
+                <HeaderFooterPresetChooser
+                    type="footer"
+                    presets={FOOTER_PRESETS}
+                    bottom={bottom}
+                    left={left}
+                    right={right}
+                    onSelect={(html) => applyHeaderFooterPreset('footer', html)}
+                    onClose={() => setHeaderFooterChooser(null)}
                 />
             )}
 
@@ -1688,10 +2625,210 @@ export default function EditorPage({
     )
 }
 
+function HeaderFooterDoubleClickZone({ type, height, onOpen }) {
+    const [hovered, setHovered] = useState(false)
+    const zoneHeight = Math.max(44, Number(height) || 44)
+    const isFooter = type === 'footer'
+
+    return (
+        <div
+            contentEditable={false}
+            data-print-hide="true"
+            onMouseDown={(e) => {
+                e.preventDefault()
+            }}
+            onDoubleClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onOpen?.()
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{
+                position: 'absolute',
+                top: isFooter ? 'auto' : 0,
+                bottom: isFooter ? 0 : 'auto',
+                left: 0,
+                right: 0,
+                height: `${zoneHeight}px`,
+                zIndex: 18,
+                cursor: 'text',
+                display: 'flex',
+                alignItems: isFooter ? 'flex-end' : 'flex-start',
+                justifyContent: 'center',
+                paddingTop: isFooter ? 0 : '8px',
+                paddingBottom: isFooter ? '8px' : 0,
+                pointerEvents: 'auto'
+            }}
+        >
+            {hovered && (
+                <span
+                    style={{
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        color: '#3b82f6',
+                        background: '#ffffff',
+                        border: '1px solid rgba(59,130,246,0.28)',
+                        borderRadius: '4px',
+                        padding: '2px 8px',
+                        boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
+                        pointerEvents: 'none',
+                        userSelect: 'none'
+                    }}
+                >
+                    Double-cliquez pour ajouter {isFooter ? 'un pied de page' : 'un en-tête'}
+                </span>
+            )}
+        </div>
+    )
+}
+
+function HeaderFooterPresetChooser({ type, presets, top, bottom, left, right, onSelect, onClose }) {
+    const isFooter = type === 'footer'
+
+    useEffect(() => {
+        const selection = window.getSelection?.()
+        if (selection && selection.rangeCount > 0) {
+            selection.removeAllRanges()
+        }
+    }, [])
+
+    return (
+        <div
+            contentEditable={false}
+            data-print-hide="true"
+            onMouseDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+            }}
+            onDoubleClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+            }}
+            onSelectStart={(e) => {
+                e.preventDefault()
+            }}
+            style={{
+                position: 'absolute',
+                top: isFooter ? 'auto' : `${Math.max(12, Number(top) || 12)}px`,
+                bottom: isFooter ? `${Math.max(12, Number(bottom) || 12)}px` : 'auto',
+                left: `${Math.max(16, Number(left) || 16)}px`,
+                right: `${Math.max(16, Number(right) || 16)}px`,
+                zIndex: 80,
+                background: '#ffffff',
+                border: '1px solid #dbeafe',
+                borderRadius: '8px',
+                boxShadow: '0 18px 48px rgba(15,23,42,0.18), 0 4px 14px rgba(15,23,42,0.08)',
+                padding: '12px',
+                color: '#111827',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+                <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>
+                        Ajouter {isFooter ? 'un pied de page' : 'un en-tête'}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Choisissez une zone libre ou un modèle de départ.</div>
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    title="Fermer"
+                    style={{
+                        width: '24px',
+                        height: '24px',
+                        border: '0',
+                        borderRadius: '6px',
+                        background: '#f1f5f9',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}
+                >
+                    <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '8px' }}>
+                {presets.map(preset => (
+                    <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => onSelect?.(preset.html)}
+                        style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            background: '#ffffff',
+                            padding: '10px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            minHeight: '86px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#3b82f6'
+                            e.currentTarget.style.background = '#eff6ff'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#e2e8f0'
+                            e.currentTarget.style.background = '#ffffff'
+                        }}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
+                            <iconify-icon icon={preset.icon} width="16" style={{ color: '#2563eb' }}></iconify-icon>
+                            {preset.name}
+                        </span>
+                        <span style={{ fontSize: '10px', lineHeight: 1.35, color: '#64748b' }}>
+                            {preset.description}
+                        </span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 // ========== HEADER/FOOTER COMPONENT ==========
-// Non-editable, rendered on every page from doc-level headerHtml/footerHtml
-function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, paddingTop, paddingBottom }) {
-    const [hovered, setHovered] = React.useState(false)
+// Editable global header/footer rendered on every edition page.
+function DocHeaderFooter({ type, html, onChange, onRemove, paddingLeft, paddingRight, paddingTop, paddingBottom }) {
+    const [hovered, setHovered] = useState(false)
+    const [focused, setFocused] = useState(false)
+    const contentRef = useRef(null)
+    const isFooter = type === 'footer'
+    const hasLine = headerFooterHasLine(html, type)
+    const leftInset = Math.max(12, Number(paddingLeft) || 40)
+    const rightInset = Math.max(12, Number(paddingRight) || 40)
+
+    useEffect(() => {
+        const node = contentRef.current
+        if (!node) return
+        if (focused || node.contains(document.activeElement)) return
+        const nextHtml = html || ''
+        if (node.innerHTML !== nextHtml) node.innerHTML = nextHtml
+    }, [html, focused])
+
+    const syncContent = useCallback(() => {
+        const node = contentRef.current
+        if (!node) return
+        onChange?.(type, node.innerHTML)
+    }, [onChange, type])
+
+    const removeDecorativeLine = useCallback(() => {
+        const node = contentRef.current
+        if (!node) return
+        const nextHtml = stripHeaderFooterLineFromElement(node, type)
+        onChange?.(type, nextHtml)
+    }, [onChange, type])
 
     return (
         <div
@@ -1700,60 +2837,128 @@ function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, padd
                 position: 'relative',
                 padding: `${type === 'header' ? (paddingTop || 20) : 12}px ${paddingRight || 40}px ${type === 'footer' ? (paddingBottom || 20) : 12}px ${paddingLeft || 40}px`,
                 color: '#000000',
-                userSelect: 'none',
+                userSelect: 'text',
                 flexShrink: 0,
-                cursor: 'default'
+                cursor: 'text'
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            {/* Rendered HTML content */}
             <div
-                dangerouslySetInnerHTML={{ __html: html }}
-                style={{ pointerEvents: 'none' }}
+                ref={contentRef}
+                contentEditable
+                suppressContentEditableWarning
+                data-doc-header-footer-editable={type}
+                spellCheck
+                onInput={syncContent}
+                onBlur={() => {
+                    setFocused(false)
+                    syncContent()
+                }}
+                onFocus={() => setFocused(true)}
+                style={{
+                    outline: 'none',
+                    minHeight: type === 'header' ? '24px' : '20px',
+                    cursor: 'text',
+                    caretColor: '#000000',
+                    pointerEvents: 'auto'
+                }}
             />
 
-            {/* Hover overlay with label + remove button */}
-            {hovered && (
+            {(hovered || focused) && (
                 <div
                     style={{
                         position: 'absolute',
                         inset: 0,
-                        border: '2px solid rgba(59,130,246,0.4)',
-                        borderRadius: '0',
-                        background: 'rgba(59,130,246,0.03)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
                         zIndex: 5,
                         pointerEvents: 'none'
                     }}
                 >
-                    {/* Label */}
+                    <span
+                        aria-hidden="true"
+                        style={{
+                            position: 'absolute',
+                            left: `${leftInset}px`,
+                            right: `${rightInset}px`,
+                            top: isFooter ? 0 : 'auto',
+                            bottom: isFooter ? 'auto' : 0,
+                            height: '1px',
+                            background: focused ? 'rgba(37,99,235,0.55)' : 'rgba(59,130,246,0.28)',
+                            boxShadow: focused ? '0 0 0 1px rgba(37,99,235,0.08)' : 'none'
+                        }}
+                    />
+
                     <span
                         style={{
                             position: 'absolute',
-                            top: type === 'header' ? '4px' : 'auto',
-                            bottom: type === 'footer' ? '4px' : 'auto',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
+                            top: isFooter ? 'auto' : '4px',
+                            bottom: isFooter ? '4px' : 'auto',
+                            left: `${leftInset}px`,
                             fontSize: '10px',
                             fontWeight: 600,
                             color: '#3b82f6',
                             background: 'white',
-                            padding: '1px 8px',
+                            padding: '1px 6px',
                             borderRadius: '4px',
-                            border: '1px solid rgba(59,130,246,0.3)',
+                            border: '1px solid rgba(59,130,246,0.22)',
                             pointerEvents: 'none',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            opacity: focused ? 0.9 : 0.72
                         }}
                     >
-                        {type === 'header' ? 'En-tête (toutes les pages)' : 'Pied de page (toutes les pages)'}
+                        {isFooter ? 'Pied de page global' : 'En-tête global'}
                     </span>
 
-                    {/* Remove button */}
+                    {hasLine && (
+                        <button
+                            type="button"
+                            contentEditable={false}
+                            onMouseDown={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                            }}
+                            onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                removeDecorativeLine()
+                            }}
+                            style={{
+                                position: 'absolute',
+                                top: isFooter ? 'auto' : '-10px',
+                                bottom: isFooter ? '-10px' : 'auto',
+                                right: '18px',
+                                height: '22px',
+                                borderRadius: '999px',
+                                background: '#ffffff',
+                                color: '#2563eb',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                padding: '0 8px',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                lineHeight: 1,
+                                cursor: 'pointer',
+                                zIndex: 10,
+                                border: '1px solid rgba(37,99,235,0.35)',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                                pointerEvents: 'auto'
+                            }}
+                            title="Retirer la ligne de séparation"
+                        >
+                            <iconify-icon icon={type === 'footer' ? 'tabler:border-top' : 'tabler:border-bottom'} width="12"></iconify-icon>
+                            Sans ligne
+                        </button>
+                    )}
+
                     <button
+                        type="button"
+                        contentEditable={false}
+                        onMouseDown={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                        }}
                         onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -1761,7 +2966,8 @@ function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, padd
                         }}
                         style={{
                             position: 'absolute',
-                            top: '-10px',
+                            top: isFooter ? 'auto' : '-10px',
+                            bottom: isFooter ? '-10px' : 'auto',
                             right: '-10px',
                             width: '22px',
                             height: '22px',

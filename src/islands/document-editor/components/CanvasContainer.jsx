@@ -26,7 +26,8 @@ const CanvasContainer = forwardRef(function CanvasContainer({
     addPage,
     zoomLevel,
     setZoomLevel,
-    accountNumber
+    accountNumber,
+    triggerSave
 }, ref) {
     // Detect dark mode from document
 
@@ -245,113 +246,122 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                 >
                     {doc.pages.map((page, pageIndex) => (
                         <div key={pageIndex} className="relative">
-                            {/* Page Label */}
-                            <div className="absolute -top-6 left-0 right-0 flex items-center justify-center">
-                                <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded">
+                            <div
+                                className="relative mb-3 flex items-center justify-center"
+                                data-print-hide="true"
+                                style={{ minHeight: '34px' }}
+                            >
+                                <span
+                                    className="text-xs font-medium text-gray-400 bg-white/85 dark:bg-gray-900/85 px-2.5 py-1 rounded-md shadow-sm border border-white/70 dark:border-gray-800"
+                                >
                                     Page {pageIndex + 1}
                                 </span>
-                            </div>
 
-                            {/* Mode Switcher */}
-                            <div
-                                className="mode-switcher absolute -top-6 right-0 z-50 flex items-center gap-1 dark:bg-gray-800 rounded-lg px-1 py-0.5 shadow-sm border-0 dark:border-gray-800"
-                                data-print-hide="true"
-                                style={{ marginTop: '-38px' }}
-                            >
-                                <button
-                                    onClick={() => setPageMode(pageIndex, 'edition')}
-                                    className={`px-2 py-0.5 text-[10px] rounded-lg transition-colors ${page.mode === 'edition'
-                                        ? 'bg-primary text-white'
-                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                        }`}
+                                <div
+                                    className="mode-switcher absolute right-0 top-0 z-50 flex items-center gap-1 rounded-xl p-1 shadow-sm"
+                                    style={{
+                                        background: isDark ? 'rgba(17,24,39,0.92)' : 'rgba(255,255,255,0.92)',
+                                        border: isDark ? '1px solid rgba(55,65,81,0.9)' : '1px solid rgba(226,232,240,0.95)',
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)'
+                                    }}
                                 >
-                                    Édition
-                                </button>
-                                <button
-                                    onClick={() => setPageMode(pageIndex, 'layout')}
-                                    className={`px-2 py-0.5 text-[10px] rounded-lg transition-colors ${page.mode === 'layout'
-                                        ? 'bg-primary text-white'
-                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                        }`}
-                                >
-                                    Layout
-                                </button>
-                                <button
-                                    onClick={() => setPageMode(pageIndex, 'designer')}
-                                    className={`px-2 py-0.5 text-[10px] rounded-lg transition-colors ${page.mode === 'designer'
-                                        ? 'bg-primary text-white'
-                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                        }`}
-                                >
-                                    Designer
-                                </button>
+                                    <button
+                                        onClick={() => setPageMode(pageIndex, 'edition')}
+                                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg transition-colors ${page.mode === 'edition'
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        Édition
+                                    </button>
+                                    <button
+                                        onClick={() => setPageMode(pageIndex, 'layout')}
+                                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg transition-colors ${page.mode === 'layout'
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        Layout
+                                    </button>
+                                    <button
+                                        onClick={() => setPageMode(pageIndex, 'designer')}
+                                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-lg transition-colors ${page.mode === 'designer'
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        Designer
+                                    </button>
 
-                                {/* Config button — only in layout mode */}
-                                {page.mode === 'layout' && (
-                                    <div className="relative" ref={showConfig === pageIndex ? configRef : undefined}>
-                                        <button
-                                            onClick={() => setShowConfig(showConfig === pageIndex ? null : pageIndex)}
-                                            className={`px-1.5 py-0.5 text-[10px] rounded-lg transition-colors ${showConfig === pageIndex
-                                                ? 'bg-primary text-white'
-                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                                }`}
-                                            title="Configuration du layout"
-                                        >
-                                            <iconify-icon icon="solar:settings-bold" width="12"></iconify-icon>
-                                        </button>
-
-                                        {/* Config Dropdown */}
-                                        {showConfig === pageIndex && (
-                                            <div
-                                                className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 p-3"
-                                                style={{ minWidth: '220px' }}
+                                    {/* Config button — only in layout mode */}
+                                    {page.mode === 'layout' && (
+                                        <div className="relative" ref={showConfig === pageIndex ? configRef : undefined}>
+                                            <button
+                                                onClick={() => setShowConfig(showConfig === pageIndex ? null : pageIndex)}
+                                                className={`px-1.5 py-1 text-[10px] rounded-lg transition-colors ${showConfig === pageIndex
+                                                    ? 'bg-primary text-white'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                                    }`}
+                                                title="Configuration du layout"
                                             >
-                                                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Options d'affichage</div>
+                                                <iconify-icon icon="solar:settings-bold" width="12"></iconify-icon>
+                                            </button>
 
-                                                {/* Panel Mode Toggle */}
+                                            {/* Config Dropdown */}
+                                            {showConfig === pageIndex && (
                                                 <div
-                                                    onClick={() => setPanelMode(prev => !prev)}
-                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', cursor: 'pointer' }}
+                                                    className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 p-3"
+                                                    style={{ minWidth: '220px' }}
                                                 >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <iconify-icon icon="solar:widget-4-bold-duotone" width="18" style={{ color: '#6b7280' }}></iconify-icon>
-                                                        <span className="text-sm text-gray-700 dark:text-gray-200">Mode Panels</span>
-                                                    </div>
-                                                    {/* Switch toggle — inline styles for reliability */}
-                                                    <div style={{
-                                                        position: 'relative',
-                                                        width: '40px',
-                                                        height: '22px',
-                                                        borderRadius: '11px',
-                                                        backgroundColor: panelMode ? 'var(--primary, #4361ee)' : '#d1d5db',
-                                                        transition: 'background-color 0.2s',
-                                                        cursor: 'pointer',
-                                                        flexShrink: 0,
-                                                    }}>
+                                                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Options d'affichage</div>
+
+                                                    {/* Panel Mode Toggle */}
+                                                    <div
+                                                        onClick={() => setPanelMode(prev => !prev)}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', cursor: 'pointer' }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <iconify-icon icon="solar:widget-4-bold-duotone" width="18" style={{ color: '#6b7280' }}></iconify-icon>
+                                                            <span className="text-sm text-gray-700 dark:text-gray-200">Mode Panels</span>
+                                                        </div>
+                                                        {/* Switch toggle — inline styles for reliability */}
                                                         <div style={{
-                                                            position: 'absolute',
-                                                            top: '2px',
-                                                            left: panelMode ? '20px' : '2px',
-                                                            width: '18px',
-                                                            height: '18px',
-                                                            borderRadius: '50%',
-                                                            backgroundColor: '#fff',
-                                                            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                                                            transition: 'left 0.2s',
-                                                        }} />
+                                                            position: 'relative',
+                                                            width: '40px',
+                                                            height: '22px',
+                                                            borderRadius: '11px',
+                                                            backgroundColor: panelMode ? 'var(--primary, #4361ee)' : '#d1d5db',
+                                                            transition: 'background-color 0.2s',
+                                                            cursor: 'pointer',
+                                                            flexShrink: 0,
+                                                        }}>
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '2px',
+                                                                left: panelMode ? '20px' : '2px',
+                                                                width: '18px',
+                                                                height: '18px',
+                                                                borderRadius: '50%',
+                                                                backgroundColor: '#fff',
+                                                                boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                                                                transition: 'left 0.2s',
+                                                            }} />
+                                                        </div>
                                                     </div>
+                                                    <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '6px', marginLeft: '26px' }}>
+                                                        {panelMode ? 'Éléments affichés en panels avec bordures' : 'Éléments compacts sans bordures'}
+                                                    </p>
                                                 </div>
-                                                <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '6px', marginLeft: '26px' }}>
-                                                    {panelMode ? 'Éléments affichés en panels avec bordures' : 'Éléments compacts sans bordures'}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Page */}
-                            <EditorPage
+                            <div className="relative">
+                                {/* Page */}
+                                <EditorPage
                                 page={page}
                                 pageIndex={pageIndex}
                                 doc={doc}
@@ -367,6 +377,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                 accountNumber={accountNumber}
                                 documentId={doc._id}
                                 sourceRecordId={doc.draftRecordId}
+                                triggerSave={triggerSave}
                             />
 
                             {/* Lock Overlay — visible on edition pages when layout/designer is active on ANY page */}
@@ -431,6 +442,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                     </div>
                                 </div>
                             )}
+                        </div>
                         </div>
                     ))}
 

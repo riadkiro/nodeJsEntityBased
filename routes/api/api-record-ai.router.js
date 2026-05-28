@@ -14,6 +14,8 @@ const IntegrationProvider = require('../../src/integrations/models/IntegrationPr
 const IntegrationAction = require('../../src/integrations/models/IntegrationAction.model');
 const IntegrationConnectionSchema = require('../../src/integrations/models/IntegrationConnection.model').schema;
 const IntegrationLogSchema = require('../../src/integrations/models/IntegrationLog.model').schema;
+const GlobalTaskList = require('../../models/task-list.model');
+const GlobalRecordTask = require('../../models/record-task.model');
 
 const router = express.Router();
 
@@ -4405,7 +4407,6 @@ function agentEventTypeOptions(eventsEntity = {}) {
 async function agentBuildToolCatalog(req, record, entity) {
     const RecordNote = await tenantCollection(req, 'RecordNote');
     const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
-    const RecordTask = await tenantCollection(req, 'RecordTask');
     const Document = await tenantCollection(req, 'Document');
     const Record = await tenantCollection(req, 'Record');
 
@@ -4437,7 +4438,7 @@ async function agentBuildToolCatalog(req, record, entity) {
             .limit(60)
             .lean()
         : [];
-    const tasks = await RecordTask.find({ recordId: record._id })
+    const tasks = await GlobalRecordTask.find({ recordId: record._id })
         .select('title description status priority dueDate updatedAt')
         .sort({ updatedAt: -1 })
         .limit(60)
@@ -4786,16 +4787,16 @@ async function requireAgentRun(req, recordId, runId) {
 }
 
 async function agentEnsureDefaultTaskList(req, recordId) {
-    const TaskList = await tenantCollection(req, 'TaskList');
-    let list = await TaskList.findOne({ recordId, label: 'Actions IA' });
+    let list = await GlobalTaskList.findOne({ recordId, label: 'Actions IA' });
     if (list) return { list, created: false };
 
-    list = await TaskList.create({
+    const maxOrder = await GlobalTaskList.findOne({ recordId }).sort({ order: -1 }).lean();
+    list = await GlobalTaskList.create({
         recordId,
         label: 'Actions IA',
         color: '#4f46e5',
         icon: 'solar:magic-stick-3-bold-duotone',
-        order: 999
+        order: (maxOrder?.order || 0) + 1
     });
     return { list, created: true };
 }
@@ -5291,13 +5292,12 @@ async function applyAgentAction(req, record, entity, action) {
         const canEdit = await canEditRecordModule(req, record._id, 'tasks');
         if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
 
-        const RecordTask = await tenantCollection(req, 'RecordTask');
         const { list, created } = await agentEnsureDefaultTaskList(req, record._id);
         const priorityColors = {
             'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
         };
         const dueDate = action.input?.dueDate ? new Date(action.input.dueDate) : null;
-        const task = await RecordTask.create({
+        const task = await GlobalRecordTask.create({
             taskListId: list._id,
             recordId: record._id,
             title: action.input?.title || 'Action IA',
@@ -5321,8 +5321,7 @@ async function applyAgentAction(req, record, entity, action) {
         const canEdit = await canEditRecordModule(req, record._id, 'tasks');
         if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
 
-        const RecordTask = await tenantCollection(req, 'RecordTask');
-        const task = await RecordTask.findOne({ _id: action.input?.taskId, recordId: record._id });
+        const task = await GlobalRecordTask.findOne({ _id: action.input?.taskId, recordId: record._id });
         if (!task) throw new Error('Tâche introuvable');
 
         const before = {
@@ -5509,19 +5508,16 @@ async function undoAgentLog(req, record, entity, log) {
     }
 
     if (inverse.tool === 'delete_task' && inverse.taskId) {
-        const RecordTask = await tenantCollection(req, 'RecordTask');
-        await RecordTask.deleteOne({ _id: inverse.taskId, recordId: record._id });
+        await GlobalRecordTask.deleteOne({ _id: inverse.taskId, recordId: record._id });
         if (inverse.taskListCreated && inverse.taskListId) {
-            const TaskList = await tenantCollection(req, 'TaskList');
-            const remaining = await RecordTask.countDocuments({ taskListId: inverse.taskListId });
-            if (!remaining) await TaskList.deleteOne({ _id: inverse.taskListId, recordId: record._id });
+            const remaining = await GlobalRecordTask.countDocuments({ taskListId: inverse.taskListId });
+            if (!remaining) await GlobalTaskList.deleteOne({ _id: inverse.taskListId, recordId: record._id });
         }
         return;
     }
 
     if (inverse.tool === 'restore_task' && inverse.task?.taskId) {
-        const RecordTask = await tenantCollection(req, 'RecordTask');
-        await RecordTask.updateOne(
+        await GlobalRecordTask.updateOne(
             { _id: inverse.task.taskId, recordId: record._id },
             {
                 $set: {

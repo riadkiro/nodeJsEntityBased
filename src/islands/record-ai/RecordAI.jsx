@@ -2022,7 +2022,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             <Icon icon="solar:magic-stick-3-bold-duotone" width={21} />
                         </div>
                         <div className="rai-chat-title-wrap">
-                            <div className="rai-chat-title">{activeMode === 'agent' ? (activeAgentConversation?.title || 'Agent record') : (activeConversation?.title || record.title || 'IA')}</div>
+                            <div className="rai-chat-title" title={activeMode === 'agent' ? (activeAgentConversation?.title || 'Agent record') : (activeConversation?.title || record.title || 'IA')}>
+                                {activeMode === 'agent' ? (activeAgentConversation?.title || 'Agent record') : (activeConversation?.title || record.title || 'IA')}
+                            </div>
                             <div className="rai-chat-sub">
                                 <span>{record.entityName || 'Fiche'}</span>
                                 <span>·</span>
@@ -2459,6 +2461,7 @@ const styles = `
 .rai-sidebar-search input::placeholder,.rai-search input::placeholder{color:#cbd5e1;}
 .rai-chat-header{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--rai-border);background:#fff;min-height:64px;}
 .rai-sidebar-title,.rai-context-title,.rai-chat-title{font-size:14px;font-weight:700;color:var(--rai-text);line-height:1.2;}
+.rai-chat-title{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .rai-chat-sub{display:flex;align-items:center;gap:6px;font-size:11px;color:#888da8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .rai-icon-btn,.rai-send{border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;font-family:inherit;}
 .rai-icon-btn{width:30px;height:30px;border-radius:8px;background:#f1f5f9;color:#94a3b8;margin-left:auto;}

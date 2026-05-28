@@ -6,7 +6,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
-const { canAccessRecord } = require('../../middleware/shared-records-helper');
+const { canAccessRecord, canEditRecordModule } = require('../../middleware/shared-records-helper');
 const OcrService = require('../../services/ocr.service');
 const IntegrationService = require('../../src/integrations/services/IntegrationService');
 const IntegrationProvider = require('../../src/integrations/models/IntegrationProvider.model');
@@ -3265,6 +3265,820 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
         });
     } catch (error) {
         console.error('[RecordAI] send message error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+function agentSafeString(value, max = 2000) {
+    return String(value === null || value === undefined ? '' : value).trim().slice(0, max);
+}
+
+function agentEscapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function agentMarkdownToHtml(markdown) {
+    const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+    const html = [];
+    let list = [];
+
+    const inline = (value) => agentEscapeHtml(value)
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    const flushList = () => {
+        if (!list.length) return;
+        html.push(`<ul>${list.map(item => `<li>${inline(item)}</li>`).join('')}</ul>`);
+        list = [];
+    };
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            flushList();
+            return;
+        }
+
+        const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) {
+            flushList();
+            const level = Math.min(3, heading[1].length + 1);
+            html.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+            return;
+        }
+
+        const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+        if (bullet) {
+            list.push(bullet[1]);
+            return;
+        }
+
+        flushList();
+        html.push(`<p>${inline(trimmed)}</p>`);
+    });
+
+    flushList();
+    return html.join('\n') || '<p></p>';
+}
+
+function agentNormalizeLabel(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function agentBuildFieldCatalog(entity = {}) {
+    const standardFields = [
+        { id: 'title', label: 'Titre', source: 'standard', type: 'string' },
+        { id: 'description', label: 'Description', source: 'standard', type: 'text' },
+        { id: 'content', label: 'Contenu', source: 'standard', type: 'text' },
+        { id: 'status', label: 'Statut', source: 'standard', type: 'string' },
+        { id: 'date', label: 'Date', source: 'standard', type: 'date' },
+        { id: 'end_date', label: 'Date de fin / échéance', source: 'standard', type: 'date' }
+    ];
+
+    const customFields = (entity.customFields || [])
+        .filter(field => field && field._id)
+        .slice(0, 120)
+        .map(field => ({
+            id: cleanId(field._id),
+            label: field.label || field.name || 'Champ',
+            name: field.name || '',
+            source: 'field',
+            type: field.type || field.inputType || field.render?.input || 'text'
+        }));
+
+    return [...standardFields, ...customFields];
+}
+
+function agentFieldLookup(fieldCatalog = []) {
+    const byId = new Map();
+    const byLabel = new Map();
+    fieldCatalog.forEach(field => {
+        byId.set(field.id, field);
+        [field.label, field.name].filter(Boolean).forEach(label => {
+            const normalized = agentNormalizeLabel(label);
+            if (normalized && !byLabel.has(normalized)) byLabel.set(normalized, field);
+        });
+    });
+    return { byId, byLabel };
+}
+
+function agentResolveField(raw = {}, lookup = {}) {
+    const fieldId = cleanId(raw.fieldId || raw.id || raw.key);
+    if (fieldId && lookup.byId?.has(fieldId)) return lookup.byId.get(fieldId);
+
+    const label = agentNormalizeLabel(raw.label || raw.name || raw.field || raw.fieldLabel);
+    if (label && lookup.byLabel?.has(label)) return lookup.byLabel.get(label);
+
+    if (/date|echeance|deadline|limite|remise|depot/.test(label || '')) {
+        const candidates = [...(lookup.byId?.values?.() || [])];
+        return candidates.find(field => /date|echeance|deadline|limite|remise|depot/.test(agentNormalizeLabel(field.label || field.name)))
+            || lookup.byId?.get('end_date')
+            || lookup.byId?.get('date')
+            || null;
+    }
+
+    return null;
+}
+
+function agentCoerceFieldValue(value, field = {}) {
+    const type = String(field.type || '').toLowerCase();
+    if (value === undefined) return '';
+    if (value === null || value === '') return '';
+
+    if (['date', 'datetime', 'datetime-local'].includes(type) || ['date', 'end_date'].includes(field.id)) {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? agentSafeString(value, 500) : date;
+    }
+
+    if (['number', 'decimal', 'currency', 'float'].includes(type)) {
+        const normalized = String(value).replace(/\s/g, '').replace(',', '.');
+        const number = Number(normalized);
+        return Number.isFinite(number) ? number : value;
+    }
+
+    if (type === 'boolean') {
+        if (typeof value === 'boolean') return value;
+        return ['true', '1', 'oui', 'yes', 'vrai'].includes(agentNormalizeLabel(value));
+    }
+
+    if (type === 'multiselect') {
+        return Array.isArray(value) ? value.map(item => agentSafeString(item, 300)).filter(Boolean) : [agentSafeString(value, 300)].filter(Boolean);
+    }
+
+    return typeof value === 'object' ? value : agentSafeString(value, 4000);
+}
+
+function agentFormatDiffValue(value) {
+    if (value === null || value === undefined || value === '') return 'Vide';
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    if (Array.isArray(value)) return value.map(agentFormatDiffValue).join(', ');
+    if (typeof value === 'object') return formatValue(value);
+    return String(value);
+}
+
+function agentGetRecordFieldValue(record = {}, field = {}) {
+    if (field.source === 'standard') return record[field.id];
+    const found = (record.customFields || []).find(item => cleanId(item.field_id?._id || item.field_id) === field.id);
+    return found ? found.value : undefined;
+}
+
+function agentSetRecordFieldValue(record, field = {}, value) {
+    if (field.source === 'standard') {
+        record[field.id] = value === '' ? null : value;
+        return { existed: Object.prototype.hasOwnProperty.call(record.toObject ? record.toObject() : record, field.id) };
+    }
+
+    const index = (record.customFields || []).findIndex(item => cleanId(item.field_id?._id || item.field_id) === field.id);
+    if (index >= 0) {
+        record.customFields[index].value = value;
+        record.markModified('customFields');
+        return { existed: true };
+    }
+
+    record.customFields = record.customFields || [];
+    record.customFields.push({ field_id: field.id, value });
+    record.markModified('customFields');
+    return { existed: false };
+}
+
+function agentRestoreRecordFieldValue(record, field = {}, inverse = {}) {
+    if (field.source === 'standard') {
+        record[field.id] = inverse.beforeValue === undefined ? null : inverse.beforeValue;
+        return;
+    }
+
+    const index = (record.customFields || []).findIndex(item => cleanId(item.field_id?._id || item.field_id) === field.id);
+    if (inverse.existed === false) {
+        if (index >= 0) record.customFields.splice(index, 1);
+        record.markModified('customFields');
+        return;
+    }
+
+    if (index >= 0) {
+        record.customFields[index].value = inverse.beforeValue;
+    } else {
+        record.customFields = record.customFields || [];
+        record.customFields.push({ field_id: field.id, value: inverse.beforeValue });
+    }
+    record.markModified('customFields');
+}
+
+function agentExtractJson(text) {
+    const raw = String(text || '').trim();
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = fenced ? fenced[1].trim() : raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+    if (!candidate || candidate[0] !== '{') throw new Error('Réponse agent JSON introuvable');
+    return JSON.parse(candidate);
+}
+
+function agentToolLabel(tool) {
+    if (tool === 'create_note') return 'Créer une note';
+    if (tool === 'update_fiche') return 'Mettre à jour la fiche';
+    if (tool === 'create_task') return 'Créer une tâche';
+    return tool;
+}
+
+function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = []) {
+    const lookup = agentFieldLookup(fieldCatalog);
+    const rawActions = Array.isArray(parsed.actions) ? parsed.actions : [];
+    const actions = [];
+
+    rawActions.slice(0, 10).forEach((raw, index) => {
+        const tool = String(raw.tool || raw.type || '').trim();
+        const id = `act_${crypto.randomBytes(6).toString('hex')}`;
+
+        if (tool === 'create_note') {
+            const input = raw.input || raw;
+            const title = agentSafeString(input.title || raw.title || 'Note IA', 140) || 'Note IA';
+            const contentMarkdown = agentSafeString(input.contentMarkdown || input.markdown || input.content || raw.content || '', 20000);
+            if (!contentMarkdown) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Créer la note "${title}"`, 500),
+                status: 'proposed',
+                input: { title, contentMarkdown },
+                preview: {
+                    title,
+                    excerpt: shortPlainText(contentMarkdown, 520)
+                },
+                diff: null
+            });
+            return;
+        }
+
+        if (tool === 'update_fiche') {
+            const input = raw.input || raw;
+            const rawFields = Array.isArray(input.fields)
+                ? input.fields
+                : [{ fieldId: input.fieldId || input.id, label: input.label, value: input.value, reason: input.reason }];
+            const fields = [];
+            const diff = [];
+
+            rawFields.slice(0, 12).forEach(fieldPatch => {
+                const field = agentResolveField(fieldPatch, lookup);
+                if (!field) return;
+                const value = agentCoerceFieldValue(fieldPatch.value ?? fieldPatch.newValue, field);
+                if (value === undefined) return;
+                const beforeValue = agentGetRecordFieldValue(record, field);
+                fields.push({
+                    fieldId: field.id,
+                    label: field.label || field.name || field.id,
+                    value,
+                    reason: agentSafeString(fieldPatch.reason || fieldPatch.source || '', 600),
+                    confidence: Math.max(0, Math.min(1, Number(fieldPatch.confidence || 0.7)))
+                });
+                diff.push({
+                    fieldId: field.id,
+                    label: field.label || field.name || field.id,
+                    before: agentFormatDiffValue(beforeValue),
+                    after: agentFormatDiffValue(value),
+                    reason: agentSafeString(fieldPatch.reason || '', 600)
+                });
+            });
+
+            if (!fields.length) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `${fields.length} champ${fields.length > 1 ? 's' : ''} à enrichir`, 500),
+                status: 'proposed',
+                input: { fields },
+                preview: { count: fields.length },
+                diff
+            });
+            return;
+        }
+
+        if (tool === 'create_task') {
+            const input = raw.input || raw;
+            const title = agentSafeString(input.title || raw.title || '', 180);
+            if (!title) return;
+            const dueDate = input.dueDate || input.date || null;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || title, 500),
+                status: 'proposed',
+                input: {
+                    title,
+                    description: agentSafeString(input.description || '', 4000),
+                    dueDate: dueDate ? agentSafeString(dueDate, 80) : '',
+                    priority: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority) ? input.priority : 'Moyenne'
+                },
+                preview: { title, dueDate: dueDate || '' },
+                diff: null
+            });
+        }
+    });
+
+    if (!actions.length && parsed.summary) {
+        actions.push({
+            id: `act_${crypto.randomBytes(6).toString('hex')}`,
+            tool: 'create_note',
+            title: 'Créer une note',
+            description: 'Créer une note avec la synthèse produite par l’agent',
+            status: 'proposed',
+            input: {
+                title: 'Analyse IA',
+                contentMarkdown: agentSafeString(parsed.summary, 12000)
+            },
+            preview: {
+                title: 'Analyse IA',
+                excerpt: shortPlainText(parsed.summary, 520)
+            },
+            diff: null
+        });
+    }
+
+    return actions;
+}
+
+function shortPlainText(value, max = 220) {
+    const text = stripHtml(String(value || '')).replace(/\s+/g, ' ').trim();
+    return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
+function agentNormalizePlan(parsed = {}) {
+    const rawSteps = Array.isArray(parsed.steps) ? parsed.steps : (Array.isArray(parsed.plan?.steps) ? parsed.plan.steps : []);
+    const steps = rawSteps.slice(0, 8).map((step, index) => ({
+        id: agentSafeString(step.id || `step_${index + 1}`, 60),
+        type: agentSafeString(step.type || 'analysis', 60),
+        title: agentSafeString(step.title || step.label || `Étape ${index + 1}`, 180),
+        detail: agentSafeString(step.detail || step.description || '', 600),
+        status: ['pending', 'ready', 'done', 'skipped', 'failed'].includes(step.status) ? step.status : 'ready'
+    }));
+
+    return {
+        title: agentSafeString(parsed.plan?.title || parsed.title || 'Plan agent', 160) || 'Plan agent',
+        steps: steps.length ? steps : [
+            { id: 'step_1', type: 'analysis', title: 'Analyser le contexte record', detail: '', status: 'ready' },
+            { id: 'step_2', type: 'tools', title: 'Préparer les actions', detail: '', status: 'ready' },
+            { id: 'step_3', type: 'review', title: 'Attendre validation', detail: '', status: 'ready' }
+        ]
+    };
+}
+
+async function agentDefaultSelection(req, record, entity) {
+    const bootstrap = await buildBootstrap(req, record, entity);
+    const recordFiles = (bootstrap.files || [])
+        .filter(file => file.source === 'record')
+        .slice(0, RECORD_AI_RAG_MAX_DOCUMENTS)
+        .map(file => ({ id: file.id, source: file.source, name: file.name }));
+
+    return normalizeSelection({
+        fields: (bootstrap.fields || []).map(field => field.id).slice(0, 80),
+        notes: (bootstrap.notes || []).filter(note => !note.isProtected).map(note => cleanId(note.id)).slice(0, 20),
+        chats: [],
+        files: recordFiles,
+        uploads: []
+    });
+}
+
+function buildAgentInstructions(record, entity, fieldCatalog = []) {
+    const fieldList = fieldCatalog.map(field => ({
+        id: field.id,
+        label: field.label,
+        type: field.type,
+        source: field.source
+    }));
+
+    return [
+        `Tu es l'agent IA de la fiche "${record.computedTitle || record.title || 'Sans titre'}" (${entity?.nameSingular || entity?.name || 'record'}).`,
+        "Tu ne modifies jamais les données directement. Tu proposes uniquement un plan et des tool calls à valider.",
+        "Réponds en français et uniquement en JSON valide, sans markdown, sans bloc ```.",
+        "Tools autorisés:",
+        "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
+        "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
+        "- create_task: { title, description, dueDate, priority }. Utilise-le pour les rappels utiles comme une date limite.",
+        "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
+        "Format strict:",
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}}]}',
+        "",
+        "Champs fiche autorisés:",
+        JSON.stringify(fieldList.slice(0, 120))
+    ].join('\n');
+}
+
+function buildAgentInput(goal, selectedContext) {
+    return [
+        'Demande utilisateur:',
+        goal,
+        '',
+        'Contexte record disponible:',
+        '<contexte>',
+        selectedContext?.text?.trim() || 'Aucun contexte détaillé disponible.',
+        '</contexte>',
+        '',
+        "Prépare un plan agentique et des actions en mode review."
+    ].join('\n');
+}
+
+function agentRunPayload(req, run) {
+    const plain = run && typeof run.toObject === 'function' ? run.toObject() : { ...(run || {}) };
+    if (!isRecordAiDebugAdmin(req)) {
+        delete plain.aiRaw;
+        delete plain.debugPayload;
+    }
+    return plain;
+}
+
+async function requireAgentRun(req, recordId, runId) {
+    const { record, entity } = await loadRecordBundle(req, recordId);
+    const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+    const run = await RecordAgentRun.findOne({
+        _id: runId,
+        recordId: record._id,
+        userId: String(req.user._id)
+    });
+    if (!run) {
+        const error = new Error('Run agent introuvable');
+        error.statusCode = 404;
+        throw error;
+    }
+    return { record, entity, run };
+}
+
+async function agentEnsureDefaultTaskList(req, recordId) {
+    const TaskList = await tenantCollection(req, 'TaskList');
+    let list = await TaskList.findOne({ recordId, label: 'Actions IA' });
+    if (list) return { list, created: false };
+
+    list = await TaskList.create({
+        recordId,
+        label: 'Actions IA',
+        color: '#4f46e5',
+        icon: 'solar:magic-stick-3-bold-duotone',
+        order: 999
+    });
+    return { list, created: true };
+}
+
+async function applyAgentAction(req, record, entity, action) {
+    if (action.tool === 'create_note') {
+        const canEdit = await canEditRecordModule(req, record._id, 'notes');
+        if (!canEdit) throw new Error("Accès en lecture seule aux notes");
+
+        const RecordNote = await tenantCollection(req, 'RecordNote');
+        const note = await RecordNote.create({
+            recordId: record._id,
+            entityId: record.entityId || entity?._id || null,
+            title: action.input?.title || 'Note IA',
+            content: agentMarkdownToHtml(action.input?.contentMarkdown || ''),
+            color: '#4f46e5',
+            icon: 'solar:magic-stick-3-bold-duotone',
+            createdBy: String(req.user._id),
+            createdByName: req.user.name || req.user.email || 'IA'
+        });
+
+        return {
+            before: null,
+            after: { noteId: cleanId(note._id), title: note.title },
+            result: { noteId: cleanId(note._id), title: note.title },
+            inverse: { tool: 'archive_note', noteId: cleanId(note._id) }
+        };
+    }
+
+    if (action.tool === 'update_fiche') {
+        const canEdit = await canEditRecordModule(req, record._id, 'fiche')
+            || await canEditRecordModule(req, record._id, 'overview');
+        if (!canEdit) throw new Error('Accès en lecture seule à la fiche');
+
+        const Record = await tenantCollection(req, 'Record');
+        const editableRecord = await Record.findById(record._id);
+        if (!editableRecord) throw new Error('Fiche introuvable');
+
+        const fieldCatalog = agentBuildFieldCatalog(entity);
+        const lookup = agentFieldLookup(fieldCatalog);
+        const before = [];
+        const after = [];
+        const inverseFields = [];
+
+        for (const patch of (action.input?.fields || []).slice(0, 12)) {
+            const field = lookup.byId.get(cleanId(patch.fieldId));
+            if (!field) continue;
+            const beforeValue = agentGetRecordFieldValue(editableRecord, field);
+            const value = agentCoerceFieldValue(patch.value, field);
+            const meta = agentSetRecordFieldValue(editableRecord, field, value);
+            before.push({ fieldId: field.id, label: field.label, value: beforeValue });
+            after.push({ fieldId: field.id, label: field.label, value });
+            inverseFields.push({ fieldId: field.id, beforeValue, existed: meta.existed });
+        }
+
+        if (!after.length) throw new Error('Aucun champ valide à mettre à jour');
+
+        editableRecord.updatedBy = req.user._id;
+        await editableRecord.save();
+
+        return {
+            before: { fields: before },
+            after: { fields: after },
+            result: { updatedFields: after.map(item => ({ fieldId: item.fieldId, label: item.label })) },
+            inverse: { tool: 'restore_fiche', fields: inverseFields }
+        };
+    }
+
+    if (action.tool === 'create_task') {
+        const canEdit = await canEditRecordModule(req, record._id, 'tasks');
+        if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
+
+        const RecordTask = await tenantCollection(req, 'RecordTask');
+        const { list, created } = await agentEnsureDefaultTaskList(req, record._id);
+        const priorityColors = {
+            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
+        };
+        const dueDate = action.input?.dueDate ? new Date(action.input.dueDate) : null;
+        const task = await RecordTask.create({
+            taskListId: list._id,
+            recordId: record._id,
+            title: action.input?.title || 'Action IA',
+            description: action.input?.description || '',
+            status: 'À faire',
+            statusColor: '#9ca3af',
+            priority: action.input?.priority || 'Moyenne',
+            priorityColor: priorityColors[action.input?.priority] || '#f59e0b',
+            dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null
+        });
+
+        return {
+            before: null,
+            after: { taskId: cleanId(task._id), title: task.title },
+            result: { taskId: cleanId(task._id), title: task.title },
+            inverse: { tool: 'delete_task', taskId: cleanId(task._id), taskListId: cleanId(list._id), taskListCreated: created }
+        };
+    }
+
+    throw new Error(`Tool non supporté: ${action.tool}`);
+}
+
+async function undoAgentLog(req, record, entity, log) {
+    const inverse = log.inverse || {};
+
+    if (inverse.tool === 'archive_note' && inverse.noteId) {
+        const RecordNote = await tenantCollection(req, 'RecordNote');
+        await RecordNote.updateOne(
+            { _id: inverse.noteId, recordId: record._id },
+            { $set: { archived: true, updatedAt: new Date() } }
+        );
+        return;
+    }
+
+    if (inverse.tool === 'restore_fiche') {
+        const Record = await tenantCollection(req, 'Record');
+        const editableRecord = await Record.findById(record._id);
+        if (!editableRecord) throw new Error('Fiche introuvable');
+        const lookup = agentFieldLookup(agentBuildFieldCatalog(entity));
+        for (const patch of (inverse.fields || [])) {
+            const field = lookup.byId.get(cleanId(patch.fieldId));
+            if (field) agentRestoreRecordFieldValue(editableRecord, field, patch);
+        }
+        editableRecord.updatedBy = req.user._id;
+        await editableRecord.save();
+        return;
+    }
+
+    if (inverse.tool === 'delete_task' && inverse.taskId) {
+        const RecordTask = await tenantCollection(req, 'RecordTask');
+        await RecordTask.deleteOne({ _id: inverse.taskId, recordId: record._id });
+        if (inverse.taskListCreated && inverse.taskListId) {
+            const TaskList = await tenantCollection(req, 'TaskList');
+            const remaining = await RecordTask.countDocuments({ taskListId: inverse.taskListId });
+            if (!remaining) await TaskList.deleteOne({ _id: inverse.taskListId, recordId: record._id });
+        }
+        return;
+    }
+
+    throw new Error("Action d'annulation non supportée");
+}
+
+router.get('/:recordId/agent/runs', async (req, res) => {
+    try {
+        const { record } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+        const runs = await RecordAgentRun.find({
+            recordId: record._id,
+            userId: String(req.user._id)
+        })
+            .sort({ updatedAt: -1 })
+            .limit(30)
+            .lean();
+
+        res.json({ success: true, runs: runs.map(run => agentRunPayload(req, run)) });
+    } catch (error) {
+        console.error('[RecordAgent] list runs error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/:recordId/agent/runs', async (req, res) => {
+    let run = null;
+    try {
+        const goal = agentSafeString(req.body.goal || req.body.message || '', 4000);
+        if (!goal) return res.status(400).json({ success: false, error: 'Demande agent requise' });
+
+        const { record, entity } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+        const requestedSelection = normalizeSelection(req.body.contextSelections || {});
+        const selection = selectionItemCount(requestedSelection) > 0
+            ? requestedSelection
+            : await agentDefaultSelection(req, record, entity);
+        const engineSettings = await getRecordAiEngineSettings(req);
+        const engineRuntime = resolveEngineRuntime(engineSettings);
+        const selectedContext = await buildSelectedContext(req, record, entity, selection, { query: goal, engineSettings });
+        const contextItems = await buildContextItems(req, record, entity, selection);
+        const fieldCatalog = agentBuildFieldCatalog(entity);
+
+        run = await RecordAgentRun.create({
+            recordId: record._id,
+            entityId: record.entityId,
+            userId: String(req.user._id),
+            userName: req.user.name || req.user.email || '',
+            goal,
+            status: 'drafting',
+            contextSelections: persistableSelection(selection),
+            contextItems,
+            contextFingerprint: selectedContext.fingerprint || '',
+            contextStats: selectedContext.stats || {},
+            engine: engineRuntime,
+            plan: agentNormalizePlan({}),
+            proposedActions: []
+        });
+
+        const aiResult = await callRecordAI(req, {
+            conversationId: run._id,
+            recordId: record._id,
+            instructions: buildAgentInstructions(record, entity, fieldCatalog),
+            input: buildAgentInput(goal, selectedContext),
+            previousResponseId: null,
+            engineSettings,
+            historyMessages: []
+        });
+
+        let parsed;
+        try {
+            parsed = agentExtractJson(aiResult.content);
+        } catch (parseError) {
+            parsed = {
+                summary: aiResult.content,
+                plan: { title: 'Plan agent', steps: [{ type: 'review', title: 'Créer une note de synthèse', detail: 'La réponse IA n’était pas structurée en tools.' }] },
+                actions: [{
+                    tool: 'create_note',
+                    title: 'Créer une note',
+                    description: 'Créer une note avec la réponse de l’agent',
+                    input: {
+                        title: 'Analyse IA',
+                        contentMarkdown: aiResult.content
+                    }
+                }]
+            };
+        }
+
+        const actions = agentNormalizeActions(parsed, record, fieldCatalog);
+        run.summary = agentSafeString(parsed.summary || 'Plan prêt à valider.', 3000);
+        run.plan = agentNormalizePlan(parsed);
+        run.proposedActions = actions;
+        run.aiRaw = aiResult.content || '';
+        run.status = actions.length ? 'review' : 'error';
+        run.error = actions.length ? '' : "L'agent n'a proposé aucune action exploitable.";
+        run.debugPayload = RECORD_AI_DEBUG_ENABLED ? {
+            phase: 'agent',
+            createdAt: new Date(),
+            goal,
+            contextSelections: debugSelection(selection),
+            contextItems,
+            contextStats: selectedContext.stats,
+            contextText: clipDebugText(selectedContext.text || '').text,
+            engineRuntime,
+            parsed
+        } : null;
+        await run.save();
+
+        res.json({ success: true, run: agentRunPayload(req, run) });
+    } catch (error) {
+        console.error('[RecordAgent] create run error:', error);
+        if (run) {
+            run.status = 'error';
+            run.error = error.message;
+            await run.save().catch(() => {});
+        }
+        res.status(error.statusCode || 500).json({ success: false, error: error.message, run: run ? agentRunPayload(req, run) : null });
+    }
+});
+
+router.get('/:recordId/agent/runs/:runId', async (req, res) => {
+    try {
+        const { run } = await requireAgentRun(req, req.params.recordId, req.params.runId);
+        res.json({ success: true, run: agentRunPayload(req, run) });
+    } catch (error) {
+        console.error('[RecordAgent] get run error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
+    try {
+        const { record, entity, run } = await requireAgentRun(req, req.params.recordId, req.params.runId);
+        if (!['review', 'partial'].includes(run.status)) {
+            return res.status(400).json({ success: false, error: 'Ce run ne peut pas être appliqué dans son état actuel' });
+        }
+
+        const requestedIds = Array.isArray(req.body.actionIds) ? new Set(req.body.actionIds.map(cleanId)) : null;
+        const actions = (run.proposedActions || []).filter(action => {
+            if (requestedIds && !requestedIds.has(action.id)) return false;
+            return ['proposed', 'failed'].includes(action.status);
+        });
+
+        if (!actions.length) return res.status(400).json({ success: false, error: 'Aucune action à appliquer' });
+
+        run.status = 'applying';
+        await run.save();
+
+        for (const action of actions) {
+            try {
+                const result = await applyAgentAction(req, record, entity, action);
+                action.status = 'applied';
+                action.error = '';
+                action.result = result.result;
+                action.appliedAt = new Date();
+                run.executionLog.push({
+                    actionId: action.id,
+                    tool: action.tool,
+                    status: 'applied',
+                    before: result.before,
+                    after: result.after,
+                    inverse: result.inverse,
+                    result: result.result,
+                    appliedAt: action.appliedAt,
+                    actorId: String(req.user._id)
+                });
+            } catch (actionError) {
+                action.status = 'failed';
+                action.error = actionError.message;
+                run.executionLog.push({
+                    actionId: action.id,
+                    tool: action.tool,
+                    status: 'failed',
+                    error: actionError.message,
+                    appliedAt: new Date(),
+                    actorId: String(req.user._id)
+                });
+            }
+        }
+
+        const appliedCount = run.proposedActions.filter(action => action.status === 'applied').length;
+        const failedCount = run.proposedActions.filter(action => action.status === 'failed').length;
+        run.status = failedCount > 0 ? (appliedCount > 0 ? 'partial' : 'review') : 'applied';
+        await run.save();
+
+        res.json({ success: true, run: agentRunPayload(req, run) });
+    } catch (error) {
+        console.error('[RecordAgent] apply run error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/:recordId/agent/runs/:runId/undo', async (req, res) => {
+    try {
+        const { record, entity, run } = await requireAgentRun(req, req.params.recordId, req.params.runId);
+        const appliedLogs = (run.executionLog || [])
+            .filter(log => log.status === 'applied')
+            .reverse();
+
+        if (!appliedLogs.length) return res.status(400).json({ success: false, error: 'Aucune action appliquée à annuler' });
+
+        run.status = 'undoing';
+        await run.save();
+
+        for (const log of appliedLogs) {
+            await undoAgentLog(req, record, entity, log);
+            log.status = 'undone';
+            log.undoneAt = new Date();
+            const action = run.proposedActions.find(item => item.id === log.actionId);
+            if (action) {
+                action.status = 'undone';
+                action.undoneAt = log.undoneAt;
+            }
+        }
+
+        run.status = 'undone';
+        await run.save();
+
+        res.json({ success: true, run: agentRunPayload(req, run) });
+    } catch (error) {
+        console.error('[RecordAgent] undo run error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
     }
 });

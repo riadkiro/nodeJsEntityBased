@@ -528,6 +528,174 @@ function DebugPayloadView({ payload = {} }) {
     )
 }
 
+function agentStatusLabel(status) {
+    if (status === 'drafting') return 'Analyse'
+    if (status === 'review') return 'À valider'
+    if (status === 'applying') return 'Application'
+    if (status === 'applied') return 'Appliqué'
+    if (status === 'partial') return 'Partiel'
+    if (status === 'undoing') return 'Annulation'
+    if (status === 'undone') return 'Annulé'
+    if (status === 'error') return 'Erreur'
+    return status || 'Agent'
+}
+
+function agentToolIcon(tool) {
+    if (tool === 'create_note') return 'solar:notebook-bold-duotone'
+    if (tool === 'update_fiche') return 'solar:card-bold-duotone'
+    if (tool === 'create_task') return 'solar:checklist-minimalistic-bold-duotone'
+    return 'solar:magic-stick-3-bold-duotone'
+}
+
+function agentToolColor(tool) {
+    if (tool === 'create_note') return '#8b5cf6'
+    if (tool === 'update_fiche') return '#4361ee'
+    if (tool === 'create_task') return '#10b981'
+    return '#4f46e5'
+}
+
+function agentActionStatusIcon(status) {
+    if (status === 'applied') return 'solar:check-circle-bold-duotone'
+    if (status === 'failed') return 'solar:danger-circle-bold-duotone'
+    if (status === 'undone') return 'solar:rewind-back-bold-duotone'
+    return 'solar:clock-circle-bold-duotone'
+}
+
+function AgentActionCard({ action = {} }) {
+    const color = agentToolColor(action.tool)
+    const diff = Array.isArray(action.diff) ? action.diff : []
+    const failed = action.status === 'failed'
+
+    return (
+        <div className={`rai-agent-action ${action.status || 'proposed'}`} style={{ '--agent-action-color': color }}>
+            <div className="rai-agent-action-head">
+                <span className="rai-agent-action-icon">
+                    <Icon icon={agentToolIcon(action.tool)} width={16} />
+                </span>
+                <span className="rai-agent-action-title">
+                    <strong>{action.title || action.tool}</strong>
+                    <small>{action.description || 'Action proposée'}</small>
+                </span>
+                <span className={`rai-agent-action-status ${action.status || 'proposed'}`}>
+                    <Icon icon={agentActionStatusIcon(action.status)} width={13} />
+                    {agentStatusLabel(action.status || 'review')}
+                </span>
+            </div>
+
+            {action.tool === 'create_note' && action.preview && (
+                <div className="rai-agent-preview">
+                    <strong>{action.preview.title || action.input?.title || 'Note IA'}</strong>
+                    <p>{action.preview.excerpt || ''}</p>
+                </div>
+            )}
+
+            {action.tool === 'create_task' && action.preview && (
+                <div className="rai-agent-preview compact">
+                    <strong>{action.preview.title || action.input?.title || 'Tâche IA'}</strong>
+                    {action.preview.dueDate && <p>Échéance: {action.preview.dueDate}</p>}
+                </div>
+            )}
+
+            {diff.length > 0 && (
+                <div className="rai-agent-diff">
+                    {diff.map(item => (
+                        <div className="rai-agent-diff-row" key={`${action.id}:${item.fieldId}`}>
+                            <span>{item.label}</span>
+                            <div>
+                                <em>{item.before}</em>
+                                <Icon icon="solar:alt-arrow-right-linear" width={13} />
+                                <strong>{item.after}</strong>
+                            </div>
+                            {item.reason && <small>{item.reason}</small>}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {failed && action.error && (
+                <div className="rai-agent-action-error">
+                    <Icon icon="solar:danger-circle-linear" width={14} />
+                    {action.error}
+                </div>
+            )}
+        </div>
+    )
+}
+
+function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext }) {
+    const actions = Array.isArray(run.proposedActions) ? run.proposedActions : []
+    const canApply = ['review', 'partial'].includes(run.status) && actions.some(action => ['proposed', 'failed'].includes(action.status))
+    const canUndo = ['applied', 'partial'].includes(run.status) && actions.some(action => action.status === 'applied')
+    const steps = Array.isArray(run.plan?.steps) ? run.plan.steps : []
+
+    return (
+        <section className={`rai-agent-run ${run.status || 'review'}`}>
+            <div className="rai-agent-run-head">
+                <span className="rai-agent-run-mark">
+                    <Icon icon="solar:magic-stick-3-bold-duotone" width={18} />
+                </span>
+                <div className="rai-agent-run-title">
+                    <strong>{shortText(run.goal || 'Run agent', 92)}</strong>
+                    <small>{formatTime(run.createdAt)} · {actions.length} tool{actions.length > 1 ? 's' : ''}</small>
+                </div>
+                <span className={`rai-agent-run-status ${run.status || 'review'}`}>{agentStatusLabel(run.status)}</span>
+            </div>
+
+            {run.summary && <p className="rai-agent-summary">{run.summary}</p>}
+
+            {run.contextItems?.length > 0 && (
+                <ContextCardGrid items={run.contextItems} onOpen={onOpenContext} />
+            )}
+
+            {steps.length > 0 && (
+                <div className="rai-agent-steps">
+                    {steps.map((step, index) => (
+                        <div className="rai-agent-step" key={step.id || index}>
+                            <span>{index + 1}</span>
+                            <div>
+                                <strong>{step.title}</strong>
+                                {step.detail && <small>{step.detail}</small>}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="rai-agent-actions">
+                {actions.length === 0 && <div className="rai-context-empty">Aucune action proposée</div>}
+                {actions.map(action => (
+                    <AgentActionCard action={action} key={action.id} />
+                ))}
+            </div>
+
+            {run.error && (
+                <div className="rai-agent-action-error">
+                    <Icon icon="solar:danger-circle-linear" width={14} />
+                    {run.error}
+                </div>
+            )}
+
+            <div className="rai-agent-run-footer">
+                <span>Review mode actif</span>
+                <div>
+                    {canUndo && (
+                        <button type="button" className="rai-agent-secondary" onClick={() => onUndo(run)} disabled={busy}>
+                            <Icon icon="solar:rewind-back-bold-duotone" width={14} />
+                            Annuler
+                        </button>
+                    )}
+                    {canApply && (
+                        <button type="button" className="rai-agent-primary" onClick={() => onApply(run)} disabled={busy}>
+                            <Icon icon={busy ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold-duotone'} width={14} />
+                            Appliquer
+                        </button>
+                    )}
+                </div>
+            </div>
+        </section>
+    )
+}
+
 export default function RecordAI({ accountNumber, recordId, recordTitle, debugAdmin = false }) {
     const apiBase = `/account/${accountNumber}/api/record-ai/${recordId}`
     const [loading, setLoading] = useState(true)
@@ -566,6 +734,10 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [lastContextStats, setLastContextStats] = useState(null)
     const [agentPhrases, setAgentPhrases] = useState(buildAgentPhrases)
     const [agentPhraseIndex, setAgentPhraseIndex] = useState(0)
+    const [activeMode, setActiveMode] = useState('chat')
+    const [agentRuns, setAgentRuns] = useState([])
+    const [agentRunning, setAgentRunning] = useState(false)
+    const [agentBusyRunId, setAgentBusyRunId] = useState('')
     const messagesRef = useRef(null)
     const fileInputRef = useRef(null)
     const agentTimerRef = useRef(null)
@@ -635,6 +807,15 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         scrollToBottom()
     }, [apiFetch, scrollToBottom])
 
+    const loadAgentRuns = useCallback(async () => {
+        try {
+            const data = await apiFetch('/agent/runs')
+            setAgentRuns(data.runs || [])
+        } catch (err) {
+            console.warn('[RecordAI] Agent runs load failed:', err)
+        }
+    }, [apiFetch])
+
     const loadBootstrap = useCallback(async () => {
         setLoading(true)
         setError('')
@@ -653,12 +834,13 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             if (data.conversations?.[0]) {
                 await loadConversation(data.conversations[0]._id)
             }
+            await loadAgentRuns()
         } catch (err) {
             setError(err.message || 'Chargement impossible')
         } finally {
             setLoading(false)
         }
-    }, [apiFetch, loadConversation, recordTitle])
+    }, [apiFetch, loadAgentRuns, loadConversation, recordTitle])
 
     useEffect(() => {
         loadBootstrap()
@@ -856,6 +1038,86 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             stopAgentStatus()
         }
     }, [activeConversation, apiFetch, createConversation, input, selection, sending, startAgentStatus, stopAgentStatus, updateConversationList])
+
+    const upsertAgentRun = useCallback((run) => {
+        if (!run?._id) return
+        setAgentRuns(prev => {
+            const rest = prev.filter(item => item._id !== run._id)
+            return [run, ...rest]
+        })
+    }, [])
+
+    const startAgentRun = useCallback(async () => {
+        const text = input.trim()
+        if (!text || agentRunning) return
+
+        const payloadSelection = buildPayloadSelection(selection)
+        const tempRun = {
+            _id: `temp_${Date.now()}`,
+            goal: text,
+            status: 'drafting',
+            summary: 'Analyse de la demande en cours...',
+            proposedActions: [],
+            plan: { title: 'Plan agent', steps: [{ title: 'Analyse du contexte', detail: '', status: 'ready' }] },
+            contextItems: [],
+            createdAt: new Date().toISOString()
+        }
+
+        setAgentRuns(prev => [tempRun, ...prev])
+        setInput('')
+        setAgentRunning(true)
+        setError('')
+        startAgentStatus(selection)
+
+        try {
+            const data = await apiFetch('/agent/runs', {
+                method: 'POST',
+                body: JSON.stringify({
+                    goal: text,
+                    contextSelections: payloadSelection,
+                }),
+            })
+            setAgentRuns(prev => [data.run, ...prev.filter(item => item._id !== tempRun._id && item._id !== data.run?._id)])
+            setSelection(emptySelection())
+            setLastContextStats(null)
+        } catch (err) {
+            setAgentRuns(prev => prev.filter(item => item._id !== tempRun._id))
+            setError(err.message || 'Agent impossible')
+        } finally {
+            setAgentRunning(false)
+            stopAgentStatus()
+        }
+    }, [agentRunning, apiFetch, input, selection, startAgentStatus, stopAgentStatus])
+
+    const applyAgentRun = useCallback(async (run) => {
+        if (!run?._id || agentBusyRunId) return
+        setAgentBusyRunId(run._id)
+        setError('')
+        try {
+            const data = await apiFetch(`/agent/runs/${run._id}/apply`, { method: 'POST', body: JSON.stringify({}) })
+            upsertAgentRun(data.run)
+        } catch (err) {
+            setError(err.message || 'Application impossible')
+        } finally {
+            setAgentBusyRunId('')
+        }
+    }, [agentBusyRunId, apiFetch, upsertAgentRun])
+
+    const undoAgentRun = useCallback(async (run) => {
+        if (!run?._id || agentBusyRunId) return
+        const ok = window.confirm("Annuler les modifications appliquées par cet agent ?")
+        if (!ok) return
+        setAgentBusyRunId(run._id)
+        setError('')
+        try {
+            const data = await apiFetch(`/agent/runs/${run._id}/undo`, { method: 'POST', body: JSON.stringify({}) })
+            upsertAgentRun(data.run)
+        } catch (err) {
+            setError(err.message || 'Annulation impossible')
+        } finally {
+            setAgentBusyRunId('')
+        }
+    }, [agentBusyRunId, apiFetch, upsertAgentRun])
 
     const handleUpload = useCallback(async (event) => {
         const file = event.target.files?.[0]
@@ -1334,6 +1596,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     )
 
     const canSend = input.trim() && !sending && !creating
+    const canSubmit = activeMode === 'agent'
+        ? Boolean(input.trim()) && !agentRunning
+        : canSend
     const responseEngineOptions = engineOptions.responseEngines?.length
         ? engineOptions.responseEngines
         : [{ key: 'openai', label: 'ChatGPT / OpenAI', available: true }]
@@ -1358,50 +1623,78 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                     <div className="rai-sidebar-header">
                         <div className="rai-sidebar-title-row">
                             <h3>
-                                <Icon icon="solar:magic-stick-3-bold-duotone" width={18} />
-                                Conversations
-                                <span className="rai-count">{conversations.length}</span>
+                                <Icon icon={activeMode === 'agent' ? 'solar:magic-stick-3-bold-duotone' : 'solar:chat-round-dots-bold-duotone'} width={18} />
+                                {activeMode === 'agent' ? 'Runs Agent' : 'Conversations'}
+                                <span className="rai-count">{activeMode === 'agent' ? agentRuns.length : conversations.length}</span>
                             </h3>
-                            <button type="button" className="rai-create-btn" title="Nouvelle conversation" onClick={() => createConversation()} disabled={creating}>
-                                <Icon icon={creating ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'} width={14} />
-                                <span>Nouvelle</span>
-                            </button>
+                            {activeMode === 'chat' && (
+                                <button type="button" className="rai-create-btn" title="Nouvelle conversation" onClick={() => createConversation()} disabled={creating}>
+                                    <Icon icon={creating ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'} width={14} />
+                                    <span>Nouvelle</span>
+                                </button>
+                            )}
                         </div>
-                        <label className="rai-sidebar-search">
-                            <Icon icon="solar:magnifer-linear" width={14} />
-                            <input
-                                type="text"
-                                value={conversationSearch}
-                                onChange={event => setConversationSearch(event.target.value)}
-                                placeholder="Rechercher une conversation..."
-                            />
-                        </label>
+                        {activeMode === 'chat' && (
+                            <label className="rai-sidebar-search">
+                                <Icon icon="solar:magnifer-linear" width={14} />
+                                <input
+                                    type="text"
+                                    value={conversationSearch}
+                                    onChange={event => setConversationSearch(event.target.value)}
+                                    placeholder="Rechercher une conversation..."
+                                />
+                            </label>
+                        )}
                     </div>
 
                     <div className="rai-conv-list">
                         {loading && <div className="rai-loading"><Icon icon="line-md:loading-twotone-loop" width={22} /> Chargement...</div>}
-                        {!loading && filteredConversations.length === 0 && (
-                            <div className="rai-empty-side">
-                                <Icon icon="solar:chat-round-dots-bold-duotone" width={32} />
-                                <span>{conversations.length === 0 ? 'Aucune conversation' : 'Aucun résultat'}</span>
-                                {conversations.length === 0 && <small>Cliquez sur Nouvelle pour commencer</small>}
-                            </div>
+                        {activeMode === 'agent' ? (
+                            <>
+                                {!loading && agentRuns.length === 0 && (
+                                    <div className="rai-empty-side">
+                                        <Icon icon="solar:magic-stick-3-bold-duotone" width={32} />
+                                        <span>Aucun run agent</span>
+                                        <small>Décrivez une action dans le champ principal</small>
+                                    </div>
+                                )}
+                                {agentRuns.map(run => (
+                                    <div className={`rai-conv rai-agent-mini ${run.status || 'review'}`} key={run._id}>
+                                        <span className="rai-conv-icon"><Icon icon="solar:magic-stick-3-bold-duotone" width={18} /></span>
+                                        <span className="rai-conv-body">
+                                            <span className="rai-conv-title" title={run.goal || 'Run agent'}>{shortText(run.goal || 'Run agent', 48)}</span>
+                                            <span className="rai-conv-preview">{agentStatusLabel(run.status)} · {(run.proposedActions || []).length} tool{(run.proposedActions || []).length > 1 ? 's' : ''}</span>
+                                        </span>
+                                        <span className="rai-conv-date">{formatDate(run.updatedAt || run.createdAt)}</span>
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
+                            <>
+                                {!loading && filteredConversations.length === 0 && (
+                                    <div className="rai-empty-side">
+                                        <Icon icon="solar:chat-round-dots-bold-duotone" width={32} />
+                                        <span>{conversations.length === 0 ? 'Aucune conversation' : 'Aucun résultat'}</span>
+                                        {conversations.length === 0 && <small>Cliquez sur Nouvelle pour commencer</small>}
+                                    </div>
+                                )}
+                                {filteredConversations.map(conversation => (
+                                    <button
+                                        type="button"
+                                        key={conversation._id}
+                                        className={`rai-conv ${activeConversation?._id === conversation._id ? 'active' : ''}`}
+                                        onClick={() => loadConversation(conversation._id)}
+                                    >
+                                        <span className="rai-conv-icon"><Icon icon="solar:chat-round-dots-bold-duotone" width={18} /></span>
+                                        <span className="rai-conv-body">
+                                            <span className="rai-conv-title" title={conversation.title || 'Conversation'}>{conversation.title || 'Conversation'}</span>
+                                            <span className="rai-conv-preview">{shortText(conversation.lastMessage?.text || 'Aucun message', 54)}</span>
+                                        </span>
+                                        <span className="rai-conv-date">{formatDate(conversation.updatedAt)}</span>
+                                    </button>
+                                ))}
+                            </>
                         )}
-                        {filteredConversations.map(conversation => (
-                            <button
-                                type="button"
-                                key={conversation._id}
-                                className={`rai-conv ${activeConversation?._id === conversation._id ? 'active' : ''}`}
-                                onClick={() => loadConversation(conversation._id)}
-                            >
-                                <span className="rai-conv-icon"><Icon icon="solar:chat-round-dots-bold-duotone" width={18} /></span>
-                                <span className="rai-conv-body">
-                                    <span className="rai-conv-title" title={conversation.title || 'Conversation'}>{conversation.title || 'Conversation'}</span>
-                                    <span className="rai-conv-preview">{shortText(conversation.lastMessage?.text || 'Aucun message', 54)}</span>
-                                </span>
-                                <span className="rai-conv-date">{formatDate(conversation.updatedAt)}</span>
-                            </button>
-                        ))}
                     </div>
                 </aside>
 
@@ -1411,11 +1704,11 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             <Icon icon="solar:magic-stick-3-bold-duotone" width={21} />
                         </div>
                         <div className="rai-chat-title-wrap">
-                            <div className="rai-chat-title">{activeConversation?.title || record.title || 'IA'}</div>
+                            <div className="rai-chat-title">{activeMode === 'agent' ? 'Agent record' : (activeConversation?.title || record.title || 'IA')}</div>
                             <div className="rai-chat-sub">
                                 <span>{record.entityName || 'Fiche'}</span>
                                 <span>·</span>
-                                <span>{selectedCount} contexte{selectedCount > 1 ? 's' : ''}</span>
+                                <span>{activeMode === 'agent' ? `${agentRuns.length} run${agentRuns.length > 1 ? 's' : ''}` : `${selectedCount} contexte${selectedCount > 1 ? 's' : ''}`}</span>
                                 {lastContextStats && (
                                     <>
                                         <span>·</span>
@@ -1423,6 +1716,24 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                     </>
                                 )}
                             </div>
+                        </div>
+                        <div className="rai-mode-switch" role="tablist" aria-label="Mode IA">
+                            <button
+                                type="button"
+                                className={activeMode === 'chat' ? 'active' : ''}
+                                onClick={() => setActiveMode('chat')}
+                            >
+                                <Icon icon="solar:chat-round-dots-bold-duotone" width={14} />
+                                Chat
+                            </button>
+                            <button
+                                type="button"
+                                className={activeMode === 'agent' ? 'active' : ''}
+                                onClick={() => setActiveMode('agent')}
+                            >
+                                <Icon icon="solar:magic-stick-3-bold-duotone" width={14} />
+                                Agent
+                            </button>
                         </div>
                         {debugAdmin && (
                             <>
@@ -1436,10 +1747,12 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                 </button>
                             </>
                         )}
-                        <button type="button" className="rai-clear-btn" onClick={deleteConversation} disabled={!activeConversation} title="Effacer cette conversation IA et son historique">
-                            <Icon icon="solar:trash-bin-trash-bold" width={15} />
-                            <span>Effacer</span>
-                        </button>
+                        {activeMode === 'chat' && (
+                            <button type="button" className="rai-clear-btn" onClick={deleteConversation} disabled={!activeConversation} title="Effacer cette conversation IA et son historique">
+                                <Icon icon="solar:trash-bin-trash-bold" width={15} />
+                                <span>Effacer</span>
+                            </button>
+                        )}
                     </header>
 
                     {error && (
@@ -1450,69 +1763,98 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                     )}
 
                     <div className="rai-messages" ref={messagesRef}>
-                        {!activeConversation && !loading && (
-                            <div className="rai-empty-chat">
-                                <div className="rai-empty-mark"><Icon icon="solar:magic-stick-3-bold-duotone" width={36} /></div>
-                                <div>Nouvelle conversation IA</div>
+                        {activeMode === 'agent' ? (
+                            <div className="rai-agent-board">
+                                {agentRunning && (
+                                    <div className="rai-agent-running">
+                                        <AgentStatus phrase={activeAgentPhrase} />
+                                    </div>
+                                )}
+                                {!agentRunning && agentRuns.length === 0 && (
+                                    <div className="rai-empty-chat">
+                                        <div className="rai-empty-mark"><Icon icon="solar:magic-stick-3-bold-duotone" width={36} /></div>
+                                        <div>Décrivez ce que l’agent doit préparer</div>
+                                        <small>Il proposera les notes, champs ou tâches en review avant application.</small>
+                                    </div>
+                                )}
+                                {agentRuns.map(run => (
+                                    <AgentRunCard
+                                        key={run._id}
+                                        run={run}
+                                        onApply={applyAgentRun}
+                                        onUndo={undoAgentRun}
+                                        busy={agentBusyRunId === run._id}
+                                        onOpenContext={openContextItem}
+                                    />
+                                ))}
                             </div>
-                        )}
-                        {activeConversation && messages.length === 0 && (
-                            <div className="rai-empty-chat">
-                                <div className="rai-empty-mark"><Icon icon="solar:chat-round-line-bold-duotone" width={36} /></div>
-                                <div>{activeConversation.title || 'Conversation'}</div>
-                            </div>
-                        )}
-                        {messages.map((message, index) => {
-                            const isContextMessage = message.messageType === 'context'
-                            const contextItems = isContextMessage ? contextItemsForMessage(message) : []
-                            const attachedContextItems = !isContextMessage && message.role === 'user'
-                                ? contextItemsForMessage(message)
-                                : []
+                        ) : (
+                            <>
+                                {!activeConversation && !loading && (
+                                    <div className="rai-empty-chat">
+                                        <div className="rai-empty-mark"><Icon icon="solar:magic-stick-3-bold-duotone" width={36} /></div>
+                                        <div>Nouvelle conversation IA</div>
+                                    </div>
+                                )}
+                                {activeConversation && messages.length === 0 && (
+                                    <div className="rai-empty-chat">
+                                        <div className="rai-empty-mark"><Icon icon="solar:chat-round-line-bold-duotone" width={36} /></div>
+                                        <div>{activeConversation.title || 'Conversation'}</div>
+                                    </div>
+                                )}
+                                {messages.map((message, index) => {
+                                    const isContextMessage = message.messageType === 'context'
+                                    const contextItems = isContextMessage ? contextItemsForMessage(message) : []
+                                    const attachedContextItems = !isContextMessage && message.role === 'user'
+                                        ? contextItemsForMessage(message)
+                                        : []
 
-                            if (isContextMessage) {
-                                return (
-                                    <div key={message._id || `${message.role}_${index}`} className="rai-message context">
-                                        <div className="rai-context-event">
-                                            <div className="rai-context-event-head">
-                                                <span className="rai-context-event-icon">
-                                                    <Icon icon="solar:layers-minimalistic-bold-duotone" width={15} />
-                                                </span>
-                                                <span>Contexte ajouté</span>
-                                                <strong>{contextItems.length} source{contextItems.length > 1 ? 's' : ''}</strong>
+                                    if (isContextMessage) {
+                                        return (
+                                            <div key={message._id || `${message.role}_${index}`} className="rai-message context">
+                                                <div className="rai-context-event">
+                                                    <div className="rai-context-event-head">
+                                                        <span className="rai-context-event-icon">
+                                                            <Icon icon="solar:layers-minimalistic-bold-duotone" width={15} />
+                                                        </span>
+                                                        <span>Contexte ajouté</span>
+                                                        <strong>{contextItems.length} source{contextItems.length > 1 ? 's' : ''}</strong>
+                                                    </div>
+                                                    <ContextCardGrid items={contextItems} onOpen={openContextItem} />
+                                                    <div className="rai-context-event-time">{formatTime(message.createdAt)}</div>
+                                                </div>
                                             </div>
-                                            <ContextCardGrid items={contextItems} onOpen={openContextItem} />
-                                            <div className="rai-context-event-time">{formatTime(message.createdAt)}</div>
-                                        </div>
-                                    </div>
-                                )
-                            }
+                                        )
+                                    }
 
-                            return (
-                                <div key={message._id || `${message.role}_${index}`} className={`rai-message ${message.role === 'user' ? 'mine' : 'assistant'}`}>
-                                    <div className="rai-msg-avatar">
-                                        {message.role === 'user' ? 'M' : <Icon icon="solar:magic-stick-3-bold-duotone" width={15} />}
-                                    </div>
-                                    <div>
-                                        <div className="rai-bubble">
-                                            {message.loading ? (
-                                                <AgentStatus phrase={activeAgentPhrase} />
-                                            ) : (
-                                                <>
-                                                    <ContextBadgeList items={attachedContextItems} onOpen={openContextItem} className="rai-message-badges" />
-                                                    {renderMessageContent(message.content)}
-                                                </>
-                                            )}
+                                    return (
+                                        <div key={message._id || `${message.role}_${index}`} className={`rai-message ${message.role === 'user' ? 'mine' : 'assistant'}`}>
+                                            <div className="rai-msg-avatar">
+                                                {message.role === 'user' ? 'M' : <Icon icon="solar:magic-stick-3-bold-duotone" width={15} />}
+                                            </div>
+                                            <div>
+                                                <div className="rai-bubble">
+                                                    {message.loading ? (
+                                                        <AgentStatus phrase={activeAgentPhrase} />
+                                                    ) : (
+                                                        <>
+                                                            <ContextBadgeList items={attachedContextItems} onOpen={openContextItem} className="rai-message-badges" />
+                                                            {renderMessageContent(message.content)}
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className="rai-msg-time">
+                                                    {formatTime(message.createdAt)}
+                                                    {message.contextStats?.included && message.role === 'user' && (
+                                                        <span> · {message.contextStats.estimatedTokens || 0} tokens ctx</span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="rai-msg-time">
-                                            {formatTime(message.createdAt)}
-                                            {message.contextStats?.included && message.role === 'user' && (
-                                                <span> · {message.contextStats.estimatedTokens || 0} tokens ctx</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })}
+                                    )
+                                })}
+                            </>
+                        )}
                     </div>
 
                     <div className="rai-composer-wrap">
@@ -1533,14 +1875,14 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                 onKeyDown={event => {
                                     if (event.key === 'Enter' && !event.shiftKey) {
                                         event.preventDefault()
-                                        sendMessage()
+                                        activeMode === 'agent' ? startAgentRun() : sendMessage()
                                     }
                                 }}
-                                placeholder="Posez votre question..."
+                                placeholder={activeMode === 'agent' ? "Décrivez l'action à préparer..." : 'Posez votre question...'}
                                 rows={1}
                             />
-                            <button type="button" className="rai-send" onClick={sendMessage} disabled={!canSend}>
-                                <Icon icon={sending ? 'line-md:loading-twotone-loop' : 'solar:plain-bold'} width={18} />
+                            <button type="button" className="rai-send" onClick={activeMode === 'agent' ? startAgentRun : sendMessage} disabled={!canSubmit}>
+                                <Icon icon={(sending || agentRunning) ? 'line-md:loading-twotone-loop' : (activeMode === 'agent' ? 'solar:magic-stick-3-bold-duotone' : 'solar:plain-bold')} width={18} />
                             </button>
                         </div>
                     </div>
@@ -1988,6 +2330,72 @@ const styles = `
 .rai-debug-block summary::-webkit-details-marker{display:none;}
 .rai-debug-block summary strong{font-size:10px;color:#94a3b8;font-weight:700;white-space:nowrap;}
 .rai-debug-block pre{margin:0;padding:10px;border-top:1px solid #e5e7eb;background:#0f172a;color:#dbeafe;max-height:340px;overflow:auto;font-size:11px;line-height:1.45;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+.rai-mode-switch{display:inline-flex;align-items:center;gap:2px;padding:3px;border:1px solid #e0e7ff;background:#f8faff;border-radius:10px;flex-shrink:0;}
+.rai-mode-switch button{height:28px;border:none;border-radius:7px;background:transparent;color:#64748b;display:inline-flex;align-items:center;gap:5px;padding:0 9px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:all .15s;}
+.rai-mode-switch button:hover{color:var(--rai-ai);background:#eef2ff;}
+.rai-mode-switch button.active{background:#fff;color:var(--rai-ai);box-shadow:0 1px 5px rgba(79,70,229,.12);}
+.rai-agent-board{width:100%;max-width:940px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+.rai-agent-running{align-self:flex-start;margin:4px 0 6px;}
+.rai-agent-run{border:1px solid #e5e7eb;background:rgba(255,255,255,.96);box-shadow:0 10px 30px rgba(15,23,42,.06);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;animation:raiFade .22s ease both;}
+.rai-agent-run.applied{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4,#fff);}
+.rai-agent-run.partial{border-color:#fde68a;background:linear-gradient(180deg,#fffbeb,#fff);}
+.rai-agent-run.error{border-color:#fecaca;background:linear-gradient(180deg,#fff1f2,#fff);}
+.rai-agent-run.undone{opacity:.82;}
+.rai-agent-run-head{display:flex;align-items:center;gap:9px;min-width:0;}
+.rai-agent-run-mark{width:34px;height:34px;border-radius:10px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-agent-run-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.rai-agent-run-title strong{font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-agent-run-title small{font-size:10.5px;color:#94a3b8;font-weight:700;}
+.rai-agent-run-status{height:24px;border-radius:999px;padding:0 9px;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
+.rai-agent-run-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
+.rai-agent-run-status.partial{color:#b45309;background:#fffbeb;border-color:#fde68a;}
+.rai-agent-run-status.error{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
+.rai-agent-run-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
+.rai-agent-summary{margin:0;font-size:12.5px;line-height:1.55;color:#334155;background:#f8fafc;border:1px solid #edf2f7;border-radius:10px;padding:9px 10px;}
+.rai-agent-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px;}
+.rai-agent-step{display:flex;align-items:flex-start;gap:8px;border:1px solid #edf2f7;background:#fff;border-radius:10px;padding:8px;}
+.rai-agent-step>span{width:20px;height:20px;border-radius:999px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;}
+.rai-agent-step div{min-width:0;display:flex;flex-direction:column;gap:2px;}
+.rai-agent-step strong{font-size:11.5px;color:#334155;}
+.rai-agent-step small{font-size:10.5px;color:#94a3b8;line-height:1.35;}
+.rai-agent-actions{display:flex;flex-direction:column;gap:8px;}
+.rai-agent-action{border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;}
+.rai-agent-action.applied{border-color:#bbf7d0;background:#f0fdf4;}
+.rai-agent-action.failed{border-color:#fecaca;background:#fff1f2;}
+.rai-agent-action.undone{background:#f8fafc;opacity:.78;}
+.rai-agent-action-head{display:flex;align-items:center;gap:9px;min-width:0;}
+.rai-agent-action-icon{width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--agent-action-color) 11%,#fff);color:var(--agent-action-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-agent-action-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.rai-agent-action-title strong{font-size:12.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-agent-action-title small{font-size:10.5px;color:#64748b;line-height:1.35;}
+.rai-agent-action-status{height:22px;border-radius:999px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
+.rai-agent-action-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
+.rai-agent-action-status.failed{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
+.rai-agent-action-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
+.rai-agent-preview{border:1px solid #edf2f7;background:#f8fafc;border-radius:10px;padding:8px 10px;}
+.rai-agent-preview strong{display:block;font-size:12px;color:#334155;margin-bottom:3px;}
+.rai-agent-preview p{margin:0;font-size:11px;color:#64748b;line-height:1.45;}
+.rai-agent-preview.compact{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.rai-agent-preview.compact strong{margin:0;}
+.rai-agent-diff{display:flex;flex-direction:column;gap:5px;}
+.rai-agent-diff-row{border:1px solid #edf2f7;background:#f8fafc;border-radius:9px;padding:8px;display:flex;flex-direction:column;gap:5px;}
+.rai-agent-diff-row>span{font-size:11px;font-weight:900;color:#334155;}
+.rai-agent-diff-row div{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
+.rai-agent-diff-row em{font-style:normal;color:#94a3b8;text-decoration:line-through;font-size:11px;}
+.rai-agent-diff-row strong{color:#0f172a;font-size:11.5px;}
+.rai-agent-diff-row small{font-size:10.5px;color:#64748b;line-height:1.35;}
+.rai-agent-action-error{display:flex;align-items:center;gap:6px;border:1px solid #fecaca;background:#fff1f2;color:#e11d48;border-radius:9px;padding:8px 10px;font-size:11px;font-weight:700;}
+.rai-agent-run-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf2f7;padding-top:10px;color:#94a3b8;font-size:10.5px;font-weight:800;}
+.rai-agent-run-footer>div{display:flex;align-items:center;gap:7px;}
+.rai-agent-primary,.rai-agent-secondary{height:32px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;}
+.rai-agent-primary{border:none;background:linear-gradient(135deg,var(--rai-ai),#7c3aed);color:#fff;}
+.rai-agent-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.24);}
+.rai-agent-secondary{border:1px solid #e2e8f0;background:#fff;color:#64748b;}
+.rai-agent-secondary:hover{border-color:#fecaca;background:#fff1f2;color:#e11d48;}
+.rai-agent-primary:disabled,.rai-agent-secondary:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}
+.rai-agent-mini{cursor:default;}
+.rai-agent-mini.review{border-color:rgba(79,70,229,.18);background:#f8faff;}
+.rai-agent-mini.applied{border-color:#bbf7d0;background:#f0fdf4;}
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes raiDot{0%,80%,100%{opacity:.35;transform:translateY(0) scale(.88)}40%{opacity:1;transform:translateY(-2px) scale(1)}}
 @keyframes raiSheen{0%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}

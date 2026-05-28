@@ -24,6 +24,9 @@ const MAX_CHAT_CHARS = 9000;
 const MAX_FILE_CHARS = 16000;
 const MAX_UPLOAD_CHARS = 12000;
 const RECORD_AI_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_TIMEOUT_MS, 120000, 30000, 300000);
+const RECORD_AI_OCR_MAX_PAGES = boundedInt(process.env.RECORD_AI_OCR_MAX_PAGES || process.env.OCR_MAX_PAGES, 20, 1, 100);
+const RECORD_AI_DEBUG_ENABLED = process.env.RECORD_AI_DEBUG_ENABLED !== 'false';
+const RECORD_AI_DEBUG_TEXT_CHARS = boundedInt(process.env.RECORD_AI_DEBUG_TEXT_CHARS, 120000, 10000, 500000);
 const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/record-ai');
 
 const OCR_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.gif']);
@@ -47,6 +50,34 @@ function boundedInt(value, fallback, min, max) {
     const number = Number(value);
     if (!Number.isFinite(number)) return fallback;
     return Math.min(max, Math.max(min, Math.round(number)));
+}
+
+function isRecordAiDebugAdmin(req) {
+    if (req.user?.role === 'superadmin') return true;
+    if (['owner', 'admin'].includes(req.workspaceRole || '')) return true;
+    return typeof req.can === 'function' && req.can('ai.manage');
+}
+
+function clipDebugText(value, maxChars = RECORD_AI_DEBUG_TEXT_CHARS) {
+    const text = String(value || '');
+    if (text.length <= maxChars) return { text, truncated: false, originalChars: text.length };
+    return {
+        text: text.slice(0, Math.max(0, maxChars - 90)) + '\n\n[Debug tronqué pour limiter la taille du log]',
+        truncated: true,
+        originalChars: text.length
+    };
+}
+
+function stripDebugFromConversation(conversation) {
+    if (!conversation) return conversation;
+    const plain = typeof conversation.toObject === 'function' ? conversation.toObject() : { ...conversation };
+    if (Array.isArray(plain.messages)) {
+        plain.messages = plain.messages.map(message => {
+            const { debugPayload, ...safeMessage } = message || {};
+            return safeMessage;
+        });
+    }
+    return plain;
 }
 
 function stripHtml(value) {
@@ -171,6 +202,23 @@ function normalizeSelection(input = {}) {
         chats: [...new Set(chats)],
         files: uniqueFiles(files),
         uploads
+    };
+}
+
+function debugSelection(selection = {}) {
+    return {
+        ...persistableSelection(selection),
+        uploads: (selection.uploads || []).map(upload => {
+            const clipped = clipDebugText(upload.text || '');
+            return {
+                id: upload.id,
+                name: upload.name,
+                charCount: upload.charCount || String(upload.text || '').length || 0,
+                text: clipped.text,
+                textTruncated: clipped.truncated,
+                originalChars: clipped.originalChars
+            };
+        })
     };
 }
 
@@ -402,7 +450,12 @@ async function buildBootstrap(req, record, entity) {
         })),
         files: [...recordFiles, ...driveFiles],
         limits: {
-            maxContextChars: MAX_CONTEXT_CHARS
+            maxContextChars: MAX_CONTEXT_CHARS,
+            maxFileChars: MAX_FILE_CHARS,
+            maxUploadChars: MAX_UPLOAD_CHARS,
+            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
+            debugEnabled: RECORD_AI_DEBUG_ENABLED,
+            debugAdmin: isRecordAiDebugAdmin(req)
         }
     };
 }
@@ -581,6 +634,18 @@ function addSection(sections, stats, title, text, maxChars, meta = {}) {
 async function buildSelectedContext(req, record, entity, selection) {
     const stats = { sections: 0, chars: 0, truncated: false, sources: [], errors: [] };
     const sections = [];
+    const debug = {
+        ocr: [],
+        uploads: [],
+        limits: {
+            maxContextChars: MAX_CONTEXT_CHARS,
+            maxNotesChars: MAX_NOTES_CHARS,
+            maxChatChars: MAX_CHAT_CHARS,
+            maxFileChars: MAX_FILE_CHARS,
+            maxUploadChars: MAX_UPLOAD_CHARS,
+            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES
+        }
+    };
 
     addSection(
         sections,
@@ -653,6 +718,18 @@ async function buildSelectedContext(req, record, entity, selection) {
                 const limited = limitText(extracted.text, MAX_FILE_CHARS);
                 fileBlocks.push(`### ${extracted.name}\n${limited.text}`);
                 stats.truncated = stats.truncated || limited.truncated;
+                const clipped = clipDebugText(extracted.text);
+                debug.ocr.push({
+                    id: file.id,
+                    source: file.source,
+                    name: extracted.name,
+                    meta: extracted.meta || {},
+                    rawText: clipped.text,
+                    rawTextTruncated: clipped.truncated,
+                    rawTextChars: clipped.originalChars,
+                    contextTextChars: limited.text.length,
+                    contextTextTruncated: limited.truncated
+                });
             } catch (error) {
                 stats.errors.push(`${file.name || file.id}: ${error.message}`);
             }
@@ -666,6 +743,16 @@ async function buildSelectedContext(req, record, entity, selection) {
             .map(upload => {
                 const limited = limitText(upload.text, MAX_UPLOAD_CHARS);
                 stats.truncated = stats.truncated || limited.truncated;
+                const clipped = clipDebugText(upload.text);
+                debug.uploads.push({
+                    id: upload.id,
+                    name: upload.name,
+                    rawText: clipped.text,
+                    rawTextTruncated: clipped.truncated,
+                    rawTextChars: clipped.originalChars,
+                    contextTextChars: limited.text.length,
+                    contextTextTruncated: limited.truncated
+                });
                 return `### ${upload.name}\n${limited.text}`;
             })
             .join('\n\n');
@@ -684,7 +771,8 @@ async function buildSelectedContext(req, record, entity, selection) {
             selection: persistableSelection(selection),
             context: limitedContext.text
         })),
-        stats
+        stats,
+        debug
     };
 }
 
@@ -725,7 +813,7 @@ async function extractFileWithCache(req, file) {
         file.filename,
         stat.size,
         stat.mtimeMs,
-        'maxPages:12'
+        `maxPages:${RECORD_AI_OCR_MAX_PAGES}`
     ].join('|'));
     const cachePath = path.join(OCR_CACHE_DIR, String(req.account_number), `${cacheKey}.json`);
 
@@ -740,7 +828,7 @@ async function extractFileWithCache(req, file) {
         originalName: file.name,
         mimeType: file.mimeType,
         mode: 'auto',
-        maxPages: 12
+        maxPages: RECORD_AI_OCR_MAX_PAGES
     });
 
     const payload = {
@@ -854,6 +942,7 @@ function sanitizeStoredMessages(messages = []) {
             contextSelections: message.contextSelections ? persistableSelection(message.contextSelections) : undefined,
             contextItems: message.contextItems ? sanitizeContextItems(message.contextItems) : undefined,
             contextFingerprint: message.contextFingerprint ? String(message.contextFingerprint) : '',
+            debugPayload: RECORD_AI_DEBUG_ENABLED && message.debugPayload ? message.debugPayload : undefined,
             contextStats: message.contextStats || undefined,
             createdAt: message.createdAt ? new Date(message.createdAt) : new Date()
         }));
@@ -863,6 +952,51 @@ function defaultConversationTitle(message) {
     const clean = stripHtml(message || '').replace(/\s+/g, ' ').trim();
     if (!clean) return 'Nouvelle conversation';
     return clean.length > 48 ? `${clean.slice(0, 48)}...` : clean;
+}
+
+function buildDebugPayload({
+    phase,
+    message,
+    selection,
+    selectedContext,
+    input,
+    previousResponseId,
+    includeContext,
+    contextChanged,
+    contextItems
+}) {
+    if (!RECORD_AI_DEBUG_ENABLED) return undefined;
+
+    const clippedContext = clipDebugText(selectedContext?.text || '');
+    const clippedInput = clipDebugText(input || '');
+
+    return {
+        phase,
+        createdAt: new Date(),
+        model: RECORD_AI_MODEL,
+        timeoutMs: RECORD_AI_TIMEOUT_MS,
+        previousResponseId: previousResponseId || '',
+        includeContext: Boolean(includeContext),
+        contextChanged: Boolean(contextChanged),
+        userMessage: String(message || ''),
+        contextSelections: debugSelection(selection || {}),
+        contextItems: sanitizeContextItems(contextItems || []),
+        contextStats: selectedContext?.stats || null,
+        limits: selectedContext?.debug?.limits || {
+            maxContextChars: MAX_CONTEXT_CHARS,
+            maxFileChars: MAX_FILE_CHARS,
+            maxUploadChars: MAX_UPLOAD_CHARS,
+            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES
+        },
+        contextText: clippedContext.text,
+        contextTextTruncated: clippedContext.truncated,
+        contextTextOriginalChars: clippedContext.originalChars,
+        aiInput: clippedInput.text,
+        aiInputTruncated: clippedInput.truncated,
+        aiInputOriginalChars: clippedInput.originalChars,
+        ocr: selectedContext?.debug?.ocr || [],
+        uploads: selectedContext?.debug?.uploads || []
+    };
 }
 
 router.get('/:recordId/bootstrap', async (req, res) => {
@@ -922,7 +1056,7 @@ router.post('/:recordId/conversations', async (req, res) => {
             contextSelections: persistableSelection(selection)
         });
 
-        res.json({ success: true, conversation });
+        res.json({ success: true, conversation: stripDebugFromConversation(conversation) });
     } catch (error) {
         console.error('[RecordAI] create conversation error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -941,7 +1075,7 @@ router.get('/:recordId/conversations/:conversationId', async (req, res) => {
         }).lean();
 
         if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
-        res.json({ success: true, conversation });
+        res.json({ success: true, conversation: stripDebugFromConversation(conversation) });
     } catch (error) {
         console.error('[RecordAI] get conversation error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -968,7 +1102,7 @@ router.patch('/:recordId/conversations/:conversationId', async (req, res) => {
         ).lean();
 
         if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
-        res.json({ success: true, conversation });
+        res.json({ success: true, conversation: stripDebugFromConversation(conversation) });
     } catch (error) {
         console.error('[RecordAI] patch conversation error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -1012,6 +1146,12 @@ router.post('/:recordId/conversations/:conversationId/context', async (req, res)
                     estimatedTokens: 0,
                     included: false
                 },
+                debugPayload: buildDebugPayload({
+                    phase: 'context',
+                    message: 'Contexte ajouté',
+                    selection,
+                    contextItems
+                }),
                 createdAt: new Date()
             };
             conversation.messages = sanitizeStoredMessages([
@@ -1030,12 +1170,69 @@ router.post('/:recordId/conversations/:conversationId/context', async (req, res)
 
         res.json({
             success: true,
-            conversation: conversation.toObject(),
+            conversation: stripDebugFromConversation(conversation),
             contextItems,
             appended: shouldAppend
         });
     } catch (error) {
         console.error('[RecordAI] add context message error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/:recordId/conversations/:conversationId/debug', async (req, res) => {
+    try {
+        if (!RECORD_AI_DEBUG_ENABLED) {
+            return res.status(404).json({ success: false, error: 'Debug Record AI désactivé' });
+        }
+        if (!isRecordAiDebugAdmin(req)) {
+            return res.status(403).json({ success: false, error: 'Debug réservé aux administrateurs' });
+        }
+
+        const { record } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAiConversation = await tenantCollection(req, 'RecordAiConversation');
+        const conversation = await RecordAiConversation.findOne({
+            _id: req.params.conversationId,
+            recordId: record._id,
+            userId: String(req.user._id),
+            archived: { $ne: true }
+        }).lean();
+
+        if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
+
+        const logs = (conversation.messages || [])
+            .map((message, index) => ({
+                index,
+                role: message.role,
+                messageType: message.messageType || 'text',
+                content: String(message.content || '').slice(0, 500),
+                createdAt: message.createdAt,
+                contextStats: message.contextStats || null,
+                debugPayload: message.debugPayload || null
+            }))
+            .filter(entry => entry.debugPayload);
+
+        res.json({
+            success: true,
+            debugEnabled: true,
+            conversation: {
+                id: conversation._id,
+                title: conversation.title,
+                model: conversation.model,
+                updatedAt: conversation.updatedAt,
+                contextSelections: conversation.contextSelections || {}
+            },
+            limits: {
+                maxContextChars: MAX_CONTEXT_CHARS,
+                maxFileChars: MAX_FILE_CHARS,
+                maxUploadChars: MAX_UPLOAD_CHARS,
+                ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
+                debugTextChars: RECORD_AI_DEBUG_TEXT_CHARS
+            },
+            logs
+        });
+    } catch (error) {
+        console.error('[RecordAI] debug logs error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
     }
 });
@@ -1079,6 +1276,7 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
         const contextChanged = selectedContext.fingerprint !== conversation.contextFingerprint;
         const includeContext = Boolean(selectedContext.text && (!previousResponseId || contextChanged || req.body.forceContext));
         const input = buildAiInput(message, includeContext ? selectedContext.text : '');
+        const contextItems = await buildContextItems(req, record, entity, selection);
 
         const aiResult = await callRecordAI(req, {
             conversationId: conversation._id,
@@ -1097,6 +1295,17 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
                 estimatedTokens: selectedContext.stats.estimatedTokens,
                 included: includeContext
             },
+            debugPayload: buildDebugPayload({
+                phase: 'message',
+                message,
+                selection,
+                selectedContext,
+                input,
+                previousResponseId,
+                includeContext,
+                contextChanged,
+                contextItems
+            }),
             createdAt: new Date()
         };
         const assistantMessage = {
@@ -1131,7 +1340,7 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
 
         res.json({
             success: true,
-            conversation: conversation.toObject(),
+            conversation: stripDebugFromConversation(conversation),
             assistantMessage,
             contextStats: {
                 ...selectedContext.stats,

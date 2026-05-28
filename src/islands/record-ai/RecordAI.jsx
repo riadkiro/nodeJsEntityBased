@@ -274,7 +274,84 @@ function contextTypeLabel(type) {
     return 'Contexte'
 }
 
-export default function RecordAI({ accountNumber, recordId, recordTitle }) {
+function formatNumber(value) {
+    const number = Number(value || 0)
+    return Number.isFinite(number) ? number.toLocaleString('fr-FR') : '0'
+}
+
+function DebugTextBlock({ title, text, meta, open = false }) {
+    return (
+        <details className="rai-debug-block" open={open}>
+            <summary>
+                <span>{title}</span>
+                {meta && <strong>{meta}</strong>}
+            </summary>
+            <pre>{text || 'Aucune donnée'}</pre>
+        </details>
+    )
+}
+
+function DebugPayloadView({ payload = {} }) {
+    const ocrItems = Array.isArray(payload.ocr) ? payload.ocr : []
+    const uploads = Array.isArray(payload.uploads) ? payload.uploads : []
+    const contextStats = payload.contextStats || {}
+
+    return (
+        <div className="rai-debug-payload">
+            <div className="rai-debug-kpis">
+                <span>Contexte envoyé: <strong>{payload.includeContext ? 'oui' : 'non'}</strong></span>
+                <span>Contexte modifié: <strong>{payload.contextChanged ? 'oui' : 'non'}</strong></span>
+                <span>OCR max: <strong>{payload.limits?.ocrMaxPages || '-'} pages</strong></span>
+                <span>Contexte: <strong>{formatNumber(contextStats.chars)} caractères</strong></span>
+                {contextStats.truncated && <span className="is-warn">Tronqué</span>}
+            </div>
+
+            {contextStats.errors?.length > 0 && (
+                <DebugTextBlock title="Erreurs OCR/contexte" text={contextStats.errors.join('\n')} open />
+            )}
+
+            <DebugTextBlock
+                title="Payload envoyé à l'IA"
+                meta={`${formatNumber(payload.aiInputOriginalChars)} caractères`}
+                text={payload.aiInput}
+                open
+            />
+            <DebugTextBlock
+                title="Contexte reconstruit"
+                meta={`${formatNumber(payload.contextTextOriginalChars)} caractères`}
+                text={payload.contextText}
+            />
+            <DebugTextBlock
+                title="Sélection brute reçue par le serveur"
+                text={JSON.stringify(payload.contextSelections || {}, null, 2)}
+            />
+
+            {ocrItems.map((item, index) => (
+                <DebugTextBlock
+                    key={`${item.source || 'ocr'}:${item.id || index}`}
+                    title={`OCR document - ${item.name || item.id || index + 1}`}
+                    meta={`${formatNumber(item.rawTextChars)} caractères`}
+                    text={[
+                        `Meta: ${JSON.stringify(item.meta || {}, null, 2)}`,
+                        '',
+                        item.rawText || ''
+                    ].join('\n')}
+                />
+            ))}
+
+            {uploads.map((item, index) => (
+                <DebugTextBlock
+                    key={`${item.id || index}`}
+                    title={`Upload OCR - ${item.name || index + 1}`}
+                    meta={`${formatNumber(item.rawTextChars)} caractères`}
+                    text={item.rawText || ''}
+                />
+            ))}
+        </div>
+    )
+}
+
+export default function RecordAI({ accountNumber, recordId, recordTitle, debugAdmin = false }) {
     const apiBase = `/account/${accountNumber}/api/record-ai/${recordId}`
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -283,6 +360,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
     const [notes, setNotes] = useState([])
     const [chats, setChats] = useState([])
     const [files, setFiles] = useState([])
+    const [limits, setLimits] = useState({})
     const [conversations, setConversations] = useState([])
     const [activeConversation, setActiveConversation] = useState(null)
     const [messages, setMessages] = useState([])
@@ -297,6 +375,10 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
     const [contextOpen, setContextOpen] = useState(false)
     const [contextTab, setContextTab] = useState('fields')
     const [previewFile, setPreviewFile] = useState(null)
+    const [debugOpen, setDebugOpen] = useState(false)
+    const [debugLoading, setDebugLoading] = useState(false)
+    const [debugError, setDebugError] = useState('')
+    const [debugData, setDebugData] = useState(null)
     const [lastContextStats, setLastContextStats] = useState(null)
     const [agentPhrases, setAgentPhrases] = useState(buildAgentPhrases)
     const [agentPhraseIndex, setAgentPhraseIndex] = useState(0)
@@ -379,6 +461,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
             setNotes(data.notes || [])
             setChats(data.chats || [])
             setFiles(data.files || [])
+            setLimits(data.limits || {})
             setConversations(data.conversations || [])
             if (data.conversations?.[0]) {
                 await loadConversation(data.conversations[0]._id)
@@ -573,7 +656,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
             const body = new FormData()
             body.append('file', file)
             body.append('mode', 'auto')
-            body.append('maxPages', '12')
+            body.append('maxPages', String(limits.ocrMaxPages || 20))
             const res = await fetch(`/account/${accountNumber}/api/ocr/extract`, {
                 method: 'POST',
                 credentials: 'include',
@@ -593,7 +676,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         } finally {
             setUploading(false)
         }
-    }, [accountNumber])
+    }, [accountNumber, limits.ocrMaxPages])
 
     const removeUpload = useCallback((id) => {
         setSelection(prev => ({ ...prev, uploads: prev.uploads.filter(upload => upload.id !== id) }))
@@ -704,6 +787,22 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
             label: item.label,
         })
     }, [])
+
+    const loadDebugLogs = useCallback(async () => {
+        if (!debugAdmin || !activeConversation) return
+        setDebugOpen(true)
+        setDebugLoading(true)
+        setDebugError('')
+        try {
+            const data = await apiFetch(`/conversations/${activeConversation._id}/debug`)
+            setDebugData(data)
+        } catch (err) {
+            setDebugError(err.message || 'Debug indisponible')
+            setDebugData(null)
+        } finally {
+            setDebugLoading(false)
+        }
+    }, [activeConversation, apiFetch, debugAdmin])
 
     const applyContextToConversation = useCallback(async () => {
         if (applyingContext) return
@@ -1007,6 +1106,12 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                                 )}
                             </div>
                         </div>
+                        {debugAdmin && (
+                            <button type="button" className="rai-debug-btn" onClick={loadDebugLogs} disabled={!activeConversation || debugLoading} title="Voir les logs debug IA">
+                                <Icon icon={debugLoading ? 'line-md:loading-twotone-loop' : 'solar:bug-bold-duotone'} width={15} />
+                                <span>Debug</span>
+                            </button>
+                        )}
                         <button type="button" className="rai-clear-btn" onClick={deleteConversation} disabled={!activeConversation} title="Effacer cette conversation IA et son historique">
                             <Icon icon="solar:trash-bin-trash-bold" width={15} />
                             <span>Effacer</span>
@@ -1142,6 +1247,55 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                 </div>
             )}
 
+            {debugAdmin && debugOpen && (
+                <div className="rai-debug-backdrop" onClick={() => setDebugOpen(false)}>
+                    <div className="rai-debug-modal" onClick={event => event.stopPropagation()}>
+                        <div className="rai-debug-header">
+                            <div className="rai-debug-title">
+                                <span className="rai-debug-icon"><Icon icon="solar:bug-bold-duotone" width={17} /></span>
+                                <span>Debug IA</span>
+                            </div>
+                            <div className="rai-debug-actions">
+                                <button type="button" className="rai-preview-action" onClick={loadDebugLogs} title="Rafraîchir">
+                                    <Icon icon="solar:refresh-bold" width={15} />
+                                </button>
+                                <button type="button" className="rai-preview-action" onClick={() => setDebugOpen(false)} title="Fermer">
+                                    <Icon icon="solar:close-circle-linear" width={17} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="rai-debug-body">
+                            {debugLoading && <div className="rai-loading"><Icon icon="line-md:loading-twotone-loop" width={22} /> Chargement debug...</div>}
+                            {!debugLoading && debugError && <div className="rai-error"><Icon icon="solar:danger-circle-linear" width={16} /> {debugError}</div>}
+                            {!debugLoading && !debugError && debugData && (
+                                <>
+                                    <div className="rai-debug-summary">
+                                        <span>Modèle <strong>{debugData.conversation?.model || '-'}</strong></span>
+                                        <span>OCR max <strong>{debugData.limits?.ocrMaxPages || '-'} pages</strong></span>
+                                        <span>Logs <strong>{debugData.logs?.length || 0}</strong></span>
+                                    </div>
+                                    {(debugData.logs || []).length === 0 ? (
+                                        <div className="rai-context-empty">Aucun log debug pour cette conversation. Les anciens messages n'ont pas forcément été journalisés.</div>
+                                    ) : (
+                                        <div className="rai-debug-list">
+                                            {debugData.logs.map(log => (
+                                                <section className="rai-debug-entry" key={`${log.index}-${log.createdAt}`}>
+                                                    <div className="rai-debug-entry-head">
+                                                        <span>{log.debugPayload?.phase === 'context' ? 'Contexte' : 'Question'}</span>
+                                                        <strong>{formatTime(log.createdAt)}</strong>
+                                                    </div>
+                                                    <DebugPayloadView payload={log.debugPayload} />
+                                                </section>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {previewFile && (
                 <div className="rai-preview-backdrop" onClick={() => setPreviewFile(null)}>
                     <div className="rai-preview-modal" onClick={event => event.stopPropagation()}>
@@ -1214,6 +1368,9 @@ const styles = `
 .rai-chat-title-wrap{min-width:0;flex:1;}
 .rai-clear-btn{display:inline-flex;align-items:center;gap:4px;border:none;background:transparent;color:#94a3b8;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
 .rai-clear-btn:hover{background:#fef2f2;color:#ef4444;}
+.rai-debug-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid #e0e7ff;background:#f8faff;color:var(--rai-ai);border-radius:8px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.rai-debug-btn:hover{border-color:#c7d2fe;background:#eef2ff;}
+.rai-debug-btn:disabled{opacity:.45;cursor:default;}
 .rai-error{display:flex;align-items:center;gap:7px;margin:10px 14px 0;padding:10px 12px;border:1px solid #fecaca;background:#fff1f2;color:#e11d48;border-radius:10px;font-size:12px;font-weight:600;}
 .rai-messages{flex:1 1 auto;overflow-y:auto;min-height:0;padding:20px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#f8fafc,#fff);overscroll-behavior:contain;}
 .rai-message{display:flex;gap:8px;max-width:78%;animation:raiFade .22s ease both;}
@@ -1337,9 +1494,31 @@ const styles = `
 .rai-preview-body{flex:1;min-height:0;background:#0f172a;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .rai-preview-frame{width:100%;height:100%;border:none;background:#fff;}
 .rai-preview-image{display:block;max-width:100%;max-height:100%;object-fit:contain;}
+.rai-debug-backdrop{position:fixed;inset:0;z-index:99996;background:rgba(15,23,42,.48);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;}
+.rai-debug-modal{width:min(1120px,96vw);height:min(820px,92vh);background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 18px 56px rgba(15,23,42,.24);display:flex;flex-direction:column;overflow:hidden;animation:raiFade .18s ease both;}
+.rai-debug-header{height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 0 18px;border-bottom:1px solid #edf0f4;background:#fff;flex-shrink:0;}
+.rai-debug-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:var(--rai-text);}
+.rai-debug-icon{width:30px;height:30px;border-radius:9px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;}
+.rai-debug-actions{display:flex;align-items:center;gap:6px;}
+.rai-debug-body{flex:1;min-height:0;overflow-y:auto;background:#f8fafc;padding:14px;}
+.rai-debug-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.rai-debug-summary span,.rai-debug-kpis span{font-size:11px;color:#64748b;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:5px 9px;}
+.rai-debug-summary strong,.rai-debug-kpis strong{color:#0f172a;}
+.rai-debug-list{display:flex;flex-direction:column;gap:12px;}
+.rai-debug-entry{border:1px solid #e5e7eb;background:#fff;border-radius:12px;overflow:hidden;}
+.rai-debug-entry-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #edf0f4;font-size:12px;font-weight:800;color:#334155;}
+.rai-debug-entry-head strong{font-size:10px;color:#94a3b8;font-weight:700;}
+.rai-debug-payload{display:flex;flex-direction:column;gap:8px;padding:10px;}
+.rai-debug-kpis{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.rai-debug-kpis .is-warn{color:#b45309;background:#fffbeb;border-color:#fde68a;font-weight:800;}
+.rai-debug-block{border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;overflow:hidden;}
+.rai-debug-block summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:8px 10px;font-size:11px;font-weight:800;color:#334155;list-style:none;}
+.rai-debug-block summary::-webkit-details-marker{display:none;}
+.rai-debug-block summary strong{font-size:10px;color:#94a3b8;font-weight:700;white-space:nowrap;}
+.rai-debug-block pre{margin:0;padding:10px;border-top:1px solid #e5e7eb;background:#0f172a;color:#dbeafe;max-height:340px;overflow:auto;font-size:11px;line-height:1.45;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes raiDot{0%,80%,100%{opacity:.35;transform:translateY(0) scale(.88)}40%{opacity:1;transform:translateY(-2px) scale(1)}}
 @keyframes raiSheen{0%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}
 @media(max-width:1050px){.rai-shell{grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 190px);min-height:640px}.rai-message{max-width:88%;}.rai-context-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}.rai-create-btn span{display:none;}.rai-create-btn{padding:7px 10px;}}
-@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-agent-status{min-width:0;max-width:100%;}.rai-agent-label{overflow:hidden;text-overflow:ellipsis;}.rai-clear-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal{width:100%;height:92vh;}}
+@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-message.context{max-width:100%;}.rai-agent-status{min-width:0;max-width:100%;}.rai-agent-label{overflow:hidden;text-overflow:ellipsis;}.rai-clear-btn span,.rai-debug-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop,.rai-debug-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal,.rai-debug-modal{width:100%;height:92vh;}.rai-context-card-grid{grid-template-columns:1fr;}}
 `

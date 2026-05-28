@@ -12,6 +12,7 @@ function mountIslands() {
             recordId: container.dataset.recordId,
             entitySlug: container.dataset.entitySlug,
             recordTitle: container.dataset.recordTitle || 'Sans titre',
+            debugAdmin: container.dataset.debugAdmin === '1',
         }
 
         createRoot(container).render(

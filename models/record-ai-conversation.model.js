@@ -27,6 +27,10 @@ const RecordAiMessageSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    debugPayload: {
+        type: mongoose.Schema.Types.Mixed,
+        default: undefined
+    },
     contextStats: {
         sections: { type: Number, default: 0 },
         chars: { type: Number, default: 0 },

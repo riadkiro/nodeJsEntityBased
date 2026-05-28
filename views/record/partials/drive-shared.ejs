@@ -1455,6 +1455,27 @@ document.addEventListener('alpine:init', () => {
             return map[cat] || '#6b7280';
         },
 
+        viewerFiles(files = []) {
+            return (files || []).map(f => ({
+                url: f.url,
+                name: f.originalName || f.name || f.filename || 'Fichier',
+                category: f.category || 'other',
+                rag: f.rag || null
+            }));
+        },
+
+        openDriveFileViewer(file, files, idx) {
+            if (!file || !window.openFileViewer) return;
+            window.openFileViewer(
+                file.url,
+                file.originalName || file.name || file.filename || 'Fichier',
+                file.category || 'other',
+                this.viewerFiles(files),
+                idx,
+                { rag: file.rag || null }
+            );
+        },
+
         async renderPdfThumb(url, canvas, size) {
             try {
                 if (!window.pdfjsLib) return;
@@ -1696,7 +1717,7 @@ document.addEventListener('alpine:init', () => {
             <!-- Root files -->
             <template x-for="(file, idx) in globalRootDisplayFiles" :key="'root-file-' + file._id">
                 <div class="rm-item" :style="'animation-delay:' + ((globalRootDisplayFolders.length + idx + 1) * 40) + 'ms'" style="cursor:pointer;"
-                     @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
+                     @click="openDriveFileViewer(file, globalRootDisplayFiles, idx)"
                      @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
                     <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
                         <iconify-icon :icon="file.category === 'image' ? 'solar:gallery-bold-duotone' : file.category === 'pdf' ? 'solar:document-text-bold-duotone' : file.category === 'word' ? 'solar:document-bold-duotone' : file.category === 'excel' ? 'solar:chart-square-bold-duotone' : 'solar:file-bold-duotone'" width="20"
@@ -1775,7 +1796,7 @@ document.addEventListener('alpine:init', () => {
         <!-- Files -->
         <template x-for="(file, idx) in globalRootDisplayFiles" :key="file._id">
             <div class="rm-item" :style="'animation-delay:' + ((globalCurrentSubfolders.length + idx) * 40) + 'ms'" style="cursor:pointer;"
-                 @click="window.openFileViewer(file.url, file.originalName, file.category, globalRootDisplayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)"
+                 @click="openDriveFileViewer(file, globalRootDisplayFiles, idx)"
                  @contextmenu.prevent="openContextMenu($event, file, 'global-file')">
                 <div class="rm-item-icon" :style="'background:linear-gradient(135deg,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '15,' + (file.category === 'image' ? '#10b981' : file.category === 'pdf' ? '#ef4444' : '#4361ee') + '08)'">
                     <iconify-icon :icon="file.category === 'image' ? 'solar:gallery-bold-duotone' : file.category === 'pdf' ? 'solar:document-text-bold-duotone' : file.category === 'word' ? 'solar:document-bold-duotone' : file.category === 'excel' ? 'solar:chart-square-bold-duotone' : 'solar:file-bold-duotone'" width="20"
@@ -2029,7 +2050,7 @@ document.addEventListener('alpine:init', () => {
                      style="cursor:pointer;"
                      :draggable="!file.isGenerated && !selectMode && renamingFileId !== file._id"
                      @dragstart="startDragFile($event, file._id)" @dragend="onDragEnd()"
-                     @click="selectMode ? toggleSelect(file._id) : (renamingFileId !== file._id && !selectMode ? window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx) : null)"
+                     @click="selectMode ? toggleSelect(file._id) : (renamingFileId !== file._id && !selectMode ? openDriveFileViewer(file, displayFiles, idx) : null)"
                      @contextmenu.prevent="openContextMenu($event, file, 'file')">
                     <!-- Checkbox in select mode -->
                     <template x-if="selectMode">
@@ -2081,7 +2102,7 @@ document.addEventListener('alpine:init', () => {
                     <div class="drive-file-actions" x-show="!selectMode">
                         <template x-if="confirmDeleteFileId !== file._id">
                             <div style="display:flex;gap:2px;">
-                                <button @click.stop="window.openFileViewer(file.url, file.originalName, file.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
+                                <button @click.stop="openDriveFileViewer(file, displayFiles, idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
                                 <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
                                 <a :href="file.url + '?dl=' + encodeURIComponent(file.originalName)" :download="file.originalName" class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
                                 <button @click.stop="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
@@ -2221,7 +2242,7 @@ document.addEventListener('alpine:init', () => {
             <!-- File Options -->
             <template x-if="contextMenu.type === 'file' && contextMenu.item">
                 <div>
-                    <button @click="window.openFileViewer(contextMenu.item.url, contextMenu.item.originalName, contextMenu.item.category, displayFiles.map(f=>({url:f.url,name:f.originalName,category:f.category})), displayFiles.findIndex(f=>f._id===contextMenu.item._id)); contextMenu.show = false;"
+                    <button @click="openDriveFileViewer(contextMenu.item, displayFiles, displayFiles.findIndex(f=>f._id===contextMenu.item._id)); contextMenu.show = false;"
                             style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
                             onmouseover="this.style.background='#f8fafc';this.style.color='#10b981';"
                             onmouseout="this.style.background='none';this.style.color='#1e293b';">

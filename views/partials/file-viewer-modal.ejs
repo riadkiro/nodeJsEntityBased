@@ -18,6 +18,10 @@
 .fv-badge--image { background:#8b5cf6; color:#fff; }
 .fv-badge--video { background:#f59e0b; color:#fff; }
 .fv-badge--other { background:#6b7280; color:#fff; }
+.fv-rag-badges { display:none; align-items:center; gap:5px; flex-shrink:0; }
+.fv-rag-badge { display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 9px; border-radius:999px; border:1px solid rgba(96,165,250,.35); background:rgba(37,99,235,.16); color:#bfdbfe; font-size:9px; font-weight:800; line-height:1; letter-spacing:.15px; text-transform:uppercase; }
+.fv-rag-badge iconify-icon { flex-shrink:0; }
+.fv-rag-badge--canonical { border-color:rgba(52,211,153,.35); background:rgba(16,185,129,.16); color:#bbf7d0; }
 .fv-actions { display:flex; align-items:center; gap:2px; }
 .fv-btn { width:32px; height:32px; border-radius:8px; border:none; background:transparent; color:#9ca3af; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; font-size:0; }
 .fv-btn:hover { background:#374151; color:#fff; }
@@ -63,6 +67,7 @@
             <iconify-icon id="fvTypeIcon" icon="solar:file-bold-duotone" width="18" style="color:#9ca3af;flex-shrink:0;"></iconify-icon>
             <span id="fvFilename" class="fv-filename"></span>
             <span id="fvBadge" class="fv-badge"></span>
+            <span id="fvRagBadges" class="fv-rag-badges"></span>
             <span id="fvCounter" class="fv-counter" style="display:none;"></span>
             <div class="fv-actions">
                 <button id="fvPrevBtn" class="fv-btn" title="Précédent" style="display:none;" onclick="window._fvNav(-1)">
@@ -105,6 +110,7 @@
     var body = document.getElementById('fvBody');
     var fnEl = document.getElementById('fvFilename');
     var badgeEl = document.getElementById('fvBadge');
+    var ragBadgesEl = document.getElementById('fvRagBadges');
     var iconEl = document.getElementById('fvTypeIcon');
     var editEl = document.getElementById('fvEdit');
     var dlEl = document.getElementById('fvDownload');
@@ -142,6 +148,27 @@
         return m[cat] || '#6b7280';
     }
 
+    function renderRagBadges(rag) {
+        if (!ragBadgesEl) return;
+        ragBadgesEl.innerHTML = '';
+        ragBadgesEl.style.display = 'none';
+        if (!rag || !rag.indexed) return;
+
+        var indexed = document.createElement('span');
+        indexed.className = 'fv-rag-badge';
+        indexed.innerHTML = '<iconify-icon icon="solar:brain-bold-duotone" width="11"></iconify-icon> Indexed';
+        ragBadgesEl.appendChild(indexed);
+
+        if (rag.canonical) {
+            var canonical = document.createElement('span');
+            canonical.className = 'fv-rag-badge fv-rag-badge--canonical';
+            canonical.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone" width="11"></iconify-icon> Canonical';
+            ragBadgesEl.appendChild(canonical);
+        }
+
+        ragBadgesEl.style.display = 'inline-flex';
+    }
+
     // ── Public API ──
     // openFileViewer(url, filename, category, fileList?, currentIndex?, options?)
     // fileList: [{url, name, category, editUrl|onEdit}, ...]
@@ -170,6 +197,7 @@
     function _renderFile(url, filename, category, options) {
         var fileMeta = (_fileList.length > 0 && _currentIdx >= 0) ? (_fileList[_currentIdx] || {}) : {};
         var editAction = (options && (options.onEdit || options.editUrl)) || fileMeta.onEdit || fileMeta.editUrl || null;
+        var rag = (options && options.rag) || fileMeta.rag || null;
         var cat = category || getCat(url, filename);
         fnEl.textContent = filename || url.split('/').pop();
         iconEl.setAttribute('icon', getIcon(cat));
@@ -193,6 +221,7 @@
         var badgeMap = { image:'Image', pdf:'PDF', word:'Word', excel:'Excel', video:'Vidéo' };
         badgeEl.textContent = badgeMap[cat] || 'Fichier';
         badgeEl.className = 'fv-badge fv-badge--' + (['image','pdf','video'].indexOf(cat) >= 0 ? cat : 'other');
+        renderRagBadges(rag);
 
         // Navigation UI
         var hasNav = _fileList.length > 1;

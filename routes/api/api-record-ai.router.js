@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const fsp = require('fs/promises');
@@ -37,6 +38,27 @@ const RECORD_AI_EMBEDDING_MODEL = process.env.RECORD_AI_EMBEDDING_MODEL || 'text
 const RECORD_AI_EMBEDDING_DIMENSIONS = boundedInt(process.env.RECORD_AI_EMBEDDING_DIMENSIONS, 0, 0, 3072);
 const RECORD_AI_EMBEDDING_BATCH_SIZE = boundedInt(process.env.RECORD_AI_EMBEDDING_BATCH_SIZE, 64, 1, 128);
 const RECORD_AI_EMBEDDING_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_EMBEDDING_TIMEOUT_MS, 120000, 30000, 300000);
+const RECORD_AI_ENGINE_SETTINGS_VIEW_ID = 'record-ai-engines';
+const RECORD_AI_RESPONSE_ENGINE = ['openai', 'local'].includes(String(process.env.RECORD_AI_RESPONSE_ENGINE || '').toLowerCase())
+    ? String(process.env.RECORD_AI_RESPONSE_ENGINE).toLowerCase()
+    : 'openai';
+const RECORD_AI_EMBEDDING_ENGINE = ['openai', 'local', 'lexical'].includes(String(process.env.RECORD_AI_EMBEDDING_ENGINE || '').toLowerCase())
+    ? String(process.env.RECORD_AI_EMBEDDING_ENGINE).toLowerCase()
+    : 'openai';
+const RECORD_AI_LOCAL_BASE_URL = String(process.env.RECORD_AI_LOCAL_BASE_URL || '').replace(/\/$/, '');
+const RECORD_AI_LOCAL_RESPONSE_URL = process.env.RECORD_AI_LOCAL_RESPONSE_URL ||
+    (RECORD_AI_LOCAL_BASE_URL ? `${RECORD_AI_LOCAL_BASE_URL}/api/chat` : '');
+const RECORD_AI_LOCAL_RESPONSE_FORMAT = ['ollama', 'openai'].includes(String(process.env.RECORD_AI_LOCAL_RESPONSE_FORMAT || '').toLowerCase())
+    ? String(process.env.RECORD_AI_LOCAL_RESPONSE_FORMAT).toLowerCase()
+    : 'ollama';
+const RECORD_AI_LOCAL_RESPONSE_MODEL = process.env.RECORD_AI_LOCAL_RESPONSE_MODEL || 'llama3.1';
+const RECORD_AI_LOCAL_RESPONSE_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_LOCAL_RESPONSE_TIMEOUT_MS, 180000, 30000, 300000);
+const RECORD_AI_LOCAL_EMBEDDING_URL = process.env.RECORD_AI_LOCAL_EMBEDDING_URL ||
+    (RECORD_AI_LOCAL_BASE_URL ? `${RECORD_AI_LOCAL_BASE_URL}/api/embed` : '');
+const RECORD_AI_LOCAL_EMBEDDING_FORMAT = ['ollama', 'openai'].includes(String(process.env.RECORD_AI_LOCAL_EMBEDDING_FORMAT || '').toLowerCase())
+    ? String(process.env.RECORD_AI_LOCAL_EMBEDDING_FORMAT).toLowerCase()
+    : 'ollama';
+const RECORD_AI_LOCAL_EMBEDDING_MODEL = process.env.RECORD_AI_LOCAL_EMBEDDING_MODEL || 'nomic-embed-text';
 const RECORD_AI_DEBUG_ENABLED = process.env.RECORD_AI_DEBUG_ENABLED !== 'false';
 const RECORD_AI_DEBUG_TEXT_CHARS = boundedInt(process.env.RECORD_AI_DEBUG_TEXT_CHARS, 120000, 10000, 500000);
 const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/record-ai');
@@ -211,10 +233,109 @@ function pageLabel(chunk = {}) {
     return end > start ? `pages ${start}-${end}` : `page ${start}`;
 }
 
-function embeddingConfigKey() {
+function normalizeEngineSettings(input = {}) {
+    const responseEngine = ['openai', 'local'].includes(String(input.responseEngine || '').toLowerCase())
+        ? String(input.responseEngine).toLowerCase()
+        : RECORD_AI_RESPONSE_ENGINE;
+    const embeddingEngine = ['openai', 'local', 'lexical'].includes(String(input.embeddingEngine || '').toLowerCase())
+        ? String(input.embeddingEngine).toLowerCase()
+        : RECORD_AI_EMBEDDING_ENGINE;
+
+    return {
+        responseEngine,
+        responseModel: String(input.responseModel || RECORD_AI_MODEL).trim().slice(0, 120) || RECORD_AI_MODEL,
+        localResponseModel: String(input.localResponseModel || RECORD_AI_LOCAL_RESPONSE_MODEL).trim().slice(0, 120) || RECORD_AI_LOCAL_RESPONSE_MODEL,
+        embeddingEngine,
+        embeddingModel: String(input.embeddingModel || RECORD_AI_EMBEDDING_MODEL).trim().slice(0, 120) || RECORD_AI_EMBEDDING_MODEL,
+        localEmbeddingModel: String(input.localEmbeddingModel || RECORD_AI_LOCAL_EMBEDDING_MODEL).trim().slice(0, 120) || RECORD_AI_LOCAL_EMBEDDING_MODEL
+    };
+}
+
+function engineOptions() {
+    return {
+        responseEngines: [
+            { key: 'openai', label: 'ChatGPT / OpenAI', available: true },
+            { key: 'local', label: 'Local', available: Boolean(RECORD_AI_LOCAL_RESPONSE_URL) }
+        ],
+        embeddingEngines: [
+            { key: 'openai', label: 'OpenAI vectoriel', available: true },
+            { key: 'local', label: 'Local vectoriel', available: Boolean(RECORD_AI_LOCAL_EMBEDDING_URL) },
+            { key: 'lexical', label: 'Local lexical', available: true }
+        ],
+        local: {
+            responseConfigured: Boolean(RECORD_AI_LOCAL_RESPONSE_URL),
+            embeddingConfigured: Boolean(RECORD_AI_LOCAL_EMBEDDING_URL),
+            responseFormat: RECORD_AI_LOCAL_RESPONSE_FORMAT,
+            embeddingFormat: RECORD_AI_LOCAL_EMBEDDING_FORMAT
+        }
+    };
+}
+
+function resolveResponseRuntime(settings = {}) {
+    const normalized = normalizeEngineSettings(settings);
+    const wantsLocal = normalized.responseEngine === 'local';
+    const localAvailable = Boolean(RECORD_AI_LOCAL_RESPONSE_URL);
+
+    if (wantsLocal && localAvailable) {
+        return {
+            engine: 'local',
+            provider: 'local',
+            model: normalized.localResponseModel,
+            configured: true,
+            fallback: false
+        };
+    }
+
+    return {
+        engine: 'openai',
+        provider: 'openai',
+        model: normalized.responseModel || RECORD_AI_MODEL,
+        configured: true,
+        fallback: wantsLocal && !localAvailable,
+        warning: wantsLocal && !localAvailable ? 'Moteur réponse local non configuré, fallback OpenAI.' : ''
+    };
+}
+
+function resolveEmbeddingRuntime(settings = {}) {
+    const normalized = normalizeEngineSettings(settings);
+    const wantsLocal = normalized.embeddingEngine === 'local';
+    const lexical = normalized.embeddingEngine === 'lexical';
+    const localAvailable = Boolean(RECORD_AI_LOCAL_EMBEDDING_URL);
+    const enabled = RECORD_AI_VECTOR_ENABLED && !lexical && (!wantsLocal || localAvailable);
+
+    return {
+        enabled,
+        engine: enabled ? normalized.embeddingEngine : 'lexical',
+        requestedEngine: normalized.embeddingEngine,
+        provider: wantsLocal ? 'local' : (lexical ? 'lexical' : 'openai'),
+        model: wantsLocal ? normalized.localEmbeddingModel : normalized.embeddingModel,
+        dimensions: wantsLocal ? 0 : RECORD_AI_EMBEDDING_DIMENSIONS,
+        configured: !wantsLocal || localAvailable,
+        fallback: (wantsLocal && !localAvailable) || lexical || !RECORD_AI_VECTOR_ENABLED,
+        warning: wantsLocal && !localAvailable ? 'Moteur embedding local non configuré, fallback lexical.' : ''
+    };
+}
+
+function resolveEngineRuntime(settings = {}) {
+    const normalized = normalizeEngineSettings(settings);
+    return {
+        response: resolveResponseRuntime(normalized),
+        embedding: resolveEmbeddingRuntime(normalized)
+    };
+}
+
+function runtimeModelLabel(runtime = {}) {
+    return [runtime.engine || runtime.provider || 'openai', runtime.model || '']
+        .filter(Boolean)
+        .join(':');
+}
+
+function embeddingConfigKey(settings = {}) {
+    const runtime = resolveEmbeddingRuntime(settings);
     return [
-        RECORD_AI_EMBEDDING_MODEL,
-        RECORD_AI_EMBEDDING_DIMENSIONS > 0 ? RECORD_AI_EMBEDDING_DIMENSIONS : 'default'
+        runtime.engine,
+        runtime.model,
+        runtime.dimensions > 0 ? runtime.dimensions : 'default'
     ].join(':');
 }
 
@@ -224,6 +345,58 @@ function embeddingInputForChunk(chunk = {}) {
         pageLabel(chunk),
         String(chunk.text || '').trim()
     ].filter(Boolean).join('\n');
+}
+
+async function getRecordAiEngineSettings(req) {
+    const defaults = normalizeEngineSettings({});
+    try {
+        const AccountPreferences = await tenantCollection(req, 'AccountPreferences');
+        if (!AccountPreferences) return defaults;
+
+        const prefs = await AccountPreferences.findOne({
+            accountId: String(req.account_number || ''),
+            viewId: RECORD_AI_ENGINE_SETTINGS_VIEW_ID
+        }).lean();
+
+        return normalizeEngineSettings({
+            ...defaults,
+            ...(prefs?.preferences || {})
+        });
+    } catch (error) {
+        console.warn('[RecordAI] engine settings load failed:', error.message);
+        return defaults;
+    }
+}
+
+async function saveRecordAiEngineSettings(req, input = {}) {
+    if (!isRecordAiDebugAdmin(req)) {
+        const error = new Error('Réglages IA réservés aux administrateurs');
+        error.statusCode = 403;
+        throw error;
+    }
+
+    const current = await getRecordAiEngineSettings(req);
+    const next = normalizeEngineSettings({ ...current, ...input });
+    const AccountPreferences = await tenantCollection(req, 'AccountPreferences');
+    if (!AccountPreferences) throw new Error('Préférences compte indisponibles');
+
+    await AccountPreferences.findOneAndUpdate(
+        {
+            accountId: String(req.account_number || ''),
+            viewId: RECORD_AI_ENGINE_SETTINGS_VIEW_ID
+        },
+        {
+            $set: {
+                accountId: String(req.account_number || ''),
+                viewId: RECORD_AI_ENGINE_SETTINGS_VIEW_ID,
+                preferences: next,
+                updatedAt: new Date()
+            }
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return next;
 }
 
 function cosineSimilarity(a = [], b = []) {
@@ -512,6 +685,9 @@ async function buildBootstrap(req, record, entity) {
     const RecordNote = await tenantCollection(req, 'RecordNote');
     const Conversation = await tenantCollection(req, 'Conversation');
     const DriveFile = await tenantCollection(req, 'DriveFile');
+    const engineSettings = await getRecordAiEngineSettings(req);
+    const engineRuntime = resolveEngineRuntime(engineSettings);
+    const embeddingRuntime = engineRuntime.embedding;
 
     const fields = await buildRecordFields(req, record, entity);
 
@@ -597,12 +773,16 @@ async function buildBootstrap(req, record, entity) {
             ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
             ragMaxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
             ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
-            vectorEnabled: RECORD_AI_VECTOR_ENABLED,
-            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
-            embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS,
+            vectorEnabled: embeddingRuntime.enabled,
+            embeddingEngine: embeddingRuntime.engine,
+            embeddingModel: embeddingRuntime.model,
+            embeddingDimensions: embeddingRuntime.dimensions,
             debugEnabled: RECORD_AI_DEBUG_ENABLED,
             debugAdmin: isRecordAiDebugAdmin(req)
-        }
+        },
+        engineSettings,
+        engineOptions: engineOptions(),
+        engineRuntime
     };
 }
 
@@ -847,7 +1027,8 @@ async function ensureOpenAIEmbeddingsAction() {
     return action;
 }
 
-async function callOpenAIEmbeddings(req, inputs) {
+async function callOpenAIEmbeddings(req, inputs, settings = {}) {
+    const runtime = resolveEmbeddingRuntime({ ...settings, embeddingEngine: 'openai' });
     const inputList = (Array.isArray(inputs) ? inputs : [inputs])
         .map(input => String(input || '').trim())
         .filter(Boolean);
@@ -856,10 +1037,10 @@ async function callOpenAIEmbeddings(req, inputs) {
     const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
     const action = await ensureOpenAIEmbeddingsAction();
     const payload = {
-        model: RECORD_AI_EMBEDDING_MODEL,
+        model: runtime.model || RECORD_AI_EMBEDDING_MODEL,
         input: inputList,
         encoding_format: 'float',
-        dimensions: RECORD_AI_EMBEDDING_DIMENSIONS > 0 ? RECORD_AI_EMBEDDING_DIMENSIONS : undefined
+        dimensions: runtime.dimensions > 0 ? runtime.dimensions : undefined
     };
 
     const result = await IntegrationService.executeAction({
@@ -894,20 +1075,88 @@ async function callOpenAIEmbeddings(req, inputs) {
     return vectors;
 }
 
-async function ensureDocumentEmbeddings(req, document) {
+async function callLocalEmbeddings(inputs, settings = {}) {
+    const runtime = resolveEmbeddingRuntime({ ...settings, embeddingEngine: 'local' });
+    const inputList = (Array.isArray(inputs) ? inputs : [inputs])
+        .map(input => String(input || '').trim())
+        .filter(Boolean);
+    if (!inputList.length) return [];
+    if (!RECORD_AI_LOCAL_EMBEDDING_URL) throw new Error('Moteur embedding local non configuré');
+
+    if (RECORD_AI_LOCAL_EMBEDDING_FORMAT === 'openai') {
+        const response = await axios.post(RECORD_AI_LOCAL_EMBEDDING_URL, {
+            model: runtime.model,
+            input: inputList,
+            encoding_format: 'float'
+        }, { timeout: RECORD_AI_EMBEDDING_TIMEOUT_MS });
+        const entries = Array.isArray(response.data?.data) ? response.data.data : [];
+        const vectors = entries
+            .slice()
+            .sort((a, b) => (a.index || 0) - (b.index || 0))
+            .map(item => item.embedding)
+            .filter(vector => Array.isArray(vector) && vector.length);
+        if (vectors.length !== inputList.length) throw new Error(`Embedding local incomplet (${vectors.length}/${inputList.length})`);
+        return vectors;
+    }
+
+    let batchError = null;
+    try {
+        const response = await axios.post(RECORD_AI_LOCAL_EMBEDDING_URL, {
+            model: runtime.model,
+            input: inputList
+        }, { timeout: RECORD_AI_EMBEDDING_TIMEOUT_MS });
+        if (Array.isArray(response.data?.embeddings)) {
+            if (response.data.embeddings.length !== inputList.length) {
+                throw new Error(`Embedding local incomplet (${response.data.embeddings.length}/${inputList.length})`);
+            }
+            return response.data.embeddings;
+        }
+        if (Array.isArray(response.data?.embedding) && inputList.length === 1) return [response.data.embedding];
+    } catch (error) {
+        batchError = error;
+    }
+
+    const vectors = [];
+    for (const input of inputList) {
+        try {
+            const itemResponse = await axios.post(RECORD_AI_LOCAL_EMBEDDING_URL, {
+                model: runtime.model,
+                prompt: input
+            }, { timeout: RECORD_AI_EMBEDDING_TIMEOUT_MS });
+            if (!Array.isArray(itemResponse.data?.embedding)) throw new Error('Réponse embedding locale invalide');
+            vectors.push(itemResponse.data.embedding);
+        } catch (error) {
+            const message = error.response?.data?.error || error.message || batchError?.message || 'Embedding local impossible';
+            throw new Error(message);
+        }
+    }
+    return vectors;
+}
+
+async function callEmbeddings(req, inputs, settings = {}) {
+    const runtime = resolveEmbeddingRuntime(settings);
+    if (!runtime.enabled) throw new Error(runtime.warning || 'Embeddings vectoriels désactivés');
+    if (runtime.engine === 'local') return callLocalEmbeddings(inputs, settings);
+    return callOpenAIEmbeddings(req, inputs, settings);
+}
+
+async function ensureDocumentEmbeddings(req, document, settings = {}) {
+    const runtime = resolveEmbeddingRuntime(settings);
     const embedding = {
-        enabled: RECORD_AI_VECTOR_ENABLED,
-        model: RECORD_AI_EMBEDDING_MODEL,
-        config: embeddingConfigKey(),
-        dimensions: RECORD_AI_EMBEDDING_DIMENSIONS,
+        enabled: runtime.enabled,
+        engine: runtime.engine,
+        requestedEngine: runtime.requestedEngine,
+        model: runtime.model,
+        config: embeddingConfigKey(settings),
+        dimensions: runtime.dimensions,
         status: 'disabled',
         embeddedChunkCount: 0,
         chunkCount: document?.chunkCount || 0,
         generated: 0,
-        error: ''
+        error: runtime.warning || ''
     };
 
-    if (!RECORD_AI_VECTOR_ENABLED || !document?._id || !document.chunkCount) {
+    if (!runtime.enabled || !document?._id || !document.chunkCount) {
         return { document, embedding };
     }
 
@@ -926,7 +1175,7 @@ async function ensureDocumentEmbeddings(req, document) {
     await RecordAiDocument.findByIdAndUpdate(document._id, {
         $set: {
             embeddingStatus: 'indexing',
-            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+            embeddingModel: runtime.model,
             embeddingConfig: embedding.config,
             embeddingError: ''
         }
@@ -947,7 +1196,7 @@ async function ensureDocumentEmbeddings(req, document) {
 
         for (let offset = 0; offset < pending.length; offset += RECORD_AI_EMBEDDING_BATCH_SIZE) {
             const batch = pending.slice(offset, offset + RECORD_AI_EMBEDDING_BATCH_SIZE);
-            const vectors = await callOpenAIEmbeddings(req, batch.map(embeddingInputForChunk));
+            const vectors = await callEmbeddings(req, batch.map(embeddingInputForChunk), settings);
             const now = new Date();
             const updates = batch.map((chunk, index) => {
                 const vector = vectors[index] || [];
@@ -957,7 +1206,7 @@ async function ensureDocumentEmbeddings(req, document) {
                         update: {
                             $set: {
                                 embedding: vector,
-                                embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                                embeddingModel: runtime.model,
                                 embeddingConfig: embedding.config,
                                 embeddingDimensions: vector.length,
                                 embeddingTextHash: hashText(embeddingInputForChunk(chunk)),
@@ -983,7 +1232,7 @@ async function ensureDocumentEmbeddings(req, document) {
             {
                 $set: {
                     embeddingStatus: status,
-                    embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                    embeddingModel: runtime.model,
                     embeddingConfig: embedding.config,
                     embeddingDimensions: embedding.dimensions || 0,
                     embeddedChunkCount,
@@ -1002,7 +1251,7 @@ async function ensureDocumentEmbeddings(req, document) {
         await RecordAiDocument.findByIdAndUpdate(document._id, {
             $set: {
                 embeddingStatus: 'error',
-                embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                embeddingModel: runtime.model,
                 embeddingConfig: embedding.config,
                 embeddingError: error.message || 'Embedding impossible',
                 embeddedAt: new Date()
@@ -1373,14 +1622,17 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
     };
 }
 
-async function prepareRagForSelection(req, record, entity, selection) {
+async function prepareRagForSelection(req, record, entity, selection, settings = {}) {
+    const embeddingRuntime = resolveEmbeddingRuntime(settings);
     const result = {
         enabled: RECORD_AI_RAG_ENABLED,
         maxPages: RECORD_AI_RAG_MAX_PAGES,
         maxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
-        vectorEnabled: RECORD_AI_VECTOR_ENABLED,
-        embeddingModel: RECORD_AI_EMBEDDING_MODEL,
-        embeddingConfig: embeddingConfigKey(),
+        vectorEnabled: embeddingRuntime.enabled,
+        embeddingEngine: embeddingRuntime.engine,
+        embeddingRequestedEngine: embeddingRuntime.requestedEngine,
+        embeddingModel: embeddingRuntime.model,
+        embeddingConfig: embeddingConfigKey(settings),
         documents: [],
         errors: []
     };
@@ -1391,7 +1643,7 @@ async function prepareRagForSelection(req, record, entity, selection) {
         try {
             const indexed = await ensureFileRagDocument(req, record, entity, file);
             if (indexed?.document) {
-                const embedded = await ensureDocumentEmbeddings(req, indexed.document);
+                const embedded = await ensureDocumentEmbeddings(req, indexed.document, settings);
                 const document = embedded.document || indexed.document;
                 result.documents.push({
                     documentId: cleanId(document._id),
@@ -1419,7 +1671,7 @@ async function prepareRagForSelection(req, record, entity, selection) {
         try {
             const indexed = await ensureUploadRagDocument(req, record, entity, upload);
             if (indexed?.document) {
-                const embedded = await ensureDocumentEmbeddings(req, indexed.document);
+                const embedded = await ensureDocumentEmbeddings(req, indexed.document, settings);
                 const document = embedded.document || indexed.document;
                 result.documents.push({
                     documentId: cleanId(document._id),
@@ -1563,9 +1815,10 @@ function selectRagChunks(scoredChunks, allChunks) {
     });
 }
 
-async function buildRagContext(req, record, entity, selection, query) {
-    const prepared = await prepareRagForSelection(req, record, entity, selection);
+async function buildRagContext(req, record, entity, selection, query, settings = {}) {
+    const prepared = await prepareRagForSelection(req, record, entity, selection, settings);
     const requestedPages = extractRequestedPages(query);
+    const embeddingRuntime = resolveEmbeddingRuntime(settings);
     const debug = {
         ...prepared,
         query: String(query || ''),
@@ -1573,11 +1826,13 @@ async function buildRagContext(req, record, entity, selection, query) {
         phrases: extractSearchPhrases(query),
         requestedPages,
         vector: {
-            enabled: RECORD_AI_VECTOR_ENABLED,
-            model: RECORD_AI_EMBEDDING_MODEL,
-            config: embeddingConfigKey(),
+            enabled: embeddingRuntime.enabled,
+            engine: embeddingRuntime.engine,
+            requestedEngine: embeddingRuntime.requestedEngine,
+            model: embeddingRuntime.model,
+            config: embeddingConfigKey(settings),
             queryEmbedded: false,
-            error: ''
+            error: embeddingRuntime.warning || ''
         },
         chunks: []
     };
@@ -1598,11 +1853,17 @@ async function buildRagContext(req, record, entity, selection, query) {
         .select('documentId source sourceId sourceName chunkIndex pageStart pageEnd text searchText charCount wordCount embedding embeddingConfig meta')
         .sort({ documentId: 1, chunkIndex: 1 })
         .lean();
+    const activeEmbeddingConfig = embeddingConfigKey(settings);
+    const chunksForScoring = chunks.map(chunk => (
+        chunk.embeddingConfig === activeEmbeddingConfig
+            ? chunk
+            : { ...chunk, embedding: [] }
+    ));
 
     let queryEmbedding = null;
-    if (RECORD_AI_VECTOR_ENABLED && chunks.some(chunk => Array.isArray(chunk.embedding) && chunk.embedding.length)) {
+    if (embeddingRuntime.enabled && chunksForScoring.some(chunk => Array.isArray(chunk.embedding) && chunk.embedding.length)) {
         try {
-            [queryEmbedding] = await callOpenAIEmbeddings(req, String(query || ''));
+            [queryEmbedding] = await callEmbeddings(req, String(query || ''), settings);
             debug.vector.queryEmbedded = Array.isArray(queryEmbedding) && queryEmbedding.length > 0;
             debug.vector.dimensions = queryEmbedding?.length || 0;
         } catch (error) {
@@ -1610,7 +1871,7 @@ async function buildRagContext(req, record, entity, selection, query) {
         }
     }
 
-    const selected = selectRagChunks(scoreRagChunks(chunks, query, requestedPages, queryEmbedding), chunks);
+    const selected = selectRagChunks(scoreRagChunks(chunksForScoring, query, requestedPages, queryEmbedding), chunksForScoring);
     const blocks = selected.map(entry => {
         const chunk = entry.chunk;
         return [
@@ -1645,6 +1906,8 @@ async function buildRagContext(req, record, entity, selection, query) {
 }
 
 async function buildSelectedContext(req, record, entity, selection, options = {}) {
+    const engineSettings = normalizeEngineSettings(options.engineSettings || {});
+    const embeddingRuntime = resolveEmbeddingRuntime(engineSettings);
     const stats = { sections: 0, chars: 0, truncated: false, sources: [], errors: [] };
     const sections = [];
     const debug = {
@@ -1661,9 +1924,10 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
             ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
             ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
             ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
-            vectorEnabled: RECORD_AI_VECTOR_ENABLED,
-            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
-            embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS
+            vectorEnabled: embeddingRuntime.enabled,
+            embeddingEngine: embeddingRuntime.engine,
+            embeddingModel: embeddingRuntime.model,
+            embeddingDimensions: embeddingRuntime.dimensions
         },
         rag: null
     };
@@ -1732,7 +1996,7 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
     }
 
     if (RECORD_AI_RAG_ENABLED && (selection.files?.length || selection.uploads?.length)) {
-        const ragContext = await buildRagContext(req, record, entity, selection, options.query || '');
+        const ragContext = await buildRagContext(req, record, entity, selection, options.query || '', engineSettings);
         debug.rag = ragContext.debug;
         if (ragContext.debug?.errors?.length) {
             stats.errors.push(...ragContext.debug.errors);
@@ -1895,7 +2159,102 @@ function buildInstructions(record, entity) {
     ].join('\n');
 }
 
-async function callRecordAI(req, { conversationId, recordId, instructions, input, previousResponseId }) {
+function buildLocalChatMessages({ instructions, input, historyMessages = [] }) {
+    const messages = [];
+    if (instructions) {
+        messages.push({
+            role: 'system',
+            content: String(instructions || '').slice(0, MAX_STORED_MESSAGE_CHARS)
+        });
+    }
+
+    (historyMessages || [])
+        .filter(message => ['user', 'assistant'].includes(message?.role) && message.messageType !== 'context')
+        .slice(-12)
+        .forEach(message => {
+            const content = String(message.content || '').trim();
+            if (!content) return;
+            messages.push({
+                role: message.role,
+                content: content.slice(0, MAX_STORED_MESSAGE_CHARS)
+            });
+        });
+
+    messages.push({
+        role: 'user',
+        content: String(input || '').slice(0, MAX_CONTEXT_CHARS + 12000)
+    });
+
+    return messages;
+}
+
+function extractLocalChatText(data = {}) {
+    if (typeof data?.message?.content === 'string') return data.message.content;
+    if (typeof data?.response === 'string') return data.response;
+    if (typeof data?.output === 'string') return data.output;
+    if (typeof data?.content === 'string') return data.content;
+
+    const choice = Array.isArray(data?.choices) ? data.choices[0] : null;
+    if (typeof choice?.message?.content === 'string') return choice.message.content;
+    if (typeof choice?.text === 'string') return choice.text;
+
+    return '';
+}
+
+async function callLocalRecordAI({ instructions, input, historyMessages = [], runtime }) {
+    if (!RECORD_AI_LOCAL_RESPONSE_URL) throw new Error('Moteur réponse local non configuré');
+
+    const messages = buildLocalChatMessages({ instructions, input, historyMessages });
+    const timeout = RECORD_AI_LOCAL_RESPONSE_TIMEOUT_MS;
+    let response;
+
+    try {
+        if (RECORD_AI_LOCAL_RESPONSE_FORMAT === 'openai') {
+            response = await axios.post(RECORD_AI_LOCAL_RESPONSE_URL, {
+                model: runtime.model,
+                messages,
+                temperature: 0.35,
+                max_tokens: 3500,
+                stream: false
+            }, { timeout });
+        } else {
+            response = await axios.post(RECORD_AI_LOCAL_RESPONSE_URL, {
+                model: runtime.model,
+                messages,
+                stream: false,
+                options: {
+                    temperature: 0.35,
+                    num_predict: 3500
+                }
+            }, { timeout });
+        }
+    } catch (error) {
+        if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) {
+            throw new Error('La génération locale prend trop de temps. Réessayez avec moins de contexte ou relancez la demande.');
+        }
+        throw new Error(error.response?.data?.error || error.message || 'Réponse IA locale impossible');
+    }
+
+    const content = extractLocalChatText(response.data).trim();
+    return {
+        content: content || 'Pas de réponse',
+        responseId: ''
+    };
+}
+
+async function callRecordAI(req, { conversationId, recordId, instructions, input, previousResponseId, engineSettings = {}, historyMessages = [] }) {
+    const responseRuntime = resolveResponseRuntime(engineSettings);
+
+    if (responseRuntime.engine === 'local') {
+        const result = await callLocalRecordAI({
+            instructions,
+            input,
+            historyMessages,
+            runtime: responseRuntime
+        });
+        return { ...result, runtime: responseRuntime };
+    }
+
     const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
     const action = await IntegrationAction.findOne({
         providerKey: 'openai',
@@ -1905,7 +2264,7 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
     if (!action) throw new Error('Responses action not found. Please seed the OpenAI actions.');
 
     const inputPayload = {
-        model: RECORD_AI_MODEL,
+        model: responseRuntime.model || RECORD_AI_MODEL,
         input,
         max_output_tokens: 3500,
         store: true,
@@ -1919,7 +2278,7 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
 
     if (instructions) inputPayload.instructions = instructions;
     if (previousResponseId) inputPayload.previous_response_id = previousResponseId;
-    if (!/^gpt-5(?:[.-]|$)/.test(RECORD_AI_MODEL)) inputPayload.temperature = 0.35;
+    if (!/^gpt-5(?:[.-]|$)/.test(responseRuntime.model || RECORD_AI_MODEL)) inputPayload.temperature = 0.35;
 
     const result = await IntegrationService.executeAction({
         ProviderModel: IntegrationProvider,
@@ -1943,7 +2302,8 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
     const content = extractResponsesText(result.data) || extractResponsesText(result.raw) || 'Pas de réponse';
     return {
         content,
-        responseId: result.data?.id || result.raw?.id || ''
+        responseId: result.data?.id || result.raw?.id || '',
+        runtime: responseRuntime
     };
 }
 
@@ -1993,17 +2353,28 @@ function buildDebugPayload({
     includeContext,
     contextChanged,
     contextItems,
-    ragPreparation
+    ragPreparation,
+    engineSettings,
+    engineRuntime
 }) {
     if (!RECORD_AI_DEBUG_ENABLED) return undefined;
 
+    const normalizedSettings = normalizeEngineSettings(engineSettings || {});
+    const runtime = engineRuntime || resolveEngineRuntime(normalizedSettings);
     const clippedContext = clipDebugText(selectedContext?.text || '');
     const clippedInput = clipDebugText(input || '');
 
     return {
         phase,
         createdAt: new Date(),
-        model: RECORD_AI_MODEL,
+        model: runtimeModelLabel(runtime.response),
+        responseEngine: runtime.response?.engine || 'openai',
+        embeddingEngine: runtime.embedding?.engine || 'lexical',
+        engines: {
+            settings: normalizedSettings,
+            response: runtime.response,
+            embedding: runtime.embedding
+        },
         timeoutMs: RECORD_AI_TIMEOUT_MS,
         previousResponseId: previousResponseId || '',
         includeContext: Boolean(includeContext),
@@ -2020,9 +2391,10 @@ function buildDebugPayload({
             ragEnabled: RECORD_AI_RAG_ENABLED,
             ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
             ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
-            vectorEnabled: RECORD_AI_VECTOR_ENABLED,
-            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
-            embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS
+            vectorEnabled: runtime.embedding?.enabled || false,
+            embeddingEngine: runtime.embedding?.engine || 'lexical',
+            embeddingModel: runtime.embedding?.model || RECORD_AI_EMBEDDING_MODEL,
+            embeddingDimensions: runtime.embedding?.dimensions || 0
         },
         contextText: clippedContext.text,
         contextTextTruncated: clippedContext.truncated,
@@ -2057,6 +2429,24 @@ router.get('/:recordId/bootstrap', async (req, res) => {
     }
 });
 
+router.patch('/:recordId/settings', async (req, res) => {
+    try {
+        await loadRecordBundle(req, req.params.recordId);
+        const engineSettings = await saveRecordAiEngineSettings(req, req.body || {});
+        const engineRuntime = resolveEngineRuntime(engineSettings);
+
+        res.json({
+            success: true,
+            engineSettings,
+            engineOptions: engineOptions(),
+            engineRuntime
+        });
+    } catch (error) {
+        console.error('[RecordAI] engine settings error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
 router.get('/:recordId/conversations', async (req, res) => {
     try {
         const { record } = await loadRecordBundle(req, req.params.recordId);
@@ -2083,13 +2473,15 @@ router.post('/:recordId/conversations', async (req, res) => {
         const RecordAiConversation = await tenantCollection(req, 'RecordAiConversation');
         const title = String(req.body.title || '').trim() || 'Nouvelle conversation';
         const selection = normalizeSelection(req.body.contextSelections || {});
+        const engineSettings = await getRecordAiEngineSettings(req);
+        const responseRuntime = resolveResponseRuntime(engineSettings);
 
         const conversation = await RecordAiConversation.create({
             recordId: record._id,
             entityId: record.entityId,
             userId: String(req.user._id),
             title: title.slice(0, 120),
-            model: RECORD_AI_MODEL,
+            model: runtimeModelLabel(responseRuntime),
             contextSelections: persistableSelection(selection)
         });
 
@@ -2161,10 +2553,13 @@ router.post('/:recordId/conversations/:conversationId/context', async (req, res)
 
         const selection = normalizeSelection(req.body.contextSelections || {});
         const persistedSelection = persistableSelection(selection);
+        const engineSettings = await getRecordAiEngineSettings(req);
+        const engineRuntime = resolveEngineRuntime(engineSettings);
         const contextItems = await buildContextItems(req, record, entity, selection);
-        const ragPreparation = await prepareRagForSelection(req, record, entity, selection);
+        const ragPreparation = await prepareRagForSelection(req, record, entity, selection, engineSettings);
         const contextFingerprint = hashText(JSON.stringify({
             selection: persistedSelection,
+            embeddingConfig: ragPreparation.embeddingConfig || '',
             items: contextItems.map(item => ({ key: item.key, label: item.label })),
             rag: ragPreparation.documents.map(document => ({
                 id: document.documentId,
@@ -2194,7 +2589,9 @@ router.post('/:recordId/conversations/:conversationId/context', async (req, res)
                     message: 'Contexte ajouté',
                     selection,
                     contextItems,
-                    ragPreparation
+                    ragPreparation,
+                    engineSettings,
+                    engineRuntime
                 }),
                 createdAt: new Date()
             };
@@ -2244,6 +2641,8 @@ router.get('/:recordId/conversations/:conversationId/debug', async (req, res) =>
 
         if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
 
+        const engineSettings = await getRecordAiEngineSettings(req);
+        const engineRuntime = resolveEngineRuntime(engineSettings);
         const logs = (conversation.messages || [])
             .map((message, index) => ({
                 index,
@@ -2266,6 +2665,9 @@ router.get('/:recordId/conversations/:conversationId/debug', async (req, res) =>
                 updatedAt: conversation.updatedAt,
                 contextSelections: conversation.contextSelections || {}
             },
+            engineSettings,
+            engineOptions: engineOptions(),
+            engineRuntime,
             limits: {
                 maxContextChars: MAX_CONTEXT_CHARS,
                 maxFileChars: MAX_FILE_CHARS,
@@ -2276,9 +2678,10 @@ router.get('/:recordId/conversations/:conversationId/debug', async (req, res) =>
                 ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
                 ragMaxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
                 ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
-                vectorEnabled: RECORD_AI_VECTOR_ENABLED,
-                embeddingModel: RECORD_AI_EMBEDDING_MODEL,
-                embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS,
+                vectorEnabled: engineRuntime.embedding.enabled,
+                embeddingEngine: engineRuntime.embedding.engine,
+                embeddingModel: engineRuntime.embedding.model,
+                embeddingDimensions: engineRuntime.embedding.dimensions,
                 debugTextChars: RECORD_AI_DEBUG_TEXT_CHARS
             },
             logs
@@ -2323,20 +2726,31 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
         if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
 
         const selection = normalizeSelection(req.body.contextSelections || conversation.contextSelections || {});
-        const selectedContext = await buildSelectedContext(req, record, entity, selection, { query: message });
-        const previousResponseId = conversation.openAI?.responseId || null;
+        const engineSettings = await getRecordAiEngineSettings(req);
+        const engineRuntime = resolveEngineRuntime(engineSettings);
+        const responseRuntime = engineRuntime.response;
+        const selectedContext = await buildSelectedContext(req, record, entity, selection, { query: message, engineSettings });
+        const previousResponseId = responseRuntime.engine === 'openai' ? (conversation.openAI?.responseId || null) : null;
         const contextChanged = selectedContext.fingerprint !== conversation.contextFingerprint;
-        const includeContext = Boolean(selectedContext.text && (!previousResponseId || contextChanged || req.body.forceContext));
+        const includeContext = Boolean(selectedContext.text && (
+            responseRuntime.engine === 'local' ||
+            !previousResponseId ||
+            contextChanged ||
+            req.body.forceContext
+        ));
         const input = buildAiInput(message, includeContext ? selectedContext.text : '');
         const contextItems = await buildContextItems(req, record, entity, selection);
 
         const aiResult = await callRecordAI(req, {
             conversationId: conversation._id,
             recordId: record._id,
-            instructions: previousResponseId ? null : buildInstructions(record, entity),
+            instructions: responseRuntime.engine === 'local' || !previousResponseId ? buildInstructions(record, entity) : null,
             input,
-            previousResponseId
+            previousResponseId,
+            engineSettings,
+            historyMessages: conversation.messages || []
         });
+        const aiRuntime = aiResult.runtime || responseRuntime;
 
         const userMessage = {
             role: 'user',
@@ -2356,7 +2770,9 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
                 previousResponseId,
                 includeContext,
                 contextChanged,
-                contextItems
+                contextItems,
+                engineSettings,
+                engineRuntime
             }),
             createdAt: new Date()
         };
@@ -2373,12 +2789,12 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
         ]);
 
         conversation.messages = nextMessages;
-        conversation.model = RECORD_AI_MODEL;
+        conversation.model = runtimeModelLabel(aiRuntime);
         conversation.contextSelections = persistableSelection(selection);
         conversation.contextFingerprint = selectedContext.fingerprint;
         conversation.openAI = {
-            responseId: aiResult.responseId || '',
-            updatedAt: aiResult.responseId ? new Date() : null
+            responseId: aiRuntime.engine === 'openai' ? (aiResult.responseId || '') : '',
+            updatedAt: aiRuntime.engine === 'openai' && aiResult.responseId ? new Date() : null
         };
         conversation.lastMessage = {
             text: aiResult.content.slice(0, 500),

@@ -8,6 +8,15 @@ const emptySelection = () => ({
     uploads: [],
 })
 
+const defaultEngineSettings = () => ({
+    responseEngine: 'openai',
+    responseModel: '',
+    localResponseModel: '',
+    embeddingEngine: 'openai',
+    embeddingModel: '',
+    localEmbeddingModel: '',
+})
+
 function fileKey(file) {
     return `${file.source}:${file.id}`
 }
@@ -311,6 +320,8 @@ function DebugPayloadView({ payload = {} }) {
     return (
         <div className="rai-debug-payload">
             <div className="rai-debug-kpis">
+                <span>Réponse: <strong>{payload.engines?.response?.model ? `${payload.responseEngine}:${payload.engines.response.model}` : payload.model || '-'}</strong></span>
+                <span>Embedding: <strong>{payload.engines?.embedding?.engine || payload.embeddingEngine || '-'}</strong></span>
                 <span>Contexte envoyé: <strong>{payload.includeContext ? 'oui' : 'non'}</strong></span>
                 <span>Contexte modifié: <strong>{payload.contextChanged ? 'oui' : 'non'}</strong></span>
                 <span>OCR max: <strong>{payload.limits?.ocrMaxPages || '-'} pages</strong></span>
@@ -410,6 +421,12 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [chats, setChats] = useState([])
     const [files, setFiles] = useState([])
     const [limits, setLimits] = useState({})
+    const [engineSettings, setEngineSettings] = useState(defaultEngineSettings)
+    const [engineOptions, setEngineOptions] = useState({ responseEngines: [], embeddingEngines: [] })
+    const [engineRuntime, setEngineRuntime] = useState({})
+    const [engineOpen, setEngineOpen] = useState(false)
+    const [engineDraft, setEngineDraft] = useState(defaultEngineSettings)
+    const [engineSaving, setEngineSaving] = useState(false)
     const [conversations, setConversations] = useState([])
     const [activeConversation, setActiveConversation] = useState(null)
     const [messages, setMessages] = useState([])
@@ -511,6 +528,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setChats(data.chats || [])
             setFiles(data.files || [])
             setLimits(data.limits || {})
+            setEngineSettings({ ...defaultEngineSettings(), ...(data.engineSettings || {}) })
+            setEngineOptions(data.engineOptions || { responseEngines: [], embeddingEngines: [] })
+            setEngineRuntime(data.engineRuntime || {})
             setConversations(data.conversations || [])
             if (data.conversations?.[0]) {
                 await loadConversation(data.conversations[0]._id)
@@ -853,6 +873,32 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         }
     }, [activeConversation, apiFetch, debugAdmin])
 
+    const openEngineSettings = useCallback(() => {
+        if (!debugAdmin) return
+        setEngineDraft({ ...defaultEngineSettings(), ...engineSettings })
+        setEngineOpen(true)
+    }, [debugAdmin, engineSettings])
+
+    const saveEngineSettings = useCallback(async () => {
+        if (!debugAdmin || engineSaving) return
+        setEngineSaving(true)
+        setError('')
+        try {
+            const data = await apiFetch('/settings', {
+                method: 'PATCH',
+                body: JSON.stringify(engineDraft),
+            })
+            setEngineSettings({ ...defaultEngineSettings(), ...(data.engineSettings || {}) })
+            setEngineOptions(data.engineOptions || { responseEngines: [], embeddingEngines: [] })
+            setEngineRuntime(data.engineRuntime || {})
+            setEngineOpen(false)
+        } catch (err) {
+            setError(err.message || 'Réglages IA impossibles')
+        } finally {
+            setEngineSaving(false)
+        }
+    }, [apiFetch, debugAdmin, engineDraft, engineSaving])
+
     const applyContextToConversation = useCallback(async () => {
         if (applyingContext) return
 
@@ -1079,6 +1125,20 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     )
 
     const canSend = input.trim() && !sending && !creating
+    const responseEngineOptions = engineOptions.responseEngines?.length
+        ? engineOptions.responseEngines
+        : [{ key: 'openai', label: 'ChatGPT / OpenAI', available: true }]
+    const embeddingEngineOptions = engineOptions.embeddingEngines?.length
+        ? engineOptions.embeddingEngines
+        : [{ key: 'openai', label: 'OpenAI vectoriel', available: true }, { key: 'lexical', label: 'Local lexical', available: true }]
+    const runtimeResponseLabel = engineRuntime.response?.model
+        ? `${engineRuntime.response.engine || 'openai'}:${engineRuntime.response.model}`
+        : ''
+    const runtimeEmbeddingLabel = engineRuntime.embedding?.engine === 'lexical'
+        ? 'lexical'
+        : engineRuntime.embedding?.model
+        ? `${engineRuntime.embedding.engine || 'lexical'}:${engineRuntime.embedding.model}`
+        : (engineRuntime.embedding?.engine || '')
 
     return (
         <div className="rai-app">
@@ -1156,10 +1216,16 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             </div>
                         </div>
                         {debugAdmin && (
-                            <button type="button" className="rai-debug-btn" onClick={loadDebugLogs} disabled={!activeConversation || debugLoading} title="Voir les logs debug IA">
-                                <Icon icon={debugLoading ? 'line-md:loading-twotone-loop' : 'solar:bug-bold-duotone'} width={15} />
-                                <span>Debug</span>
-                            </button>
+                            <>
+                                <button type="button" className="rai-debug-btn rai-engine-btn" onClick={openEngineSettings} title="Moteurs IA">
+                                    <Icon icon="solar:tuning-2-bold-duotone" width={15} />
+                                    <span>Moteurs</span>
+                                </button>
+                                <button type="button" className="rai-debug-btn" onClick={loadDebugLogs} disabled={!activeConversation || debugLoading} title="Voir les logs debug IA">
+                                    <Icon icon={debugLoading ? 'line-md:loading-twotone-loop' : 'solar:bug-bold-duotone'} width={15} />
+                                    <span>Debug</span>
+                                </button>
+                            </>
                         )}
                         <button type="button" className="rai-clear-btn" onClick={deleteConversation} disabled={!activeConversation} title="Effacer cette conversation IA et son historique">
                             <Icon icon="solar:trash-bin-trash-bold" width={15} />
@@ -1290,6 +1356,112 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             <span>{selectedCount} source{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}</span>
                             <button type="button" className="rai-modal-submit" onClick={applyContextToConversation} disabled={applyingContext || creating}>
                                 {applyingContext ? 'Envoi...' : selectedCount > 0 ? 'Envoyer le contexte' : 'Appliquer'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {debugAdmin && engineOpen && (
+                <div className="rai-debug-backdrop" onClick={() => setEngineOpen(false)}>
+                    <div className="rai-engine-modal" onClick={event => event.stopPropagation()}>
+                        <div className="rai-debug-header">
+                            <div className="rai-debug-title">
+                                <span className="rai-debug-icon"><Icon icon="solar:tuning-2-bold-duotone" width={17} /></span>
+                                <span>Moteurs IA</span>
+                            </div>
+                            <div className="rai-debug-actions">
+                                <button type="button" className="rai-preview-action" onClick={() => setEngineOpen(false)} title="Fermer">
+                                    <Icon icon="solar:close-circle-linear" width={17} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="rai-engine-body">
+                            <div className="rai-engine-grid">
+                                <label className="rai-engine-field">
+                                    <span>Réponse</span>
+                                    <select
+                                        value={engineDraft.responseEngine}
+                                        onChange={event => setEngineDraft(prev => ({ ...prev, responseEngine: event.target.value }))}
+                                    >
+                                        {responseEngineOptions.map(option => (
+                                            <option key={option.key} value={option.key} disabled={!option.available}>
+                                                {option.label}{option.available ? '' : ' (indisponible)'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                {engineDraft.responseEngine === 'local' ? (
+                                    <label className="rai-engine-field">
+                                        <span>Modèle local</span>
+                                        <input
+                                            value={engineDraft.localResponseModel}
+                                            onChange={event => setEngineDraft(prev => ({ ...prev, localResponseModel: event.target.value }))}
+                                            placeholder="llama3.1"
+                                        />
+                                    </label>
+                                ) : (
+                                    <label className="rai-engine-field">
+                                        <span>Modèle ChatGPT</span>
+                                        <input
+                                            value={engineDraft.responseModel}
+                                            onChange={event => setEngineDraft(prev => ({ ...prev, responseModel: event.target.value }))}
+                                            placeholder="gpt-5.5"
+                                        />
+                                    </label>
+                                )}
+
+                                <label className="rai-engine-field">
+                                    <span>Embedding</span>
+                                    <select
+                                        value={engineDraft.embeddingEngine}
+                                        onChange={event => setEngineDraft(prev => ({ ...prev, embeddingEngine: event.target.value }))}
+                                    >
+                                        {embeddingEngineOptions.map(option => (
+                                            <option key={option.key} value={option.key} disabled={!option.available}>
+                                                {option.label}{option.available ? '' : ' (indisponible)'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                {engineDraft.embeddingEngine === 'local' && (
+                                    <label className="rai-engine-field">
+                                        <span>Modèle embedding local</span>
+                                        <input
+                                            value={engineDraft.localEmbeddingModel}
+                                            onChange={event => setEngineDraft(prev => ({ ...prev, localEmbeddingModel: event.target.value }))}
+                                            placeholder="nomic-embed-text"
+                                        />
+                                    </label>
+                                )}
+
+                                {engineDraft.embeddingEngine === 'openai' && (
+                                    <label className="rai-engine-field">
+                                        <span>Modèle embedding ChatGPT</span>
+                                        <input
+                                            value={engineDraft.embeddingModel}
+                                            onChange={event => setEngineDraft(prev => ({ ...prev, embeddingModel: event.target.value }))}
+                                            placeholder="text-embedding-3-small"
+                                        />
+                                    </label>
+                                )}
+                            </div>
+
+                            {(runtimeResponseLabel || runtimeEmbeddingLabel) && (
+                                <div className="rai-engine-current">
+                                    {runtimeResponseLabel && <span>Réponse <strong>{runtimeResponseLabel}</strong></span>}
+                                    {runtimeEmbeddingLabel && <span>Embedding <strong>{runtimeEmbeddingLabel}</strong></span>}
+                                </div>
+                            )}
+                        </div>
+                        <div className="rai-engine-footer">
+                            <button type="button" className="rai-link-btn" onClick={() => setEngineOpen(false)} disabled={engineSaving}>
+                                Annuler
+                            </button>
+                            <button type="button" className="rai-modal-submit" onClick={saveEngineSettings} disabled={engineSaving}>
+                                {engineSaving ? 'Enregistrement...' : 'Enregistrer'}
                             </button>
                         </div>
                     </div>
@@ -1547,11 +1719,22 @@ const styles = `
 .rai-preview-image{display:block;max-width:100%;max-height:100%;object-fit:contain;}
 .rai-debug-backdrop{position:fixed;inset:0;z-index:99996;background:rgba(15,23,42,.48);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;}
 .rai-debug-modal{width:min(1120px,96vw);height:min(820px,92vh);background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 18px 56px rgba(15,23,42,.24);display:flex;flex-direction:column;overflow:hidden;animation:raiFade .18s ease both;}
+.rai-engine-modal{width:min(560px,94vw);max-height:min(640px,90vh);background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 18px 56px rgba(15,23,42,.24);display:flex;flex-direction:column;overflow:hidden;animation:raiFade .18s ease both;}
 .rai-debug-header{height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 0 18px;border-bottom:1px solid #edf0f4;background:#fff;flex-shrink:0;}
 .rai-debug-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:var(--rai-text);}
 .rai-debug-icon{width:30px;height:30px;border-radius:9px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;}
 .rai-debug-actions{display:flex;align-items:center;gap:6px;}
 .rai-debug-body{flex:1;min-height:0;overflow-y:auto;background:#f8fafc;padding:14px;}
+.rai-engine-body{flex:1;min-height:0;overflow-y:auto;background:#f8fafc;padding:14px;}
+.rai-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.rai-engine-field{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.rai-engine-field span{font-size:11px;font-weight:800;color:#475569;}
+.rai-engine-field select,.rai-engine-field input{height:38px;border:1px solid #dbe3ee;border-radius:10px;background:#fff;color:var(--rai-text);font-size:12px;font-weight:600;font-family:inherit;padding:0 11px;outline:none;min-width:0;}
+.rai-engine-field select:focus,.rai-engine-field input:focus{border-color:var(--rai-ai);box-shadow:0 0 0 3px rgba(79,70,229,.10);}
+.rai-engine-current{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.rai-engine-current span{font-size:11px;color:#64748b;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:5px 9px;}
+.rai-engine-current strong{color:#0f172a;}
+.rai-engine-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #edf0f4;background:#fff;}
 .rai-debug-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
 .rai-debug-summary span,.rai-debug-kpis span{font-size:11px;color:#64748b;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:5px 9px;}
 .rai-debug-summary strong,.rai-debug-kpis strong{color:#0f172a;}
@@ -1571,5 +1754,5 @@ const styles = `
 @keyframes raiDot{0%,80%,100%{opacity:.35;transform:translateY(0) scale(.88)}40%{opacity:1;transform:translateY(-2px) scale(1)}}
 @keyframes raiSheen{0%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}
 @media(max-width:1050px){.rai-shell{grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 190px);min-height:640px}.rai-message{max-width:88%;}.rai-context-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}.rai-create-btn span{display:none;}.rai-create-btn{padding:7px 10px;}}
-@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-message.context{max-width:100%;}.rai-agent-status{min-width:0;max-width:100%;}.rai-agent-label{overflow:hidden;text-overflow:ellipsis;}.rai-clear-btn span,.rai-debug-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop,.rai-debug-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal,.rai-debug-modal{width:100%;height:92vh;}.rai-context-card-grid{grid-template-columns:1fr;}}
+@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-message.context{max-width:100%;}.rai-agent-status{min-width:0;max-width:100%;}.rai-agent-label{overflow:hidden;text-overflow:ellipsis;}.rai-clear-btn span,.rai-debug-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop,.rai-debug-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal,.rai-debug-modal{width:100%;height:92vh;}.rai-engine-modal{width:100%;max-height:92vh}.rai-engine-grid{grid-template-columns:1fr}.rai-engine-footer{align-items:stretch;flex-direction:column}.rai-context-card-grid{grid-template-columns:1fr;}}
 `

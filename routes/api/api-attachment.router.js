@@ -39,6 +39,186 @@ const {
 
 const crypto = require('crypto');
 
+const RECORD_AI_RAG_ENABLED = process.env.RECORD_AI_RAG_ENABLED !== 'false';
+const RECORD_AI_RAG_MAX_PAGES = boundedInt(process.env.RECORD_AI_RAG_MAX_PAGES, 200, 1, 250);
+const RECORD_AI_RAG_CHUNK_CHARS = boundedInt(process.env.RECORD_AI_RAG_CHUNK_CHARS, 1800, 600, 5000);
+const RECORD_AI_RAG_CHUNK_OVERLAP = boundedInt(process.env.RECORD_AI_RAG_CHUNK_OVERLAP, 220, 0, 1200);
+
+function boundedInt(value, fallback, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(number)));
+}
+
+function cleanId(value) {
+    if (!value || value === 'null' || value === 'undefined') return '';
+    return String(value);
+}
+
+function hashText(value) {
+    return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function ragConfigHash() {
+    return hashText([
+        `ragMaxPages:${RECORD_AI_RAG_MAX_PAGES}`,
+        `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
+    ].join('|'));
+}
+
+function hashFileContent(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+
+        stream.on('data', chunk => hash.update(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(hash.digest('hex')));
+    });
+}
+
+function resolveAttachmentPath(accountNumber, filename) {
+    if (!filename || filename.includes('..')) {
+        throw new Error('Chemin de fichier invalide');
+    }
+
+    const privatePath = path.join(__dirname, '../../private_uploads/attachments', String(accountNumber), filename);
+    if (fs.existsSync(privatePath)) return privatePath;
+
+    const publicPath = path.join(__dirname, '../../public/uploads/attachments', String(accountNumber), filename);
+    if (fs.existsSync(publicPath)) return publicPath;
+
+    throw new Error('Fichier introuvable sur le disque');
+}
+
+function attachmentRagStatusPayload(document, canonicalDocument = null, fallback = {}) {
+    if (!document) return null;
+
+    const canonicalId = cleanId(canonicalDocument?._id || document._id);
+    const documentId = cleanId(document._id);
+    const isCanonical = !fallback.sourceCache && canonicalId && documentId === canonicalId;
+
+    return {
+        indexed: true,
+        canonical: isCanonical,
+        status: isCanonical ? 'canonical' : 'indexed',
+        label: isCanonical ? 'Canonical' : 'Indexed',
+        documentId,
+        canonicalDocumentId: canonicalId,
+        canonicalName: canonicalDocument?.name || document.name || fallback.name || '',
+        chunkCount: document.chunkCount || canonicalDocument?.chunkCount || 0,
+        embeddingStatus: document.embeddingStatus || canonicalDocument?.embeddingStatus || 'none',
+        embeddedChunkCount: document.embeddedChunkCount || canonicalDocument?.embeddedChunkCount || 0,
+        contentHash: document.contentHash || fallback.contentHash || '',
+        ragConfigHash: document.ragConfigHash || fallback.ragConfigHash || '',
+        sourceCache: Boolean(fallback.sourceCache)
+    };
+}
+
+async function enrichAttachmentsWithRagStatus(req, attachments = []) {
+    if (!attachments.length || !RECORD_AI_RAG_ENABLED) return attachments;
+
+    let RecordAiDocument;
+    try {
+        RecordAiDocument = await tenantCollection(req, 'RecordAiDocument');
+    } catch (_) {
+        return attachments;
+    }
+    if (!RecordAiDocument) return attachments;
+
+    const sourceIds = attachments.map(file => cleanId(file._id)).filter(Boolean);
+    const directDocs = sourceIds.length
+        ? await RecordAiDocument.find({
+            source: 'record',
+            sourceId: { $in: sourceIds },
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean()
+        : [];
+    const directBySourceId = new Map();
+    directDocs.forEach(document => {
+        if (!directBySourceId.has(document.sourceId)) directBySourceId.set(document.sourceId, document);
+    });
+
+    const configHash = ragConfigHash();
+    const sizes = [...new Set(attachments.map(file => Number(file.size || 0)).filter(size => size > 0))];
+    const contentCandidates = sizes.length
+        ? await RecordAiDocument.find({
+            fileSize: { $in: sizes },
+            contentHash: { $exists: true, $nin: ['', null] },
+            ragConfigHash: configHash,
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean()
+        : [];
+
+    const canonicalByHash = new Map();
+    const candidatesBySize = new Map();
+    contentCandidates.forEach(document => {
+        const hash = document.contentHash || '';
+        if (!hash) return;
+        const size = Number(document.fileSize || 0);
+        if (!canonicalByHash.has(hash)) canonicalByHash.set(hash, document);
+        if (!candidatesBySize.has(size)) candidatesBySize.set(size, []);
+        candidatesBySize.get(size).push(document);
+    });
+
+    const hashByAttachmentId = new Map();
+    const getContentHashForAttachment = async (file) => {
+        const key = cleanId(file._id);
+        if (hashByAttachmentId.has(key)) return hashByAttachmentId.get(key);
+        if (!file.filename) {
+            hashByAttachmentId.set(key, '');
+            return '';
+        }
+        try {
+            const filePath = resolveAttachmentPath(req.account_number, file.filename);
+            const contentHash = await hashFileContent(filePath);
+            hashByAttachmentId.set(key, contentHash);
+            return contentHash;
+        } catch (_) {
+            hashByAttachmentId.set(key, '');
+            return '';
+        }
+    };
+
+    const enriched = [];
+    for (const file of attachments) {
+        const sourceId = cleanId(file._id);
+        const direct = directBySourceId.get(sourceId);
+        const directCanonical = direct?.contentHash ? canonicalByHash.get(direct.contentHash) : null;
+
+        if (direct) {
+            enriched.push({
+                ...file,
+                rag: attachmentRagStatusPayload(direct, directCanonical || direct)
+            });
+            continue;
+        }
+
+        const sizeCandidates = candidatesBySize.get(Number(file.size || 0)) || [];
+        if (sizeCandidates.length) {
+            const contentHash = await getContentHashForAttachment(file);
+            const canonical = contentHash ? canonicalByHash.get(contentHash) : null;
+            if (canonical) {
+                enriched.push({
+                    ...file,
+                    rag: attachmentRagStatusPayload(canonical, canonical, {
+                        contentHash,
+                        ragConfigHash: configHash,
+                        sourceCache: true
+                    })
+                });
+                continue;
+            }
+        }
+
+        enriched.push({ ...file, rag: null });
+    }
+
+    return enriched;
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uuid = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.round(Math.random() * 1E9));
@@ -458,7 +638,9 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             uploadedBy: att.uploadedBy
         }));
 
-        res.json({ success: true, attachments, driveFolders: record.driveFolders || [] });
+        const enrichedAttachments = await enrichAttachmentsWithRagStatus(req, attachments);
+
+        res.json({ success: true, attachments: enrichedAttachments, driveFolders: record.driveFolders || [] });
     } catch (error) {
         console.error('[Attachment] List error:', error);
         res.status(500).json({ error: error.message });

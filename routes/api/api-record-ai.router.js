@@ -1353,7 +1353,7 @@ function hashFileContent(filePath) {
     });
 }
 
-async function findReusableRagDocument(RecordAiDocument, { contentHash, configHash, excludeId = null }) {
+async function findReusableRagDocument(RecordAiDocument, { contentHash, configHash, accountNumber, fileSize, excludeId = null }) {
     if (!contentHash || !configHash) return null;
 
     const query = {
@@ -1364,9 +1364,58 @@ async function findReusableRagDocument(RecordAiDocument, { contentHash, configHa
     };
     if (excludeId) query._id = { $ne: excludeId };
 
-    return RecordAiDocument.findOne(query)
+    const direct = await RecordAiDocument.findOne(query)
         .sort({ indexedAt: 1, updatedAt: 1 })
         .lean();
+
+    let legacy = null;
+    const numericFileSize = Number(fileSize || 0);
+    if (accountNumber && numericFileSize > 0) {
+        const legacyQuery = {
+            status: 'ready',
+            chunkCount: { $gt: 0 },
+            fileSize: numericFileSize,
+            filename: { $nin: ['', null] },
+            $or: [
+                { contentHash: '' },
+                { contentHash: { $exists: false } }
+            ]
+        };
+        if (excludeId) legacyQuery._id = { $ne: excludeId };
+
+        const candidates = await RecordAiDocument.find(legacyQuery)
+            .sort({ indexedAt: 1, updatedAt: 1 })
+            .limit(25)
+            .lean();
+
+        for (const candidate of candidates) {
+            try {
+                const filePath = resolveAttachmentPath(accountNumber, candidate.filename);
+                const candidateHash = await hashFileContent(filePath);
+                if (candidateHash !== contentHash) continue;
+
+                legacy = await RecordAiDocument.findByIdAndUpdate(
+                    candidate._id,
+                    {
+                        $set: {
+                            contentHash,
+                            ragConfigHash: configHash,
+                            lastUsedAt: new Date()
+                        }
+                    },
+                    { new: true }
+                ).lean() || candidate;
+                break;
+            } catch (_) {
+                // Ignore legacy documents whose source file is no longer available.
+            }
+        }
+    }
+
+    if (legacy && (!direct || new Date(legacy.indexedAt || 0) < new Date(direct.indexedAt || 0))) {
+        return legacy;
+    }
+    return direct;
 }
 
 async function markRagDocumentUsed(RecordAiDocument, documentId) {
@@ -1493,6 +1542,28 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
         status: 'ready'
     }).lean();
 
+    const reusable = await findReusableRagDocument(RecordAiDocument, {
+        contentHash,
+        configHash,
+        accountNumber: req.account_number,
+        fileSize: stat.size
+    });
+    if (reusable && cleanId(reusable._id) !== cleanId(existing?._id)) {
+        await markRagDocumentUsed(RecordAiDocument, reusable._id);
+        return {
+            document: reusable,
+            indexed: false,
+            reused: true,
+            reuseReason: 'content-hash',
+            chunksCreated: reusable.chunkCount,
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: file.name || reusable.name,
+            usageSource: file.source,
+            usageSourceId: sourceId
+        };
+    }
+
     if (existing?.chunkCount > 0) {
         const document = await RecordAiDocument.findByIdAndUpdate(
             existing._id,
@@ -1516,23 +1587,6 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
             contentHash,
             ragConfigHash: configHash,
             usageName: file.name || existing.name,
-            usageSource: file.source,
-            usageSourceId: sourceId
-        };
-    }
-
-    const reusable = await findReusableRagDocument(RecordAiDocument, { contentHash, configHash });
-    if (reusable) {
-        await markRagDocumentUsed(RecordAiDocument, reusable._id);
-        return {
-            document: reusable,
-            indexed: false,
-            reused: true,
-            reuseReason: 'content-hash',
-            chunksCreated: reusable.chunkCount,
-            contentHash,
-            ragConfigHash: configHash,
-            usageName: file.name || reusable.name,
             usageSource: file.source,
             usageSourceId: sourceId
         };
@@ -1678,6 +1732,26 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
         `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
     ].join('|'));
 
+    const reusable = await findReusableRagDocument(RecordAiDocument, {
+        contentHash,
+        configHash
+    });
+    if (reusable && cleanId(reusable._id) !== cleanId(existingLatest?._id)) {
+        await markRagDocumentUsed(RecordAiDocument, reusable._id);
+        return {
+            document: reusable,
+            indexed: false,
+            reused: true,
+            reuseReason: 'content-hash',
+            chunksCreated: reusable.chunkCount,
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: upload.name || reusable.name,
+            usageSource: 'upload',
+            usageSourceId: sourceId
+        };
+    }
+
     if (existingLatest?.fileFingerprint === fileFingerprint && existingLatest.chunkCount > 0) {
         const document = await RecordAiDocument.findByIdAndUpdate(
             existingLatest._id,
@@ -1699,23 +1773,6 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
             contentHash,
             ragConfigHash: configHash,
             usageName: upload.name || existingLatest.name,
-            usageSource: 'upload',
-            usageSourceId: sourceId
-        };
-    }
-
-    const reusable = await findReusableRagDocument(RecordAiDocument, { contentHash, configHash });
-    if (reusable) {
-        await markRagDocumentUsed(RecordAiDocument, reusable._id);
-        return {
-            document: reusable,
-            indexed: false,
-            reused: true,
-            reuseReason: 'content-hash',
-            chunksCreated: reusable.chunkCount,
-            contentHash,
-            ragConfigHash: configHash,
-            usageName: upload.name || reusable.name,
             usageSource: 'upload',
             usageSourceId: sourceId
         };

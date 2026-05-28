@@ -45,6 +45,22 @@ function shortText(value, max = 96) {
     return text.length > max ? `${text.slice(0, max)}...` : text
 }
 
+function fileExtension(name) {
+    const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)(?:[?#].*)?$/)
+    return match ? `.${match[1]}` : ''
+}
+
+function getFilePreviewType(file = {}) {
+    const mime = String(file.mimeType || '').toLowerCase()
+    const name = String(file.name || file.originalName || file.filename || '').toLowerCase()
+    const ext = fileExtension(name)
+
+    if (mime === 'application/pdf' || ext === '.pdf') return 'pdf'
+    if (mime.startsWith('image/') && mime !== 'image/svg+xml') return 'image'
+    if (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'].includes(ext)) return 'image'
+    return ''
+}
+
 function renderInlineMarkdown(text, keyPrefix = 'inline') {
     const value = String(text || '')
     const nodes = []
@@ -189,6 +205,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
     const [contextSearch, setContextSearch] = useState('')
     const [contextOpen, setContextOpen] = useState(false)
     const [contextTab, setContextTab] = useState('fields')
+    const [previewFile, setPreviewFile] = useState(null)
     const [lastContextStats, setLastContextStats] = useState(null)
     const messagesRef = useRef(null)
     const fileInputRef = useRef(null)
@@ -469,20 +486,25 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         })
         selection.files.forEach(file => {
             const key = fileKey(file)
+            const fileDetails = files.find(item => fileKey(item) === key) || file
+            const previewType = getFilePreviewType(fileDetails)
             items.push({
                 key,
                 type: 'files',
                 id: String(file.id),
-                label: file.name,
-                icon: file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone',
+                label: fileDetails.name || file.name,
+                icon: previewType === 'image' ? 'solar:gallery-bold-duotone' : (file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone'),
                 color: file.source === 'drive' ? '#ec4899' : '#0f766e',
+                url: fileDetails.url || '',
+                mimeType: fileDetails.mimeType || '',
+                previewType,
             })
         })
         selection.uploads.forEach(upload => {
             items.push({ key: upload.id, type: 'uploads', id: upload.id, label: upload.name, icon: 'solar:file-check-bold-duotone', color: '#0f766e' })
         })
         return items
-    }, [chats, fields, notes, selection])
+    }, [chats, fields, files, notes, selection])
 
     const removeContextItem = useCallback((item) => {
         setSelection(prev => {
@@ -495,6 +517,23 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
             return { ...prev, [item.type]: (prev[item.type] || []).filter(id => String(id) !== String(item.id)) }
         })
     }, [])
+
+    const openContextItem = useCallback((item) => {
+        if (item.type !== 'files' || !item.url || !item.previewType) return
+        setPreviewFile({
+            url: item.url,
+            type: item.previewType,
+            label: item.label,
+        })
+    }, [])
+
+    const handleBadgeKeyDown = useCallback((event, item) => {
+        if (!item.url || !item.previewType) return
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            openContextItem(item)
+        }
+    }, [openContextItem])
 
     const contextTabs = useMemo(() => ([
         {
@@ -801,11 +840,31 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                         {selectedContextItems.length > 0 && (
                             <div className="rai-selected-context" aria-label="Contexte sélectionné">
                                 {selectedContextItems.map(item => (
-                                    <button type="button" key={item.key} className="rai-context-badge" title={item.label} onClick={() => removeContextItem(item)}>
+                                    <span
+                                        key={item.key}
+                                        className={`rai-context-badge ${item.url && item.previewType ? 'is-clickable' : ''}`}
+                                        title={item.url && item.previewType ? `Ouvrir ${item.label}` : item.label}
+                                        role={item.url && item.previewType ? 'button' : undefined}
+                                        tabIndex={item.url && item.previewType ? 0 : undefined}
+                                        onClick={() => openContextItem(item)}
+                                        onKeyDown={event => handleBadgeKeyDown(event, item)}
+                                    >
                                         <Icon icon={item.icon} width={13} color={item.color} />
-                                        <span>{item.label}</span>
-                                        <Icon icon="solar:close-circle-bold" width={12} />
-                                    </button>
+                                        <span className="rai-badge-text">{item.label}</span>
+                                        <button
+                                            type="button"
+                                            className="rai-badge-remove"
+                                            title="Retirer du contexte"
+                                            aria-label={`Retirer ${item.label}`}
+                                            onKeyDown={event => event.stopPropagation()}
+                                            onClick={event => {
+                                                event.stopPropagation()
+                                                removeContextItem(item)
+                                            }}
+                                        >
+                                            <Icon icon="solar:close-circle-bold" width={12} />
+                                        </button>
+                                    </span>
                                 ))}
                             </div>
                         )}
@@ -860,6 +919,36 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                             <button type="button" className="rai-modal-submit" onClick={() => setContextOpen(false)}>
                                 Appliquer
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {previewFile && (
+                <div className="rai-preview-backdrop" onClick={() => setPreviewFile(null)}>
+                    <div className="rai-preview-modal" onClick={event => event.stopPropagation()}>
+                        <div className="rai-preview-header">
+                            <div className="rai-preview-title">
+                                <span className="rai-preview-icon">
+                                    <Icon icon={previewFile.type === 'pdf' ? 'solar:file-text-bold-duotone' : 'solar:gallery-bold-duotone'} width={17} />
+                                </span>
+                                <span>{previewFile.label}</span>
+                            </div>
+                            <div className="rai-preview-actions">
+                                <a className="rai-preview-action" href={previewFile.url} target="_blank" rel="noopener" title="Ouvrir dans un nouvel onglet">
+                                    <Icon icon="solar:square-top-up-bold" width={16} />
+                                </a>
+                                <button type="button" className="rai-preview-action" onClick={() => setPreviewFile(null)} title="Fermer">
+                                    <Icon icon="solar:close-circle-linear" width={17} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="rai-preview-body">
+                            {previewFile.type === 'pdf' ? (
+                                <iframe className="rai-preview-frame" src={previewFile.url} title={previewFile.label} />
+                            ) : (
+                                <img className="rai-preview-image" src={previewFile.url} alt={previewFile.label} />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -929,9 +1018,12 @@ const styles = `
 .rai-md-list li{margin:2px 0;}
 .rai-composer-wrap{border-top:1px solid var(--rai-border);background:#fff;padding:10px 16px 14px;flex-shrink:0;}
 .rai-selected-context{display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:64px;overflow-y:auto;margin-bottom:8px;padding-right:2px;}
-.rai-context-badge{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:230px;height:28px;border:1px solid #e0e7ff;background:#f8faff;color:#475569;border-radius:9px;padding:0 8px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .16s;}
-.rai-context-badge:hover{border-color:#c7d2fe;background:#eef2ff;color:var(--rai-text);}
-.rai-context-badge span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rai-context-badge{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:230px;height:28px;border:1px solid #e0e7ff;background:#f8faff;color:#475569;border-radius:9px;padding:0 5px 0 8px;font-size:11px;font-weight:600;font-family:inherit;cursor:default;transition:all .16s;}
+.rai-context-badge.is-clickable{cursor:pointer;}
+.rai-context-badge.is-clickable:hover{border-color:#c7d2fe;background:#eef2ff;color:var(--rai-text);}
+.rai-badge-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rai-badge-remove{width:18px;height:18px;border:none;border-radius:999px;background:transparent;color:#64748b;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;padding:0;font-family:inherit;transition:all .15s;}
+.rai-badge-remove:hover{background:#fee2e2;color:#ef4444;}
 .rai-composer{display:flex;align-items:flex-end;gap:10px;background:#fff;}
 .rai-attach-context{position:relative;width:44px;height:44px;border:1px solid var(--rai-border);border-radius:13px;background:#f8fafc;color:var(--rai-ai);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-family:inherit;transition:all .16s;}
 .rai-attach-context:hover{border-color:#c7d2fe;background:var(--rai-ai-soft);transform:translateY(-1px);}
@@ -994,7 +1086,19 @@ const styles = `
 .rai-modal-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid #f1f3f5;background:#fff;color:#64748b;font-size:12px;font-weight:600;}
 .rai-modal-submit{border:none;border-radius:10px;background:linear-gradient(135deg,var(--rai-ai),#7c3aed);color:#fff;padding:8px 18px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .16s;}
 .rai-modal-submit:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.25);}
+.rai-preview-backdrop{position:fixed;inset:0;z-index:99995;background:rgba(15,23,42,.52);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:22px;}
+.rai-preview-modal{width:min(1040px,96vw);height:min(760px,92vh);background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 18px 54px rgba(15,23,42,.22);display:flex;flex-direction:column;overflow:hidden;animation:raiFade .18s ease both;}
+.rai-preview-header{height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 0 18px;border-bottom:1px solid #edf0f4;background:#fff;flex-shrink:0;}
+.rai-preview-title{min-width:0;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--rai-text);}
+.rai-preview-title span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rai-preview-icon{width:30px;height:30px;border-radius:9px;background:var(--rai-ai-soft);color:var(--rai-ai);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-preview-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.rai-preview-action{width:30px;height:30px;border:none;border-radius:8px;background:#f1f5f9;color:#64748b;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;font-family:inherit;transition:all .15s;}
+.rai-preview-action:hover{background:#e2e8f0;color:var(--rai-text);}
+.rai-preview-body{flex:1;min-height:0;background:#0f172a;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.rai-preview-frame{width:100%;height:100%;border:none;background:#fff;}
+.rai-preview-image{display:block;max-width:100%;max-height:100%;object-fit:contain;}
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:1050px){.rai-shell{grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 190px);min-height:640px}.rai-message{max-width:88%;}.rai-context-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}.rai-create-btn span{display:none;}.rai-create-btn{padding:7px 10px;}}
-@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-clear-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}}
+@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-clear-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal{width:100%;height:92vh;}}
 `

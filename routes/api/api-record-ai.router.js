@@ -331,6 +331,7 @@ async function buildBootstrap(req, record, entity) {
             mimeType: file.mimeType || '',
             size: file.size || 0,
             folder: file.folder || '',
+            url: `/account/${req.account_number}/uploads/attachments/${file.filename}`,
             uploadedAt: file.uploadedAt,
             charCount: null
         }))
@@ -347,6 +348,7 @@ async function buildBootstrap(req, record, entity) {
                 mimeType: file.mimeType || '',
                 size: file.size || 0,
                 folder: file.folder || '',
+                url: `/account/${req.account_number}/uploads/attachments/${file.filename}`,
                 uploadedAt: file.uploadedAt,
                 charCount: null
             }))

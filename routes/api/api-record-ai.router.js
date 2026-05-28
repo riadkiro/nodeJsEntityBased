@@ -3563,13 +3563,59 @@ function agentFallbackTextFromAiContent(value) {
 
 function agentToolLabel(tool) {
     if (tool === 'create_note') return 'Créer une note';
+    if (tool === 'update_note') return 'Modifier une note';
+    if (tool === 'create_doc') return 'Créer un document';
+    if (tool === 'use_template') return 'Utiliser un template';
     if (tool === 'update_fiche') return 'Mettre à jour la fiche';
     if (tool === 'create_task') return 'Créer une tâche';
+    if (tool === 'update_task') return 'Modifier une tâche';
     return tool;
 }
 
-function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = []) {
+function agentToolLookup(toolCatalog = {}) {
+    const notes = Array.isArray(toolCatalog.notes) ? toolCatalog.notes : [];
+    const templates = Array.isArray(toolCatalog.templates) ? toolCatalog.templates : [];
+    const tasks = Array.isArray(toolCatalog.tasks) ? toolCatalog.tasks : [];
+    const noteById = new Map(notes.map(note => [cleanId(note.id), note]));
+    const noteByTitle = new Map(notes.map(note => [agentNormalizeLabel(note.title), note]));
+    const templateById = new Map(templates.map(template => [cleanId(template.id), template]));
+    const templateByName = new Map(templates.map(template => [agentNormalizeLabel(template.name), template]));
+    const taskById = new Map(tasks.map(task => [cleanId(task.id), task]));
+    const taskByTitle = new Map(tasks.map(task => [agentNormalizeLabel(task.title), task]));
+    return { notes, templates, tasks, noteById, noteByTitle, templateById, templateByName, taskById, taskByTitle };
+}
+
+function agentResolveNoteRef(input = {}, lookup = {}) {
+    const id = cleanId(input.noteId || input.id || input.targetId);
+    if (id && lookup.noteById?.has(id)) return lookup.noteById.get(id);
+    const title = agentNormalizeLabel(input.noteTitle || input.title || input.targetTitle || input.name);
+    if (title && lookup.noteByTitle?.has(title)) return lookup.noteByTitle.get(title);
+    return id ? { id, title: input.noteTitle || input.title || 'Note' } : null;
+}
+
+function agentResolveTemplateRef(input = {}, lookup = {}) {
+    const id = cleanId(input.templateId || input.smartDocId || input.id);
+    if (id && lookup.templateById?.has(id)) return lookup.templateById.get(id);
+    const name = agentNormalizeLabel(input.templateName || input.name || input.title);
+    if (name && lookup.templateByName?.has(name)) return lookup.templateByName.get(name);
+    return id ? { id, name: input.templateName || input.name || 'Template' } : null;
+}
+
+function agentResolveTaskRef(input = {}, lookup = {}) {
+    const id = cleanId(input.taskId || input.id || input.targetId);
+    if (id && lookup.taskById?.has(id)) return lookup.taskById.get(id);
+    const title = agentNormalizeLabel(input.taskTitle || input.title || input.targetTitle || input.name);
+    if (title && lookup.taskByTitle?.has(title)) return lookup.taskByTitle.get(title);
+    return id ? { id, title: input.taskTitle || input.title || 'Tâche' } : null;
+}
+
+function agentObjectInput(value = {}) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], toolCatalog = {}) {
     const lookup = agentFieldLookup(fieldCatalog);
+    const toolLookup = agentToolLookup(toolCatalog);
     const rawActions = Array.isArray(parsed.actions) ? parsed.actions : [];
     const actions = [];
 
@@ -3592,6 +3638,114 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = []) {
                 preview: {
                     title,
                     excerpt: shortPlainText(contentMarkdown, 520)
+                },
+                diff: null
+            });
+            return;
+        }
+
+        if (tool === 'update_note') {
+            const input = agentObjectInput(raw.input || raw);
+            const note = agentResolveNoteRef(input, toolLookup);
+            if (!note?.id) return;
+            const nextTitle = input.title !== undefined ? agentSafeString(input.title, 140) : '';
+            const contentMarkdown = input.contentMarkdown !== undefined || input.markdown !== undefined || input.content !== undefined
+                ? agentSafeString(input.contentMarkdown || input.markdown || input.content || '', 30000)
+                : '';
+            const mode = ['replace', 'append'].includes(String(input.mode || '').toLowerCase())
+                ? String(input.mode).toLowerCase()
+                : 'replace';
+            if (!nextTitle && !contentMarkdown) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Modifier la note "${note.title || note.id}"`, 500),
+                status: 'proposed',
+                input: {
+                    noteId: cleanId(note.id),
+                    title: nextTitle,
+                    contentMarkdown,
+                    mode
+                },
+                preview: {
+                    title: nextTitle || note.title || 'Note',
+                    excerpt: contentMarkdown ? shortPlainText(contentMarkdown, 520) : 'Titre uniquement',
+                    target: note.title || note.id,
+                    mode
+                },
+                diff: [
+                    ...(nextTitle ? [{
+                        fieldId: `note:${note.id}:title`,
+                        label: `Note "${note.title || note.id}"`,
+                        before: note.title || '',
+                        after: nextTitle,
+                        reason: agentSafeString(input.reason || raw.description || '', 400)
+                    }] : []),
+                    ...(contentMarkdown ? [{
+                        fieldId: `note:${note.id}:content`,
+                        label: 'Contenu de la note',
+                        before: note.preview || '',
+                        after: shortPlainText(contentMarkdown, 180),
+                        reason: mode === 'append' ? 'Ajout au contenu existant' : 'Remplacement du contenu'
+                    }] : [])
+                ]
+            });
+            return;
+        }
+
+        if (tool === 'create_doc') {
+            const input = agentObjectInput(raw.input || raw);
+            const name = agentSafeString(input.name || input.title || raw.title || 'Document IA', 160) || 'Document IA';
+            const contentMarkdown = agentSafeString(input.contentMarkdown || input.markdown || input.content || '', 40000);
+            const contentHtml = agentSafeString(input.contentHtml || input.html || '', 60000);
+            if (!contentMarkdown && !contentHtml) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Créer le document "${name}"`, 500),
+                status: 'proposed',
+                input: {
+                    name,
+                    contentMarkdown,
+                    contentHtml,
+                    format: ['A4', 'A5', 'A3', 'Letter', 'Legal'].includes(input.format) ? input.format : 'A4',
+                    orientation: ['portrait', 'landscape'].includes(input.orientation) ? input.orientation : 'portrait'
+                },
+                preview: {
+                    title: name,
+                    excerpt: shortPlainText(contentHtml || contentMarkdown, 520),
+                    meta: 'Document brouillon'
+                },
+                diff: null
+            });
+            return;
+        }
+
+        if (tool === 'use_template') {
+            const input = agentObjectInput(raw.input || raw);
+            const template = agentResolveTemplateRef(input, toolLookup);
+            if (!template?.id) return;
+            const variables = agentObjectInput(input.variables || input.inputs || {});
+            const outputName = agentSafeString(input.outputName || input.name || '', 180);
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Créer un brouillon depuis le template "${template.name || template.id}"`, 500),
+                status: 'proposed',
+                input: {
+                    templateId: cleanId(template.id),
+                    templateName: template.name || '',
+                    variables,
+                    outputName,
+                    outputMode: 'draft'
+                },
+                preview: {
+                    title: outputName || template.name || 'Template',
+                    excerpt: `${Object.keys(variables).length} variable${Object.keys(variables).length > 1 ? 's' : ''}`,
+                    meta: 'Template SmartDoc'
                 },
                 diff: null
             });
@@ -3661,6 +3815,40 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = []) {
                 },
                 preview: { title, dueDate: dueDate || '' },
                 diff: null
+            });
+            return;
+        }
+
+        if (tool === 'update_task') {
+            const input = agentObjectInput(raw.input || raw);
+            const task = agentResolveTaskRef(input, toolLookup);
+            if (!task?.id) return;
+            const fields = {};
+            if (input.title !== undefined) fields.title = agentSafeString(input.title, 180);
+            if (input.description !== undefined) fields.description = agentSafeString(input.description, 4000);
+            if (input.status !== undefined) fields.status = agentSafeString(input.status, 80);
+            if (input.priority !== undefined && ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority)) fields.priority = input.priority;
+            if (input.dueDate !== undefined || input.date !== undefined) fields.dueDate = agentSafeString(input.dueDate || input.date || '', 80);
+            if (!Object.keys(fields).length) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Modifier la tâche "${task.title || task.id}"`, 500),
+                status: 'proposed',
+                input: { taskId: cleanId(task.id), fields },
+                preview: {
+                    title: fields.title || task.title || 'Tâche',
+                    excerpt: fields.description || fields.status || fields.priority || fields.dueDate || '',
+                    meta: 'Mise à jour tâche'
+                },
+                diff: Object.entries(fields).map(([key, value]) => ({
+                    fieldId: `task:${task.id}:${key}`,
+                    label: `Tâche: ${key}`,
+                    before: task[key] || '',
+                    after: value,
+                    reason: agentSafeString(input.reason || raw.description || '', 400)
+                }))
             });
         }
     });
@@ -3858,7 +4046,93 @@ async function agentDefaultSelection(req, record, entity, goal = '') {
     });
 }
 
-function buildAgentInstructions(record, entity, fieldCatalog = []) {
+async function agentBuildToolCatalog(req, record, entity) {
+    const RecordNote = await tenantCollection(req, 'RecordNote');
+    const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+    const RecordTask = await tenantCollection(req, 'RecordTask');
+
+    const notes = await RecordNote.find({
+        recordId: record._id,
+        archived: { $ne: true }
+    })
+        .select('title content isProtected pinned updatedAt')
+        .sort({ pinned: -1, updatedAt: -1 })
+        .limit(40)
+        .lean();
+
+    const visibilityClauses = [
+        { scopeType: 'entity' },
+        { scopeType: { $exists: false } },
+        { scopeType: null },
+        { scopeType: '' },
+        { scopeType: 'record', scopeRecordId: record._id }
+    ];
+
+    const templates = record.entityId
+        ? await SmartDocTemplate.find({
+            entityId: record.entityId,
+            active: true,
+            $or: visibilityClauses
+        })
+            .select('name description documentId inputFields outputFormat outputNameTemplate scopeType icon color order')
+            .sort({ order: 1, name: 1 })
+            .limit(60)
+            .lean()
+        : [];
+    const tasks = await RecordTask.find({ recordId: record._id })
+        .select('title description status priority dueDate updatedAt')
+        .sort({ updatedAt: -1 })
+        .limit(60)
+        .lean();
+
+    return {
+        notes: notes.map(note => ({
+            id: cleanId(note._id),
+            title: note.title || 'Sans titre',
+            protected: Boolean(note.isProtected),
+            pinned: Boolean(note.pinned),
+            preview: note.isProtected ? '[Note protégée]' : shortPlainText(note.content || '', 220),
+            updatedAt: note.updatedAt
+        })),
+        templates: templates.map(template => ({
+            id: cleanId(template._id),
+            name: template.name || 'Template',
+            description: template.description || '',
+            documentId: cleanId(template.documentId),
+            outputFormat: template.outputFormat || 'pdf',
+            outputNameTemplate: template.outputNameTemplate || '{{templateName}} - {{recordTitle}}',
+            scopeType: template.scopeType || 'entity',
+            inputFields: (template.inputFields || []).map(field => ({
+                key: field.key,
+                label: field.label,
+                type: field.type,
+                required: field.required !== false,
+                defaultValue: field.defaultValue,
+                options: field.options || []
+            }))
+        })),
+        tasks: tasks.map(task => ({
+            id: cleanId(task._id),
+            title: task.title || 'Tâche',
+            description: task.description || '',
+            status: task.status || '',
+            priority: task.priority || '',
+            dueDate: task.dueDate || '',
+            updatedAt: task.updatedAt
+        })),
+        tools: [
+            'create_note',
+            'update_note',
+            'create_doc',
+            'use_template',
+            'update_fiche',
+            'create_task',
+            'update_task'
+        ]
+    };
+}
+
+function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog = {}) {
     const fieldList = fieldCatalog.map(field => ({
         id: field.id,
         label: field.label,
@@ -3872,16 +4146,28 @@ function buildAgentInstructions(record, entity, fieldCatalog = []) {
         "Réponds en français et uniquement en JSON valide, sans markdown, sans bloc ```.",
         "Tools autorisés:",
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
+        "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
+        "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation? }. Crée un document brouillon lié à la fiche.",
+        "- use_template: { templateId, variables, outputName? }. Crée un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
         "- create_task: { title, description, dueDate, priority }. Utilise-le pour les rappels utiles comme une date limite.",
+        "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
         "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
+        "Pour modifier une note ou utiliser un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"..."}},{"tool":"use_template","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}}]}',
         "",
         "Champs fiche autorisés:",
-        JSON.stringify(fieldList.slice(0, 120))
+        JSON.stringify(fieldList.slice(0, 120)),
+        "",
+        "Catalogue record disponible pour les tools:",
+        JSON.stringify({
+            notes: (toolCatalog.notes || []).slice(0, 40),
+            templates: (toolCatalog.templates || []).slice(0, 60),
+            tasks: (toolCatalog.tasks || []).slice(0, 60)
+        })
     ].join('\n');
 }
 
@@ -4103,6 +4389,130 @@ async function agentEnsureDefaultTaskList(req, recordId) {
     return { list, created: true };
 }
 
+function agentLinkedRecordPayload(record = {}, entity = {}) {
+    return {
+        recordId: record._id,
+        recordTitle: record.computedTitle || record.title || '',
+        entityId: record.entityId || entity?._id || null,
+        entityName: entity?.name || entity?.nameSingular || '',
+        entityIcon: entity?.icon || '',
+        entityColor: entity?.color || '',
+        entitySlug: entity?.slug || '',
+        alias: entity?.slug || 'record'
+    };
+}
+
+function agentDocumentUrl(req, documentId) {
+    return `/account/${req.account_number}/documents/${documentId}/edit-react`;
+}
+
+function agentDocContentHtml(action = {}) {
+    const html = String(action.input?.contentHtml || '').trim();
+    if (html) return html;
+    return agentMarkdownToHtml(action.input?.contentMarkdown || '');
+}
+
+function agentDefaultDocDimensions(format = 'A4', orientation = 'portrait') {
+    const portrait = {
+        A3: { width: 1123, height: 1587 },
+        A4: { width: 794, height: 1123 },
+        A5: { width: 559, height: 794 },
+        Letter: { width: 816, height: 1056 },
+        Legal: { width: 816, height: 1344 }
+    }[format] || { width: 794, height: 1123 };
+    if (orientation === 'landscape') return { width: portrait.height, height: portrait.width };
+    return portrait;
+}
+
+function agentCloneWithoutMongoIds(value) {
+    if (Array.isArray(value)) return value.map(agentCloneWithoutMongoIds);
+    if (!value || typeof value !== 'object') return value;
+    const output = {};
+    Object.entries(value).forEach(([key, item]) => {
+        if (key === '_id' || key === '__v') return;
+        output[key] = agentCloneWithoutMongoIds(item);
+    });
+    return output;
+}
+
+function agentTemplateContext(record = {}, entity = {}, template = {}, variables = {}, user = {}) {
+    const recordTitle = record.computedTitle || record.title || '';
+    return {
+        ...variables,
+        templateName: template.name || '',
+        recordTitle,
+        title: recordTitle,
+        userName: user.name || user.email || '',
+        record: {
+            title: record.title || '',
+            computedTitle: record.computedTitle || '',
+            description: record.description || '',
+            content: record.content || '',
+            status: record.status || '',
+            date: record.date || '',
+            end_date: record.end_date || ''
+        },
+        entity: {
+            name: entity?.name || '',
+            nameSingular: entity?.nameSingular || '',
+            slug: entity?.slug || ''
+        },
+        input: variables,
+        inputs: variables,
+        variables
+    };
+}
+
+function agentValueByPath(source = {}, pathValue = '') {
+    const parts = String(pathValue || '').split('.').map(part => part.trim()).filter(Boolean);
+    let current = source;
+    for (const part of parts) {
+        if (current && Object.prototype.hasOwnProperty.call(current, part)) {
+            current = current[part];
+        } else {
+            return undefined;
+        }
+    }
+    return current;
+}
+
+function agentResolveTemplateString(value, context = {}) {
+    return String(value || '').replace(/{{\s*([^}]+)\s*}}/g, (match, key) => {
+        const clean = String(key || '').trim();
+        const resolved = agentValueByPath(context, clean);
+        if (resolved === undefined || resolved === null) return '';
+        if (Array.isArray(resolved)) return resolved.join(', ');
+        if (typeof resolved === 'object') return JSON.stringify(resolved);
+        return String(resolved);
+    });
+}
+
+function agentResolveTemplateObject(value, context = {}) {
+    if (typeof value === 'string') return agentResolveTemplateString(value, context);
+    if (Array.isArray(value)) return value.map(item => agentResolveTemplateObject(item, context));
+    if (!value || typeof value !== 'object') return value;
+    const output = {};
+    Object.entries(value).forEach(([key, item]) => {
+        output[key] = agentResolveTemplateObject(item, context);
+    });
+    return output;
+}
+
+function agentTemplateVariables(template = {}, inputVariables = {}) {
+    const variables = { ...agentObjectInput(inputVariables) };
+    (template.inputFields || []).forEach(field => {
+        if (variables[field.key] !== undefined && variables[field.key] !== null && variables[field.key] !== '') return;
+        if (field.defaultValue !== undefined && field.defaultValue !== null) {
+            variables[field.key] = field.defaultValue;
+            return;
+        }
+        if (field.type === 'date') variables[field.key] = new Date().toISOString().slice(0, 10);
+        else if (field.type === 'number') variables[field.key] = 0;
+        else variables[field.key] = '';
+    });
+    return variables;
+}
+
 async function applyAgentAction(req, record, entity, action) {
     if (action.tool === 'create_note') {
         const canEdit = await canEditRecordModule(req, record._id, 'notes');
@@ -4125,6 +4535,173 @@ async function applyAgentAction(req, record, entity, action) {
             after: { noteId: cleanId(note._id), title: note.title },
             result: { noteId: cleanId(note._id), title: note.title },
             inverse: { tool: 'archive_note', noteId: cleanId(note._id) }
+        };
+    }
+
+    if (action.tool === 'update_note') {
+        const canEdit = await canEditRecordModule(req, record._id, 'notes');
+        if (!canEdit) throw new Error("Accès en lecture seule aux notes");
+
+        const RecordNote = await tenantCollection(req, 'RecordNote');
+        const note = await RecordNote.findOne({
+            _id: action.input?.noteId,
+            recordId: record._id,
+            archived: { $ne: true }
+        });
+        if (!note) throw new Error('Note introuvable');
+        if (note.isProtected) throw new Error('Les notes protégées ne peuvent pas être modifiées par l’agent');
+
+        const before = {
+            noteId: cleanId(note._id),
+            title: note.title || '',
+            content: note.content || '',
+            color: note.color || '',
+            icon: note.icon || ''
+        };
+        if (action.input?.title) note.title = action.input.title;
+        if (action.input?.contentMarkdown) {
+            const nextContent = agentMarkdownToHtml(action.input.contentMarkdown);
+            note.content = action.input.mode === 'append'
+                ? `${note.content || ''}\n<hr>\n${nextContent}`
+                : nextContent;
+        }
+        note.updatedAt = new Date();
+        await note.save();
+
+        return {
+            before,
+            after: { noteId: cleanId(note._id), title: note.title },
+            result: { noteId: cleanId(note._id), title: note.title },
+            inverse: { tool: 'restore_note', note: before }
+        };
+    }
+
+    if (action.tool === 'create_doc') {
+        const canEdit = await canEditRecordModule(req, record._id, 'docs');
+        if (!canEdit) throw new Error('Accès en lecture seule aux documents');
+
+        const Document = await tenantCollection(req, 'Document');
+        const format = action.input?.format || 'A4';
+        const orientation = action.input?.orientation || 'portrait';
+        const dimensions = agentDefaultDocDimensions(format, orientation);
+        const document = await Document.create({
+            name: action.input?.name || 'Document IA',
+            format,
+            orientation,
+            dimensions,
+            pages: [{
+                content: agentDocContentHtml(action),
+                mode: 'edition',
+                elements: [],
+                rows: [],
+                background: { color: '#ffffff' },
+                order: 0
+            }],
+            entityId: record.entityId || entity?._id || null,
+            createdBy: req.user._id,
+            isTemplate: false,
+            status: 'draft',
+            linkedRecords: [agentLinkedRecordPayload(record, entity)],
+            metadata: {
+                createdByAgent: true,
+                agentTool: action.tool,
+                agentActionId: action.id
+            }
+        });
+
+        return {
+            before: null,
+            after: { documentId: cleanId(document._id), name: document.name },
+            result: {
+                documentId: cleanId(document._id),
+                name: document.name,
+                url: agentDocumentUrl(req, document._id)
+            },
+            inverse: { tool: 'delete_document', documentId: cleanId(document._id) }
+        };
+    }
+
+    if (action.tool === 'use_template') {
+        const canEdit = await canEditRecordModule(req, record._id, 'docs');
+        if (!canEdit) throw new Error('Accès en lecture seule aux documents');
+
+        const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+        const Document = await tenantCollection(req, 'Document');
+        const template = await SmartDocTemplate.findOne({
+            _id: action.input?.templateId,
+            active: true
+        }).lean();
+        if (!template) throw new Error('Template SmartDoc introuvable');
+        if (template.entityId && cleanId(template.entityId) !== cleanId(record.entityId)) {
+            throw new Error("Ce template n'est pas lié au type de fiche courant");
+        }
+        if (template.scopeType === 'record' && cleanId(template.scopeRecordId) !== cleanId(record._id)) {
+            throw new Error("Ce template n'est pas disponible pour cette fiche");
+        }
+
+        const sourceDoc = await Document.findById(template.documentId).lean();
+        if (!sourceDoc) throw new Error('Document template introuvable');
+
+        const variables = agentTemplateVariables(template, action.input?.variables || {});
+        const context = agentTemplateContext(record, entity, template, variables, req.user || {});
+        const outputName = agentResolveTemplateString(
+            action.input?.outputName || template.outputNameTemplate || '{{templateName}} - {{recordTitle}}',
+            context
+        ) || `${template.name || sourceDoc.name || 'Document'} - ${record.computedTitle || record.title || 'Fiche'}`;
+        const pages = agentResolveTemplateObject(agentCloneWithoutMongoIds(sourceDoc.pages || []), context);
+        const headerHtml = agentResolveTemplateString(sourceDoc.headerHtml || '', context);
+        const footerHtml = agentResolveTemplateString(sourceDoc.footerHtml || '', context);
+
+        const draftDoc = await Document.create({
+            name: outputName,
+            pages: pages.length ? pages : [{
+                content: '',
+                mode: 'edition',
+                elements: [],
+                rows: [],
+                background: { color: '#ffffff' },
+                order: 0
+            }],
+            headerHtml,
+            footerHtml,
+            format: sourceDoc.format || 'A4',
+            orientation: sourceDoc.orientation || 'portrait',
+            margins: sourceDoc.margins || { top: 40, right: 40, bottom: 40, left: 40 },
+            dimensions: sourceDoc.dimensions || agentDefaultDocDimensions(sourceDoc.format || 'A4', sourceDoc.orientation || 'portrait'),
+            entityId: record.entityId || entity?._id || null,
+            createdBy: req.user._id,
+            isTemplate: false,
+            isDraft: true,
+            draftSourceTemplateId: template._id,
+            draftRecordId: record._id,
+            draftOutputName: outputName,
+            draftOutputFormat: template.outputFormat || 'pdf',
+            generatedFrom: {
+                templateId: sourceDoc._id,
+                smartDocId: template._id,
+                templateName: template.name || sourceDoc.name || '',
+                generatedAt: new Date()
+            },
+            linkedRecords: [agentLinkedRecordPayload(record, entity)],
+            extractedData: { agentVariables: variables },
+            status: 'draft',
+            metadata: {
+                createdByAgent: true,
+                agentTool: action.tool,
+                agentActionId: action.id
+            }
+        });
+
+        return {
+            before: null,
+            after: { documentId: cleanId(draftDoc._id), name: draftDoc.name, templateId: cleanId(template._id) },
+            result: {
+                documentId: cleanId(draftDoc._id),
+                name: draftDoc.name,
+                templateId: cleanId(template._id),
+                url: agentDocumentUrl(req, draftDoc._id)
+            },
+            inverse: { tool: 'delete_document', documentId: cleanId(draftDoc._id) }
         };
     }
 
@@ -4197,6 +4774,49 @@ async function applyAgentAction(req, record, entity, action) {
         };
     }
 
+    if (action.tool === 'update_task') {
+        const canEdit = await canEditRecordModule(req, record._id, 'tasks');
+        if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
+
+        const RecordTask = await tenantCollection(req, 'RecordTask');
+        const task = await RecordTask.findOne({ _id: action.input?.taskId, recordId: record._id });
+        if (!task) throw new Error('Tâche introuvable');
+
+        const before = {
+            taskId: cleanId(task._id),
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            statusColor: task.statusColor,
+            priority: task.priority,
+            priorityColor: task.priorityColor,
+            dueDate: task.dueDate
+        };
+        const fields = agentObjectInput(action.input?.fields || {});
+        const priorityColors = {
+            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
+        };
+        if (fields.title !== undefined) task.title = agentSafeString(fields.title, 180) || task.title;
+        if (fields.description !== undefined) task.description = agentSafeString(fields.description, 4000);
+        if (fields.status !== undefined) task.status = agentSafeString(fields.status, 80) || task.status;
+        if (fields.priority !== undefined && priorityColors[fields.priority] !== undefined) {
+            task.priority = fields.priority;
+            task.priorityColor = priorityColors[fields.priority];
+        }
+        if (fields.dueDate !== undefined) {
+            const dueDate = fields.dueDate ? new Date(fields.dueDate) : null;
+            task.dueDate = dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null;
+        }
+        await task.save();
+
+        return {
+            before,
+            after: { taskId: cleanId(task._id), title: task.title },
+            result: { taskId: cleanId(task._id), title: task.title },
+            inverse: { tool: 'restore_task', task: before }
+        };
+    }
+
     throw new Error(`Tool non supporté: ${action.tool}`);
 }
 
@@ -4209,6 +4829,39 @@ async function undoAgentLog(req, record, entity, log) {
             { _id: inverse.noteId, recordId: record._id },
             { $set: { archived: true, updatedAt: new Date() } }
         );
+        return;
+    }
+
+    if (inverse.tool === 'restore_note' && inverse.note?.noteId) {
+        const RecordNote = await tenantCollection(req, 'RecordNote');
+        await RecordNote.updateOne(
+            { _id: inverse.note.noteId, recordId: record._id },
+            {
+                $set: {
+                    title: inverse.note.title || 'Sans titre',
+                    content: inverse.note.content || '',
+                    color: inverse.note.color || '#8b5cf6',
+                    icon: inverse.note.icon || 'solar:notebook-bold-duotone',
+                    updatedAt: new Date()
+                }
+            }
+        );
+        return;
+    }
+
+    if (inverse.tool === 'delete_document' && inverse.documentId) {
+        const Document = await tenantCollection(req, 'Document');
+        const DocumentLine = await tenantCollection(req, 'DocumentLine');
+        await Document.deleteOne({
+            _id: inverse.documentId,
+            createdBy: req.user._id,
+            $or: [
+                { 'metadata.createdByAgent': true },
+                { isDraft: true },
+                { 'generatedFrom.smartDocId': { $exists: true } }
+            ]
+        });
+        if (DocumentLine) await DocumentLine.deleteMany({ documentId: inverse.documentId });
         return;
     }
 
@@ -4234,6 +4887,25 @@ async function undoAgentLog(req, record, entity, log) {
             const remaining = await RecordTask.countDocuments({ taskListId: inverse.taskListId });
             if (!remaining) await TaskList.deleteOne({ _id: inverse.taskListId, recordId: record._id });
         }
+        return;
+    }
+
+    if (inverse.tool === 'restore_task' && inverse.task?.taskId) {
+        const RecordTask = await tenantCollection(req, 'RecordTask');
+        await RecordTask.updateOne(
+            { _id: inverse.task.taskId, recordId: record._id },
+            {
+                $set: {
+                    title: inverse.task.title || 'Tâche',
+                    description: inverse.task.description || '',
+                    status: inverse.task.status || 'À faire',
+                    statusColor: inverse.task.statusColor || '#9ca3af',
+                    priority: inverse.task.priority || 'Aucune',
+                    priorityColor: inverse.task.priorityColor || '',
+                    dueDate: inverse.task.dueDate || null
+                }
+            }
+        );
         return;
     }
 
@@ -4440,6 +5112,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             inventoryContextItems: availableContextItems.length
         };
         const fieldCatalog = agentBuildFieldCatalog(entity);
+        const toolCatalog = await agentBuildToolCatalog(req, record, entity);
 
         run = await RecordAgentRun.create({
             recordId: record._id,
@@ -4461,7 +5134,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         const aiResult = await callRecordAI(req, {
             conversationId: agentConversation._id,
             recordId: record._id,
-            instructions: buildAgentInstructions(record, entity, fieldCatalog),
+            instructions: buildAgentInstructions(record, entity, fieldCatalog, toolCatalog),
             input: buildAgentInput(goal, selectedContext, {
                 ...contextDecision,
                 inventoryText: contextInventoryText,
@@ -4492,7 +5165,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             };
         }
 
-        const actions = agentNormalizeActions(parsed, record, fieldCatalog);
+        const actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog);
         run.summary = agentSafeString(parsed.summary || 'Plan prêt à valider.', 3000);
         run.plan = agentNormalizePlan(parsed);
         run.proposedActions = actions;
@@ -4511,6 +5184,11 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             contextStats,
             contextInventoryText,
             contextText: clipDebugText(selectedContext.text || '').text,
+            toolCatalog: {
+                notes: (toolCatalog.notes || []).map(note => ({ id: note.id, title: note.title, protected: note.protected })),
+                templates: (toolCatalog.templates || []).map(template => ({ id: template.id, name: template.name, inputFields: template.inputFields })),
+                tasks: (toolCatalog.tasks || []).map(task => ({ id: task.id, title: task.title, status: task.status, priority: task.priority }))
+            },
             engineRuntime,
             parsed
         } : null;

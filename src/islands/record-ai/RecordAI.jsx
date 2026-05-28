@@ -586,15 +586,23 @@ function agentStatusLabel(status) {
 
 function agentToolIcon(tool) {
     if (tool === 'create_note') return 'solar:notebook-bold-duotone'
+    if (tool === 'update_note') return 'solar:pen-new-square-bold-duotone'
+    if (tool === 'create_doc') return 'solar:document-add-bold-duotone'
+    if (tool === 'use_template') return 'solar:document-medicine-bold-duotone'
     if (tool === 'update_fiche') return 'solar:card-bold-duotone'
     if (tool === 'create_task') return 'solar:checklist-minimalistic-bold-duotone'
+    if (tool === 'update_task') return 'solar:checklist-minimalistic-bold-duotone'
     return 'solar:magic-stick-3-bold-duotone'
 }
 
 function agentToolColor(tool) {
     if (tool === 'create_note') return '#8b5cf6'
+    if (tool === 'update_note') return '#a855f7'
+    if (tool === 'create_doc') return '#0f766e'
+    if (tool === 'use_template') return '#2563eb'
     if (tool === 'update_fiche') return '#4361ee'
     if (tool === 'create_task') return '#10b981'
+    if (tool === 'update_task') return '#14b8a6'
     return '#4f46e5'
 }
 
@@ -609,7 +617,8 @@ function AgentActionCard({ action = {} }) {
     const color = agentToolColor(action.tool)
     const diff = Array.isArray(action.diff) ? action.diff : []
     const failed = action.status === 'failed'
-    const notePreviewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
+    const previewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
+    const genericPreviewTools = ['update_note', 'create_doc', 'use_template', 'update_task']
 
     return (
         <div className={`rai-agent-action ${action.status || 'proposed'}`} style={{ '--agent-action-color': color }}>
@@ -627,10 +636,11 @@ function AgentActionCard({ action = {} }) {
                 </span>
             </div>
 
-            {action.tool === 'create_note' && action.preview && (
+            {['create_note', ...genericPreviewTools].includes(action.tool) && action.preview && (
                 <div className="rai-agent-preview">
-                    <strong>{action.preview.title || action.input?.title || 'Note IA'}</strong>
-                    <p>{shortText(notePreviewText, 520)}</p>
+                    <strong>{action.preview.title || action.input?.title || action.input?.name || action.tool}</strong>
+                    <p>{shortText(previewText || action.preview.meta || '', 520)}</p>
+                    {action.preview.meta && <small>{action.preview.meta}</small>}
                 </div>
             )}
 
@@ -2637,6 +2647,7 @@ const styles = `
 .rai-agent-preview{border:1px solid #edf2f7;background:#f8fafc;border-radius:8px;padding:7px 8px;}
 .rai-agent-preview strong{display:block;font-size:11.5px;color:#334155;margin-bottom:2px;}
 .rai-agent-preview p{margin:0;font-size:10.5px;color:#64748b;line-height:1.4;}
+.rai-agent-preview small{display:block;margin-top:3px;font-size:10px;color:#94a3b8;font-weight:700;}
 .rai-agent-preview.compact{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .rai-agent-preview.compact strong{margin:0;}
 .rai-agent-diff{display:flex;flex-direction:column;gap:4px;}

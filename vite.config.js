@@ -4,9 +4,10 @@ import path from 'path'
 
 export default defineConfig({
     plugins: [react()],
+    publicDir: false,
     build: {
         outDir: 'public/dist',
-        emptyOutDir: true,
+        emptyOutDir: false,
         rollupOptions: {
             input: {
                 recordsGrid: path.resolve(__dirname, 'src/islands/records-grid/entry.jsx'),

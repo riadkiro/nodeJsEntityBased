@@ -10,7 +10,9 @@
     "tailwind": "npx tailwindcss -i ./public/themes/default/assets/css/tailwind.css -o ./public/themes/default/assets/css/style.css",
     "tailwind:watch": "npx tailwindcss -i ./public/themes/default/assets/css/tailwind.css -o ./public/themes/default/assets/css/style.css --watch",
     "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run tailwind:watch\"",
-    "build": "vite build && npm run tailwind",
+    "build": "vite build",
+    "build:all": "npm run build && npm run tailwind",
+    "build:css": "npm run tailwind",
     "build:watch": "vite build --watch"
   },
   "keywords": [],

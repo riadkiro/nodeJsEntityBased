@@ -2857,8 +2857,9 @@ router.get('/:recordId/bootstrap', async (req, res) => {
             .select('title model lastMessage contextSelections updatedAt createdAt')
             .sort({ updatedAt: -1 })
             .lean();
+        const agentConversations = await listAgentConversations(req, record, entity);
 
-        res.json({ success: true, ...bootstrap, conversations });
+        res.json({ success: true, ...bootstrap, conversations, agentConversations });
     } catch (error) {
         console.error('[RecordAI] bootstrap error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -3888,6 +3889,7 @@ function buildAgentInput(goal, selectedContext, contextMeta = {}) {
     const mode = contextMeta.mode || 'full';
     const detailedContext = selectedContext?.text?.trim();
     const inventoryText = String(contextMeta.inventoryText || '').trim();
+    const historyText = String(contextMeta.historyText || '').trim();
     let contextBlock = "Aucun contexte détaillé envoyé. Traite la demande à partir du message utilisateur et des instructions système.";
 
     if (mode === 'full' && detailedContext) {
@@ -3900,6 +3902,11 @@ function buildAgentInput(goal, selectedContext, contextMeta = {}) {
         'Demande utilisateur:',
         goal,
         '',
+        historyText ? 'Historique récent de cette conversation agent:' : '',
+        historyText ? '<historique>' : '',
+        historyText,
+        historyText ? '</historique>' : '',
+        historyText ? '' : '',
         mode === 'full' ? 'Contexte record détaillé disponible:' : 'Contexte record envoyé:',
         '<contexte>',
         contextBlock,
@@ -3918,13 +3925,160 @@ function agentRunPayload(req, run) {
     return plain;
 }
 
+function agentConversationTitleFromGoal(goal) {
+    const title = shortPlainText(goal, 70);
+    return title || 'Nouvelle conversation agent';
+}
+
+function agentConversationPayload(conversation) {
+    if (!conversation) return null;
+    const plain = conversation && typeof conversation.toObject === 'function'
+        ? conversation.toObject()
+        : { ...(conversation || {}) };
+    return plain;
+}
+
+function isDefaultAgentConversationTitle(title) {
+    const clean = normalizeSearchText(title);
+    return !clean || ['nouvelle conversation agent', 'conversation agent', 'nouvelle conversation'].includes(clean);
+}
+
+async function updateAgentConversationFromRun(req, conversation, run) {
+    if (!conversation || !run?._id) return conversation;
+    const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+    const count = await RecordAgentRun.countDocuments({
+        conversationId: conversation._id,
+        recordId: run.recordId,
+        userId: run.userId,
+        archived: { $ne: true }
+    });
+
+    if (isDefaultAgentConversationTitle(conversation.title)) {
+        conversation.title = agentConversationTitleFromGoal(run.goal);
+    }
+    conversation.runCount = count;
+    conversation.lastRun = {
+        runId: run._id,
+        goal: run.goal || '',
+        status: run.status || '',
+        actionCount: Array.isArray(run.proposedActions) ? run.proposedActions.length : 0,
+        updatedAt: run.updatedAt || new Date()
+    };
+    await conversation.save();
+    return conversation;
+}
+
+function agentHistoryMessagesFromRuns(runs = []) {
+    return (Array.isArray(runs) ? runs : [])
+        .slice(-8)
+        .flatMap(run => {
+            const actions = (run.proposedActions || [])
+                .slice(0, 6)
+                .map(action => `${action.tool}: ${action.title || action.description || action.status || 'action'}`)
+                .join('; ');
+            return [
+                { role: 'user', content: run.goal || '' },
+                {
+                    role: 'assistant',
+                    content: [
+                        `Résumé agent précédent: ${run.summary || 'Aucun résumé.'}`,
+                        `Statut: ${run.status || 'inconnu'}`,
+                        actions ? `Actions: ${actions}` : ''
+                    ].filter(Boolean).join('\n')
+                }
+            ];
+        })
+        .filter(message => message.content);
+}
+
+function agentHistoryTextFromRuns(runs = []) {
+    const messages = agentHistoryMessagesFromRuns(runs);
+    if (!messages.length) return '';
+    return messages
+        .map(message => `${message.role === 'user' ? 'Utilisateur' : 'Agent'}: ${message.content}`)
+        .join('\n\n');
+}
+
+async function migrateLegacyAgentRunsToConversations(req, record, entity) {
+    const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+    const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+    const legacyRuns = await RecordAgentRun.find({
+        recordId: record._id,
+        userId: String(req.user._id),
+        $or: [{ conversationId: { $exists: false } }, { conversationId: null }],
+        archived: { $ne: true }
+    })
+        .sort({ updatedAt: -1 })
+        .limit(80);
+
+    for (const run of legacyRuns) {
+        const conversation = await RecordAgentConversation.create({
+            recordId: record._id,
+            entityId: record.entityId || entity?._id || null,
+            userId: String(req.user._id),
+            userName: req.user.name || req.user.email || '',
+            title: agentConversationTitleFromGoal(run.goal),
+            runCount: 1,
+            lastRun: {
+                runId: run._id,
+                goal: run.goal || '',
+                status: run.status || '',
+                actionCount: Array.isArray(run.proposedActions) ? run.proposedActions.length : 0,
+                updatedAt: run.updatedAt || run.createdAt || new Date()
+            },
+            createdAt: run.createdAt || new Date(),
+            updatedAt: run.updatedAt || run.createdAt || new Date()
+        });
+        run.conversationId = conversation._id;
+        await run.save();
+    }
+}
+
+async function listAgentConversations(req, record, entity) {
+    await migrateLegacyAgentRunsToConversations(req, record, entity);
+    const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+    return RecordAgentConversation.find({
+        recordId: record._id,
+        userId: String(req.user._id),
+        archived: { $ne: true }
+    })
+        .select('title runCount lastRun archived updatedAt createdAt')
+        .sort({ updatedAt: -1 })
+        .lean();
+}
+
+async function ensureAgentConversation(req, record, entity, conversationId, goal) {
+    const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+    let conversation = null;
+
+    if (isObjectId(conversationId)) {
+        conversation = await RecordAgentConversation.findOne({
+            _id: conversationId,
+            recordId: record._id,
+            userId: String(req.user._id),
+            archived: { $ne: true }
+        });
+    }
+
+    if (conversation) return conversation;
+
+    return RecordAgentConversation.create({
+        recordId: record._id,
+        entityId: record.entityId || entity?._id || null,
+        userId: String(req.user._id),
+        userName: req.user.name || req.user.email || '',
+        title: agentConversationTitleFromGoal(goal)
+    });
+}
+
 async function requireAgentRun(req, recordId, runId) {
     const { record, entity } = await loadRecordBundle(req, recordId);
     const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
     const run = await RecordAgentRun.findOne({
         _id: runId,
         recordId: record._id,
-        userId: String(req.user._id)
+        userId: String(req.user._id),
+        archived: { $ne: true }
     });
     if (!run) {
         const error = new Error('Run agent introuvable');
@@ -4086,13 +4240,142 @@ async function undoAgentLog(req, record, entity, log) {
     throw new Error("Action d'annulation non supportée");
 }
 
-router.get('/:recordId/agent/runs', async (req, res) => {
+router.get('/:recordId/agent/conversations', async (req, res) => {
+    try {
+        const { record, entity } = await loadRecordBundle(req, req.params.recordId);
+        const conversations = await listAgentConversations(req, record, entity);
+        res.json({ success: true, conversations });
+    } catch (error) {
+        console.error('[RecordAgent] list conversations error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/:recordId/agent/conversations', async (req, res) => {
+    try {
+        const { record, entity } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+        const title = agentSafeString(req.body.title || '', 120) || 'Nouvelle conversation agent';
+        const conversation = await RecordAgentConversation.create({
+            recordId: record._id,
+            entityId: record.entityId || entity?._id || null,
+            userId: String(req.user._id),
+            userName: req.user.name || req.user.email || '',
+            title
+        });
+
+        res.json({ success: true, conversation: agentConversationPayload(conversation) });
+    } catch (error) {
+        console.error('[RecordAgent] create conversation error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/:recordId/agent/conversations/:conversationId', async (req, res) => {
     try {
         const { record } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+        const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+        const conversation = await RecordAgentConversation.findOne({
+            _id: req.params.conversationId,
+            recordId: record._id,
+            userId: String(req.user._id),
+            archived: { $ne: true }
+        }).lean();
+
+        if (!conversation) return res.status(404).json({ success: false, error: 'Conversation agent introuvable' });
+
+        const runs = await RecordAgentRun.find({
+            conversationId: conversation._id,
+            recordId: record._id,
+            userId: String(req.user._id),
+            archived: { $ne: true }
+        })
+            .sort({ createdAt: -1 })
+            .limit(60)
+            .lean();
+
+        res.json({
+            success: true,
+            conversation,
+            runs: runs.map(run => agentRunPayload(req, run))
+        });
+    } catch (error) {
+        console.error('[RecordAgent] get conversation error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.patch('/:recordId/agent/conversations/:conversationId', async (req, res) => {
+    try {
+        const { record } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+        const title = agentSafeString(req.body.title || '', 120);
+        if (!title) return res.status(400).json({ success: false, error: 'Titre requis' });
+
+        const conversation = await RecordAgentConversation.findOneAndUpdate(
+            {
+                _id: req.params.conversationId,
+                recordId: record._id,
+                userId: String(req.user._id),
+                archived: { $ne: true }
+            },
+            { $set: { title } },
+            { new: true }
+        ).lean();
+
+        if (!conversation) return res.status(404).json({ success: false, error: 'Conversation agent introuvable' });
+        res.json({ success: true, conversation });
+    } catch (error) {
+        console.error('[RecordAgent] rename conversation error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.delete('/:recordId/agent/conversations/:conversationId', async (req, res) => {
+    try {
+        const { record } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+        const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+        const archivedAt = new Date();
+        const conversation = await RecordAgentConversation.findOneAndUpdate(
+            {
+                _id: req.params.conversationId,
+                recordId: record._id,
+                userId: String(req.user._id),
+                archived: { $ne: true }
+            },
+            { $set: { archived: true, archivedAt } },
+            { new: true }
+        ).lean();
+
+        if (!conversation) return res.status(404).json({ success: false, error: 'Conversation agent introuvable' });
+
+        await RecordAgentRun.updateMany(
+            {
+                conversationId: conversation._id,
+                recordId: record._id,
+                userId: String(req.user._id)
+            },
+            { $set: { archived: true, archivedAt } }
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[RecordAgent] delete conversation error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/:recordId/agent/runs', async (req, res) => {
+    try {
+        const { record, entity } = await loadRecordBundle(req, req.params.recordId);
+        await migrateLegacyAgentRunsToConversations(req, record, entity);
         const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
         const runs = await RecordAgentRun.find({
             recordId: record._id,
-            userId: String(req.user._id)
+            userId: String(req.user._id),
+            archived: { $ne: true }
         })
             .sort({ updatedAt: -1 })
             .limit(30)
@@ -4113,6 +4396,17 @@ router.post('/:recordId/agent/runs', async (req, res) => {
 
         const { record, entity } = await loadRecordBundle(req, req.params.recordId);
         const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+        let agentConversation = await ensureAgentConversation(req, record, entity, req.body.conversationId, goal);
+        const priorRuns = await RecordAgentRun.find({
+            conversationId: agentConversation._id,
+            recordId: record._id,
+            userId: String(req.user._id),
+            archived: { $ne: true }
+        })
+            .sort({ createdAt: -1 })
+            .limit(8)
+            .lean();
+        const priorRunsChronological = [...priorRuns].reverse();
         const requestedSelection = normalizeSelection(req.body.contextSelections || {});
         const contextDecision = agentContextDecision(goal, requestedSelection);
         const requestedCount = selectionItemCount(requestedSelection);
@@ -4150,6 +4444,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         run = await RecordAgentRun.create({
             recordId: record._id,
             entityId: record.entityId,
+            conversationId: agentConversation._id,
             userId: String(req.user._id),
             userName: req.user.name || req.user.email || '',
             goal,
@@ -4164,10 +4459,14 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         });
 
         const aiResult = await callRecordAI(req, {
-            conversationId: run._id,
+            conversationId: agentConversation._id,
             recordId: record._id,
             instructions: buildAgentInstructions(record, entity, fieldCatalog),
-            input: buildAgentInput(goal, selectedContext, { ...contextDecision, inventoryText: contextInventoryText }),
+            input: buildAgentInput(goal, selectedContext, {
+                ...contextDecision,
+                inventoryText: contextInventoryText,
+                historyText: agentHistoryTextFromRuns(priorRunsChronological)
+            }),
             previousResponseId: null,
             engineSettings,
             historyMessages: []
@@ -4216,8 +4515,9 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             parsed
         } : null;
         await run.save();
+        agentConversation = await updateAgentConversationFromRun(req, agentConversation, run);
 
-        res.json({ success: true, run: agentRunPayload(req, run) });
+        res.json({ success: true, run: agentRunPayload(req, run), conversation: agentConversationPayload(agentConversation) });
     } catch (error) {
         console.error('[RecordAgent] create run error:', error);
         if (run) {
@@ -4293,8 +4593,19 @@ router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
         const failedCount = run.proposedActions.filter(action => action.status === 'failed').length;
         run.status = failedCount > 0 ? (appliedCount > 0 ? 'partial' : 'review') : 'applied';
         await run.save();
+        let conversation = null;
+        if (run.conversationId) {
+            const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+            conversation = await RecordAgentConversation.findOne({
+                _id: run.conversationId,
+                recordId: record._id,
+                userId: String(req.user._id),
+                archived: { $ne: true }
+            });
+            if (conversation) conversation = await updateAgentConversationFromRun(req, conversation, run);
+        }
 
-        res.json({ success: true, run: agentRunPayload(req, run) });
+        res.json({ success: true, run: agentRunPayload(req, run), conversation: agentConversationPayload(conversation) });
     } catch (error) {
         console.error('[RecordAgent] apply run error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -4326,8 +4637,19 @@ router.post('/:recordId/agent/runs/:runId/undo', async (req, res) => {
 
         run.status = 'undone';
         await run.save();
+        let conversation = null;
+        if (run.conversationId) {
+            const RecordAgentConversation = await tenantCollection(req, 'RecordAgentConversation');
+            conversation = await RecordAgentConversation.findOne({
+                _id: run.conversationId,
+                recordId: record._id,
+                userId: String(req.user._id),
+                archived: { $ne: true }
+            });
+            if (conversation) conversation = await updateAgentConversationFromRun(req, conversation, run);
+        }
 
-        res.json({ success: true, run: agentRunPayload(req, run) });
+        res.json({ success: true, run: agentRunPayload(req, run), conversation: agentConversationPayload(conversation) });
     } catch (error) {
         console.error('[RecordAgent] undo run error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });

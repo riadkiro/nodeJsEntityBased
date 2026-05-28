@@ -806,6 +806,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [engineSaving, setEngineSaving] = useState(false)
     const [conversations, setConversations] = useState([])
     const [activeConversation, setActiveConversation] = useState(null)
+    const [agentConversations, setAgentConversations] = useState([])
+    const [activeAgentConversation, setActiveAgentConversation] = useState(null)
     const [messages, setMessages] = useState([])
     const [selection, setSelection] = useState(emptySelection)
     const [input, setInput] = useState('')
@@ -899,14 +901,35 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         scrollToBottom()
     }, [apiFetch, scrollToBottom])
 
-    const loadAgentRuns = useCallback(async () => {
-        try {
-            const data = await apiFetch('/agent/runs')
-            setAgentRuns(data.runs || [])
-        } catch (err) {
-            console.warn('[RecordAI] Agent runs load failed:', err)
+    const loadAgentConversation = useCallback(async (conversationId) => {
+        if (!conversationId) {
+            setActiveAgentConversation(null)
+            setAgentRuns([])
+            return
         }
-    }, [apiFetch])
+        const data = await apiFetch(`/agent/conversations/${conversationId}`)
+        setActiveAgentConversation(data.conversation || null)
+        setAgentRuns(data.runs || [])
+        setSelection(emptySelection())
+        setLastContextStats(null)
+        scrollToBottom()
+    }, [apiFetch, scrollToBottom])
+
+    const loadAgentConversations = useCallback(async (preferredId = '') => {
+        try {
+            const data = await apiFetch('/agent/conversations')
+            const list = data.conversations || []
+            setAgentConversations(list)
+            const next = list.find(item => item._id === preferredId) || list[0] || null
+            if (next) await loadAgentConversation(next._id)
+            else {
+                setActiveAgentConversation(null)
+                setAgentRuns([])
+            }
+        } catch (err) {
+            console.warn('[RecordAI] Agent conversations load failed:', err)
+        }
+    }, [apiFetch, loadAgentConversation])
 
     const loadBootstrap = useCallback(async () => {
         setLoading(true)
@@ -923,16 +946,19 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setEngineOptions(data.engineOptions || { responseEngines: [], embeddingEngines: [] })
             setEngineRuntime(data.engineRuntime || {})
             setConversations(data.conversations || [])
+            setAgentConversations(data.agentConversations || [])
             if (data.conversations?.[0]) {
                 await loadConversation(data.conversations[0]._id)
             }
-            await loadAgentRuns()
+            if (data.agentConversations?.[0]) {
+                await loadAgentConversation(data.agentConversations[0]._id)
+            }
         } catch (err) {
             setError(err.message || 'Chargement impossible')
         } finally {
             setLoading(false)
         }
-    }, [apiFetch, loadAgentRuns, loadConversation, recordTitle])
+    }, [apiFetch, loadAgentConversation, loadConversation, recordTitle])
 
     useEffect(() => {
         loadBootstrap()
@@ -992,6 +1018,15 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         })
     }, [conversationSearch, conversations])
 
+    const filteredAgentConversations = useMemo(() => {
+        const q = conversationSearch.trim().toLowerCase()
+        if (!q) return agentConversations
+        return agentConversations.filter(item => {
+            return String(item.title || '').toLowerCase().includes(q)
+                || String(item.lastRun?.goal || '').toLowerCase().includes(q)
+        })
+    }, [agentConversations, conversationSearch])
+
     const recordContextFiles = useMemo(() => filtered.files.filter(file => file.source === 'record'), [filtered.files])
     const driveContextFiles = useMemo(() => filtered.files.filter(file => file.source === 'drive'), [filtered.files])
     const driveFolders = useMemo(() => {
@@ -1015,6 +1050,15 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             const rest = prev.filter(item => item._id !== conversation._id)
             return [conversation, ...rest]
         })
+    }, [])
+
+    const updateAgentConversationList = useCallback((conversation) => {
+        if (!conversation?._id) return
+        setAgentConversations(prev => {
+            const rest = prev.filter(item => item._id !== conversation._id)
+            return [conversation, ...rest]
+        })
+        setActiveAgentConversation(prev => prev?._id === conversation._id ? { ...prev, ...conversation } : prev)
     }, [])
 
     const createConversation = useCallback(async (initialSelection = emptySelection()) => {
@@ -1060,6 +1104,81 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setError(err.message || 'Suppression impossible')
         }
     }, [activeConversation, apiFetch, conversations, loadConversation])
+
+    const renameConversation = useCallback(async () => {
+        if (!activeConversation) return
+        const title = window.prompt('Nouveau nom de la conversation', activeConversation.title || 'Conversation')
+        const clean = String(title || '').trim()
+        if (!clean || clean === activeConversation.title) return
+        try {
+            const data = await apiFetch(`/conversations/${activeConversation._id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ title: clean }),
+            })
+            setActiveConversation(data.conversation)
+            updateConversationList(data.conversation)
+        } catch (err) {
+            setError(err.message || 'Renommage impossible')
+        }
+    }, [activeConversation, apiFetch, updateConversationList])
+
+    const createAgentConversation = useCallback(async () => {
+        if (creating) return null
+        setCreating(true)
+        setError('')
+        try {
+            const data = await apiFetch('/agent/conversations', {
+                method: 'POST',
+                body: JSON.stringify({ title: 'Nouvelle conversation agent' }),
+            })
+            setAgentConversations(prev => [data.conversation, ...prev])
+            setActiveAgentConversation(data.conversation)
+            setAgentRuns([])
+            setSelection(emptySelection())
+            setLastContextStats(null)
+            scrollToBottom()
+            return data.conversation
+        } catch (err) {
+            setError(err.message || 'Création impossible')
+            return null
+        } finally {
+            setCreating(false)
+        }
+    }, [apiFetch, creating, scrollToBottom])
+
+    const renameAgentConversation = useCallback(async () => {
+        if (!activeAgentConversation) return
+        const title = window.prompt('Nouveau nom de la conversation agent', activeAgentConversation.title || 'Conversation agent')
+        const clean = String(title || '').trim()
+        if (!clean || clean === activeAgentConversation.title) return
+        try {
+            const data = await apiFetch(`/agent/conversations/${activeAgentConversation._id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ title: clean }),
+            })
+            updateAgentConversationList(data.conversation)
+        } catch (err) {
+            setError(err.message || 'Renommage impossible')
+        }
+    }, [activeAgentConversation, apiFetch, updateAgentConversationList])
+
+    const deleteAgentConversation = useCallback(async () => {
+        if (!activeAgentConversation) return
+        const ok = window.confirm('Supprimer cette conversation agent ? Les actions déjà appliquées ne seront pas annulées.')
+        if (!ok) return
+        try {
+            await apiFetch(`/agent/conversations/${activeAgentConversation._id}`, { method: 'DELETE' })
+            const next = agentConversations.find(item => item._id !== activeAgentConversation._id) || null
+            setAgentConversations(prev => prev.filter(item => item._id !== activeAgentConversation._id))
+            setActiveAgentConversation(null)
+            setAgentRuns([])
+            setSelection(emptySelection())
+            setLastContextStats(null)
+            if (next) await loadAgentConversation(next._id)
+        } catch (err) {
+            setError(err.message || 'Suppression impossible')
+        }
+    }, [activeAgentConversation, agentConversations, apiFetch, loadAgentConversation])
 
     const toggleArrayValue = useCallback((key, id) => {
         setSelection(prev => {
@@ -1137,19 +1256,26 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
 
     const upsertAgentRun = useCallback((run) => {
         if (!run?._id) return
+        if (activeAgentConversation?._id && run.conversationId && run.conversationId !== activeAgentConversation._id) return
         setAgentRuns(prev => {
             const rest = prev.filter(item => item._id !== run._id)
             return [run, ...rest]
         })
-    }, [])
+    }, [activeAgentConversation])
 
     const startAgentRun = useCallback(async () => {
         const text = input.trim()
         if (!text || agentRunning) return
 
         const payloadSelection = buildPayloadSelection(selection)
+        let conversation = activeAgentConversation
+        if (!conversation) {
+            conversation = await createAgentConversation()
+            if (!conversation) return
+        }
         const tempRun = {
             _id: `temp_${Date.now()}`,
+            conversationId: conversation._id,
             goal: text,
             status: 'drafting',
             summary: 'Analyse de la demande en cours...',
@@ -1169,11 +1295,13 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             const data = await apiFetch('/agent/runs', {
                 method: 'POST',
                 body: JSON.stringify({
+                    conversationId: conversation._id,
                     goal: text,
                     contextSelections: payloadSelection,
                 }),
             })
             setAgentRuns(prev => [data.run, ...prev.filter(item => item._id !== tempRun._id && item._id !== data.run?._id)])
+            updateAgentConversationList(data.conversation)
             setSelection(emptySelection())
             setLastContextStats(null)
         } catch (err) {
@@ -1183,7 +1311,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setAgentRunning(false)
             stopAgentStatus()
         }
-    }, [agentRunning, apiFetch, input, selection, startAgentStatus, stopAgentStatus])
+    }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, input, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
 
     const applyAgentRun = useCallback(async (run) => {
         if (!run?._id || agentBusyRunId) return
@@ -1192,12 +1320,13 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         try {
             const data = await apiFetch(`/agent/runs/${run._id}/apply`, { method: 'POST', body: JSON.stringify({}) })
             upsertAgentRun(data.run)
+            updateAgentConversationList(data.conversation)
         } catch (err) {
             setError(err.message || 'Application impossible')
         } finally {
             setAgentBusyRunId('')
         }
-    }, [agentBusyRunId, apiFetch, upsertAgentRun])
+    }, [agentBusyRunId, apiFetch, updateAgentConversationList, upsertAgentRun])
 
     const undoAgentRun = useCallback(async (run) => {
         if (!run?._id || agentBusyRunId) return
@@ -1208,12 +1337,13 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         try {
             const data = await apiFetch(`/agent/runs/${run._id}/undo`, { method: 'POST', body: JSON.stringify({}) })
             upsertAgentRun(data.run)
+            updateAgentConversationList(data.conversation)
         } catch (err) {
             setError(err.message || 'Annulation impossible')
         } finally {
             setAgentBusyRunId('')
         }
-    }, [agentBusyRunId, apiFetch, upsertAgentRun])
+    }, [agentBusyRunId, apiFetch, updateAgentConversationList, upsertAgentRun])
 
     const handleUpload = useCallback(async (event) => {
         const file = event.target.files?.[0]
@@ -1693,7 +1823,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
 
     const canSend = input.trim() && !sending && !creating
     const canSubmit = activeMode === 'agent'
-        ? Boolean(input.trim()) && !agentRunning
+        ? Boolean(input.trim()) && !agentRunning && !creating
         : canSend
     const responseEngineOptions = engineOptions.responseEngines?.length
         ? engineOptions.responseEngines
@@ -1720,49 +1850,60 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                         <div className="rai-sidebar-title-row">
                             <h3>
                                 <Icon icon={activeMode === 'agent' ? 'solar:magic-stick-3-bold-duotone' : 'solar:chat-round-dots-bold-duotone'} width={18} />
-                                {activeMode === 'agent' ? 'Runs Agent' : 'Conversations'}
-                                <span className="rai-count">{activeMode === 'agent' ? agentRuns.length : conversations.length}</span>
+                                {activeMode === 'agent' ? 'Conversations Agent' : 'Conversations'}
+                                <span className="rai-count">{activeMode === 'agent' ? agentConversations.length : conversations.length}</span>
                             </h3>
-                            {activeMode === 'chat' && (
-                                <button type="button" className="rai-create-btn" title="Nouvelle conversation" onClick={() => createConversation()} disabled={creating}>
-                                    <Icon icon={creating ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'} width={14} />
-                                    <span>Nouvelle</span>
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className="rai-create-btn"
+                                title={activeMode === 'agent' ? 'Nouvelle conversation agent' : 'Nouvelle conversation'}
+                                onClick={() => activeMode === 'agent' ? createAgentConversation() : createConversation()}
+                                disabled={creating}
+                            >
+                                <Icon icon={creating ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'} width={14} />
+                                <span>Nouveau</span>
+                            </button>
                         </div>
-                        {activeMode === 'chat' && (
-                            <label className="rai-sidebar-search">
-                                <Icon icon="solar:magnifer-linear" width={14} />
-                                <input
-                                    type="text"
-                                    value={conversationSearch}
-                                    onChange={event => setConversationSearch(event.target.value)}
-                                    placeholder="Rechercher une conversation..."
-                                />
-                            </label>
-                        )}
+                        <label className="rai-sidebar-search">
+                            <Icon icon="solar:magnifer-linear" width={14} />
+                            <input
+                                type="text"
+                                value={conversationSearch}
+                                onChange={event => setConversationSearch(event.target.value)}
+                                placeholder={activeMode === 'agent' ? 'Rechercher une conversation agent...' : 'Rechercher une conversation...'}
+                            />
+                        </label>
                     </div>
 
                     <div className="rai-conv-list">
                         {loading && <div className="rai-loading"><Icon icon="line-md:loading-twotone-loop" width={22} /> Chargement...</div>}
                         {activeMode === 'agent' ? (
                             <>
-                                {!loading && agentRuns.length === 0 && (
+                                {!loading && filteredAgentConversations.length === 0 && (
                                     <div className="rai-empty-side">
                                         <Icon icon="solar:magic-stick-3-bold-duotone" width={32} />
-                                        <span>Aucun run agent</span>
-                                        <small>Décrivez une action dans le champ principal</small>
+                                        <span>{agentConversations.length === 0 ? 'Aucune conversation agent' : 'Aucun résultat'}</span>
+                                        {agentConversations.length === 0 && <small>Cliquez sur Nouveau pour commencer</small>}
                                     </div>
                                 )}
-                                {agentRuns.map(run => (
-                                    <div className={`rai-conv rai-agent-mini ${run.status || 'review'}`} key={run._id}>
+                                {filteredAgentConversations.map(conversation => (
+                                    <button
+                                        type="button"
+                                        className={`rai-conv rai-agent-mini ${conversation.lastRun?.status || ''} ${activeAgentConversation?._id === conversation._id ? 'active' : ''}`}
+                                        key={conversation._id}
+                                        onClick={() => loadAgentConversation(conversation._id)}
+                                    >
                                         <span className="rai-conv-icon"><Icon icon="solar:magic-stick-3-bold-duotone" width={18} /></span>
                                         <span className="rai-conv-body">
-                                            <span className="rai-conv-title" title={run.goal || 'Run agent'}>{shortText(run.goal || 'Run agent', 48)}</span>
-                                            <span className="rai-conv-preview">{agentStatusLabel(run.status)} · {(run.proposedActions || []).length} tool{(run.proposedActions || []).length > 1 ? 's' : ''}</span>
+                                            <span className="rai-conv-title" title={conversation.title || 'Conversation agent'}>{conversation.title || 'Conversation agent'}</span>
+                                            <span className="rai-conv-preview">
+                                                {conversation.lastRun?.goal
+                                                    ? `${agentStatusLabel(conversation.lastRun.status)} · ${shortText(conversation.lastRun.goal, 42)}`
+                                                    : 'Aucun message'}
+                                            </span>
                                         </span>
-                                        <span className="rai-conv-date">{formatDate(run.updatedAt || run.createdAt)}</span>
-                                    </div>
+                                        <span className="rai-conv-date">{formatDate(conversation.updatedAt)}</span>
+                                    </button>
                                 ))}
                             </>
                         ) : (
@@ -1800,11 +1941,11 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             <Icon icon="solar:magic-stick-3-bold-duotone" width={21} />
                         </div>
                         <div className="rai-chat-title-wrap">
-                            <div className="rai-chat-title">{activeMode === 'agent' ? 'Agent record' : (activeConversation?.title || record.title || 'IA')}</div>
+                            <div className="rai-chat-title">{activeMode === 'agent' ? (activeAgentConversation?.title || 'Agent record') : (activeConversation?.title || record.title || 'IA')}</div>
                             <div className="rai-chat-sub">
                                 <span>{record.entityName || 'Fiche'}</span>
                                 <span>·</span>
-                                <span>{activeMode === 'agent' ? `${agentRuns.length} run${agentRuns.length > 1 ? 's' : ''}` : `${selectedCount} contexte${selectedCount > 1 ? 's' : ''}`}</span>
+                                <span>{activeMode === 'agent' ? `${agentRuns.length} message${agentRuns.length > 1 ? 's' : ''} agent` : `${selectedCount} contexte${selectedCount > 1 ? 's' : ''}`}</span>
                                 {lastContextStats && (
                                     <>
                                         <span>·</span>
@@ -1843,11 +1984,28 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                 </button>
                             </>
                         )}
-                        {activeMode === 'chat' && (
-                            <button type="button" className="rai-clear-btn" onClick={deleteConversation} disabled={!activeConversation} title="Effacer cette conversation IA et son historique">
+                        {activeMode === 'chat' ? (
+                            <>
+                                <button type="button" className="rai-clear-btn neutral" onClick={renameConversation} disabled={!activeConversation} title="Renommer cette conversation">
+                                    <Icon icon="solar:pen-bold" width={15} />
+                                    <span>Renommer</span>
+                                </button>
+                                <button type="button" className="rai-clear-btn" onClick={deleteConversation} disabled={!activeConversation} title="Effacer cette conversation IA et son historique">
+                                    <Icon icon="solar:trash-bin-trash-bold" width={15} />
+                                    <span>Effacer</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button type="button" className="rai-clear-btn neutral" onClick={renameAgentConversation} disabled={!activeAgentConversation} title="Renommer cette conversation agent">
+                                    <Icon icon="solar:pen-bold" width={15} />
+                                    <span>Renommer</span>
+                                </button>
+                                <button type="button" className="rai-clear-btn" onClick={deleteAgentConversation} disabled={!activeAgentConversation} title="Supprimer cette conversation agent">
                                 <Icon icon="solar:trash-bin-trash-bold" width={15} />
-                                <span>Effacer</span>
-                            </button>
+                                    <span>Supprimer</span>
+                                </button>
+                            </>
                         )}
                     </header>
 
@@ -2241,6 +2399,7 @@ const styles = `
 .rai-chat-title-wrap{min-width:0;flex:1;}
 .rai-clear-btn{display:inline-flex;align-items:center;gap:4px;border:none;background:transparent;color:#94a3b8;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
 .rai-clear-btn:hover{background:#fef2f2;color:#ef4444;}
+.rai-clear-btn.neutral:hover{background:#eef2ff;color:var(--rai-ai);}
 .rai-debug-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid #e0e7ff;background:#f8faff;color:var(--rai-ai);border-radius:8px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
 .rai-debug-btn:hover{border-color:#c7d2fe;background:#eef2ff;}
 .rai-debug-btn:disabled{opacity:.45;cursor:default;}
@@ -2496,7 +2655,7 @@ const styles = `
 .rai-agent-secondary{border:1px solid #e2e8f0;background:#fff;color:#64748b;}
 .rai-agent-secondary:hover{border-color:#fecaca;background:#fff1f2;color:#e11d48;}
 .rai-agent-primary:disabled,.rai-agent-secondary:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}
-.rai-agent-mini{cursor:default;}
+.rai-agent-mini{cursor:pointer;}
 .rai-agent-mini.review{border-color:rgba(79,70,229,.18);background:#f8faff;}
 .rai-agent-mini.applied{border-color:#bbf7d0;background:#f0fdf4;}
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}

@@ -56,6 +56,7 @@ const RecordAgentExecutionLogSchema = new mongoose.Schema({
 const RecordAgentRunSchema = new mongoose.Schema({
     recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record', required: true, index: true },
     entityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity', default: null, index: true },
+    conversationId: { type: mongoose.Schema.Types.ObjectId, ref: 'RecordAgentConversation', default: null, index: true },
     userId: { type: String, default: '', index: true },
     userName: { type: String, default: '' },
 
@@ -84,10 +85,13 @@ const RecordAgentRunSchema = new mongoose.Schema({
 
     aiRaw: { type: String, default: '' },
     debugPayload: { type: mongoose.Schema.Types.Mixed, default: null },
-    error: { type: String, default: '' }
+    error: { type: String, default: '' },
+    archived: { type: Boolean, default: false, index: true },
+    archivedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 RecordAgentRunSchema.index({ recordId: 1, userId: 1, updatedAt: -1 });
+RecordAgentRunSchema.index({ recordId: 1, userId: 1, conversationId: 1, updatedAt: -1 });
 RecordAgentRunSchema.index({ recordId: 1, status: 1, updatedAt: -1 });
 
 module.exports = mongoose.model('RecordAgentRun', RecordAgentRunSchema);

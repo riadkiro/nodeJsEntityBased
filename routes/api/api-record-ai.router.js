@@ -45,7 +45,8 @@ const SEARCH_STOPWORDS = new Set([
     'leurs', 'mais', 'mes', 'mon', 'nous', 'par', 'pas', 'plus', 'pour', 'que', 'quel',
     'quelle', 'quelles', 'quels', 'qui', 'quoi', 'sans', 'ses', 'sur', 'tes', 'ton',
     'tous', 'tout', 'une', 'vos', 'vous', 'the', 'and', 'for', 'with', 'from', 'this',
-    'that', 'document', 'documents', 'fichier', 'question', 'reponse', 'resume', 'resumer'
+    'that', 'document', 'documents', 'fichier', 'question', 'reponse', 'resume', 'resumer',
+    'moi', 'page', 'pages', 'svp', 'stp'
 ]);
 
 function cleanId(value) {
@@ -165,6 +166,38 @@ function extractSearchPhrases(value) {
     });
 
     return [...new Set(phrases.map(normalizeSearchText).filter(item => item.length >= 3))].slice(0, 12);
+}
+
+function extractRequestedPages(value) {
+    const text = String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[–—]/g, '-')
+        .replace(/\bp\.\s*/g, 'page ');
+    const pages = new Set();
+    const pageRefRegex = /\b(?:pages?|p)\s+(?:n[°o]\s*)?([0-9]{1,4}(?:\s*(?:,|;|et|and|&|-|a|à|to)\s*[0-9]{1,4}){0,12})/gi;
+    let match;
+
+    while ((match = pageRefRegex.exec(text)) !== null) {
+        const sequence = match[1] || '';
+        const numberRegex = /([0-9]{1,4})(?:\s*(?:-|a|à|to)\s*([0-9]{1,4}))?/gi;
+        let numberMatch;
+
+        while ((numberMatch = numberRegex.exec(sequence)) !== null) {
+            const start = Number(numberMatch[1]);
+            const end = Number(numberMatch[2] || numberMatch[1]);
+            if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+
+            const low = Math.max(1, Math.min(start, end));
+            const high = Math.min(1000, Math.max(start, end));
+            for (let page = low; page <= high && pages.size < 30; page += 1) {
+                pages.add(page);
+            }
+        }
+    }
+
+    return [...pages].sort((a, b) => a - b);
 }
 
 function pageLabel(chunk = {}) {
@@ -839,7 +872,7 @@ function buildRagChunkPayloads({ documentId, record, entity, source, sourceId, s
                 pageStart: pageNumber,
                 pageEnd: pageNumber,
                 text,
-                searchText: normalizeSearchText(`${sourceName || ''}\n${text}`),
+                searchText: normalizeSearchText(`${sourceName || ''}\npage ${pageNumber}\np. ${pageNumber}\n${text}`),
                 charCount: text.length,
                 wordCount: countWords(text),
                 indexedAt,
@@ -1117,14 +1150,24 @@ async function prepareRagForSelection(req, record, entity, selection) {
     return result;
 }
 
-function scoreRagChunks(chunks, query) {
+function scoreRagChunks(chunks, query, requestedPages = []) {
     const tokens = tokenizeSearch(query);
     const phrases = extractSearchPhrases(query);
+    const requestedPageSet = new Set((requestedPages || []).map(Number).filter(Number.isFinite));
 
     return (chunks || []).map(chunk => {
         const searchText = chunk.searchText || normalizeSearchText(`${chunk.sourceName || ''}\n${chunk.text || ''}`);
         const matchedTerms = [];
         let score = 0;
+        const pageStart = Number(chunk.pageStart || 1);
+        const pageEnd = Number(chunk.pageEnd || pageStart);
+
+        requestedPageSet.forEach(page => {
+            if (pageStart <= page && page <= pageEnd) {
+                matchedTerms.push(`page ${page}`);
+                score += 1000;
+            }
+        });
 
         tokens.forEach(token => {
             if (!searchText.includes(token)) return;
@@ -1213,11 +1256,13 @@ function selectRagChunks(scoredChunks, allChunks) {
 
 async function buildRagContext(req, record, entity, selection, query) {
     const prepared = await prepareRagForSelection(req, record, entity, selection);
+    const requestedPages = extractRequestedPages(query);
     const debug = {
         ...prepared,
         query: String(query || ''),
         queryTokens: tokenizeSearch(query),
         phrases: extractSearchPhrases(query),
+        requestedPages,
         chunks: []
     };
 
@@ -1238,7 +1283,7 @@ async function buildRagContext(req, record, entity, selection, query) {
         .sort({ documentId: 1, chunkIndex: 1 })
         .lean();
 
-    const selected = selectRagChunks(scoreRagChunks(chunks, query), chunks);
+    const selected = selectRagChunks(scoreRagChunks(chunks, query, requestedPages), chunks);
     const blocks = selected.map(entry => {
         const chunk = entry.chunk;
         return [

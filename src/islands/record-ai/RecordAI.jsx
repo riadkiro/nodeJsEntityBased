@@ -352,6 +352,7 @@ function DebugPayloadView({ payload = {} }) {
                         documents: ragDocuments,
                         queryTokens: rag.queryTokens || [],
                         phrases: rag.phrases || [],
+                        requestedPages: rag.requestedPages || [],
                     }, null, 2)}
                     open={ragDocuments.length > 0}
                 />

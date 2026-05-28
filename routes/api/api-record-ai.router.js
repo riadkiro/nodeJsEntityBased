@@ -25,6 +25,13 @@ const MAX_FILE_CHARS = 16000;
 const MAX_UPLOAD_CHARS = 12000;
 const RECORD_AI_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_TIMEOUT_MS, 120000, 30000, 300000);
 const RECORD_AI_OCR_MAX_PAGES = boundedInt(process.env.RECORD_AI_OCR_MAX_PAGES || process.env.OCR_MAX_PAGES, 20, 1, 100);
+const RECORD_AI_RAG_ENABLED = process.env.RECORD_AI_RAG_ENABLED !== 'false';
+const RECORD_AI_RAG_MAX_PAGES = boundedInt(process.env.RECORD_AI_RAG_MAX_PAGES, 200, 1, 250);
+const RECORD_AI_RAG_MAX_DOCUMENTS = boundedInt(process.env.RECORD_AI_RAG_MAX_DOCUMENTS, 5, 1, 12);
+const RECORD_AI_RAG_MAX_CHUNKS = boundedInt(process.env.RECORD_AI_RAG_MAX_CHUNKS, 9, 1, 24);
+const RECORD_AI_RAG_CONTEXT_CHARS = boundedInt(process.env.RECORD_AI_RAG_CONTEXT_CHARS, 18000, 4000, 60000);
+const RECORD_AI_RAG_CHUNK_CHARS = boundedInt(process.env.RECORD_AI_RAG_CHUNK_CHARS, 1800, 600, 5000);
+const RECORD_AI_RAG_CHUNK_OVERLAP = boundedInt(process.env.RECORD_AI_RAG_CHUNK_OVERLAP, 220, 0, 1200);
 const RECORD_AI_DEBUG_ENABLED = process.env.RECORD_AI_DEBUG_ENABLED !== 'false';
 const RECORD_AI_DEBUG_TEXT_CHARS = boundedInt(process.env.RECORD_AI_DEBUG_TEXT_CHARS, 120000, 10000, 500000);
 const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/record-ai');
@@ -32,6 +39,14 @@ const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/reco
 const OCR_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.gif']);
 const OCR_MIME_PREFIXES = ['image/'];
 const OCR_MIME_TYPES = new Set(['application/pdf']);
+const SEARCH_STOPWORDS = new Set([
+    'avec', 'afin', 'ainsi', 'alors', 'apres', 'avant', 'avoir', 'cela', 'cette', 'dans',
+    'des', 'donc', 'dont', 'elle', 'elles', 'entre', 'etre', 'faire', 'faut', 'leur',
+    'leurs', 'mais', 'mes', 'mon', 'nous', 'par', 'pas', 'plus', 'pour', 'que', 'quel',
+    'quelle', 'quelles', 'quels', 'qui', 'quoi', 'sans', 'ses', 'sur', 'tes', 'ton',
+    'tous', 'tout', 'une', 'vos', 'vous', 'the', 'and', 'for', 'with', 'from', 'this',
+    'that', 'document', 'documents', 'fichier', 'question', 'reponse', 'resume', 'resumer'
+]);
 
 function cleanId(value) {
     if (!value || value === 'null' || value === 'undefined') return '';
@@ -104,6 +119,58 @@ function limitText(value, maxChars) {
         text: text.slice(0, Math.max(0, maxChars - 80)).trim() + '\n\n[Contexte tronqué pour limiter les tokens]',
         truncated: true
     };
+}
+
+function normalizeSearchText(value) {
+    return stripHtml(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function countWords(text) {
+    const words = String(text || '').trim().match(/\S+/g);
+    return words ? words.length : 0;
+}
+
+function tokenizeSearch(value) {
+    const tokens = normalizeSearchText(value).match(/[a-z0-9]+/g) || [];
+    const unique = [];
+    const seen = new Set();
+
+    tokens.forEach(token => {
+        if (seen.has(token)) return;
+        if (SEARCH_STOPWORDS.has(token)) return;
+        if (token.length < 3 && !/\d/.test(token) && !/^[ivxlcdm]+$/.test(token)) return;
+        seen.add(token);
+        unique.push(token);
+    });
+
+    return unique.slice(0, 60);
+}
+
+function extractSearchPhrases(value) {
+    const text = String(value || '');
+    const phrases = [];
+    const quoted = text.match(/["“”'‘’]([^"“”'‘’]{4,120})["“”'‘’]/g) || [];
+    quoted.forEach(item => phrases.push(item.replace(/^["“”'‘’]|["“”'‘’]$/g, '')));
+
+    const anchored = text.match(/\b(?:chapitre|section|article|lot|lots?|annexe|titre)\s+[a-zivxlcdm0-9][a-zivxlcdm0-9.\-_]*/gi) || [];
+    anchored.forEach(item => {
+        phrases.push(item);
+        phrases.push(item.replace(/\b(?:chapitre|section|article|lot|lots?|annexe|titre)\s+/i, ''));
+    });
+
+    return [...new Set(phrases.map(normalizeSearchText).filter(item => item.length >= 3))].slice(0, 12);
+}
+
+function pageLabel(chunk = {}) {
+    const start = Number(chunk.pageStart || chunk.page || 1);
+    const end = Number(chunk.pageEnd || start);
+    return end > start ? `pages ${start}-${end}` : `page ${start}`;
 }
 
 function formatValue(value) {
@@ -193,7 +260,7 @@ function normalizeSelection(input = {}) {
                 text: String(upload?.text || ''),
                 charCount: Number(upload?.charCount || String(upload?.text || '').length || 0)
             }))
-            .filter(upload => upload.text.trim())
+            .filter(upload => upload.id && (upload.text.trim() || upload.charCount > 0))
         : [];
 
     return {
@@ -454,6 +521,11 @@ async function buildBootstrap(req, record, entity) {
             maxFileChars: MAX_FILE_CHARS,
             maxUploadChars: MAX_UPLOAD_CHARS,
             ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
+            ragEnabled: RECORD_AI_RAG_ENABLED,
+            ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
+            ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
+            ragMaxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
+            ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
             debugEnabled: RECORD_AI_DEBUG_ENABLED,
             debugAdmin: isRecordAiDebugAdmin(req)
         }
@@ -631,7 +703,573 @@ function addSection(sections, stats, title, text, maxChars, meta = {}) {
     });
 }
 
-async function buildSelectedContext(req, record, entity, selection) {
+async function getRagModels(req) {
+    const RecordAiDocument = await tenantCollection(req, 'RecordAiDocument');
+    const RecordAiDocumentChunk = await tenantCollection(req, 'RecordAiDocumentChunk');
+    if (!RecordAiDocument || !RecordAiDocumentChunk) {
+        throw new Error('Index documentaire IA indisponible');
+    }
+    return { RecordAiDocument, RecordAiDocumentChunk };
+}
+
+async function resolveSelectedFileInfo(req, record, selectedFile) {
+    if (selectedFile.source === 'drive') {
+        if (['guest', 'external'].includes(req.workspaceRole || '')) {
+            throw new Error('Accès Drive non autorisé');
+        }
+        const DriveFile = await tenantCollection(req, 'DriveFile');
+        const driveFile = await DriveFile.findById(selectedFile.id).lean();
+        if (!driveFile) throw new Error('Fichier Drive introuvable');
+        return {
+            source: 'drive',
+            id: cleanId(driveFile._id),
+            filename: driveFile.filename,
+            name: driveFile.originalName || driveFile.filename,
+            mimeType: driveFile.mimeType || ''
+        };
+    }
+
+    const attachment = (record.attachments || []).find(file => cleanId(file._id) === selectedFile.id);
+    if (!attachment) throw new Error('Pièce jointe introuvable');
+    if (attachment.isDataRoomOnly) throw new Error('Fichier réservé à la Data Room');
+
+    return {
+        source: 'record',
+        id: cleanId(attachment._id),
+        filename: attachment.filename,
+        name: attachment.originalName || attachment.filename,
+        mimeType: attachment.mimeType || ''
+    };
+}
+
+function buildRagFingerprint(req, file, stat) {
+    return hashText([
+        req.account_number,
+        file.source,
+        file.id,
+        file.filename || file.name,
+        stat?.size || 0,
+        stat?.mtimeMs || 0,
+        `ragMaxPages:${RECORD_AI_RAG_MAX_PAGES}`,
+        `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
+    ].join('|'));
+}
+
+function pagesFromText(text) {
+    const lines = String(text || '').replace(/\r/g, '').split('\n');
+    const pages = [];
+    let current = { page: 1, lines: [] };
+
+    lines.forEach(line => {
+        const match = line.match(/^---\s*Page\s+(\d+)\s*---\s*$/i);
+        if (match) {
+            const content = current.lines.join('\n').trim();
+            if (content) pages.push({ page: current.page, text: content, source: 'text', confidence: null });
+            current = { page: Number(match[1]) || pages.length + 1, lines: [] };
+            return;
+        }
+        current.lines.push(line);
+    });
+
+    const content = current.lines.join('\n').trim();
+    if (content) pages.push({ page: current.page, text: content, source: 'text', confidence: null });
+    return pages;
+}
+
+function pagesFromExtracted(extracted = {}) {
+    if (Array.isArray(extracted.pages) && extracted.pages.length) {
+        return extracted.pages
+            .map((page, index) => ({
+                page: Number(page.page || index + 1),
+                text: String(page.text || '').trim(),
+                source: page.source || '',
+                confidence: page.confidence ?? null
+            }))
+            .filter(page => page.text);
+    }
+    return pagesFromText(extracted.text || '');
+}
+
+function splitTextIntoChunks(text, maxChars = RECORD_AI_RAG_CHUNK_CHARS, overlap = RECORD_AI_RAG_CHUNK_OVERLAP) {
+    const clean = String(text || '').trim();
+    if (!clean) return [];
+    if (clean.length <= maxChars) return [clean];
+
+    const chunks = [];
+    let start = 0;
+
+    while (start < clean.length) {
+        let end = Math.min(clean.length, start + maxChars);
+
+        if (end < clean.length) {
+            const newline = clean.lastIndexOf('\n', end);
+            const space = clean.lastIndexOf(' ', end);
+            const boundary = Math.max(newline, space);
+            if (boundary > start + Math.floor(maxChars * 0.55)) end = boundary;
+        }
+
+        const chunk = clean.slice(start, end).trim();
+        if (chunk) chunks.push(chunk);
+        if (end >= clean.length) break;
+
+        const nextStart = Math.max(start + 1, end - overlap);
+        start = nextStart;
+        while (start < clean.length && /\s/.test(clean[start])) start += 1;
+    }
+
+    return chunks;
+}
+
+function buildRagChunkPayloads({ documentId, record, entity, source, sourceId, sourceName, pages, meta = {} }) {
+    const chunks = [];
+    const indexedAt = new Date();
+    const entityId = record.entityId || entity?._id || null;
+
+    (pages || []).forEach(page => {
+        const pageNumber = Number(page.page || 1);
+        splitTextIntoChunks(page.text).forEach(text => {
+            chunks.push({
+                documentId,
+                recordId: record._id,
+                entityId,
+                source,
+                sourceId,
+                sourceName: sourceName || 'Document',
+                chunkIndex: chunks.length,
+                pageStart: pageNumber,
+                pageEnd: pageNumber,
+                text,
+                searchText: normalizeSearchText(`${sourceName || ''}\n${text}`),
+                charCount: text.length,
+                wordCount: countWords(text),
+                indexedAt,
+                meta: {
+                    ...meta,
+                    pageSource: page.source || '',
+                    confidence: page.confidence ?? null
+                }
+            });
+        });
+    });
+
+    return chunks;
+}
+
+async function ensureFileRagDocument(req, record, entity, selectedFile) {
+    const { RecordAiDocument, RecordAiDocumentChunk } = await getRagModels(req);
+    const file = await resolveSelectedFileInfo(req, record, selectedFile);
+    const filePath = resolveAttachmentPath(req.account_number, file.filename);
+    const stat = await fsp.stat(filePath);
+    const sourceId = cleanId(file.id);
+    const fileFingerprint = buildRagFingerprint(req, file, stat);
+    const existing = await RecordAiDocument.findOne({
+        source: file.source,
+        sourceId,
+        fileFingerprint,
+        status: 'ready'
+    }).lean();
+
+    if (existing?.chunkCount > 0) {
+        return {
+            document: existing,
+            indexed: false,
+            chunksCreated: existing.chunkCount
+        };
+    }
+
+    let document = await RecordAiDocument.findOneAndUpdate(
+        { source: file.source, sourceId, fileFingerprint },
+        {
+            $set: {
+                recordId: record._id,
+                entityId: record.entityId || entity?._id || null,
+                name: file.name || file.filename || 'Document',
+                filename: file.filename || '',
+                mimeType: file.mimeType || '',
+                fileSize: stat.size || 0,
+                mtimeMs: stat.mtimeMs || 0,
+                status: 'indexing',
+                error: ''
+            }
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    try {
+        const extracted = await extractFileWithCache(req, file, {
+            maxPages: RECORD_AI_RAG_MAX_PAGES,
+            cacheLabel: 'rag'
+        });
+        const pages = pagesFromExtracted(extracted);
+        const chunks = buildRagChunkPayloads({
+            documentId: document._id,
+            record,
+            entity,
+            source: file.source,
+            sourceId,
+            sourceName: extracted.name || file.name || file.filename || 'Document',
+            pages,
+            meta: {
+                mimeType: file.mimeType || '',
+                fileFingerprint
+            }
+        });
+
+        await RecordAiDocumentChunk.deleteMany({ documentId: document._id });
+        if (chunks.length) await RecordAiDocumentChunk.insertMany(chunks, { ordered: false });
+
+        document = await RecordAiDocument.findByIdAndUpdate(
+            document._id,
+            {
+                $set: {
+                    status: 'ready',
+                    pageCount: extracted.meta?.pageCount || pages.length,
+                    processedPages: extracted.meta?.processedPages || pages.length,
+                    truncated: Boolean(extracted.meta?.truncated),
+                    charCount: extracted.meta?.charCount || chunks.reduce((sum, chunk) => sum + chunk.charCount, 0),
+                    wordCount: extracted.meta?.wordCount || chunks.reduce((sum, chunk) => sum + chunk.wordCount, 0),
+                    chunkCount: chunks.length,
+                    indexedAt: new Date(),
+                    error: '',
+                    meta: extracted.meta || {}
+                }
+            },
+            { new: true }
+        ).lean();
+
+        return {
+            document,
+            indexed: true,
+            chunksCreated: chunks.length,
+            extractedMeta: extracted.meta || {}
+        };
+    } catch (error) {
+        await RecordAiDocument.findByIdAndUpdate(document._id, {
+            $set: {
+                status: 'error',
+                error: error.message || 'Indexation impossible',
+                indexedAt: new Date()
+            }
+        });
+        throw error;
+    }
+}
+
+async function ensureUploadRagDocument(req, record, entity, upload) {
+    const { RecordAiDocument, RecordAiDocumentChunk } = await getRagModels(req);
+    const sourceId = cleanId(upload.id);
+    if (!sourceId) throw new Error('Upload OCR invalide');
+
+    const text = String(upload.text || '').trim();
+    const existingLatest = await RecordAiDocument.findOne({
+        source: 'upload',
+        sourceId,
+        status: 'ready'
+    }).sort({ indexedAt: -1, updatedAt: -1 }).lean();
+
+    if (!text) {
+        if (existingLatest) {
+            return {
+                document: existingLatest,
+                indexed: false,
+                chunksCreated: existingLatest.chunkCount
+            };
+        }
+        throw new Error(`${upload.name || 'Upload OCR'}: texte OCR absent de la sélection`);
+    }
+
+    const fileFingerprint = hashText([
+        req.account_number,
+        'upload',
+        sourceId,
+        upload.name || '',
+        upload.charCount || text.length,
+        hashText(text),
+        `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
+    ].join('|'));
+
+    if (existingLatest?.fileFingerprint === fileFingerprint && existingLatest.chunkCount > 0) {
+        return {
+            document: existingLatest,
+            indexed: false,
+            chunksCreated: existingLatest.chunkCount
+        };
+    }
+
+    let document = await RecordAiDocument.findOneAndUpdate(
+        { source: 'upload', sourceId, fileFingerprint },
+        {
+            $set: {
+                recordId: record._id,
+                entityId: record.entityId || entity?._id || null,
+                name: upload.name || 'Document OCR',
+                filename: '',
+                mimeType: '',
+                fileSize: 0,
+                mtimeMs: 0,
+                status: 'indexing',
+                error: ''
+            }
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    const pages = pagesFromText(text);
+    const chunks = buildRagChunkPayloads({
+        documentId: document._id,
+        record,
+        entity,
+        source: 'upload',
+        sourceId,
+        sourceName: upload.name || 'Document OCR',
+        pages,
+        meta: { upload: true }
+    });
+
+    await RecordAiDocumentChunk.deleteMany({ documentId: document._id });
+    if (chunks.length) await RecordAiDocumentChunk.insertMany(chunks, { ordered: false });
+
+    document = await RecordAiDocument.findByIdAndUpdate(
+        document._id,
+        {
+            $set: {
+                status: 'ready',
+                pageCount: pages.length || 1,
+                processedPages: pages.length || 1,
+                truncated: false,
+                charCount: text.length,
+                wordCount: countWords(text),
+                chunkCount: chunks.length,
+                indexedAt: new Date(),
+                error: '',
+                meta: { upload: true, charCount: text.length }
+            }
+        },
+        { new: true }
+    ).lean();
+
+    return {
+        document,
+        indexed: true,
+        chunksCreated: chunks.length
+    };
+}
+
+async function prepareRagForSelection(req, record, entity, selection) {
+    const result = {
+        enabled: RECORD_AI_RAG_ENABLED,
+        maxPages: RECORD_AI_RAG_MAX_PAGES,
+        maxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
+        documents: [],
+        errors: []
+    };
+
+    if (!RECORD_AI_RAG_ENABLED) return result;
+
+    for (const file of (selection.files || []).slice(0, RECORD_AI_RAG_MAX_DOCUMENTS)) {
+        try {
+            const indexed = await ensureFileRagDocument(req, record, entity, file);
+            if (indexed?.document) {
+                result.documents.push({
+                    documentId: cleanId(indexed.document._id),
+                    source: indexed.document.source,
+                    sourceId: indexed.document.sourceId,
+                    name: indexed.document.name,
+                    pageCount: indexed.document.pageCount,
+                    processedPages: indexed.document.processedPages,
+                    truncated: Boolean(indexed.document.truncated),
+                    charCount: indexed.document.charCount,
+                    chunkCount: indexed.document.chunkCount,
+                    indexed: Boolean(indexed.indexed),
+                    indexedAt: indexed.document.indexedAt,
+                    status: indexed.document.status
+                });
+            }
+        } catch (error) {
+            result.errors.push(`${file.name || file.id}: ${error.message}`);
+        }
+    }
+
+    for (const upload of (selection.uploads || []).slice(0, 8)) {
+        try {
+            const indexed = await ensureUploadRagDocument(req, record, entity, upload);
+            if (indexed?.document) {
+                result.documents.push({
+                    documentId: cleanId(indexed.document._id),
+                    source: indexed.document.source,
+                    sourceId: indexed.document.sourceId,
+                    name: indexed.document.name,
+                    pageCount: indexed.document.pageCount,
+                    processedPages: indexed.document.processedPages,
+                    truncated: Boolean(indexed.document.truncated),
+                    charCount: indexed.document.charCount,
+                    chunkCount: indexed.document.chunkCount,
+                    indexed: Boolean(indexed.indexed),
+                    indexedAt: indexed.document.indexedAt,
+                    status: indexed.document.status
+                });
+            }
+        } catch (error) {
+            result.errors.push(`${upload.name || upload.id}: ${error.message}`);
+        }
+    }
+
+    return result;
+}
+
+function scoreRagChunks(chunks, query) {
+    const tokens = tokenizeSearch(query);
+    const phrases = extractSearchPhrases(query);
+
+    return (chunks || []).map(chunk => {
+        const searchText = chunk.searchText || normalizeSearchText(`${chunk.sourceName || ''}\n${chunk.text || ''}`);
+        const matchedTerms = [];
+        let score = 0;
+
+        tokens.forEach(token => {
+            if (!searchText.includes(token)) return;
+            matchedTerms.push(token);
+            if (/^\d+$/.test(token) || token.length <= 2) score += 1;
+            else if (token.length >= 7) score += 5;
+            else score += 3;
+        });
+
+        phrases.forEach(phrase => {
+            if (!searchText.includes(phrase)) return;
+            matchedTerms.push(phrase);
+            score += phrase.length >= 8 ? 14 : 8;
+        });
+
+        if (tokens.length > 1 && tokens.every(token => searchText.includes(token))) {
+            score += Math.min(12, tokens.length * 2);
+        }
+
+        return {
+            chunk,
+            score,
+            matchedTerms: [...new Set(matchedTerms)]
+        };
+    }).sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (String(a.chunk.documentId) !== String(b.chunk.documentId)) {
+            return String(a.chunk.documentId).localeCompare(String(b.chunk.documentId));
+        }
+        return (a.chunk.chunkIndex || 0) - (b.chunk.chunkIndex || 0);
+    });
+}
+
+function selectRagChunks(scoredChunks, allChunks) {
+    const byKey = new Map();
+    (allChunks || []).forEach(chunk => {
+        byKey.set(`${cleanId(chunk.documentId)}:${chunk.chunkIndex}`, chunk);
+    });
+
+    const selected = new Map();
+    const addScored = (entry, reason = 'match') => {
+        if (!entry?.chunk || selected.size >= RECORD_AI_RAG_MAX_CHUNKS) return;
+        const key = `${cleanId(entry.chunk.documentId)}:${entry.chunk.chunkIndex}`;
+        if (selected.has(key)) return;
+        selected.set(key, {
+            ...entry,
+            reason
+        });
+    };
+
+    const positive = (scoredChunks || []).filter(entry => entry.score > 0);
+    positive.forEach(entry => {
+        if (selected.size >= RECORD_AI_RAG_MAX_CHUNKS) return;
+        addScored(entry, 'match');
+
+        const next = byKey.get(`${cleanId(entry.chunk.documentId)}:${Number(entry.chunk.chunkIndex || 0) + 1}`);
+        if (next && selected.size < RECORD_AI_RAG_MAX_CHUNKS) {
+            addScored({
+                chunk: next,
+                score: Math.max(0.1, entry.score * 0.35),
+                matchedTerms: entry.matchedTerms
+            }, 'voisin');
+        }
+    });
+
+    if (selected.size === 0) {
+        (allChunks || [])
+            .slice()
+            .sort((a, b) => {
+                if (String(a.documentId) !== String(b.documentId)) {
+                    return String(a.documentId).localeCompare(String(b.documentId));
+                }
+                return (a.chunkIndex || 0) - (b.chunkIndex || 0);
+            })
+            .slice(0, RECORD_AI_RAG_MAX_CHUNKS)
+            .forEach(chunk => addScored({ chunk, score: 0, matchedTerms: [] }, 'fallback'));
+    }
+
+    return [...selected.values()].sort((a, b) => {
+        const nameCompare = String(a.chunk.sourceName || '').localeCompare(String(b.chunk.sourceName || ''));
+        if (nameCompare !== 0) return nameCompare;
+        if ((a.chunk.pageStart || 0) !== (b.chunk.pageStart || 0)) return (a.chunk.pageStart || 0) - (b.chunk.pageStart || 0);
+        return (a.chunk.chunkIndex || 0) - (b.chunk.chunkIndex || 0);
+    });
+}
+
+async function buildRagContext(req, record, entity, selection, query) {
+    const prepared = await prepareRagForSelection(req, record, entity, selection);
+    const debug = {
+        ...prepared,
+        query: String(query || ''),
+        queryTokens: tokenizeSearch(query),
+        phrases: extractSearchPhrases(query),
+        chunks: []
+    };
+
+    const documentIds = prepared.documents
+        .filter(document => document.status === 'ready' && document.chunkCount > 0)
+        .map(document => document.documentId)
+        .filter(isObjectId);
+
+    if (!RECORD_AI_RAG_ENABLED || !documentIds.length) {
+        return { text: '', debug };
+    }
+
+    const { RecordAiDocumentChunk } = await getRagModels(req);
+    const chunks = await RecordAiDocumentChunk.find({
+        documentId: { $in: documentIds }
+    })
+        .select('documentId source sourceId sourceName chunkIndex pageStart pageEnd text searchText charCount wordCount meta')
+        .sort({ documentId: 1, chunkIndex: 1 })
+        .lean();
+
+    const selected = selectRagChunks(scoreRagChunks(chunks, query), chunks);
+    const blocks = selected.map(entry => {
+        const chunk = entry.chunk;
+        return [
+            `### ${chunk.sourceName || 'Document'} - ${pageLabel(chunk)}`,
+            `Source: ${chunk.sourceName || 'Document'} (${pageLabel(chunk)})`,
+            chunk.text
+        ].join('\n');
+    });
+
+    debug.chunks = selected.map(entry => ({
+        documentId: cleanId(entry.chunk.documentId),
+        source: entry.chunk.source,
+        sourceId: entry.chunk.sourceId,
+        name: entry.chunk.sourceName,
+        chunkIndex: entry.chunk.chunkIndex,
+        pageStart: entry.chunk.pageStart,
+        pageEnd: entry.chunk.pageEnd,
+        score: Number(entry.score || 0),
+        reason: entry.reason,
+        matchedTerms: entry.matchedTerms || [],
+        charCount: entry.chunk.charCount,
+        text: clipDebugText(entry.chunk.text, Math.min(RECORD_AI_DEBUG_TEXT_CHARS, 20000)).text
+    }));
+
+    return {
+        text: blocks.join('\n\n'),
+        debug
+    };
+}
+
+async function buildSelectedContext(req, record, entity, selection, options = {}) {
     const stats = { sections: 0, chars: 0, truncated: false, sources: [], errors: [] };
     const sections = [];
     const debug = {
@@ -643,8 +1281,13 @@ async function buildSelectedContext(req, record, entity, selection) {
             maxChatChars: MAX_CHAT_CHARS,
             maxFileChars: MAX_FILE_CHARS,
             maxUploadChars: MAX_UPLOAD_CHARS,
-            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES
-        }
+            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
+            ragEnabled: RECORD_AI_RAG_ENABLED,
+            ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
+            ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
+            ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS
+        },
+        rag: null
     };
 
     addSection(
@@ -710,7 +1353,34 @@ async function buildSelectedContext(req, record, entity, selection) {
         addSection(sections, stats, 'Conversations chat sélectionnées', chatBlocks.join('\n\n'), MAX_CHAT_CHARS, { type: 'chats' });
     }
 
-    if (selection.files?.length) {
+    if (RECORD_AI_RAG_ENABLED && (selection.files?.length || selection.uploads?.length)) {
+        const ragContext = await buildRagContext(req, record, entity, selection, options.query || '');
+        debug.rag = ragContext.debug;
+        if (ragContext.debug?.errors?.length) {
+            stats.errors.push(...ragContext.debug.errors);
+        }
+        addSection(
+            sections,
+            stats,
+            'Extraits OCR pertinents sélectionnés',
+            ragContext.text,
+            RECORD_AI_RAG_CONTEXT_CHARS,
+            { type: 'rag', chunks: ragContext.debug?.chunks?.length || 0 }
+        );
+
+        (selection.uploads || []).slice(0, 8).forEach(upload => {
+            if (!upload.text) return;
+            const clipped = clipDebugText(upload.text);
+            debug.uploads.push({
+                id: upload.id,
+                name: upload.name,
+                rawText: clipped.text,
+                rawTextTruncated: clipped.truncated,
+                rawTextChars: clipped.originalChars,
+                indexedInRag: true
+            });
+        });
+    } else if (selection.files?.length) {
         const fileBlocks = [];
         for (const file of selection.files.slice(0, 5)) {
             try {
@@ -735,9 +1405,7 @@ async function buildSelectedContext(req, record, entity, selection) {
             }
         }
         addSection(sections, stats, 'Documents OCR sélectionnés', fileBlocks.join('\n\n'), MAX_FILE_CHARS, { type: 'files' });
-    }
-
-    if (selection.uploads?.length) {
+    } else if (selection.uploads?.length) {
         const text = selection.uploads
             .slice(0, 4)
             .map(upload => {
@@ -777,33 +1445,13 @@ async function buildSelectedContext(req, record, entity, selection) {
 }
 
 async function extractSelectedFile(req, record, selectedFile) {
-    if (selectedFile.source === 'drive') {
-        const DriveFile = await tenantCollection(req, 'DriveFile');
-        const driveFile = await DriveFile.findById(selectedFile.id).lean();
-        if (!driveFile) throw new Error('Fichier Drive introuvable');
-        return extractFileWithCache(req, {
-            source: 'drive',
-            id: driveFile._id,
-            filename: driveFile.filename,
-            name: driveFile.originalName || driveFile.filename,
-            mimeType: driveFile.mimeType
-        });
-    }
-
-    const attachment = (record.attachments || []).find(file => cleanId(file._id) === selectedFile.id);
-    if (!attachment) throw new Error('Pièce jointe introuvable');
-    if (attachment.isDataRoomOnly) throw new Error('Fichier réservé à la Data Room');
-
-    return extractFileWithCache(req, {
-        source: 'record',
-        id: attachment._id,
-        filename: attachment.filename,
-        name: attachment.originalName || attachment.filename,
-        mimeType: attachment.mimeType
-    });
+    const file = await resolveSelectedFileInfo(req, record, selectedFile);
+    return extractFileWithCache(req, file);
 }
 
-async function extractFileWithCache(req, file) {
+async function extractFileWithCache(req, file, options = {}) {
+    const maxPages = boundedInt(options.maxPages || RECORD_AI_OCR_MAX_PAGES, RECORD_AI_OCR_MAX_PAGES, 1, 250);
+    const cacheLabel = String(options.cacheLabel || 'context').replace(/[^a-z0-9_-]/gi, '').slice(0, 32) || 'context';
     const filePath = resolveAttachmentPath(req.account_number, file.filename);
     const stat = await fsp.stat(filePath);
     const cacheKey = hashText([
@@ -813,7 +1461,8 @@ async function extractFileWithCache(req, file) {
         file.filename,
         stat.size,
         stat.mtimeMs,
-        `maxPages:${RECORD_AI_OCR_MAX_PAGES}`
+        cacheLabel,
+        `maxPages:${maxPages}`
     ].join('|'));
     const cachePath = path.join(OCR_CACHE_DIR, String(req.account_number), `${cacheKey}.json`);
 
@@ -828,12 +1477,13 @@ async function extractFileWithCache(req, file) {
         originalName: file.name,
         mimeType: file.mimeType,
         mode: 'auto',
-        maxPages: RECORD_AI_OCR_MAX_PAGES
+        maxPages
     });
 
     const payload = {
         name: file.name,
         text: result.text || '',
+        pages: result.pages || [],
         meta: result.meta || {}
     };
 
@@ -861,6 +1511,7 @@ function buildInstructions(record, entity) {
         `Tu es l'assistant IA de la fiche "${record.computedTitle || record.title || 'Sans titre'}" (${entity?.nameSingular || entity?.name || 'record'}).`,
         "Réponds en français, clairement et directement.",
         "Utilise le contexte fourni quand il est pertinent. Si l'information n'est pas dans le contexte, dis-le au lieu d'inventer.",
+        "Les documents volumineux peuvent être fournis sous forme d'extraits OCR pertinents issus d'un index RAG: réponds à partir de ces extraits et cite les pages quand elles sont disponibles.",
         "Ne propose pas de correctifs ou d'actions à appliquer sauf si l'utilisateur le demande explicitement.",
         "Quand tu t'appuies sur un document, une note ou un chat précis, cite brièvement la source dans la réponse."
     ].join('\n');
@@ -963,7 +1614,8 @@ function buildDebugPayload({
     previousResponseId,
     includeContext,
     contextChanged,
-    contextItems
+    contextItems,
+    ragPreparation
 }) {
     if (!RECORD_AI_DEBUG_ENABLED) return undefined;
 
@@ -986,7 +1638,10 @@ function buildDebugPayload({
             maxContextChars: MAX_CONTEXT_CHARS,
             maxFileChars: MAX_FILE_CHARS,
             maxUploadChars: MAX_UPLOAD_CHARS,
-            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES
+            ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
+            ragEnabled: RECORD_AI_RAG_ENABLED,
+            ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
+            ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS
         },
         contextText: clippedContext.text,
         contextTextTruncated: clippedContext.truncated,
@@ -995,7 +1650,8 @@ function buildDebugPayload({
         aiInputTruncated: clippedInput.truncated,
         aiInputOriginalChars: clippedInput.originalChars,
         ocr: selectedContext?.debug?.ocr || [],
-        uploads: selectedContext?.debug?.uploads || []
+        uploads: selectedContext?.debug?.uploads || [],
+        rag: selectedContext?.debug?.rag || ragPreparation || null
     };
 }
 
@@ -1125,9 +1781,15 @@ router.post('/:recordId/conversations/:conversationId/context', async (req, res)
         const selection = normalizeSelection(req.body.contextSelections || {});
         const persistedSelection = persistableSelection(selection);
         const contextItems = await buildContextItems(req, record, entity, selection);
+        const ragPreparation = await prepareRagForSelection(req, record, entity, selection);
         const contextFingerprint = hashText(JSON.stringify({
             selection: persistedSelection,
-            items: contextItems.map(item => ({ key: item.key, label: item.label }))
+            items: contextItems.map(item => ({ key: item.key, label: item.label })),
+            rag: ragPreparation.documents.map(document => ({
+                id: document.documentId,
+                chunks: document.chunkCount,
+                indexedAt: document.indexedAt
+            }))
         }));
         const lastMessage = (conversation.messages || [])[conversation.messages.length - 1];
         const shouldAppend = !(lastMessage?.messageType === 'context' && lastMessage?.contextFingerprint === contextFingerprint);
@@ -1150,7 +1812,8 @@ router.post('/:recordId/conversations/:conversationId/context', async (req, res)
                     phase: 'context',
                     message: 'Contexte ajouté',
                     selection,
-                    contextItems
+                    contextItems,
+                    ragPreparation
                 }),
                 createdAt: new Date()
             };
@@ -1227,6 +1890,11 @@ router.get('/:recordId/conversations/:conversationId/debug', async (req, res) =>
                 maxFileChars: MAX_FILE_CHARS,
                 maxUploadChars: MAX_UPLOAD_CHARS,
                 ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
+                ragEnabled: RECORD_AI_RAG_ENABLED,
+                ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
+                ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
+                ragMaxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
+                ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
                 debugTextChars: RECORD_AI_DEBUG_TEXT_CHARS
             },
             logs
@@ -1271,7 +1939,7 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
         if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
 
         const selection = normalizeSelection(req.body.contextSelections || conversation.contextSelections || {});
-        const selectedContext = await buildSelectedContext(req, record, entity, selection);
+        const selectedContext = await buildSelectedContext(req, record, entity, selection, { query: message });
         const previousResponseId = conversation.openAI?.responseId || null;
         const contextChanged = selectedContext.fingerprint !== conversation.contextFingerprint;
         const includeContext = Boolean(selectedContext.text && (!previousResponseId || contextChanged || req.body.forceContext));

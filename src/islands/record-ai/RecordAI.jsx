@@ -18,7 +18,7 @@ function cleanConversationSelection(selection = {}) {
         notes: Array.isArray(selection.notes) ? selection.notes : [],
         chats: Array.isArray(selection.chats) ? selection.chats : [],
         files: Array.isArray(selection.files) ? selection.files : [],
-        uploads: [],
+        uploads: Array.isArray(selection.uploads) ? selection.uploads : [],
     }
 }
 
@@ -28,7 +28,16 @@ function buildPayloadSelection(selection = {}) {
         notes: Array.isArray(selection.notes) ? selection.notes : [],
         chats: Array.isArray(selection.chats) ? selection.chats : [],
         files: Array.isArray(selection.files) ? selection.files : [],
-        uploads: Array.isArray(selection.uploads) ? selection.uploads.filter(upload => upload.text) : [],
+        uploads: Array.isArray(selection.uploads)
+            ? selection.uploads
+                .filter(upload => upload?.id || upload?.text)
+                .map(upload => ({
+                    id: upload.id,
+                    name: upload.name,
+                    text: upload.text || '',
+                    charCount: upload.charCount || String(upload.text || '').length || 0,
+                }))
+            : [],
     }
 }
 
@@ -294,6 +303,9 @@ function DebugTextBlock({ title, text, meta, open = false }) {
 function DebugPayloadView({ payload = {} }) {
     const ocrItems = Array.isArray(payload.ocr) ? payload.ocr : []
     const uploads = Array.isArray(payload.uploads) ? payload.uploads : []
+    const rag = payload.rag || null
+    const ragChunks = Array.isArray(rag?.chunks) ? rag.chunks : []
+    const ragDocuments = Array.isArray(rag?.documents) ? rag.documents : []
     const contextStats = payload.contextStats || {}
 
     return (
@@ -302,6 +314,8 @@ function DebugPayloadView({ payload = {} }) {
                 <span>Contexte envoyé: <strong>{payload.includeContext ? 'oui' : 'non'}</strong></span>
                 <span>Contexte modifié: <strong>{payload.contextChanged ? 'oui' : 'non'}</strong></span>
                 <span>OCR max: <strong>{payload.limits?.ocrMaxPages || '-'} pages</strong></span>
+                <span>RAG: <strong>{rag?.enabled ? `${payload.limits?.ragMaxPages || rag.maxPages || '-'} pages` : 'non'}</strong></span>
+                {ragChunks.length > 0 && <span>Chunks: <strong>{ragChunks.length}</strong></span>}
                 <span>Contexte: <strong>{formatNumber(contextStats.chars)} caractères</strong></span>
                 {contextStats.truncated && <span className="is-warn">Tronqué</span>}
             </div>
@@ -325,6 +339,37 @@ function DebugPayloadView({ payload = {} }) {
                 title="Sélection brute reçue par le serveur"
                 text={JSON.stringify(payload.contextSelections || {}, null, 2)}
             />
+
+            {rag && (
+                <DebugTextBlock
+                    title="Index RAG documents"
+                    meta={`${ragDocuments.length} document${ragDocuments.length > 1 ? 's' : ''}`}
+                    text={JSON.stringify({
+                        enabled: rag.enabled,
+                        maxPages: rag.maxPages,
+                        maxDocuments: rag.maxDocuments,
+                        errors: rag.errors || [],
+                        documents: ragDocuments,
+                        queryTokens: rag.queryTokens || [],
+                        phrases: rag.phrases || [],
+                    }, null, 2)}
+                    open={ragDocuments.length > 0}
+                />
+            )}
+
+            {ragChunks.map((chunk, index) => (
+                <DebugTextBlock
+                    key={`${chunk.documentId || 'rag'}:${chunk.chunkIndex || index}`}
+                    title={`Chunk RAG - ${chunk.name || index + 1}`}
+                    meta={`p. ${chunk.pageStart || '-'} | score ${formatNumber(chunk.score)}`}
+                    text={[
+                        `Reason: ${chunk.reason || '-'}`,
+                        `Matched: ${(chunk.matchedTerms || []).join(', ') || '-'}`,
+                        '',
+                        chunk.text || ''
+                    ].join('\n')}
+                />
+            ))}
 
             {ocrItems.map((item, index) => (
                 <DebugTextBlock
@@ -656,7 +701,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             const body = new FormData()
             body.append('file', file)
             body.append('mode', 'auto')
-            body.append('maxPages', String(limits.ocrMaxPages || 20))
+            body.append('maxPages', String(limits.ragMaxPages || limits.ocrMaxPages || 20))
             const res = await fetch(`/account/${accountNumber}/api/ocr/extract`, {
                 method: 'POST',
                 credentials: 'include',
@@ -676,7 +721,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         } finally {
             setUploading(false)
         }
-    }, [accountNumber, limits.ocrMaxPages])
+    }, [accountNumber, limits.ocrMaxPages, limits.ragMaxPages])
 
     const removeUpload = useCallback((id) => {
         setSelection(prev => ({ ...prev, uploads: prev.uploads.filter(upload => upload.id !== id) }))
@@ -1272,6 +1317,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                     <div className="rai-debug-summary">
                                         <span>Modèle <strong>{debugData.conversation?.model || '-'}</strong></span>
                                         <span>OCR max <strong>{debugData.limits?.ocrMaxPages || '-'} pages</strong></span>
+                                        <span>RAG <strong>{debugData.limits?.ragEnabled ? `${debugData.limits?.ragMaxPages || '-'} pages` : 'désactivé'}</strong></span>
                                         <span>Logs <strong>{debugData.logs?.length || 0}</strong></span>
                                     </div>
                                     {(debugData.logs || []).length === 0 ? (

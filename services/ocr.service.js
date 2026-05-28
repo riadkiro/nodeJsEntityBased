@@ -7,7 +7,7 @@ const { createCanvas, DOMMatrix, ImageData, Path2D } = require('@napi-rs/canvas'
 setLogging(false);
 
 const DEFAULT_LANGUAGE = process.env.OCR_DEFAULT_LANGUAGE || 'fra+eng';
-const DEFAULT_MAX_PAGES = clampInt(process.env.OCR_MAX_PAGES, 20, 1, 100);
+const DEFAULT_MAX_PAGES = clampInt(process.env.OCR_MAX_PAGES, 20, 1, 250);
 const DEFAULT_RENDER_SCALE = clampFloat(process.env.OCR_RENDER_SCALE, 2, 1, 3);
 const MIN_NATIVE_TEXT_CHARS = clampInt(process.env.OCR_MIN_NATIVE_TEXT_CHARS, 12, 0, 1000);
 const OCR_CACHE_PATH = process.env.OCR_CACHE_PATH || path.join(__dirname, '..', 'private_uploads', 'ocr-cache');
@@ -28,7 +28,7 @@ async function extractTextFromFile(filePath, options = {}) {
     const originalName = options.originalName || path.basename(filePath);
     const language = normalizeLanguage(options.language || DEFAULT_LANGUAGE);
     const mode = normalizeMode(options.mode);
-    const maxPages = clampInt(options.maxPages, DEFAULT_MAX_PAGES, 1, 100);
+    const maxPages = clampInt(options.maxPages, DEFAULT_MAX_PAGES, 1, 250);
     const renderScale = clampFloat(options.renderScale, DEFAULT_RENDER_SCALE, 1, 3);
 
     let result;

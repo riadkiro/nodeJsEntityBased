@@ -147,8 +147,97 @@ function estimateTokensFromChars(chars) {
     return Math.ceil((chars || 0) / 4)
 }
 
+function buildAgentSteps(selection = {}) {
+    const steps = []
+    const hasFields = (selection.fields || []).length > 0
+    const hasNotes = (selection.notes || []).length > 0
+    const hasChats = (selection.chats || []).length > 0
+    const documentCount = (selection.files || []).length + (selection.uploads || []).length
+
+    steps.push({
+        label: 'Préparation',
+        detail: 'Je prépare le contexte de la conversation.',
+    })
+
+    if (hasFields) {
+        steps.push({
+            label: 'Analyse fiche',
+            detail: 'Lecture des champs sélectionnés.',
+        })
+    }
+
+    if (hasNotes) {
+        steps.push({
+            label: 'Analyse notes',
+            detail: 'Extraction des éléments utiles dans les notes.',
+        })
+    }
+
+    if (hasChats) {
+        steps.push({
+            label: 'Analyse chat',
+            detail: 'Lecture des échanges liés à la fiche.',
+        })
+    }
+
+    if (documentCount > 0) {
+        steps.push({
+            label: 'Analyse document',
+            detail: documentCount > 1
+                ? `Lecture de ${documentCount} documents sélectionnés.`
+                : 'Lecture du document sélectionné.',
+        })
+    }
+
+    steps.push(
+        {
+            label: 'Thinking',
+            detail: 'Je relie les informations importantes.',
+        },
+        {
+            label: 'Rédaction',
+            detail: 'Je prépare une réponse claire.',
+        }
+    )
+
+    return steps
+}
+
 function Icon({ icon, width = 16, color }) {
     return <iconify-icon icon={icon} width={width} style={color ? { color } : undefined}></iconify-icon>
+}
+
+function AgentStatus({ steps = [], activeIndex = 0 }) {
+    const safeSteps = steps.length ? steps : buildAgentSteps()
+    const currentIndex = Math.min(Math.max(activeIndex, 0), safeSteps.length - 1)
+    const current = safeSteps[currentIndex]
+    const progress = ((currentIndex + 1) / safeSteps.length) * 100
+
+    return (
+        <div className="rai-agent-status" role="status" aria-live="polite">
+            <div className="rai-agent-current">
+                <span className="rai-agent-pulse" aria-hidden="true" />
+                <span className="rai-agent-text">
+                    <span className="rai-agent-label">{current.label}</span>
+                    <span className="rai-agent-detail">{current.detail}</span>
+                </span>
+            </div>
+            <div className="rai-agent-track" aria-hidden="true">
+                <span style={{ width: `${progress}%` }} />
+            </div>
+            <div className="rai-agent-steps" aria-hidden="true">
+                {safeSteps.map((step, index) => (
+                    <span
+                        key={`${step.label}-${index}`}
+                        className={`rai-agent-step ${index < currentIndex ? 'done' : ''} ${index === currentIndex ? 'active' : ''}`}
+                    >
+                        <span />
+                        {step.label}
+                    </span>
+                ))}
+            </div>
+        </div>
+    )
 }
 
 function SectionItem({ active, icon, color, title, meta, preview, onToggle, disabled = false }) {
@@ -207,8 +296,11 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
     const [contextTab, setContextTab] = useState('fields')
     const [previewFile, setPreviewFile] = useState(null)
     const [lastContextStats, setLastContextStats] = useState(null)
+    const [agentSteps, setAgentSteps] = useState(buildAgentSteps)
+    const [agentStepIndex, setAgentStepIndex] = useState(0)
     const messagesRef = useRef(null)
     const fileInputRef = useRef(null)
+    const agentTimerRef = useRef(null)
 
     const apiFetch = useCallback(async (path, options = {}) => {
         const res = await fetch(`${apiBase}${path}`, {
@@ -228,6 +320,31 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
             if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
         })
     }, [])
+
+    const clearAgentTimer = useCallback(() => {
+        if (agentTimerRef.current) {
+            window.clearInterval(agentTimerRef.current)
+            agentTimerRef.current = null
+        }
+    }, [])
+
+    const stopAgentStatus = useCallback(() => {
+        clearAgentTimer()
+        setAgentStepIndex(0)
+    }, [clearAgentTimer])
+
+    const startAgentStatus = useCallback((currentSelection) => {
+        const steps = buildAgentSteps(currentSelection)
+        setAgentSteps(steps)
+        setAgentStepIndex(0)
+
+        clearAgentTimer()
+        agentTimerRef.current = window.setInterval(() => {
+            setAgentStepIndex(prev => Math.min(prev + 1, steps.length - 1))
+        }, 1400)
+    }, [clearAgentTimer])
+
+    useEffect(() => () => clearAgentTimer(), [clearAgentTimer])
 
     const loadConversation = useCallback(async (conversationId) => {
         const data = await apiFetch(`/conversations/${conversationId}`)
@@ -408,6 +525,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         setInput('')
         setSending(true)
         setError('')
+        startAgentStatus(selection)
 
         try {
             const payloadSelection = {
@@ -430,8 +548,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
             setError(err.message || 'Envoi impossible')
         } finally {
             setSending(false)
+            stopAgentStatus()
         }
-    }, [activeConversation, apiFetch, createConversation, input, selection, sending, updateConversationList])
+    }, [activeConversation, apiFetch, createConversation, input, selection, sending, startAgentStatus, stopAgentStatus, updateConversationList])
 
     const handleUpload = useCallback(async (event) => {
         const file = event.target.files?.[0]
@@ -820,7 +939,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                                 <div>
                                     <div className="rai-bubble">
                                         {message.loading ? (
-                                            <span className="rai-thinking"><Icon icon="line-md:loading-twotone-loop" width={16} /> Réflexion...</span>
+                                            <AgentStatus steps={agentSteps} activeIndex={agentStepIndex} />
                                         ) : (
                                             renderMessageContent(message.content)
                                         )}
@@ -1006,7 +1125,21 @@ const styles = `
 .rai-message.mine .rai-bubble{background:linear-gradient(135deg,var(--rai-ai),#7c3aed);color:#fff;border:none;}
 .rai-msg-time{font-size:10px;color:#bfc9d4;margin-top:3px;padding:0 4px;}
 .rai-message.mine .rai-msg-time{text-align:right;}
-.rai-thinking{display:inline-flex;align-items:center;gap:7px;color:#64748b;font-weight:600;}
+.rai-agent-status{min-width:min(360px,62vw);display:flex;flex-direction:column;gap:9px;color:#64748b;}
+.rai-agent-current{display:flex;align-items:flex-start;gap:9px;}
+.rai-agent-pulse{width:10px;height:10px;border-radius:999px;background:var(--rai-ai);box-shadow:0 0 0 0 rgba(79,70,229,.28);flex-shrink:0;margin-top:4px;animation:raiPulse 1.25s ease-out infinite;}
+.rai-agent-text{min-width:0;display:flex;flex-direction:column;gap:1px;}
+.rai-agent-label{font-size:12.5px;font-weight:700;color:var(--rai-text);line-height:1.25;}
+.rai-agent-detail{font-size:11px;font-weight:500;color:#94a3b8;line-height:1.35;}
+.rai-agent-track{height:4px;border-radius:999px;background:#e5e7eb;overflow:hidden;}
+.rai-agent-track span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--rai-ai),#10b981);transition:width .35s ease;}
+.rai-agent-steps{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.rai-agent-step{height:22px;display:inline-flex;align-items:center;gap:5px;border:1px solid #e2e8f0;background:#fff;color:#94a3b8;border-radius:999px;padding:0 8px;font-size:10px;font-weight:600;line-height:1;transition:all .18s;}
+.rai-agent-step span{width:5px;height:5px;border-radius:999px;background:#cbd5e1;flex-shrink:0;}
+.rai-agent-step.done{border-color:#d1fae5;background:#ecfdf5;color:#047857;}
+.rai-agent-step.done span{background:#10b981;}
+.rai-agent-step.active{border-color:#c7d2fe;background:var(--rai-ai-soft);color:var(--rai-ai);}
+.rai-agent-step.active span{background:var(--rai-ai);}
 .rai-md-p{margin:0 0 6px;}
 .rai-md-p:last-child,.rai-md-list:last-child,.rai-md-heading:last-child{margin-bottom:0;}
 .rai-md-heading{margin:8px 0 4px;font-size:13px;font-weight:700;color:var(--rai-text);line-height:1.35;}
@@ -1099,6 +1232,7 @@ const styles = `
 .rai-preview-frame{width:100%;height:100%;border:none;background:#fff;}
 .rai-preview-image{display:block;max-width:100%;max-height:100%;object-fit:contain;}
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes raiPulse{0%{box-shadow:0 0 0 0 rgba(79,70,229,.28)}70%{box-shadow:0 0 0 8px rgba(79,70,229,0)}100%{box-shadow:0 0 0 0 rgba(79,70,229,0)}}
 @media(max-width:1050px){.rai-shell{grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 190px);min-height:640px}.rai-message{max-width:88%;}.rai-context-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}.rai-create-btn span{display:none;}.rai-create-btn{padding:7px 10px;}}
-@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-clear-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal{width:100%;height:92vh;}}
+@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-agent-status{min-width:0;width:100%;}.rai-agent-step{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.rai-clear-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal{width:100%;height:92vh;}}
 `

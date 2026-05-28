@@ -32,8 +32,235 @@ const {
     joinUploadFolder,
 } = require('../../utils/filename-encoding');
 
+const RECORD_AI_RAG_ENABLED = process.env.RECORD_AI_RAG_ENABLED !== 'false';
+const RECORD_AI_RAG_MAX_PAGES = boundedInt(process.env.RECORD_AI_RAG_MAX_PAGES, 200, 1, 250);
+const RECORD_AI_RAG_CHUNK_CHARS = boundedInt(process.env.RECORD_AI_RAG_CHUNK_CHARS, 1800, 600, 5000);
+const RECORD_AI_RAG_CHUNK_OVERLAP = boundedInt(process.env.RECORD_AI_RAG_CHUNK_OVERLAP, 220, 0, 1200);
+
+function boundedInt(value, fallback, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(number)));
+}
+
+function cleanId(value) {
+    if (!value || value === 'null' || value === 'undefined') return '';
+    return String(value);
+}
+
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hashText(value) {
+    return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function ragConfigHash() {
+    return hashText([
+        `ragMaxPages:${RECORD_AI_RAG_MAX_PAGES}`,
+        `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
+    ].join('|'));
+}
+
+function hashFileContent(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+
+        stream.on('data', chunk => hash.update(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(hash.digest('hex')));
+    });
+}
+
+function resolveAttachmentPath(accountNumber, filename) {
+    if (!filename || filename.includes('..')) {
+        throw new Error('Chemin de fichier invalide');
+    }
+
+    const privatePath = path.join(__dirname, '../../private_uploads/attachments', String(accountNumber), filename);
+    if (fs.existsSync(privatePath)) return privatePath;
+
+    const publicPath = path.join(__dirname, '../../public/uploads/attachments', String(accountNumber), filename);
+    if (fs.existsSync(publicPath)) return publicPath;
+
+    throw new Error('Fichier introuvable sur le disque');
+}
+
+function driveRagStatusPayload(document, canonicalDocument = null, fallback = {}) {
+    if (!document) return null;
+
+    const canonicalId = cleanId(canonicalDocument?._id || document._id);
+    const documentId = cleanId(document._id);
+    const isCanonical = !fallback.sourceCache && canonicalId && documentId === canonicalId;
+
+    return {
+        indexed: true,
+        canonical: isCanonical,
+        status: isCanonical ? 'canonical' : 'indexed',
+        label: isCanonical ? 'Canonical' : 'Indexed',
+        documentId,
+        canonicalDocumentId: canonicalId,
+        canonicalName: canonicalDocument?.name || document.name || fallback.name || '',
+        chunkCount: document.chunkCount || canonicalDocument?.chunkCount || 0,
+        embeddingStatus: document.embeddingStatus || canonicalDocument?.embeddingStatus || 'none',
+        embeddedChunkCount: document.embeddedChunkCount || canonicalDocument?.embeddedChunkCount || 0,
+        contentHash: document.contentHash || fallback.contentHash || '',
+        ragConfigHash: document.ragConfigHash || fallback.ragConfigHash || '',
+        sourceCache: Boolean(fallback.sourceCache)
+    };
+}
+
+async function enrichDriveFilesWithRagStatus(req, files = []) {
+    if (!files.length || !RECORD_AI_RAG_ENABLED) return files;
+
+    let RecordAiDocument;
+    try {
+        RecordAiDocument = await tenantCollection(req, 'RecordAiDocument');
+    } catch (_) {
+        return files;
+    }
+    if (!RecordAiDocument) return files;
+
+    const sourceFilters = files
+        .filter(file => file._id)
+        .map(file => ({ source: 'drive', sourceId: cleanId(file._id) }));
+    const directDocs = sourceFilters.length
+        ? await RecordAiDocument.find({
+            $or: sourceFilters,
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean()
+        : [];
+    const directBySource = new Map();
+    directDocs.forEach(document => {
+        const key = `${document.source}:${document.sourceId}`;
+        if (!directBySource.has(key)) directBySource.set(key, document);
+    });
+
+    const configHash = ragConfigHash();
+    const sizes = [...new Set(files.map(file => Number(file.size || 0)).filter(size => size > 0))];
+    const contentCandidates = sizes.length
+        ? await RecordAiDocument.find({
+            fileSize: { $in: sizes },
+            contentHash: { $exists: true, $nin: ['', null] },
+            ragConfigHash: configHash,
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean()
+        : [];
+
+    const canonicalByHash = new Map();
+    const candidatesBySize = new Map();
+    contentCandidates.forEach(document => {
+        const hash = document.contentHash || '';
+        if (!hash) return;
+        const size = Number(document.fileSize || 0);
+        if (!canonicalByHash.has(hash)) canonicalByHash.set(hash, document);
+        if (!candidatesBySize.has(size)) candidatesBySize.set(size, []);
+        candidatesBySize.get(size).push(document);
+    });
+
+    const hashByFileId = new Map();
+    const getContentHashForFile = async (file) => {
+        const key = cleanId(file._id);
+        if (hashByFileId.has(key)) return hashByFileId.get(key);
+        if (!file.filename) {
+            hashByFileId.set(key, '');
+            return '';
+        }
+        try {
+            const filePath = resolveAttachmentPath(req.account_number, file.filename);
+            const contentHash = await hashFileContent(filePath);
+            hashByFileId.set(key, contentHash);
+            return contentHash;
+        } catch (_) {
+            hashByFileId.set(key, '');
+            return '';
+        }
+    };
+
+    const enriched = [];
+    for (const file of files) {
+        const sourceId = cleanId(file._id);
+        const direct = directBySource.get(`drive:${sourceId}`);
+        const directCanonical = direct?.contentHash ? canonicalByHash.get(direct.contentHash) : null;
+
+        if (direct) {
+            enriched.push({
+                ...file,
+                rag: driveRagStatusPayload(direct, directCanonical || direct)
+            });
+            continue;
+        }
+
+        const sizeCandidates = candidatesBySize.get(Number(file.size || 0)) || [];
+        if (sizeCandidates.length) {
+            const contentHash = await getContentHashForFile(file);
+            const canonical = contentHash ? canonicalByHash.get(contentHash) : null;
+            if (canonical) {
+                enriched.push({
+                    ...file,
+                    rag: driveRagStatusPayload(canonical, canonical, {
+                        contentHash,
+                        ragConfigHash: configHash,
+                        sourceCache: true
+                    })
+                });
+                continue;
+            }
+        }
+
+        enriched.push({ ...file, rag: null });
+    }
+
+    return enriched;
+}
+
+async function directRagStatusMap(req, source, sourceIds = []) {
+    const ids = [...new Set(sourceIds.map(cleanId).filter(Boolean))];
+    if (!ids.length || !RECORD_AI_RAG_ENABLED) return new Map();
+
+    let RecordAiDocument;
+    try {
+        RecordAiDocument = await tenantCollection(req, 'RecordAiDocument');
+    } catch (_) {
+        return new Map();
+    }
+    if (!RecordAiDocument) return new Map();
+
+    const documents = await RecordAiDocument.find({
+        source,
+        sourceId: { $in: ids },
+        status: 'ready',
+        chunkCount: { $gt: 0 }
+    }).sort({ indexedAt: 1, updatedAt: 1 }).lean();
+    if (!documents.length) return new Map();
+
+    const configHash = ragConfigHash();
+    const hashes = [...new Set(documents.map(document => document.contentHash).filter(Boolean))];
+    const canonicalByHash = new Map();
+    if (hashes.length) {
+        const canonicalDocs = await RecordAiDocument.find({
+            contentHash: { $in: hashes },
+            ragConfigHash: configHash,
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean();
+        canonicalDocs.forEach(document => {
+            if (document.contentHash && !canonicalByHash.has(document.contentHash)) {
+                canonicalByHash.set(document.contentHash, document);
+            }
+        });
+    }
+
+    const statuses = new Map();
+    documents.forEach(document => {
+        if (statuses.has(document.sourceId)) return;
+        statuses.set(document.sourceId, driveRagStatusPayload(document, canonicalByHash.get(document.contentHash) || document));
+    });
+    return statuses;
 }
 
 // ============================================================================
@@ -186,7 +413,7 @@ router.get('/drive/files', async (req, res) => {
         else query.folder = { $in: ['', null] }; // root files
         const files = await DriveFile.find(query).sort({ uploadedAt: -1 }).lean();
         // Format files
-        const formatted = files.map(f => ({
+        const formatted = await enrichDriveFilesWithRagStatus(req, files.map(f => ({
             _id: f._id,
             filename: f.filename,
             originalName: f.originalName,
@@ -197,7 +424,7 @@ router.get('/drive/files', async (req, res) => {
             folder: f.folder || '',
             url: `/account/${req.account_number}/uploads/attachments/${f.filename}`,
             uploadedAt: f.uploadedAt,
-        }));
+        })));
         res.json({ success: true, files: formatted, folders: account?.driveFolders || [] });
     } catch(err) {
         console.error('[Drive] files error:', err);
@@ -562,6 +789,10 @@ router.get('/drive', async (req, res) => {
         const records = await Record.find(recordQuery)
             .select('title computedTitle entityId attachments driveFolders')
             .lean();
+        const recordAttachmentIds = records.flatMap(record => (record.attachments || [])
+            .filter(attachment => !attachment.isDataRoomOnly)
+            .map(attachment => attachment._id));
+        const recordRagById = await directRagStatusMap(req, 'record', recordAttachmentIds);
 
         // Fetch all entities for labeling
         const entityIds = [...new Set(records.map(r => String(r.entityId)))];
@@ -641,7 +872,8 @@ router.get('/drive', async (req, res) => {
                     recordId: record._id,
                     recordTitle: recordTitle,
                     entityName: entity.name,
-                    entitySlug: entity.slug
+                    entitySlug: entity.slug,
+                    rag: recordRagById.get(cleanId(att._id)) || null
                 };
 
                 totalFiles++;

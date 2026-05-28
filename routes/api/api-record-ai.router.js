@@ -710,6 +710,135 @@ async function buildRecordFields(req, record, entity) {
     return fields;
 }
 
+function fileRagStatusPayload(document, canonicalDocument = null, fallback = {}) {
+    if (!document) return null;
+
+    const canonicalId = cleanId(canonicalDocument?._id || document._id);
+    const documentId = cleanId(document._id);
+    const isCanonical = !fallback.sourceCache && canonicalId && documentId === canonicalId;
+
+    return {
+        indexed: true,
+        canonical: isCanonical,
+        status: isCanonical ? 'canonical' : 'indexed',
+        label: isCanonical ? 'Canonical' : 'Indexed',
+        documentId,
+        canonicalDocumentId: canonicalId,
+        canonicalName: canonicalDocument?.name || document.name || fallback.name || '',
+        chunkCount: document.chunkCount || canonicalDocument?.chunkCount || 0,
+        embeddingStatus: document.embeddingStatus || canonicalDocument?.embeddingStatus || 'none',
+        embeddedChunkCount: document.embeddedChunkCount || canonicalDocument?.embeddedChunkCount || 0,
+        contentHash: document.contentHash || fallback.contentHash || '',
+        ragConfigHash: document.ragConfigHash || fallback.ragConfigHash || '',
+        sourceCache: Boolean(fallback.sourceCache)
+    };
+}
+
+async function enrichFilesWithRagStatus(req, files = []) {
+    if (!files.length || !RECORD_AI_RAG_ENABLED) return files;
+
+    let RecordAiDocument;
+    try {
+        ({ RecordAiDocument } = await getRagModels(req));
+    } catch (_) {
+        return files;
+    }
+
+    const sourceFilters = files
+        .filter(file => file.source && file.id)
+        .map(file => ({ source: file.source, sourceId: cleanId(file.id) }));
+    const directDocs = sourceFilters.length
+        ? await RecordAiDocument.find({
+            $or: sourceFilters,
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean()
+        : [];
+    const directBySource = new Map();
+    directDocs.forEach(document => {
+        const key = `${document.source}:${document.sourceId}`;
+        if (!directBySource.has(key)) directBySource.set(key, document);
+    });
+
+    const configHash = ragConfigHash();
+    const sizes = [...new Set(files.map(file => Number(file.size || 0)).filter(size => size > 0))];
+    const contentCandidates = sizes.length
+        ? await RecordAiDocument.find({
+            fileSize: { $in: sizes },
+            contentHash: { $exists: true, $nin: ['', null] },
+            ragConfigHash: configHash,
+            status: 'ready',
+            chunkCount: { $gt: 0 }
+        }).sort({ indexedAt: 1, updatedAt: 1 }).lean()
+        : [];
+
+    const canonicalByHash = new Map();
+    const candidatesBySize = new Map();
+    contentCandidates.forEach(document => {
+        const hash = document.contentHash || '';
+        if (!hash) return;
+        const size = Number(document.fileSize || 0);
+        if (!canonicalByHash.has(hash)) canonicalByHash.set(hash, document);
+        if (!candidatesBySize.has(size)) candidatesBySize.set(size, []);
+        candidatesBySize.get(size).push(document);
+    });
+
+    const hashByFileKey = new Map();
+    const getContentHashForFile = async (file) => {
+        const key = `${file.source}:${file.id}`;
+        if (hashByFileKey.has(key)) return hashByFileKey.get(key);
+        if (!file.filename) {
+            hashByFileKey.set(key, '');
+            return '';
+        }
+        try {
+            const filePath = resolveAttachmentPath(req.account_number, file.filename);
+            const contentHash = await hashFileContent(filePath);
+            hashByFileKey.set(key, contentHash);
+            return contentHash;
+        } catch (_) {
+            hashByFileKey.set(key, '');
+            return '';
+        }
+    };
+
+    const enriched = [];
+    for (const file of files) {
+        const key = `${file.source}:${file.id}`;
+        const direct = directBySource.get(key);
+        const directCanonical = direct?.contentHash ? canonicalByHash.get(direct.contentHash) : null;
+
+        if (direct) {
+            enriched.push({
+                ...file,
+                rag: fileRagStatusPayload(direct, directCanonical || direct)
+            });
+            continue;
+        }
+
+        const sizeCandidates = candidatesBySize.get(Number(file.size || 0)) || [];
+        if (sizeCandidates.length) {
+            const contentHash = await getContentHashForFile(file);
+            const canonical = contentHash ? canonicalByHash.get(contentHash) : null;
+            if (canonical) {
+                enriched.push({
+                    ...file,
+                    rag: fileRagStatusPayload(canonical, canonical, {
+                        contentHash,
+                        ragConfigHash: configHash,
+                        sourceCache: true
+                    })
+                });
+                continue;
+            }
+        }
+
+        enriched.push({ ...file, rag: null });
+    }
+
+    return enriched;
+}
+
 async function buildBootstrap(req, record, entity) {
     const RecordNote = await tenantCollection(req, 'RecordNote');
     const Conversation = await tenantCollection(req, 'Conversation');
@@ -736,6 +865,7 @@ async function buildBootstrap(req, record, entity) {
         .map(file => ({
             id: file._id?.toString(),
             source: 'record',
+            filename: file.filename || '',
             name: file.originalName || file.filename || 'Fichier',
             mimeType: file.mimeType || '',
             size: file.size || 0,
@@ -753,6 +883,7 @@ async function buildBootstrap(req, record, entity) {
             .map(file => ({
                 id: file._id?.toString(),
                 source: 'drive',
+                filename: file.filename || '',
                 name: file.originalName || file.filename || 'Fichier Drive',
                 mimeType: file.mimeType || '',
                 size: file.size || 0,
@@ -763,12 +894,16 @@ async function buildBootstrap(req, record, entity) {
             }))
             .filter(file => file.id)
         : [];
+    const files = await enrichFilesWithRagStatus(req, [...recordFiles, ...driveFiles]);
 
     return {
         record: {
             id: record._id,
             title: record.computedTitle || record.title || 'Sans titre',
-            entityName: entity?.nameSingular || entity?.name || 'Fiche'
+            entityName: entity?.nameSingular || entity?.name || 'Fiche',
+            entityIcon: entity?.icon || 'solar:card-bold-duotone',
+            entityColor: entity?.color || '#4f46e5',
+            canUseAccountDrive
         },
         fields,
         notes: notes.map(note => {
@@ -791,7 +926,7 @@ async function buildBootstrap(req, record, entity) {
             participantsCount: (chat.participants || []).length,
             charCount: null
         })),
-        files: [...recordFiles, ...driveFiles],
+        files,
         limits: {
             maxContextChars: MAX_CONTEXT_CHARS,
             maxFileChars: MAX_FILE_CHARS,

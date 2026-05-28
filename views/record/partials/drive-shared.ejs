@@ -56,6 +56,9 @@
     .drive-upload-row-fill { width:0; height:100%; border-radius:999px; transition:width .25s ease; }
     .drive-upload-row-path { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
     .drive-file-actions { display:flex; gap:2px; }
+    .drive-rag-badges { display:inline-flex; align-items:center; gap:4px; margin-left:6px; vertical-align:middle; }
+    .drive-rag-badge { display:inline-flex; align-items:center; height:18px; padding:0 7px; border-radius:999px; font-size:9px; font-weight:800; line-height:1; letter-spacing:.1px; text-transform:uppercase; border:1px solid #dbeafe; background:#eff6ff; color:#2563eb; }
+    .drive-rag-badge--canonical { border-color:#bbf7d0; background:#ecfdf5; color:#059669; }
     .drive-folder-item:hover { background:#f8fafc; }
     .drive-folder-item--drop-target { background:#4361ee0a !important; box-shadow:inset 0 0 0 2px #4361ee40; border-radius:12px; }
     .drive-empty { text-align:center; padding:40px 20px; color:#94a3b8; }
@@ -1705,6 +1708,12 @@ document.addEventListener('alpine:init', () => {
                             <span x-text="formatDate(file.uploadedAt)"></span>
                         </div>
                     </div>
+                    <span class="drive-rag-badges" x-show="file.rag && file.rag.indexed" style="display:none;">
+                        <span class="drive-rag-badge">Indexed</span>
+                        <template x-if="file.rag && file.rag.canonical">
+                            <span class="drive-rag-badge drive-rag-badge--canonical">Canonical</span>
+                        </template>
+                    </span>
                     <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
                 </div>
             </template>
@@ -1778,6 +1787,12 @@ document.addEventListener('alpine:init', () => {
                         <span x-text="formatDate(file.uploadedAt)"></span>
                     </div>
                 </div>
+                <span class="drive-rag-badges" x-show="file.rag && file.rag.indexed" style="display:none;">
+                    <span class="drive-rag-badge">Indexed</span>
+                    <template x-if="file.rag && file.rag.canonical">
+                        <span class="drive-rag-badge drive-rag-badge--canonical">Canonical</span>
+                    </template>
+                </span>
                 <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
             </div>
         </template>
@@ -2055,6 +2070,12 @@ document.addEventListener('alpine:init', () => {
                             </template>
                         </div>
                     </div>
+                    <span class="drive-rag-badges" x-show="file.rag && file.rag.indexed" style="display:none;">
+                        <span class="drive-rag-badge">Indexed</span>
+                        <template x-if="file.rag && file.rag.canonical">
+                            <span class="drive-rag-badge drive-rag-badge--canonical">Canonical</span>
+                        </template>
+                    </span>
                     <span class="rm-item-badge" style="background:#6b728015;color:#6b7280" x-text="file.sizeFormatted"></span>
                     <div class="drive-file-actions" x-show="!selectMode">
                         <template x-if="confirmDeleteFileId !== file._id">

@@ -89,6 +89,64 @@ function getFilePreviewType(file = {}) {
     return ''
 }
 
+function normalizeFolderPath(value = '') {
+    return String(value || '').replace(/^\/+|\/+$/g, '').replace(/\/{2,}/g, '/')
+}
+
+function folderNameFromPath(value = '') {
+    const clean = normalizeFolderPath(value)
+    if (!clean) return 'Drive'
+    return clean.split('/').filter(Boolean).pop() || clean
+}
+
+function parentFolderPath(value = '') {
+    const parts = normalizeFolderPath(value).split('/').filter(Boolean)
+    parts.pop()
+    return parts.join('/')
+}
+
+function childFolderName(folder = '', parent = '') {
+    const cleanFolder = normalizeFolderPath(folder)
+    const cleanParent = normalizeFolderPath(parent)
+    if (!cleanFolder) return ''
+    if (!cleanParent) return cleanFolder.split('/')[0] || ''
+    if (cleanFolder === cleanParent || !cleanFolder.startsWith(`${cleanParent}/`)) return ''
+    return cleanFolder.slice(cleanParent.length + 1).split('/')[0] || ''
+}
+
+function fileIcon(file = {}) {
+    const previewType = getFilePreviewType(file)
+    if (previewType === 'image') return 'solar:gallery-bold-duotone'
+    if (previewType === 'pdf') return 'solar:file-text-bold-duotone'
+    return file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:document-text-bold-duotone'
+}
+
+function fileColor(file = {}) {
+    const previewType = getFilePreviewType(file)
+    if (previewType === 'image') return '#10b981'
+    if (previewType === 'pdf') return '#ef4444'
+    if (file.source === 'drive') return '#ec4899'
+    return '#f59e0b'
+}
+
+function ragBadges(file = {}) {
+    const rag = file.rag || null
+    if (!rag?.indexed) return []
+    return [
+        { label: 'Indexed', tone: 'indexed' },
+        ...(rag.canonical ? [{ label: 'Canonical', tone: 'canonical' }] : []),
+    ]
+}
+
+function fileRagMeta(file = {}) {
+    const rag = file.rag || null
+    if (rag?.indexed) {
+        const chunks = rag.chunkCount ? `${rag.chunkCount} chunk${rag.chunkCount > 1 ? 's' : ''}` : 'RAG'
+        return rag.canonical ? `Canonical · ${chunks}` : `Indexed · ${chunks}`
+    }
+    return 'OCR à l’envoi'
+}
+
 function renderInlineMarkdown(text, keyPrefix = 'inline') {
     const value = String(text || '')
     const nodes = []
@@ -206,7 +264,7 @@ function AgentStatus({ phrase = 'Analyse de la demande' }) {
     )
 }
 
-function SectionItem({ active, icon, color, title, meta, preview, onToggle, disabled = false }) {
+function SectionItem({ active, icon, color, title, meta, preview, badges = [], onToggle, disabled = false }) {
     return (
         <button type="button" className={`rai-context-item ${active ? 'active' : ''}`} onClick={onToggle} disabled={disabled} title={title}>
             <span className="rai-check" aria-hidden="true">
@@ -216,7 +274,16 @@ function SectionItem({ active, icon, color, title, meta, preview, onToggle, disa
                 <Icon icon={icon} width={15} />
             </span>
             <span className="rai-item-body">
-                <span className="rai-item-title">{title}</span>
+                <span className="rai-item-title-row">
+                    <span className="rai-item-title">{title}</span>
+                    {badges.length > 0 && (
+                        <span className="rai-item-badges">
+                            {badges.map(badge => (
+                                <span key={`${badge.tone}:${badge.label}`} className={`rai-rag-badge ${badge.tone || ''}`}>{badge.label}</span>
+                            ))}
+                        </span>
+                    )}
+                </span>
                 {preview && <span className="rai-item-preview">{preview}</span>}
                 {meta && <span className="rai-item-meta">{meta}</span>}
             </span>
@@ -488,7 +555,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [conversationSearch, setConversationSearch] = useState('')
     const [contextSearch, setContextSearch] = useState('')
     const [contextOpen, setContextOpen] = useState(false)
-    const [contextTab, setContextTab] = useState('fields')
+    const [contextTab, setContextTab] = useState('documents')
+    const [documentScope, setDocumentScope] = useState('record')
+    const [drivePath, setDrivePath] = useState('')
     const [previewFile, setPreviewFile] = useState(null)
     const [debugOpen, setDebugOpen] = useState(false)
     const [debugLoading, setDebugLoading] = useState(false)
@@ -644,6 +713,24 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                 || String(item.lastMessage?.text || '').toLowerCase().includes(q)
         })
     }, [conversationSearch, conversations])
+
+    const recordContextFiles = useMemo(() => filtered.files.filter(file => file.source === 'record'), [filtered.files])
+    const driveContextFiles = useMemo(() => filtered.files.filter(file => file.source === 'drive'), [filtered.files])
+    const driveFolders = useMemo(() => {
+        const names = new Set()
+        driveContextFiles.forEach(file => {
+            const child = childFolderName(file.folder || '', drivePath)
+            if (child) names.add(child)
+        })
+        return [...names].sort((a, b) => a.localeCompare(b))
+    }, [driveContextFiles, drivePath])
+    const visibleDriveFiles = useMemo(() => {
+        const current = normalizeFolderPath(drivePath)
+        return driveContextFiles.filter(file => normalizeFolderPath(file.folder || '') === current)
+    }, [driveContextFiles, drivePath])
+    const canBrowseDrive = Boolean(record.canUseAccountDrive) || driveContextFiles.length > 0
+    const recordEntityIcon = record.entityIcon || 'solar:card-bold-duotone'
+    const recordEntityColor = record.entityColor || '#4f46e5'
 
     const updateConversationList = useCallback((conversation) => {
         setConversations(prev => {
@@ -892,19 +979,20 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             const key = fileKey(file)
             const fallback = fallbackByKey.get(key) || fallbackByKey.get(`file:${file.id}`) || fallbackByKey.get(`files:${file.id}`)
             const fileDetails = files.find(item => fileKey(item) === key) || fallback || file
-            const previewType = getFilePreviewType(fileDetails)
+            const displayFile = { ...file, ...fileDetails }
+            const previewType = getFilePreviewType(displayFile)
             items.push({
                 key,
                 type: 'files',
                 id: String(file.id),
                 source: file.source,
-                label: fileDetails.name || fileDetails.label || file.name,
-                icon: fallback?.icon || (previewType === 'image' ? 'solar:gallery-bold-duotone' : (file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone')),
-                color: fallback?.color || (file.source === 'drive' ? '#ec4899' : '#0f766e'),
-                url: fileDetails.url || '',
-                mimeType: fileDetails.mimeType || '',
+                label: displayFile.name || displayFile.label || file.name,
+                icon: fallback?.icon || fileIcon(displayFile),
+                color: fallback?.color || fileColor(displayFile),
+                url: displayFile.url || '',
+                mimeType: displayFile.mimeType || '',
                 previewType: previewType || fallback?.previewType || '',
-                meta: fallback?.meta || (file.source === 'drive' ? 'Drive' : 'Document'),
+                meta: fallback?.meta || fileRagMeta(displayFile),
             })
         })
         safeSelection.uploads.forEach(upload => {
@@ -938,6 +1026,13 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             type: item.previewType,
             label: item.label,
         })
+    }, [])
+
+    const openContextPicker = useCallback(() => {
+        setContextTab('documents')
+        setDocumentScope('record')
+        setDrivePath('')
+        setContextOpen(true)
     }, [])
 
     const loadDebugLogs = useCallback(async () => {
@@ -988,10 +1083,18 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
 
     const contextTabs = useMemo(() => ([
         {
+            key: 'documents',
+            label: 'Docs',
+            icon: 'solar:folder-with-files-bold-duotone',
+            color: '#f59e0b',
+            total: files.length + selection.uploads.length,
+            selected: selection.files.length + selection.uploads.length,
+        },
+        {
             key: 'fields',
             label: 'Fiche',
-            icon: 'solar:card-bold-duotone',
-            color: '#4f46e5',
+            icon: recordEntityIcon,
+            color: recordEntityColor,
             total: fields.length,
             selected: selection.fields.length,
         },
@@ -1011,15 +1114,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             total: chats.length,
             selected: selection.chats.length,
         },
-        {
-            key: 'documents',
-            label: 'Docs',
-            icon: 'solar:document-text-bold-duotone',
-            color: '#0f766e',
-            total: files.length + selection.uploads.length,
-            selected: selection.files.length + selection.uploads.length,
-        },
-    ]), [chats.length, fields.length, files.length, notes.length, selection])
+    ]), [chats.length, fields.length, files.length, notes.length, recordEntityColor, recordEntityIcon, selection])
 
     const activeContextGroup = (() => {
         if (contextTab === 'notes') {
@@ -1064,8 +1159,60 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         }
 
         if (contextTab === 'documents') {
+            const activeFiles = documentScope === 'drive' ? visibleDriveFiles : recordContextFiles
+            const activeTotal = documentScope === 'drive' ? driveContextFiles.length : recordContextFiles.length
             return (
-                <ContextGroup title="Documents" icon="solar:document-text-bold-duotone" color="#0f766e" count={`${selection.files.length + selection.uploads.length}/${files.length}`}>
+                <ContextGroup
+                    title={documentScope === 'drive' ? folderNameFromPath(drivePath) : (record.entityName || 'Fiche')}
+                    icon={documentScope === 'drive' ? 'solar:cloud-storage-bold-duotone' : recordEntityIcon}
+                    color={documentScope === 'drive' ? '#ec4899' : recordEntityColor}
+                    count={`${selection.files.length + selection.uploads.length}/${activeTotal}`}
+                >
+                    <div className="rai-doc-sourcebar">
+                        <button
+                            type="button"
+                            className={`rai-doc-source ${documentScope === 'record' ? 'active' : ''}`}
+                            onClick={() => setDocumentScope('record')}
+                            style={{ '--rai-source-color': recordEntityColor }}
+                        >
+                            <Icon icon={recordEntityIcon} width={15} />
+                            <span>Fiche</span>
+                            <strong>{recordContextFiles.length}</strong>
+                        </button>
+                        <button
+                            type="button"
+                            className={`rai-doc-source drive ${documentScope === 'drive' ? 'active' : ''}`}
+                            onClick={() => {
+                                if (!canBrowseDrive) return
+                                setDocumentScope('drive')
+                            }}
+                            disabled={!canBrowseDrive}
+                            style={{ '--rai-source-color': '#ec4899' }}
+                        >
+                            <Icon icon="solar:cloud-storage-bold-duotone" width={15} />
+                            <span>Drive</span>
+                            <strong>{driveContextFiles.length}</strong>
+                        </button>
+                    </div>
+
+                    {documentScope === 'drive' && (
+                        <div className="rai-doc-breadcrumb">
+                            <button type="button" onClick={() => setDrivePath('')} className={!drivePath ? 'active' : ''}>
+                                <Icon icon="solar:home-2-bold-duotone" width={13} />
+                                <span>Drive</span>
+                            </button>
+                            {drivePath && (
+                                <>
+                                    <button type="button" onClick={() => setDrivePath(parentFolderPath(drivePath))}>
+                                        <Icon icon="solar:arrow-left-linear" width={13} />
+                                        <span>Retour</span>
+                                    </button>
+                                    <strong>{drivePath}</strong>
+                                </>
+                            )}
+                        </div>
+                    )}
+
                     <button type="button" className="rai-upload-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                         <Icon icon={uploading ? 'line-md:loading-twotone-loop' : 'solar:upload-square-bold'} width={15} />
                         <span>{uploading ? 'OCR...' : 'Upload OCR'}</span>
@@ -1077,7 +1224,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             key={upload.id}
                             active
                             icon="solar:file-check-bold-duotone"
-                            color="#0f766e"
+                            color="#f59e0b"
                             title={upload.name}
                             preview="Upload OCR"
                             meta={`${estimateTokensFromChars(upload.charCount)} tokens`}
@@ -1085,16 +1232,40 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                         />
                     ))}
 
-                    {filtered.files.length === 0 && selection.uploads.length === 0 && <div className="rai-context-empty">Aucun document</div>}
-                    {filtered.files.map(file => (
+                    {documentScope === 'drive' && driveFolders.map(folder => {
+                        const folderPath = normalizeFolderPath(drivePath ? `${drivePath}/${folder}` : folder)
+                        const nestedFiles = driveContextFiles.filter(file => normalizeFolderPath(file.folder || '') === folderPath).length
+                        const nestedFolders = new Set(driveContextFiles
+                            .map(file => childFolderName(file.folder || '', folderPath))
+                            .filter(Boolean)).size
+                        return (
+                            <button
+                                type="button"
+                                key={folderPath}
+                                className="rai-folder-item"
+                                onClick={() => setDrivePath(folderPath)}
+                            >
+                                <span className="rai-folder-icon"><Icon icon="solar:folder-open-bold-duotone" width={16} /></span>
+                                <span className="rai-folder-body">
+                                    <span>{folder}</span>
+                                    <small>{nestedFiles + nestedFolders} élément{nestedFiles + nestedFolders > 1 ? 's' : ''}</small>
+                                </span>
+                                <Icon icon="solar:alt-arrow-right-linear" width={15} />
+                            </button>
+                        )
+                    })}
+
+                    {activeFiles.length === 0 && driveFolders.length === 0 && selection.uploads.length === 0 && <div className="rai-context-empty">Aucun document</div>}
+                    {activeFiles.map(file => (
                         <SectionItem
                             key={fileKey(file)}
                             active={selectedFileKeys.has(fileKey(file))}
-                            icon={file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone'}
-                            color={file.source === 'drive' ? '#ec4899' : '#0f766e'}
+                            icon={fileIcon(file)}
+                            color={fileColor(file)}
                             title={file.name}
                             preview={file.folder || (file.source === 'drive' ? 'Drive' : 'Fiche')}
-                            meta="OCR à l'envoi"
+                            meta={fileRagMeta(file)}
+                            badges={ragBadges(file)}
                             onToggle={() => toggleFile(file)}
                         />
                     ))}
@@ -1103,14 +1274,14 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         }
 
         return (
-            <ContextGroup title="Fiche" icon="solar:card-bold-duotone" color="#4f46e5" count={`${selection.fields.length}/${fields.length}`}>
+            <ContextGroup title="Fiche" icon={recordEntityIcon} color={recordEntityColor} count={`${selection.fields.length}/${fields.length}`}>
                 {filtered.fields.length === 0 && <div className="rai-context-empty">Aucun champ</div>}
                 {filtered.fields.map(field => (
                     <SectionItem
                         key={field.id}
                         active={selection.fields.includes(field.id)}
                         icon="solar:text-field-focus-bold"
-                        color="#4f46e5"
+                        color={recordEntityColor}
                         title={field.label}
                         preview={shortText(field.value, 86)}
                         meta={`${estimateTokensFromChars(field.charCount)} tokens`}
@@ -1352,7 +1523,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             </div>
                         )}
                         <div className="rai-composer">
-                            <button type="button" className="rai-attach-context" onClick={() => setContextOpen(true)} title="Ajouter du contexte">
+                            <button type="button" className="rai-attach-context" onClick={openContextPicker} title="Ajouter du contexte">
                                 <Icon icon="solar:layers-minimalistic-bold-duotone" width={17} />
                                 {selectedCount > 0 && <strong>{selectedCount}</strong>}
                             </button>
@@ -1707,12 +1878,12 @@ const styles = `
 .rai-search input{padding:0;}
 .rai-context-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 10px 12px;}
 .rai-context-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:4px 14px 12px;}
-.rai-context-tab{min-width:0;height:38px;border:1px solid var(--rai-border);background:#fff;color:#64748b;border-radius:10px;display:flex;align-items:center;gap:7px;padding:0 9px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .16s;}
+.rai-context-tab{min-width:0;height:40px;border:1px solid #e2e8f0;background:linear-gradient(180deg,#fff,#f8fafc);color:#64748b;border-radius:12px;display:flex;align-items:center;gap:7px;padding:0 9px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .16s;box-shadow:0 1px 2px rgba(15,23,42,.03);}
 .rai-context-tab span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .rai-context-tab strong{margin-left:auto;min-width:26px;height:18px;border-radius:999px;background:#eef2f7;color:var(--rai-muted);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;}
 .rai-context-tab:hover{border-color:color-mix(in srgb,var(--rai-tab-color) 28%,var(--rai-border));color:var(--rai-text);background:#fbfdff;}
-.rai-context-tab.active{border-color:color-mix(in srgb,var(--rai-tab-color) 42%,#fff);background:color-mix(in srgb,var(--rai-tab-color) 10%,#fff);color:var(--rai-tab-color);}
-.rai-context-tab.active strong{background:#fff;color:var(--rai-tab-color);}
+.rai-context-tab.active{border-color:color-mix(in srgb,var(--rai-tab-color) 46%,#fff);background:linear-gradient(180deg,color-mix(in srgb,var(--rai-tab-color) 12%,#fff),#fff);color:var(--rai-tab-color);box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--rai-tab-color) 62%,#fff),0 4px 12px rgba(15,23,42,.05);}
+.rai-context-tab.active strong{background:#fff;color:var(--rai-tab-color);box-shadow:0 1px 4px rgba(15,23,42,.06);}
 .rai-context-group{margin-top:10px;}
 .rai-group-title{display:flex;align-items:center;gap:7px;padding:6px 4px;font-size:10px;font-weight:700;color:var(--rai-muted);text-transform:uppercase;letter-spacing:.6px;}
 .rai-group-icon{display:flex;}
@@ -1726,11 +1897,32 @@ const styles = `
 .rai-context-item.active .rai-check{background:var(--rai-ai);border-color:var(--rai-ai);color:#fff;}
 .rai-item-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--rai-item-color);background:color-mix(in srgb,var(--rai-item-color) 10%,#fff);}
 .rai-item-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.rai-item-title-row{display:flex;align-items:center;gap:6px;min-width:0;}
 .rai-item-title{font-size:12px;font-weight:600;color:var(--rai-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-item-badges{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;}
+.rai-rag-badge{display:inline-flex;align-items:center;height:18px;border-radius:999px;padding:0 7px;font-size:9.5px;font-weight:800;letter-spacing:.1px;border:1px solid #dbeafe;background:#eff6ff;color:#2563eb;text-transform:uppercase;}
+.rai-rag-badge.canonical{border-color:#bbf7d0;background:#ecfdf5;color:#059669;}
 .rai-item-preview,.rai-item-meta{font-size:10.5px;color:var(--rai-muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .rai-item-meta{font-weight:500;color:#a8b1bf;-webkit-line-clamp:1;}
-.rai-upload-btn{height:34px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px dashed #cbd5e1;background:#fff;color:#0f766e;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
-.rai-upload-btn:hover{border-color:#0f766e;background:#ecfdf5;}
+.rai-doc-sourcebar{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;}
+.rai-doc-source{min-width:0;height:34px;border:1px solid #e2e8f0;background:#fff;color:#64748b;border-radius:10px;display:flex;align-items:center;gap:7px;padding:0 9px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .16s;}
+.rai-doc-source strong{margin-left:auto;min-width:22px;height:18px;border-radius:999px;background:#eef2f7;color:#94a3b8;display:inline-flex;align-items:center;justify-content:center;font-size:10px;}
+.rai-doc-source:hover{border-color:color-mix(in srgb,var(--rai-source-color) 28%,#e2e8f0);color:#334155;background:#fbfdff;}
+.rai-doc-source.active{border-color:color-mix(in srgb,var(--rai-source-color) 42%,#fff);background:color-mix(in srgb,var(--rai-source-color) 10%,#fff);color:var(--rai-source-color);}
+.rai-doc-source.active strong{background:#fff;color:var(--rai-source-color);}
+.rai-doc-source:disabled{opacity:.48;cursor:not-allowed;}
+.rai-doc-breadcrumb{display:flex;align-items:center;gap:6px;min-width:0;margin-bottom:7px;padding:6px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;}
+.rai-doc-breadcrumb button{height:26px;border:none;border-radius:8px;background:#f8fafc;color:#64748b;display:inline-flex;align-items:center;gap:5px;padding:0 8px;font-size:10.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;}
+.rai-doc-breadcrumb button:hover,.rai-doc-breadcrumb button.active{background:#fdf2f8;color:#ec4899;}
+.rai-doc-breadcrumb strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:#64748b;}
+.rai-folder-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;color:#334155;text-align:left;cursor:pointer;font-family:inherit;transition:all .15s;}
+.rai-folder-item:hover{border-color:#fde68a;background:#fffbeb;}
+.rai-folder-icon{width:26px;height:26px;border-radius:8px;background:#fffbeb;color:#f59e0b;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-folder-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+.rai-folder-body span{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-folder-body small{font-size:10.5px;color:#94a3b8;font-weight:600;}
+.rai-upload-btn{height:34px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px dashed #cbd5e1;background:#fff;color:#f59e0b;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
+.rai-upload-btn:hover{border-color:#f59e0b;background:#fffbeb;}
 .rai-context-empty{padding:18px 10px;border:1px dashed var(--rai-border);border-radius:10px;background:#fff;color:var(--rai-muted);font-size:12px;font-weight:600;text-align:center;}
 .rai-loading,.rai-empty-side,.rai-empty-chat{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--rai-muted);font-size:12px;font-weight:600;text-align:center;}
 .rai-empty-side small{font-size:11px;font-weight:400;color:var(--rai-muted);line-height:1.5;}

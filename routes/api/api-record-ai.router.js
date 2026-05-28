@@ -3473,12 +3473,91 @@ function agentRestoreRecordFieldValue(record, field = {}, inverse = {}) {
     record.markModified('customFields');
 }
 
+function agentTryParseJsonCandidate(candidate) {
+    const clean = String(candidate || '').trim().replace(/^\uFEFF/, '');
+    if (!clean) return null;
+
+    try {
+        const parsed = JSON.parse(clean);
+        if (typeof parsed === 'string') return agentTryParseJsonCandidate(parsed) || parsed;
+        return parsed;
+    } catch (_) {
+        return null;
+    }
+}
+
+function agentBalancedJsonCandidate(raw) {
+    const text = String(raw || '');
+    const start = text.indexOf('{');
+    if (start < 0) return '';
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let index = start; index < text.length; index += 1) {
+        const char = text[index];
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (char === '\\') {
+            escaped = true;
+            continue;
+        }
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+        if (inString) continue;
+        if (char === '{') depth += 1;
+        if (char === '}') {
+            depth -= 1;
+            if (depth === 0) return text.slice(start, index + 1);
+        }
+    }
+
+    return '';
+}
+
 function agentExtractJson(text) {
     const raw = String(text || '').trim();
     const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const candidate = fenced ? fenced[1].trim() : raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-    if (!candidate || candidate[0] !== '{') throw new Error('Réponse agent JSON introuvable');
-    return JSON.parse(candidate);
+    const candidates = [
+        raw,
+        fenced?.[1],
+        agentBalancedJsonCandidate(raw),
+        raw.includes('{') && raw.includes('}') ? raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1) : ''
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+        const parsed = agentTryParseJsonCandidate(candidate);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+
+        const unescaped = String(candidate || '').replace(/\\"/g, '"').replace(/\\n/g, '\n');
+        const reparsed = agentTryParseJsonCandidate(unescaped);
+        if (reparsed && typeof reparsed === 'object' && !Array.isArray(reparsed)) return reparsed;
+    }
+
+    throw new Error('Réponse agent JSON introuvable');
+}
+
+function agentFallbackTextFromAiContent(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return 'Réponse IA non structurée.';
+
+    const parsed = agentTryParseJsonCandidate(raw) ||
+        agentTryParseJsonCandidate(agentBalancedJsonCandidate(raw));
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const noteAction = Array.isArray(parsed.actions)
+            ? parsed.actions.find(action => action?.tool === 'create_note')
+            : null;
+        const noteInput = noteAction?.input || noteAction || {};
+        const noteContent = noteInput.contentMarkdown || noteInput.markdown || noteInput.content;
+        if (noteContent) return String(noteContent).trim();
+        if (parsed.summary) return String(parsed.summary).trim();
+    }
+
+    return raw;
 }
 
 function agentToolLabel(tool) {
@@ -3632,18 +3711,148 @@ function agentNormalizePlan(parsed = {}) {
     };
 }
 
-async function agentDefaultSelection(req, record, entity) {
+function agentGoalHasContextKeyword(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text) return false;
+    return [
+        /\b(analyse|analyser|resume|resumer|synthese|synthetise|extrais|extraire|extrait|extraits)\b/,
+        /\b(cherche|trouve|identifie|verifie|controle|compare|audit|explique)\b/,
+        /\b(document|documents|doc|docs|pdf|fichier|fichiers|image|photo|ocr|piece jointe|pieces jointes)\b/,
+        /\b(cahier des charges|csc|dce|appel d offre|marche|soumission|soumettre|eligible|eligibilite)\b/,
+        /\b(facture|devis|contrat|cin|registre|annexe|chapitre|page|pages|lot|lots)\b/,
+        /\b(condition|conditions|critere|criteres|delai|deadline|echeance|date limite|adresse|montant|budget)\b/,
+        /\b(enrichis|enrichir|complete|completer|remplis|mettre a jour|mets a jour)\b/,
+        /\b(a partir|depuis|selon|dans le contexte|avec le contexte|source|sources)\b/
+    ].some(pattern => pattern.test(text));
+}
+
+function agentGoalNeedsFullContext(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text || agentGoalLooksStandalone(text)) return false;
+
+    return agentGoalHasContextKeyword(text);
+}
+
+function agentGoalLooksStandalone(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text) return false;
+    const explicitStandalone = [
+        /\b(demo|demonstration|lorem|ipsum|test|exemple|exemples|fictif|fictive|placeholder)\b/,
+        /\b(contenu|texte|paragraphe)\b.*\b(demo|test|exemple|lorem|ipsum)\b/,
+        /\bcree[rz]?\b.*\b(note|tache|task)\b.*\b(sans contexte|sans document|vide)\b/
+    ].some(pattern => pattern.test(text));
+    if (explicitStandalone) return true;
+
+    const lightweightAction = /\b(note|tache|task)\b.*\b(simple|rapide|courte|petit|petite)\b/.test(text);
+    return lightweightAction && !agentGoalHasContextKeyword(text);
+}
+
+function agentGoalShouldUseDocuments(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text || agentGoalLooksStandalone(text)) return false;
+
+    return [
+        /\b(document|documents|doc|docs|pdf|fichier|fichiers|image|photo|ocr|piece jointe|pieces jointes)\b/,
+        /\b(cahier des charges|csc|dce|appel d offre|marche|soumission|soumettre|eligible|eligibilite)\b/,
+        /\b(facture|devis|contrat|cin|registre|annexe|chapitre|page|pages|lot|lots)\b/,
+        /\b(condition|conditions|critere|criteres|delai|deadline|echeance|date limite|adresse|montant|budget)\b/
+    ].some(pattern => pattern.test(text));
+}
+
+function agentGoalShouldUseNotes(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text || agentGoalLooksStandalone(text)) return false;
+    return /\b(note|notes|synthese|historique|resume)\b/.test(text);
+}
+
+function agentContextDecision(goal, requestedSelection = {}) {
+    const requestedCount = selectionItemCount(requestedSelection);
+    const standalone = agentGoalLooksStandalone(goal);
+    const needsFullContext = agentGoalNeedsFullContext(goal);
+
+    if (needsFullContext) {
+        return {
+            mode: 'full',
+            reason: requestedCount > 0 ? 'selected_context_needed' : 'record_context_needed',
+            requestedCount
+        };
+    }
+
+    if (requestedCount > 0) {
+        return {
+            mode: 'inventory',
+            reason: standalone ? 'standalone_request_skipped_selected_context' : 'selected_context_inventory_only',
+            requestedCount
+        };
+    }
+
+    return {
+        mode: 'none',
+        reason: standalone ? 'standalone_request' : 'no_context_signal',
+        requestedCount
+    };
+}
+
+function emptySelectedContext(contextDecision = {}) {
+    return {
+        text: '',
+        fingerprint: hashText(JSON.stringify({ strategy: contextDecision.mode || 'none', reason: contextDecision.reason || '' })),
+        stats: {
+            sections: 0,
+            chars: 0,
+            estimatedTokens: 0,
+            truncated: false,
+            sources: [],
+            errors: [],
+            strategy: contextDecision.mode || 'none',
+            reason: contextDecision.reason || ''
+        },
+        debug: {
+            ocr: [],
+            uploads: [],
+            rag: null,
+            limits: {}
+        }
+    };
+}
+
+function agentBuildContextInventoryText(items = [], requestedSelection = {}, contextDecision = {}) {
+    const requestedCount = selectionItemCount(requestedSelection);
+    if (!requestedCount) return '';
+
+    const visibleItems = sanitizeContextItems(items).slice(0, 14);
+    const lines = visibleItems.map(item => {
+        const meta = item.meta || item.type || 'Contexte';
+        return `- ${meta}: ${item.label}`;
+    });
+    const hiddenCount = Math.max(0, requestedCount - visibleItems.length);
+    if (hiddenCount > 0) lines.push(`- ${hiddenCount} autre(s) source(s) sélectionnée(s)`);
+
+    return [
+        `Inventaire léger du contexte sélectionné (${requestedCount} source${requestedCount > 1 ? 's' : ''}).`,
+        "Le contenu détaillé/OCR n'est pas envoyé car la demande semble pouvoir être traitée sans ces sources.",
+        lines.length ? lines.join('\n') : '- Sources sélectionnées non résolues',
+        `Stratégie contexte: ${contextDecision.reason || contextDecision.mode || 'inventory'}.`,
+        "Si la demande exige une preuve venant des documents, n'invente rien: indique qu'il faut relancer avec le contexte détaillé."
+    ].join('\n');
+}
+
+async function agentDefaultSelection(req, record, entity, goal = '') {
     const bootstrap = await buildBootstrap(req, record, entity);
     const recordFiles = (bootstrap.files || [])
         .filter(file => file.source === 'record')
         .slice(0, RECORD_AI_RAG_MAX_DOCUMENTS)
         .map(file => ({ id: file.id, source: file.source, name: file.name }));
+    const useDocuments = agentGoalShouldUseDocuments(goal);
+    const useNotes = agentGoalShouldUseNotes(goal);
 
     return normalizeSelection({
         fields: (bootstrap.fields || []).map(field => field.id).slice(0, 80),
-        notes: (bootstrap.notes || []).filter(note => !note.isProtected).map(note => cleanId(note.id)).slice(0, 20),
+        notes: useNotes
+            ? (bootstrap.notes || []).filter(note => !note.isProtected).map(note => cleanId(note.id)).slice(0, 20)
+            : [],
         chats: [],
-        files: recordFiles,
+        files: useDocuments ? recordFiles : [],
         uploads: []
     });
 }
@@ -3665,6 +3874,8 @@ function buildAgentInstructions(record, entity, fieldCatalog = []) {
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
         "- create_task: { title, description, dueDate, priority }. Utilise-le pour les rappels utiles comme une date limite.",
         "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
+        "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
+        "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
         "Format strict:",
         '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}}]}',
         "",
@@ -3673,14 +3884,25 @@ function buildAgentInstructions(record, entity, fieldCatalog = []) {
     ].join('\n');
 }
 
-function buildAgentInput(goal, selectedContext) {
+function buildAgentInput(goal, selectedContext, contextMeta = {}) {
+    const mode = contextMeta.mode || 'full';
+    const detailedContext = selectedContext?.text?.trim();
+    const inventoryText = String(contextMeta.inventoryText || '').trim();
+    let contextBlock = "Aucun contexte détaillé envoyé. Traite la demande à partir du message utilisateur et des instructions système.";
+
+    if (mode === 'full' && detailedContext) {
+        contextBlock = detailedContext;
+    } else if (mode === 'inventory' && inventoryText) {
+        contextBlock = inventoryText;
+    }
+
     return [
         'Demande utilisateur:',
         goal,
         '',
-        'Contexte record disponible:',
+        mode === 'full' ? 'Contexte record détaillé disponible:' : 'Contexte record envoyé:',
         '<contexte>',
-        selectedContext?.text?.trim() || 'Aucun contexte détaillé disponible.',
+        contextBlock,
         '</contexte>',
         '',
         "Prépare un plan agentique et des actions en mode review."
@@ -3892,13 +4114,37 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         const { record, entity } = await loadRecordBundle(req, req.params.recordId);
         const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
         const requestedSelection = normalizeSelection(req.body.contextSelections || {});
-        const selection = selectionItemCount(requestedSelection) > 0
-            ? requestedSelection
-            : await agentDefaultSelection(req, record, entity);
+        const contextDecision = agentContextDecision(goal, requestedSelection);
+        const requestedCount = selectionItemCount(requestedSelection);
+        let selection = normalizeSelection({});
+        if (contextDecision.mode === 'full') {
+            selection = requestedCount > 0
+                ? requestedSelection
+                : await agentDefaultSelection(req, record, entity, goal);
+        }
         const engineSettings = await getRecordAiEngineSettings(req);
         const engineRuntime = resolveEngineRuntime(engineSettings);
-        const selectedContext = await buildSelectedContext(req, record, entity, selection, { query: goal, engineSettings });
-        const contextItems = await buildContextItems(req, record, entity, selection);
+        let selectedContext = emptySelectedContext(contextDecision);
+        let contextItems = [];
+        let availableContextItems = [];
+        let contextInventoryText = '';
+
+        if (contextDecision.mode === 'full' && selectionItemCount(selection) > 0) {
+            selectedContext = await buildSelectedContext(req, record, entity, selection, { query: goal, engineSettings });
+            contextItems = await buildContextItems(req, record, entity, selection);
+        } else if (contextDecision.mode === 'inventory' && requestedCount > 0) {
+            availableContextItems = await buildContextItems(req, record, entity, requestedSelection);
+            contextInventoryText = agentBuildContextInventoryText(availableContextItems, requestedSelection, contextDecision);
+        }
+
+        const contextStats = {
+            ...(selectedContext.stats || {}),
+            strategy: contextDecision.mode,
+            reason: contextDecision.reason,
+            requestedContextItems: requestedCount,
+            usedContextItems: contextItems.length,
+            inventoryContextItems: availableContextItems.length
+        };
         const fieldCatalog = agentBuildFieldCatalog(entity);
 
         run = await RecordAgentRun.create({
@@ -3911,7 +4157,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             contextSelections: persistableSelection(selection),
             contextItems,
             contextFingerprint: selectedContext.fingerprint || '',
-            contextStats: selectedContext.stats || {},
+            contextStats,
             engine: engineRuntime,
             plan: agentNormalizePlan({}),
             proposedActions: []
@@ -3921,7 +4167,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             conversationId: run._id,
             recordId: record._id,
             instructions: buildAgentInstructions(record, entity, fieldCatalog),
-            input: buildAgentInput(goal, selectedContext),
+            input: buildAgentInput(goal, selectedContext, { ...contextDecision, inventoryText: contextInventoryText }),
             previousResponseId: null,
             engineSettings,
             historyMessages: []
@@ -3931,8 +4177,9 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         try {
             parsed = agentExtractJson(aiResult.content);
         } catch (parseError) {
+            const fallbackContent = agentFallbackTextFromAiContent(aiResult.content);
             parsed = {
-                summary: aiResult.content,
+                summary: shortPlainText(fallbackContent, 1200),
                 plan: { title: 'Plan agent', steps: [{ type: 'review', title: 'Créer une note de synthèse', detail: 'La réponse IA n’était pas structurée en tools.' }] },
                 actions: [{
                     tool: 'create_note',
@@ -3940,7 +4187,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
                     description: 'Créer une note avec la réponse de l’agent',
                     input: {
                         title: 'Analyse IA',
-                        contentMarkdown: aiResult.content
+                        contentMarkdown: fallbackContent
                     }
                 }]
             };
@@ -3957,9 +4204,13 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             phase: 'agent',
             createdAt: new Date(),
             goal,
+            contextDecision,
+            requestedContextSelections: debugSelection(requestedSelection),
             contextSelections: debugSelection(selection),
             contextItems,
-            contextStats: selectedContext.stats,
+            availableContextItems,
+            contextStats,
+            contextInventoryText,
             contextText: clipDebugText(selectedContext.text || '').text,
             engineRuntime,
             parsed

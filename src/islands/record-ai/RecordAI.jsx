@@ -73,6 +73,50 @@ function shortText(value, max = 96) {
     return text.length > max ? `${text.slice(0, max)}...` : text
 }
 
+function parseLooseAgentJson(value, depth = 0) {
+    if (depth > 2 || value == null) return null
+    if (typeof value === 'object') return value
+    const raw = String(value || '').trim()
+    if (!raw) return null
+
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
+    const candidates = [
+        raw,
+        fenced?.[1],
+        raw.includes('{') && raw.includes('}') ? raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1) : ''
+    ].filter(Boolean)
+
+    for (const candidate of candidates) {
+        try {
+            const parsed = JSON.parse(candidate)
+            if (typeof parsed === 'string') return parseLooseAgentJson(parsed, depth + 1)
+            if (parsed && typeof parsed === 'object') return parsed
+        } catch (_) {
+            try {
+                const parsed = JSON.parse(candidate.replace(/\\"/g, '"').replace(/\\n/g, '\n'))
+                if (typeof parsed === 'string') return parseLooseAgentJson(parsed, depth + 1)
+                if (parsed && typeof parsed === 'object') return parsed
+            } catch (_) {}
+        }
+    }
+    return null
+}
+
+function agentReadableText(value, fallback = '') {
+    const text = String(value || '').trim()
+    const parsed = parseLooseAgentJson(text)
+    if (parsed) {
+        if (parsed.summary) return String(parsed.summary).trim()
+        const noteAction = Array.isArray(parsed.actions)
+            ? parsed.actions.find(action => action?.tool === 'create_note')
+            : null
+        const noteInput = noteAction?.input || noteAction || {}
+        const noteText = noteInput.contentMarkdown || noteInput.markdown || noteInput.content || noteAction?.description
+        if (noteText) return String(noteText).trim()
+    }
+    return text || fallback
+}
+
 function fileExtension(name) {
     const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)(?:[?#].*)?$/)
     return match ? `.${match[1]}` : ''
@@ -565,6 +609,7 @@ function AgentActionCard({ action = {} }) {
     const color = agentToolColor(action.tool)
     const diff = Array.isArray(action.diff) ? action.diff : []
     const failed = action.status === 'failed'
+    const notePreviewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
 
     return (
         <div className={`rai-agent-action ${action.status || 'proposed'}`} style={{ '--agent-action-color': color }}>
@@ -585,7 +630,7 @@ function AgentActionCard({ action = {} }) {
             {action.tool === 'create_note' && action.preview && (
                 <div className="rai-agent-preview">
                     <strong>{action.preview.title || action.input?.title || 'Note IA'}</strong>
-                    <p>{action.preview.excerpt || ''}</p>
+                    <p>{shortText(notePreviewText, 520)}</p>
                 </div>
             )}
 
@@ -654,7 +699,7 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                         <AgentStatus phrase={draftPhrase} />
                     ) : (
                         <>
-                            {run.summary && <p className="rai-agent-summary">{run.summary}</p>}
+                            {run.summary && <p className="rai-agent-summary">{agentReadableText(run.summary)}</p>}
 
                             {sourceCount > 0 && (
                                 <details className="rai-agent-sources">

@@ -100,6 +100,17 @@ function isOcrSupported(file = {}) {
     return OCR_EXTENSIONS.has(path.extname(name));
 }
 
+function getFilePreviewType(file = {}) {
+    const mime = String(file.mimeType || file.mimetype || '').toLowerCase();
+    const name = String(file.name || file.originalName || file.filename || '').toLowerCase();
+    const ext = path.extname(name);
+
+    if (mime === 'application/pdf' || ext === '.pdf') return 'pdf';
+    if (mime.startsWith('image/') && mime !== 'image/svg+xml') return 'image';
+    if (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'].includes(ext)) return 'image';
+    return '';
+}
+
 function getTenantIntegrationModels(req) {
     const conn = req.tenantDbConnection;
     if (!conn) throw new Error('Tenant DB not connected');
@@ -396,6 +407,160 @@ async function buildBootstrap(req, record, entity) {
     };
 }
 
+function sanitizeContextItems(items = []) {
+    return (Array.isArray(items) ? items : [])
+        .filter(item => item && item.label)
+        .slice(0, 30)
+        .map(item => ({
+            key: String(item.key || `${item.type}:${item.id || item.label}`).slice(0, 260),
+            type: String(item.type || 'context').slice(0, 40),
+            id: cleanId(item.id).slice(0, 80),
+            source: item.source ? String(item.source).slice(0, 40) : undefined,
+            label: String(item.label || 'Contexte').slice(0, 240),
+            icon: String(item.icon || 'solar:document-text-bold-duotone').slice(0, 120),
+            color: String(item.color || '#4f46e5').slice(0, 32),
+            url: item.url ? String(item.url).slice(0, 500) : '',
+            mimeType: item.mimeType ? String(item.mimeType).slice(0, 120) : '',
+            previewType: item.previewType ? String(item.previewType).slice(0, 40) : '',
+            meta: item.meta ? String(item.meta).slice(0, 80) : ''
+        }));
+}
+
+async function buildContextItems(req, record, entity, selection) {
+    const items = [];
+
+    if (selection.fields?.length) {
+        const fields = await buildRecordFields(req, record, entity);
+        const fieldMap = new Map(fields.map(field => [field.id, field]));
+        selection.fields.forEach(id => {
+            const field = fieldMap.get(id);
+            if (!field) return;
+            items.push({
+                key: `field:${id}`,
+                type: 'fields',
+                id,
+                label: field.label || 'Champ',
+                icon: 'solar:text-field-focus-bold',
+                color: '#4f46e5',
+                meta: 'Fiche'
+            });
+        });
+    }
+
+    if (selection.notes?.length) {
+        const RecordNote = await tenantCollection(req, 'RecordNote');
+        const notes = await RecordNote.find({
+            _id: { $in: selection.notes },
+            recordId: record._id,
+            archived: { $ne: true }
+        }).select('title isProtected').lean();
+        const noteMap = new Map(notes.map(note => [cleanId(note._id), note]));
+        selection.notes.forEach(id => {
+            const note = noteMap.get(cleanId(id));
+            if (!note) return;
+            items.push({
+                key: `note:${id}`,
+                type: 'notes',
+                id,
+                label: note.title || 'Note',
+                icon: note.isProtected ? 'solar:lock-keyhole-bold-duotone' : 'solar:notes-bold-duotone',
+                color: '#8b5cf6',
+                meta: note.isProtected ? 'Note protégée' : 'Note'
+            });
+        });
+    }
+
+    if (selection.chats?.length) {
+        const Conversation = await tenantCollection(req, 'Conversation');
+        const chats = await Conversation.find({
+            _id: { $in: selection.chats },
+            recordId: record._id,
+            archived: { $ne: true }
+        }).select('name').lean();
+        const chatMap = new Map(chats.map(chat => [cleanId(chat._id), chat]));
+        selection.chats.forEach(id => {
+            const chat = chatMap.get(cleanId(id));
+            if (!chat) return;
+            items.push({
+                key: `chat:${id}`,
+                type: 'chats',
+                id,
+                label: chat.name || 'Chat',
+                icon: 'solar:chat-round-dots-bold-duotone',
+                color: '#f97316',
+                meta: 'Chat'
+            });
+        });
+    }
+
+    if (selection.files?.length) {
+        const canUseAccountDrive = !['guest', 'external'].includes(req.workspaceRole || '');
+        for (const selected of selection.files.slice(0, 12)) {
+            let file = null;
+            if (selected.source === 'drive' && canUseAccountDrive) {
+                const DriveFile = await tenantCollection(req, 'DriveFile');
+                const driveFile = await DriveFile.findById(selected.id).lean();
+                if (driveFile) {
+                    file = {
+                        source: 'drive',
+                        id: cleanId(driveFile._id),
+                        filename: driveFile.filename,
+                        name: driveFile.originalName || driveFile.filename || selected.name || 'Fichier Drive',
+                        mimeType: driveFile.mimeType || '',
+                        meta: driveFile.folder || 'Drive'
+                    };
+                }
+            } else if (selected.source === 'record') {
+                const attachment = (record.attachments || []).find(item => cleanId(item._id) === cleanId(selected.id));
+                if (attachment && !attachment.isDataRoomOnly) {
+                    file = {
+                        source: 'record',
+                        id: cleanId(attachment._id),
+                        filename: attachment.filename,
+                        name: attachment.originalName || attachment.filename || selected.name || 'Fichier',
+                        mimeType: attachment.mimeType || '',
+                        meta: attachment.folder || 'Document'
+                    };
+                }
+            }
+
+            if (!file || !file.filename) continue;
+            const previewType = getFilePreviewType(file);
+            items.push({
+                key: `${file.source}:${file.id}`,
+                type: 'files',
+                id: file.id,
+                source: file.source,
+                label: file.name,
+                icon: previewType === 'image'
+                    ? 'solar:gallery-bold-duotone'
+                    : (file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone'),
+                color: file.source === 'drive' ? '#ec4899' : '#0f766e',
+                url: `/account/${req.account_number}/uploads/attachments/${file.filename}`,
+                mimeType: file.mimeType,
+                previewType,
+                meta: file.meta
+            });
+        }
+    }
+
+    if (selection.uploads?.length) {
+        selection.uploads.slice(0, 8).forEach(upload => {
+            items.push({
+                key: upload.id,
+                type: 'uploads',
+                id: upload.id,
+                label: upload.name || 'Document OCR',
+                icon: 'solar:file-check-bold-duotone',
+                color: '#0f766e',
+                meta: 'OCR'
+            });
+        });
+    }
+
+    return sanitizeContextItems(items);
+}
+
 function addSection(sections, stats, title, text, maxChars, meta = {}) {
     const clean = String(text || '').trim();
     if (!clean) return;
@@ -685,6 +850,10 @@ function sanitizeStoredMessages(messages = []) {
         .map(message => ({
             role: message.role,
             content: String(message.content || '').slice(0, MAX_STORED_MESSAGE_CHARS),
+            messageType: message.messageType === 'context' ? 'context' : 'text',
+            contextSelections: message.contextSelections ? persistableSelection(message.contextSelections) : undefined,
+            contextItems: message.contextItems ? sanitizeContextItems(message.contextItems) : undefined,
+            contextFingerprint: message.contextFingerprint ? String(message.contextFingerprint) : '',
             contextStats: message.contextStats || undefined,
             createdAt: message.createdAt ? new Date(message.createdAt) : new Date()
         }));
@@ -802,6 +971,71 @@ router.patch('/:recordId/conversations/:conversationId', async (req, res) => {
         res.json({ success: true, conversation });
     } catch (error) {
         console.error('[RecordAI] patch conversation error:', error);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/:recordId/conversations/:conversationId/context', async (req, res) => {
+    try {
+        const { record, entity } = await loadRecordBundle(req, req.params.recordId);
+        const RecordAiConversation = await tenantCollection(req, 'RecordAiConversation');
+        const conversation = await RecordAiConversation.findOne({
+            _id: req.params.conversationId,
+            recordId: record._id,
+            userId: String(req.user._id),
+            archived: { $ne: true }
+        });
+
+        if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
+
+        const selection = normalizeSelection(req.body.contextSelections || {});
+        const persistedSelection = persistableSelection(selection);
+        const contextItems = await buildContextItems(req, record, entity, selection);
+        const contextFingerprint = hashText(JSON.stringify({
+            selection: persistedSelection,
+            items: contextItems.map(item => ({ key: item.key, label: item.label }))
+        }));
+        const lastMessage = (conversation.messages || [])[conversation.messages.length - 1];
+        const shouldAppend = !(lastMessage?.messageType === 'context' && lastMessage?.contextFingerprint === contextFingerprint);
+
+        if (shouldAppend) {
+            const contextMessage = {
+                role: 'system',
+                messageType: 'context',
+                content: 'Contexte ajouté',
+                contextSelections: persistedSelection,
+                contextItems,
+                contextFingerprint,
+                contextStats: {
+                    sections: contextItems.length,
+                    chars: 0,
+                    estimatedTokens: 0,
+                    included: false
+                },
+                createdAt: new Date()
+            };
+            conversation.messages = sanitizeStoredMessages([
+                ...(conversation.messages || []),
+                contextMessage
+            ]);
+            conversation.lastMessage = {
+                text: `Contexte ajouté (${contextItems.length} source${contextItems.length > 1 ? 's' : ''})`,
+                role: 'system',
+                sentAt: contextMessage.createdAt
+            };
+        }
+
+        conversation.contextSelections = persistedSelection;
+        await conversation.save();
+
+        res.json({
+            success: true,
+            conversation: conversation.toObject(),
+            contextItems,
+            appended: shouldAppend
+        });
+    } catch (error) {
+        console.error('[RecordAI] add context message error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
     }
 });

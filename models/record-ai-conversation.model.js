@@ -10,6 +10,23 @@ const RecordAiMessageSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    messageType: {
+        type: String,
+        enum: ['text', 'context'],
+        default: 'text'
+    },
+    contextSelections: {
+        type: mongoose.Schema.Types.Mixed,
+        default: undefined
+    },
+    contextItems: {
+        type: [mongoose.Schema.Types.Mixed],
+        default: undefined
+    },
+    contextFingerprint: {
+        type: String,
+        default: ''
+    },
     contextStats: {
         sections: { type: Number, default: 0 },
         chars: { type: Number, default: 0 },

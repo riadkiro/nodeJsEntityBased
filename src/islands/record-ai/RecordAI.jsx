@@ -22,6 +22,16 @@ function cleanConversationSelection(selection = {}) {
     }
 }
 
+function buildPayloadSelection(selection = {}) {
+    return {
+        fields: Array.isArray(selection.fields) ? selection.fields : [],
+        notes: Array.isArray(selection.notes) ? selection.notes : [],
+        chats: Array.isArray(selection.chats) ? selection.chats : [],
+        files: Array.isArray(selection.files) ? selection.files : [],
+        uploads: Array.isArray(selection.uploads) ? selection.uploads.filter(upload => upload.text) : [],
+    }
+}
+
 function formatDate(value) {
     if (!value) return ''
     try {
@@ -147,15 +157,17 @@ function estimateTokensFromChars(chars) {
     return Math.ceil((chars || 0) / 4)
 }
 
+const AGENT_PHASE_MS = 1600
+
 function buildAgentPhrases(selection = {}) {
     const phrases = ['Analyse de la demande']
-    const documentCount = (selection.files || []).length + (selection.uploads || []).length
+    const documentCount = (selection.files || []).length
 
     if (documentCount > 0) {
         phrases.push(documentCount > 1 ? 'Lecture des documents' : 'Lecture du document')
     }
 
-    phrases.push('Thinking', 'Working...', 'Préparation de la réponse')
+    phrases.push('Thinking', 'Working...')
     return phrases
 }
 
@@ -209,6 +221,59 @@ function ContextGroup({ title, icon, color, count, children }) {
     )
 }
 
+function ContextCardGrid({ items = [], onOpen }) {
+    if (!items.length) return null
+
+    return (
+        <div className="rai-context-card-grid">
+            {items.map(item => {
+                const clickable = item.type === 'files' && item.url && item.previewType
+                const content = (
+                    <>
+                        <span className="rai-context-card-icon" style={{ '--rai-card-color': item.color || '#4f46e5' }}>
+                            <Icon icon={item.icon || 'solar:document-text-bold-duotone'} width={15} />
+                        </span>
+                        <span className="rai-context-card-body">
+                            <span className="rai-context-card-title">{item.label}</span>
+                            <span className="rai-context-card-meta">
+                                {item.previewType === 'pdf' ? 'PDF' : item.previewType === 'image' ? 'Image' : item.meta || contextTypeLabel(item.type)}
+                            </span>
+                        </span>
+                    </>
+                )
+
+                if (clickable) {
+                    return (
+                        <button
+                            type="button"
+                            key={item.key || `${item.type}:${item.id}`}
+                            className="rai-context-card is-clickable"
+                            onClick={() => onOpen(item)}
+                            title={`Ouvrir ${item.label}`}
+                        >
+                            {content}
+                        </button>
+                    )
+                }
+
+                return (
+                    <div key={item.key || `${item.type}:${item.id}`} className="rai-context-card">
+                        {content}
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
+function contextTypeLabel(type) {
+    if (type === 'fields') return 'Fiche'
+    if (type === 'notes') return 'Note'
+    if (type === 'chats') return 'Chat'
+    if (type === 'uploads') return 'OCR'
+    return 'Contexte'
+}
+
 export default function RecordAI({ accountNumber, recordId, recordTitle }) {
     const apiBase = `/account/${accountNumber}/api/record-ai/${recordId}`
     const [loading, setLoading] = useState(true)
@@ -226,6 +291,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
     const [sending, setSending] = useState(false)
     const [creating, setCreating] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [applyingContext, setApplyingContext] = useState(false)
     const [conversationSearch, setConversationSearch] = useState('')
     const [contextSearch, setContextSearch] = useState('')
     const [contextOpen, setContextOpen] = useState(false)
@@ -259,7 +325,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
 
     const clearAgentTimer = useCallback(() => {
         if (agentTimerRef.current) {
-            window.clearInterval(agentTimerRef.current)
+            window.clearTimeout(agentTimerRef.current)
             agentTimerRef.current = null
         }
     }, [])
@@ -275,9 +341,20 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         setAgentPhraseIndex(0)
 
         clearAgentTimer()
-        agentTimerRef.current = window.setInterval(() => {
-            setAgentPhraseIndex(prev => (prev + 1) % phrases.length)
-        }, 1600)
+        if (phrases.length <= 1) return
+
+        let nextIndex = 1
+        const advance = () => {
+            setAgentPhraseIndex(Math.min(nextIndex, phrases.length - 1))
+            if (nextIndex < phrases.length - 1) {
+                nextIndex += 1
+                agentTimerRef.current = window.setTimeout(advance, AGENT_PHASE_MS)
+            } else {
+                agentTimerRef.current = null
+            }
+        }
+
+        agentTimerRef.current = window.setTimeout(advance, AGENT_PHASE_MS)
     }, [clearAgentTimer])
 
     useEffect(() => () => clearAgentTimer(), [clearAgentTimer])
@@ -464,10 +541,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         startAgentStatus(selection)
 
         try {
-            const payloadSelection = {
-                ...selection,
-                uploads: (selection.uploads || []).filter(upload => upload.text),
-            }
+            const payloadSelection = buildPayloadSelection(selection)
             const data = await apiFetch(`/conversations/${conversation._id}/messages`, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -525,53 +599,102 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         setSelection(prev => ({ ...prev, uploads: prev.uploads.filter(upload => upload.id !== id) }))
     }, [])
 
-    const selectedContextItems = useMemo(() => {
+    const buildContextItems = useCallback((contextSelection = {}, fallbackItems = []) => {
         const items = []
-        selection.fields.forEach(id => {
+        const fallbackByKey = new Map((fallbackItems || []).map(item => [item.key || `${item.type}:${item.id}`, item]))
+        const safeSelection = {
+            fields: Array.isArray(contextSelection.fields) ? contextSelection.fields : [],
+            notes: Array.isArray(contextSelection.notes) ? contextSelection.notes : [],
+            chats: Array.isArray(contextSelection.chats) ? contextSelection.chats : [],
+            files: Array.isArray(contextSelection.files) ? contextSelection.files : [],
+            uploads: Array.isArray(contextSelection.uploads) ? contextSelection.uploads : [],
+        }
+
+        safeSelection.fields.forEach(id => {
             const field = fields.find(item => item.id === id)
-            if (field) items.push({ key: `field:${id}`, type: 'fields', id, label: field.label, icon: 'solar:text-field-focus-bold', color: '#4f46e5' })
+            const fallback = fallbackByKey.get(`field:${id}`) || fallbackByKey.get(`fields:${id}`)
+            if (field || fallback) {
+                items.push({
+                    key: `field:${id}`,
+                    type: 'fields',
+                    id,
+                    label: field?.label || fallback?.label || 'Champ',
+                    icon: fallback?.icon || 'solar:text-field-focus-bold',
+                    color: fallback?.color || '#4f46e5',
+                    meta: fallback?.meta || 'Fiche',
+                })
+            }
         })
-        selection.notes.forEach(id => {
+        safeSelection.notes.forEach(id => {
             const note = notes.find(item => String(item.id) === String(id))
-            if (note) items.push({ key: `note:${id}`, type: 'notes', id: String(id), label: note.title, icon: 'solar:notes-bold-duotone', color: '#8b5cf6' })
+            const fallback = fallbackByKey.get(`note:${id}`) || fallbackByKey.get(`notes:${id}`)
+            if (note || fallback) {
+                items.push({
+                    key: `note:${id}`,
+                    type: 'notes',
+                    id: String(id),
+                    label: note?.title || fallback?.label || 'Note',
+                    icon: fallback?.icon || 'solar:notes-bold-duotone',
+                    color: fallback?.color || '#8b5cf6',
+                    meta: fallback?.meta || 'Note',
+                })
+            }
         })
-        selection.chats.forEach(id => {
+        safeSelection.chats.forEach(id => {
             const chat = chats.find(item => String(item.id) === String(id))
-            if (chat) items.push({ key: `chat:${id}`, type: 'chats', id: String(id), label: chat.name, icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316' })
+            const fallback = fallbackByKey.get(`chat:${id}`) || fallbackByKey.get(`chats:${id}`)
+            if (chat || fallback) {
+                items.push({
+                    key: `chat:${id}`,
+                    type: 'chats',
+                    id: String(id),
+                    label: chat?.name || fallback?.label || 'Chat',
+                    icon: fallback?.icon || 'solar:chat-round-dots-bold-duotone',
+                    color: fallback?.color || '#f97316',
+                    meta: fallback?.meta || 'Chat',
+                })
+            }
         })
-        selection.files.forEach(file => {
+        safeSelection.files.forEach(file => {
             const key = fileKey(file)
-            const fileDetails = files.find(item => fileKey(item) === key) || file
+            const fallback = fallbackByKey.get(key) || fallbackByKey.get(`file:${file.id}`) || fallbackByKey.get(`files:${file.id}`)
+            const fileDetails = files.find(item => fileKey(item) === key) || fallback || file
             const previewType = getFilePreviewType(fileDetails)
             items.push({
                 key,
                 type: 'files',
                 id: String(file.id),
-                label: fileDetails.name || file.name,
-                icon: previewType === 'image' ? 'solar:gallery-bold-duotone' : (file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone'),
-                color: file.source === 'drive' ? '#ec4899' : '#0f766e',
+                source: file.source,
+                label: fileDetails.name || fileDetails.label || file.name,
+                icon: fallback?.icon || (previewType === 'image' ? 'solar:gallery-bold-duotone' : (file.source === 'drive' ? 'solar:cloud-storage-bold-duotone' : 'solar:file-text-bold-duotone')),
+                color: fallback?.color || (file.source === 'drive' ? '#ec4899' : '#0f766e'),
                 url: fileDetails.url || '',
                 mimeType: fileDetails.mimeType || '',
-                previewType,
+                previewType: previewType || fallback?.previewType || '',
+                meta: fallback?.meta || (file.source === 'drive' ? 'Drive' : 'Document'),
             })
         })
-        selection.uploads.forEach(upload => {
-            items.push({ key: upload.id, type: 'uploads', id: upload.id, label: upload.name, icon: 'solar:file-check-bold-duotone', color: '#0f766e' })
+        safeSelection.uploads.forEach(upload => {
+            const fallback = fallbackByKey.get(upload.id) || fallbackByKey.get(`upload:${upload.id}`) || fallbackByKey.get(`uploads:${upload.id}`)
+            items.push({
+                key: upload.id,
+                type: 'uploads',
+                id: upload.id,
+                label: upload.name || fallback?.label || 'Document OCR',
+                icon: fallback?.icon || 'solar:file-check-bold-duotone',
+                color: fallback?.color || '#0f766e',
+                meta: fallback?.meta || 'OCR',
+            })
         })
         return items
-    }, [chats, fields, files, notes, selection])
+    }, [chats, fields, files, notes])
 
-    const removeContextItem = useCallback((item) => {
-        setSelection(prev => {
-            if (item.type === 'files') {
-                return { ...prev, files: prev.files.filter(file => fileKey(file) !== item.key) }
-            }
-            if (item.type === 'uploads') {
-                return { ...prev, uploads: prev.uploads.filter(upload => upload.id !== item.id) }
-            }
-            return { ...prev, [item.type]: (prev[item.type] || []).filter(id => String(id) !== String(item.id)) }
-        })
-    }, [])
+    const contextItemsForMessage = useCallback((message = {}) => {
+        const fallbackItems = Array.isArray(message.contextItems) ? message.contextItems : []
+        const contextSelection = message.contextSelections || {}
+        const hasSelection = ['fields', 'notes', 'chats', 'files', 'uploads'].some(key => Array.isArray(contextSelection[key]) && contextSelection[key].length > 0)
+        return hasSelection ? buildContextItems(contextSelection, fallbackItems) : fallbackItems
+    }, [buildContextItems])
 
     const openContextItem = useCallback((item) => {
         if (item.type !== 'files' || !item.url || !item.previewType) return
@@ -582,13 +705,54 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
         })
     }, [])
 
-    const handleBadgeKeyDown = useCallback((event, item) => {
-        if (!item.url || !item.previewType) return
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            openContextItem(item)
+    const applyContextToConversation = useCallback(async () => {
+        if (applyingContext) return
+
+        if (selectedCount === 0) {
+            if (activeConversation) {
+                try {
+                    const data = await apiFetch(`/conversations/${activeConversation._id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ contextSelections: emptySelection() }),
+                    })
+                    setActiveConversation(data.conversation)
+                    updateConversationList(data.conversation)
+                } catch (err) {
+                    setError(err.message || 'Contexte impossible à vider')
+                    return
+                }
+            }
+            setContextOpen(false)
+            return
         }
-    }, [openContextItem])
+
+        setApplyingContext(true)
+        setError('')
+        try {
+            let conversation = activeConversation
+            if (!conversation) {
+                conversation = await createConversation(selection)
+                if (!conversation) return
+            }
+
+            const data = await apiFetch(`/conversations/${conversation._id}/context`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    contextSelections: buildPayloadSelection(selection),
+                }),
+            })
+            setActiveConversation(data.conversation)
+            setMessages(data.conversation.messages || [])
+            updateConversationList(data.conversation)
+            setLastContextStats(null)
+            setContextOpen(false)
+            scrollToBottom()
+        } catch (err) {
+            setError(err.message || 'Contexte impossible à envoyer')
+        } finally {
+            setApplyingContext(false)
+        }
+    }, [activeConversation, apiFetch, applyingContext, createConversation, scrollToBottom, selectedCount, selection, updateConversationList])
 
     const contextTabs = useMemo(() => ([
         {
@@ -869,65 +1033,57 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                                 <div>{activeConversation.title || 'Conversation'}</div>
                             </div>
                         )}
-                        {messages.map((message, index) => (
-                            <div key={message._id || `${message.role}_${index}`} className={`rai-message ${message.role === 'user' ? 'mine' : 'assistant'}`}>
-                                <div className="rai-msg-avatar">
-                                    {message.role === 'user' ? 'M' : <Icon icon="solar:magic-stick-3-bold-duotone" width={15} />}
-                                </div>
-                                <div>
-                                    <div className="rai-bubble">
-                                        {message.loading ? (
-                                            <AgentStatus phrase={activeAgentPhrase} />
-                                        ) : (
-                                            renderMessageContent(message.content)
-                                        )}
+                        {messages.map((message, index) => {
+                            const isContextMessage = message.messageType === 'context'
+                            const contextItems = isContextMessage ? contextItemsForMessage(message) : []
+
+                            if (isContextMessage) {
+                                return (
+                                    <div key={message._id || `${message.role}_${index}`} className="rai-message context">
+                                        <div className="rai-context-event">
+                                            <div className="rai-context-event-head">
+                                                <span className="rai-context-event-icon">
+                                                    <Icon icon="solar:layers-minimalistic-bold-duotone" width={15} />
+                                                </span>
+                                                <span>Contexte ajouté</span>
+                                                <strong>{contextItems.length} source{contextItems.length > 1 ? 's' : ''}</strong>
+                                            </div>
+                                            <ContextCardGrid items={contextItems} onOpen={openContextItem} />
+                                            <div className="rai-context-event-time">{formatTime(message.createdAt)}</div>
+                                        </div>
                                     </div>
-                                    <div className="rai-msg-time">
-                                        {formatTime(message.createdAt)}
-                                        {message.contextStats?.included && message.role === 'user' && (
-                                            <span> · {message.contextStats.estimatedTokens || 0} tokens ctx</span>
-                                        )}
+                                )
+                            }
+
+                            return (
+                                <div key={message._id || `${message.role}_${index}`} className={`rai-message ${message.role === 'user' ? 'mine' : 'assistant'}`}>
+                                    <div className="rai-msg-avatar">
+                                        {message.role === 'user' ? 'M' : <Icon icon="solar:magic-stick-3-bold-duotone" width={15} />}
+                                    </div>
+                                    <div>
+                                        <div className="rai-bubble">
+                                            {message.loading ? (
+                                                <AgentStatus phrase={activeAgentPhrase} />
+                                            ) : (
+                                                renderMessageContent(message.content)
+                                            )}
+                                        </div>
+                                        <div className="rai-msg-time">
+                                            {formatTime(message.createdAt)}
+                                            {message.contextStats?.included && message.role === 'user' && (
+                                                <span> · {message.contextStats.estimatedTokens || 0} tokens ctx</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
 
                     <div className="rai-composer-wrap">
                         {uploading && (
                             <div className="rai-inline-status">
                                 <AgentStatus phrase="Lecture du document" />
-                            </div>
-                        )}
-                        {selectedContextItems.length > 0 && (
-                            <div className="rai-selected-context" aria-label="Contexte sélectionné">
-                                {selectedContextItems.map(item => (
-                                    <span
-                                        key={item.key}
-                                        className={`rai-context-badge ${item.url && item.previewType ? 'is-clickable' : ''}`}
-                                        title={item.url && item.previewType ? `Ouvrir ${item.label}` : item.label}
-                                        role={item.url && item.previewType ? 'button' : undefined}
-                                        tabIndex={item.url && item.previewType ? 0 : undefined}
-                                        onClick={() => openContextItem(item)}
-                                        onKeyDown={event => handleBadgeKeyDown(event, item)}
-                                    >
-                                        <Icon icon={item.icon} width={13} color={item.color} />
-                                        <span className="rai-badge-text">{item.label}</span>
-                                        <button
-                                            type="button"
-                                            className="rai-badge-remove"
-                                            title="Retirer du contexte"
-                                            aria-label={`Retirer ${item.label}`}
-                                            onKeyDown={event => event.stopPropagation()}
-                                            onClick={event => {
-                                                event.stopPropagation()
-                                                removeContextItem(item)
-                                            }}
-                                        >
-                                            <Icon icon="solar:close-circle-bold" width={12} />
-                                        </button>
-                                    </span>
-                                ))}
                             </div>
                         )}
                         <div className="rai-composer">
@@ -978,8 +1134,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle }) {
                         </div>
                         <div className="rai-modal-footer">
                             <span>{selectedCount} source{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}</span>
-                            <button type="button" className="rai-modal-submit" onClick={() => setContextOpen(false)}>
-                                Appliquer
+                            <button type="button" className="rai-modal-submit" onClick={applyContextToConversation} disabled={applyingContext || creating}>
+                                {applyingContext ? 'Envoi...' : selectedCount > 0 ? 'Envoyer le contexte' : 'Appliquer'}
                             </button>
                         </div>
                     </div>
@@ -1041,7 +1197,7 @@ const styles = `
 .rai-icon-btn,.rai-send{border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;font-family:inherit;}
 .rai-icon-btn{width:30px;height:30px;border-radius:8px;background:#f1f5f9;color:#94a3b8;margin-left:auto;}
 .rai-icon-btn:hover{background:#e2e8f0;color:var(--rai-text);}
-.rai-icon-btn:disabled,.rai-send:disabled,.rai-clear-btn:disabled,.rai-link-btn:disabled,.rai-upload-btn:disabled,.rai-attach-context:disabled,.rai-create-btn:disabled{opacity:.45;cursor:default;box-shadow:none;transform:none;}
+.rai-icon-btn:disabled,.rai-send:disabled,.rai-clear-btn:disabled,.rai-link-btn:disabled,.rai-upload-btn:disabled,.rai-attach-context:disabled,.rai-create-btn:disabled,.rai-modal-submit:disabled{opacity:.45;cursor:default;box-shadow:none;transform:none;}
 .rai-conv-list{flex:1;overflow-y:auto;padding:8px;min-height:0;}
 .rai-conv-list::-webkit-scrollbar,.rai-messages::-webkit-scrollbar,.rai-context-scroll::-webkit-scrollbar{width:4px;}
 .rai-conv-list::-webkit-scrollbar-thumb,.rai-messages::-webkit-scrollbar-thumb,.rai-context-scroll::-webkit-scrollbar-thumb{background:var(--rai-border);border-radius:4px;}
@@ -1068,6 +1224,20 @@ const styles = `
 .rai-message.mine .rai-bubble{background:linear-gradient(135deg,var(--rai-ai),#7c3aed);color:#fff;border:none;}
 .rai-msg-time{font-size:10px;color:#bfc9d4;margin-top:3px;padding:0 4px;}
 .rai-message.mine .rai-msg-time{text-align:right;}
+.rai-message.context{max-width:720px;width:100%;align-self:center;display:block;}
+.rai-context-event{border:1px solid #e5e7eb;background:rgba(255,255,255,.9);box-shadow:0 8px 28px rgba(15,23,42,.06);border-radius:14px;padding:10px 12px;}
+.rai-context-event-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#334155;margin-bottom:9px;}
+.rai-context-event-head strong{margin-left:auto;font-size:10px;font-weight:700;color:var(--rai-ai);background:#eef2ff;border-radius:999px;padding:3px 8px;}
+.rai-context-event-icon{width:26px;height:26px;border-radius:8px;background:var(--rai-ai-soft);color:var(--rai-ai);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-context-event-time{font-size:10px;color:#bfc9d4;margin-top:7px;padding-left:2px;}
+.rai-context-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px;}
+.rai-context-card{min-width:0;border:1px solid #e8edf5;background:#f8fafc;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:9px;text-align:left;color:inherit;font-family:inherit;}
+.rai-context-card.is-clickable{cursor:pointer;transition:all .15s;}
+.rai-context-card.is-clickable:hover{border-color:#c7d2fe;background:#eef2ff;transform:translateY(-1px);}
+.rai-context-card-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--rai-card-color);background:color-mix(in srgb,var(--rai-card-color) 10%,#fff);}
+.rai-context-card-body{min-width:0;display:flex;flex-direction:column;gap:2px;}
+.rai-context-card-title{font-size:12px;font-weight:700;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-context-card-meta{font-size:10px;font-weight:600;color:#94a3b8;line-height:1.2;}
 .rai-agent-status{position:relative;min-width:220px;height:36px;display:inline-flex;align-items:center;gap:10px;overflow:hidden;border:1px solid rgba(79,70,229,.16);border-radius:999px;background:linear-gradient(135deg,#fff,#f8faff);box-shadow:0 8px 24px rgba(79,70,229,.08);padding:0 14px;color:var(--rai-text);}
 .rai-agent-status::after{content:"";position:absolute;inset:-1px;background:linear-gradient(110deg,transparent 0%,rgba(255,255,255,.78) 45%,transparent 68%);transform:translateX(-100%);animation:raiSheen 2.2s ease-in-out infinite;pointer-events:none;}
 .rai-agent-loader{position:relative;z-index:1;display:inline-flex;align-items:center;gap:3px;flex-shrink:0;}

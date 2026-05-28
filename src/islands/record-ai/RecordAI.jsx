@@ -115,6 +115,20 @@ function inferRelevantFilesFromText(text = '', files = [], max = 3) {
         .map(item => item.file)
 }
 
+function recordAiModeKey(recordId) {
+    return `record-ai:${recordId || 'record'}:mode`
+}
+
+function initialRecordAiMode(recordId) {
+    if (typeof window === 'undefined') return 'chat'
+    try {
+        const stored = window.localStorage.getItem(recordAiModeKey(recordId))
+        return stored === 'agent' ? 'agent' : 'chat'
+    } catch (_) {
+        return 'chat'
+    }
+}
+
 function parseLooseAgentJson(value, depth = 0) {
     if (depth > 2 || value == null) return null
     if (typeof value === 'object') return value
@@ -157,6 +171,19 @@ function agentReadableText(value, fallback = '') {
         if (noteText) return String(noteText).trim()
     }
     return text || fallback
+}
+
+function looksLikeRawAgentJson(value = '') {
+    const text = String(value || '').trim()
+    return (text.startsWith('{') || /^```(?:json)?\s*\{/i.test(text)) && /"(summary|plan|actions)"\s*:/.test(text)
+}
+
+function safeAgentSummary(value, fallback = '') {
+    const text = agentReadableText(value, fallback)
+    if (looksLikeRawAgentJson(text)) {
+        return fallback || "La réponse de l'agent a été interrompue avant la fin. Relance la demande pour générer un plan propre."
+    }
+    return text
 }
 
 function fileExtension(name) {
@@ -676,6 +703,10 @@ function AgentActionCard({ action = {} }) {
     const failed = action.status === 'failed'
     const previewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
     const genericPreviewTools = ['update_note', 'create_doc', 'update_doc', 'generate_doc', 'use_template', 'update_task', 'create_event', 'update_event']
+    const taskMeta = [
+        action.preview?.meta,
+        action.preview?.dueDate ? `Échéance: ${action.preview.dueDate}` : ''
+    ].filter(Boolean).join(' · ')
 
     return (
         <div className={`rai-agent-action ${action.status || 'proposed'}`} style={{ '--agent-action-color': color }}>
@@ -704,7 +735,7 @@ function AgentActionCard({ action = {} }) {
             {action.tool === 'create_task' && action.preview && (
                 <div className="rai-agent-preview compact">
                     <strong>{action.preview.title || action.input?.title || 'Tâche IA'}</strong>
-                    {action.preview.dueDate && <p>Échéance: {action.preview.dueDate}</p>}
+                    {taskMeta && <p>{taskMeta}</p>}
                 </div>
             )}
 
@@ -766,7 +797,7 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                         <AgentStatus phrase={draftPhrase} />
                     ) : (
                         <>
-                            {run.summary && <p className="rai-agent-summary">{agentReadableText(run.summary)}</p>}
+                            {run.summary && <p className="rai-agent-summary">{safeAgentSummary(run.summary)}</p>}
 
                             {sourceCount > 0 && (
                                 <details className="rai-agent-sources">
@@ -895,7 +926,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [lastContextStats, setLastContextStats] = useState(null)
     const [agentPhrases, setAgentPhrases] = useState(buildAgentPhrases)
     const [agentPhraseIndex, setAgentPhraseIndex] = useState(0)
-    const [activeMode, setActiveMode] = useState('chat')
+    const [activeMode, setActiveMode] = useState(() => initialRecordAiMode(recordId))
     const [agentRuns, setAgentRuns] = useState([])
     const [agentRunning, setAgentRunning] = useState(false)
     const [agentBusyRunId, setAgentBusyRunId] = useState('')
@@ -1030,6 +1061,12 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     useEffect(() => {
         loadBootstrap()
     }, [loadBootstrap])
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(recordAiModeKey(recordId), activeMode)
+        } catch (_) {}
+    }, [activeMode, recordId])
 
     useEffect(() => {
         scrollToBottom()

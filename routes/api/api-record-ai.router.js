@@ -28,6 +28,8 @@ const MAX_CHAT_CHARS = 9000;
 const MAX_FILE_CHARS = 16000;
 const MAX_UPLOAD_CHARS = 12000;
 const RECORD_AI_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_TIMEOUT_MS, 120000, 30000, 300000);
+const RECORD_AI_OUTPUT_TOKENS = boundedInt(process.env.RECORD_AI_OUTPUT_TOKENS, 3500, 500, 12000);
+const RECORD_AI_AGENT_OUTPUT_TOKENS = boundedInt(process.env.RECORD_AI_AGENT_OUTPUT_TOKENS, 6500, 1500, 12000);
 const RECORD_AI_OCR_MAX_PAGES = boundedInt(process.env.RECORD_AI_OCR_MAX_PAGES || process.env.OCR_MAX_PAGES, 20, 1, 100);
 const RECORD_AI_RAG_ENABLED = process.env.RECORD_AI_RAG_ENABLED !== 'false';
 const RECORD_AI_RAG_MAX_PAGES = boundedInt(process.env.RECORD_AI_RAG_MAX_PAGES, 200, 1, 250);
@@ -2638,11 +2640,12 @@ function extractLocalChatText(data = {}) {
     return '';
 }
 
-async function callLocalRecordAI({ instructions, input, historyMessages = [], runtime }) {
+async function callLocalRecordAI({ instructions, input, historyMessages = [], runtime, maxOutputTokens = RECORD_AI_OUTPUT_TOKENS }) {
     if (!RECORD_AI_LOCAL_RESPONSE_URL) throw new Error('Moteur réponse local non configuré');
 
     const messages = buildLocalChatMessages({ instructions, input, historyMessages });
     const timeout = RECORD_AI_LOCAL_RESPONSE_TIMEOUT_MS;
+    const outputTokens = boundedInt(maxOutputTokens, RECORD_AI_OUTPUT_TOKENS, 500, 12000);
     let response;
 
     try {
@@ -2651,7 +2654,7 @@ async function callLocalRecordAI({ instructions, input, historyMessages = [], ru
                 model: runtime.model,
                 messages,
                 temperature: 0.35,
-                max_tokens: 3500,
+                max_tokens: outputTokens,
                 stream: false
             }, { timeout });
         } else {
@@ -2661,7 +2664,7 @@ async function callLocalRecordAI({ instructions, input, historyMessages = [], ru
                 stream: false,
                 options: {
                     temperature: 0.35,
-                    num_predict: 3500
+                    num_predict: outputTokens
                 }
             }, { timeout });
         }
@@ -2679,15 +2682,17 @@ async function callLocalRecordAI({ instructions, input, historyMessages = [], ru
     };
 }
 
-async function callRecordAI(req, { conversationId, recordId, instructions, input, previousResponseId, engineSettings = {}, historyMessages = [] }) {
+async function callRecordAI(req, { conversationId, recordId, instructions, input, previousResponseId, engineSettings = {}, historyMessages = [], maxOutputTokens = RECORD_AI_OUTPUT_TOKENS }) {
     const responseRuntime = resolveResponseRuntime(engineSettings);
+    const outputTokens = boundedInt(maxOutputTokens, RECORD_AI_OUTPUT_TOKENS, 500, 12000);
 
     if (responseRuntime.engine === 'local') {
         const result = await callLocalRecordAI({
             instructions,
             input,
             historyMessages,
-            runtime: responseRuntime
+            runtime: responseRuntime,
+            maxOutputTokens: outputTokens
         });
         return { ...result, runtime: responseRuntime };
     }
@@ -2703,7 +2708,7 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
     const inputPayload = {
         model: responseRuntime.model || RECORD_AI_MODEL,
         input,
-        max_output_tokens: 3500,
+        max_output_tokens: outputTokens,
         store: true,
         metadata: {
             feature: 'record-ai-app',
@@ -3984,6 +3989,7 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             const title = agentSafeString(input.title || raw.title || '', 180);
             if (!title) return;
             const dueDate = input.dueDate || input.date || null;
+            const listTitle = agentSafeString(input.listTitle || input.listName || input.taskList || input.project || '', 90);
             actions.push({
                 id,
                 tool,
@@ -3994,9 +4000,10 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     title,
                     description: agentSafeString(input.description || '', 4000),
                     dueDate: dueDate ? agentSafeString(dueDate, 80) : '',
-                    priority: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority) ? input.priority : 'Moyenne'
+                    priority: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority) ? input.priority : 'Moyenne',
+                    listTitle
                 },
-                preview: { title, dueDate: dueDate || '' },
+                preview: { title, dueDate: dueDate || '', meta: listTitle ? `Liste: ${listTitle}` : '' },
                 diff: null
             });
             return;
@@ -4556,7 +4563,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append.",
         "- generate_doc: { templateId, variables, outputName? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
-        "- create_task: { title, description, dueDate, priority }. Utilise-le pour les rappels utiles comme une date limite.",
+        "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
         "- create_event: { title, date, endDate?, duration?, type?, lieu?, notes?, status? }. Crée un événement Agenda lié à la fiche.",
         "- update_event: { eventId, fields }. fields peut contenir title, date, endDate, duration, type, lieu, notes, status. Utilise eventId depuis le catalogue.",
@@ -4564,8 +4571,11 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour modifier une note, un document, un événement ou générer depuis un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
+        "Réponse compacte obligatoire: summary <= 400 caractères, plan <= 4 étapes, actions <= 10.",
+        "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
+        "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"..."}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"..."}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -4614,8 +4624,85 @@ function buildAgentInput(goal, selectedContext, contextMeta = {}) {
     ].join('\n');
 }
 
+function agentLooksRawJsonPayload(value = '') {
+    const text = String(value || '').trim();
+    return (text.startsWith('{') || /^```(?:json)?\s*\{/i.test(text)) && /"(summary|plan|actions)"\s*:/.test(text);
+}
+
+function agentParsedPayloadJson(value = '') {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const parsed = agentTryParseJsonCandidate(raw) || agentTryParseJsonCandidate(agentBalancedJsonCandidate(raw));
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+}
+
+function agentRunHasRawFallbackNote(run = {}) {
+    const actions = Array.isArray(run.proposedActions) ? run.proposedActions : [];
+    if (actions.length !== 1 || actions[0]?.tool !== 'create_note') return false;
+    const content = actions[0]?.input?.contentMarkdown || actions[0]?.input?.content || actions[0]?.preview?.excerpt || '';
+    return agentLooksRawJsonPayload(content);
+}
+
+function agentSanitizeRunPayload(run = {}) {
+    const plain = { ...(run || {}) };
+    const parsedSummary = agentParsedPayloadJson(plain.summary);
+    if (parsedSummary) {
+        if (parsedSummary.summary) {
+            plain.summary = agentSafeString(parsedSummary.summary, 3000);
+        }
+        if ((!plain.plan || plain.plan?.title === 'Plan agent') && (parsedSummary.plan || parsedSummary.steps)) {
+            plain.plan = agentNormalizePlan(parsedSummary);
+        }
+    }
+
+    const hasRawSummary = !parsedSummary && agentLooksRawJsonPayload(plain.summary);
+    if (hasRawSummary || agentRunHasRawFallbackNote(plain)) {
+        plain.summary = "La réponse de l'agent a été interrompue avant la fin. Relance la demande: la sortie agent est maintenant plus compacte.";
+        plain.proposedActions = [];
+        plain.status = 'error';
+        plain.error = 'Réponse agent JSON incomplète, aucune action appliquable.';
+        plain.plan = {
+            title: 'Génération interrompue',
+            steps: [
+                {
+                    id: 'interrupted',
+                    type: 'error',
+                    title: 'Relancer la demande',
+                    detail: 'Le modèle a coupé sa réponse avant de fermer le JSON.',
+                    status: 'failed'
+                }
+            ]
+        };
+    }
+
+    if (plain.status === 'drafting') {
+        const referenceDate = new Date(plain.updatedAt || plain.createdAt || Date.now()).getTime();
+        if (Number.isFinite(referenceDate) && Date.now() - referenceDate > RECORD_AI_TIMEOUT_MS + 30000) {
+            plain.status = 'error';
+            plain.summary = 'La génération précédente a expiré avant de produire un plan.';
+            plain.proposedActions = [];
+            plain.error = 'Timeout agent.';
+            plain.plan = {
+                title: 'Génération expirée',
+                steps: [
+                    {
+                        id: 'timeout',
+                        type: 'error',
+                        title: 'Relancer la demande',
+                        detail: 'Aucune action n’a été créée pour ce run.',
+                        status: 'failed'
+                    }
+                ]
+            };
+        }
+    }
+
+    return plain;
+}
+
 function agentRunPayload(req, run) {
-    const plain = run && typeof run.toObject === 'function' ? run.toObject() : { ...(run || {}) };
+    const source = run && typeof run.toObject === 'function' ? run.toObject() : { ...(run || {}) };
+    const plain = agentSanitizeRunPayload(source);
     if (!isRecordAiDebugAdmin(req)) {
         delete plain.aiRaw;
         delete plain.debugPayload;
@@ -4786,14 +4873,15 @@ async function requireAgentRun(req, recordId, runId) {
     return { record, entity, run };
 }
 
-async function agentEnsureDefaultTaskList(req, recordId) {
-    let list = await GlobalTaskList.findOne({ recordId, label: 'Actions IA' });
+async function agentEnsureTaskList(req, recordId, requestedLabel = '') {
+    const label = agentSafeString(requestedLabel || 'Actions IA', 90) || 'Actions IA';
+    let list = await GlobalTaskList.findOne({ recordId, label });
     if (list) return { list, created: false };
 
     const maxOrder = await GlobalTaskList.findOne({ recordId }).sort({ order: -1 }).lean();
     list = await GlobalTaskList.create({
         recordId,
-        label: 'Actions IA',
+        label,
         color: '#4f46e5',
         icon: 'solar:magic-stick-3-bold-duotone',
         order: (maxOrder?.order || 0) + 1
@@ -5292,7 +5380,7 @@ async function applyAgentAction(req, record, entity, action) {
         const canEdit = await canEditRecordModule(req, record._id, 'tasks');
         if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
 
-        const { list, created } = await agentEnsureDefaultTaskList(req, record._id);
+        const { list, created } = await agentEnsureTaskList(req, record._id, action.input?.listTitle);
         const priorityColors = {
             'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
         };
@@ -5803,7 +5891,8 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             }),
             previousResponseId: null,
             engineSettings,
-            historyMessages: []
+            historyMessages: [],
+            maxOutputTokens: RECORD_AI_AGENT_OUTPUT_TOKENS
         });
 
         let parsed;

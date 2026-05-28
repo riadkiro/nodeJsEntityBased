@@ -312,6 +312,21 @@
         0%, 100% { opacity: 0.6; transform: scale(1); }
         50% { opacity: 1; transform: scale(1.05); }
       }
+
+      /* The app theme adds dash markers and large padding to every .sub-menu link.
+         The dynamic hierarchy already renders its own icons, so keep those rows compact. */
+      .sidebar ul.hierarchy-sub-menu li a,
+      .sidebar ul.hierarchy-sub-menu li button {
+        display: block !important;
+        width: auto !important;
+        padding: 0.25rem 0 !important;
+      }
+      .sidebar ul.hierarchy-sub-menu li a::before,
+      .sidebar ul.hierarchy-sub-menu li button::before {
+        content: none !important;
+        display: none !important;
+        margin: 0 !important;
+      }
     </style>
     <div
       x-data="{
@@ -789,7 +804,7 @@
 
                   <!-- Nested children for Folders -->
                   <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)"
-                    x-collapse class="sub-menu text-gray-500 dark:text-gray-400 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
+                    x-collapse class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                     <template x-for="subChild in child.children" :key="subChild.id">
                       <li x-data="{ hovered: false }" class="relative block" :data-id="subChild.id" :data-type="subChild.type">
                         <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
@@ -867,7 +882,7 @@
                 </div>
 
                 <ul x-cloak x-show="activeDropdown.includes(item.id)" x-collapse
-                  class="sub-menu text-gray-500 dark:text-gray-400 mx-4 mb-2">
+                  class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 mx-2 mb-2">
                   <template x-for="child in item.children" :key="child.id">
                     <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
@@ -908,7 +923,7 @@
 
                       <!-- Nested children for Folders/Environments -->
                       <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)"
-                        x-collapse class="sub-menu text-gray-500 dark:text-gray-400 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
+                        x-collapse class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
@@ -948,7 +963,7 @@
 
                             <ul x-show="['folder', 'environment'].includes(subChild.type) && isExpanded(subChild.id)"
                               x-collapse
-                              class="sub-menu text-gray-500 dark:text-gray-400 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
+                              class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                               <template x-for="subSubChild in subChild.children" :key="subSubChild.id">
                                 <li x-data="{ hovered: false }"
                                   class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub3"

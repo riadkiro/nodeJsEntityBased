@@ -284,6 +284,54 @@ function ContextCardGrid({ items = [], onOpen }) {
     )
 }
 
+function ContextBadgeList({ items = [], onOpen, onRemove, className = 'rai-selected-context' }) {
+    if (!items.length) return null
+
+    return (
+        <div className={className}>
+            {items.map(item => {
+                const clickable = item.type === 'files' && item.url && item.previewType
+                const open = () => {
+                    if (clickable && onOpen) onOpen(item)
+                }
+                return (
+                    <div
+                        key={item.key || `${item.type}:${item.id}`}
+                        className={`rai-context-badge ${clickable ? 'is-clickable' : ''}`}
+                        role={clickable ? 'button' : undefined}
+                        tabIndex={clickable ? 0 : undefined}
+                        onClick={open}
+                        onKeyDown={event => {
+                            if (!clickable) return
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                open()
+                            }
+                        }}
+                        title={clickable ? `Ouvrir ${item.label}` : item.label}
+                    >
+                        <Icon icon={item.icon || 'solar:document-text-bold-duotone'} width={13} color={item.color || '#4f46e5'} />
+                        <span className="rai-badge-text">{item.label}</span>
+                        {onRemove && (
+                            <button
+                                type="button"
+                                className="rai-badge-remove"
+                                onClick={event => {
+                                    event.stopPropagation()
+                                    onRemove(item)
+                                }}
+                                title="Retirer"
+                            >
+                                <Icon icon="solar:close-circle-bold" width={13} />
+                            </button>
+                        )}
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
 function contextTypeLabel(type) {
     if (type === 'fields') return 'Fiche'
     if (type === 'notes') return 'Note'
@@ -435,7 +483,6 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [sending, setSending] = useState(false)
     const [creating, setCreating] = useState(false)
     const [uploading, setUploading] = useState(false)
-    const [applyingContext, setApplyingContext] = useState(false)
     const [conversationSearch, setConversationSearch] = useState('')
     const [contextSearch, setContextSearch] = useState('')
     const [contextOpen, setContextOpen] = useState(false)
@@ -512,7 +559,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         const conversation = data.conversation
         setActiveConversation(conversation)
         setMessages(conversation.messages || [])
-        setSelection(cleanConversationSelection(conversation.contextSelections || {}))
+        setSelection(emptySelection())
         setLastContextStats(null)
         scrollToBottom()
     }, [apiFetch, scrollToBottom])
@@ -678,13 +725,20 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         const text = input.trim()
         if (!text || sending) return
 
+        const payloadSelection = buildPayloadSelection(selection)
         let conversation = activeConversation
         if (!conversation) {
-            conversation = await createConversation(selection)
+            conversation = await createConversation(emptySelection())
             if (!conversation) return
         }
 
-        const tempUser = { _id: `u_${Date.now()}`, role: 'user', content: text, createdAt: new Date().toISOString() }
+        const tempUser = {
+            _id: `u_${Date.now()}`,
+            role: 'user',
+            content: text,
+            contextSelections: payloadSelection,
+            createdAt: new Date().toISOString()
+        }
         const tempAssistant = { _id: `a_${Date.now()}`, role: 'assistant', content: '', loading: true, createdAt: new Date().toISOString() }
         setMessages(prev => [...prev, tempUser, tempAssistant])
         setInput('')
@@ -693,7 +747,6 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         startAgentStatus(selection)
 
         try {
-            const payloadSelection = buildPayloadSelection(selection)
             const data = await apiFetch(`/conversations/${conversation._id}/messages`, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -703,7 +756,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             })
             setActiveConversation(data.conversation)
             setMessages(data.conversation.messages || [])
-            setLastContextStats(data.contextStats || null)
+            setLastContextStats(data.contextStats?.included ? data.contextStats : null)
+            setSelection(emptySelection())
             updateConversationList(data.conversation)
         } catch (err) {
             setMessages(prev => prev.filter(item => item._id !== tempAssistant._id))
@@ -749,6 +803,31 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
 
     const removeUpload = useCallback((id) => {
         setSelection(prev => ({ ...prev, uploads: prev.uploads.filter(upload => upload.id !== id) }))
+    }, [])
+
+    const removeContextItem = useCallback((item = {}) => {
+        setSelection(prev => {
+            if (item.type === 'fields') {
+                return { ...prev, fields: prev.fields.filter(id => id !== item.id) }
+            }
+            if (item.type === 'notes') {
+                return { ...prev, notes: prev.notes.filter(id => String(id) !== String(item.id)) }
+            }
+            if (item.type === 'chats') {
+                return { ...prev, chats: prev.chats.filter(id => String(id) !== String(item.id)) }
+            }
+            if (item.type === 'files') {
+                return {
+                    ...prev,
+                    files: prev.files.filter(file => fileKey(file) !== `${item.source}:${item.id}`)
+                }
+            }
+            if (item.type === 'uploads') {
+                return { ...prev, uploads: prev.uploads.filter(upload => upload.id !== item.id) }
+            }
+            return prev
+        })
+        setLastContextStats(null)
     }, [])
 
     const buildContextItems = useCallback((contextSelection = {}, fallbackItems = []) => {
@@ -841,6 +920,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         return items
     }, [chats, fields, files, notes])
 
+    const selectedContextItems = useMemo(() => buildContextItems(selection), [buildContextItems, selection])
+
     const contextItemsForMessage = useCallback((message = {}) => {
         const fallbackItems = Array.isArray(message.contextItems) ? message.contextItems : []
         const contextSelection = message.contextSelections || {}
@@ -899,54 +980,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         }
     }, [apiFetch, debugAdmin, engineDraft, engineSaving])
 
-    const applyContextToConversation = useCallback(async () => {
-        if (applyingContext) return
-
-        if (selectedCount === 0) {
-            if (activeConversation) {
-                try {
-                    const data = await apiFetch(`/conversations/${activeConversation._id}`, {
-                        method: 'PATCH',
-                        body: JSON.stringify({ contextSelections: emptySelection() }),
-                    })
-                    setActiveConversation(data.conversation)
-                    updateConversationList(data.conversation)
-                } catch (err) {
-                    setError(err.message || 'Contexte impossible à vider')
-                    return
-                }
-            }
-            setContextOpen(false)
-            return
-        }
-
-        setApplyingContext(true)
-        setError('')
-        try {
-            let conversation = activeConversation
-            if (!conversation) {
-                conversation = await createConversation(selection)
-                if (!conversation) return
-            }
-
-            const data = await apiFetch(`/conversations/${conversation._id}/context`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    contextSelections: buildPayloadSelection(selection),
-                }),
-            })
-            setActiveConversation(data.conversation)
-            setMessages(data.conversation.messages || [])
-            updateConversationList(data.conversation)
-            setLastContextStats(null)
-            setContextOpen(false)
-            scrollToBottom()
-        } catch (err) {
-            setError(err.message || 'Contexte impossible à envoyer')
-        } finally {
-            setApplyingContext(false)
-        }
-    }, [activeConversation, apiFetch, applyingContext, createConversation, scrollToBottom, selectedCount, selection, updateConversationList])
+    const closeContextPicker = useCallback(() => {
+        setContextOpen(false)
+    }, [])
 
     const contextTabs = useMemo(() => ([
         {
@@ -1256,6 +1292,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                         {messages.map((message, index) => {
                             const isContextMessage = message.messageType === 'context'
                             const contextItems = isContextMessage ? contextItemsForMessage(message) : []
+                            const attachedContextItems = !isContextMessage && message.role === 'user'
+                                ? contextItemsForMessage(message)
+                                : []
 
                             if (isContextMessage) {
                                 return (
@@ -1285,7 +1324,10 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                             {message.loading ? (
                                                 <AgentStatus phrase={activeAgentPhrase} />
                                             ) : (
-                                                renderMessageContent(message.content)
+                                                <>
+                                                    <ContextBadgeList items={attachedContextItems} onOpen={openContextItem} className="rai-message-badges" />
+                                                    {renderMessageContent(message.content)}
+                                                </>
                                             )}
                                         </div>
                                         <div className="rai-msg-time">
@@ -1301,6 +1343,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                     </div>
 
                     <div className="rai-composer-wrap">
+                        <ContextBadgeList items={selectedContextItems} onOpen={openContextItem} onRemove={removeContextItem} />
                         {uploading && (
                             <div className="rai-inline-status">
                                 <AgentStatus phrase="Lecture du document" />
@@ -1354,8 +1397,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                         </div>
                         <div className="rai-modal-footer">
                             <span>{selectedCount} source{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}</span>
-                            <button type="button" className="rai-modal-submit" onClick={applyContextToConversation} disabled={applyingContext || creating}>
-                                {applyingContext ? 'Envoi...' : selectedCount > 0 ? 'Envoyer le contexte' : 'Appliquer'}
+                            <button type="button" className="rai-modal-submit" onClick={closeContextPicker}>
+                                Valider
                             </button>
                         </div>
                     </div>
@@ -1636,7 +1679,8 @@ const styles = `
 .rai-md-list li{margin:2px 0;}
 .rai-composer-wrap{border-top:1px solid var(--rai-border);background:#fff;padding:10px 16px 14px;flex-shrink:0;}
 .rai-inline-status{display:flex;align-items:center;margin:0 0 8px;}
-.rai-selected-context{display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:64px;overflow-y:auto;margin-bottom:8px;padding-right:2px;}
+.rai-selected-context,.rai-message-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:64px;overflow-y:auto;margin-bottom:8px;padding-right:2px;}
+.rai-message-badges{max-height:none;margin-bottom:7px;}
 .rai-context-badge{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:230px;height:28px;border:1px solid #e0e7ff;background:#f8faff;color:#475569;border-radius:9px;padding:0 5px 0 8px;font-size:11px;font-weight:600;font-family:inherit;cursor:default;transition:all .16s;}
 .rai-context-badge.is-clickable{cursor:pointer;}
 .rai-context-badge.is-clickable:hover{border-color:#c7d2fe;background:#eef2ff;color:var(--rai-text);}

@@ -62,6 +62,30 @@ const RecordAiDocumentChunkSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    embedding: {
+        type: [Number],
+        default: undefined
+    },
+    embeddingModel: {
+        type: String,
+        default: ''
+    },
+    embeddingConfig: {
+        type: String,
+        default: ''
+    },
+    embeddingDimensions: {
+        type: Number,
+        default: 0
+    },
+    embeddingTextHash: {
+        type: String,
+        default: ''
+    },
+    embeddedAt: {
+        type: Date,
+        default: null
+    },
     indexedAt: {
         type: Date,
         default: Date.now
@@ -74,6 +98,7 @@ const RecordAiDocumentChunkSchema = new mongoose.Schema({
 
 RecordAiDocumentChunkSchema.index({ documentId: 1, chunkIndex: 1 }, { unique: true });
 RecordAiDocumentChunkSchema.index({ source: 1, sourceId: 1, pageStart: 1 });
+RecordAiDocumentChunkSchema.index({ documentId: 1, embeddingConfig: 1 });
 RecordAiDocumentChunkSchema.index({ sourceName: 'text', searchText: 'text' });
 
 module.exports = mongoose.model('RecordAiDocumentChunk', RecordAiDocumentChunkSchema);

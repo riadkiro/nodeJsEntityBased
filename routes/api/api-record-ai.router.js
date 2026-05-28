@@ -32,6 +32,11 @@ const RECORD_AI_RAG_MAX_CHUNKS = boundedInt(process.env.RECORD_AI_RAG_MAX_CHUNKS
 const RECORD_AI_RAG_CONTEXT_CHARS = boundedInt(process.env.RECORD_AI_RAG_CONTEXT_CHARS, 18000, 4000, 60000);
 const RECORD_AI_RAG_CHUNK_CHARS = boundedInt(process.env.RECORD_AI_RAG_CHUNK_CHARS, 1800, 600, 5000);
 const RECORD_AI_RAG_CHUNK_OVERLAP = boundedInt(process.env.RECORD_AI_RAG_CHUNK_OVERLAP, 220, 0, 1200);
+const RECORD_AI_VECTOR_ENABLED = process.env.RECORD_AI_VECTOR_ENABLED !== 'false';
+const RECORD_AI_EMBEDDING_MODEL = process.env.RECORD_AI_EMBEDDING_MODEL || 'text-embedding-3-small';
+const RECORD_AI_EMBEDDING_DIMENSIONS = boundedInt(process.env.RECORD_AI_EMBEDDING_DIMENSIONS, 0, 0, 3072);
+const RECORD_AI_EMBEDDING_BATCH_SIZE = boundedInt(process.env.RECORD_AI_EMBEDDING_BATCH_SIZE, 64, 1, 128);
+const RECORD_AI_EMBEDDING_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_EMBEDDING_TIMEOUT_MS, 120000, 30000, 300000);
 const RECORD_AI_DEBUG_ENABLED = process.env.RECORD_AI_DEBUG_ENABLED !== 'false';
 const RECORD_AI_DEBUG_TEXT_CHARS = boundedInt(process.env.RECORD_AI_DEBUG_TEXT_CHARS, 120000, 10000, 500000);
 const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/record-ai');
@@ -204,6 +209,39 @@ function pageLabel(chunk = {}) {
     const start = Number(chunk.pageStart || chunk.page || 1);
     const end = Number(chunk.pageEnd || start);
     return end > start ? `pages ${start}-${end}` : `page ${start}`;
+}
+
+function embeddingConfigKey() {
+    return [
+        RECORD_AI_EMBEDDING_MODEL,
+        RECORD_AI_EMBEDDING_DIMENSIONS > 0 ? RECORD_AI_EMBEDDING_DIMENSIONS : 'default'
+    ].join(':');
+}
+
+function embeddingInputForChunk(chunk = {}) {
+    return [
+        chunk.sourceName || 'Document',
+        pageLabel(chunk),
+        String(chunk.text || '').trim()
+    ].filter(Boolean).join('\n');
+}
+
+function cosineSimilarity(a = [], b = []) {
+    if (!Array.isArray(a) || !Array.isArray(b) || !a.length || a.length !== b.length) return null;
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let index = 0; index < a.length; index += 1) {
+        const av = Number(a[index]) || 0;
+        const bv = Number(b[index]) || 0;
+        dot += av * bv;
+        normA += av * av;
+        normB += bv * bv;
+    }
+
+    if (!normA || !normB) return null;
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
 function formatValue(value) {
@@ -559,6 +597,9 @@ async function buildBootstrap(req, record, entity) {
             ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
             ragMaxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
             ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
+            vectorEnabled: RECORD_AI_VECTOR_ENABLED,
+            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+            embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS,
             debugEnabled: RECORD_AI_DEBUG_ENABLED,
             debugAdmin: isRecordAiDebugAdmin(req)
         }
@@ -745,6 +786,234 @@ async function getRagModels(req) {
     return { RecordAiDocument, RecordAiDocumentChunk };
 }
 
+async function ensureOpenAIEmbeddingsAction() {
+    let action = await IntegrationAction.findOne({
+        providerKey: 'openai',
+        actionKey: 'embeddings'
+    });
+    if (action) return action;
+
+    action = await IntegrationAction.findOneAndUpdate(
+        { providerKey: 'openai', actionKey: 'embeddings' },
+        {
+            providerKey: 'openai',
+            actionKey: 'embeddings',
+            name: 'Embeddings',
+            description: 'Create vector embeddings for semantic search',
+            http: {
+                method: 'POST',
+                path: '/embeddings'
+            },
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    model: { type: 'string', default: RECORD_AI_EMBEDDING_MODEL },
+                    input: {
+                        oneOf: [
+                            { type: 'string' },
+                            { type: 'array', items: { type: 'string' } }
+                        ]
+                    },
+                    encoding_format: { type: 'string', default: 'float' },
+                    dimensions: { type: 'number' }
+                },
+                required: ['model', 'input']
+            },
+            requestTemplate: {
+                query: {},
+                headers: {},
+                body: {
+                    model: '{{input.model}}',
+                    input: '{{input.input}}',
+                    encoding_format: '{{input.encoding_format}}',
+                    dimensions: '{{input.dimensions}}'
+                }
+            },
+            responseMapping: {
+                data: 'data',
+                model: 'model',
+                usage: 'usage'
+            },
+            testPayload: {
+                model: RECORD_AI_EMBEDDING_MODEL,
+                input: 'Bonjour',
+                encoding_format: 'float'
+            },
+            isPublished: true
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return action;
+}
+
+async function callOpenAIEmbeddings(req, inputs) {
+    const inputList = (Array.isArray(inputs) ? inputs : [inputs])
+        .map(input => String(input || '').trim())
+        .filter(Boolean);
+    if (!inputList.length) return [];
+
+    const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
+    const action = await ensureOpenAIEmbeddingsAction();
+    const payload = {
+        model: RECORD_AI_EMBEDDING_MODEL,
+        input: inputList,
+        encoding_format: 'float',
+        dimensions: RECORD_AI_EMBEDDING_DIMENSIONS > 0 ? RECORD_AI_EMBEDDING_DIMENSIONS : undefined
+    };
+
+    const result = await IntegrationService.executeAction({
+        ProviderModel: IntegrationProvider,
+        ActionModel: IntegrationAction,
+        ConnectionModel,
+        LogModel,
+        workspaceId: req.account_number,
+        providerKey: 'openai',
+        actionId: action._id.toString(),
+        input: payload,
+        timeoutMs: RECORD_AI_EMBEDDING_TIMEOUT_MS
+    });
+
+    if (!result.success) {
+        throw new Error(result.error || result.errorMessage || 'Embedding OpenAI impossible');
+    }
+
+    const entries = Array.isArray(result.raw?.data)
+        ? result.raw.data
+        : (Array.isArray(result.data?.data) ? result.data.data : []);
+    const vectors = entries
+        .slice()
+        .sort((a, b) => (a.index || 0) - (b.index || 0))
+        .map(item => item.embedding)
+        .filter(vector => Array.isArray(vector) && vector.length);
+
+    if (vectors.length !== inputList.length) {
+        throw new Error(`Embedding OpenAI incomplet (${vectors.length}/${inputList.length})`);
+    }
+
+    return vectors;
+}
+
+async function ensureDocumentEmbeddings(req, document) {
+    const embedding = {
+        enabled: RECORD_AI_VECTOR_ENABLED,
+        model: RECORD_AI_EMBEDDING_MODEL,
+        config: embeddingConfigKey(),
+        dimensions: RECORD_AI_EMBEDDING_DIMENSIONS,
+        status: 'disabled',
+        embeddedChunkCount: 0,
+        chunkCount: document?.chunkCount || 0,
+        generated: 0,
+        error: ''
+    };
+
+    if (!RECORD_AI_VECTOR_ENABLED || !document?._id || !document.chunkCount) {
+        return { document, embedding };
+    }
+
+    const { RecordAiDocument, RecordAiDocumentChunk } = await getRagModels(req);
+    if (
+        document.embeddingStatus === 'ready' &&
+        document.embeddingConfig === embedding.config &&
+        Number(document.embeddedChunkCount || 0) >= Number(document.chunkCount || 0)
+    ) {
+        embedding.status = 'ready';
+        embedding.embeddedChunkCount = document.embeddedChunkCount || document.chunkCount || 0;
+        embedding.dimensions = document.embeddingDimensions || RECORD_AI_EMBEDDING_DIMENSIONS;
+        return { document, embedding };
+    }
+
+    await RecordAiDocument.findByIdAndUpdate(document._id, {
+        $set: {
+            embeddingStatus: 'indexing',
+            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+            embeddingConfig: embedding.config,
+            embeddingError: ''
+        }
+    });
+
+    try {
+        const chunks = await RecordAiDocumentChunk.find({ documentId: document._id })
+            .select('sourceName pageStart pageEnd text embedding embeddingConfig embeddingTextHash')
+            .sort({ chunkIndex: 1 })
+            .lean();
+        const pending = chunks.filter(chunk => {
+            const textHash = hashText(embeddingInputForChunk(chunk));
+            return chunk.embeddingConfig !== embedding.config ||
+                chunk.embeddingTextHash !== textHash ||
+                !Array.isArray(chunk.embedding) ||
+                chunk.embedding.length === 0;
+        });
+
+        for (let offset = 0; offset < pending.length; offset += RECORD_AI_EMBEDDING_BATCH_SIZE) {
+            const batch = pending.slice(offset, offset + RECORD_AI_EMBEDDING_BATCH_SIZE);
+            const vectors = await callOpenAIEmbeddings(req, batch.map(embeddingInputForChunk));
+            const now = new Date();
+            const updates = batch.map((chunk, index) => {
+                const vector = vectors[index] || [];
+                return {
+                    updateOne: {
+                        filter: { _id: chunk._id },
+                        update: {
+                            $set: {
+                                embedding: vector,
+                                embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                                embeddingConfig: embedding.config,
+                                embeddingDimensions: vector.length,
+                                embeddingTextHash: hashText(embeddingInputForChunk(chunk)),
+                                embeddedAt: now
+                            }
+                        }
+                    }
+                };
+            });
+            if (updates.length) await RecordAiDocumentChunk.bulkWrite(updates, { ordered: false });
+            embedding.generated += updates.length;
+            if (!embedding.dimensions && vectors[0]?.length) embedding.dimensions = vectors[0].length;
+        }
+
+        const embeddedChunkCount = await RecordAiDocumentChunk.countDocuments({
+            documentId: document._id,
+            embeddingConfig: embedding.config,
+            embedding: { $exists: true, $ne: [] }
+        });
+        const status = embeddedChunkCount >= chunks.length ? 'ready' : 'partial';
+        const updatedDocument = await RecordAiDocument.findByIdAndUpdate(
+            document._id,
+            {
+                $set: {
+                    embeddingStatus: status,
+                    embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                    embeddingConfig: embedding.config,
+                    embeddingDimensions: embedding.dimensions || 0,
+                    embeddedChunkCount,
+                    embeddedAt: new Date(),
+                    embeddingError: ''
+                }
+            },
+            { new: true }
+        ).lean();
+
+        embedding.status = status;
+        embedding.embeddedChunkCount = embeddedChunkCount;
+        embedding.chunkCount = chunks.length;
+        return { document: updatedDocument || document, embedding };
+    } catch (error) {
+        await RecordAiDocument.findByIdAndUpdate(document._id, {
+            $set: {
+                embeddingStatus: 'error',
+                embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                embeddingConfig: embedding.config,
+                embeddingError: error.message || 'Embedding impossible',
+                embeddedAt: new Date()
+            }
+        });
+        embedding.status = 'error';
+        embedding.error = error.message || 'Embedding impossible';
+        return { document, embedding };
+    }
+}
+
 async function resolveSelectedFileInfo(req, record, selectedFile) {
     if (selectedFile.source === 'drive') {
         if (['guest', 'external'].includes(req.workspaceRole || '')) {
@@ -922,6 +1191,10 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
                 fileSize: stat.size || 0,
                 mtimeMs: stat.mtimeMs || 0,
                 status: 'indexing',
+                embeddingStatus: 'none',
+                embeddingConfig: '',
+                embeddedChunkCount: 0,
+                embeddingError: '',
                 error: ''
             }
         },
@@ -962,6 +1235,10 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
                     charCount: extracted.meta?.charCount || chunks.reduce((sum, chunk) => sum + chunk.charCount, 0),
                     wordCount: extracted.meta?.wordCount || chunks.reduce((sum, chunk) => sum + chunk.wordCount, 0),
                     chunkCount: chunks.length,
+                    embeddingStatus: 'none',
+                    embeddingConfig: '',
+                    embeddedChunkCount: 0,
+                    embeddingError: '',
                     indexedAt: new Date(),
                     error: '',
                     meta: extracted.meta || {}
@@ -1041,6 +1318,10 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
                 fileSize: 0,
                 mtimeMs: 0,
                 status: 'indexing',
+                embeddingStatus: 'none',
+                embeddingConfig: '',
+                embeddedChunkCount: 0,
+                embeddingError: '',
                 error: ''
             }
         },
@@ -1073,6 +1354,10 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
                 charCount: text.length,
                 wordCount: countWords(text),
                 chunkCount: chunks.length,
+                embeddingStatus: 'none',
+                embeddingConfig: '',
+                embeddedChunkCount: 0,
+                embeddingError: '',
                 indexedAt: new Date(),
                 error: '',
                 meta: { upload: true, charCount: text.length }
@@ -1093,6 +1378,9 @@ async function prepareRagForSelection(req, record, entity, selection) {
         enabled: RECORD_AI_RAG_ENABLED,
         maxPages: RECORD_AI_RAG_MAX_PAGES,
         maxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
+        vectorEnabled: RECORD_AI_VECTOR_ENABLED,
+        embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+        embeddingConfig: embeddingConfigKey(),
         documents: [],
         errors: []
     };
@@ -1103,20 +1391,24 @@ async function prepareRagForSelection(req, record, entity, selection) {
         try {
             const indexed = await ensureFileRagDocument(req, record, entity, file);
             if (indexed?.document) {
+                const embedded = await ensureDocumentEmbeddings(req, indexed.document);
+                const document = embedded.document || indexed.document;
                 result.documents.push({
-                    documentId: cleanId(indexed.document._id),
-                    source: indexed.document.source,
-                    sourceId: indexed.document.sourceId,
-                    name: indexed.document.name,
-                    pageCount: indexed.document.pageCount,
-                    processedPages: indexed.document.processedPages,
-                    truncated: Boolean(indexed.document.truncated),
-                    charCount: indexed.document.charCount,
-                    chunkCount: indexed.document.chunkCount,
+                    documentId: cleanId(document._id),
+                    source: document.source,
+                    sourceId: document.sourceId,
+                    name: document.name,
+                    pageCount: document.pageCount,
+                    processedPages: document.processedPages,
+                    truncated: Boolean(document.truncated),
+                    charCount: document.charCount,
+                    chunkCount: document.chunkCount,
                     indexed: Boolean(indexed.indexed),
-                    indexedAt: indexed.document.indexedAt,
-                    status: indexed.document.status
+                    indexedAt: document.indexedAt,
+                    status: document.status,
+                    embedding: embedded.embedding
                 });
+                if (embedded.embedding?.error) result.errors.push(`${document.name}: ${embedded.embedding.error}`);
             }
         } catch (error) {
             result.errors.push(`${file.name || file.id}: ${error.message}`);
@@ -1127,20 +1419,24 @@ async function prepareRagForSelection(req, record, entity, selection) {
         try {
             const indexed = await ensureUploadRagDocument(req, record, entity, upload);
             if (indexed?.document) {
+                const embedded = await ensureDocumentEmbeddings(req, indexed.document);
+                const document = embedded.document || indexed.document;
                 result.documents.push({
-                    documentId: cleanId(indexed.document._id),
-                    source: indexed.document.source,
-                    sourceId: indexed.document.sourceId,
-                    name: indexed.document.name,
-                    pageCount: indexed.document.pageCount,
-                    processedPages: indexed.document.processedPages,
-                    truncated: Boolean(indexed.document.truncated),
-                    charCount: indexed.document.charCount,
-                    chunkCount: indexed.document.chunkCount,
+                    documentId: cleanId(document._id),
+                    source: document.source,
+                    sourceId: document.sourceId,
+                    name: document.name,
+                    pageCount: document.pageCount,
+                    processedPages: document.processedPages,
+                    truncated: Boolean(document.truncated),
+                    charCount: document.charCount,
+                    chunkCount: document.chunkCount,
                     indexed: Boolean(indexed.indexed),
-                    indexedAt: indexed.document.indexedAt,
-                    status: indexed.document.status
+                    indexedAt: document.indexedAt,
+                    status: document.status,
+                    embedding: embedded.embedding
                 });
+                if (embedded.embedding?.error) result.errors.push(`${document.name}: ${embedded.embedding.error}`);
             }
         } catch (error) {
             result.errors.push(`${upload.name || upload.id}: ${error.message}`);
@@ -1150,7 +1446,7 @@ async function prepareRagForSelection(req, record, entity, selection) {
     return result;
 }
 
-function scoreRagChunks(chunks, query, requestedPages = []) {
+function scoreRagChunks(chunks, query, requestedPages = [], queryEmbedding = null) {
     const tokens = tokenizeSearch(query);
     const phrases = extractSearchPhrases(query);
     const requestedPageSet = new Set((requestedPages || []).map(Number).filter(Number.isFinite));
@@ -1158,38 +1454,48 @@ function scoreRagChunks(chunks, query, requestedPages = []) {
     return (chunks || []).map(chunk => {
         const searchText = chunk.searchText || normalizeSearchText(`${chunk.sourceName || ''}\n${chunk.text || ''}`);
         const matchedTerms = [];
-        let score = 0;
+        let lexicalScore = 0;
+        let pageBoost = 0;
         const pageStart = Number(chunk.pageStart || 1);
         const pageEnd = Number(chunk.pageEnd || pageStart);
+        const vectorScore = queryEmbedding && Array.isArray(chunk.embedding)
+            ? cosineSimilarity(queryEmbedding, chunk.embedding)
+            : null;
 
         requestedPageSet.forEach(page => {
             if (pageStart <= page && page <= pageEnd) {
                 matchedTerms.push(`page ${page}`);
-                score += 1000;
+                pageBoost += 1000;
             }
         });
 
         tokens.forEach(token => {
             if (!searchText.includes(token)) return;
             matchedTerms.push(token);
-            if (/^\d+$/.test(token) || token.length <= 2) score += 1;
-            else if (token.length >= 7) score += 5;
-            else score += 3;
+            if (/^\d+$/.test(token) || token.length <= 2) lexicalScore += 1;
+            else if (token.length >= 7) lexicalScore += 5;
+            else lexicalScore += 3;
         });
 
         phrases.forEach(phrase => {
             if (!searchText.includes(phrase)) return;
             matchedTerms.push(phrase);
-            score += phrase.length >= 8 ? 14 : 8;
+            lexicalScore += phrase.length >= 8 ? 14 : 8;
         });
 
         if (tokens.length > 1 && tokens.every(token => searchText.includes(token))) {
-            score += Math.min(12, tokens.length * 2);
+            lexicalScore += Math.min(12, tokens.length * 2);
         }
+
+        const vectorBoost = typeof vectorScore === 'number' ? Math.max(0, vectorScore) * 100 : 0;
+        const score = pageBoost + lexicalScore + vectorBoost;
 
         return {
             chunk,
             score,
+            lexicalScore,
+            vectorScore,
+            pageBoost,
             matchedTerms: [...new Set(matchedTerms)]
         };
     }).sort((a, b) => {
@@ -1228,6 +1534,9 @@ function selectRagChunks(scoredChunks, allChunks) {
             addScored({
                 chunk: next,
                 score: Math.max(0.1, entry.score * 0.35),
+                lexicalScore: entry.lexicalScore,
+                vectorScore: entry.vectorScore,
+                pageBoost: entry.pageBoost,
                 matchedTerms: entry.matchedTerms
             }, 'voisin');
         }
@@ -1243,7 +1552,7 @@ function selectRagChunks(scoredChunks, allChunks) {
                 return (a.chunkIndex || 0) - (b.chunkIndex || 0);
             })
             .slice(0, RECORD_AI_RAG_MAX_CHUNKS)
-            .forEach(chunk => addScored({ chunk, score: 0, matchedTerms: [] }, 'fallback'));
+            .forEach(chunk => addScored({ chunk, score: 0, lexicalScore: 0, vectorScore: null, pageBoost: 0, matchedTerms: [] }, 'fallback'));
     }
 
     return [...selected.values()].sort((a, b) => {
@@ -1263,6 +1572,13 @@ async function buildRagContext(req, record, entity, selection, query) {
         queryTokens: tokenizeSearch(query),
         phrases: extractSearchPhrases(query),
         requestedPages,
+        vector: {
+            enabled: RECORD_AI_VECTOR_ENABLED,
+            model: RECORD_AI_EMBEDDING_MODEL,
+            config: embeddingConfigKey(),
+            queryEmbedded: false,
+            error: ''
+        },
         chunks: []
     };
 
@@ -1279,11 +1595,22 @@ async function buildRagContext(req, record, entity, selection, query) {
     const chunks = await RecordAiDocumentChunk.find({
         documentId: { $in: documentIds }
     })
-        .select('documentId source sourceId sourceName chunkIndex pageStart pageEnd text searchText charCount wordCount meta')
+        .select('documentId source sourceId sourceName chunkIndex pageStart pageEnd text searchText charCount wordCount embedding embeddingConfig meta')
         .sort({ documentId: 1, chunkIndex: 1 })
         .lean();
 
-    const selected = selectRagChunks(scoreRagChunks(chunks, query, requestedPages), chunks);
+    let queryEmbedding = null;
+    if (RECORD_AI_VECTOR_ENABLED && chunks.some(chunk => Array.isArray(chunk.embedding) && chunk.embedding.length)) {
+        try {
+            [queryEmbedding] = await callOpenAIEmbeddings(req, String(query || ''));
+            debug.vector.queryEmbedded = Array.isArray(queryEmbedding) && queryEmbedding.length > 0;
+            debug.vector.dimensions = queryEmbedding?.length || 0;
+        } catch (error) {
+            debug.vector.error = error.message || 'Embedding de la question impossible';
+        }
+    }
+
+    const selected = selectRagChunks(scoreRagChunks(chunks, query, requestedPages, queryEmbedding), chunks);
     const blocks = selected.map(entry => {
         const chunk = entry.chunk;
         return [
@@ -1302,6 +1629,9 @@ async function buildRagContext(req, record, entity, selection, query) {
         pageStart: entry.chunk.pageStart,
         pageEnd: entry.chunk.pageEnd,
         score: Number(entry.score || 0),
+        lexicalScore: Number(entry.lexicalScore || 0),
+        vectorScore: typeof entry.vectorScore === 'number' ? entry.vectorScore : null,
+        pageBoost: Number(entry.pageBoost || 0),
         reason: entry.reason,
         matchedTerms: entry.matchedTerms || [],
         charCount: entry.chunk.charCount,
@@ -1330,7 +1660,10 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
             ragEnabled: RECORD_AI_RAG_ENABLED,
             ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
             ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
-            ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS
+            ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
+            vectorEnabled: RECORD_AI_VECTOR_ENABLED,
+            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+            embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS
         },
         rag: null
     };
@@ -1686,7 +2019,10 @@ function buildDebugPayload({
             ocrMaxPages: RECORD_AI_OCR_MAX_PAGES,
             ragEnabled: RECORD_AI_RAG_ENABLED,
             ragMaxPages: RECORD_AI_RAG_MAX_PAGES,
-            ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS
+            ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
+            vectorEnabled: RECORD_AI_VECTOR_ENABLED,
+            embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+            embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS
         },
         contextText: clippedContext.text,
         contextTextTruncated: clippedContext.truncated,
@@ -1940,6 +2276,9 @@ router.get('/:recordId/conversations/:conversationId/debug', async (req, res) =>
                 ragMaxChunks: RECORD_AI_RAG_MAX_CHUNKS,
                 ragMaxDocuments: RECORD_AI_RAG_MAX_DOCUMENTS,
                 ragContextChars: RECORD_AI_RAG_CONTEXT_CHARS,
+                vectorEnabled: RECORD_AI_VECTOR_ENABLED,
+                embeddingModel: RECORD_AI_EMBEDDING_MODEL,
+                embeddingDimensions: RECORD_AI_EMBEDDING_DIMENSIONS,
                 debugTextChars: RECORD_AI_DEBUG_TEXT_CHARS
             },
             logs

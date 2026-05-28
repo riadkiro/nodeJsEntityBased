@@ -79,6 +79,36 @@ const RecordAiDocumentSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    embeddingStatus: {
+        type: String,
+        enum: ['none', 'indexing', 'ready', 'partial', 'error'],
+        default: 'none',
+        index: true
+    },
+    embeddingModel: {
+        type: String,
+        default: ''
+    },
+    embeddingConfig: {
+        type: String,
+        default: ''
+    },
+    embeddingDimensions: {
+        type: Number,
+        default: 0
+    },
+    embeddedChunkCount: {
+        type: Number,
+        default: 0
+    },
+    embeddedAt: {
+        type: Date,
+        default: null
+    },
+    embeddingError: {
+        type: String,
+        default: ''
+    },
     indexedAt: {
         type: Date,
         default: null

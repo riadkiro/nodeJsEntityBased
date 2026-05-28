@@ -315,6 +315,7 @@ function DebugPayloadView({ payload = {} }) {
                 <span>Contexte modifié: <strong>{payload.contextChanged ? 'oui' : 'non'}</strong></span>
                 <span>OCR max: <strong>{payload.limits?.ocrMaxPages || '-'} pages</strong></span>
                 <span>RAG: <strong>{rag?.enabled ? `${payload.limits?.ragMaxPages || rag.maxPages || '-'} pages` : 'non'}</strong></span>
+                <span>Vectoriel: <strong>{rag?.vector?.enabled ? (rag.vector.queryEmbedded ? 'oui' : 'fallback') : 'non'}</strong></span>
                 {ragChunks.length > 0 && <span>Chunks: <strong>{ragChunks.length}</strong></span>}
                 <span>Contexte: <strong>{formatNumber(contextStats.chars)} caractères</strong></span>
                 {contextStats.truncated && <span className="is-warn">Tronqué</span>}
@@ -353,6 +354,7 @@ function DebugPayloadView({ payload = {} }) {
                         queryTokens: rag.queryTokens || [],
                         phrases: rag.phrases || [],
                         requestedPages: rag.requestedPages || [],
+                        vector: rag.vector || null,
                     }, null, 2)}
                     open={ragDocuments.length > 0}
                 />
@@ -365,6 +367,7 @@ function DebugPayloadView({ payload = {} }) {
                     meta={`p. ${chunk.pageStart || '-'} | score ${formatNumber(chunk.score)}`}
                     text={[
                         `Reason: ${chunk.reason || '-'}`,
+                        `Scores: vector=${chunk.vectorScore ?? '-'} lexical=${chunk.lexicalScore ?? '-'} pageBoost=${chunk.pageBoost ?? '-'}`,
                         `Matched: ${(chunk.matchedTerms || []).join(', ') || '-'}`,
                         '',
                         chunk.text || ''
@@ -1319,6 +1322,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                         <span>Modèle <strong>{debugData.conversation?.model || '-'}</strong></span>
                                         <span>OCR max <strong>{debugData.limits?.ocrMaxPages || '-'} pages</strong></span>
                                         <span>RAG <strong>{debugData.limits?.ragEnabled ? `${debugData.limits?.ragMaxPages || '-'} pages` : 'désactivé'}</strong></span>
+                                        <span>Vectoriel <strong>{debugData.limits?.vectorEnabled ? (debugData.limits?.embeddingModel || 'actif') : 'désactivé'}</strong></span>
                                         <span>Logs <strong>{debugData.logs?.length || 0}</strong></span>
                                     </div>
                                     {(debugData.logs || []).length === 0 ? (

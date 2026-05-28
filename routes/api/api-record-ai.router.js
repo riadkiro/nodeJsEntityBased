@@ -4188,6 +4188,49 @@ function agentGoalShouldUseNotes(goal) {
     return /\b(note|notes|synthese|historique|resume)\b/.test(text);
 }
 
+function agentGoalMentionsDrive(goal) {
+    const text = normalizeSearchText(goal);
+    return /\b(drive|dossier drive|fichier drive|document drive|dans drive|sur drive)\b/.test(text);
+}
+
+function agentFileGoalScore(goal, file = {}) {
+    const goalText = normalizeSearchText(goal);
+    if (!goalText) return 0;
+
+    const name = String(file.name || file.filename || '').replace(/\.[a-z0-9]{1,8}$/i, '');
+    const folder = String(file.folder || '');
+    const fileText = normalizeSearchText(`${name} ${folder}`);
+    if (!fileText) return 0;
+
+    const goalTokens = new Set(tokenizeSearch(goalText));
+    const fileTokens = tokenizeSearch(fileText)
+        .filter(token => token.length >= 3 && !['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx'].includes(token));
+    const matchedTokens = fileTokens.filter(token => goalTokens.has(token));
+    let score = 0;
+
+    if (goalText.includes(fileText) || fileText.includes(goalText)) score += 120;
+    if (matchedTokens.length) score += matchedTokens.length * 14;
+    if (matchedTokens.length >= Math.min(2, fileTokens.length)) score += 45;
+    if (matchedTokens.some(token => token.length >= 5)) score += 12;
+    if (file.source === 'drive' && agentGoalMentionsDrive(goal)) score += 8;
+
+    return score;
+}
+
+function agentRelevantFilesForGoal(goal, files = [], max = RECORD_AI_RAG_MAX_DOCUMENTS) {
+    return (files || [])
+        .map(file => ({ file, score: agentFileGoalScore(goal, file) }))
+        .filter(item => item.score >= 20)
+        .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const aDate = new Date(a.file.uploadedAt || 0).getTime() || 0;
+            const bDate = new Date(b.file.uploadedAt || 0).getTime() || 0;
+            return bDate - aDate;
+        })
+        .slice(0, max)
+        .map(item => item.file);
+}
+
 function agentContextDecision(goal, requestedSelection = {}) {
     const requestedCount = selectionItemCount(requestedSelection);
     const standalone = agentGoalLooksStandalone(goal);
@@ -4262,12 +4305,22 @@ function agentBuildContextInventoryText(items = [], requestedSelection = {}, con
 
 async function agentDefaultSelection(req, record, entity, goal = '') {
     const bootstrap = await buildBootstrap(req, record, entity);
-    const recordFiles = (bootstrap.files || [])
-        .filter(file => file.source === 'record')
-        .slice(0, RECORD_AI_RAG_MAX_DOCUMENTS)
-        .map(file => ({ id: file.id, source: file.source, name: file.name }));
+    const allFiles = (bootstrap.files || []).filter(file => ['record', 'drive'].includes(file.source));
+    const recordFiles = allFiles.filter(file => file.source === 'record');
+    const driveFiles = allFiles.filter(file => file.source === 'drive');
     const useDocuments = agentGoalShouldUseDocuments(goal);
     const useNotes = agentGoalShouldUseNotes(goal);
+    const standalone = agentGoalLooksStandalone(goal);
+    const matchedFiles = standalone ? [] : agentRelevantFilesForGoal(goal, allFiles);
+    const fallbackFiles = useDocuments
+        ? [
+            ...recordFiles,
+            ...(agentGoalMentionsDrive(goal) ? driveFiles : [])
+        ]
+        : [];
+    const selectedFiles = (matchedFiles.length ? matchedFiles : fallbackFiles)
+        .slice(0, RECORD_AI_RAG_MAX_DOCUMENTS)
+        .map(file => ({ id: file.id, source: file.source, name: file.name }));
 
     return normalizeSelection({
         fields: (bootstrap.fields || []).map(field => field.id).slice(0, 80),
@@ -4275,7 +4328,7 @@ async function agentDefaultSelection(req, record, entity, goal = '') {
             ? (bootstrap.notes || []).filter(note => !note.isProtected).map(note => cleanId(note.id)).slice(0, 20)
             : [],
         chats: [],
-        files: useDocuments ? recordFiles : [],
+        files: selectedFiles,
         uploads: []
     });
 }
@@ -5681,13 +5734,24 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             .lean();
         const priorRunsChronological = [...priorRuns].reverse();
         const requestedSelection = normalizeSelection(req.body.contextSelections || {});
-        const contextDecision = agentContextDecision(goal, requestedSelection);
+        let contextDecision = agentContextDecision(goal, requestedSelection);
         const requestedCount = selectionItemCount(requestedSelection);
+        let autoSelection = null;
+        if (!requestedCount && !agentGoalLooksStandalone(goal)) {
+            autoSelection = await agentDefaultSelection(req, record, entity, goal);
+            if (contextDecision.mode !== 'full' && documentSelectionItemCount(autoSelection) > 0) {
+                contextDecision = {
+                    mode: 'full',
+                    reason: 'auto_matched_document',
+                    requestedCount
+                };
+            }
+        }
         let selection = normalizeSelection({});
         if (contextDecision.mode === 'full') {
             selection = requestedCount > 0
                 ? requestedSelection
-                : await agentDefaultSelection(req, record, entity, goal);
+                : (autoSelection || await agentDefaultSelection(req, record, entity, goal));
         }
         const engineSettings = await getRecordAiEngineSettings(req);
         const engineRuntime = resolveEngineRuntime(engineSettings);

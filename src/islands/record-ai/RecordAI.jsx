@@ -73,6 +73,48 @@ function shortText(value, max = 96) {
     return text.length > max ? `${text.slice(0, max)}...` : text
 }
 
+function searchText(value = '') {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+}
+
+function searchTokens(value = '') {
+    const stop = new Set(['le', 'la', 'les', 'de', 'du', 'des', 'un', 'une', 'pour', 'avec', 'dans', 'sur', 'fichier', 'document', 'doc', 'pdf'])
+    return searchText(value).split(' ').filter(token => token.length >= 3 && !stop.has(token))
+}
+
+function scoreFileForText(text = '', file = {}) {
+    const query = searchText(text)
+    const name = String(file.name || file.filename || '').replace(/\.[a-z0-9]{1,8}$/i, '')
+    const indexed = searchText(`${name} ${file.folder || ''}`)
+    if (!query || !indexed) return 0
+
+    const queryTokens = new Set(searchTokens(query))
+    const fileTokens = searchTokens(indexed).filter(token => !['jpg', 'jpeg', 'png', 'webp', 'docx', 'xlsx'].includes(token))
+    const matched = fileTokens.filter(token => queryTokens.has(token))
+    let score = 0
+    if (query.includes(indexed) || indexed.includes(query)) score += 120
+    if (matched.length) score += matched.length * 14
+    if (matched.length >= Math.min(2, fileTokens.length)) score += 45
+    if (matched.some(token => token.length >= 5)) score += 12
+    if (file.source === 'drive' && /\bdrive\b/.test(query)) score += 8
+    return score
+}
+
+function inferRelevantFilesFromText(text = '', files = [], max = 3) {
+    return (files || [])
+        .map(file => ({ file, score: scoreFileForText(text, file) }))
+        .filter(item => item.score >= 20)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, max)
+        .map(item => item.file)
+}
+
 function parseLooseAgentJson(value, depth = 0) {
     if (depth > 2 || value == null) return null
     if (typeof value === 'object') return value
@@ -279,12 +321,21 @@ function estimateTokensFromChars(chars) {
 
 const AGENT_PHASE_MS = 1600
 
-function buildAgentPhrases(selection = {}) {
+function buildAgentPhrases(selection = {}, query = '', availableFiles = []) {
     const phrases = ['Analyse de la demande']
-    const documentCount = (selection.files || []).length
+    const selectedFiles = (selection.files || [])
+        .map(file => (availableFiles || []).find(item => fileKey(item) === fileKey(file)) || file)
+    const inferredFiles = selectedFiles.length ? [] : inferRelevantFilesFromText(query, availableFiles)
+    const contextFiles = selectedFiles.length ? selectedFiles : inferredFiles
+    const uploadCount = (selection.uploads || []).length
+    const documentCount = contextFiles.length + uploadCount
 
     if (documentCount > 0) {
-        phrases.push(documentCount > 1 ? 'Lecture des documents' : 'Lecture du document')
+        if (contextFiles.length === 1 && uploadCount === 0) {
+            phrases.push(`Analyse du document ${shortText(contextFiles[0].name || 'sélectionné', 54)}`)
+        } else {
+            phrases.push(documentCount > 1 ? 'Analyse des documents' : 'Lecture du document')
+        }
     }
 
     phrases.push('Thinking', 'Working...')
@@ -883,8 +934,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         setAgentPhraseIndex(0)
     }, [clearAgentTimer])
 
-    const startAgentStatus = useCallback((currentSelection) => {
-        const phrases = buildAgentPhrases(currentSelection)
+    const startAgentStatus = useCallback((currentSelection, query = '', availableFiles = []) => {
+        const phrases = buildAgentPhrases(currentSelection, query, availableFiles)
         setAgentPhrases(phrases)
         setAgentPhraseIndex(0)
 
@@ -1284,6 +1335,20 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         if (!text || agentRunning) return
 
         const payloadSelection = buildPayloadSelection(selection)
+        const inferredFiles = payloadSelection.files?.length ? [] : inferRelevantFilesFromText(text, files)
+        const inferredContextItems = inferredFiles.map(file => ({
+            key: fileKey(file),
+            type: 'files',
+            id: String(file.id),
+            source: file.source,
+            label: file.name || file.filename || 'Document',
+            icon: fileIcon(file),
+            color: fileColor(file),
+            url: file.url || '',
+            mimeType: file.mimeType || '',
+            previewType: getFilePreviewType(file),
+            meta: file.source === 'drive' ? 'Drive auto' : 'Document auto'
+        }))
         let conversation = activeAgentConversation
         if (!conversation) {
             conversation = await createAgentConversation()
@@ -1297,7 +1362,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             summary: 'Analyse de la demande en cours...',
             proposedActions: [],
             plan: { title: 'Plan agent', steps: [{ title: 'Analyse du contexte', detail: '', status: 'ready' }] },
-            contextItems: [],
+            contextItems: inferredContextItems,
             createdAt: new Date().toISOString()
         }
 
@@ -1305,7 +1370,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         setInput('')
         setAgentRunning(true)
         setError('')
-        startAgentStatus(selection)
+        startAgentStatus(selection, text, files)
 
         try {
             const data = await apiFetch('/agent/runs', {
@@ -1327,7 +1392,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setAgentRunning(false)
             stopAgentStatus()
         }
-    }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, input, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
+    }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, files, input, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
 
     const applyAgentRun = useCallback(async (run) => {
         if (!run?._id || agentBusyRunId) return

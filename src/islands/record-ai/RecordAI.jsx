@@ -622,77 +622,124 @@ function AgentActionCard({ action = {} }) {
     )
 }
 
-function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext }) {
+function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, draftPhrase = 'Analyse de la demande' }) {
     const actions = Array.isArray(run.proposedActions) ? run.proposedActions : []
     const canApply = ['review', 'partial'].includes(run.status) && actions.some(action => ['proposed', 'failed'].includes(action.status))
     const canUndo = ['applied', 'partial'].includes(run.status) && actions.some(action => action.status === 'applied')
     const steps = Array.isArray(run.plan?.steps) ? run.plan.steps : []
+    const sourceCount = Array.isArray(run.contextItems) ? run.contextItems.length : 0
+    const doneActions = actions.filter(action => ['applied', 'failed', 'undone'].includes(action.status))
+    const isDrafting = run.status === 'drafting'
 
     return (
-        <section className={`rai-agent-run ${run.status || 'review'}`}>
-            <div className="rai-agent-run-head">
-                <span className="rai-agent-run-mark">
-                    <Icon icon="solar:magic-stick-3-bold-duotone" width={18} />
+        <article className="rai-agent-thread">
+            <div className="rai-agent-msg user">
+                <div className="rai-agent-msg-bubble">
+                    <p>{run.goal || 'Run agent'}</p>
+                    <span>{formatTime(run.createdAt)}{sourceCount > 0 ? ` · ${sourceCount} source${sourceCount > 1 ? 's' : ''}` : ''}</span>
+                </div>
+            </div>
+
+            <div className="rai-agent-msg assistant">
+                <span className="rai-agent-msg-avatar">
+                    <Icon icon="solar:magic-stick-3-bold-duotone" width={15} />
                 </span>
-                <div className="rai-agent-run-title">
-                    <strong>{shortText(run.goal || 'Run agent', 92)}</strong>
-                    <small>{formatTime(run.createdAt)} · {actions.length} tool{actions.length > 1 ? 's' : ''}</small>
-                </div>
-                <span className={`rai-agent-run-status ${run.status || 'review'}`}>{agentStatusLabel(run.status)}</span>
-            </div>
+                <div className={`rai-agent-msg-bubble plan ${run.status || 'review'}`}>
+                    <div className="rai-agent-plan-top">
+                        <strong>{isDrafting ? 'Préparation du plan' : (run.plan?.title || 'Plan proposé')}</strong>
+                        <span className={`rai-agent-run-status ${run.status || 'review'}`}>{agentStatusLabel(run.status)}</span>
+                    </div>
 
-            {run.summary && <p className="rai-agent-summary">{run.summary}</p>}
+                    {isDrafting ? (
+                        <AgentStatus phrase={draftPhrase} />
+                    ) : (
+                        <>
+                            {run.summary && <p className="rai-agent-summary">{run.summary}</p>}
 
-            {run.contextItems?.length > 0 && (
-                <ContextCardGrid items={run.contextItems} onOpen={onOpenContext} />
-            )}
+                            {sourceCount > 0 && (
+                                <details className="rai-agent-sources">
+                                    <summary>{sourceCount} source{sourceCount > 1 ? 's' : ''} utilisée{sourceCount > 1 ? 's' : ''}</summary>
+                                    <ContextCardGrid items={run.contextItems || []} onOpen={onOpenContext} />
+                                </details>
+                            )}
 
-            {steps.length > 0 && (
-                <div className="rai-agent-steps">
-                    {steps.map((step, index) => (
-                        <div className="rai-agent-step" key={step.id || index}>
-                            <span>{index + 1}</span>
-                            <div>
-                                <strong>{step.title}</strong>
-                                {step.detail && <small>{step.detail}</small>}
+                            {steps.length > 0 && (
+                                <ol className="rai-agent-plan-list">
+                                    {steps.map((step, index) => (
+                                        <li key={step.id || index}>
+                                            <span>{index + 1}</span>
+                                            <div>
+                                                <strong>{step.title}</strong>
+                                                {step.detail && <small>{step.detail}</small>}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+
+                            <div className="rai-agent-actions">
+                                {actions.length === 0 && <div className="rai-context-empty">Aucune action proposée</div>}
+                                {actions.map(action => (
+                                    <AgentActionCard action={action} key={action.id} />
+                                ))}
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )}
 
-            <div className="rai-agent-actions">
-                {actions.length === 0 && <div className="rai-context-empty">Aucune action proposée</div>}
-                {actions.map(action => (
-                    <AgentActionCard action={action} key={action.id} />
-                ))}
-            </div>
+                            {run.error && (
+                                <div className="rai-agent-action-error">
+                                    <Icon icon="solar:danger-circle-linear" width={14} />
+                                    {run.error}
+                                </div>
+                            )}
 
-            {run.error && (
-                <div className="rai-agent-action-error">
-                    <Icon icon="solar:danger-circle-linear" width={14} />
-                    {run.error}
-                </div>
-            )}
-
-            <div className="rai-agent-run-footer">
-                <span>Review mode actif</span>
-                <div>
-                    {canUndo && (
-                        <button type="button" className="rai-agent-secondary" onClick={() => onUndo(run)} disabled={busy}>
-                            <Icon icon="solar:rewind-back-bold-duotone" width={14} />
-                            Annuler
-                        </button>
-                    )}
-                    {canApply && (
-                        <button type="button" className="rai-agent-primary" onClick={() => onApply(run)} disabled={busy}>
-                            <Icon icon={busy ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold-duotone'} width={14} />
-                            Appliquer
-                        </button>
+                            <div className="rai-agent-run-footer">
+                                <span>Review mode</span>
+                                <div>
+                                    {canUndo && (
+                                        <button type="button" className="rai-agent-secondary" onClick={() => onUndo(run)} disabled={busy}>
+                                            <Icon icon="solar:rewind-back-bold-duotone" width={14} />
+                                            Annuler
+                                        </button>
+                                    )}
+                                    {canApply && (
+                                        <button type="button" className="rai-agent-primary" onClick={() => onApply(run)} disabled={busy}>
+                                            <Icon icon={busy ? 'line-md:loading-twotone-loop' : 'solar:plain-bold'} width={14} />
+                                            Exécuter
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
-        </section>
+
+            {busy && (
+                <div className="rai-agent-msg assistant compact">
+                    <span className="rai-agent-msg-avatar">
+                        <Icon icon="solar:magic-stick-3-bold-duotone" width={15} />
+                    </span>
+                    <div className="rai-agent-msg-bubble status">
+                        <AgentStatus phrase="Application des actions" />
+                    </div>
+                </div>
+            )}
+
+            {doneActions.map(action => (
+                <div className="rai-agent-msg assistant compact" key={`${run._id}:${action.id}:event`}>
+                    <span className="rai-agent-msg-avatar">
+                        <Icon icon={agentToolIcon(action.tool)} width={15} />
+                    </span>
+                    <div className={`rai-agent-msg-bubble event ${action.status}`}>
+                        <Icon icon={agentActionStatusIcon(action.status)} width={14} />
+                        <span>
+                            {action.status === 'applied' && `${action.title || action.tool} appliqué`}
+                            {action.status === 'failed' && `${action.title || action.tool} en erreur`}
+                            {action.status === 'undone' && `${action.title || action.tool} annulé`}
+                        </span>
+                    </div>
+                </div>
+            ))}
+        </article>
     )
 }
 
@@ -849,6 +896,10 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     useEffect(() => {
         scrollToBottom()
     }, [messages, scrollToBottom])
+
+    useEffect(() => {
+        if (activeMode === 'agent') scrollToBottom()
+    }, [activeMode, agentRuns, agentRunning, agentBusyRunId, scrollToBottom])
 
     const selectedFileKeys = useMemo(() => new Set((selection.files || []).map(fileKey)), [selection.files])
 
@@ -1765,11 +1816,6 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                     <div className="rai-messages" ref={messagesRef}>
                         {activeMode === 'agent' ? (
                             <div className="rai-agent-board">
-                                {agentRunning && (
-                                    <div className="rai-agent-running">
-                                        <AgentStatus phrase={activeAgentPhrase} />
-                                    </div>
-                                )}
                                 {!agentRunning && agentRuns.length === 0 && (
                                     <div className="rai-empty-chat">
                                         <div className="rai-empty-mark"><Icon icon="solar:magic-stick-3-bold-duotone" width={36} /></div>
@@ -1777,7 +1823,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                         <small>Il proposera les notes, champs ou tâches en review avant application.</small>
                                     </div>
                                 )}
-                                {agentRuns.map(run => (
+                                {[...agentRuns].reverse().map(run => (
                                     <AgentRunCard
                                         key={run._id}
                                         run={run}
@@ -1785,6 +1831,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                         onUndo={undoAgentRun}
                                         busy={agentBusyRunId === run._id}
                                         onOpenContext={openContextItem}
+                                        draftPhrase={activeAgentPhrase}
                                     />
                                 ))}
                             </div>
@@ -2334,62 +2381,73 @@ const styles = `
 .rai-mode-switch button{height:28px;border:none;border-radius:7px;background:transparent;color:#64748b;display:inline-flex;align-items:center;gap:5px;padding:0 9px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:all .15s;}
 .rai-mode-switch button:hover{color:var(--rai-ai);background:#eef2ff;}
 .rai-mode-switch button.active{background:#fff;color:var(--rai-ai);box-shadow:0 1px 5px rgba(79,70,229,.12);}
-.rai-agent-board{width:100%;max-width:940px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
-.rai-agent-running{align-self:flex-start;margin:4px 0 6px;}
-.rai-agent-run{border:1px solid #e5e7eb;background:rgba(255,255,255,.96);box-shadow:0 10px 30px rgba(15,23,42,.06);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;animation:raiFade .22s ease both;}
-.rai-agent-run.applied{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4,#fff);}
-.rai-agent-run.partial{border-color:#fde68a;background:linear-gradient(180deg,#fffbeb,#fff);}
-.rai-agent-run.error{border-color:#fecaca;background:linear-gradient(180deg,#fff1f2,#fff);}
-.rai-agent-run.undone{opacity:.82;}
-.rai-agent-run-head{display:flex;align-items:center;gap:9px;min-width:0;}
-.rai-agent-run-mark{width:34px;height:34px;border-radius:10px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.rai-agent-run-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
-.rai-agent-run-title strong{font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.rai-agent-run-title small{font-size:10.5px;color:#94a3b8;font-weight:700;}
-.rai-agent-run-status{height:24px;border-radius:999px;padding:0 9px;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
+.rai-agent-board{width:100%;max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:14px;padding-bottom:4px;}
+.rai-agent-thread{display:flex;flex-direction:column;gap:8px;animation:raiFade .22s ease both;}
+.rai-agent-msg{display:flex;align-items:flex-end;gap:8px;max-width:86%;}
+.rai-agent-msg.user{align-self:flex-end;justify-content:flex-end;}
+.rai-agent-msg.assistant{align-self:flex-start;}
+.rai-agent-msg.compact{max-width:70%;}
+.rai-agent-msg-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#eef2ff,#f8faff);color:var(--rai-ai);border:1px solid #e0e7ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-agent-msg-bubble{border:1px solid #e5e7eb;background:#fff;border-radius:15px;padding:10px 12px;box-shadow:0 5px 18px rgba(15,23,42,.04);font-size:12.5px;color:#334155;line-height:1.48;}
+.rai-agent-msg.user .rai-agent-msg-bubble{background:linear-gradient(135deg,var(--rai-ai),#7c3aed);border:none;color:#fff;border-bottom-right-radius:6px;min-width:220px;}
+.rai-agent-msg.assistant .rai-agent-msg-bubble{border-bottom-left-radius:6px;}
+.rai-agent-msg-bubble p{margin:0;}
+.rai-agent-msg.user .rai-agent-msg-bubble>span{display:block;margin-top:4px;font-size:10.5px;font-weight:700;color:rgba(255,255,255,.72);}
+.rai-agent-msg-bubble.plan{width:min(680px,100%);display:flex;flex-direction:column;gap:9px;}
+.rai-agent-msg-bubble.status{padding:7px 8px;background:transparent;border:none;box-shadow:none;}
+.rai-agent-msg-bubble.event{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;font-size:11.5px;font-weight:800;border-radius:999px;background:#f8fafc;box-shadow:none;}
+.rai-agent-msg-bubble.event.applied{border-color:#bbf7d0;background:#ecfdf5;color:#059669;}
+.rai-agent-msg-bubble.event.failed{border-color:#fecaca;background:#fff1f2;color:#e11d48;}
+.rai-agent-msg-bubble.event.undone{border-color:#e2e8f0;background:#f8fafc;color:#64748b;}
+.rai-agent-plan-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.rai-agent-plan-top strong{font-size:13px;color:#0f172a;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rai-agent-run-status{height:22px;border-radius:999px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
 .rai-agent-run-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
 .rai-agent-run-status.partial{color:#b45309;background:#fffbeb;border-color:#fde68a;}
 .rai-agent-run-status.error{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
 .rai-agent-run-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
-.rai-agent-summary{margin:0;font-size:12.5px;line-height:1.55;color:#334155;background:#f8fafc;border:1px solid #edf2f7;border-radius:10px;padding:9px 10px;}
-.rai-agent-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px;}
-.rai-agent-step{display:flex;align-items:flex-start;gap:8px;border:1px solid #edf2f7;background:#fff;border-radius:10px;padding:8px;}
-.rai-agent-step>span{width:20px;height:20px;border-radius:999px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;}
-.rai-agent-step div{min-width:0;display:flex;flex-direction:column;gap:2px;}
-.rai-agent-step strong{font-size:11.5px;color:#334155;}
-.rai-agent-step small{font-size:10.5px;color:#94a3b8;line-height:1.35;}
-.rai-agent-actions{display:flex;flex-direction:column;gap:8px;}
-.rai-agent-action{border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;}
+.rai-agent-summary{margin:0;font-size:12px;line-height:1.5;color:#475569;background:#f8fafc;border:1px solid #edf2f7;border-radius:10px;padding:8px 9px;}
+.rai-agent-sources{border:1px solid #edf2f7;background:#f8fafc;border-radius:10px;overflow:hidden;}
+.rai-agent-sources summary{cursor:pointer;list-style:none;padding:7px 9px;font-size:11px;font-weight:800;color:#64748b;}
+.rai-agent-sources summary::-webkit-details-marker{display:none;}
+.rai-agent-sources .rai-context-card-grid{padding:0 8px 8px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+.rai-agent-plan-list{margin:0;padding:0;display:flex;flex-direction:column;gap:6px;list-style:none;}
+.rai-agent-plan-list li{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border:1px solid #edf2f7;background:#fff;border-radius:9px;}
+.rai-agent-plan-list li>span{width:19px;height:19px;border-radius:999px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;}
+.rai-agent-plan-list strong{font-size:11.5px;color:#334155;}
+.rai-agent-plan-list small{display:block;margin-top:1px;font-size:10.5px;color:#94a3b8;line-height:1.35;}
+.rai-agent-actions{display:flex;flex-direction:column;gap:6px;}
+.rai-agent-action{border:1px solid #edf2f7;background:#fff;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;}
 .rai-agent-action.applied{border-color:#bbf7d0;background:#f0fdf4;}
 .rai-agent-action.failed{border-color:#fecaca;background:#fff1f2;}
 .rai-agent-action.undone{background:#f8fafc;opacity:.78;}
-.rai-agent-action-head{display:flex;align-items:center;gap:9px;min-width:0;}
-.rai-agent-action-icon{width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--agent-action-color) 11%,#fff);color:var(--agent-action-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.rai-agent-action-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
-.rai-agent-action-title strong{font-size:12.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.rai-agent-action-title small{font-size:10.5px;color:#64748b;line-height:1.35;}
-.rai-agent-action-status{height:22px;border-radius:999px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
+.rai-agent-action-head{display:flex;align-items:center;gap:8px;min-width:0;}
+.rai-agent-action-icon{width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--agent-action-color) 10%,#fff);color:var(--agent-action-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rai-agent-action-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+.rai-agent-action-title strong{font-size:12px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-agent-action-title small{font-size:10.5px;color:#64748b;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rai-agent-action-status{height:20px;border-radius:999px;padding:0 7px;display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
 .rai-agent-action-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
 .rai-agent-action-status.failed{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
 .rai-agent-action-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
-.rai-agent-preview{border:1px solid #edf2f7;background:#f8fafc;border-radius:10px;padding:8px 10px;}
-.rai-agent-preview strong{display:block;font-size:12px;color:#334155;margin-bottom:3px;}
-.rai-agent-preview p{margin:0;font-size:11px;color:#64748b;line-height:1.45;}
+.rai-agent-preview{border:1px solid #edf2f7;background:#f8fafc;border-radius:8px;padding:7px 8px;}
+.rai-agent-preview strong{display:block;font-size:11.5px;color:#334155;margin-bottom:2px;}
+.rai-agent-preview p{margin:0;font-size:10.5px;color:#64748b;line-height:1.4;}
 .rai-agent-preview.compact{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .rai-agent-preview.compact strong{margin:0;}
-.rai-agent-diff{display:flex;flex-direction:column;gap:5px;}
-.rai-agent-diff-row{border:1px solid #edf2f7;background:#f8fafc;border-radius:9px;padding:8px;display:flex;flex-direction:column;gap:5px;}
-.rai-agent-diff-row>span{font-size:11px;font-weight:900;color:#334155;}
+.rai-agent-diff{display:flex;flex-direction:column;gap:4px;}
+.rai-agent-diff-row{border:1px solid #edf2f7;background:#f8fafc;border-radius:8px;padding:7px;display:flex;flex-direction:column;gap:4px;}
+.rai-agent-diff-row>span{font-size:10.5px;font-weight:900;color:#334155;}
 .rai-agent-diff-row div{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
-.rai-agent-diff-row em{font-style:normal;color:#94a3b8;text-decoration:line-through;font-size:11px;}
-.rai-agent-diff-row strong{color:#0f172a;font-size:11.5px;}
-.rai-agent-diff-row small{font-size:10.5px;color:#64748b;line-height:1.35;}
+.rai-agent-diff-row em{font-style:normal;color:#94a3b8;text-decoration:line-through;font-size:10.5px;}
+.rai-agent-diff-row strong{color:#0f172a;font-size:11px;}
+.rai-agent-diff-row small{font-size:10px;color:#64748b;line-height:1.32;}
 .rai-agent-action-error{display:flex;align-items:center;gap:6px;border:1px solid #fecaca;background:#fff1f2;color:#e11d48;border-radius:9px;padding:8px 10px;font-size:11px;font-weight:700;}
-.rai-agent-run-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf2f7;padding-top:10px;color:#94a3b8;font-size:10.5px;font-weight:800;}
+.rai-agent-run-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf2f7;padding-top:8px;color:#94a3b8;font-size:10.5px;font-weight:800;}
 .rai-agent-run-footer>div{display:flex;align-items:center;gap:7px;}
-.rai-agent-primary,.rai-agent-secondary{height:32px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;}
+.rai-agent-primary,.rai-agent-secondary{height:30px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;padding:0 11px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;}
 .rai-agent-primary{border:none;background:linear-gradient(135deg,var(--rai-ai),#7c3aed);color:#fff;}
-.rai-agent-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.24);}
+.rai-agent-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.22);}
 .rai-agent-secondary{border:1px solid #e2e8f0;background:#fff;color:#64748b;}
 .rai-agent-secondary:hover{border-color:#fecaca;background:#fff1f2;color:#e11d48;}
 .rai-agent-primary:disabled,.rai-agent-secondary:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}

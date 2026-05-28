@@ -555,6 +555,35 @@ function selectionItemCount(selection = {}) {
         (selection.uploads?.length || 0);
 }
 
+function documentSelectionItemCount(selection = {}) {
+    return (selection.files?.length || 0) + (selection.uploads?.length || 0);
+}
+
+function documentOnlySelection(selection = {}) {
+    const normalized = normalizeSelection(selection || {});
+    return {
+        fields: [],
+        notes: [],
+        chats: [],
+        files: normalized.files || [],
+        uploads: normalized.uploads || []
+    };
+}
+
+function latestConversationDocumentSelection(conversation = {}) {
+    const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
+
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+        const candidate = documentOnlySelection(messages[index]?.contextSelections || {});
+        if (documentSelectionItemCount(candidate) > 0) return candidate;
+    }
+
+    const conversationCandidate = documentOnlySelection(conversation.contextSelections || {});
+    return documentSelectionItemCount(conversationCandidate) > 0
+        ? conversationCandidate
+        : normalizeSelection({});
+}
+
 function emptySelectedContext() {
     return {
         text: '',
@@ -2757,6 +2786,7 @@ function buildDebugPayload({
     previousResponseId,
     includeContext,
     contextChanged,
+    contextSource,
     contextItems,
     ragPreparation,
     engineSettings,
@@ -2784,6 +2814,7 @@ function buildDebugPayload({
         previousResponseId: previousResponseId || '',
         includeContext: Boolean(includeContext),
         contextChanged: Boolean(contextChanged),
+        contextSource: contextSource || 'none',
         userMessage: String(message || ''),
         contextSelections: debugSelection(selection || {}),
         contextItems: sanitizeContextItems(contextItems || []),
@@ -3130,20 +3161,29 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
 
         if (!conversation) return res.status(404).json({ success: false, error: 'Conversation introuvable' });
 
-        const selection = normalizeSelection(req.body.contextSelections || {});
-        const hasSelectedContext = selectionItemCount(selection) > 0;
+        const requestedSelection = normalizeSelection(req.body.contextSelections || {});
+        const hasSelectedContext = selectionItemCount(requestedSelection) > 0;
+        const conversationDocumentSelection = hasSelectedContext
+            ? normalizeSelection({})
+            : latestConversationDocumentSelection(conversation);
+        const reusingConversationDocuments = !hasSelectedContext && documentSelectionItemCount(conversationDocumentSelection) > 0;
+        const selection = hasSelectedContext ? requestedSelection : conversationDocumentSelection;
+        const hasContextForRequest = selectionItemCount(selection) > 0;
+        const contextSource = hasSelectedContext
+            ? 'selected'
+            : (reusingConversationDocuments ? 'conversation-documents' : 'none');
         const engineSettings = await getRecordAiEngineSettings(req);
         const engineRuntime = resolveEngineRuntime(engineSettings);
         const responseRuntime = engineRuntime.response;
-        const selectedContext = hasSelectedContext
+        const selectedContext = hasContextForRequest
             ? await buildSelectedContext(req, record, entity, selection, { query: message, engineSettings })
             : emptySelectedContext();
         const previousResponseId = responseRuntime.engine === 'openai' ? (conversation.openAI?.responseId || null) : null;
-        const contextChanged = hasSelectedContext && selectedContext.fingerprint !== conversation.contextFingerprint;
-        const includeContext = Boolean(hasSelectedContext && selectedContext.text);
+        const contextChanged = hasContextForRequest && selectedContext.fingerprint !== conversation.contextFingerprint;
+        const includeContext = Boolean(hasContextForRequest && selectedContext.text);
         const input = buildAiInput(message, includeContext ? selectedContext.text : '');
-        const contextItems = hasSelectedContext ? await buildContextItems(req, record, entity, selection) : [];
-        const persistedSelection = hasSelectedContext ? persistableSelection(selection) : persistableSelection({});
+        const contextItems = hasContextForRequest ? await buildContextItems(req, record, entity, selection) : [];
+        const persistedSelection = hasContextForRequest ? persistableSelection(selection) : persistableSelection({});
 
         const aiResult = await callRecordAI(req, {
             conversationId: conversation._id,
@@ -3159,9 +3199,9 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
         const userMessage = {
             role: 'user',
             content: message,
-            contextSelections: hasSelectedContext ? persistedSelection : undefined,
-            contextItems: hasSelectedContext ? contextItems : undefined,
-            contextFingerprint: hasSelectedContext ? selectedContext.fingerprint : '',
+            contextSelections: hasContextForRequest ? persistedSelection : undefined,
+            contextItems: hasContextForRequest ? contextItems : undefined,
+            contextFingerprint: hasContextForRequest ? selectedContext.fingerprint : '',
             contextStats: {
                 sections: selectedContext.stats.sections,
                 chars: selectedContext.stats.chars,
@@ -3177,6 +3217,7 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
                 previousResponseId,
                 includeContext,
                 contextChanged,
+                contextSource,
                 contextItems,
                 engineSettings,
                 engineRuntime
@@ -3197,8 +3238,8 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
 
         conversation.messages = nextMessages;
         conversation.model = runtimeModelLabel(aiRuntime);
-        conversation.contextSelections = persistableSelection({});
-        conversation.contextFingerprint = '';
+        conversation.contextSelections = persistedSelection;
+        conversation.contextFingerprint = hasContextForRequest ? selectedContext.fingerprint : '';
         conversation.openAI = {
             responseId: aiRuntime.engine === 'openai' ? (aiResult.responseId || '') : '',
             updatedAt: aiRuntime.engine === 'openai' && aiResult.responseId ? new Date() : null

@@ -7,6 +7,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
 const { canAccessRecord, canEditRecordModule } = require('../../middleware/shared-records-helper');
+const { ensureEventsEntity } = require('../../services/events-entity.service');
 const OcrService = require('../../services/ocr.service');
 const IntegrationService = require('../../src/integrations/services/IntegrationService');
 const IntegrationProvider = require('../../src/integrations/models/IntegrationProvider.model');
@@ -3565,24 +3566,55 @@ function agentToolLabel(tool) {
     if (tool === 'create_note') return 'Créer une note';
     if (tool === 'update_note') return 'Modifier une note';
     if (tool === 'create_doc') return 'Créer un document';
-    if (tool === 'use_template') return 'Utiliser un template';
+    if (tool === 'update_doc') return 'Modifier un document';
+    if (tool === 'generate_doc' || tool === 'use_template') return 'Générer un document';
     if (tool === 'update_fiche') return 'Mettre à jour la fiche';
     if (tool === 'create_task') return 'Créer une tâche';
     if (tool === 'update_task') return 'Modifier une tâche';
+    if (tool === 'create_event') return 'Créer un événement';
+    if (tool === 'update_event') return 'Modifier un événement';
     return tool;
+}
+
+function agentCanonicalTool(tool) {
+    const value = String(tool || '').trim();
+    if (value === 'use_template') return 'generate_doc';
+    return value;
 }
 
 function agentToolLookup(toolCatalog = {}) {
     const notes = Array.isArray(toolCatalog.notes) ? toolCatalog.notes : [];
     const templates = Array.isArray(toolCatalog.templates) ? toolCatalog.templates : [];
     const tasks = Array.isArray(toolCatalog.tasks) ? toolCatalog.tasks : [];
+    const documents = Array.isArray(toolCatalog.documents) ? toolCatalog.documents : [];
+    const events = Array.isArray(toolCatalog.events) ? toolCatalog.events : [];
     const noteById = new Map(notes.map(note => [cleanId(note.id), note]));
     const noteByTitle = new Map(notes.map(note => [agentNormalizeLabel(note.title), note]));
     const templateById = new Map(templates.map(template => [cleanId(template.id), template]));
     const templateByName = new Map(templates.map(template => [agentNormalizeLabel(template.name), template]));
     const taskById = new Map(tasks.map(task => [cleanId(task.id), task]));
     const taskByTitle = new Map(tasks.map(task => [agentNormalizeLabel(task.title), task]));
-    return { notes, templates, tasks, noteById, noteByTitle, templateById, templateByName, taskById, taskByTitle };
+    const documentById = new Map(documents.map(document => [cleanId(document.id), document]));
+    const documentByName = new Map(documents.map(document => [agentNormalizeLabel(document.name), document]));
+    const eventById = new Map(events.map(event => [cleanId(event.id), event]));
+    const eventByTitle = new Map(events.map(event => [agentNormalizeLabel(event.title), event]));
+    return {
+        notes,
+        templates,
+        tasks,
+        documents,
+        events,
+        noteById,
+        noteByTitle,
+        templateById,
+        templateByName,
+        taskById,
+        taskByTitle,
+        documentById,
+        documentByName,
+        eventById,
+        eventByTitle
+    };
 }
 
 function agentResolveNoteRef(input = {}, lookup = {}) {
@@ -3609,8 +3641,101 @@ function agentResolveTaskRef(input = {}, lookup = {}) {
     return id ? { id, title: input.taskTitle || input.title || 'Tâche' } : null;
 }
 
+function agentResolveDocumentRef(input = {}, lookup = {}) {
+    const id = cleanId(input.documentId || input.docId || input.id || input.targetId);
+    if (id && lookup.documentById?.has(id)) return lookup.documentById.get(id);
+    const name = agentNormalizeLabel(input.documentName || input.docName || input.name || input.title || input.targetTitle);
+    if (name && lookup.documentByName?.has(name)) return lookup.documentByName.get(name);
+    return id ? { id, name: input.documentName || input.name || 'Document' } : null;
+}
+
+function agentResolveEventRef(input = {}, lookup = {}) {
+    const id = cleanId(input.eventId || input.id || input.targetId);
+    if (id && lookup.eventById?.has(id)) return lookup.eventById.get(id);
+    const title = agentNormalizeLabel(input.eventTitle || input.title || input.targetTitle || input.name);
+    if (title && lookup.eventByTitle?.has(title)) return lookup.eventByTitle.get(title);
+    return id ? { id, title: input.eventTitle || input.title || 'Événement' } : null;
+}
+
 function agentObjectInput(value = {}) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function agentResolveCatalogOption(value, options = []) {
+    const raw = cleanId(value);
+    if (!raw) return null;
+    const normalized = agentNormalizeLabel(raw);
+    return options.find(option => {
+        const optionId = cleanId(option.id || option._id || option.optionId);
+        const optionValue = cleanId(option.value);
+        const optionLabel = cleanId(option.label || option.name);
+        return optionId === raw
+            || optionValue === raw
+            || agentNormalizeLabel(optionLabel) === normalized
+            || agentNormalizeLabel(optionValue) === normalized;
+    }) || null;
+}
+
+function agentNormalizeEventType(value, toolCatalog = {}) {
+    const option = agentResolveCatalogOption(value, toolCatalog.eventTypes || []);
+    if (option) return option.value || option.label || 'autre';
+    const normalized = agentNormalizeLabel(value);
+    if (!normalized) return 'autre';
+    if (/reunion|meeting/.test(normalized)) return 'reunion';
+    if (/rappel|relance|reminder/.test(normalized)) return 'rappel';
+    if (/tache|task|action/.test(normalized)) return 'tache';
+    if (/consultation/.test(normalized)) return 'consultation';
+    if (/personnel|personal/.test(normalized)) return 'personnel';
+    return 'autre';
+}
+
+function agentNormalizeEventStatus(input = {}, toolCatalog = {}) {
+    const option = agentResolveCatalogOption(
+        input.statusOptionId || input.statusId || input.status || input.statusLabel,
+        toolCatalog.eventStatuses || []
+    );
+    if (!option) return { statusOptionId: cleanId(input.statusOptionId || input.statusId), status: agentSafeString(input.status || input.statusLabel || '', 80) };
+    return {
+        statusOptionId: cleanId(option.id || option._id || option.optionId),
+        status: option.label || input.status || ''
+    };
+}
+
+function agentNormalizeEventDate(value) {
+    if (value === undefined || value === null || value === '') return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? agentSafeString(value, 80) : date.toISOString();
+}
+
+function agentNormalizeEventInput(input = {}, toolCatalog = {}, { requireTitle = true } = {}) {
+    const title = agentSafeString(input.title || input.name || input.eventTitle || '', 180);
+    if (requireTitle && !title) return null;
+
+    const durationRaw = input.duration ?? input.durationMinutes ?? input.duree ?? input.duree_evenement;
+    const duration = durationRaw === undefined || durationRaw === ''
+        ? ''
+        : Math.min(1440, Math.max(0, parseInt(durationRaw, 10) || 0));
+    const status = agentNormalizeEventStatus(input, toolCatalog);
+    const fields = {};
+    if (title) fields.title = title;
+    if (input.date !== undefined || input.startDate !== undefined || input.start !== undefined) {
+        fields.date = agentNormalizeEventDate(input.date || input.startDate || input.start);
+    }
+    if (input.endDate !== undefined || input.end !== undefined) {
+        fields.endDate = agentNormalizeEventDate(input.endDate || input.end);
+    }
+    if (duration !== '') fields.duration = duration || 30;
+    if (input.type !== undefined || input.eventType !== undefined) fields.type = agentNormalizeEventType(input.type || input.eventType, toolCatalog);
+    if (input.lieu !== undefined || input.location !== undefined || input.address !== undefined || input.place !== undefined) {
+        fields.lieu = agentSafeString(input.lieu || input.location || input.address || input.place || '', 500);
+    }
+    if (input.notes !== undefined || input.description !== undefined || input.content !== undefined) {
+        fields.notes = agentSafeString(input.notes || input.description || input.content || '', 4000);
+    }
+    if (status.statusOptionId) fields.statusOptionId = status.statusOptionId;
+    if (status.status) fields.status = status.status;
+
+    return fields;
 }
 
 function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], toolCatalog = {}) {
@@ -3620,7 +3745,7 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
     const actions = [];
 
     rawActions.slice(0, 10).forEach((raw, index) => {
-        const tool = String(raw.tool || raw.type || '').trim();
+        const tool = agentCanonicalTool(raw.tool || raw.type || '');
         const id = `act_${crypto.randomBytes(6).toString('hex')}`;
 
         if (tool === 'create_note') {
@@ -3723,7 +3848,63 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             return;
         }
 
-        if (tool === 'use_template') {
+        if (tool === 'update_doc') {
+            const input = agentObjectInput(raw.input || raw);
+            const document = agentResolveDocumentRef(input, toolLookup);
+            if (!document?.id) return;
+            const name = input.name !== undefined || input.title !== undefined
+                ? agentSafeString(input.name || input.title || '', 160)
+                : '';
+            const contentMarkdown = input.contentMarkdown !== undefined || input.markdown !== undefined || input.content !== undefined
+                ? agentSafeString(input.contentMarkdown || input.markdown || input.content || '', 40000)
+                : '';
+            const contentHtml = input.contentHtml !== undefined || input.html !== undefined
+                ? agentSafeString(input.contentHtml || input.html || '', 60000)
+                : '';
+            const mode = ['replace', 'append'].includes(String(input.mode || '').toLowerCase())
+                ? String(input.mode).toLowerCase()
+                : 'replace';
+            if (!name && !contentMarkdown && !contentHtml) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Modifier le document "${document.name || document.id}"`, 500),
+                status: 'proposed',
+                input: {
+                    documentId: cleanId(document.id),
+                    name,
+                    contentMarkdown,
+                    contentHtml,
+                    mode
+                },
+                preview: {
+                    title: name || document.name || 'Document',
+                    excerpt: shortPlainText(contentHtml || contentMarkdown || 'Nom uniquement', 520),
+                    target: document.name || document.id,
+                    meta: mode === 'append' ? 'Ajout au document' : 'Remplacement du contenu'
+                },
+                diff: [
+                    ...(name ? [{
+                        fieldId: `doc:${document.id}:name`,
+                        label: `Document "${document.name || document.id}"`,
+                        before: document.name || '',
+                        after: name,
+                        reason: agentSafeString(input.reason || raw.description || '', 400)
+                    }] : []),
+                    ...((contentMarkdown || contentHtml) ? [{
+                        fieldId: `doc:${document.id}:content`,
+                        label: 'Contenu du document',
+                        before: document.preview || '',
+                        after: shortPlainText(contentHtml || contentMarkdown, 180),
+                        reason: mode === 'append' ? 'Ajout au contenu existant' : 'Remplacement du contenu'
+                    }] : [])
+                ]
+            });
+            return;
+        }
+
+        if (tool === 'generate_doc') {
             const input = agentObjectInput(raw.input || raw);
             const template = agentResolveTemplateRef(input, toolLookup);
             if (!template?.id) return;
@@ -3846,6 +4027,59 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     fieldId: `task:${task.id}:${key}`,
                     label: `Tâche: ${key}`,
                     before: task[key] || '',
+                    after: value,
+                    reason: agentSafeString(input.reason || raw.description || '', 400)
+                }))
+            });
+            return;
+        }
+
+        if (tool === 'create_event') {
+            const input = agentObjectInput(raw.input || raw);
+            const fields = agentNormalizeEventInput(input, toolCatalog, { requireTitle: true });
+            if (!fields?.title) return;
+            if (!fields.date) fields.date = new Date().toISOString();
+            if (!fields.duration && !fields.endDate) fields.duration = 30;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Créer l’événement "${fields.title}"`, 500),
+                status: 'proposed',
+                input: fields,
+                preview: {
+                    title: fields.title,
+                    excerpt: [fields.date, fields.lieu, fields.type].filter(Boolean).join(' · '),
+                    meta: 'Agenda'
+                },
+                diff: null
+            });
+            return;
+        }
+
+        if (tool === 'update_event') {
+            const input = agentObjectInput(raw.input || raw);
+            const event = agentResolveEventRef(input, toolLookup);
+            if (!event?.id) return;
+            const fields = agentNormalizeEventInput(input.fields || input, toolCatalog, { requireTitle: false });
+            if (!fields || !Object.keys(fields).length) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(raw.description || `Modifier l’événement "${event.title || event.id}"`, 500),
+                status: 'proposed',
+                input: { eventId: cleanId(event.id), fields },
+                preview: {
+                    title: fields.title || event.title || 'Événement',
+                    excerpt: [fields.date, fields.endDate, fields.lieu, fields.status, fields.type].filter(Boolean).join(' · '),
+                    target: event.title || event.id,
+                    meta: 'Agenda'
+                },
+                diff: Object.entries(fields).map(([key, value]) => ({
+                    fieldId: `event:${event.id}:${key}`,
+                    label: `Événement: ${key}`,
+                    before: event[key] || '',
                     after: value,
                     reason: agentSafeString(input.reason || raw.description || '', 400)
                 }))
@@ -4046,10 +4280,81 @@ async function agentDefaultSelection(req, record, entity, goal = '') {
     });
 }
 
+function agentRecordLinkValues(record = {}) {
+    const values = [];
+    if (record._id) values.push(record._id);
+    const stringId = cleanId(record._id);
+    if (stringId) values.push(stringId);
+    const seen = new Set();
+    return values.filter(value => {
+        const key = `${typeof value}:${value?.toString ? value.toString() : value}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function agentDocumentRecordQuery(record = {}, documentId = null) {
+    const recordIds = agentRecordLinkValues(record);
+    const query = {
+        isTemplate: { $ne: true },
+        $or: [
+            { 'linkedRecords.recordId': { $in: recordIds } },
+            { draftRecordId: { $in: recordIds } },
+            { 'generatedFile.recordId': { $in: recordIds } }
+        ]
+    };
+    if (documentId) query._id = documentId;
+    return query;
+}
+
+function agentEventRecordQuery(record = {}, eventsEntity = {}, eventId = null) {
+    const recordIds = agentRecordLinkValues(record);
+    const query = {
+        entityId: eventsEntity._id,
+        'relations.value': { $in: recordIds }
+    };
+    if (eventId) query._id = eventId;
+    return query;
+}
+
+function agentEventFieldMap(eventsEntity = {}) {
+    const map = {};
+    (eventsEntity.customFields || []).forEach(field => {
+        if (field?.name && field?._id) map[field.name] = cleanId(field._id);
+    });
+    return map;
+}
+
+function agentEventCustomFieldValue(event = {}, fieldMap = {}, fieldName = '') {
+    const fieldId = fieldMap[fieldName];
+    if (!fieldId) return '';
+    const found = (event.customFields || []).find(item => cleanId(item.field_id?._id || item.field_id) === fieldId);
+    return found ? found.value : '';
+}
+
+function agentEventStatusOptions(eventsEntity = {}) {
+    return (eventsEntity.statusClassification?.options || []).map(option => ({
+        id: cleanId(option._id),
+        label: option.label || '',
+        color: option.color || ''
+    }));
+}
+
+function agentEventTypeOptions(eventsEntity = {}) {
+    const typeField = (eventsEntity.customFields || []).find(field => field.name === 'type_evenement');
+    return (typeField?.type_config?.options || []).map(option => ({
+        value: option.value || option.label || '',
+        label: option.label || option.value || ''
+    }));
+}
+
 async function agentBuildToolCatalog(req, record, entity) {
     const RecordNote = await tenantCollection(req, 'RecordNote');
     const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
     const RecordTask = await tenantCollection(req, 'RecordTask');
+    const Document = await tenantCollection(req, 'Document');
+    const Record = await tenantCollection(req, 'Record');
 
     const notes = await RecordNote.find({
         recordId: record._id,
@@ -4084,6 +4389,20 @@ async function agentBuildToolCatalog(req, record, entity) {
         .sort({ updatedAt: -1 })
         .limit(60)
         .lean();
+    const documents = await Document.find(agentDocumentRecordQuery(record))
+        .select('name status isDraft draftOutputFormat generatedFrom generatedFile pages updatedAt createdAt')
+        .sort({ updatedAt: -1 })
+        .limit(60)
+        .lean();
+    const eventsEntity = await ensureEventsEntity(req);
+    const fieldMap = agentEventFieldMap(eventsEntity);
+    const events = await Record.find(agentEventRecordQuery(record, eventsEntity))
+        .select('title date end_date customFields classificationValues updatedAt createdAt')
+        .sort({ date: -1, updatedAt: -1 })
+        .limit(60)
+        .lean();
+    const eventStatuses = agentEventStatusOptions(eventsEntity);
+    const eventTypes = agentEventTypeOptions(eventsEntity);
 
     return {
         notes: notes.map(note => ({
@@ -4120,14 +4439,46 @@ async function agentBuildToolCatalog(req, record, entity) {
             dueDate: task.dueDate || '',
             updatedAt: task.updatedAt
         })),
+        documents: documents.map(document => ({
+            id: cleanId(document._id),
+            name: document.name || 'Document',
+            status: document.status || '',
+            draft: Boolean(document.isDraft),
+            generatedFrom: document.generatedFrom?.templateName || document.generatedFile?.generatedFromName || '',
+            pageCount: Array.isArray(document.pages) ? document.pages.length : 0,
+            preview: shortPlainText(document.pages?.[0]?.content || '', 220),
+            updatedAt: document.updatedAt || document.createdAt
+        })),
+        events: events.map(event => {
+            const statusOption = eventStatuses.find(option =>
+                (event.classificationValues || []).some(cv => cleanId(cv.optionId) === option.id)
+            );
+            return {
+                id: cleanId(event._id),
+                title: event.title || 'Événement',
+                date: event.date || '',
+                endDate: event.end_date || '',
+                duration: agentEventCustomFieldValue(event, fieldMap, 'duree_evenement') || '',
+                type: agentEventCustomFieldValue(event, fieldMap, 'type_evenement') || '',
+                lieu: agentEventCustomFieldValue(event, fieldMap, 'lieu_evenement') || '',
+                notes: shortPlainText(agentEventCustomFieldValue(event, fieldMap, 'notes_evenement') || '', 220),
+                status: statusOption?.label || '',
+                updatedAt: event.updatedAt || event.createdAt
+            };
+        }),
+        eventStatuses,
+        eventTypes,
         tools: [
             'create_note',
             'update_note',
             'create_doc',
-            'use_template',
+            'update_doc',
+            'generate_doc',
             'update_fiche',
             'create_task',
-            'update_task'
+            'update_task',
+            'create_event',
+            'update_event'
         ]
     };
 }
@@ -4148,16 +4499,19 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
         "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation? }. Crée un document brouillon lié à la fiche.",
-        "- use_template: { templateId, variables, outputName? }. Crée un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue.",
+        "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append.",
+        "- generate_doc: { templateId, variables, outputName? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
         "- create_task: { title, description, dueDate, priority }. Utilise-le pour les rappels utiles comme une date limite.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
+        "- create_event: { title, date, endDate?, duration?, type?, lieu?, notes?, status? }. Crée un événement Agenda lié à la fiche.",
+        "- update_event: { eventId, fields }. fields peut contenir title, date, endDate, duration, type, lieu, notes, status. Utilise eventId depuis le catalogue.",
         "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
-        "Pour modifier une note ou utiliser un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
+        "Pour modifier une note, un document, un événement ou générer depuis un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"..."}},{"tool":"use_template","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"..."}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -4166,7 +4520,11 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         JSON.stringify({
             notes: (toolCatalog.notes || []).slice(0, 40),
             templates: (toolCatalog.templates || []).slice(0, 60),
-            tasks: (toolCatalog.tasks || []).slice(0, 60)
+            documents: (toolCatalog.documents || []).slice(0, 60),
+            tasks: (toolCatalog.tasks || []).slice(0, 60),
+            events: (toolCatalog.events || []).slice(0, 60),
+            eventStatuses: toolCatalog.eventStatuses || [],
+            eventTypes: toolCatalog.eventTypes || []
         })
     ].join('\n');
 }
@@ -4513,6 +4871,84 @@ function agentTemplateVariables(template = {}, inputVariables = {}) {
     return variables;
 }
 
+function agentResolveEventStatus(eventsEntity = {}, input = {}) {
+    const raw = input.statusOptionId || input.statusId || input.status || input.statusLabel;
+    const option = agentResolveCatalogOption(raw, agentEventStatusOptions(eventsEntity));
+    const defaultOption = eventsEntity.statusClassification?.options?.[0] || null;
+    const chosen = option
+        ? (eventsEntity.statusClassification?.options || []).find(item => cleanId(item._id) === cleanId(option.id))
+        : (input.statusOptionId || input.status ? null : defaultOption);
+    if (!chosen) return null;
+    return {
+        classificationId: eventsEntity.statusClassification?._id,
+        optionId: chosen._id,
+        label: chosen.label || input.status || '',
+        color: chosen.color || '#3b82f6'
+    };
+}
+
+function agentSetEventCustomField(event, fieldMap = {}, fieldName = '', value) {
+    if (value === undefined) return;
+    const fieldId = fieldMap[fieldName];
+    if (!fieldId) return;
+    event.customFields = event.customFields || [];
+    const index = event.customFields.findIndex(item => cleanId(item.field_id?._id || item.field_id) === fieldId);
+    if (index >= 0) {
+        event.customFields[index].value = value;
+    } else {
+        event.customFields.push({ field_id: fieldId, value });
+    }
+    if (typeof event.markModified === 'function') event.markModified('customFields');
+}
+
+function agentApplyEventFields(event, eventsEntity = {}, fields = {}, { includeDefaults = false } = {}) {
+    const fieldMap = agentEventFieldMap(eventsEntity);
+    const updates = agentObjectInput(fields);
+    if (updates.title !== undefined) event.title = agentSafeString(updates.title, 180) || event.title || 'Nouvel événement';
+    if (updates.date !== undefined) {
+        const date = updates.date ? new Date(updates.date) : null;
+        event.date = date && !Number.isNaN(date.getTime()) ? date : event.date;
+    } else if (includeDefaults && !event.date) {
+        event.date = new Date();
+    }
+    if (updates.endDate !== undefined) {
+        const endDate = updates.endDate ? new Date(updates.endDate) : null;
+        event.end_date = endDate && !Number.isNaN(endDate.getTime()) ? endDate : null;
+        agentSetEventCustomField(event, fieldMap, 'heure_fin', updates.endDate || '');
+    }
+    if (updates.duration !== undefined) agentSetEventCustomField(event, fieldMap, 'duree_evenement', parseInt(updates.duration, 10) || 30);
+    if (updates.type !== undefined) agentSetEventCustomField(event, fieldMap, 'type_evenement', agentNormalizeEventType(updates.type, { eventTypes: agentEventTypeOptions(eventsEntity) }));
+    if (updates.lieu !== undefined) agentSetEventCustomField(event, fieldMap, 'lieu_evenement', agentSafeString(updates.lieu, 500));
+    if (updates.notes !== undefined) agentSetEventCustomField(event, fieldMap, 'notes_evenement', agentSafeString(updates.notes, 4000));
+
+    const statusPatch = updates.statusOptionId || updates.statusId || updates.status || updates.statusLabel;
+    const statusValue = statusPatch || (includeDefaults ? '' : null);
+    if (statusValue !== null && eventsEntity.statusClassification) {
+        const status = agentResolveEventStatus(eventsEntity, updates);
+        if (status?.optionId) {
+            event.classificationValues = (event.classificationValues || []).filter(
+                cv => cleanId(cv.classificationId) !== cleanId(eventsEntity.statusClassification._id)
+            );
+            event.classificationValues.push(status);
+            if (typeof event.markModified === 'function') event.markModified('classificationValues');
+        }
+    }
+}
+
+async function agentComputeRecordDenorm(recordData, eventsEntity, Record, Entity) {
+    try {
+        const denormService = require('../../services/record-denorm.service');
+        const source = typeof recordData.toObject === 'function'
+            ? recordData.toObject({ depopulate: true })
+            : recordData;
+        const denorm = await denormService.computeDenorm(source, eventsEntity, Record, Entity);
+        if (typeof recordData.set === 'function') recordData.set(denorm);
+        else Object.assign(recordData, denorm);
+    } catch (_) {
+        // Denormalization is a display optimization; the event itself remains valid without it.
+    }
+}
+
 async function applyAgentAction(req, record, entity, action) {
     if (action.tool === 'create_note') {
         const canEdit = await canEditRecordModule(req, record._id, 'notes');
@@ -4621,7 +5057,61 @@ async function applyAgentAction(req, record, entity, action) {
         };
     }
 
-    if (action.tool === 'use_template') {
+    if (action.tool === 'update_doc') {
+        const canEdit = await canEditRecordModule(req, record._id, 'docs');
+        if (!canEdit) throw new Error('Accès en lecture seule aux documents');
+
+        const Document = await tenantCollection(req, 'Document');
+        const document = await Document.findOne(agentDocumentRecordQuery(record, action.input?.documentId));
+        if (!document) throw new Error('Document introuvable');
+
+        const before = {
+            documentId: cleanId(document._id),
+            name: document.name || '',
+            hadPage0: Boolean(document.pages?.[0]),
+            page0Content: document.pages?.[0]?.content || ''
+        };
+        if (action.input?.name) document.name = action.input.name;
+        if (action.input?.contentMarkdown || action.input?.contentHtml) {
+            const nextContent = agentDocContentHtml(action);
+            document.pages = Array.isArray(document.pages) ? document.pages : [];
+            if (!document.pages[0]) {
+                document.pages.push({
+                    content: '',
+                    mode: 'edition',
+                    elements: [],
+                    rows: [],
+                    background: { color: '#ffffff' },
+                    order: 0
+                });
+            }
+            document.pages[0].content = action.input?.mode === 'append'
+                ? `${document.pages[0].content || ''}\n<hr>\n${nextContent}`
+                : nextContent;
+            document.markModified('pages');
+        }
+        document.metadata = {
+            ...(document.metadata?.toObject?.() || document.metadata || {}),
+            updatedByAgent: true,
+            lastAgentTool: action.tool,
+            lastAgentActionId: action.id,
+            lastAgentUpdatedAt: new Date()
+        };
+        await document.save();
+
+        return {
+            before,
+            after: { documentId: cleanId(document._id), name: document.name },
+            result: {
+                documentId: cleanId(document._id),
+                name: document.name,
+                url: agentDocumentUrl(req, document._id)
+            },
+            inverse: { tool: 'restore_document', document: before }
+        };
+    }
+
+    if (action.tool === 'generate_doc' || action.tool === 'use_template') {
         const canEdit = await canEditRecordModule(req, record._id, 'docs');
         if (!canEdit) throw new Error('Accès en lecture seule aux documents');
 
@@ -4817,6 +5307,70 @@ async function applyAgentAction(req, record, entity, action) {
         };
     }
 
+    if (action.tool === 'create_event') {
+        const canEdit = await canEditRecordModule(req, record._id, 'agenda');
+        if (!canEdit) throw new Error("Accès en lecture seule à l'agenda");
+
+        const Entity = await tenantCollection(req, 'Entity');
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        const parentEntity = await Entity.findById(record.entityId).select('slug').lean();
+        const relationKey = parentEntity?.slug ? `event_${parentEntity.slug}` : null;
+        const event = new Record({
+            entityId: eventsEntity._id,
+            title: action.input?.title || 'Nouvel événement',
+            date: new Date(),
+            end_date: null,
+            published: true,
+            customFields: [],
+            classificationValues: [],
+            relations: relationKey ? [{ relationKey, value: cleanId(record._id) }] : [],
+            createdBy: req.user?._id
+        });
+        agentApplyEventFields(event, eventsEntity, action.input || {}, { includeDefaults: true });
+        await agentComputeRecordDenorm(event, eventsEntity, Record, Entity);
+        await event.save();
+
+        return {
+            before: null,
+            after: { eventId: cleanId(event._id), title: event.title },
+            result: { eventId: cleanId(event._id), title: event.title },
+            inverse: { tool: 'delete_event', eventId: cleanId(event._id) }
+        };
+    }
+
+    if (action.tool === 'update_event') {
+        const canEdit = await canEditRecordModule(req, record._id, 'agenda');
+        if (!canEdit) throw new Error("Accès en lecture seule à l'agenda");
+
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        const event = await Record.findOne(agentEventRecordQuery(record, eventsEntity, action.input?.eventId));
+        if (!event) throw new Error('Événement introuvable');
+
+        const before = {
+            eventId: cleanId(event._id),
+            title: event.title || '',
+            date: event.date || null,
+            end_date: event.end_date || null,
+            customFields: agentCloneWithoutMongoIds((event.customFields || []).map(item =>
+                typeof item.toObject === 'function' ? item.toObject({ depopulate: true }) : item
+            )),
+            classificationValues: agentCloneWithoutMongoIds((event.classificationValues || []).map(item =>
+                typeof item.toObject === 'function' ? item.toObject({ depopulate: true }) : item
+            ))
+        };
+        agentApplyEventFields(event, eventsEntity, action.input?.fields || {});
+        await event.save();
+
+        return {
+            before,
+            after: { eventId: cleanId(event._id), title: event.title },
+            result: { eventId: cleanId(event._id), title: event.title },
+            inverse: { tool: 'restore_event', event: before }
+        };
+    }
+
     throw new Error(`Tool non supporté: ${action.tool}`);
 }
 
@@ -4865,6 +5419,28 @@ async function undoAgentLog(req, record, entity, log) {
         return;
     }
 
+    if (inverse.tool === 'restore_document' && inverse.document?.documentId) {
+        const Document = await tenantCollection(req, 'Document');
+        const document = await Document.findOne(agentDocumentRecordQuery(record, inverse.document.documentId));
+        if (!document) return;
+        document.name = inverse.document.name || document.name || 'Document';
+        document.pages = Array.isArray(document.pages) ? document.pages : [];
+        if (!document.pages[0]) {
+            document.pages.push({
+                content: '',
+                mode: 'edition',
+                elements: [],
+                rows: [],
+                background: { color: '#ffffff' },
+                order: 0
+            });
+        }
+        document.pages[0].content = inverse.document.page0Content || '';
+        document.markModified('pages');
+        await document.save();
+        return;
+    }
+
     if (inverse.tool === 'restore_fiche') {
         const Record = await tenantCollection(req, 'Record');
         const editableRecord = await Record.findById(record._id);
@@ -4903,6 +5479,31 @@ async function undoAgentLog(req, record, entity, log) {
                     priority: inverse.task.priority || 'Aucune',
                     priorityColor: inverse.task.priorityColor || '',
                     dueDate: inverse.task.dueDate || null
+                }
+            }
+        );
+        return;
+    }
+
+    if (inverse.tool === 'delete_event' && inverse.eventId) {
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        await Record.deleteOne(agentEventRecordQuery(record, eventsEntity, inverse.eventId));
+        return;
+    }
+
+    if (inverse.tool === 'restore_event' && inverse.event?.eventId) {
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        await Record.updateOne(
+            agentEventRecordQuery(record, eventsEntity, inverse.event.eventId),
+            {
+                $set: {
+                    title: inverse.event.title || 'Événement',
+                    date: inverse.event.date || null,
+                    end_date: inverse.event.end_date || null,
+                    customFields: inverse.event.customFields || [],
+                    classificationValues: inverse.event.classificationValues || []
                 }
             }
         );
@@ -5187,7 +5788,11 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             toolCatalog: {
                 notes: (toolCatalog.notes || []).map(note => ({ id: note.id, title: note.title, protected: note.protected })),
                 templates: (toolCatalog.templates || []).map(template => ({ id: template.id, name: template.name, inputFields: template.inputFields })),
-                tasks: (toolCatalog.tasks || []).map(task => ({ id: task.id, title: task.title, status: task.status, priority: task.priority }))
+                documents: (toolCatalog.documents || []).map(document => ({ id: document.id, name: document.name, status: document.status, draft: document.draft })),
+                tasks: (toolCatalog.tasks || []).map(task => ({ id: task.id, title: task.title, status: task.status, priority: task.priority })),
+                events: (toolCatalog.events || []).map(event => ({ id: event.id, title: event.title, date: event.date, status: event.status })),
+                eventStatuses: toolCatalog.eventStatuses || [],
+                eventTypes: toolCatalog.eventTypes || []
             },
             engineRuntime,
             parsed

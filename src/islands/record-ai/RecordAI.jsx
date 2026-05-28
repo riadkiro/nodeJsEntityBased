@@ -588,10 +588,13 @@ function agentToolIcon(tool) {
     if (tool === 'create_note') return 'solar:notebook-bold-duotone'
     if (tool === 'update_note') return 'solar:pen-new-square-bold-duotone'
     if (tool === 'create_doc') return 'solar:document-add-bold-duotone'
-    if (tool === 'use_template') return 'solar:document-medicine-bold-duotone'
+    if (tool === 'update_doc') return 'solar:document-text-bold-duotone'
+    if (tool === 'generate_doc' || tool === 'use_template') return 'solar:document-medicine-bold-duotone'
     if (tool === 'update_fiche') return 'solar:card-bold-duotone'
     if (tool === 'create_task') return 'solar:checklist-minimalistic-bold-duotone'
     if (tool === 'update_task') return 'solar:checklist-minimalistic-bold-duotone'
+    if (tool === 'create_event') return 'solar:calendar-add-bold-duotone'
+    if (tool === 'update_event') return 'solar:calendar-mark-bold-duotone'
     return 'solar:magic-stick-3-bold-duotone'
 }
 
@@ -599,10 +602,13 @@ function agentToolColor(tool) {
     if (tool === 'create_note') return '#8b5cf6'
     if (tool === 'update_note') return '#a855f7'
     if (tool === 'create_doc') return '#0f766e'
-    if (tool === 'use_template') return '#2563eb'
+    if (tool === 'update_doc') return '#0d9488'
+    if (tool === 'generate_doc' || tool === 'use_template') return '#2563eb'
     if (tool === 'update_fiche') return '#4361ee'
     if (tool === 'create_task') return '#10b981'
     if (tool === 'update_task') return '#14b8a6'
+    if (tool === 'create_event') return '#f59e0b'
+    if (tool === 'update_event') return '#d97706'
     return '#4f46e5'
 }
 
@@ -618,7 +624,7 @@ function AgentActionCard({ action = {} }) {
     const diff = Array.isArray(action.diff) ? action.diff : []
     const failed = action.status === 'failed'
     const previewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
-    const genericPreviewTools = ['update_note', 'create_doc', 'use_template', 'update_task']
+    const genericPreviewTools = ['update_note', 'create_doc', 'update_doc', 'generate_doc', 'use_template', 'update_task', 'create_event', 'update_event']
 
     return (
         <div className={`rai-agent-action ${action.status || 'proposed'}`} style={{ '--agent-action-color': color }}>

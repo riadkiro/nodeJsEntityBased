@@ -16,7 +16,19 @@ const RecordAgentActionSchema = new mongoose.Schema({
     id: { type: String, required: true },
     tool: {
         type: String,
-        enum: ['create_note', 'update_note', 'create_doc', 'use_template', 'update_fiche', 'create_task', 'update_task'],
+        enum: [
+            'create_note',
+            'update_note',
+            'create_doc',
+            'update_doc',
+            'generate_doc',
+            'use_template',
+            'update_fiche',
+            'create_task',
+            'update_task',
+            'create_event',
+            'update_event'
+        ],
         required: true
     },
     title: { type: String, default: '' },

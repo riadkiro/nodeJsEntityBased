@@ -1335,6 +1335,48 @@ function buildRagFingerprint(req, file, stat) {
     ].join('|'));
 }
 
+function ragConfigHash() {
+    return hashText([
+        `ragMaxPages:${RECORD_AI_RAG_MAX_PAGES}`,
+        `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
+    ].join('|'));
+}
+
+function hashFileContent(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+
+        stream.on('data', chunk => hash.update(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(hash.digest('hex')));
+    });
+}
+
+async function findReusableRagDocument(RecordAiDocument, { contentHash, configHash, excludeId = null }) {
+    if (!contentHash || !configHash) return null;
+
+    const query = {
+        contentHash,
+        ragConfigHash: configHash,
+        status: 'ready',
+        chunkCount: { $gt: 0 }
+    };
+    if (excludeId) query._id = { $ne: excludeId };
+
+    return RecordAiDocument.findOne(query)
+        .sort({ indexedAt: 1, updatedAt: 1 })
+        .lean();
+}
+
+async function markRagDocumentUsed(RecordAiDocument, documentId) {
+    if (!documentId) return;
+    await RecordAiDocument.updateOne(
+        { _id: documentId },
+        { $set: { lastUsedAt: new Date() } }
+    );
+}
+
 function pagesFromText(text) {
     const lines = String(text || '').replace(/\r/g, '').split('\n');
     const pages = [];
@@ -1442,6 +1484,8 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
     const stat = await fsp.stat(filePath);
     const sourceId = cleanId(file.id);
     const fileFingerprint = buildRagFingerprint(req, file, stat);
+    const contentHash = await hashFileContent(filePath);
+    const configHash = ragConfigHash();
     const existing = await RecordAiDocument.findOne({
         source: file.source,
         sourceId,
@@ -1450,10 +1494,47 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
     }).lean();
 
     if (existing?.chunkCount > 0) {
+        const document = await RecordAiDocument.findByIdAndUpdate(
+            existing._id,
+            {
+                $set: {
+                    contentHash,
+                    ragConfigHash: configHash,
+                    fileSize: stat.size || existing.fileSize || 0,
+                    mtimeMs: stat.mtimeMs || existing.mtimeMs || 0,
+                    lastUsedAt: new Date()
+                }
+            },
+            { new: true }
+        ).lean();
         return {
-            document: existing,
+            document: document || existing,
             indexed: false,
-            chunksCreated: existing.chunkCount
+            reused: false,
+            reuseReason: 'source-cache',
+            chunksCreated: existing.chunkCount,
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: file.name || existing.name,
+            usageSource: file.source,
+            usageSourceId: sourceId
+        };
+    }
+
+    const reusable = await findReusableRagDocument(RecordAiDocument, { contentHash, configHash });
+    if (reusable) {
+        await markRagDocumentUsed(RecordAiDocument, reusable._id);
+        return {
+            document: reusable,
+            indexed: false,
+            reused: true,
+            reuseReason: 'content-hash',
+            chunksCreated: reusable.chunkCount,
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: file.name || reusable.name,
+            usageSource: file.source,
+            usageSourceId: sourceId
         };
     }
 
@@ -1468,12 +1549,15 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
                 mimeType: file.mimeType || '',
                 fileSize: stat.size || 0,
                 mtimeMs: stat.mtimeMs || 0,
+                contentHash,
+                ragConfigHash: configHash,
                 status: 'indexing',
                 embeddingStatus: 'none',
                 embeddingConfig: '',
                 embeddedChunkCount: 0,
                 embeddingError: '',
-                error: ''
+                error: '',
+                lastUsedAt: new Date()
             }
         },
         { new: true, upsert: true, setDefaultsOnInsert: true }
@@ -1495,7 +1579,9 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
             pages,
             meta: {
                 mimeType: file.mimeType || '',
-                fileFingerprint
+                fileFingerprint,
+                contentHash,
+                ragConfigHash: configHash
             }
         });
 
@@ -1513,13 +1599,20 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
                     charCount: extracted.meta?.charCount || chunks.reduce((sum, chunk) => sum + chunk.charCount, 0),
                     wordCount: extracted.meta?.wordCount || chunks.reduce((sum, chunk) => sum + chunk.wordCount, 0),
                     chunkCount: chunks.length,
+                    contentHash,
+                    ragConfigHash: configHash,
                     embeddingStatus: 'none',
                     embeddingConfig: '',
                     embeddedChunkCount: 0,
                     embeddingError: '',
                     indexedAt: new Date(),
+                    lastUsedAt: new Date(),
                     error: '',
-                    meta: extracted.meta || {}
+                    meta: {
+                        ...(extracted.meta || {}),
+                        contentHash,
+                        ragConfigHash: configHash
+                    }
                 }
             },
             { new: true }
@@ -1529,7 +1622,14 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
             document,
             indexed: true,
             chunksCreated: chunks.length,
-            extractedMeta: extracted.meta || {}
+            extractedMeta: extracted.meta || {},
+            reused: false,
+            reuseReason: 'indexed',
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: file.name || document?.name,
+            usageSource: file.source,
+            usageSourceId: sourceId
         };
     } catch (error) {
         await RecordAiDocument.findByIdAndUpdate(document._id, {
@@ -1566,6 +1666,8 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
         throw new Error(`${upload.name || 'Upload OCR'}: texte OCR absent de la sélection`);
     }
 
+    const contentHash = hashText(text);
+    const configHash = ragConfigHash();
     const fileFingerprint = hashText([
         req.account_number,
         'upload',
@@ -1577,10 +1679,45 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
     ].join('|'));
 
     if (existingLatest?.fileFingerprint === fileFingerprint && existingLatest.chunkCount > 0) {
+        const document = await RecordAiDocument.findByIdAndUpdate(
+            existingLatest._id,
+            {
+                $set: {
+                    contentHash,
+                    ragConfigHash: configHash,
+                    lastUsedAt: new Date()
+                }
+            },
+            { new: true }
+        ).lean();
         return {
-            document: existingLatest,
+            document: document || existingLatest,
             indexed: false,
-            chunksCreated: existingLatest.chunkCount
+            reused: false,
+            reuseReason: 'source-cache',
+            chunksCreated: existingLatest.chunkCount,
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: upload.name || existingLatest.name,
+            usageSource: 'upload',
+            usageSourceId: sourceId
+        };
+    }
+
+    const reusable = await findReusableRagDocument(RecordAiDocument, { contentHash, configHash });
+    if (reusable) {
+        await markRagDocumentUsed(RecordAiDocument, reusable._id);
+        return {
+            document: reusable,
+            indexed: false,
+            reused: true,
+            reuseReason: 'content-hash',
+            chunksCreated: reusable.chunkCount,
+            contentHash,
+            ragConfigHash: configHash,
+            usageName: upload.name || reusable.name,
+            usageSource: 'upload',
+            usageSourceId: sourceId
         };
     }
 
@@ -1595,12 +1732,15 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
                 mimeType: '',
                 fileSize: 0,
                 mtimeMs: 0,
+                contentHash,
+                ragConfigHash: configHash,
                 status: 'indexing',
                 embeddingStatus: 'none',
                 embeddingConfig: '',
                 embeddedChunkCount: 0,
                 embeddingError: '',
-                error: ''
+                error: '',
+                lastUsedAt: new Date()
             }
         },
         { new: true, upsert: true, setDefaultsOnInsert: true }
@@ -1615,7 +1755,7 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
         sourceId,
         sourceName: upload.name || 'Document OCR',
         pages,
-        meta: { upload: true }
+        meta: { upload: true, contentHash, ragConfigHash: configHash }
     });
 
     await RecordAiDocumentChunk.deleteMany({ documentId: document._id });
@@ -1632,13 +1772,16 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
                 charCount: text.length,
                 wordCount: countWords(text),
                 chunkCount: chunks.length,
+                contentHash,
+                ragConfigHash: configHash,
                 embeddingStatus: 'none',
                 embeddingConfig: '',
                 embeddedChunkCount: 0,
                 embeddingError: '',
                 indexedAt: new Date(),
+                lastUsedAt: new Date(),
                 error: '',
-                meta: { upload: true, charCount: text.length }
+                meta: { upload: true, charCount: text.length, contentHash, ragConfigHash: configHash }
             }
         },
         { new: true }
@@ -1647,7 +1790,14 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
     return {
         document,
         indexed: true,
-        chunksCreated: chunks.length
+        reused: false,
+        reuseReason: 'indexed',
+        chunksCreated: chunks.length,
+        contentHash,
+        ragConfigHash: configHash,
+        usageName: upload.name || document?.name,
+        usageSource: 'upload',
+        usageSourceId: sourceId
     };
 }
 
@@ -1674,22 +1824,30 @@ async function prepareRagForSelection(req, record, entity, selection, settings =
             if (indexed?.document) {
                 const embedded = await ensureDocumentEmbeddings(req, indexed.document, settings);
                 const document = embedded.document || indexed.document;
+                const displayName = indexed.usageName || document.name;
                 result.documents.push({
                     documentId: cleanId(document._id),
-                    source: document.source,
-                    sourceId: document.sourceId,
-                    name: document.name,
+                    source: indexed.usageSource || document.source,
+                    sourceId: indexed.usageSourceId || document.sourceId,
+                    canonicalSource: document.source,
+                    canonicalSourceId: document.sourceId,
+                    name: displayName,
+                    canonicalName: document.name,
                     pageCount: document.pageCount,
                     processedPages: document.processedPages,
                     truncated: Boolean(document.truncated),
                     charCount: document.charCount,
                     chunkCount: document.chunkCount,
                     indexed: Boolean(indexed.indexed),
+                    reused: Boolean(indexed.reused),
+                    reuseReason: indexed.reuseReason || (indexed.indexed ? 'indexed' : 'source-cache'),
+                    contentHash: document.contentHash || indexed.contentHash || '',
+                    ragConfigHash: document.ragConfigHash || indexed.ragConfigHash || '',
                     indexedAt: document.indexedAt,
                     status: document.status,
                     embedding: embedded.embedding
                 });
-                if (embedded.embedding?.error) result.errors.push(`${document.name}: ${embedded.embedding.error}`);
+                if (embedded.embedding?.error) result.errors.push(`${displayName}: ${embedded.embedding.error}`);
             }
         } catch (error) {
             result.errors.push(`${file.name || file.id}: ${error.message}`);
@@ -1702,22 +1860,30 @@ async function prepareRagForSelection(req, record, entity, selection, settings =
             if (indexed?.document) {
                 const embedded = await ensureDocumentEmbeddings(req, indexed.document, settings);
                 const document = embedded.document || indexed.document;
+                const displayName = indexed.usageName || document.name;
                 result.documents.push({
                     documentId: cleanId(document._id),
-                    source: document.source,
-                    sourceId: document.sourceId,
-                    name: document.name,
+                    source: indexed.usageSource || document.source,
+                    sourceId: indexed.usageSourceId || document.sourceId,
+                    canonicalSource: document.source,
+                    canonicalSourceId: document.sourceId,
+                    name: displayName,
+                    canonicalName: document.name,
                     pageCount: document.pageCount,
                     processedPages: document.processedPages,
                     truncated: Boolean(document.truncated),
                     charCount: document.charCount,
                     chunkCount: document.chunkCount,
                     indexed: Boolean(indexed.indexed),
+                    reused: Boolean(indexed.reused),
+                    reuseReason: indexed.reuseReason || (indexed.indexed ? 'indexed' : 'source-cache'),
+                    contentHash: document.contentHash || indexed.contentHash || '',
+                    ragConfigHash: document.ragConfigHash || indexed.ragConfigHash || '',
                     indexedAt: document.indexedAt,
                     status: document.status,
                     embedding: embedded.embedding
                 });
-                if (embedded.embedding?.error) result.errors.push(`${document.name}: ${embedded.embedding.error}`);
+                if (embedded.embedding?.error) result.errors.push(`${displayName}: ${embedded.embedding.error}`);
             }
         } catch (error) {
             result.errors.push(`${upload.name || upload.id}: ${error.message}`);
@@ -1882,8 +2048,26 @@ async function buildRagContext(req, record, entity, selection, query, settings =
         .select('documentId source sourceId sourceName chunkIndex pageStart pageEnd text searchText charCount wordCount embedding embeddingConfig meta')
         .sort({ documentId: 1, chunkIndex: 1 })
         .lean();
+    const usageByDocumentId = new Map(prepared.documents.map(document => [
+        cleanId(document.documentId),
+        {
+            name: document.name,
+            source: document.source,
+            sourceId: document.sourceId
+        }
+    ]));
+    const displayChunks = chunks.map(chunk => {
+        const usage = usageByDocumentId.get(cleanId(chunk.documentId));
+        if (!usage) return chunk;
+        return {
+            ...chunk,
+            source: usage.source || chunk.source,
+            sourceId: usage.sourceId || chunk.sourceId,
+            sourceName: usage.name || chunk.sourceName
+        };
+    });
     const activeEmbeddingConfig = embeddingConfigKey(settings);
-    const chunksForScoring = chunks.map(chunk => (
+    const chunksForScoring = displayChunks.map(chunk => (
         chunk.embeddingConfig === activeEmbeddingConfig
             ? chunk
             : { ...chunk, embedding: [] }

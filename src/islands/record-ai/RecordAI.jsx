@@ -363,6 +363,7 @@ function DebugPayloadView({ payload = {} }) {
     const rag = payload.rag || null
     const ragChunks = Array.isArray(rag?.chunks) ? rag.chunks : []
     const ragDocuments = Array.isArray(rag?.documents) ? rag.documents : []
+    const reusedDocuments = ragDocuments.filter(document => document.reused).length
     const contextStats = payload.contextStats || {}
 
     return (
@@ -374,6 +375,7 @@ function DebugPayloadView({ payload = {} }) {
                 <span>Contexte modifié: <strong>{payload.contextChanged ? 'oui' : 'non'}</strong></span>
                 <span>OCR max: <strong>{payload.limits?.ocrMaxPages || '-'} pages</strong></span>
                 <span>RAG: <strong>{rag?.enabled ? `${payload.limits?.ragMaxPages || rag.maxPages || '-'} pages` : 'non'}</strong></span>
+                {reusedDocuments > 0 && <span>RAG cache: <strong>{reusedDocuments}</strong></span>}
                 <span>Vectoriel: <strong>{rag?.vector?.enabled ? (rag.vector.queryEmbedded ? 'oui' : 'fallback') : 'non'}</strong></span>
                 {ragChunks.length > 0 && <span>Chunks: <strong>{ragChunks.length}</strong></span>}
                 <span>Contexte: <strong>{formatNumber(contextStats.chars)} caractères</strong></span>

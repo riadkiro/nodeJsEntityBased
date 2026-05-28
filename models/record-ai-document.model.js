@@ -29,6 +29,16 @@ const RecordAiDocumentSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    contentHash: {
+        type: String,
+        default: '',
+        index: true
+    },
+    ragConfigHash: {
+        type: String,
+        default: '',
+        index: true
+    },
     name: {
         type: String,
         default: 'Document'
@@ -113,6 +123,10 @@ const RecordAiDocumentSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    lastUsedAt: {
+        type: Date,
+        default: null
+    },
     error: {
         type: String,
         default: ''
@@ -124,6 +138,7 @@ const RecordAiDocumentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 RecordAiDocumentSchema.index({ source: 1, sourceId: 1, fileFingerprint: 1 }, { unique: true });
+RecordAiDocumentSchema.index({ contentHash: 1, ragConfigHash: 1, status: 1, indexedAt: 1 });
 RecordAiDocumentSchema.index({ recordId: 1, source: 1, sourceId: 1, updatedAt: -1 });
 
 module.exports = mongoose.model('RecordAiDocument', RecordAiDocumentSchema);

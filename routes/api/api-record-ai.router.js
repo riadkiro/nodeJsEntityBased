@@ -23,6 +23,7 @@ const MAX_NOTES_CHARS = 9000;
 const MAX_CHAT_CHARS = 9000;
 const MAX_FILE_CHARS = 16000;
 const MAX_UPLOAD_CHARS = 12000;
+const RECORD_AI_TIMEOUT_MS = boundedInt(process.env.RECORD_AI_TIMEOUT_MS, 120000, 30000, 300000);
 const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/record-ai');
 
 const OCR_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.gif']);
@@ -40,6 +41,12 @@ function isObjectId(value) {
 
 function hashText(value) {
     return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function boundedInt(value, fallback, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(number)));
 }
 
 function stripHtml(value) {
@@ -640,11 +647,15 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
         workspaceId: req.account_number,
         providerKey: 'openai',
         actionId: action._id.toString(),
-        input: inputPayload
+        input: inputPayload,
+        timeoutMs: RECORD_AI_TIMEOUT_MS
     });
 
     if (!result.success) {
-        throw new Error(result.error || result.errorMessage || 'AI response call failed');
+        const message = result.error || result.errorMessage || 'AI response call failed';
+        throw new Error(/request timeout/i.test(message)
+            ? 'La génération prend trop de temps. Réessayez avec moins de contexte ou relancez la demande.'
+            : message);
     }
 
     const content = extractResponsesText(result.data) || extractResponsesText(result.raw) || 'Pas de réponse';

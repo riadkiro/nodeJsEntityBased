@@ -11,6 +11,13 @@ const { redactHeaders, redactQueryParams, redactUrl, truncateBody } = require('.
 
 // Default timeout (30 seconds)
 const DEFAULT_TIMEOUT = 30000;
+const MAX_TIMEOUT = 300000;
+
+function normalizeTimeoutMs(value) {
+    const timeout = Number(value);
+    if (!Number.isFinite(timeout) || timeout <= 0) return DEFAULT_TIMEOUT;
+    return Math.min(MAX_TIMEOUT, Math.max(1000, Math.round(timeout)));
+}
 
 /**
  * Execute an HTTP request for an integration action
@@ -19,9 +26,10 @@ const DEFAULT_TIMEOUT = 30000;
  * @param {object} options.action - IntegrationAction document
  * @param {object} options.input - User input data
  * @param {object} options.secrets - Decrypted secrets (e.g., { token: "xyz" })
+ * @param {number} [options.timeoutMs] - Optional request timeout override
  * @returns {Promise<object>} - Execution result
  */
-async function execute({ provider, action, input = {}, secrets = {} }) {
+async function execute({ provider, action, input = {}, secrets = {}, timeoutMs = DEFAULT_TIMEOUT }) {
     const startTime = Date.now();
 
     // Build resolution context
@@ -58,7 +66,7 @@ async function execute({ provider, action, input = {}, secrets = {} }) {
             url,
             headers,
             params: resolvedQuery,
-            timeout: DEFAULT_TIMEOUT
+            timeout: normalizeTimeoutMs(timeoutMs)
         };
 
         // Add body for methods that support it

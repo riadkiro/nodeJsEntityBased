@@ -148,6 +148,7 @@ async function testConnection({
  * @param {string} options.providerKey
  * @param {string} options.actionId - MongoDB _id or actionKey
  * @param {object} options.input - User input
+ * @param {number} [options.timeoutMs] - Optional request timeout override
  * @returns {Promise<object>} - Execution result
  */
 async function executeAction({
@@ -158,7 +159,8 @@ async function executeAction({
     workspaceId,
     providerKey,
     actionId,
-    input = {}
+    input = {},
+    timeoutMs
 }) {
     // Get provider
     const provider = await ProviderModel.findOne({ key: providerKey });
@@ -208,7 +210,8 @@ async function executeAction({
         provider,
         action,
         input,
-        secrets
+        secrets,
+        timeoutMs
     });
 
     // Log execution

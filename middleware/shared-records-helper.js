@@ -12,7 +12,7 @@
 
 const { tenantCollection } = require('./tenant');
 
-const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'team'];
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'ai', 'team'];
 const MODULE_ROUTE_KEYS = {
     dataRoom: 'data-room',
 };
@@ -32,7 +32,7 @@ function defaultModules(permissions = {}) {
     return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [
         key,
         {
-            view: key === 'team' ? permissions.share === true : true,
+            view: key === 'team' ? permissions.share === true : (key === 'ai' ? false : true),
             edit: permissions.update === true && (key !== 'team' || permissions.share === true),
         },
     ]));

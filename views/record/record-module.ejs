@@ -11,6 +11,7 @@ const _modulesDef = {
   chat:   { icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316', label: 'Chat', desc: 'Conversations et échanges' },
   emails: { icon: 'solar:letter-bold-duotone', color: '#0ea5e9', label: 'Emails', desc: 'Correspondance liée' },
   notes:  { icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', label: 'Notes', desc: 'Notes et observations' },
+  ai:     { icon: 'solar:magic-stick-3-bold-duotone', color: '#4f46e5', label: 'IA', desc: 'Conversations IA et contexte intelligent' },
   team:   { icon: 'solar:users-group-rounded-bold-duotone', color: '#7c3aed', label: 'Accès', desc: 'Gestion des accès équipe' }
 };
 const _mod = _modulesDef[moduleName];
@@ -428,6 +429,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
             { key:'emails', icon:'solar:letter-bold-duotone', color:'#0ea5e9', label:'Emails' },
             { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
+            { key:'ai', icon:'solar:magic-stick-3-bold-duotone', color:'#4f46e5', label:'IA' },
             { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Accès' }
         ]; %>
         <% const _visibleMods = _sharedDataRoomOnly
@@ -2489,6 +2491,20 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         <%- include('../record/partials/record-notes-module') %>
         <% } %>
 
+        <% if (moduleName === 'ai') { %>
+        <div data-island="record-ai"
+             data-account-number="<%= account_number %>"
+             data-record-id="<%= record._id %>"
+             data-entity-slug="<%= entity.slug %>"
+             data-record-title="<%= (record.title || 'Sans titre').replace(/"/g, '&quot;') %>">
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:60px 0;color:#888da8;font-size:14px">
+                <div style="width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:spin .8s linear infinite"></div>
+                Chargement de l'IA...
+            </div>
+        </div>
+        <script type="module" src="/dist/recordAI.js"></script>
+        <% } %>
+
         <% if (moduleName === 'team') { %>
         <%- include('../record/partials/ov-widget-team') %>
         <script>
@@ -2509,11 +2525,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 { key: 'chat', routeKey: 'chat', label: 'Chat', icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316' },
                 { key: 'emails', routeKey: 'emails', label: 'Emails', icon: 'solar:letter-bold-duotone', color: '#0ea5e9' },
                 { key: 'notes', routeKey: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' },
+                { key: 'ai', routeKey: 'ai', label: 'IA', icon: 'solar:magic-stick-3-bold-duotone', color: '#4f46e5' },
                 { key: 'team', routeKey: 'team', label: 'Accès', icon: 'solar:users-group-rounded-bold-duotone', color: '#7c3aed', requiresShare: true },
             ];
             const _defaultRecordModules = Object.fromEntries(_recordModuleOptions.map(m => [
                 m.key,
-                { view: m.key !== 'team', edit: false },
+                { view: m.key !== 'team' && m.key !== 'ai', edit: false },
             ]));
             const _cloneDefaultRecordModules = () => JSON.parse(JSON.stringify(_defaultRecordModules));
 

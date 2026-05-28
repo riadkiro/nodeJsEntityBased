@@ -45,6 +45,8 @@ router.use("/", require("./line-defaults.router.js"));
 
 // Global Drive API (aggregated attachments across all records) — must be before api-account (has /:id catch-all)
 router.use("/api", require("./api/api-drive.router.js"));
+router.use("/api", require("./api/api-ocr.router.js"));
+router.use("/api/record-ai", require("./api/api-record-ai.router.js"));
 
 router.use("/api/team", require("./api/api-team.router.js"));
 router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
@@ -757,5 +759,4 @@ router.get("/test-progressive/:entityName", async (req, res) => {
 });
 
 module.exports = router;
-
 

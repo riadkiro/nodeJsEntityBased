@@ -160,7 +160,7 @@ export default function AIChatSidebar({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
     const [mode, setMode] = useState('agent') // 'assistant' | 'agent' - agent by default
-    const [model, setModel] = useState('gpt-4o')
+    const [model, setModel] = useState('gpt-5.5')
 
     // Scope: what to analyze - 'selection' | 'page' | 'document'
     const [scope, setScope] = useState('page') // Default to page
@@ -182,6 +182,7 @@ export default function AIChatSidebar({
 
     // Available models
     const MODELS = [
+        { id: 'gpt-5.5', name: 'GPT-5.5', description: 'Agent avancé' },
         { id: 'gpt-4o', name: 'GPT-4o', description: 'Plus intelligent' },
         { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Rapide' },
         { id: 'gpt-3.5-turbo', name: 'GPT-3.5', description: 'Économique' }
@@ -688,18 +689,21 @@ export default function AIChatSidebar({
     const callOpenAI = async (conversationHistory, isAgent = false) => {
         const accNum = getAccountNumber()
         if (!accNum) throw new Error('Numéro de compte introuvable')
+        const isGpt5Model = /^gpt-5(?:[.-]|$)/.test(model)
+        const inputPayload = {
+            model,
+            messages: conversationHistory,
+            ...(isGpt5Model
+                ? { max_completion_tokens: 3000 }
+                : { temperature: isAgent ? 0.2 : 0.7, max_tokens: 3000 })
+        }
 
         const response = await fetch(`/account/${accNum}/integrations/openai/actions/chat-completion/execute`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
-                input: {
-                    model: model,
-                    messages: conversationHistory,
-                    temperature: isAgent ? 0.2 : 0.7,
-                    max_tokens: 3000
-                }
+                input: inputPayload
             })
         })
 

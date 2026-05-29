@@ -54,7 +54,7 @@ async function seedOpenAI() {
             providerKey: 'openai',
             actionKey: 'chat-completion',
             name: 'Chat Completion',
-            description: 'Generate text using GPT models (GPT-4, GPT-3.5-turbo)',
+            description: 'Generate text using GPT models (GPT-5.5, GPT-4, GPT-3.5-turbo)',
             http: {
                 method: 'POST',
                 path: '/chat/completions'
@@ -66,8 +66,8 @@ async function seedOpenAI() {
                         type: 'string',
                         title: 'Model',
                         description: 'ID of the model to use',
-                        enum: ['gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
-                        default: 'gpt-4o-mini'
+                        enum: ['gpt-5.5', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
+                        default: 'gpt-5.5'
                     },
                     messages: {
                         type: 'array',
@@ -99,6 +99,12 @@ async function seedOpenAI() {
                         title: 'Max Tokens',
                         description: 'Maximum tokens in response',
                         default: 1000
+                    },
+                    max_completion_tokens: {
+                        type: 'number',
+                        title: 'Max Completion Tokens',
+                        description: 'Maximum completion tokens for GPT-5 and reasoning models',
+                        default: 1000
                     }
                 },
                 required: ['model', 'messages']
@@ -111,6 +117,7 @@ async function seedOpenAI() {
                     messages: '{{input.messages}}',
                     temperature: '{{input.temperature}}',
                     max_tokens: '{{input.max_tokens}}',
+                    max_completion_tokens: '{{input.max_completion_tokens}}',
                     response_format: '{{input.response_format}}'
                 }
             },

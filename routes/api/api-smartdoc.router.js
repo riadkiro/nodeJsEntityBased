@@ -1634,8 +1634,12 @@ ${pagesHtml}
 </html>`;
 
         // 4. Generate output file
+        const normalizeOutputName = value => {
+            const clean = String(value || 'Document').replace(/(\.pdf)+$/i, '').trim();
+            return clean || 'Document';
+        };
         const requestedOutputName = typeof req.body.outputName === 'string' ? req.body.outputName.trim() : '';
-        const outputName = requestedOutputName || draftDoc.draftOutputName || draftDoc.name || 'Document';
+        const outputName = normalizeOutputName(requestedOutputName || draftDoc.draftOutputName || draftDoc.name || 'Document');
         const outputFormat = draftDoc.draftOutputFormat || 'pdf';
         let savedFilename;
         let savedSize;

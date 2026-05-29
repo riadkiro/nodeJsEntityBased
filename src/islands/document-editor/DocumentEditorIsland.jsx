@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, pullFromNextPageInto, reflowAllPages, compactUnderflowPages, doesContentOverflow } from './utils/paginationUtils'
+import { checkOverflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 import { getSelectedImage } from './hooks/useImageResize'
 
@@ -35,6 +35,11 @@ function sanitizeEditorPageHtml(html) {
     })
 
     return template.innerHTML
+}
+
+function normalizePdfOutputName(name) {
+    const cleanName = String(name || 'Document').replace(/(\.pdf)+$/i, '').trim()
+    return cleanName || 'Document'
 }
 
 function stripEditorRuntimeArtifacts(html) {
@@ -813,13 +818,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
         if (!hasOverflow) {
-            // No overflow: compact following pages upward in one guarded transaction.
-            // This gives a natural document flow after deletions without the old duplicate-tail bug.
-            reflowInProgressRef.current = true
-            compactUnderflowPages(docRef, setDoc, pageRefs)
-            requestAnimationFrame(() => {
-                reflowInProgressRef.current = false
-            })
+            // No overflow: do not pull content backward automatically.
+            // That behavior can duplicate trailing pages because the editor DOM is uncontrolled.
             return
         }
 
@@ -1937,7 +1937,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                 const targetRecordId = doc.draftRecordId || doc.generatedFile?.recordId || (doc.linkedRecords && doc.linkedRecords.length > 0 ? doc.linkedRecords[0].recordId : null)
                 const replaceAttachmentId = doc.sourceGeneratedAttachmentId || doc.generatedFile?.attachmentId || null
-                const result = await finalizeDraft(doc._id, targetRecordId, accountNumber, pagesContent, replaceAttachmentId, doc.name)
+                const outputName = normalizePdfOutputName(doc.name)
+                const result = await finalizeDraft(doc._id, targetRecordId, accountNumber, pagesContent, replaceAttachmentId, outputName)
                 if (!result.success) {
                     console.error('[SmartDoc] Finalize-draft failed:', result.error)
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
@@ -1948,6 +1949,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 	                const attachmentId = result.attachmentId || result.attachment?._id || replaceAttachmentId || null
 	                const attachment = result.attachment || {}
 	                const finalizedPatch = {
+	                    name: outputName,
 	                    isDraft: false,
 	                    isGenerationSnapshot: true,
 	                    status: 'finalized',

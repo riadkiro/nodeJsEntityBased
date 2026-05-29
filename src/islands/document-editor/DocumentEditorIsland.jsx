@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, pullFromNextPageInto, reflowAllPages, reflowUnderflowAllPages, doesContentOverflow } from './utils/paginationUtils'
+import { checkOverflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 import { getSelectedImage } from './hooks/useImageResize'
 
@@ -766,8 +766,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [restoreSelection, triggerSave])
 
     // ========== REFLOW ORCHESTRATOR (Word-like) ==========
-    // After each input, reflow entire document: overflow forward, then underflow backward.
-    // For large pastes, overflow may cascade through multiple new pages.
+    // After each input, reflow only overflowing content forward.
+    // Pulling content backward automatically is intentionally disabled: it can duplicate
+    // paragraphs or truncate later pages when the uncontrolled DOM and saved state diverge.
     //
     // CRITICAL: Guard against concurrent execution!
     // insertHTML triggers both onPaste and onInput, which would start two parallel reflows.
@@ -807,8 +808,6 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         if (!hasOverflow) {
             // No overflow — nothing to reflow. Just let the browser handle the cursor natively.
-            // Still do underflow check in case content was deleted
-            reflowUnderflowAllPages(docRef, setDoc, pageRefs)
             return
         }
 
@@ -912,8 +911,6 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 }
             })
 
-            // Underflow pass is intentionally sequential: page deletion shifts indexes.
-            reflowUnderflowAllPages(docRef, setDoc, pageRefs)
         })
     }, [])
 
@@ -1964,7 +1961,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 	                if (isSimpleEditableDoc) {
 	                    finalizedRef.current = false
 	                    if (window.showMessage) {
-	                        window.showMessage('Document enregistré', 'success')
+	                        window.showMessage('PDF exporté', 'success')
 	                    }
 	                    return
 	                }

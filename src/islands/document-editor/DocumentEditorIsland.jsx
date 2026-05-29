@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, checkUnderflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
+import { checkOverflow, pullFromNextPageInto, reflowAllPages, reflowUnderflowAllPages, doesContentOverflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 import { getSelectedImage } from './hooks/useImageResize'
 
@@ -478,6 +478,39 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         if (finalizedRef.current) return
         // Read current content from page refs
         const currentDoc = { ...(docOverride || docRef.current) }
+        currentDoc.pages = Array.isArray(currentDoc.pages) ? [...currentDoc.pages] : []
+
+        // If React state temporarily lags behind mounted page refs, never save a
+        // shorter pages array. This protects against pagination/index races during
+        // page deletion/reflow: mounted DOM is still the source of truth.
+        const mountedPageIndexes = Object.keys(pageRefs.current || {})
+            .map(key => Number(key))
+            .filter(index => Number.isInteger(index) && index >= 0)
+            .sort((a, b) => a - b)
+        mountedPageIndexes.forEach(index => {
+            const pageRef = pageRefs.current[index]
+            if (!pageRef || currentDoc.pages[index]) return
+            currentDoc.pages[index] = {
+                content: stripEditorRuntimeArtifacts(pageRef.innerHTML || ''),
+                elements: [],
+                rows: [],
+                mode: 'edition',
+                background: '#ffffff',
+                order: index
+            }
+        })
+        for (let i = 0; i < currentDoc.pages.length; i += 1) {
+            if (!currentDoc.pages[i]) {
+                currentDoc.pages[i] = {
+                    content: '',
+                    elements: [],
+                    rows: [],
+                    mode: 'edition',
+                    background: '#ffffff',
+                    order: i
+                }
+            }
+        }
 
         // Safety check: verify all edition pages have valid refs
         // This prevents saving empty content when DOM refs aren't available
@@ -775,16 +808,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         if (!hasOverflow) {
             // No overflow — nothing to reflow. Just let the browser handle the cursor natively.
             // Still do underflow check in case content was deleted
-            requestAnimationFrame(() => {
-                const d2 = docRef.current
-                if (!d2?.pages?.length) return
-                for (let i = 0; i < d2.pages.length - 1; i++) {
-                    const el = pageRefs.current[i]
-                    if (el) {
-                        checkUnderflow(el, i, d2, setDoc, pageRefs)
-                    }
-                }
-            })
+            reflowUnderflowAllPages(docRef, setDoc, pageRefs)
             return
         }
 
@@ -888,17 +912,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 }
             })
 
-            // Underflow backward pass
-            requestAnimationFrame(() => {
-                const d2 = docRef.current
-                if (!d2?.pages?.length) return
-                for (let i = 0; i < d2.pages.length - 1; i++) {
-                    const el = pageRefs.current[i]
-                    if (el) {
-                        checkUnderflow(el, i, d2, setDoc, pageRefs)
-                    }
-                }
-            })
+            // Underflow pass is intentionally sequential: page deletion shifts indexes.
+            reflowUnderflowAllPages(docRef, setDoc, pageRefs)
         })
     }, [])
 

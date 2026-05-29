@@ -521,20 +521,64 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
  * Check if page has underflow (can pull content from next page)
  */
 export function checkUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
-    if (!element || !doc?.pages) return
+    if (!element || !doc?.pages) return false
 
     const currentPage = doc.pages[pageIndex]
-    if (!currentPage || currentPage.mode !== 'edition') return
+    if (!currentPage || currentPage.mode !== 'edition') return false
 
-    if (pageIndex >= doc.pages.length - 1) return
+    if (pageIndex >= doc.pages.length - 1) return false
 
     const nextPage = doc.pages[pageIndex + 1]
-    if (nextPage && nextPage.mode !== 'edition') return
+    if (nextPage && nextPage.mode !== 'edition') return false
 
     const availableSpace = getAvailableSpacePx(element)
-    if (availableSpace <= UNDERFLOW_THRESHOLD_PX) return
+    if (availableSpace <= UNDERFLOW_THRESHOLD_PX) return false
 
-    tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs)
+    return tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs)
+}
+
+/**
+ * Reflow underflow safely across the whole document.
+ *
+ * Only one adjacent page pair is compacted per pass. This matters because a
+ * successful pull can delete the next page, shifting every later page index.
+ * Running several pulls against the same stale page map can overwrite or drop
+ * trailing pages before React has rendered the new order.
+ */
+export function reflowUnderflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComplete = null) {
+    let pass = 0
+
+    function doPass() {
+        if (pass >= maxPasses) {
+            console.warn('[reflowUnderflowAllPages] Hit max passes limit:', maxPasses)
+            if (onComplete) onComplete()
+            return
+        }
+        pass++
+
+        const d = docRef.current
+        if (!d?.pages?.length) {
+            if (onComplete) onComplete()
+            return
+        }
+
+        for (let i = 0; i < d.pages.length - 1; i++) {
+            const el = pageRefs.current[i]
+            if (!el) continue
+
+            const moved = checkUnderflow(el, i, d, setDoc, pageRefs)
+            if (moved) {
+                requestAnimationFrame(() => {
+                    setTimeout(doPass, 35)
+                })
+                return
+            }
+        }
+
+        if (onComplete) onComplete()
+    }
+
+    requestAnimationFrame(doPass)
 }
 
 /**
@@ -547,7 +591,7 @@ export function checkUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
  */
 export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
     const nextPageRef = pageRefs.current[pageIndex + 1]
-    if (!nextPageRef) return
+    if (!nextPageRef) return false
 
     let iterations = 0
     let movedAny = false
@@ -583,7 +627,7 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
         }
     }
 
-    if (!movedAny) return
+    if (!movedAny) return false
 
     // Snapshot DOM *now* (source of truth)
     const currentHtmlSnapshot = element.innerHTML
@@ -620,6 +664,8 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
 
         return newDoc
     })
+
+    return true
 }
 
 /**

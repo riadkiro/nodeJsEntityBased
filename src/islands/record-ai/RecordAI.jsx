@@ -369,6 +369,62 @@ function buildAgentPhrases(selection = {}, query = '', availableFiles = []) {
     return phrases
 }
 
+function agentRequestedPageCount(query = '') {
+    const text = searchText(query)
+    const digitMatch = text.match(/\b(\d{1,2})\s*pages?\b/)
+    if (digitMatch) return Math.max(1, Math.min(20, Number(digitMatch[1]) || 1))
+    const words = { une: 1, un: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10 }
+    const wordMatch = text.match(/\b(une|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*pages?\b/)
+    return wordMatch ? words[wordMatch[1]] : 1
+}
+
+function buildAgentDraftSteps(selection = {}, query = '', availableFiles = [], recordTitle = '') {
+    const text = searchText(query)
+    const wantsDoc = /\b(doc|docs|document|documents|pdf|brouillon|bail|contrat|facture|devis|attestation|offre)\b/.test(text)
+    const pageCount = agentRequestedPageCount(query)
+    const selectedFiles = (selection.files || [])
+        .map(file => (availableFiles || []).find(item => fileKey(item) === fileKey(file)) || file)
+    const inferredFiles = selectedFiles.length ? [] : inferRelevantFilesFromText(query, availableFiles)
+    const contextFiles = selectedFiles.length ? selectedFiles : inferredFiles
+    const uploadCount = (selection.uploads || []).length
+    const standalone = /\b(lorem|ipsum|demo|demonstration|test|exemple|fictif|placeholder)\b/.test(text)
+    const title = recordTitle ? `Contexte fiche: ${shortText(recordTitle, 48)}.` : 'Contexte fiche disponible.'
+
+    if (wantsDoc) {
+        return [
+            {
+                id: 'draft_doc_request',
+                title: 'Compréhension',
+                detail: `Demande détectée: créer un document${pageCount > 1 ? ` de ${pageCount} pages` : ''}.`
+            },
+            {
+                id: 'draft_doc_context',
+                title: 'Contexte',
+                detail: contextFiles.length || uploadCount
+                    ? `${contextFiles.length + uploadCount} source${contextFiles.length + uploadCount > 1 ? 's' : ''} à prendre en compte. ${title}`
+                    : `${title} ${standalone ? "Pas d'analyse Drive/OCR nécessaire pour cette demande." : 'Je vérifie si un contexte externe est utile.'}`
+            },
+            {
+                id: 'draft_doc_tool',
+                title: 'Préparation',
+                detail: 'create_doc utilisera A4 portrait par défaut, avec une page éditeur distincte par page demandée.'
+            }
+        ]
+    }
+
+    return [
+        { id: 'draft_request', title: 'Compréhension', detail: 'Je transforme la demande en plan actionnable.' },
+        {
+            id: 'draft_context',
+            title: 'Contexte',
+            detail: contextFiles.length || uploadCount
+                ? `${contextFiles.length + uploadCount} source${contextFiles.length + uploadCount > 1 ? 's' : ''} à examiner.`
+                : 'Aucun document externe nécessaire détecté pour l’instant.'
+        },
+        { id: 'draft_tools', title: 'Préparation', detail: 'Je prépare uniquement les outils utiles avant validation.' }
+    ]
+}
+
 function Icon({ icon, width = 16, color }) {
     return <iconify-icon icon={icon} width={width} style={color ? { color } : undefined}></iconify-icon>
 }
@@ -829,7 +885,22 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                     </div>
 
                     {isDrafting ? (
-                        <AgentStatus phrase={draftPhrase} />
+                        <>
+                            <AgentStatus phrase={draftPhrase} />
+                            {steps.length > 0 && (
+                                <ol className="rai-agent-plan-list drafting">
+                                    {steps.map((step, index) => (
+                                        <li key={step.id || index}>
+                                            <span>{index + 1}</span>
+                                            <div>
+                                                <strong>{step.title}</strong>
+                                                {step.detail && <small>{step.detail}</small>}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                        </>
                     ) : (
                         <>
                             {run.summary && <p className="rai-agent-summary">{safeAgentSummary(run.summary)}</p>}
@@ -1442,7 +1513,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             status: 'drafting',
             summary: 'Analyse de la demande en cours...',
             proposedActions: [],
-            plan: { title: 'Plan agent', steps: [{ title: 'Analyse du contexte', detail: '', status: 'ready' }] },
+            plan: { title: 'Préparation agent', steps: buildAgentDraftSteps(selection, text, files, recordTitle) },
             contextItems: inferredContextItems,
             createdAt: new Date().toISOString()
         }
@@ -1473,7 +1544,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setAgentRunning(false)
             stopAgentStatus()
         }
-    }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, files, input, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
+    }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, files, input, recordTitle, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
 
     const applyAgentRun = useCallback(async (run, actionIds = []) => {
         if (!run?._id || agentBusyRunId) return

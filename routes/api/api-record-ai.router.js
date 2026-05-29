@@ -4367,9 +4367,15 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
         if (tool === 'create_doc') {
             const input = agentObjectInput(raw.input || raw);
             const name = agentSafeString(input.name || input.title || raw.title || 'Document IA', 160) || 'Document IA';
+            const contentPages = Array.isArray(input.contentPages)
+                ? input.contentPages.slice(0, 20)
+                : (Array.isArray(input.pages) ? input.pages.slice(0, 20) : []);
             const contentMarkdown = agentSafeString(input.contentMarkdown || input.markdown || input.content || '', 40000);
             const contentHtml = agentSafeString(input.contentHtml || input.html || '', 60000);
-            if (!contentMarkdown && !contentHtml) return;
+            if (!contentMarkdown && !contentHtml && !contentPages.length) return;
+            const pageCount = agentRequestedPageCount(input.pageCount || input.pagesCount || input.numberOfPages || input.nbPages || '', contentPages.length || 1);
+            const format = ['A4', 'A5', 'A3', 'Letter', 'Legal'].includes(input.format) ? input.format : 'A4';
+            const orientation = ['portrait', 'landscape'].includes(input.orientation) ? input.orientation : 'portrait';
             actions.push({
                 id,
                 tool,
@@ -4380,13 +4386,15 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     name,
                     contentMarkdown,
                     contentHtml,
-                    format: ['A4', 'A5', 'A3', 'Letter', 'Legal'].includes(input.format) ? input.format : 'A4',
-                    orientation: ['portrait', 'landscape'].includes(input.orientation) ? input.orientation : 'portrait'
+                    contentPages,
+                    pageCount,
+                    format,
+                    orientation
                 },
                 preview: {
                     title: name,
-                    excerpt: shortPlainText(contentHtml || contentMarkdown, 520),
-                    meta: 'Document brouillon'
+                    excerpt: shortPlainText(contentHtml || contentMarkdown || contentPages.map(page => typeof page === 'string' ? page : (page?.contentHtml || page?.contentMarkdown || page?.content || '')).join('\n'), 520),
+                    meta: `${format} ${orientation} · ${Math.max(pageCount, contentPages.length || 1)} page${Math.max(pageCount, contentPages.length || 1) > 1 ? 's' : ''}`
                 },
                 diff: null
             });
@@ -4693,6 +4701,137 @@ function agentNormalizePlan(parsed = {}) {
             { id: 'step_2', type: 'tools', title: 'Préparer les actions', detail: '', status: 'ready' },
             { id: 'step_3', type: 'review', title: 'Attendre validation', detail: '', status: 'ready' }
         ]
+    };
+}
+
+function agentRequestedPageCount(goalOrValue = '', fallback = 1) {
+    const direct = Number(goalOrValue);
+    if (Number.isFinite(direct) && direct > 0) return Math.max(1, Math.min(20, Math.round(direct)));
+
+    const text = normalizeSearchText(goalOrValue);
+    if (!text) return fallback;
+    const digitMatch = text.match(/\b(\d{1,2})\s*(?:page|pages)\b/);
+    if (digitMatch) return Math.max(1, Math.min(20, Number(digitMatch[1]) || fallback));
+
+    const words = {
+        une: 1,
+        un: 1,
+        deux: 2,
+        trois: 3,
+        quatre: 4,
+        cinq: 5,
+        six: 6,
+        sept: 7,
+        huit: 8,
+        neuf: 9,
+        dix: 10
+    };
+    const wordMatch = text.match(/\b(une|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(?:page|pages)\b/);
+    return wordMatch ? words[wordMatch[1]] : fallback;
+}
+
+function agentSimpleDocTitleFromGoal(goal = '', record = {}) {
+    const text = normalizeSearchText(goal);
+    const recordTitle = agentSafeString(record.computedTitle || record.title || '', 80);
+    let base = 'Document IA';
+    if (/\bbail\b/.test(text)) base = 'Bail';
+    else if (/\bcontrat\b/.test(text)) base = 'Contrat';
+    else if (/\bfacture\b/.test(text)) base = 'Facture';
+    else if (/\bdevis\b/.test(text)) base = 'Devis';
+    else if (/\blorem|ipsum|demo|demonstration|test\b/.test(text)) base = 'Document Lorem ipsum';
+    return recordTitle ? `${base} - ${recordTitle}` : base;
+}
+
+function agentLooksFastSimpleDocGoal(goal = '') {
+    const text = normalizeSearchText(goal);
+    if (!text) return false;
+    const wantsDoc = /\b(cree|creer|cr[ée]e|cr[ée]er|genere|generer|g[ée]n[èe]re|nouveau|nouvelle|veux|souhaite)\b/.test(text)
+        && /\b(doc|docs|document|documents|pdf|brouillon|bail|contrat|facture|devis|attestation|offre)\b/.test(text);
+    const simpleContent = /\b(lorem|ipsum|demo|demonstration|test|exemple|fictif|placeholder|paragraphe)\b/.test(text);
+    const needsAnalysis = /\b(analyse|analyser|resume|resumer|extrait|extrais|ocr|drive|fichier|document fourni|cahier des charges|cin|registre)\b/.test(text);
+    return wantsDoc && simpleContent && !needsAnalysis;
+}
+
+function agentLoremParagraphs() {
+    return [
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer facilisis, sem vitae cursus finibus, neque arcu tempor justo, vitae aliquet purus arcu sed mi.',
+        'Curabitur faucibus, mauris non posuere pharetra, enim nisl aliquet nisi, et tempus magna erat id lorem. Sed vitae magna in sem gravida interdum.',
+        'Nullam bibendum erat sed justo ultrices, at cursus nibh suscipit. Fusce egestas ipsum sed mi convallis, vitae vehicula arcu malesuada.',
+        'Sed sit amet massa a justo commodo posuere. Aenean interdum, lorem vel pretium imperdiet, nibh lectus aliquam risus, non sollicitudin lectus magna in sem.',
+        'Phasellus lacinia sem at sem malesuada, vitae porttitor lacus accumsan. Etiam ut sapien quis augue volutpat pretium.',
+        'Donec elementum augue vitae purus venenatis, quis feugiat arcu consequat. Integer pulvinar magna in mi fermentum, sed pulvinar eros molestie.'
+    ];
+}
+
+function agentBuildSimpleDocPages(goal = '', record = {}, entity = {}) {
+    const pageCount = agentRequestedPageCount(goal, 1);
+    const recordTitle = agentSafeString(record.computedTitle || record.title || '', 120);
+    const entityName = agentSafeString(entity?.nameSingular || entity?.name || 'fiche', 80);
+    const paragraphs = agentLoremParagraphs();
+    const pages = [];
+
+    for (let index = 0; index < pageCount; index += 1) {
+        const pageNo = index + 1;
+        const contextLine = pageNo === 1 && recordTitle
+            ? `<p style="margin:0 0 16px;color:#475569;font-size:14px;">Contexte record: ${agentEscapeHtml(entityName)} ${agentEscapeHtml(recordTitle)}.</p>`
+            : '';
+        const body = paragraphs
+            .slice(index % 2, index % 2 + 4)
+            .map(paragraph => `<p style="margin:0 0 14px;line-height:1.65;color:#111827;font-size:15px;">${agentEscapeHtml(paragraph)}</p>`)
+            .join('\n');
+        pages.push([
+            `<h2 style="margin:0 0 18px;font-size:24px;line-height:1.2;color:#111827;">Page ${pageNo}</h2>`,
+            contextLine,
+            body
+        ].filter(Boolean).join('\n'));
+    }
+
+    return pages;
+}
+
+function agentFastSimpleDocParsed(goal = '', record = {}, entity = {}) {
+    if (!agentLooksFastSimpleDocGoal(goal)) return null;
+
+    const pageCount = agentRequestedPageCount(goal, 1);
+    const name = agentSimpleDocTitleFromGoal(goal, record);
+    const recordTitle = agentSafeString(record.computedTitle || record.title || 'la fiche courante', 120);
+    const contentPages = agentBuildSimpleDocPages(goal, record, entity);
+
+    return {
+        summary: `Demande comprise: créer un document simple de ${pageCount} page${pageCount > 1 ? 's' : ''}. Contexte disponible: ${recordTitle}. Aucun document Drive/OCR n'est nécessaire pour cette demande autonome.`,
+        plan: {
+            title: 'Création rapide du document',
+            steps: [
+                {
+                    type: 'analysis',
+                    title: 'Comprendre la demande',
+                    detail: `Créer un brouillon document de ${pageCount} page${pageCount > 1 ? 's' : ''} avec du contenu de démonstration.`
+                },
+                {
+                    type: 'context',
+                    title: 'Limiter le contexte',
+                    detail: 'Demande autonome: je n’analyse pas le Drive, les OCR ou autres sources pour éviter lenteur et coût inutile.'
+                },
+                {
+                    type: 'tools',
+                    title: 'Préparer create_doc',
+                    detail: 'Format A4 portrait par défaut, une page éditeur par page demandée, brouillon modifiable avant PDF.'
+                }
+            ]
+        },
+        actions: [{
+            tool: 'create_doc',
+            title: 'Créer le document',
+            description: `Créer un brouillon A4 de ${pageCount} page${pageCount > 1 ? 's' : ''}`,
+            input: {
+                name,
+                contentPages,
+                pageCount,
+                format: 'A4',
+                orientation: 'portrait',
+                folder: 'Documents IA'
+            }
+        }]
     };
 }
 
@@ -5126,7 +5265,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Tools autorisés:",
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
-        "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche.",
+        "- create_doc: { name, contentMarkdown? ou contentHtml?, contentPages?, pageCount?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche. Par défaut: A4 portrait. Si l'utilisateur demande plusieurs pages, utilise contentPages avec un élément par page; ne mets jamais Page 2/Page 3 dans la même page HTML.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, replacements?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append. replacements = [{search, replace, label?}] pour modifier sans casser le design.",
         "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite. Tu peux aussi utiliser des variables à chemin pointé comme \"company.name\", \"company.address\", \"company.representative\" quand l'utilisateur veut remplacer une valeur de template standard.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis. Pour select/multiselect, choisis une valeur dans options. Pour relation, value peut être un id exact ou un nom de fiche à rechercher.",
@@ -5147,7 +5286,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"...","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -5482,6 +5621,124 @@ function agentDocContentHtml(action = {}) {
     const html = String(action.input?.contentHtml || '').trim();
     if (html) return html;
     return agentMarkdownToHtml(action.input?.contentMarkdown || '');
+}
+
+function agentPagePayload(content = '', order = 0) {
+    return {
+        content: String(content || '').trim() || '<p></p>',
+        mode: 'edition',
+        elements: [],
+        rows: [],
+        background: { color: '#ffffff' },
+        order
+    };
+}
+
+function agentLooksLikeHtml(value = '') {
+    return /<\/?[a-z][\s\S]*>/i.test(String(value || ''));
+}
+
+function agentContentItemToHtml(item = {}) {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+        if (item.contentHtml || item.html) return String(item.contentHtml || item.html || '');
+        if (item.contentMarkdown || item.markdown || item.content) {
+            const raw = String(item.contentMarkdown || item.markdown || item.content || '');
+            return agentLooksLikeHtml(raw) ? raw : agentMarkdownToHtml(raw);
+        }
+        return '';
+    }
+    const raw = String(item || '');
+    return agentLooksLikeHtml(raw) ? raw : agentMarkdownToHtml(raw);
+}
+
+function agentSplitHtmlByExplicitPages(html = '') {
+    const marker = '%%AGENT_PAGE_BREAK%%';
+    let normalized = String(html || '')
+        .replace(/<!--\s*page-break\s*-->/gi, marker)
+        .replace(/<hr\b[^>]*(?:page-break|data-page-break)[^>]*>/gi, marker)
+        .replace(/<div\b[^>]*page-break-after\s*:\s*always[^>]*>\s*<\/div>/gi, marker)
+        .replace(/<div\b[^>]*(?:class|data-page-break)=["'][^"']*page-break[^"']*["'][^>]*>\s*<\/div>/gi, marker);
+
+    normalized = normalized.replace(/(<h[1-6]\b[^>]*>\s*(?:<[^>]+>\s*)*(?:Page|P\.)\s*(\d{1,2})\s*(?:<\/[^>]+>\s*)*<\/h[1-6]>)/gi, (match, heading, pageNo) => {
+        return Number(pageNo) > 1 ? `${marker}${heading}` : heading;
+    });
+
+    return normalized
+        .split(marker)
+        .map(part => part.trim())
+        .filter(Boolean);
+}
+
+function agentHtmlBlocks(html = '') {
+    const source = String(html || '').trim();
+    if (!source) return [];
+    const blockPattern = /<(p|h[1-6]|ul|ol|table|blockquote|section|article)\b[\s\S]*?<\/\1>/gi;
+    const blocks = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = blockPattern.exec(source)) !== null) {
+        const before = source.slice(lastIndex, match.index).trim();
+        if (before) blocks.push(before);
+        blocks.push(match[0]);
+        lastIndex = match.index + match[0].length;
+    }
+    const tail = source.slice(lastIndex).trim();
+    if (tail) blocks.push(tail);
+    return blocks.length ? blocks : [source];
+}
+
+function agentDistributeHtmlAcrossPages(html = '', pageCount = 1) {
+    const count = Math.max(1, Math.min(20, Number(pageCount) || 1));
+    if (count <= 1) return [String(html || '').trim()].filter(Boolean);
+
+    const blocks = agentHtmlBlocks(html);
+    if (!blocks.length) return Array.from({ length: count }, () => '<p></p>');
+
+    const totalChars = blocks.reduce((sum, block) => sum + agentPlainTextFromHtmlish(block).length, 0) || blocks.join('').length || 1;
+    const targetChars = Math.max(250, Math.ceil(totalChars / count));
+    const pages = [];
+    let current = [];
+    let currentChars = 0;
+
+    blocks.forEach((block, index) => {
+        const blockChars = agentPlainTextFromHtmlish(block).length || block.length;
+        const remainingBlocks = blocks.length - index;
+        const remainingPages = count - pages.length - 1;
+        if (pages.length < count - 1 && current.length && currentChars >= targetChars && remainingBlocks >= remainingPages) {
+            pages.push(current.join('\n'));
+            current = [];
+            currentChars = 0;
+        }
+        current.push(block);
+        currentChars += blockChars;
+    });
+
+    if (current.length) pages.push(current.join('\n'));
+    while (pages.length < count) pages.push('<p></p>');
+    return pages.slice(0, count);
+}
+
+function agentDocPages(action = {}) {
+    const input = action.input || {};
+    const rawPages = Array.isArray(input.contentPages)
+        ? input.contentPages
+        : (Array.isArray(input.pages) ? input.pages : []);
+    const requestedPageCount = Math.max(
+        agentRequestedPageCount(input.pageCount || input.pagesCount || input.numberOfPages || input.nbPages || '', 1),
+        rawPages.length || 1
+    );
+
+    let pageHtml = rawPages.map(agentContentItemToHtml).map(html => html.trim()).filter(Boolean);
+    if (!pageHtml.length) {
+        const html = agentDocContentHtml(action);
+        pageHtml = agentSplitHtmlByExplicitPages(html);
+        if (pageHtml.length < requestedPageCount) {
+            pageHtml = agentDistributeHtmlAcrossPages(html, requestedPageCount);
+        }
+    }
+
+    while (pageHtml.length < requestedPageCount) pageHtml.push('<p></p>');
+    return pageHtml.slice(0, Math.max(1, Math.min(20, pageHtml.length))).map((content, index) => agentPagePayload(content, index));
 }
 
 function agentReplaceLiteralEverywhere(source = '', search = '', replacement = '') {
@@ -6110,19 +6367,13 @@ async function applyAgentAction(req, record, entity, action) {
         const dimensions = agentDefaultDocDimensions(format, orientation);
         const simpleFolder = String(action.input?.folder || '').trim() || 'Documents IA';
         const docName = action.input?.name || 'Document IA';
+        const pages = agentDocPages(action);
         const document = await Document.create({
             name: docName,
             format,
             orientation,
             dimensions,
-            pages: [{
-                content: agentDocContentHtml(action),
-                mode: 'edition',
-                elements: [],
-                rows: [],
-                background: { color: '#ffffff' },
-                order: 0
-            }],
+            pages,
             entityId: record.entityId || entity?._id || null,
             createdBy: req.user._id,
             isTemplate: false,
@@ -6135,6 +6386,9 @@ async function applyAgentAction(req, record, entity, action) {
             metadata: {
                 docKind: 'simple',
                 simpleFolder,
+                pageCount: pages.length,
+                format,
+                orientation,
                 createdByAgent: true,
                 agentTool: action.tool,
                 agentActionId: action.id
@@ -6863,39 +7117,44 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             proposedActions: []
         });
 
-        const aiResult = await callRecordAI(req, {
-            conversationId: agentConversation._id,
-            recordId: record._id,
-            instructions: buildAgentInstructions(record, entity, fieldCatalog, toolCatalog),
-            input: buildAgentInput(goal, selectedContext, {
-                ...contextDecision,
-                inventoryText: contextInventoryText,
-                historyText: agentHistoryTextFromRuns(priorRunsChronological)
-            }),
-            previousResponseId: null,
-            engineSettings,
-            historyMessages: [],
-            maxOutputTokens: RECORD_AI_AGENT_OUTPUT_TOKENS
-        });
+        let aiResult = null;
+        let parsed = agentFastSimpleDocParsed(goal, record, entity);
+        const usedFastPath = !!parsed;
 
-        let parsed;
-        try {
-            parsed = agentExtractJson(aiResult.content);
-        } catch (parseError) {
-            const fallbackContent = agentFallbackTextFromAiContent(aiResult.content);
-            parsed = {
-                summary: shortPlainText(fallbackContent, 1200),
-                plan: { title: 'Plan agent', steps: [{ type: 'review', title: 'Créer une note de synthèse', detail: 'La réponse IA n’était pas structurée en tools.' }] },
-                actions: [{
-                    tool: 'create_note',
-                    title: 'Créer une note',
-                    description: 'Créer une note avec la réponse de l’agent',
-                    input: {
-                        title: 'Analyse IA',
-                        contentMarkdown: fallbackContent
-                    }
-                }]
-            };
+        if (!parsed) {
+            aiResult = await callRecordAI(req, {
+                conversationId: agentConversation._id,
+                recordId: record._id,
+                instructions: buildAgentInstructions(record, entity, fieldCatalog, toolCatalog),
+                input: buildAgentInput(goal, selectedContext, {
+                    ...contextDecision,
+                    inventoryText: contextInventoryText,
+                    historyText: agentHistoryTextFromRuns(priorRunsChronological)
+                }),
+                previousResponseId: null,
+                engineSettings,
+                historyMessages: [],
+                maxOutputTokens: RECORD_AI_AGENT_OUTPUT_TOKENS
+            });
+
+            try {
+                parsed = agentExtractJson(aiResult.content);
+            } catch (parseError) {
+                const fallbackContent = agentFallbackTextFromAiContent(aiResult.content);
+                parsed = {
+                    summary: shortPlainText(fallbackContent, 1200),
+                    plan: { title: 'Plan agent', steps: [{ type: 'review', title: 'Créer une note de synthèse', detail: 'La réponse IA n’était pas structurée en tools.' }] },
+                    actions: [{
+                        tool: 'create_note',
+                        title: 'Créer une note',
+                        description: 'Créer une note avec la réponse de l’agent',
+                        input: {
+                            title: 'Analyse IA',
+                            contentMarkdown: fallbackContent
+                        }
+                    }]
+                };
+            }
         }
 
         let actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog);
@@ -6903,11 +7162,12 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         run.summary = agentSafeString(parsed.summary || 'Plan prêt à valider.', 3000);
         run.plan = agentNormalizePlan(parsed);
         run.proposedActions = actions;
-        run.aiRaw = aiResult.content || '';
+        run.aiRaw = aiResult?.content || (usedFastPath ? JSON.stringify(parsed) : '');
         run.status = actions.length ? 'review' : 'error';
         run.error = actions.length ? '' : "L'agent n'a proposé aucune action exploitable.";
         run.debugPayload = RECORD_AI_DEBUG_ENABLED ? {
             phase: 'agent',
+            usedFastPath,
             createdAt: new Date(),
             goal,
             contextDecision,

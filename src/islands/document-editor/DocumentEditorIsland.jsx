@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
+import { checkOverflow, pullFromNextPageInto, reflowAllPages, compactUnderflowPages, doesContentOverflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 import { getSelectedImage } from './hooks/useImageResize'
 
@@ -807,7 +807,13 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
         if (!hasOverflow) {
-            // No overflow — nothing to reflow. Just let the browser handle the cursor natively.
+            // No overflow: compact following pages upward in one guarded transaction.
+            // This gives a natural document flow after deletions without the old duplicate-tail bug.
+            reflowInProgressRef.current = true
+            compactUnderflowPages(docRef, setDoc, pageRefs)
+            requestAnimationFrame(() => {
+                reflowInProgressRef.current = false
+            })
             return
         }
 

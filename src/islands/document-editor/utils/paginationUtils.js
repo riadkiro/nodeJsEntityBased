@@ -31,6 +31,24 @@ function isEffectivelyEmpty(html) {
     return cleaned.length === 0
 }
 
+function nodeToHtml(node) {
+    if (!node) return ''
+    if (node.nodeType === 1) return node.outerHTML || ''
+    if (node.nodeType === 3) return node.textContent || ''
+    return node.textContent || ''
+}
+
+function removeLeadingEmptyNodes(container) {
+    if (!container) return false
+
+    let removed = false
+    while (container.firstChild && isEffectivelyEmpty(nodeToHtml(container.firstChild))) {
+        container.removeChild(container.firstChild)
+        removed = true
+    }
+    return removed
+}
+
 /**
  * Get vertical paddings from computed style
  */
@@ -582,6 +600,87 @@ export function reflowUnderflowAllPages(docRef, setDoc, pageRefs, maxPasses = 10
 }
 
 /**
+ * Compact edition pages in a single DOM-first transaction.
+ *
+ * This replaces the old setDoc-per-page underflow flow for normal editing. We
+ * mutate adjacent page DOMs first, cascade across all refs while indexes are
+ * stable, then sync every page once. That avoids the duplicate-tail bug where a
+ * page received content from the next page but React state kept the source page
+ * unchanged.
+ */
+export function compactUnderflowPages(docRef, setDoc, pageRefs, maxPasses = 40) {
+    const initialDoc = docRef.current
+    if (!initialDoc?.pages?.length) return false
+
+    let movedAny = false
+
+    for (let pass = 0; pass < maxPasses; pass += 1) {
+        const pages = docRef.current?.pages || initialDoc.pages
+        let movedThisPass = false
+
+        for (let i = 0; i < pages.length - 1; i += 1) {
+            const currentPage = pages[i]
+            const nextPage = pages[i + 1]
+            if (!currentPage || !nextPage) continue
+            if (currentPage.mode !== 'edition' || nextPage.mode !== 'edition') continue
+
+            const currentEl = pageRefs.current[i]
+            const nextEl = pageRefs.current[i + 1]
+            if (!currentEl || !nextEl) continue
+            if (doesContentOverflow(currentEl)) continue
+
+            const removedLeadingEmpty = removeLeadingEmptyNodes(nextEl)
+            if (isEffectivelyEmpty(nextEl.innerHTML)) {
+                if (removedLeadingEmpty) {
+                    movedAny = true
+                    movedThisPass = true
+                }
+                continue
+            }
+
+            const { movedAny: movedFromNext } = pullFromNextPageInto(currentEl, nextEl)
+            if (movedFromNext) {
+                movedAny = true
+                movedThisPass = true
+            }
+        }
+
+        if (!movedThisPass) break
+    }
+
+    if (!movedAny) return false
+
+    setDoc(prevDoc => {
+        if (!prevDoc?.pages?.length) return prevDoc
+
+        const syncedPages = prevDoc.pages.map((page, index) => {
+            const pageRef = pageRefs.current[index]
+            if (page?.mode === 'edition' && pageRef) {
+                return { ...page, content: pageRef.innerHTML }
+            }
+            return { ...page }
+        })
+
+        const compactedPages = syncedPages.filter(page => {
+            const hasElements = Array.isArray(page.elements) && page.elements.length > 0
+            const hasRows = Array.isArray(page.rows) && page.rows.length > 0
+            if (syncedPages.length <= 1) return true
+            if (page.mode !== 'edition') return true
+            return !(isEffectivelyEmpty(page.content) && !hasElements && !hasRows)
+        })
+
+        const pages = (compactedPages.length ? compactedPages : [syncedPages[0]]).map((page, index) => ({
+            ...page,
+            order: index
+        }))
+
+        return { ...prevDoc, pages }
+    })
+
+    return true
+}
+
+/**
  * Pull as much as possible (node-by-node) from next page to current page.
  * Uses real DOM of both pages, then syncs BOTH page contents in state.
  *
@@ -601,6 +700,8 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
 
         const availableSpace = getAvailableSpacePx(element)
         if (availableSpace <= UNDERFLOW_THRESHOLD_PX) break
+
+        removeLeadingEmptyNodes(nextPageRef)
 
         const firstNode = nextPageRef.firstChild
         if (!firstNode) break
@@ -684,6 +785,8 @@ export function pullFromNextPageInto(prevEl, curEl) {
 
         const availableSpace = getAvailableSpacePx(prevEl)
         if (availableSpace <= UNDERFLOW_THRESHOLD_PX) break
+
+        removeLeadingEmptyNodes(curEl)
 
         const firstNode = curEl.firstChild
         if (!firstNode) break

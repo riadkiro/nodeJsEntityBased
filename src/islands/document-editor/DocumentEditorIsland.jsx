@@ -284,8 +284,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
 	    // Effective template mode: server prop OR document flag
 	    const effectiveTemplateMode = isTemplateMode || !!doc.isTemplate
-	    const isSimpleEditableDoc = doc?.metadata?.docKind === 'simple'
-	        || Boolean(doc?.metadata?.createdByAgent && !doc?.draftSourceTemplateId && !doc?.generatedFrom?.smartDocId)
+	    const editorUrlParams = new URLSearchParams(window.location.search)
+	    const isTemplateDrivenDoc = Boolean(
+	        doc?.draftSourceTemplateId
+	        || doc?.generatedFrom?.smartDocId
+	        || doc?.generatedFrom?.templateId
+	        || editorUrlParams.get('templateId')
+	    )
+	    const isSimpleEditableDoc = !doc?.isTemplate && !isTemplateDrivenDoc
 
 	    // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
@@ -1914,7 +1920,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // context-free drafts (Docs Hub flow) causing PDFs to only blob-download
         // without persisting anywhere, and drafts to accumulate in the DB.
         const isRegenerableSnapshot = doc.isGenerationSnapshot || doc.sourceGeneratedAttachmentId || doc.generatedFile?.attachmentId
-        if (doc.isDraft || isRegenerableSnapshot) {
+        if (doc.isDraft || isRegenerableSnapshot || isSimpleEditableDoc) {
             setIsGeneratingPdf(true)
             try {
                 // CRITICAL: Extract CURRENT DOM content from pageRefs (contenteditable is uncontrolled)
@@ -1967,7 +1973,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 	                if (isSimpleEditableDoc) {
 	                    finalizedRef.current = false
 	                    if (window.showMessage) {
-	                        window.showMessage('PDF exporté', 'success')
+	                        window.showMessage('Document enregistré', 'success')
 	                    }
 	                    return
 	                }

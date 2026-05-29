@@ -671,10 +671,15 @@ export default function EditorHeader({
 	    const [highlightColor, setHighlightColor] = useState('transparent')
 	    const [modalConfig, setModalConfig] = useState(null)
 	    const [isSavingDraft, setIsSavingDraft] = useState(false)
-	    const isSimpleEditableDoc = doc?.metadata?.docKind === 'simple'
-	        || Boolean(doc?.metadata?.createdByAgent && !doc?.draftSourceTemplateId && !doc?.generatedFrom?.smartDocId)
-	    const draftLoadingLabel = 'Génération...'
 	    const urlParams = new URLSearchParams(window.location.search)
+	    const isTemplateDrivenDoc = Boolean(
+	        doc?.draftSourceTemplateId
+	        || doc?.generatedFrom?.smartDocId
+	        || doc?.generatedFrom?.templateId
+	        || urlParams.get('templateId')
+	    )
+	    const isSimpleEditableDoc = !doc?.isTemplate && !isTemplateDrivenDoc
+	    const draftLoadingLabel = 'Génération...'
 	    const isTemplateDraftFlow = Boolean(
 	        doc?.isDraft
 	        || doc?.draftSourceTemplateId
@@ -758,30 +763,6 @@ export default function EditorHeader({
                 window.showMessage(error?.message || 'Erreur lors de l’enregistrement du brouillon', 'danger')
             } else {
                 alert(error?.message || 'Erreur lors de l’enregistrement du brouillon')
-            }
-        } finally {
-            setIsSavingDraft(false)
-        }
-    }
-
-    const handleSimpleSave = async () => {
-        if (!doc?._id || isSavingDraft || isGeneratingPdf) return
-        setIsSavingDraft(true)
-        try {
-            const saver = forceSave || triggerSave
-            const result = await saver?.()
-            if (result?.success === false) {
-                throw new Error(result.error || 'Erreur lors de l’enregistrement')
-            }
-            if (window.showMessage) {
-                window.showMessage('Document enregistré', 'success')
-            }
-        } catch (error) {
-            console.error('[DocumentEditor] Save failed:', error)
-            if (window.showMessage) {
-                window.showMessage(error?.message || 'Erreur lors de l’enregistrement', 'danger')
-            } else {
-                alert(error?.message || 'Erreur lors de l’enregistrement')
             }
         } finally {
             setIsSavingDraft(false)
@@ -1154,34 +1135,19 @@ export default function EditorHeader({
                                 </button>
 
                                 {isSimpleEditableDoc ? (
-                                    <>
-                                        <button
-                                            onClick={handleSimpleSave}
-                                            disabled={!doc._id || isSavingDraft || isGeneratingPdf}
-                                            className="flex items-center gap-1.5 px-4 py-2 rounded border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isSavingDraft ? (
-                                                <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
-                                            ) : (
-                                                <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
-                                            )}
-                                            <span>{isSavingDraft ? 'Enregistrement...' : 'Enregistrer'}</span>
-                                        </button>
-
-                                        <button
-                                            onClick={handlePdfExport}
-                                            disabled={!doc._id || isGeneratingPdf || isSavingDraft}
-                                            className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                            style={{ backgroundColor: '#10b981' }}
-                                        >
-                                            {isGeneratingPdf ? (
-                                                <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
-                                            ) : (
-                                                <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
-                                            )}
-                                            <span>{isGeneratingPdf ? 'Export...' : 'Exporter PDF'}</span>
-                                        </button>
-                                    </>
+                                    <button
+                                        onClick={handlePdfExport}
+                                        disabled={!doc._id || isGeneratingPdf}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style={{ backgroundColor: '#10b981' }}
+                                    >
+                                        {isGeneratingPdf ? (
+                                            <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                        ) : (
+                                            <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
+                                        )}
+                                        <span>{isGeneratingPdf ? 'Enregistrement...' : 'Enregistrer'}</span>
+                                    </button>
                                 ) : (
                                     <>
                                         {canSaveDraft && (
@@ -1242,37 +1208,22 @@ export default function EditorHeader({
 
                                 {/* Action Button */}
                                 {isSimpleEditableDoc ? (
-                                    <>
-                                        <button
-                                            onClick={handleSimpleSave}
-                                            disabled={!doc._id || isSavingDraft || isGeneratingPdf}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isSavingDraft ? (
-                                                <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
-                                            ) : (
-                                                <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
-                                            )}
-                                            <span>{isSavingDraft ? 'Enregistrement...' : 'Enregistrer'}</span>
-                                        </button>
-
-                                        <button
-                                            onClick={handlePdfExport}
-                                            disabled={!doc._id || isGeneratingPdf || isSavingDraft}
-                                            className="flex items-center gap-2 px-4 py-2 text-white rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 duration-200"
-                                            style={{
-                                                backgroundColor: '#10b981',
-                                                boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -2px rgba(16, 185, 129, 0.2)'
-                                            }}
-                                        >
-                                            {isGeneratingPdf ? (
-                                                <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
-                                            ) : (
-                                                <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
-                                            )}
-                                            <span>{isGeneratingPdf ? 'Export...' : 'Exporter PDF'}</span>
-                                        </button>
-                                    </>
+                                    <button
+                                        onClick={handlePdfExport}
+                                        disabled={!doc._id || isGeneratingPdf}
+                                        className="flex items-center gap-2 px-4 py-2 text-white rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 duration-200"
+                                        style={{
+                                            backgroundColor: '#10b981',
+                                            boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -2px rgba(16, 185, 129, 0.2)'
+                                        }}
+                                    >
+                                        {isGeneratingPdf ? (
+                                            <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                        ) : (
+                                            <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
+                                        )}
+                                        <span>{isGeneratingPdf ? 'Enregistrement...' : 'Enregistrer'}</span>
+                                    </button>
                                 ) : doc.isDraft ? (
                                     <button
                                         onClick={handlePdfExport}

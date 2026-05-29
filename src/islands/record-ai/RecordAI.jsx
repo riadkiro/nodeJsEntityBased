@@ -658,6 +658,7 @@ function agentStatusLabel(status) {
     if (status === 'partial') return 'Partiel'
     if (status === 'undoing') return 'Annulation'
     if (status === 'undone') return 'Annulé'
+    if (status === 'rejected') return 'Ignoré'
     if (status === 'error') return 'Erreur'
     return status || 'Agent'
 }
@@ -694,10 +695,11 @@ function agentActionStatusIcon(status) {
     if (status === 'applied') return 'solar:check-circle-bold-duotone'
     if (status === 'failed') return 'solar:danger-circle-bold-duotone'
     if (status === 'undone') return 'solar:rewind-back-bold-duotone'
+    if (status === 'rejected') return 'solar:close-circle-bold-duotone'
     return 'solar:clock-circle-bold-duotone'
 }
 
-function AgentActionCard({ action = {} }) {
+function AgentActionCard({ action = {}, selectable = false, selected = true, onToggle }) {
     const color = agentToolColor(action.tool)
     const diff = Array.isArray(action.diff) ? action.diff : []
     const failed = action.status === 'failed'
@@ -712,6 +714,16 @@ function AgentActionCard({ action = {} }) {
     return (
         <div className={`rai-agent-action ${action.status || 'proposed'}`} style={{ '--agent-action-color': color }}>
             <div className="rai-agent-action-head">
+                {selectable && (
+                    <button
+                        type="button"
+                        className={`rai-agent-action-check ${selected ? 'selected' : ''}`}
+                        onClick={() => onToggle?.(action.id)}
+                        title={selected ? 'Retirer cette action' : 'Inclure cette action'}
+                    >
+                        <Icon icon={selected ? 'solar:check-square-bold-duotone' : 'solar:square-linear'} width={15} />
+                    </button>
+                )}
                 <span className="rai-agent-action-icon">
                     <Icon icon={agentToolIcon(action.tool)} width={16} />
                 </span>
@@ -774,7 +786,23 @@ function AgentActionCard({ action = {} }) {
 
 function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, draftPhrase = 'Analyse de la demande' }) {
     const actions = Array.isArray(run.proposedActions) ? run.proposedActions : []
-    const canApply = ['review', 'partial'].includes(run.status) && actions.some(action => ['proposed', 'failed'].includes(action.status))
+    const selectableActionIds = useMemo(
+        () => actions.filter(action => ['proposed', 'failed'].includes(action.status)).map(action => action.id),
+        [actions]
+    )
+    const [selectedActionIds, setSelectedActionIds] = useState([])
+    useEffect(() => {
+        setSelectedActionIds(selectableActionIds)
+    }, [run._id, selectableActionIds.join('|')])
+    const selectedActionSet = useMemo(() => new Set(selectedActionIds), [selectedActionIds])
+    const toggleActionSelection = useCallback((actionId) => {
+        setSelectedActionIds(current => (
+            current.includes(actionId)
+                ? current.filter(id => id !== actionId)
+                : [...current, actionId]
+        ))
+    }, [])
+    const canApply = ['review', 'partial'].includes(run.status) && selectedActionIds.length > 0
     const canUndo = ['applied', 'partial'].includes(run.status) && actions.some(action => action.status === 'applied')
     const steps = Array.isArray(run.plan?.steps) ? run.plan.steps : []
     const sourceCount = Array.isArray(run.contextItems) ? run.contextItems.length : 0
@@ -830,7 +858,13 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                             <div className="rai-agent-actions">
                                 {actions.length === 0 && <div className="rai-context-empty">Aucune action proposée</div>}
                                 {actions.map(action => (
-                                    <AgentActionCard action={action} key={action.id} />
+                                    <AgentActionCard
+                                        action={action}
+                                        key={action.id}
+                                        selectable={['proposed', 'failed'].includes(action.status)}
+                                        selected={selectedActionSet.has(action.id)}
+                                        onToggle={toggleActionSelection}
+                                    />
                                 ))}
                             </div>
 
@@ -842,7 +876,10 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                             )}
 
                             <div className="rai-agent-run-footer">
-                                <span>Review mode</span>
+                                <span>
+                                    Review mode
+                                    {selectableActionIds.length > 0 ? ` · ${selectedActionIds.length}/${selectableActionIds.length} sélectionnée${selectedActionIds.length > 1 ? 's' : ''}` : ''}
+                                </span>
                                 <div>
                                     {canUndo && (
                                         <button type="button" className="rai-agent-secondary" onClick={() => onUndo(run)} disabled={busy}>
@@ -851,7 +888,7 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                                         </button>
                                     )}
                                     {canApply && (
-                                        <button type="button" className="rai-agent-primary" onClick={() => onApply(run)} disabled={busy}>
+                                        <button type="button" className="rai-agent-primary" onClick={() => onApply(run, selectedActionIds)} disabled={busy}>
                                             <Icon icon={busy ? 'line-md:loading-twotone-loop' : 'solar:plain-bold'} width={14} />
                                             Exécuter
                                         </button>
@@ -1438,12 +1475,17 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         }
     }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, files, input, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
 
-    const applyAgentRun = useCallback(async (run) => {
+    const applyAgentRun = useCallback(async (run, actionIds = []) => {
         if (!run?._id || agentBusyRunId) return
+        const selectedIds = Array.isArray(actionIds) ? actionIds.filter(Boolean) : []
+        if (!selectedIds.length) return
         setAgentBusyRunId(run._id)
         setError('')
         try {
-            const data = await apiFetch(`/agent/runs/${run._id}/apply`, { method: 'POST', body: JSON.stringify({}) })
+            const data = await apiFetch(`/agent/runs/${run._id}/apply`, {
+                method: 'POST',
+                body: JSON.stringify({ actionIds: selectedIds })
+            })
             upsertAgentRun(data.run)
             updateAgentConversationList(data.conversation)
         } catch (err) {
@@ -2753,7 +2795,11 @@ const styles = `
 .rai-agent-action.applied{border-color:#bbf7d0;background:#f0fdf4;}
 .rai-agent-action.failed{border-color:#fecaca;background:#fff1f2;}
 .rai-agent-action.undone{background:#f8fafc;opacity:.78;}
+.rai-agent-action.rejected{background:#f8fafc;opacity:.72;}
 .rai-agent-action-head{display:flex;align-items:center;gap:8px;min-width:0;}
+.rai-agent-action-check{width:24px;height:24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#94a3b8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .14s ease;}
+.rai-agent-action-check:hover{border-color:#c7d2fe;color:#4f46e5;background:#f8faff;}
+.rai-agent-action-check.selected{border-color:#c7d2fe;color:#4f46e5;background:#eef2ff;}
 .rai-agent-action-icon{width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--agent-action-color) 10%,#fff);color:var(--agent-action-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .rai-agent-action-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
 .rai-agent-action-title strong{font-size:12px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -2762,6 +2808,7 @@ const styles = `
 .rai-agent-action-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
 .rai-agent-action-status.failed{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
 .rai-agent-action-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
+.rai-agent-action-status.rejected{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
 .rai-agent-preview{border:1px solid #edf2f7;background:#f8fafc;border-radius:8px;padding:7px 8px;}
 .rai-agent-preview strong{display:block;font-size:11.5px;color:#334155;margin-bottom:2px;}
 .rai-agent-preview p{margin:0;font-size:10.5px;color:#64748b;line-height:1.4;}

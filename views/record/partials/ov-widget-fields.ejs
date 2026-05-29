@@ -104,12 +104,12 @@ function _jsonAttr(value) {
                             </span>
                         </template>
                         <input type="text" class="ov-rel-search" placeholder="Rechercher..."
-                               x-model="searchQ" @input="showDropdown = searchQ.trim().length > 0" @focus="if (searchQ.trim().length > 0) showDropdown = true"
-                               @keydown.enter.prevent="searchQ.trim().length && filteredOptions.length ? addChoice(filteredOptions[0]) : createNew()"
+                               x-model="searchQ" @input="showDropdown = true" @focus="showDropdown = true"
+                               @keydown.enter.prevent="visibleOptions.length ? addChoice(visibleOptions[0]) : createNew()"
                                @keydown.escape="closeAndSave()" x-ref="choiceSearchInput">
                     </div>
-                    <div class="ov-rel-dropdown" x-show="showDropdown && searchQ.trim().length > 0 && (filteredOptions.length > 0 || !hasExactMatch)" x-cloak>
-                        <template x-for="opt in filteredOptions" :key="opt.value">
+                    <div class="ov-rel-dropdown" x-show="showDropdown && (visibleOptions.length > 0 || (searchQ.trim().length > 0 && !hasExactMatch))" x-cloak>
+                        <template x-for="opt in visibleOptions" :key="opt.value">
                             <div class="ov-rel-option" @click.stop="addChoice(opt)" @contextmenu.prevent.stop="openChoiceContextMenu($event, opt)">
                                 <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>
                                 <span x-text="opt.label"></span>
@@ -139,10 +139,10 @@ function _jsonAttr(value) {
                             </span>
                         </template>
                         <input type="text" class="ov-rel-search" placeholder="Rechercher..."
-                               x-model="searchQ" @input.debounce.300ms="search()" @focus="if (searchQ.trim().length > 0) search()"
+                               x-model="searchQ" @input.debounce.300ms="search()" @focus="search()"
                                @keydown.escape="closeAndSave()" x-ref="relSearchInput">
                     </div>
-                    <div class="ov-rel-dropdown" x-show="showDropdown && searchQ.trim().length > 0" x-cloak>
+                    <div class="ov-rel-dropdown" x-show="showDropdown && (results.length > 0 || searchQ.trim().length > 0)" x-cloak>
                         <template x-for="r in results" :key="r._id">
                             <div class="ov-rel-option" @click.stop="addTag(r)">
                                 <iconify-icon icon="solar:add-circle-linear" width="13" style="opacity:.5"></iconify-icon>

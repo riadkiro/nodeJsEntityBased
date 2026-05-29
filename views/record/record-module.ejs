@@ -951,7 +951,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 if (!this.targetEntityId) return;
                 const q = this.searchQ.trim();
                 try {
-                    let url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&limit=8';
+                    let url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&limit=5';
                     if (q) url += '&q=' + encodeURIComponent(q);
                     const res = await fetch(url, { credentials: 'include' });
                     const data = await res.json();
@@ -5105,6 +5105,10 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 });
             },
 
+            get visibleOptions() {
+                return this.filteredOptions.slice(0, 5);
+            },
+
             get hasExactMatch() {
                 const q = this.searchQ.trim().toLowerCase();
                 if (!q) return false;
@@ -5310,7 +5314,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 if (!this.targetEntityId) return;
                 const q = this.searchQ.trim();
                 try {
-                    let url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&limit=8';
+                    let url = '/account/<%= account_number %>/record/api/search?entityId=' + this.targetEntityId + '&limit=5';
                     if (q) url += '&q=' + encodeURIComponent(q);
                     const res = await fetch(url, { credentials: 'include' });
                     const data = await res.json();

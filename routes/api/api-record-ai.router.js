@@ -86,6 +86,10 @@ function cleanId(value) {
     return String(value);
 }
 
+function escapeRegExp(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function isObjectId(value) {
     return mongoose.Types.ObjectId.isValid(cleanId(value));
 }
@@ -3362,6 +3366,29 @@ function agentNormalizeLabel(value) {
         .trim();
 }
 
+function agentNormalizeFieldOptions(field = {}) {
+    const rawOptions = field.options || field.type_config?.options || field.typeConfig?.options || [];
+    if (!Array.isArray(rawOptions)) return [];
+    return rawOptions
+        .map(option => {
+            if (option && typeof option === 'object') {
+                const label = agentSafeString(option.label || option.name || option.value || option.id || option._id || '', 160);
+                const value = agentSafeString(option.value || option.id || option._id || option.label || option.name || '', 160);
+                if (!label && !value) return null;
+                return {
+                    id: cleanId(option.id || option._id || option.optionId || value),
+                    label: label || value,
+                    value: value || label,
+                    color: option.color || ''
+                };
+            }
+            const value = agentSafeString(option, 160);
+            return value ? { id: value, label: value, value } : null;
+        })
+        .filter(Boolean)
+        .slice(0, 120);
+}
+
 function agentBuildFieldCatalog(entity = {}) {
     const standardFields = [
         { id: 'title', label: 'Titre', source: 'standard', type: 'string' },
@@ -3375,15 +3402,58 @@ function agentBuildFieldCatalog(entity = {}) {
     const customFields = (entity.customFields || [])
         .filter(field => field && field._id)
         .slice(0, 120)
-        .map(field => ({
-            id: cleanId(field._id),
-            label: field.label || field.name || 'Champ',
-            name: field.name || '',
-            source: 'field',
-            type: field.type || field.inputType || field.render?.input || 'text'
-        }));
+        .map(field => {
+            const type = field.type || field.inputType || field.render?.input || 'text';
+            if (String(type || '').toLowerCase() === 'relation') {
+                const typeConfig = field.type_config || field.typeConfig || {};
+                const targetEntityId = cleanId(typeConfig.refEntity || typeConfig.targetEntityId || typeConfig.entityId || typeConfig.ref || '');
+                return {
+                    id: cleanId(field._id),
+                    key: cleanId(field._id),
+                    customFieldId: cleanId(field._id),
+                    label: field.label || field.name || 'Relation',
+                    name: field.name || '',
+                    source: 'relation',
+                    type: 'relation',
+                    targetEntityId,
+                    targetEntityName: '',
+                    targetEntitySlug: '',
+                    isMulti: !!(typeConfig.multiple || typeConfig.isMulti || field.isMulti)
+                };
+            }
+            const options = agentNormalizeFieldOptions(field);
+            return {
+                id: cleanId(field._id),
+                label: field.label || field.name || 'Champ',
+                name: field.name || '',
+                source: 'field',
+                type,
+                options,
+                isMulti: String(type || '').toLowerCase() === 'multiselect'
+            };
+        });
 
-    return [...standardFields, ...customFields];
+    const relationFields = (entity.relations || [])
+        .filter(relation => relation && relation.key && relation.direction !== 'inverse' && relation.inputMode !== 'readonly')
+        .slice(0, 80)
+        .map(relation => {
+            const cardinality = String(relation.cardinality || '').toLowerCase();
+            const targetEntity = relation.targetEntity || {};
+            return {
+                id: `relation:${relation.key}`,
+                key: relation.key,
+                label: relation.label || targetEntity.name || targetEntity.nameSingular || 'Relation',
+                name: relation.key,
+                source: 'relation',
+                type: 'relation',
+                targetEntityId: cleanId(targetEntity._id || relation.targetEntity),
+                targetEntityName: targetEntity.name || targetEntity.nameSingular || '',
+                targetEntitySlug: targetEntity.slug || '',
+                isMulti: ['one-to-many', 'many-to-many'].includes(cardinality)
+            };
+        });
+
+    return [...standardFields, ...customFields, ...relationFields];
 }
 
 function agentFieldLookup(fieldCatalog = []) {
@@ -3438,11 +3508,93 @@ function agentCoerceFieldValue(value, field = {}) {
         return ['true', '1', 'oui', 'yes', 'vrai'].includes(agentNormalizeLabel(value));
     }
 
+    if (type === 'select') {
+        const raw = value && typeof value === 'object'
+            ? (value.value || value.label || value.name || value.id || value._id || '')
+            : value;
+        const option = agentResolveCatalogOption(raw, field.options || []);
+        return option ? (option.value || option.label || raw) : agentSafeString(raw, 300);
+    }
+
     if (type === 'multiselect') {
-        return Array.isArray(value) ? value.map(item => agentSafeString(item, 300)).filter(Boolean) : [agentSafeString(value, 300)].filter(Boolean);
+        const rawValues = Array.isArray(value) ? value : String(value).split(/[;,]/);
+        return rawValues
+            .map(item => {
+                const raw = item && typeof item === 'object'
+                    ? (item.value || item.label || item.name || item.id || item._id || '')
+                    : item;
+                const option = agentResolveCatalogOption(raw, field.options || []);
+                return option ? (option.value || option.label || raw) : agentSafeString(raw, 300);
+            })
+            .filter(Boolean);
     }
 
     return typeof value === 'object' ? value : agentSafeString(value, 4000);
+}
+
+function agentRelationRawValues(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') return [value];
+    if (typeof value === 'string') {
+        return value.split(/[;,]/).map(item => item.trim()).filter(Boolean);
+    }
+    return value ? [value] : [];
+}
+
+async function agentResolveRelationValue(req, field = {}, rawValue) {
+    const rawValues = agentRelationRawValues(rawValue);
+    const targetEntityId = cleanId(field.targetEntityId);
+    if (!targetEntityId) throw new Error(`Relation "${field.label || field.id}" sans entité cible`);
+
+    const Record = await tenantCollection(req, 'Record');
+    const resolvedIds = [];
+
+    for (const item of rawValues) {
+        const directId = cleanId(
+            item && typeof item === 'object'
+                ? (item.id || item._id || item.recordId || item.value)
+                : item
+        );
+        if (directId && isObjectId(directId)) {
+            const exists = await Record.exists({ _id: directId, entityId: targetEntityId });
+            if (exists) {
+                resolvedIds.push(directId);
+                continue;
+            }
+        }
+
+        const label = agentSafeString(
+            item && typeof item === 'object'
+                ? (item.label || item.title || item.name || item.value || '')
+                : item,
+            300
+        );
+        if (!label) continue;
+
+        const exact = new RegExp(`^${escapeRegExp(label)}$`, 'i');
+        const found = await Record.findOne({
+            entityId: targetEntityId,
+            $or: [
+                { title: exact },
+                { computedTitle: exact }
+            ]
+        }).select('_id').lean()
+            || await Record.findOne({
+                entityId: targetEntityId,
+                $or: [
+                    { title: { $regex: escapeRegExp(label), $options: 'i' } },
+                    { computedTitle: { $regex: escapeRegExp(label), $options: 'i' } }
+                ]
+            }).select('_id').lean();
+
+        if (found?._id) resolvedIds.push(cleanId(found._id));
+    }
+
+    const uniqueIds = [...new Set(resolvedIds)];
+    if (!uniqueIds.length && rawValues.length) {
+        throw new Error(`Aucune fiche trouvée pour la relation "${field.label || field.id}"`);
+    }
+    return field.isMulti ? uniqueIds : (uniqueIds[0] || '');
 }
 
 function agentFormatDiffValue(value) {
@@ -3455,6 +3607,16 @@ function agentFormatDiffValue(value) {
 
 function agentGetRecordFieldValue(record = {}, field = {}) {
     if (field.source === 'standard') return record[field.id];
+    if (field.source === 'relation') {
+        const relationKey = field.key || String(field.id || '').replace(/^relation:/, '');
+        if (field.customFieldId) {
+            const customFound = (record.customFields || []).find(item => cleanId(item.field_id?._id || item.field_id) === field.customFieldId);
+            if (customFound) return customFound.value;
+        }
+        const found = (record.relations || []).find(item => item.relationKey === relationKey);
+        if (found) return found.value;
+        return undefined;
+    }
     const found = (record.customFields || []).find(item => cleanId(item.field_id?._id || item.field_id) === field.id);
     return found ? found.value : undefined;
 }
@@ -3463,6 +3625,35 @@ function agentSetRecordFieldValue(record, field = {}, value) {
     if (field.source === 'standard') {
         record[field.id] = value === '' ? null : value;
         return { existed: Object.prototype.hasOwnProperty.call(record.toObject ? record.toObject() : record, field.id) };
+    }
+
+    if (field.source === 'relation') {
+        const relationKey = field.key || String(field.id || '').replace(/^relation:/, '');
+        record.relations = (record.relations || []).filter(item => item.relationKey);
+        const index = record.relations.findIndex(item => item.relationKey === relationKey);
+        const customIndex = field.customFieldId
+            ? (record.customFields || []).findIndex(item => cleanId(item.field_id?._id || item.field_id) === field.customFieldId)
+            : -1;
+        const nextValue = field.isMulti
+            ? (Array.isArray(value) ? value.map(cleanId).filter(Boolean) : [cleanId(value)].filter(Boolean))
+            : (Array.isArray(value) ? cleanId(value[0]) : cleanId(value));
+        if (index >= 0) {
+            record.relations[index].value = nextValue;
+            record.markModified('relations');
+        } else {
+            record.relations.push({ relationKey, value: nextValue });
+            record.markModified('relations');
+        }
+        if (field.customFieldId) {
+            record.customFields = record.customFields || [];
+            if (customIndex >= 0) {
+                record.customFields[customIndex].value = nextValue;
+            } else {
+                record.customFields.push({ field_id: field.customFieldId, value: nextValue });
+            }
+            record.markModified('customFields');
+        }
+        return { existed: index >= 0, customExisted: customIndex >= 0 };
     }
 
     const index = (record.customFields || []).findIndex(item => cleanId(item.field_id?._id || item.field_id) === field.id);
@@ -3481,6 +3672,35 @@ function agentSetRecordFieldValue(record, field = {}, value) {
 function agentRestoreRecordFieldValue(record, field = {}, inverse = {}) {
     if (field.source === 'standard') {
         record[field.id] = inverse.beforeValue === undefined ? null : inverse.beforeValue;
+        return;
+    }
+
+    if (field.source === 'relation') {
+        const relationKey = field.key || String(field.id || '').replace(/^relation:/, '');
+        record.relations = record.relations || [];
+        const index = record.relations.findIndex(item => item.relationKey === relationKey);
+        const customIndex = field.customFieldId
+            ? (record.customFields || []).findIndex(item => cleanId(item.field_id?._id || item.field_id) === field.customFieldId)
+            : -1;
+        if (inverse.existed === false) {
+            if (index >= 0) record.relations.splice(index, 1);
+        } else if (index >= 0) {
+            record.relations[index].value = inverse.beforeValue;
+        } else {
+            record.relations.push({ relationKey, value: inverse.beforeValue });
+        }
+        record.markModified('relations');
+        if (field.customFieldId) {
+            record.customFields = record.customFields || [];
+            if (inverse.customExisted === false) {
+                if (customIndex >= 0) record.customFields.splice(customIndex, 1);
+            } else if (customIndex >= 0) {
+                record.customFields[customIndex].value = inverse.beforeValue;
+            } else {
+                record.customFields.push({ field_id: field.customFieldId, value: inverse.beforeValue });
+            }
+            record.markModified('customFields');
+        }
         return;
     }
 
@@ -4885,7 +5105,18 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         id: field.id,
         label: field.label,
         type: field.type,
-        source: field.source
+        source: field.source,
+        options: field.options && field.options.length
+            ? field.options.map(option => ({ label: option.label, value: option.value })).slice(0, 80)
+            : undefined,
+        relation: field.source === 'relation'
+            ? {
+                key: field.key,
+                targetEntityId: field.targetEntityId,
+                targetEntityName: field.targetEntityName,
+                isMulti: field.isMulti
+            }
+            : undefined
     }));
 
     return [
@@ -4898,7 +5129,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, replacements?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append. replacements = [{search, replace, label?}] pour modifier sans casser le design.",
         "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite. Tu peux aussi utiliser des variables à chemin pointé comme \"company.name\", \"company.address\", \"company.representative\" quand l'utilisateur veut remplacer une valeur de template standard.",
-        "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
+        "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis. Pour select/multiselect, choisis une valeur dans options. Pour relation, value peut être un id exact ou un nom de fiche à rechercher.",
         "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
         "- create_event: { title, date, endDate?, duration?, type?, lieu?, notes?, status? }. Crée un événement Agenda lié à la fiche.",
@@ -6106,11 +6337,13 @@ async function applyAgentAction(req, record, entity, action) {
             const field = lookup.byId.get(cleanId(patch.fieldId));
             if (!field) continue;
             const beforeValue = agentGetRecordFieldValue(editableRecord, field);
-            const value = agentCoerceFieldValue(patch.value, field);
+            const value = field.source === 'relation'
+                ? await agentResolveRelationValue(req, field, patch.value)
+                : agentCoerceFieldValue(patch.value, field);
             const meta = agentSetRecordFieldValue(editableRecord, field, value);
             before.push({ fieldId: field.id, label: field.label, value: beforeValue });
             after.push({ fieldId: field.id, label: field.label, value });
-            inverseFields.push({ fieldId: field.id, beforeValue, existed: meta.existed });
+            inverseFields.push({ fieldId: field.id, beforeValue, existed: meta.existed, customExisted: meta.customExisted });
         }
 
         if (!after.length) throw new Error('Aucun champ valide à mettre à jour');
@@ -6730,6 +6963,14 @@ router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
         }
 
         const requestedIds = Array.isArray(req.body.actionIds) ? new Set(req.body.actionIds.map(cleanId)) : null;
+        if (requestedIds) {
+            (run.proposedActions || []).forEach(action => {
+                if (!requestedIds.has(action.id) && ['proposed', 'failed'].includes(action.status)) {
+                    action.status = 'rejected';
+                    action.error = 'Action ignorée par sélection utilisateur';
+                }
+            });
+        }
         const actions = (run.proposedActions || []).filter(action => {
             if (requestedIds && !requestedIds.has(action.id)) return false;
             return ['proposed', 'failed'].includes(action.status);
@@ -6774,7 +7015,14 @@ router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
 
         const appliedCount = run.proposedActions.filter(action => action.status === 'applied').length;
         const failedCount = run.proposedActions.filter(action => action.status === 'failed').length;
-        run.status = failedCount > 0 ? (appliedCount > 0 ? 'partial' : 'review') : 'applied';
+        const pendingCount = run.proposedActions.filter(action => action.status === 'proposed').length;
+        if (failedCount > 0) {
+            run.status = appliedCount > 0 ? 'partial' : 'review';
+        } else if (pendingCount > 0) {
+            run.status = appliedCount > 0 ? 'partial' : 'review';
+        } else {
+            run.status = 'applied';
+        }
         await run.save();
         let conversation = null;
         if (run.conversationId) {

@@ -642,20 +642,30 @@ router.get('/records/:recordId/attachments', async (req, res) => {
 
         let documentFolders = [];
         const folderNameById = new Map();
+        const folderIdByName = new Map();
+        const normalizeFolderName = (name) => String(name || '').trim().toLowerCase();
         if (DocumentFolder) {
             documentFolders = await DocumentFolder.find({
                 createdBy: req.user._id,
                 scope: 'record',
                 recordId: record._id
             }).sort({ order: 1, createdAt: 1 }).lean();
-            documentFolders.forEach(folder => folderNameById.set(cleanId(folder._id), folder.name));
+            documentFolders.forEach(folder => {
+                const folderId = cleanId(folder._id);
+                folderNameById.set(folderId, folder.name);
+                folderIdByName.set(normalizeFolderName(folder.name), folderId);
+            });
         }
 
-        const folderNameForDoc = (doc) => {
+        const folderInfoForDoc = (doc) => {
             const folderId = cleanId(doc?.folderId);
-            return (folderId && folderNameById.get(folderId))
+            const name = (folderId && folderNameById.get(folderId))
                 || doc?.metadata?.simpleFolder
                 || (doc?.metadata?.createdByAgent ? 'Documents IA' : 'Documents');
+            return {
+                id: folderId || folderIdByName.get(normalizeFolderName(name)) || '',
+                name
+            };
         };
 
         const isSimpleDocument = (doc) => {
@@ -681,13 +691,13 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             enrichedAttachments = enrichedAttachments.map(att => {
                 const snapshot = snapshotById.get(cleanId(att.snapshotDocumentId));
                 if (!isSimpleDocument(snapshot)) return att;
-                const simpleFolder = folderNameForDoc(snapshot);
+                const simpleFolder = folderInfoForDoc(snapshot);
                 return {
                     ...att,
                     isSimpleDoc: true,
-                    simpleFolder,
-                    simpleFolderId: cleanId(snapshot.folderId),
-                    generatedFromName: simpleFolder
+                    simpleFolder: simpleFolder.name,
+                    simpleFolderId: simpleFolder.id,
+                    generatedFromName: simpleFolder.name
                 };
             });
 
@@ -719,7 +729,7 @@ router.get('/records/:recordId/attachments', async (req, res) => {
                 .lean();
 
             agentDocuments = docs.map(doc => {
-                const simpleFolder = folderNameForDoc(doc);
+                const simpleFolder = folderInfoForDoc(doc);
                 return {
                     _id: doc._id,
                     filename: '',
@@ -732,10 +742,10 @@ router.get('/records/:recordId/attachments', async (req, res) => {
                     isGenerated: true,
                     isAgentDraft: true,
                     isSimpleDoc: true,
-                    simpleFolder,
-                    simpleFolderId: cleanId(doc.folderId),
+                    simpleFolder: simpleFolder.name,
+                    simpleFolderId: simpleFolder.id,
                     generatedFrom: doc.generatedFrom || {},
-                    generatedFromName: simpleFolder,
+                    generatedFromName: simpleFolder.name,
                     generatedFromDocumentId: doc.generatedFrom?.templateId || null,
                     snapshotDocumentId: doc._id,
                     url: `/account/${req.account_number}/documents/${doc._id}/edit-react`,

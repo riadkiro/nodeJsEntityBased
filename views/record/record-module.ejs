@@ -68,6 +68,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; font-family:inherit;
 }
 .rm-btn-secondary:hover { color:#4361ee; border-color:#c7d2fe; background:#f8fbff; }
+.rm-actions-compact { display:flex; align-items:center; gap:8px; margin-left:auto; }
 .rm-nav { display:flex; gap:4px; margin-bottom:24px; padding:4px; background:#f8fafc; border-radius:12px; border:1px solid #e0e6ed; overflow-x:auto; }
 .rm-nav a { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:500; color:#888da8; text-decoration:none; transition:all .2s; white-space:nowrap; }
 .rm-nav a:hover { background:#fff; color:#0e1726; }
@@ -1680,14 +1681,43 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                this.creatingFolder = false;
 	            },
 
+	            findDocumentFolder(name) {
+	                const target = String(name || '').trim().toLowerCase();
+	                return this.documentFolders.find(folder => String(folder.name || '').trim().toLowerCase() === target) || null;
+	            },
+
+	            async ensureSimpleFolder(name = 'Documents IA') {
+	                const existing = this.findDocumentFolder(name);
+	                if (existing) return existing;
+	                const res = await fetch(`/account/${this._accountNumber}/documents/api/folders`, {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({
+	                        name,
+	                        color: '#4361ee',
+	                        scope: 'record',
+	                        recordId: this._recordId,
+	                        entityId: this._entityId
+	                    })
+	                });
+	                const data = await res.json();
+	                if (!res.ok || !data.success) throw new Error(data.error || 'Création dossier impossible');
+	                if (!this.documentFolders.some(folder => String(folder._id) === String(data.folder._id))) {
+	                    this.documentFolders.push(data.folder);
+	                }
+	                return data.folder;
+	            },
+
 	            async createSimpleDoc(folder = null) {
 	                if (this.creatingSimpleDoc) return;
 	                const name = (prompt('Nom du document', 'Nouveau document') || '').trim();
 	                if (!name) return;
-	                const folderName = folder?.name || 'Documents IA';
-	                const folderId = folder?.folderId || folder?._id || null;
 	                this.creatingSimpleDoc = true;
 	                try {
+	                    const targetFolder = folder || await this.ensureSimpleFolder('Documents IA');
+	                    const folderName = targetFolder?.name || 'Documents IA';
+	                    const folderId = targetFolder?.folderId || targetFolder?._id || null;
 	                    const docRes = await fetch(`/account/${this._accountNumber}/documents/api`, {
 	                        method: 'POST',
 	                        headers: { 'Content-Type': 'application/json' },
@@ -2368,24 +2398,26 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         <% if (moduleName === 'docs') { %>
         <div x-data="docsModule" x-cloak>
             
-	            <div class="rm-toolbar" style="margin-bottom: 16px;">
+	            <div class="rm-toolbar" style="margin-bottom: 16px; justify-content:flex-start;">
 	                <div class="rm-search">
 	                    <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
 	                    <input type="text" placeholder="Rechercher un document...">
 	                </div>
-	                <button type="button" @click="createSimpleFolder()" :disabled="creatingFolder" class="rm-btn-secondary">
-	                    <iconify-icon :icon="creatingFolder ? 'line-md:loading-twotone-loop' : 'solar:folder-add-bold-duotone'" width="16"></iconify-icon>
-	                    <span x-text="creatingFolder ? 'Création...' : 'Nouveau dossier'"></span>
-	                </button>
-	                <button type="button" @click="createSimpleDoc()" :disabled="creatingSimpleDoc" class="rm-btn-primary">
-	                    <iconify-icon :icon="creatingSimpleDoc ? 'line-md:loading-twotone-loop' : 'solar:document-add-bold-duotone'" width="16"></iconify-icon>
-	                    <span x-text="creatingSimpleDoc ? 'Création...' : 'Nouveau doc'"></span>
-	                </button>
-	                <button type="button" @click="createRecordTemplate()" :disabled="creatingTemplate" class="rm-btn-primary" style="background:linear-gradient(135deg, #f59e0b, #f59e0bdd); border:none; box-shadow:0 2px 8px rgba(245, 158, 11, 0.25);">
-	                    <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="16"></iconify-icon>
-	                    <span x-text="creatingTemplate ? 'Création...' : 'Nouveau template'"></span>
-                </button>
-            </div>
+	                <div class="rm-actions-compact">
+	                    <button type="button" @click="createSimpleFolder()" :disabled="creatingFolder" class="rm-btn-secondary">
+	                        <iconify-icon :icon="creatingFolder ? 'line-md:loading-twotone-loop' : 'solar:folder-add-bold-duotone'" width="16"></iconify-icon>
+	                        <span x-text="creatingFolder ? 'Création...' : 'Nouveau dossier'"></span>
+	                    </button>
+	                    <button type="button" @click="createSimpleDoc()" :disabled="creatingSimpleDoc" class="rm-btn-primary">
+	                        <iconify-icon :icon="creatingSimpleDoc ? 'line-md:loading-twotone-loop' : 'solar:document-add-bold-duotone'" width="16"></iconify-icon>
+	                        <span x-text="creatingSimpleDoc ? 'Création...' : 'Nouveau doc'"></span>
+	                    </button>
+	                    <button type="button" @click="createRecordTemplate()" :disabled="creatingTemplate" class="rm-btn-primary" style="background:linear-gradient(135deg, #f59e0b, #f59e0bdd); border:none; box-shadow:0 2px 8px rgba(245, 158, 11, 0.25);">
+	                        <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="16"></iconify-icon>
+	                        <span x-text="creatingTemplate ? 'Création...' : 'Nouveau template'"></span>
+	                    </button>
+	                </div>
+	            </div>
 
             <!-- Loading state -->
             <div x-show="loading && loadingTemplates" style="text-align:center; padding:32px 0; color:#94a3b8;">

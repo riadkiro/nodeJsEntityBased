@@ -4,6 +4,7 @@ const emptySelection = () => ({
     fields: [],
     notes: [],
     chats: [],
+    events: [],
     files: [],
     uploads: [],
 })
@@ -26,6 +27,7 @@ function cleanConversationSelection(selection = {}) {
         fields: Array.isArray(selection.fields) ? selection.fields : [],
         notes: Array.isArray(selection.notes) ? selection.notes : [],
         chats: Array.isArray(selection.chats) ? selection.chats : [],
+        events: Array.isArray(selection.events) ? selection.events : [],
         files: Array.isArray(selection.files) ? selection.files : [],
         uploads: Array.isArray(selection.uploads) ? selection.uploads : [],
     }
@@ -36,6 +38,7 @@ function buildPayloadSelection(selection = {}) {
         fields: Array.isArray(selection.fields) ? selection.fields : [],
         notes: Array.isArray(selection.notes) ? selection.notes : [],
         chats: Array.isArray(selection.chats) ? selection.chats : [],
+        events: Array.isArray(selection.events) ? selection.events : [],
         files: Array.isArray(selection.files) ? selection.files : [],
         uploads: Array.isArray(selection.uploads)
             ? selection.uploads
@@ -71,6 +74,10 @@ function formatTime(value) {
 function shortText(value, max = 96) {
     const text = String(value || '').replace(/\s+/g, ' ').trim()
     return text.length > max ? `${text.slice(0, max)}...` : text
+}
+
+function sleep(ms = 0) {
+    return new Promise(resolve => window.setTimeout(resolve, Math.max(0, ms)))
 }
 
 function searchText(value = '') {
@@ -113,6 +120,41 @@ function inferRelevantFilesFromText(text = '', files = [], max = 3) {
         .sort((a, b) => b.score - a.score)
         .slice(0, max)
         .map(item => item.file)
+}
+
+function scoreContextItemForText(text = '', item = {}, fields = []) {
+    const query = searchText(text)
+    const indexed = searchText(fields.map(field => item[field] || '').join(' '))
+    if (!query || !indexed) return 0
+    const queryTokens = new Set(searchTokens(query))
+    const itemTokens = searchTokens(indexed)
+    const matched = itemTokens.filter(token => queryTokens.has(token))
+    let score = 0
+    if (query.includes(indexed) || indexed.includes(query)) score += 100
+    if (matched.length) score += matched.length * 16
+    if (matched.length >= Math.min(2, itemTokens.length)) score += 38
+    return score
+}
+
+function inferRelevantNotesFromText(text = '', notes = [], max = 3) {
+    if (!/\b(note|notes|synthese|resume|transforme)\b/.test(searchText(text))) return []
+    return (notes || [])
+        .filter(note => !note.isProtected)
+        .map(note => ({ note, score: scoreContextItemForText(text, note, ['title', 'preview']) }))
+        .filter(item => item.score >= 16)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, max)
+        .map(item => item.note)
+}
+
+function inferRelevantEventsFromText(text = '', events = [], max = 3) {
+    if (!/\b(agenda|evenement|evenements|rdv|rendez|reunion|planning|calendrier|echeance)\b/.test(searchText(text))) return []
+    return (events || [])
+        .map(event => ({ event, score: scoreContextItemForText(text, event, ['title', 'notes', 'type', 'lieu', 'status']) }))
+        .filter(item => item.score >= 14)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, max)
+        .map(item => item.event)
 }
 
 function recordAiModeKey(recordId) {
@@ -346,26 +388,46 @@ function estimateTokensFromChars(chars) {
     return Math.ceil((chars || 0) / 4)
 }
 
-const AGENT_PHASE_MS = 1600
+const AGENT_PHASE_MS = 1000
 
-function buildAgentPhrases(selection = {}, query = '', availableFiles = []) {
+function sourcePhraseLabel(item = {}) {
+    if (item.type === 'notes') return `Source examinée: note ${shortText(item.title || item.label || 'sélectionnée', 48)}`
+    if (item.type === 'events') return `Source examinée: agenda ${shortText(item.title || item.label || 'sélectionné', 48)}`
+    if (item.type === 'chats') return `Source examinée: conversation ${shortText(item.name || item.label || 'sélectionnée', 42)}`
+    if (item.type === 'uploads') return `Lecture OCR: ${shortText(item.name || item.label || 'document importé', 48)}`
+    return `Source examinée: ${shortText(item.name || item.label || 'document sélectionné', 54)}`
+}
+
+function buildAgentPhrases(selection = {}, query = '', availableFiles = [], availableNotes = [], availableEvents = []) {
     const phrases = ['Analyse de la demande']
     const selectedFiles = (selection.files || [])
         .map(file => (availableFiles || []).find(item => fileKey(item) === fileKey(file)) || file)
     const inferredFiles = selectedFiles.length ? [] : inferRelevantFilesFromText(query, availableFiles)
     const contextFiles = selectedFiles.length ? selectedFiles : inferredFiles
-    const uploadCount = (selection.uploads || []).length
-    const documentCount = contextFiles.length + uploadCount
+    const selectedNotes = (selection.notes || [])
+        .map(id => (availableNotes || []).find(item => String(item.id) === String(id)) || { id, title: 'Note sélectionnée' })
+    const inferredNotes = selectedNotes.length ? [] : inferRelevantNotesFromText(query, availableNotes)
+    const selectedEvents = (selection.events || [])
+        .map(id => (availableEvents || []).find(item => String(item.id) === String(id)) || { id, title: 'Événement sélectionné' })
+    const inferredEvents = selectedEvents.length ? [] : inferRelevantEventsFromText(query, availableEvents)
+    const selectedChats = (selection.chats || []).map(id => ({ id, name: 'Chat sélectionné', type: 'chats' }))
+    const selectedUploads = (selection.uploads || []).map(upload => ({ ...upload, type: 'uploads' }))
+    const sources = [
+        ...contextFiles.map(item => ({ ...item, type: 'files' })),
+        ...selectedUploads,
+        ...(selectedNotes.length ? selectedNotes : inferredNotes).map(item => ({ ...item, type: 'notes' })),
+        ...(selectedEvents.length ? selectedEvents : inferredEvents).map(item => ({ ...item, type: 'events' })),
+        ...selectedChats
+    ]
 
-    if (documentCount > 0) {
-        if (contextFiles.length === 1 && uploadCount === 0) {
-            phrases.push(`Analyse du document ${shortText(contextFiles[0].name || 'sélectionné', 54)}`)
-        } else {
-            phrases.push(documentCount > 1 ? 'Analyse des documents' : 'Lecture du document')
-        }
+    if (sources.length) {
+        sources.slice(0, 4).forEach(source => phrases.push(sourcePhraseLabel(source)))
+        if (sources.length > 4) phrases.push(`${sources.length - 4} autre${sources.length - 4 > 1 ? 's' : ''} source${sources.length - 4 > 1 ? 's' : ''} examinée${sources.length - 4 > 1 ? 's' : ''}`)
+    } else {
+        phrases.push('Contexte filtré: fiche record uniquement')
     }
 
-    phrases.push('Thinking', 'Working...')
+    phrases.push('Thinking')
     return phrases
 }
 
@@ -378,7 +440,7 @@ function agentRequestedPageCount(query = '') {
     return wordMatch ? words[wordMatch[1]] : 1
 }
 
-function buildAgentDraftSteps(selection = {}, query = '', availableFiles = [], recordTitle = '') {
+function buildAgentDraftSteps(selection = {}, query = '', availableFiles = [], recordTitle = '', availableNotes = [], availableEvents = []) {
     const text = searchText(query)
     const wantsDoc = /\b(doc|docs|document|documents|pdf|brouillon|bail|contrat|facture|devis|attestation|offre)\b/.test(text)
     const pageCount = agentRequestedPageCount(query)
@@ -386,7 +448,14 @@ function buildAgentDraftSteps(selection = {}, query = '', availableFiles = [], r
         .map(file => (availableFiles || []).find(item => fileKey(item) === fileKey(file)) || file)
     const inferredFiles = selectedFiles.length ? [] : inferRelevantFilesFromText(query, availableFiles)
     const contextFiles = selectedFiles.length ? selectedFiles : inferredFiles
+    const contextNotes = selection.notes?.length
+        ? selection.notes
+        : inferRelevantNotesFromText(query, availableNotes)
+    const contextEvents = selection.events?.length
+        ? selection.events
+        : inferRelevantEventsFromText(query, availableEvents)
     const uploadCount = (selection.uploads || []).length
+    const contextCount = contextFiles.length + contextNotes.length + contextEvents.length + uploadCount
     const standalone = /\b(lorem|ipsum|demo|demonstration|test|exemple|fictif|placeholder)\b/.test(text)
     const title = recordTitle ? `Contexte fiche: ${shortText(recordTitle, 48)}.` : 'Contexte fiche disponible.'
 
@@ -400,8 +469,8 @@ function buildAgentDraftSteps(selection = {}, query = '', availableFiles = [], r
             {
                 id: 'draft_doc_context',
                 title: 'Contexte',
-                detail: contextFiles.length || uploadCount
-                    ? `${contextFiles.length + uploadCount} source${contextFiles.length + uploadCount > 1 ? 's' : ''} à prendre en compte. ${title}`
+                detail: contextCount
+                    ? `${contextCount} source${contextCount > 1 ? 's' : ''} à prendre en compte. ${title}`
                     : `${title} ${standalone ? "Pas d'analyse Drive/OCR nécessaire pour cette demande." : 'Je vérifie si un contexte externe est utile.'}`
             },
             {
@@ -417,8 +486,8 @@ function buildAgentDraftSteps(selection = {}, query = '', availableFiles = [], r
         {
             id: 'draft_context',
             title: 'Contexte',
-            detail: contextFiles.length || uploadCount
-                ? `${contextFiles.length + uploadCount} source${contextFiles.length + uploadCount > 1 ? 's' : ''} à examiner.`
+            detail: contextCount
+                ? `${contextCount} source${contextCount > 1 ? 's' : ''} à examiner.`
                 : 'Aucun document externe nécessaire détecté pour l’instant.'
         },
         { id: 'draft_tools', title: 'Préparation', detail: 'Je prépare uniquement les outils utiles avant validation.' }
@@ -581,6 +650,7 @@ function contextTypeLabel(type) {
     if (type === 'fields') return 'Fiche'
     if (type === 'notes') return 'Note'
     if (type === 'chats') return 'Chat'
+    if (type === 'events') return 'Agenda'
     if (type === 'uploads') return 'OCR'
     return 'Contexte'
 }
@@ -885,22 +955,23 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                     </div>
 
                     {isDrafting ? (
-                        <>
-                            <AgentStatus phrase={draftPhrase} />
-                            {steps.length > 0 && (
-                                <ol className="rai-agent-plan-list drafting">
-                                    {steps.map((step, index) => (
-                                        <li key={step.id || index}>
-                                            <span>{index + 1}</span>
-                                            <div>
-                                                <strong>{step.title}</strong>
-                                                {step.detail && <small>{step.detail}</small>}
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ol>
-                            )}
-                        </>
+                        <div className="rai-agent-live">
+                            <div className="rai-agent-live-status">
+                                <AgentStatus phrase={draftPhrase} />
+                                <small>{steps[0]?.detail || 'Je prépare un plan actionnable avant validation.'}</small>
+                            </div>
+                            <div className="rai-agent-examined">
+                                <div className="rai-agent-examined-head">
+                                    <span>Éléments examinés</span>
+                                    <strong>{sourceCount}</strong>
+                                </div>
+                                {sourceCount > 0 ? (
+                                    <ContextCardGrid items={run.contextItems || []} onOpen={onOpenContext} />
+                                ) : (
+                                    <p>Aucun contexte externe inutile envoyé.</p>
+                                )}
+                            </div>
+                        </div>
                     ) : (
                         <>
                             {run.summary && <p className="rai-agent-summary">{safeAgentSummary(run.summary)}</p>}
@@ -1009,6 +1080,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
     const [fields, setFields] = useState([])
     const [notes, setNotes] = useState([])
     const [chats, setChats] = useState([])
+    const [events, setEvents] = useState([])
     const [files, setFiles] = useState([])
     const [limits, setLimits] = useState({})
     const [engineSettings, setEngineSettings] = useState(defaultEngineSettings)
@@ -1080,8 +1152,8 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         setAgentPhraseIndex(0)
     }, [clearAgentTimer])
 
-    const startAgentStatus = useCallback((currentSelection, query = '', availableFiles = []) => {
-        const phrases = buildAgentPhrases(currentSelection, query, availableFiles)
+    const startAgentStatus = useCallback((currentSelection, query = '', availableFiles = [], availableNotes = [], availableEvents = []) => {
+        const phrases = buildAgentPhrases(currentSelection, query, availableFiles, availableNotes, availableEvents)
         setAgentPhrases(phrases)
         setAgentPhraseIndex(0)
 
@@ -1153,6 +1225,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setFields(data.fields || [])
             setNotes(data.notes || [])
             setChats(data.chats || [])
+            setEvents(data.events || [])
             setFiles(data.files || [])
             setLimits(data.limits || {})
             setEngineSettings({ ...defaultEngineSettings(), ...(data.engineSettings || {}) })
@@ -1197,6 +1270,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         return (selection.fields?.length || 0)
             + (selection.notes?.length || 0)
             + (selection.chats?.length || 0)
+            + (selection.events?.length || 0)
             + (selection.files?.length || 0)
             + (selection.uploads?.length || 0)
     }, [selection])
@@ -1212,10 +1286,13 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         chats.forEach(chat => {
             if (selection.chats.includes(String(chat.id))) chars += chat.charCount || 3500
         })
+        events.forEach(event => {
+            if (selection.events.includes(String(event.id))) chars += event.charCount || 700
+        })
         selection.files.forEach(() => { chars += 4500 })
         selection.uploads.forEach(upload => { chars += upload.charCount || String(upload.text || '').length })
         return estimateTokensFromChars(chars)
-    }, [fields, notes, chats, selection])
+    }, [fields, notes, chats, events, selection])
 
     const filtered = useMemo(() => {
         const q = contextSearch.trim().toLowerCase()
@@ -1224,9 +1301,10 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             fields: fields.filter(item => match(item.label) || match(item.value)),
             notes: notes.filter(item => match(item.title) || match(item.preview)),
             chats: chats.filter(item => match(item.name) || match(item.preview)),
+            events: events.filter(item => match(item.title) || match(item.notes) || match(item.type) || match(item.lieu) || match(item.status)),
             files: files.filter(item => match(item.name) || match(item.folder)),
         }
-    }, [contextSearch, fields, notes, chats, files])
+    }, [contextSearch, fields, notes, chats, events, files])
 
     const filteredConversations = useMemo(() => {
         const q = conversationSearch.trim().toLowerCase()
@@ -1449,7 +1527,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         setInput('')
         setSending(true)
         setError('')
-        startAgentStatus(selection)
+        startAgentStatus(selection, text, files, notes, events)
 
         try {
             const data = await apiFetch(`/conversations/${conversation._id}/messages`, {
@@ -1471,7 +1549,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setSending(false)
             stopAgentStatus()
         }
-    }, [activeConversation, apiFetch, createConversation, input, selection, sending, startAgentStatus, stopAgentStatus, updateConversationList])
+    }, [activeConversation, apiFetch, createConversation, events, files, input, notes, selection, sending, startAgentStatus, stopAgentStatus, updateConversationList])
 
     const upsertAgentRun = useCallback((run) => {
         if (!run?._id) return
@@ -1487,20 +1565,114 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         if (!text || agentRunning) return
 
         const payloadSelection = buildPayloadSelection(selection)
+        const selectedFieldsForDraft = (payloadSelection.fields || [])
+            .map(id => fields.find(item => item.id === id))
+            .filter(Boolean)
+        const selectedFilesForDraft = (payloadSelection.files || [])
+            .map(file => files.find(item => fileKey(item) === fileKey(file)) || file)
+        const selectedNotesForDraft = (payloadSelection.notes || [])
+            .map(id => notes.find(item => String(item.id) === String(id)))
+            .filter(Boolean)
+        const selectedEventsForDraft = (payloadSelection.events || [])
+            .map(id => events.find(item => String(item.id) === String(id)))
+            .filter(Boolean)
+        const selectedChatsForDraft = (payloadSelection.chats || [])
+            .map(id => chats.find(item => String(item.id) === String(id)))
+            .filter(Boolean)
         const inferredFiles = payloadSelection.files?.length ? [] : inferRelevantFilesFromText(text, files)
-        const inferredContextItems = inferredFiles.map(file => ({
-            key: fileKey(file),
-            type: 'files',
-            id: String(file.id),
-            source: file.source,
-            label: file.name || file.filename || 'Document',
-            icon: fileIcon(file),
-            color: fileColor(file),
-            url: file.url || '',
-            mimeType: file.mimeType || '',
-            previewType: getFilePreviewType(file),
-            meta: file.source === 'drive' ? 'Drive auto' : 'Document auto'
-        }))
+        const inferredNotes = payloadSelection.notes?.length ? [] : inferRelevantNotesFromText(text, notes)
+        const inferredEvents = payloadSelection.events?.length ? [] : inferRelevantEventsFromText(text, events)
+        const inferredContextItems = [
+            ...selectedFieldsForDraft.map(field => ({
+                key: `field:${field.id}`,
+                type: 'fields',
+                id: field.id,
+                label: field.label || 'Champ fiche',
+                icon: 'solar:text-field-focus-bold',
+                color: recordEntityColor,
+                meta: 'Fiche sélectionnée'
+            })),
+            ...selectedFilesForDraft.map(file => ({
+                key: fileKey(file),
+                type: 'files',
+                id: String(file.id),
+                source: file.source,
+                label: file.name || file.filename || 'Document',
+                icon: fileIcon(file),
+                color: fileColor(file),
+                url: file.url || '',
+                mimeType: file.mimeType || '',
+                previewType: getFilePreviewType(file),
+                meta: file.source === 'drive' ? 'Drive sélectionné' : 'Document sélectionné'
+            })),
+            ...(payloadSelection.uploads || []).map(upload => ({
+                key: upload.id,
+                type: 'uploads',
+                id: upload.id,
+                label: upload.name || 'Document OCR',
+                icon: 'solar:file-check-bold-duotone',
+                color: '#0f766e',
+                meta: 'OCR sélectionné'
+            })),
+            ...selectedNotesForDraft.map(note => ({
+                key: `note:${note.id}`,
+                type: 'notes',
+                id: String(note.id),
+                label: note.title || 'Note',
+                icon: 'solar:notes-bold-duotone',
+                color: '#8b5cf6',
+                meta: 'Note sélectionnée'
+            })),
+            ...selectedEventsForDraft.map(event => ({
+                key: `event:${event.id}`,
+                type: 'events',
+                id: String(event.id),
+                label: event.title || 'Événement',
+                icon: 'solar:calendar-bold-duotone',
+                color: '#14b8a6',
+                meta: 'Agenda sélectionné'
+            })),
+            ...selectedChatsForDraft.map(chat => ({
+                key: `chat:${chat.id}`,
+                type: 'chats',
+                id: String(chat.id),
+                label: chat.name || 'Chat',
+                icon: 'solar:chat-round-dots-bold-duotone',
+                color: '#f97316',
+                meta: 'Chat sélectionné'
+            })),
+            ...inferredFiles.map(file => ({
+                key: fileKey(file),
+                type: 'files',
+                id: String(file.id),
+                source: file.source,
+                label: file.name || file.filename || 'Document',
+                icon: fileIcon(file),
+                color: fileColor(file),
+                url: file.url || '',
+                mimeType: file.mimeType || '',
+                previewType: getFilePreviewType(file),
+                meta: file.source === 'drive' ? 'Drive auto' : 'Document auto'
+            })),
+            ...inferredNotes.map(note => ({
+                key: `note:${note.id}`,
+                type: 'notes',
+                id: String(note.id),
+                label: note.title || 'Note',
+                icon: 'solar:notes-bold-duotone',
+                color: '#8b5cf6',
+                meta: 'Note auto'
+            })),
+            ...inferredEvents.map(event => ({
+                key: `event:${event.id}`,
+                type: 'events',
+                id: String(event.id),
+                label: event.title || 'Événement',
+                icon: 'solar:calendar-bold-duotone',
+                color: '#14b8a6',
+                meta: 'Agenda auto'
+            }))
+        ]
         let conversation = activeAgentConversation
         if (!conversation) {
             conversation = await createAgentConversation()
@@ -1513,7 +1685,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             status: 'drafting',
             summary: 'Analyse de la demande en cours...',
             proposedActions: [],
-            plan: { title: 'Préparation agent', steps: buildAgentDraftSteps(selection, text, files, recordTitle) },
+            plan: { title: 'Préparation agent', steps: buildAgentDraftSteps(selection, text, files, recordTitle, notes, events) },
             contextItems: inferredContextItems,
             createdAt: new Date().toISOString()
         }
@@ -1522,7 +1694,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
         setInput('')
         setAgentRunning(true)
         setError('')
-        startAgentStatus(selection, text, files)
+        startAgentStatus(selection, text, files, notes, events)
+        const startedAt = Date.now()
+        const minimumVisibleMs = inferredContextItems.length ? 2200 : 1100
 
         try {
             const data = await apiFetch('/agent/runs', {
@@ -1533,6 +1707,12 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                     contextSelections: payloadSelection,
                 }),
             })
+            const remainingMs = minimumVisibleMs - (Date.now() - startedAt)
+            if (remainingMs > 0) await sleep(remainingMs)
+            clearAgentTimer()
+            setAgentPhrases(['Working...'])
+            setAgentPhraseIndex(0)
+            await sleep(450)
             setAgentRuns(prev => [data.run, ...prev.filter(item => item._id !== tempRun._id && item._id !== data.run?._id)])
             updateAgentConversationList(data.conversation)
             setSelection(emptySelection())
@@ -1544,7 +1724,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             setAgentRunning(false)
             stopAgentStatus()
         }
-    }, [activeAgentConversation, agentRunning, apiFetch, createAgentConversation, files, input, recordTitle, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
+    }, [activeAgentConversation, agentRunning, apiFetch, chats, clearAgentTimer, createAgentConversation, events, fields, files, input, notes, recordEntityColor, recordTitle, selection, startAgentStatus, stopAgentStatus, updateAgentConversationList])
 
     const applyAgentRun = useCallback(async (run, actionIds = []) => {
         if (!run?._id || agentBusyRunId) return
@@ -1631,6 +1811,9 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             if (item.type === 'chats') {
                 return { ...prev, chats: prev.chats.filter(id => String(id) !== String(item.id)) }
             }
+            if (item.type === 'events') {
+                return { ...prev, events: prev.events.filter(id => String(id) !== String(item.id)) }
+            }
             if (item.type === 'files') {
                 return {
                     ...prev,
@@ -1652,6 +1835,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             fields: Array.isArray(contextSelection.fields) ? contextSelection.fields : [],
             notes: Array.isArray(contextSelection.notes) ? contextSelection.notes : [],
             chats: Array.isArray(contextSelection.chats) ? contextSelection.chats : [],
+            events: Array.isArray(contextSelection.events) ? contextSelection.events : [],
             files: Array.isArray(contextSelection.files) ? contextSelection.files : [],
             uploads: Array.isArray(contextSelection.uploads) ? contextSelection.uploads : [],
         }
@@ -1701,6 +1885,21 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                 })
             }
         })
+        safeSelection.events.forEach(id => {
+            const event = events.find(item => String(item.id) === String(id))
+            const fallback = fallbackByKey.get(`event:${id}`) || fallbackByKey.get(`events:${id}`)
+            if (event || fallback) {
+                items.push({
+                    key: `event:${id}`,
+                    type: 'events',
+                    id: String(id),
+                    label: event?.title || fallback?.label || 'Événement',
+                    icon: fallback?.icon || 'solar:calendar-bold-duotone',
+                    color: fallback?.color || '#14b8a6',
+                    meta: fallback?.meta || [event?.date ? formatDate(event.date) : '', event?.status || 'Agenda'].filter(Boolean).join(' · '),
+                })
+            }
+        })
         safeSelection.files.forEach(file => {
             const key = fileKey(file)
             const fallback = fallbackByKey.get(key) || fallbackByKey.get(`file:${file.id}`) || fallbackByKey.get(`files:${file.id}`)
@@ -1734,14 +1933,14 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             })
         })
         return items
-    }, [chats, fields, files, notes])
+    }, [chats, events, fields, files, notes])
 
     const selectedContextItems = useMemo(() => buildContextItems(selection), [buildContextItems, selection])
 
     const contextItemsForMessage = useCallback((message = {}) => {
         const fallbackItems = Array.isArray(message.contextItems) ? message.contextItems : []
         const contextSelection = message.contextSelections || {}
-        const hasSelection = ['fields', 'notes', 'chats', 'files', 'uploads'].some(key => Array.isArray(contextSelection[key]) && contextSelection[key].length > 0)
+        const hasSelection = ['fields', 'notes', 'chats', 'events', 'files', 'uploads'].some(key => Array.isArray(contextSelection[key]) && contextSelection[key].length > 0)
         return hasSelection ? buildContextItems(contextSelection, fallbackItems) : fallbackItems
     }, [buildContextItems])
 
@@ -1840,7 +2039,15 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
             total: chats.length,
             selected: selection.chats.length,
         },
-    ]), [chats.length, fields.length, files.length, notes.length, recordEntityColor, recordEntityIcon, selection])
+        {
+            key: 'events',
+            label: 'Agenda',
+            icon: 'solar:calendar-bold-duotone',
+            color: '#14b8a6',
+            total: events.length,
+            selected: selection.events.length,
+        },
+    ]), [chats.length, events.length, fields.length, files.length, notes.length, recordEntityColor, recordEntityIcon, selection])
 
     const activeContextGroup = (() => {
         if (contextTab === 'notes') {
@@ -1878,6 +2085,26 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                             preview={shortText(chat.preview, 90)}
                             meta={`${chat.participantsCount || 0} participant${chat.participantsCount > 1 ? 's' : ''}`}
                             onToggle={() => toggleArrayValue('chats', String(chat.id))}
+                        />
+                    ))}
+                </ContextGroup>
+            )
+        }
+
+        if (contextTab === 'events') {
+            return (
+                <ContextGroup title="Agenda" icon="solar:calendar-bold-duotone" color="#14b8a6" count={`${selection.events.length}/${events.length}`}>
+                    {filtered.events.length === 0 && <div className="rai-context-empty">Aucun événement</div>}
+                    {filtered.events.map(event => (
+                        <SectionItem
+                            key={event.id}
+                            active={selection.events.includes(String(event.id))}
+                            icon="solar:calendar-bold-duotone"
+                            color="#14b8a6"
+                            title={event.title}
+                            preview={shortText(event.notes || event.type || event.lieu || '', 90)}
+                            meta={[event.date ? formatDate(event.date) : '', event.status || 'Agenda'].filter(Boolean).join(' · ')}
+                            onToggle={() => toggleArrayValue('events', String(event.id))}
                         />
                     ))}
                 </ContextGroup>
@@ -2711,7 +2938,7 @@ const styles = `
 .rai-search{margin:12px 12px 8px;padding:0 10px;height:36px;}
 .rai-search input{padding:0;}
 .rai-context-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 10px 12px;}
-.rai-context-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:4px 14px 12px;}
+.rai-context-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:4px 14px 12px;}
 .rai-context-tab{min-width:0;height:40px;border:1px solid #e2e8f0;background:linear-gradient(180deg,#fff,#f8fafc);color:#64748b;border-radius:12px;display:flex;align-items:center;gap:7px;padding:0 9px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .16s;box-shadow:0 1px 2px rgba(15,23,42,.03);}
 .rai-context-tab span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .rai-context-tab strong{margin-left:auto;min-width:26px;height:18px;border-radius:999px;background:#eef2f7;color:var(--rai-muted);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;}
@@ -2856,6 +3083,15 @@ const styles = `
 .rai-agent-sources summary{cursor:pointer;list-style:none;padding:7px 9px;font-size:11px;font-weight:800;color:#64748b;}
 .rai-agent-sources summary::-webkit-details-marker{display:none;}
 .rai-agent-sources .rai-context-card-grid{padding:0 8px 8px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+.rai-agent-live{display:flex;flex-direction:column;gap:8px;}
+.rai-agent-live-status{border:1px solid #edf2f7;background:linear-gradient(135deg,#ffffff,#f8faff);border-radius:12px;padding:9px;display:flex;flex-direction:column;gap:7px;}
+.rai-agent-live-status .rai-agent-status{width:100%;min-width:0;justify-content:flex-start;}
+.rai-agent-live-status small{font-size:10.5px;line-height:1.38;color:#94a3b8;font-weight:700;}
+.rai-agent-examined{border:1px solid #edf2f7;background:#fff;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:7px;}
+.rai-agent-examined-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#64748b;font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.02em;}
+.rai-agent-examined-head strong{min-width:22px;height:20px;border-radius:999px;background:#eef2ff;color:#4f46e5;display:inline-flex;align-items:center;justify-content:center;font-size:10px;}
+.rai-agent-examined .rai-context-card-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+.rai-agent-examined p{margin:0;color:#94a3b8;font-size:11px;font-weight:700;line-height:1.4;}
 .rai-agent-plan-list{margin:0;padding:0;display:flex;flex-direction:column;gap:6px;list-style:none;}
 .rai-agent-plan-list li{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border:1px solid #edf2f7;background:#fff;border-radius:9px;}
 .rai-agent-plan-list li>span{width:19px;height:19px;border-radius:999px;background:#eef2ff;color:var(--rai-ai);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;}

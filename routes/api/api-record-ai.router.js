@@ -494,6 +494,7 @@ function normalizeSelection(input = {}) {
     const fields = Array.isArray(input.fields) ? input.fields.map(cleanId).filter(Boolean) : [];
     const notes = Array.isArray(input.notes) ? input.notes.map(cleanId).filter(isObjectId) : [];
     const chats = Array.isArray(input.chats) ? input.chats.map(cleanId).filter(isObjectId) : [];
+    const events = Array.isArray(input.events) ? input.events.map(cleanId).filter(isObjectId) : [];
 
     const files = Array.isArray(input.files)
         ? input.files
@@ -520,6 +521,7 @@ function normalizeSelection(input = {}) {
         fields: [...new Set(fields)],
         notes: [...new Set(notes)],
         chats: [...new Set(chats)],
+        events: [...new Set(events)],
         files: uniqueFiles(files),
         uploads
     };
@@ -547,6 +549,7 @@ function persistableSelection(selection = {}) {
         fields: selection.fields || [],
         notes: selection.notes || [],
         chats: selection.chats || [],
+        events: selection.events || [],
         files: selection.files || [],
         uploads: (selection.uploads || []).map(upload => ({
             id: upload.id,
@@ -560,6 +563,7 @@ function selectionItemCount(selection = {}) {
     return (selection.fields?.length || 0) +
         (selection.notes?.length || 0) +
         (selection.chats?.length || 0) +
+        (selection.events?.length || 0) +
         (selection.files?.length || 0) +
         (selection.uploads?.length || 0);
 }
@@ -568,12 +572,20 @@ function documentSelectionItemCount(selection = {}) {
     return (selection.files?.length || 0) + (selection.uploads?.length || 0);
 }
 
+function substantialSelectionItemCount(selection = {}) {
+    return (selection.notes?.length || 0) +
+        (selection.chats?.length || 0) +
+        (selection.events?.length || 0) +
+        documentSelectionItemCount(selection);
+}
+
 function documentOnlySelection(selection = {}) {
     const normalized = normalizeSelection(selection || {});
     return {
         fields: [],
         notes: [],
         chats: [],
+        events: [],
         files: normalized.files || [],
         uploads: normalized.uploads || []
     };
@@ -898,6 +910,38 @@ async function buildBootstrap(req, record, entity) {
         .limit(80)
         .lean();
 
+    let events = [];
+    try {
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        const fieldMap = agentEventFieldMap(eventsEntity);
+        const eventStatuses = agentEventStatusOptions(eventsEntity);
+        const rawEvents = await Record.find(agentEventRecordQuery(record, eventsEntity))
+            .select('title date end_date customFields classificationValues updatedAt createdAt')
+            .sort({ date: -1, updatedAt: -1 })
+            .limit(80)
+            .lean();
+        events = rawEvents.map(event => {
+            const statusOption = eventStatuses.find(option =>
+                (event.classificationValues || []).some(cv => cleanId(cv.optionId) === option.id)
+            );
+            return {
+                id: cleanId(event._id),
+                title: event.title || 'Événement',
+                date: event.date || '',
+                endDate: event.end_date || '',
+                type: agentEventCustomFieldValue(event, fieldMap, 'type_evenement') || '',
+                lieu: agentEventCustomFieldValue(event, fieldMap, 'lieu_evenement') || '',
+                notes: shortPlainText(agentEventCustomFieldValue(event, fieldMap, 'notes_evenement') || '', 260),
+                status: statusOption?.label || '',
+                updatedAt: event.updatedAt || event.createdAt,
+                charCount: 700
+            };
+        });
+    } catch (error) {
+        console.warn('[RecordAI] Agenda bootstrap skipped:', error.message);
+    }
+
     const recordFiles = (record.attachments || [])
         .filter(file => !file.isDataRoomOnly && isOcrSupported(file))
         .map(file => ({
@@ -964,6 +1008,7 @@ async function buildBootstrap(req, record, entity) {
             participantsCount: (chat.participants || []).length,
             charCount: null
         })),
+        events,
         files,
         limits: {
             maxContextChars: MAX_CONTEXT_CHARS,
@@ -1070,6 +1115,33 @@ async function buildContextItems(req, record, entity, selection) {
                 icon: 'solar:chat-round-dots-bold-duotone',
                 color: '#f97316',
                 meta: 'Chat'
+            });
+        });
+    }
+
+    if (selection.events?.length) {
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        const events = await Record.find({
+            ...agentEventRecordQuery(record, eventsEntity),
+            _id: { $in: selection.events }
+        }).select('title date end_date customFields classificationValues').lean();
+        const eventStatuses = agentEventStatusOptions(eventsEntity);
+        const eventMap = new Map(events.map(event => [cleanId(event._id), event]));
+        selection.events.forEach(id => {
+            const event = eventMap.get(cleanId(id));
+            if (!event) return;
+            const statusOption = eventStatuses.find(option =>
+                (event.classificationValues || []).some(cv => cleanId(cv.optionId) === option.id)
+            );
+            items.push({
+                key: `event:${id}`,
+                type: 'events',
+                id,
+                label: event.title || 'Événement',
+                icon: 'solar:calendar-bold-duotone',
+                color: '#14b8a6',
+                meta: [event.date ? agentTemplateFormatDate(event.date) : '', statusOption?.label || 'Agenda'].filter(Boolean).join(' · ')
             });
         });
     }
@@ -2438,6 +2510,32 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
         addSection(sections, stats, 'Conversations chat sélectionnées', chatBlocks.join('\n\n'), MAX_CHAT_CHARS, { type: 'chats' });
     }
 
+    if (selection.events?.length) {
+        const Record = await tenantCollection(req, 'Record');
+        const eventsEntity = await ensureEventsEntity(req);
+        const events = await Record.find({
+            ...agentEventRecordQuery(record, eventsEntity),
+            _id: { $in: selection.events }
+        }).lean();
+        const fieldMap = agentEventFieldMap(eventsEntity);
+        const eventStatuses = agentEventStatusOptions(eventsEntity);
+        const text = events.map(event => {
+            const statusOption = eventStatuses.find(option =>
+                (event.classificationValues || []).some(cv => cleanId(cv.optionId) === option.id)
+            );
+            return [
+                `### ${event.title || 'Événement'}`,
+                event.date ? `Date: ${agentTemplateFormatDate(event.date)}` : '',
+                event.end_date ? `Fin: ${agentTemplateFormatDate(event.end_date)}` : '',
+                statusOption?.label ? `Statut: ${statusOption.label}` : '',
+                agentEventCustomFieldValue(event, fieldMap, 'type_evenement') ? `Type: ${agentEventCustomFieldValue(event, fieldMap, 'type_evenement')}` : '',
+                agentEventCustomFieldValue(event, fieldMap, 'lieu_evenement') ? `Lieu: ${agentEventCustomFieldValue(event, fieldMap, 'lieu_evenement')}` : '',
+                agentEventCustomFieldValue(event, fieldMap, 'notes_evenement') ? `Notes: ${agentEventCustomFieldValue(event, fieldMap, 'notes_evenement')}` : ''
+            ].filter(Boolean).join('\n');
+        }).join('\n\n');
+        addSection(sections, stats, 'Agenda sélectionné', text, 9000, { type: 'events' });
+    }
+
     if (RECORD_AI_RAG_ENABLED && (selection.files?.length || selection.uploads?.length)) {
         const ragContext = await buildRagContext(req, record, entity, selection, options.query || '', engineSettings);
         debug.rag = ragContext.debug;
@@ -3299,6 +3397,7 @@ function agentMarkdownToHtml(markdown) {
     const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
     const html = [];
     let list = [];
+    let listType = 'ul';
 
     const inline = (value) => agentEscapeHtml(value)
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -3306,8 +3405,9 @@ function agentMarkdownToHtml(markdown) {
 
     const flushList = () => {
         if (!list.length) return;
-        html.push(`<ul>${list.map(item => `<li>${inline(item)}</li>`).join('')}</ul>`);
+        html.push(`<${listType}>${list.map(item => `<li>${inline(item)}</li>`).join('')}</${listType}>`);
         list = [];
+        listType = 'ul';
     };
 
     lines.forEach(line => {
@@ -3327,7 +3427,17 @@ function agentMarkdownToHtml(markdown) {
 
         const bullet = trimmed.match(/^[-*]\s+(.+)$/);
         if (bullet) {
+            if (list.length && listType !== 'ul') flushList();
+            listType = 'ul';
             list.push(bullet[1]);
+            return;
+        }
+
+        const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+        if (numbered) {
+            if (list.length && listType !== 'ol') flushList();
+            listType = 'ol';
+            list.push(numbered[1]);
             return;
         }
 
@@ -4376,6 +4486,7 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             const pageCount = agentRequestedPageCount(input.pageCount || input.pagesCount || input.numberOfPages || input.nbPages || '', contentPages.length || 1);
             const format = ['A4', 'A5', 'A3', 'Letter', 'Legal'].includes(input.format) ? input.format : 'A4';
             const orientation = ['portrait', 'landscape'].includes(input.orientation) ? input.orientation : 'portrait';
+            const folder = agentSafeString(input.folder || input.folderName || 'Documents IA', 120) || 'Documents IA';
             actions.push({
                 id,
                 tool,
@@ -4389,7 +4500,8 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     contentPages,
                     pageCount,
                     format,
-                    orientation
+                    orientation,
+                    folder
                 },
                 preview: {
                     title: name,
@@ -4888,7 +5000,13 @@ function agentGoalShouldUseDocuments(goal) {
 function agentGoalShouldUseNotes(goal) {
     const text = normalizeSearchText(goal);
     if (!text || agentGoalLooksStandalone(text)) return false;
-    return /\b(note|notes|synthese|historique|resume)\b/.test(text);
+    return /\b(note|notes|synthese|historique|resume|transforme la note|depuis la note|a partir de la note)\b/.test(text);
+}
+
+function agentGoalShouldUseAgenda(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text || agentGoalLooksStandalone(text)) return false;
+    return /\b(agenda|evenement|evenements|rendez vous|rdv|reunion|meet|planning|calendrier|date prevue|echeance)\b/.test(text);
 }
 
 function agentGoalMentionsDrive(goal) {
@@ -4932,6 +5050,50 @@ function agentRelevantFilesForGoal(goal, files = [], max = RECORD_AI_RAG_MAX_DOC
         })
         .slice(0, max)
         .map(item => item.file);
+}
+
+function agentTextGoalScore(goal, item = {}, keys = []) {
+    const goalText = normalizeSearchText(goal);
+    if (!goalText) return 0;
+    const itemText = normalizeSearchText(keys.map(key => item[key] || '').join(' '));
+    if (!itemText) return 0;
+    const goalTokens = new Set(tokenizeSearch(goalText));
+    const itemTokens = tokenizeSearch(itemText).filter(token => token.length >= 3);
+    const matched = itemTokens.filter(token => goalTokens.has(token));
+    let score = 0;
+    if (goalText.includes(itemText) || itemText.includes(goalText)) score += 100;
+    if (matched.length) score += matched.length * 16;
+    if (matched.length >= Math.min(2, itemTokens.length)) score += 38;
+    return score;
+}
+
+function agentRelevantNotesForGoal(goal, notes = [], max = 6) {
+    return (notes || [])
+        .filter(note => !note.isProtected)
+        .map(note => ({ note, score: agentTextGoalScore(goal, note, ['title', 'preview']) }))
+        .filter(item => item.score >= 18)
+        .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const aDate = new Date(a.note.updatedAt || 0).getTime() || 0;
+            const bDate = new Date(b.note.updatedAt || 0).getTime() || 0;
+            return bDate - aDate;
+        })
+        .slice(0, max)
+        .map(item => item.note);
+}
+
+function agentRelevantEventsForGoal(goal, events = [], max = 8) {
+    return (events || [])
+        .map(event => ({ event, score: agentTextGoalScore(goal, event, ['title', 'notes', 'type', 'lieu', 'status']) }))
+        .filter(item => item.score >= 16)
+        .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const aDate = new Date(a.event.date || a.event.updatedAt || 0).getTime() || 0;
+            const bDate = new Date(b.event.date || b.event.updatedAt || 0).getTime() || 0;
+            return bDate - aDate;
+        })
+        .slice(0, max)
+        .map(item => item.event);
 }
 
 function agentContextDecision(goal, requestedSelection = {}) {
@@ -5013,8 +5175,11 @@ async function agentDefaultSelection(req, record, entity, goal = '') {
     const driveFiles = allFiles.filter(file => file.source === 'drive');
     const useDocuments = agentGoalShouldUseDocuments(goal);
     const useNotes = agentGoalShouldUseNotes(goal);
+    const useAgenda = agentGoalShouldUseAgenda(goal);
     const standalone = agentGoalLooksStandalone(goal);
     const matchedFiles = standalone ? [] : agentRelevantFilesForGoal(goal, allFiles);
+    const matchedNotes = standalone ? [] : agentRelevantNotesForGoal(goal, bootstrap.notes || []);
+    const matchedEvents = standalone ? [] : agentRelevantEventsForGoal(goal, bootstrap.events || []);
     const fallbackFiles = useDocuments
         ? [
             ...recordFiles,
@@ -5028,9 +5193,14 @@ async function agentDefaultSelection(req, record, entity, goal = '') {
     return normalizeSelection({
         fields: (bootstrap.fields || []).map(field => field.id).slice(0, 80),
         notes: useNotes
-            ? (bootstrap.notes || []).filter(note => !note.isProtected).map(note => cleanId(note.id)).slice(0, 20)
+            ? (matchedNotes.length ? matchedNotes : (bootstrap.notes || []).filter(note => !note.isProtected).slice(0, 6))
+                .map(note => cleanId(note.id))
             : [],
         chats: [],
+        events: useAgenda
+            ? (matchedEvents.length ? matchedEvents : (bootstrap.events || []).slice(0, 8))
+                .map(event => cleanId(event.id))
+            : [],
         files: selectedFiles,
         uploads: []
     });
@@ -5266,6 +5436,8 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
         "- create_doc: { name, contentMarkdown? ou contentHtml?, contentPages?, pageCount?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche. Par défaut: A4 portrait. Si l'utilisateur demande plusieurs pages, utilise contentPages avec un élément par page; ne mets jamais Page 2/Page 3 dans la même page HTML.",
+        "Pour create_doc, produis un vrai document structuré et exploitable comme une bonne note: titre, introduction courte, sections hiérarchisées, listes/tableaux si utiles, conclusion/sources quand le contexte est documentaire. Utilise du HTML sémantique simple (h1/h2/h3/p/ul/ol/table) sans wrappers html/body, sans position fixed/absolute, sans height/min-height en vh/% et sans CSS global.",
+        "Si l'utilisateur demande de transformer une note en document, utilise le contenu de la note sélectionnée ou auto-sélectionnée comme source principale et propose create_doc; ne crée pas une nouvelle note sauf demande explicite.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, replacements?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append. replacements = [{search, replace, label?}] pour modifier sans casser le design.",
         "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite. Tu peux aussi utiliser des variables à chemin pointé comme \"company.name\", \"company.address\", \"company.representative\" quand l'utilisateur veut remplacer une valeur de template standard.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis. Pour select/multiselect, choisis une valeur dans options. Pour relation, value peut être un id exact ou un nom de fiche à rechercher.",
@@ -5638,17 +5810,51 @@ function agentLooksLikeHtml(value = '') {
     return /<\/?[a-z][\s\S]*>/i.test(String(value || ''));
 }
 
+function agentStyleTagIfMissing(html = '', tag = 'p', style = '') {
+    const pattern = new RegExp(`<${tag}\\b(?![^>]*\\bstyle=)([^>]*)>`, 'gi');
+    return String(html || '').replace(pattern, `<${tag}$1 style="${style}">`);
+}
+
+function agentNormalizeDocHtmlForEditor(html = '') {
+    let output = String(html || '').trim();
+    if (!output) return '<p></p>';
+    if (!agentLooksLikeHtml(output)) output = agentMarkdownToHtml(output);
+
+    output = output
+        .replace(/<!doctype[\s\S]*?>/gi, '')
+        .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+        .replace(/<style\b[\s\S]*?<\/style>/gi, '')
+        .replace(/<\/?(?:html|head|body)\b[^>]*>/gi, '')
+        .replace(/\sposition\s*:\s*(?:fixed|absolute)\s*;?/gi, '')
+        .replace(/\smin-height\s*:\s*[^;"']+\s*;?/gi, '')
+        .replace(/\sheight\s*:\s*(?:100vh|100%)\s*;?/gi, '')
+        .trim();
+
+    output = agentStyleTagIfMissing(output, 'h1', 'margin:0 0 18px;font-size:28px;line-height:1.18;color:#111827;font-weight:800;');
+    output = agentStyleTagIfMissing(output, 'h2', 'margin:22px 0 12px;font-size:21px;line-height:1.25;color:#111827;font-weight:800;');
+    output = agentStyleTagIfMissing(output, 'h3', 'margin:18px 0 10px;font-size:17px;line-height:1.3;color:#111827;font-weight:800;');
+    output = agentStyleTagIfMissing(output, 'p', 'margin:0 0 13px;line-height:1.62;color:#111827;font-size:15px;');
+    output = agentStyleTagIfMissing(output, 'ul', 'margin:0 0 14px 22px;padding:0;line-height:1.58;color:#111827;font-size:15px;');
+    output = agentStyleTagIfMissing(output, 'ol', 'margin:0 0 14px 22px;padding:0;line-height:1.58;color:#111827;font-size:15px;');
+    output = agentStyleTagIfMissing(output, 'li', 'margin:0 0 7px;line-height:1.58;');
+    output = agentStyleTagIfMissing(output, 'blockquote', 'margin:14px 0;padding:10px 14px;border-left:3px solid #c7d2fe;background:#f8faff;color:#334155;');
+    output = agentStyleTagIfMissing(output, 'table', 'width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;');
+    output = agentStyleTagIfMissing(output, 'th', 'border:1px solid #d1d5db;background:#f8fafc;padding:8px;text-align:left;font-weight:800;');
+    output = agentStyleTagIfMissing(output, 'td', 'border:1px solid #d1d5db;padding:8px;vertical-align:top;');
+    return output || '<p></p>';
+}
+
 function agentContentItemToHtml(item = {}) {
     if (item && typeof item === 'object' && !Array.isArray(item)) {
-        if (item.contentHtml || item.html) return String(item.contentHtml || item.html || '');
+        if (item.contentHtml || item.html) return agentNormalizeDocHtmlForEditor(item.contentHtml || item.html || '');
         if (item.contentMarkdown || item.markdown || item.content) {
             const raw = String(item.contentMarkdown || item.markdown || item.content || '');
-            return agentLooksLikeHtml(raw) ? raw : agentMarkdownToHtml(raw);
+            return agentNormalizeDocHtmlForEditor(raw);
         }
         return '';
     }
     const raw = String(item || '');
-    return agentLooksLikeHtml(raw) ? raw : agentMarkdownToHtml(raw);
+    return agentNormalizeDocHtmlForEditor(raw);
 }
 
 function agentSplitHtmlByExplicitPages(html = '') {
@@ -5718,27 +5924,49 @@ function agentDistributeHtmlAcrossPages(html = '', pageCount = 1) {
     return pages.slice(0, count);
 }
 
+function agentEstimatePageCountFromHtml(html = '') {
+    const plainLength = agentPlainTextFromHtmlish(html).length;
+    const blockCount = (String(html || '').match(/<(p|li|h[1-6]|tr|blockquote)\b/gi) || []).length;
+    const tableCount = (String(html || '').match(/<table\b/gi) || []).length;
+    const imageCount = (String(html || '').match(/<img\b/gi) || []).length;
+    const weight = plainLength + (blockCount * 70) + (tableCount * 900) + (imageCount * 700);
+    return Math.max(1, Math.min(20, Math.ceil(weight / 2300)));
+}
+
 function agentDocPages(action = {}) {
     const input = action.input || {};
     const rawPages = Array.isArray(input.contentPages)
         ? input.contentPages
         : (Array.isArray(input.pages) ? input.pages : []);
-    const requestedPageCount = Math.max(
-        agentRequestedPageCount(input.pageCount || input.pagesCount || input.numberOfPages || input.nbPages || '', 1),
-        rawPages.length || 1
-    );
+    const explicitPageCount = agentRequestedPageCount(input.pageCount || input.pagesCount || input.numberOfPages || input.nbPages || '', 0);
+    let requestedPageCount = Math.max(explicitPageCount || 0, rawPages.length || 0, 1);
 
-    let pageHtml = rawPages.map(agentContentItemToHtml).map(html => html.trim()).filter(Boolean);
+    let pageHtml = rawPages
+        .map(agentContentItemToHtml)
+        .flatMap(html => {
+            const explicitParts = agentSplitHtmlByExplicitPages(html);
+            const parts = explicitParts.length ? explicitParts : [html];
+            return parts.flatMap(part => {
+                const estimated = agentEstimatePageCountFromHtml(part);
+                return estimated > 1 ? agentDistributeHtmlAcrossPages(part, estimated) : [part];
+            });
+        })
+        .map(html => html.trim())
+        .filter(Boolean);
     if (!pageHtml.length) {
         const html = agentDocContentHtml(action);
         pageHtml = agentSplitHtmlByExplicitPages(html);
-        if (pageHtml.length < requestedPageCount) {
+        const estimatedPageCount = agentEstimatePageCountFromHtml(html);
+        requestedPageCount = Math.max(requestedPageCount, pageHtml.length || 0, estimatedPageCount);
+        if (pageHtml.length < requestedPageCount || pageHtml.some(page => agentEstimatePageCountFromHtml(page) > 1)) {
             pageHtml = agentDistributeHtmlAcrossPages(html, requestedPageCount);
         }
     }
 
     while (pageHtml.length < requestedPageCount) pageHtml.push('<p></p>');
-    return pageHtml.slice(0, Math.max(1, Math.min(20, pageHtml.length))).map((content, index) => agentPagePayload(content, index));
+    return pageHtml
+        .slice(0, Math.max(1, Math.min(20, pageHtml.length)))
+        .map((content, index) => agentPagePayload(agentNormalizeDocHtmlForEditor(content), index));
 }
 
 function agentReplaceLiteralEverywhere(source = '', search = '', replacement = '') {
@@ -7060,10 +7288,10 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         let autoSelection = null;
         if (!requestedCount && !agentGoalLooksStandalone(goal)) {
             autoSelection = await agentDefaultSelection(req, record, entity, goal);
-            if (contextDecision.mode !== 'full' && documentSelectionItemCount(autoSelection) > 0) {
+            if (contextDecision.mode !== 'full' && substantialSelectionItemCount(autoSelection) > 0) {
                 contextDecision = {
                     mode: 'full',
-                    reason: 'auto_matched_document',
+                    reason: documentSelectionItemCount(autoSelection) > 0 ? 'auto_matched_document' : 'auto_matched_record_context',
                     requestedCount
                 };
             }

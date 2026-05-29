@@ -1554,10 +1554,33 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         .docs-tpl-file-icon { width:26px; height:26px; min-width:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#10b98112,#10b98106); }
         .docs-tpl-file-name { flex:1; min-width:0; font-size:12px; font-weight:500; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .docs-tpl-file-date { font-size:10px; color:#94a3b8; white-space:nowrap; display:flex; align-items:center; gap:3px; }
-        .docs-tpl-file-size { font-size:9px; font-weight:600; color:#10b981; background:#10b98110; padding:2px 8px; border-radius:10px; white-space:nowrap; }
-        .docs-tpl-file-dl { width:24px; height:24px; border:none; background:none; border-radius:6px; color:#94a3b8; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; text-decoration:none; }
-        .docs-tpl-file-dl:hover { background:#4361ee10; color:#4361ee; }
-        .docs-tpl-load-more { display:flex; align-items:center; justify-content:center; gap:5px; width:100%; padding:6px 16px; border:none; border-top:1px solid #f5f6f8; background:#fafbfc; color:#64748b; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; }
+	        .docs-tpl-file-size { font-size:9px; font-weight:600; color:#10b981; background:#10b98110; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+	        .docs-tpl-file-dl { width:24px; height:24px; border:none; background:none; border-radius:6px; color:#94a3b8; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; text-decoration:none; }
+	        .docs-tpl-file-dl:hover { background:#4361ee10; color:#4361ee; }
+	        .docs-section-menu-btn { flex-shrink:0; width:28px; height:28px; border:1px solid transparent; background:transparent; border-radius:8px; color:#94a3b8; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+	        .docs-section-menu-btn:hover { background:#f8fafc; border-color:#e5e7eb; color:#4361ee; }
+	        .docs-context-menu { position:fixed; z-index:99999; min-width:190px; padding:5px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 16px 34px rgba(15,23,42,.18); }
+	        .docs-context-menu button { width:100%; display:flex; align-items:center; gap:9px; padding:8px 10px; border:none; background:transparent; border-radius:7px; font-size:12px; font-weight:600; color:#334155; text-align:left; cursor:pointer; transition:all .12s; }
+	        .docs-context-menu button:hover { background:#f8fafc; color:#4361ee; }
+	        .docs-context-menu button.danger { color:#ef4444; }
+	        .docs-context-menu button.danger:hover { background:#fef2f2; color:#dc2626; }
+	        .docs-context-separator { height:1px; background:#eef2f7; margin:4px 2px; }
+	        .docs-modal-backdrop { position:fixed; inset:0; z-index:100000; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.35); backdrop-filter:blur(5px); }
+	        .docs-modal { width:min(420px, 100%); background:#fff; border:1px solid #e5e7eb; border-radius:16px; box-shadow:0 22px 60px rgba(15,23,42,.22); overflow:hidden; }
+	        .docs-modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid #eef2f7; }
+	        .docs-modal-title { font-size:14px; font-weight:800; color:#0f172a; }
+	        .docs-modal-close { width:30px; height:30px; border:none; border-radius:9px; background:#f1f5f9; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+	        .docs-modal-body { padding:16px 18px 18px; }
+	        .docs-modal-label { display:block; margin-bottom:7px; font-size:11px; font-weight:700; color:#64748b; }
+	        .docs-modal-input { width:100%; height:42px; border:1px solid #dbe3ee; border-radius:11px; padding:0 12px; font-size:13px; font-weight:600; color:#0f172a; outline:none; transition:all .15s; }
+	        .docs-modal-input:focus { border-color:#4361ee; box-shadow:0 0 0 3px #4361ee14; }
+	        .docs-modal-text { margin:0; font-size:12px; line-height:1.55; color:#64748b; }
+	        .docs-modal-actions { display:flex; justify-content:flex-end; gap:8px; padding:12px 18px 16px; background:#f8fafc; border-top:1px solid #eef2f7; }
+	        .docs-modal-btn { height:36px; padding:0 14px; border-radius:10px; border:1px solid #dbe3ee; background:#fff; color:#475569; font-size:12px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+	        .docs-modal-btn.primary { border-color:#4361ee; background:#4361ee; color:#fff; }
+	        .docs-modal-btn.danger { border-color:#ef4444; background:#ef4444; color:#fff; }
+	        .docs-modal-btn:disabled { opacity:.65; cursor:wait; }
+	        .docs-tpl-load-more { display:flex; align-items:center; justify-content:center; gap:5px; width:100%; padding:6px 16px; border:none; border-top:1px solid #f5f6f8; background:#fafbfc; color:#64748b; font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; }
         .docs-tpl-load-more:hover { background:#f1f5f9; color:#4361ee; }
     </style>
     <script>
@@ -1575,10 +1598,13 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             draftDocId: null,
             finalizing: false,
             finalized: false,
-            downloadUrl: '',
-            renamingDocId: null,
-            docContextMenu: { show: false, x: 0, y: 0, doc: null },
-            editingAttachmentId: null,
+	            downloadUrl: '',
+	            renamingDocId: null,
+	            docContextMenu: { show: false, x: 0, y: 0, doc: null },
+	            sectionContextMenu: { show: false, x: 0, y: 0, section: null },
+	            nameModal: { show: false, mode: '', title: '', label: '', value: '', target: null, saving: false },
+	            deleteModal: { show: false, type: '', title: '', message: '', target: null, saving: false },
+	            editingAttachmentId: null,
             deleteDraftOnCancel: true,
 	            copyingDocId: null,
 	            creatingTemplate: false,
@@ -1608,12 +1634,52 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                }
 	            },
 
-	            setDocsTab(tab) {
-	                this.activeDocsTab = tab === 'documents' ? 'documents' : 'templates';
-	                try {
-	                    localStorage.setItem(this.docsTabStorageKey(), this.activeDocsTab);
-	                } catch (_) {}
-	            },
+		            setDocsTab(tab) {
+		                this.activeDocsTab = tab === 'documents' ? 'documents' : 'templates';
+		                try {
+		                    localStorage.setItem(this.docsTabStorageKey(), this.activeDocsTab);
+		                } catch (_) {}
+		            },
+
+		            openNameModal({ mode, title, label, value = '', target = null }) {
+		                this.closeDocContext();
+		                this.closeSectionContext();
+		                this.nameModal = { show: true, mode, title, label, value, target, saving: false };
+		                this.$nextTick(() => {
+		                    const input = document.getElementById('docs-name-modal-input');
+		                    if (input) {
+		                        input.focus();
+		                        input.select();
+		                    }
+		                });
+		            },
+
+		            closeNameModal() {
+		                if (this.nameModal.saving) return;
+		                this.nameModal.show = false;
+		            },
+
+		            async submitNameModal() {
+		                const name = String(this.nameModal.value || '').trim();
+		                if (!name || this.nameModal.saving) return;
+		                this.nameModal.saving = true;
+		                try {
+		                    if (this.nameModal.mode === 'create-folder') {
+		                        await this.createFolderWithName(name);
+		                    } else if (this.nameModal.mode === 'rename-folder') {
+		                        await this.renameFolderWithName(this.nameModal.target, name);
+		                    } else if (this.nameModal.mode === 'rename-template') {
+		                        await this.renameTemplateWithName(this.nameModal.target, name);
+		                    } else if (this.nameModal.mode === 'rename-doc') {
+		                        await this.renameDocWithName(this.nameModal.target, name);
+		                    }
+		                    this.nameModal.show = false;
+		                } catch (err) {
+		                    console.error('[DocsModule] Name modal error:', err);
+		                    window.showMessage ? window.showMessage(err.message || 'Action impossible', 'danger') : alert(err.message || 'Action impossible');
+		                }
+		                this.nameModal.saving = false;
+		            },
 
             async createRecordTemplate() {
                 if (this.creatingTemplate) return;
@@ -1674,38 +1740,44 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                }
 	            },
 
-	            async createSimpleFolder() {
-	                if (this.creatingFolder) return;
-	                const name = (prompt('Nom du dossier', 'Documents IA') || '').trim();
-	                if (!name) return;
-	                this.creatingFolder = true;
-	                try {
-	                    const res = await fetch(`/account/${this._accountNumber}/documents/api/folders`, {
-	                        method: 'POST',
-	                        headers: { 'Content-Type': 'application/json' },
-	                        credentials: 'include',
-	                        body: JSON.stringify({
-	                            name,
-	                            color: '#4361ee',
-	                            scope: 'record',
-	                            recordId: this._recordId,
-	                            entityId: this._entityId
-	                        })
-	                    });
-	                    const data = await res.json();
-	                    if (!res.ok || !data.success) throw new Error(data.error || 'Création impossible');
-	                    if (!this.documentFolders.some(folder => String(folder._id) === String(data.folder._id))) {
-	                        this.documentFolders.push(data.folder);
-	                    }
-	                    const sectionId = `__simple_folder_${data.folder._id}`;
-	                    if (!this.openTemplates.includes(sectionId)) this.openTemplates.unshift(sectionId);
-	                    if (window.showMessage) window.showMessage('Dossier créé', 'success');
-	                } catch (err) {
-	                    console.error('[DocsModule] Folder creation error:', err);
-	                    window.showMessage ? window.showMessage(err.message || 'Erreur dossier', 'danger') : alert(err.message || 'Erreur dossier');
-	                }
-	                this.creatingFolder = false;
-	            },
+		            createSimpleFolder() {
+		                if (this.creatingFolder) return;
+		                this.openNameModal({
+		                    mode: 'create-folder',
+		                    title: 'Nouveau dossier',
+		                    label: 'Nom du dossier',
+		                    value: 'Documents IA'
+		                });
+		            },
+
+		            async createFolderWithName(name) {
+		                if (this.creatingFolder) return;
+		                this.creatingFolder = true;
+		                try {
+		                    const res = await fetch(`/account/${this._accountNumber}/documents/api/folders`, {
+		                        method: 'POST',
+		                        headers: { 'Content-Type': 'application/json' },
+		                        credentials: 'include',
+		                        body: JSON.stringify({
+		                            name,
+		                            color: '#4361ee',
+		                            scope: 'record',
+		                            recordId: this._recordId,
+		                            entityId: this._entityId
+		                        })
+		                    });
+		                    const data = await res.json();
+		                    if (!res.ok || !data.success) throw new Error(data.error || 'Création impossible');
+		                    if (!this.documentFolders.some(folder => String(folder._id) === String(data.folder._id))) {
+		                        this.documentFolders.push(data.folder);
+		                    }
+		                    const sectionId = `__simple_folder_${data.folder._id}`;
+		                    if (!this.openTemplates.includes(sectionId)) this.openTemplates.unshift(sectionId);
+		                    if (window.showMessage) window.showMessage('Dossier créé', 'success');
+		                } finally {
+		                    this.creatingFolder = false;
+		                }
+		            },
 
 	            findDocumentFolder(name) {
 	                const target = String(name || '').trim().toLowerCase();
@@ -1890,8 +1962,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                        return (d.simpleFolder || d.generatedFromName || 'Documents IA') === folder.name;
 	                    });
 	                }
-	                return this.generatedDocs.filter(d => !this.isSimpleDoc(d) && d.generatedFromName === tplName);
-	            },
+		                return this.generatedDocs.filter(d => {
+		                    if (this.isSimpleDoc(d)) return false;
+		                    const generatedId = String(d.generatedFrom?.smartDocId || d.generatedFrom || '');
+		                    return generatedId === String(tplId || '') || d.generatedFromName === tplName;
+		                });
+		            },
 
             getVisibleDocs(tplName, tplId) {
                 const all = this.getDocsForTemplate(tplName, tplId);
@@ -1995,37 +2071,214 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 };
             },
 
-            closeDocContext() {
-                this.docContextMenu.show = false;
-            },
+	            closeDocContext() {
+	                this.docContextMenu.show = false;
+	            },
 
-            async renameGeneratedDoc(doc) {
-                this.closeDocContext();
-                if (!doc || this.renamingDocId) return;
-                const current = (doc.originalName || doc.generatedFromName || 'Document').replace(/\.pdf$/i, '');
-                const next = prompt('Nom du document', current);
-                if (next === null) return;
-                const clean = next.trim();
-                if (!clean) return;
-                const originalName = clean.toLowerCase().endsWith('.pdf') ? clean : clean + '.pdf';
-                this.renamingDocId = doc._id;
-                try {
-                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ originalName })
-                    });
-                    const data = await res.json();
-                    if (!res.ok || data.error) throw new Error(data.error || 'Renommage impossible');
-                    doc.originalName = originalName;
-                    if (window.showMessage) window.showMessage('Document renommé', 'success');
-                } catch (e) {
-                    console.error('[DocsModule] Rename error:', e);
-                    window.showMessage ? window.showMessage(e.message || 'Erreur lors du renommage', 'danger') : alert(e.message || 'Erreur lors du renommage');
-                }
-                this.renamingDocId = null;
-            },
+	            openSectionContext(event, section) {
+	                this.closeDocContext();
+	                this.sectionContextMenu = {
+	                    show: true,
+	                    x: event.clientX,
+	                    y: event.clientY,
+	                    section
+	                };
+	            },
+
+	            closeSectionContext() {
+	                this.sectionContextMenu.show = false;
+	            },
+
+	            renameSection(section) {
+	                if (!section) return;
+	                this.openNameModal({
+	                    mode: section.isSimpleFolder ? 'rename-folder' : 'rename-template',
+	                    title: section.isSimpleFolder ? 'Renommer le dossier' : 'Renommer le template',
+	                    label: section.isSimpleFolder ? 'Nom du dossier' : 'Nom du template',
+	                    value: section.name || '',
+	                    target: section
+	                });
+	            },
+
+	            async renameFolderWithName(section, name) {
+	                if (!section?.folderId) throw new Error('Dossier introuvable');
+	                const oldName = section.name;
+	                const res = await fetch(`/account/${this._accountNumber}/documents/api/folders/${section.folderId}`, {
+	                    method: 'PUT',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ name })
+	                });
+	                const data = await res.json();
+	                if (!res.ok || !data.success) throw new Error(data.error || 'Renommage impossible');
+	                this.documentFolders = this.documentFolders.map(folder => (
+	                    String(folder._id) === String(section.folderId) ? data.folder : folder
+	                ));
+	                this.generatedDocs.forEach(doc => {
+	                    if (String(doc.simpleFolderId || '') === String(section.folderId) || doc.simpleFolder === oldName) {
+	                        doc.simpleFolder = name;
+	                        doc.generatedFromName = name;
+	                    }
+	                });
+	                if (window.showMessage) window.showMessage('Dossier renommé', 'success');
+	            },
+
+	            async renameTemplateWithName(section, name) {
+	                if (!section?._id) throw new Error('Template introuvable');
+	                const oldName = section.name;
+	                const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/templates/${section._id}`, {
+	                    method: 'PUT',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ name })
+	                });
+	                const data = await res.json();
+	                if (!res.ok || !data.success) throw new Error(data.error || 'Renommage impossible');
+	                if (section.documentId) {
+	                    try {
+	                        await fetch(`/account/${this._accountNumber}/documents/api/${section.documentId}`, {
+	                            method: 'PUT',
+	                            headers: { 'Content-Type': 'application/json' },
+	                            credentials: 'include',
+	                            body: JSON.stringify({ name })
+	                        });
+	                    } catch (_) {}
+	                }
+	                this.templates = this.templates.map(tpl => (
+	                    String(tpl._id) === String(section._id) ? { ...tpl, name } : tpl
+	                ));
+	                this.generatedDocs.forEach(doc => {
+	                    const generatedId = String(doc.generatedFrom?.smartDocId || doc.generatedFrom || '');
+	                    if (generatedId === String(section._id) || doc.generatedFromName === oldName) {
+	                        doc.generatedFromName = name;
+	                    }
+	                });
+	                if (window.showMessage) window.showMessage('Template renommé', 'success');
+	            },
+
+	            editTemplate(section) {
+	                this.closeSectionContext();
+	                if (!section?.documentId) return;
+	                const returnTo = encodeURIComponent(window.location.href);
+	                window.location.href = `/account/${this._accountNumber}/documents/${section.documentId}/edit-react?isTemplate=true&returnTo=${returnTo}`;
+	            },
+
+	            requestDeleteSection(section) {
+	                if (!section) return;
+	                const count = this.getDocsForTemplate(section.name, section._id).length;
+	                this.closeSectionContext();
+	                this.deleteModal = {
+	                    show: true,
+	                    type: section.isSimpleFolder ? 'folder' : 'template',
+	                    title: section.isSimpleFolder ? 'Supprimer le dossier' : 'Supprimer le template',
+	                    message: section.isSimpleFolder
+	                        ? (count > 0 ? `Le dossier sera supprimé. Les ${count} document(s) seront replacés dans Documents.` : 'Ce dossier vide sera supprimé.')
+	                        : (count > 0 ? `Le template sera supprimé. Les ${count} document(s) déjà générés restent disponibles.` : 'Ce template sera supprimé.'),
+	                    target: section,
+	                    saving: false
+	                };
+	            },
+
+	            closeDeleteModal() {
+	                if (this.deleteModal.saving) return;
+	                this.deleteModal.show = false;
+	            },
+
+		            async submitDeleteModal() {
+		                if (!this.deleteModal.target || this.deleteModal.saving) return;
+		                this.deleteModal.saving = true;
+		                try {
+		                    if (this.deleteModal.type === 'folder') {
+		                        await this.deleteFolderSection(this.deleteModal.target);
+		                    } else if (this.deleteModal.type === 'template') {
+		                        await this.deleteTemplateSection(this.deleteModal.target);
+		                    } else if (this.deleteModal.type === 'doc') {
+		                        await this.deleteDocNow(this.deleteModal.target, { silentError: true });
+		                    }
+		                    this.deleteModal.show = false;
+		                } catch (err) {
+	                    console.error('[DocsModule] Delete section error:', err);
+	                    window.showMessage ? window.showMessage(err.message || 'Suppression impossible', 'danger') : alert(err.message || 'Suppression impossible');
+	                }
+	                this.deleteModal.saving = false;
+	            },
+
+	            async deleteFolderSection(section) {
+	                if (!section?.folderId) throw new Error('Dossier introuvable');
+	                const res = await fetch(`/account/${this._accountNumber}/documents/api/folders/${section.folderId}`, {
+	                    method: 'DELETE',
+	                    credentials: 'include'
+	                });
+	                const data = await res.json();
+	                if (!res.ok || !data.success) throw new Error(data.error || 'Suppression impossible');
+	                this.documentFolders = this.documentFolders.filter(folder => String(folder._id) !== String(section.folderId));
+	                this.openTemplates = this.openTemplates.filter(id => id !== section._id);
+	                await this.loadGeneratedDocs();
+	                if (window.showMessage) window.showMessage('Dossier supprimé', 'success');
+	            },
+
+	            async deleteTemplateSection(section) {
+	                if (!section?._id) throw new Error('Template introuvable');
+	                const res = await fetch(`/account/${this._accountNumber}/api/smartdoc/templates/${section._id}`, {
+	                    method: 'DELETE',
+	                    credentials: 'include'
+	                });
+	                const data = await res.json();
+	                if (!res.ok || !data.success) throw new Error(data.error || 'Suppression impossible');
+	                this.templates = this.templates.filter(tpl => String(tpl._id) !== String(section._id));
+	                this.openTemplates = this.openTemplates.filter(id => id !== section._id);
+		                if (window.showMessage) window.showMessage('Template supprimé', 'success');
+		            },
+
+		            requestDeleteDoc(doc) {
+		                if (!doc) return;
+		                this.closeDocContext();
+		                this.deleteModal = {
+		                    show: true,
+		                    type: 'doc',
+		                    title: 'Supprimer le document',
+		                    message: `Supprimer « ${doc.originalName || doc.name || 'Document'} » ?`,
+		                    target: doc,
+		                    saving: false
+		                };
+		            },
+
+		            renameGeneratedDoc(doc) {
+	                this.closeDocContext();
+	                if (!doc || this.renamingDocId) return;
+	                const current = (doc.originalName || doc.generatedFromName || 'Document').replace(/\.pdf$/i, '');
+	                this.openNameModal({
+	                    mode: 'rename-doc',
+	                    title: 'Renommer le document',
+	                    label: 'Nom du document',
+	                    value: current,
+	                    target: doc
+	                });
+	            },
+
+		            async renameDocWithName(doc, clean) {
+		                if (!doc) return;
+		                const originalName = clean.toLowerCase().endsWith('.pdf') ? clean : clean + '.pdf';
+		                this.renamingDocId = doc._id;
+		                try {
+		                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
+		                        method: 'PATCH',
+		                        headers: { 'Content-Type': 'application/json' },
+		                        credentials: 'include',
+		                        body: JSON.stringify({ originalName })
+		                    });
+		                    const data = await res.json();
+		                    if (!res.ok || data.error) throw new Error(data.error || 'Renommage impossible');
+		                    doc.originalName = originalName;
+			                    if (window.showMessage) window.showMessage('Document renommé', 'success');
+			                } catch (e) {
+			                    console.error('[DocsModule] Rename error:', e);
+			                    window.showMessage ? window.showMessage(e.message || 'Erreur lors du renommage', 'danger') : alert(e.message || 'Erreur lors du renommage');
+			                    throw e;
+			                } finally {
+			                    this.renamingDocId = null;
+			                }
+			            },
 
             async generateDoc(tpl) {
                 this.generatingId = tpl._id;
@@ -2228,32 +2481,39 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 
             confirmingDocDelete: null,
 
-            async deleteDoc(doc) {
-                if (this.confirmingDocDelete !== doc._id) {
-                    this.confirmingDocDelete = doc._id;
-                    setTimeout(() => { if (this.confirmingDocDelete === doc._id) this.confirmingDocDelete = null; }, 3000);
-                    return;
-                }
-                this.confirmingDocDelete = null;
-                try {
-                    const res = await fetch(doc.isAgentDraft
-                        ? `/account/${this._accountNumber}/documents/api/${doc._id}`
-                        : `/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
+	            async deleteDoc(doc) {
+	                if (this.confirmingDocDelete !== doc._id) {
+	                    this.confirmingDocDelete = doc._id;
+	                    setTimeout(() => { if (this.confirmingDocDelete === doc._id) this.confirmingDocDelete = null; }, 3000);
+	                    return;
+	                }
+	                this.confirmingDocDelete = null;
+	                await this.deleteDocNow(doc);
+	            },
+
+	            async deleteDocNow(doc, options = {}) {
+	                try {
+	                    const res = await fetch(doc.isAgentDraft
+	                        ? `/account/${this._accountNumber}/documents/api/${doc._id}`
+	                        : `/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
                         method: 'DELETE', credentials: 'include'
                     });
                     const data = await res.json();
-                    if (data.success) {
-                        const idx = this.generatedDocs.findIndex(d => d._id === doc._id);
-                        if (idx !== -1) this.generatedDocs.splice(idx, 1);
-                        if (window.showMessage) window.showMessage('Document supprimé', 'success');
-                    } else {
-                        window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
-                    }
-                } catch (e) {
-                    console.error('[DocsModule] Delete error:', e);
-                    window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
-                }
-            }
+	                    if (data.success) {
+	                        const idx = this.generatedDocs.findIndex(d => d._id === doc._id);
+	                        if (idx !== -1) this.generatedDocs.splice(idx, 1);
+	                        if (window.showMessage) window.showMessage('Document supprimé', 'success');
+	                    } else {
+	                        throw new Error(data.error || 'Erreur lors de la suppression');
+	                    }
+	                } catch (e) {
+	                    console.error('[DocsModule] Delete error:', e);
+	                    if (!options.silentError) {
+	                        window.showMessage ? window.showMessage(e.message || 'Erreur réseau', 'danger') : alert(e.message || 'Erreur réseau');
+	                    }
+	                    throw e;
+	                }
+	            }
         }));
     });
     </script>
@@ -2516,8 +2776,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                <template x-for="(tpl, tIdx) in visibleSections" :key="tpl._id">
                     <div class="docs-tpl-section" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
                         <!-- Template header row -->
-                        <div class="rm-item" style="cursor:pointer; border-bottom:none; margin-bottom:0;"
-                             @click="toggleTemplate(tpl._id)">
+	                        <div class="rm-item" style="cursor:pointer; border-bottom:none; margin-bottom:0;"
+	                             @click="toggleTemplate(tpl._id)"
+	                             @contextmenu.prevent.stop="openSectionContext($event, tpl)">
 	                            <div class="rm-item-icon" :style="tpl.isSimpleFolder ? 'background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;' : 'background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;'">
 	                                <iconify-icon :icon="tpl.isSimpleFolder ? 'solar:folder-with-files-bold-duotone' : 'solar:file-text-bold-duotone'" width="20" :style="'color:' + (tpl.isSimpleFolder ? '#4361ee' : '#f59e0b')"></iconify-icon>
 	                                <iconify-icon x-show="!tpl.isSimpleFolder" icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
@@ -2537,14 +2798,17 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                                <iconify-icon :icon="creatingSimpleDoc ? 'line-md:loading-twotone-loop' : 'solar:document-add-bold-duotone'" width="12"></iconify-icon>
 	                                <span x-text="creatingSimpleDoc ? 'Création...' : 'Nouveau doc'"></span>
 	                            </button>
-	                            <button x-show="!tpl.isSimpleFolder" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
-	                                class="rm-docs-generate-btn" style="flex-shrink:0;">
-                                <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
-                                <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
-                            </button>
-                            <span class="rm-item-action" style="color:#94a3b8; transition:transform .2s;" :style="openTemplates.includes(tpl._id) ? 'transform:rotate(90deg)' : ''">
-                                <iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon>
-                            </span>
+		                            <button x-show="!tpl.isSimpleFolder" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
+		                                class="rm-docs-generate-btn" style="flex-shrink:0;">
+	                                <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
+	                                <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
+	                            </button>
+	                            <button type="button" class="docs-section-menu-btn" @click.stop="openSectionContext($event, tpl)" title="Options">
+	                                <iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon>
+	                            </button>
+	                            <span class="rm-item-action" style="color:#94a3b8; transition:transform .2s;" :style="openTemplates.includes(tpl._id) ? 'transform:rotate(90deg)' : ''">
+	                                <iconify-icon icon="solar:alt-arrow-right-linear" width="18"></iconify-icon>
+	                            </span>
                         </div>
                         <!-- Expanded: generated files for this template -->
                         <div x-show="openTemplates.includes(tpl._id)" x-transition.duration.200ms>
@@ -2608,30 +2872,112 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 </template>
             </div>
 
-            <template x-teleport="body">
-                <div x-show="docContextMenu.show" x-cloak
-                     @click.outside="closeDocContext()"
-                     :style="'position:fixed;left:' + docContextMenu.x + 'px;top:' + docContextMenu.y + 'px;z-index:99999;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:4px;min-width:170px;'">
-                    <button type="button" x-show="!docContextMenu.doc || !docContextMenu.doc.isAgentDraft" @click="renameGeneratedDoc(docContextMenu.doc)"
-                        style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
-                        <iconify-icon icon="solar:text-field-focus-bold" width="14"></iconify-icon>
-                        Renommer
-                    </button>
-                    <button type="button" @click="editGeneratedDoc(docContextMenu.doc); closeDocContext()"
-                        style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
-                        <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
-                        Modifier
-                    </button>
-                    <button type="button" x-show="!docContextMenu.doc || !docContextMenu.doc.isAgentDraft" @click="copyGeneratedDoc(docContextMenu.doc); closeDocContext()"
-                        style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
-                        <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
-                        Copier vers
-                    </button>
-                </div>
-            </template>
+	            <template x-teleport="body">
+	                <div x-show="docContextMenu.show" x-cloak
+	                     @click.outside="closeDocContext()"
+	                     class="docs-context-menu"
+	                     :style="'left:' + docContextMenu.x + 'px;top:' + docContextMenu.y + 'px;'">
+	                    <button type="button" x-show="!docContextMenu.doc || !docContextMenu.doc.isAgentDraft" @click="renameGeneratedDoc(docContextMenu.doc)"
+	                        >
+	                        <iconify-icon icon="solar:text-field-focus-bold" width="14"></iconify-icon>
+	                        Renommer
+	                    </button>
+	                    <button type="button" @click="editGeneratedDoc(docContextMenu.doc); closeDocContext()"
+	                        >
+	                        <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+	                        Modifier
+	                    </button>
+	                    <button type="button" x-show="!docContextMenu.doc || !docContextMenu.doc.isAgentDraft" @click="copyGeneratedDoc(docContextMenu.doc); closeDocContext()"
+	                        >
+	                        <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
+	                        Copier vers
+	                    </button>
+	                    <div class="docs-context-separator"></div>
+	                    <button type="button" class="danger" @click="requestDeleteDoc(docContextMenu.doc)">
+	                        <iconify-icon icon="solar:trash-bin-2-bold" width="14"></iconify-icon>
+	                        Supprimer
+	                    </button>
+	                </div>
+	            </template>
 
-            <!-- Full-screen editor overlay (teleported to body) -->
-            <template x-teleport="body">
+	            <template x-teleport="body">
+	                <div x-show="sectionContextMenu.show" x-cloak
+	                     @click.outside="closeSectionContext()"
+	                     class="docs-context-menu"
+	                     :style="'left:' + sectionContextMenu.x + 'px;top:' + sectionContextMenu.y + 'px;'">
+	                    <button type="button" @click="renameSection(sectionContextMenu.section)">
+	                        <iconify-icon icon="solar:text-field-focus-bold" width="14"></iconify-icon>
+	                        Renommer
+	                    </button>
+	                    <button type="button" x-show="sectionContextMenu.section && sectionContextMenu.section.isSimpleFolder" @click="createSimpleDoc(sectionContextMenu.section); closeSectionContext()">
+	                        <iconify-icon icon="solar:document-add-bold-duotone" width="14"></iconify-icon>
+	                        Nouveau doc
+	                    </button>
+	                    <button type="button" x-show="sectionContextMenu.section && !sectionContextMenu.section.isSimpleFolder && sectionContextMenu.section.documentId" @click="editTemplate(sectionContextMenu.section)">
+	                        <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+	                        Modifier
+	                    </button>
+	                    <button type="button" x-show="sectionContextMenu.section && !sectionContextMenu.section.isSimpleFolder" @click="generateDoc(sectionContextMenu.section); closeSectionContext()">
+	                        <iconify-icon icon="solar:play-bold" width="14"></iconify-icon>
+	                        Générer
+	                    </button>
+	                    <div class="docs-context-separator"></div>
+	                    <button type="button" class="danger" @click="requestDeleteSection(sectionContextMenu.section)">
+	                        <iconify-icon icon="solar:trash-bin-2-bold" width="14"></iconify-icon>
+	                        Supprimer
+	                    </button>
+	                </div>
+	            </template>
+
+	            <template x-teleport="body">
+	                <div x-show="nameModal.show" x-cloak class="docs-modal-backdrop" @keydown.escape.window="closeNameModal()">
+	                    <form class="docs-modal" @submit.prevent="submitNameModal()" @click.outside="closeNameModal()">
+	                        <div class="docs-modal-head">
+	                            <div class="docs-modal-title" x-text="nameModal.title"></div>
+	                            <button type="button" class="docs-modal-close" @click="closeNameModal()">
+	                                <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+	                            </button>
+	                        </div>
+	                        <div class="docs-modal-body">
+	                            <label class="docs-modal-label" for="docs-name-modal-input" x-text="nameModal.label"></label>
+	                            <input id="docs-name-modal-input" class="docs-modal-input" type="text" x-model="nameModal.value" autocomplete="off">
+	                        </div>
+	                        <div class="docs-modal-actions">
+	                            <button type="button" class="docs-modal-btn" @click="closeNameModal()">Annuler</button>
+	                            <button type="submit" class="docs-modal-btn primary" :disabled="nameModal.saving || !String(nameModal.value || '').trim()">
+	                                <iconify-icon :icon="nameModal.saving ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
+	                                Valider
+	                            </button>
+	                        </div>
+	                    </form>
+	                </div>
+	            </template>
+
+	            <template x-teleport="body">
+	                <div x-show="deleteModal.show" x-cloak class="docs-modal-backdrop" @keydown.escape.window="closeDeleteModal()">
+	                    <div class="docs-modal" @click.outside="closeDeleteModal()">
+	                        <div class="docs-modal-head">
+	                            <div class="docs-modal-title" x-text="deleteModal.title"></div>
+	                            <button type="button" class="docs-modal-close" @click="closeDeleteModal()">
+	                                <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+	                            </button>
+	                        </div>
+	                        <div class="docs-modal-body">
+	                            <p class="docs-modal-text" x-text="deleteModal.message"></p>
+	                        </div>
+	                        <div class="docs-modal-actions">
+	                            <button type="button" class="docs-modal-btn" @click="closeDeleteModal()">Annuler</button>
+	                            <button type="button" class="docs-modal-btn danger" @click="submitDeleteModal()" :disabled="deleteModal.saving">
+	                                <iconify-icon :icon="deleteModal.saving ? 'line-md:loading-twotone-loop' : 'solar:trash-bin-2-bold'" width="14"></iconify-icon>
+	                                Supprimer
+	                            </button>
+	                        </div>
+	                    </div>
+	                </div>
+	            </template>
+
+	            <!-- Full-screen editor overlay (teleported to body) -->
+	            <template x-teleport="body">
                 <div x-show="showPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                     x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                     class="fixed inset-0 flex flex-col bg-white" style="display:none; z-index: 99998;">

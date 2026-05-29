@@ -965,7 +965,7 @@ router.delete('/api/folders/:id', async (req, res) => {
         // Move documents from folder back to root
         await Document.updateMany(
             { folderId: req.params.id, createdBy: req.user._id },
-            { $set: { folderId: null } }
+            { $set: { folderId: null, 'metadata.simpleFolder': 'Documents' } }
         );
 
         const result = await DocumentFolder.deleteOne({

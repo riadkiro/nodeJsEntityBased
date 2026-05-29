@@ -675,7 +675,21 @@ export default function EditorHeader({
 	        || Boolean(doc?.metadata?.createdByAgent && doc?.isDraft && !doc?.draftSourceTemplateId && !doc?.generatedFrom?.smartDocId)
 	    const draftActionLabel = isSimpleEditableDoc ? 'Enregistrer' : 'Finaliser et générer'
 	    const draftLoadingLabel = isSimpleEditableDoc ? 'Enregistrement...' : 'Génération...'
-	    const canSaveDraft = Boolean(doc?.isDraft && !isSimpleEditableDoc)
+	    const urlParams = new URLSearchParams(window.location.search)
+	    const isTemplateDraftFlow = Boolean(
+	        doc?.isDraft
+	        || doc?.draftSourceTemplateId
+	        || urlParams.get('contextFree') === '1'
+	        || urlParams.get('templateId')
+	    )
+	    const canSaveDraft = Boolean(
+	        doc?._id
+	        && !doc?.isTemplate
+	        && !isSimpleEditableDoc
+	        && !doc?.isGenerationSnapshot
+	        && doc?.status !== 'finalized'
+	        && isTemplateDraftFlow
+	    )
 
 	    const getCloseUrl = () => {
 	        if (window.self !== window.top) return 'smartdoc-cancel'
@@ -1167,7 +1181,7 @@ export default function EditorHeader({
                                         ) : (
                                             <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
                                         )}
-                                        <span>{isSavingDraft ? 'Enregistrement...' : 'Brouillon'}</span>
+                                        <span>{isSavingDraft ? 'Enregistrement...' : 'Enregistrer comme brouillon'}</span>
                                     </button>
                                 )}
 

@@ -1663,9 +1663,13 @@ ${pagesHtml}
         }
 
         // 5. Resolve template name for metadata
-        let generatedFromName = 'Document genere';
+        const isSimpleDocDraft = draftDoc.metadata?.docKind === 'simple'
+            || Boolean(draftDoc.metadata?.createdByAgent && !draftDoc.draftSourceTemplateId && !draftDoc.generatedFrom?.smartDocId);
+        let generatedFromName = isSimpleDocDraft
+            ? (draftDoc.metadata?.simpleFolder || 'Documents IA')
+            : 'Document genere';
         try {
-            if (draftDoc.draftSourceTemplateId) {
+            if (!isSimpleDocDraft && draftDoc.draftSourceTemplateId) {
                 const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
                 const tpl = await SmartDocTemplate.findById(draftDoc.draftSourceTemplateId);
                 if (tpl) generatedFromName = tpl.name;
@@ -1757,17 +1761,20 @@ ${pagesHtml}
                 removeGeneratedFile(req.account_number, oldFilename);
             }
 
-            responsePayload = {
-                success: true,
-                mode: 'record-attachment',
-                attachment: {
-                    _id: addedAttachment._id,
-                    ...newAttachment,
-                    url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
-                    sizeFormatted: formatSize(savedSize)
-                },
-                outputName
-            };
+	            responsePayload = {
+	                success: true,
+	                mode: 'record-attachment',
+	                attachment: {
+	                    _id: addedAttachment._id,
+	                    ...newAttachment,
+	                    url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
+	                    sizeFormatted: formatSize(savedSize),
+	                    isSimpleDoc: isSimpleDocDraft,
+	                    simpleFolder: isSimpleDocDraft ? generatedFromName : '',
+	                    simpleFolderId: isSimpleDocDraft ? (draftDoc.folderId || '') : ''
+	                },
+	                outputName
+	            };
         } else {
             // PATH B: No record — convert draft to a standalone finalized document
             // Instead of deleting the draft, convert it to a finalized document with file metadata.
@@ -1798,8 +1805,8 @@ ${pagesHtml}
             responsePayload = {
                 success: true,
                 mode: 'standalone-document',
-                attachment: {
-                    _id: draftDoc._id,
+	                attachment: {
+	                    _id: draftDoc._id,
                     filename: savedFilename,
                     originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
                     mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
@@ -1808,10 +1815,13 @@ ${pagesHtml}
                     isGenerated: true,
                     generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
                     generatedFromName,
-                    snapshotDocumentId: draftDoc._id,
-                    url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
-                    sizeFormatted: formatSize(savedSize)
-                },
+	                    snapshotDocumentId: draftDoc._id,
+	                    url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
+	                    sizeFormatted: formatSize(savedSize),
+	                    isSimpleDoc: isSimpleDocDraft,
+	                    simpleFolder: isSimpleDocDraft ? generatedFromName : '',
+	                    simpleFolderId: isSimpleDocDraft ? (draftDoc.folderId || '') : ''
+	                },
                 outputName
             };
         }

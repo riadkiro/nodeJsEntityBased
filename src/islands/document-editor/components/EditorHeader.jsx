@@ -666,14 +666,25 @@ export default function EditorHeader({
     FONT_FAMILIES,
     FONT_SIZES,
     hasUnsavedChanges
-}) {
-    const [textColor, setTextColor] = useState('#000000')
-    const [highlightColor, setHighlightColor] = useState('transparent')
-    const [modalConfig, setModalConfig] = useState(null)
+	}) {
+	    const [textColor, setTextColor] = useState('#000000')
+	    const [highlightColor, setHighlightColor] = useState('transparent')
+	    const [modalConfig, setModalConfig] = useState(null)
+	    const isSimpleEditableDoc = doc?.metadata?.docKind === 'simple'
+	        || Boolean(doc?.metadata?.createdByAgent && doc?.isDraft && !doc?.draftSourceTemplateId && !doc?.generatedFrom?.smartDocId)
+	    const draftActionLabel = isSimpleEditableDoc ? 'Enregistrer' : 'Finaliser et générer'
+	    const draftLoadingLabel = isSimpleEditableDoc ? 'Enregistrement...' : 'Génération...'
 
-    const getCloseUrl = () => {
-        return window.self !== window.top ? 'smartdoc-cancel' : `/account/${accountNumber}/documents`;
-    }
+	    const getCloseUrl = () => {
+	        if (window.self !== window.top) return 'smartdoc-cancel'
+	        const linkedRecord = doc?.linkedRecords?.[0]
+	        const recordId = doc?.draftRecordId || linkedRecord?.recordId
+	        const entitySlug = linkedRecord?.entitySlug
+	        if (recordId && entitySlug) {
+	            return `/account/${accountNumber}/record/${entitySlug}/${recordId}/docs`
+	        }
+	        return `/account/${accountNumber}/documents`;
+	    }
 
     const attemptNavigation = (targetUrl, e) => {
         if (e) e.preventDefault();
@@ -1073,7 +1084,7 @@ export default function EditorHeader({
                                     ) : (
                                         <iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon>
                                     )}
-                                    <span>{isGeneratingPdf ? 'Génération en cours...' : 'Finaliser et générer le PDF'}</span>
+	                                    <span>{isGeneratingPdf ? draftLoadingLabel : (isSimpleEditableDoc ? 'Enregistrer' : 'Finaliser et générer le PDF')}</span>
                                 </button>
                             </>
                         ) : (
@@ -1102,7 +1113,7 @@ export default function EditorHeader({
                                         ) : (
                                             <iconify-icon icon="solar:check-circle-bold-duotone" width="18"></iconify-icon>
                                         )}
-                                        <span>{isGeneratingPdf ? 'Génération...' : 'Finaliser et générer'}</span>
+	                                        <span>{isGeneratingPdf ? draftLoadingLabel : draftActionLabel}</span>
                                     </button>
                                 ) : (
                                     <button

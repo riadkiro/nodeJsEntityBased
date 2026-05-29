@@ -612,6 +612,7 @@ router.get('/records/:recordId/attachments', async (req, res) => {
     try {
         const Record = await tenantCollection(req, 'Record');
         const Document = await tenantCollection(req, 'Document');
+        const DocumentFolder = await tenantCollection(req, 'DocumentFolder');
         const record = await Record.findById(req.params.recordId).select('attachments driveFolders');
 
         if (!record) {
@@ -639,47 +640,124 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             uploadedBy: att.uploadedBy
         }));
 
-        const enrichedAttachments = await enrichAttachmentsWithRagStatus(req, attachments);
+        let documentFolders = [];
+        const folderNameById = new Map();
+        if (DocumentFolder) {
+            documentFolders = await DocumentFolder.find({
+                createdBy: req.user._id,
+                scope: 'record',
+                recordId: record._id
+            }).sort({ order: 1, createdAt: 1 }).lean();
+            documentFolders.forEach(folder => folderNameById.set(cleanId(folder._id), folder.name));
+        }
+
+        const folderNameForDoc = (doc) => {
+            const folderId = cleanId(doc?.folderId);
+            return (folderId && folderNameById.get(folderId))
+                || doc?.metadata?.simpleFolder
+                || (doc?.metadata?.createdByAgent ? 'Documents IA' : 'Documents');
+        };
+
+        const isSimpleDocument = (doc) => {
+            if (!doc) return false;
+            if (doc.metadata?.docKind === 'simple') return true;
+            return Boolean(doc.metadata?.createdByAgent && !doc.draftSourceTemplateId && !doc.generatedFrom?.smartDocId);
+        };
+
+        let enrichedAttachments = await enrichAttachmentsWithRagStatus(req, attachments);
         let agentDocuments = [];
 
         if (Document) {
+            const snapshotIds = enrichedAttachments
+                .map(att => cleanId(att.snapshotDocumentId))
+                .filter(Boolean);
+            const snapshotDocs = snapshotIds.length
+                ? await Document.find({ _id: { $in: snapshotIds } })
+                    .select('_id name metadata folderId draftSourceTemplateId generatedFrom')
+                    .lean()
+                : [];
+            const snapshotById = new Map(snapshotDocs.map(doc => [cleanId(doc._id), doc]));
+
+            enrichedAttachments = enrichedAttachments.map(att => {
+                const snapshot = snapshotById.get(cleanId(att.snapshotDocumentId));
+                if (!isSimpleDocument(snapshot)) return att;
+                const simpleFolder = folderNameForDoc(snapshot);
+                return {
+                    ...att,
+                    isSimpleDoc: true,
+                    simpleFolder,
+                    simpleFolderId: cleanId(snapshot.folderId),
+                    generatedFromName: simpleFolder
+                };
+            });
+
             const docs = await Document.find({
                 isTemplate: false,
                 isGenerationSnapshot: { $ne: true },
-                'metadata.createdByAgent': true,
-                $or: [
-                    { draftRecordId: record._id },
-                    { 'linkedRecords.recordId': record._id }
+                $and: [
+                    {
+                        $or: [
+                            { 'metadata.docKind': 'simple' },
+                            {
+                                'metadata.createdByAgent': true,
+                                draftSourceTemplateId: null,
+                                'generatedFrom.smartDocId': { $exists: false }
+                            }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { draftRecordId: record._id },
+                            { 'linkedRecords.recordId': record._id }
+                        ]
+                    }
                 ]
             })
-                .select('_id name status createdAt updatedAt generatedFrom linkedRecords metadata')
+                .select('_id name status createdAt updatedAt generatedFrom linkedRecords metadata folderId')
                 .sort({ updatedAt: -1 })
                 .limit(80)
                 .lean();
 
-            agentDocuments = docs.map(doc => ({
-                _id: doc._id,
-                filename: '',
-                originalName: doc.name || 'Document IA',
-                mimeType: 'application/x-dexio-document',
-                size: 0,
-                sizeFormatted: 'Brouillon',
-                category: 'document',
-                folder: '',
-                isGenerated: true,
-                isAgentDraft: true,
-                generatedFrom: doc.generatedFrom || {},
-                generatedFromName: 'Documents IA',
-                generatedFromDocumentId: doc.generatedFrom?.templateId || null,
-                snapshotDocumentId: doc._id,
-                url: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
-                editUrl: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
-                uploadedAt: doc.updatedAt || doc.createdAt,
-                uploadedBy: null
-            }));
+            agentDocuments = docs.map(doc => {
+                const simpleFolder = folderNameForDoc(doc);
+                return {
+                    _id: doc._id,
+                    filename: '',
+                    originalName: doc.name || 'Document IA',
+                    mimeType: 'application/x-dexio-document',
+                    size: 0,
+                    sizeFormatted: 'Brouillon',
+                    category: 'document',
+                    folder: '',
+                    isGenerated: true,
+                    isAgentDraft: true,
+                    isSimpleDoc: true,
+                    simpleFolder,
+                    simpleFolderId: cleanId(doc.folderId),
+                    generatedFrom: doc.generatedFrom || {},
+                    generatedFromName: simpleFolder,
+                    generatedFromDocumentId: doc.generatedFrom?.templateId || null,
+                    snapshotDocumentId: doc._id,
+                    url: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
+                    editUrl: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
+                    uploadedAt: doc.updatedAt || doc.createdAt,
+                    uploadedBy: null
+                };
+            });
         }
 
-        res.json({ success: true, attachments: [...agentDocuments, ...enrichedAttachments], driveFolders: record.driveFolders || [] });
+        res.json({
+            success: true,
+            attachments: [...agentDocuments, ...enrichedAttachments],
+            driveFolders: record.driveFolders || [],
+            documentFolders: documentFolders.map(folder => ({
+                _id: folder._id,
+                name: folder.name,
+                color: folder.color,
+                icon: folder.icon,
+                order: folder.order
+            }))
+        });
     } catch (error) {
         console.error('[Attachment] List error:', error);
         res.status(500).json({ error: error.message });

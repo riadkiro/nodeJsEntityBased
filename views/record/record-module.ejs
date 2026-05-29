@@ -62,6 +62,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     cursor:pointer; transition:all .2s; font-family:inherit; text-decoration:none;
 }
 .rm-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px <%= _modColor %>40; }
+.rm-btn-secondary {
+    display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+    background:#fff; color:#475569; border:1px solid #e0e6ed; border-radius:10px;
+    font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; font-family:inherit;
+}
+.rm-btn-secondary:hover { color:#4361ee; border-color:#c7d2fe; background:#f8fbff; }
 .rm-nav { display:flex; gap:4px; margin-bottom:24px; padding:4px; background:#f8fafc; border-radius:12px; border:1px solid #e0e6ed; overflow-x:auto; }
 .rm-nav a { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:500; color:#888da8; text-decoration:none; transition:all .2s; white-space:nowrap; }
 .rm-nav a:hover { background:#fff; color:#0e1726; }
@@ -1569,9 +1575,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             docContextMenu: { show: false, x: 0, y: 0, doc: null },
             editingAttachmentId: null,
             deleteDraftOnCancel: true,
-            copyingDocId: null,
-            creatingTemplate: false,
-            _accountNumber: '<%= account_number %>',
+	            copyingDocId: null,
+	            creatingTemplate: false,
+	            creatingSimpleDoc: false,
+	            creatingFolder: false,
+	            documentFolders: [],
+	            _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
             _entityName: '<%= (entity.name || "").replace(/'/g, "\\'") %>',
             _entityIcon: '<%= entity.icon || "solar:layers-bold-duotone" %>',
@@ -1635,40 +1644,165 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     console.error(err);
                     window.showMessage ? window.showMessage("Erreur lors de la création du modèle", 'danger') : alert("Erreur lors de la création du modèle");
                     this.creatingTemplate = false;
-                }
-            },
+	                }
+	            },
 
-            get templateSections() {
-                const sections = [...this.templates];
-                if (this.generatedDocs.some(d => d.isAgentDraft)) {
-                    sections.unshift({
-                        _id: '__agent_docs__',
-                        name: 'Documents IA',
-                        isAgentDocs: true
-                    });
-                }
-                return sections;
-            },
+	            async createSimpleFolder() {
+	                if (this.creatingFolder) return;
+	                const name = (prompt('Nom du dossier', 'Documents IA') || '').trim();
+	                if (!name) return;
+	                this.creatingFolder = true;
+	                try {
+	                    const res = await fetch(`/account/${this._accountNumber}/documents/api/folders`, {
+	                        method: 'POST',
+	                        headers: { 'Content-Type': 'application/json' },
+	                        credentials: 'include',
+	                        body: JSON.stringify({
+	                            name,
+	                            color: '#4361ee',
+	                            scope: 'record',
+	                            recordId: this._recordId,
+	                            entityId: this._entityId
+	                        })
+	                    });
+	                    const data = await res.json();
+	                    if (!res.ok || !data.success) throw new Error(data.error || 'Création impossible');
+	                    if (!this.documentFolders.some(folder => String(folder._id) === String(data.folder._id))) {
+	                        this.documentFolders.push(data.folder);
+	                    }
+	                    const sectionId = `__simple_folder_${data.folder._id}`;
+	                    if (!this.openTemplates.includes(sectionId)) this.openTemplates.unshift(sectionId);
+	                    if (window.showMessage) window.showMessage('Dossier créé', 'success');
+	                } catch (err) {
+	                    console.error('[DocsModule] Folder creation error:', err);
+	                    window.showMessage ? window.showMessage(err.message || 'Erreur dossier', 'danger') : alert(err.message || 'Erreur dossier');
+	                }
+	                this.creatingFolder = false;
+	            },
+
+	            async createSimpleDoc(folder = null) {
+	                if (this.creatingSimpleDoc) return;
+	                const name = (prompt('Nom du document', 'Nouveau document') || '').trim();
+	                if (!name) return;
+	                const folderName = folder?.name || 'Documents IA';
+	                const folderId = folder?.folderId || folder?._id || null;
+	                this.creatingSimpleDoc = true;
+	                try {
+	                    const docRes = await fetch(`/account/${this._accountNumber}/documents/api`, {
+	                        method: 'POST',
+	                        headers: { 'Content-Type': 'application/json' },
+	                        credentials: 'include',
+	                        body: JSON.stringify({
+	                            name,
+	                            isTemplate: false,
+	                            isDraft: true,
+	                            draftRecordId: this._recordId,
+	                            draftOutputName: name,
+	                            draftOutputFormat: 'pdf',
+	                            status: 'draft',
+	                            entityId: this._entityId,
+	                            folderId,
+	                            linkedRecords: [{
+	                                recordId: this._recordId,
+	                                recordTitle: this._recordTitle,
+	                                entityId: this._entityId,
+	                                entityName: this._entityName,
+	                                entityIcon: this._entityIcon,
+	                                entitySlug: this._entitySlug,
+	                                entityColor: this._entityColor,
+	                                alias: this._entitySlug
+	                            }],
+	                            metadata: {
+	                                docKind: 'simple',
+	                                simpleFolder: folderName,
+	                                createdFromRecordDocs: true
+	                            },
+	                            format: 'A4',
+	                            orientation: 'portrait',
+	                            dimensions: { width: 794, height: 1123 },
+	                            pages: [{
+	                                content: '<p><br></p>',
+	                                mode: 'edition',
+	                                elements: [],
+	                                rows: [],
+	                                background: { color: '#ffffff' },
+	                                order: 0
+	                            }]
+	                        })
+	                    });
+	                    const docData = await docRes.json();
+	                    if (!docData.success) throw new Error(docData.error || 'Création impossible');
+	                    window.location.href = `/account/${this._accountNumber}/documents/${docData.document._id}/edit-react`;
+	                } catch (err) {
+	                    console.error('[DocsModule] Simple doc creation error:', err);
+	                    window.showMessage ? window.showMessage(err.message || 'Erreur document', 'danger') : alert(err.message || 'Erreur document');
+	                    this.creatingSimpleDoc = false;
+	                }
+	            },
+
+	            get templateSections() {
+	                return [...this.simpleFolderSections, ...this.templates];
+	            },
+
+	            get simpleFolderSections() {
+	                const byKey = new Map();
+	                this.documentFolders.forEach(folder => {
+	                    const key = folder._id || folder.name;
+	                    byKey.set(String(key), {
+	                        _id: `__simple_folder_${key}`,
+	                        folderId: folder._id || '',
+	                        name: folder.name || 'Documents',
+	                        color: folder.color || '#4361ee',
+	                        isSimpleFolder: true,
+	                        isAgentDocs: true
+	                    });
+	                });
+	                this.generatedDocs.filter(d => this.isSimpleDoc(d)).forEach(doc => {
+	                    const folderId = doc.simpleFolderId || '';
+	                    const folderName = doc.simpleFolder || doc.generatedFromName || 'Documents IA';
+	                    const key = folderId || folderName;
+	                    if (!byKey.has(String(key))) {
+	                        byKey.set(String(key), {
+	                            _id: folderId ? `__simple_folder_${folderId}` : `__simple_folder_name_${folderName}`,
+	                            folderId,
+	                            name: folderName,
+	                            color: '#4361ee',
+	                            isSimpleFolder: true,
+	                            isAgentDocs: true
+	                        });
+	                    }
+	                });
+	                return Array.from(byKey.values());
+	            },
+
+	            isSimpleDoc(doc) {
+	                return Boolean(doc?.isSimpleDoc || doc?.isAgentDraft);
+	            },
 
             // Templates sorted by most recent generation (template with latest doc first)
-            get sortedTemplates() {
-                return [...this.templateSections].sort((a, b) => {
-                    if (a.isAgentDocs) return -1;
-                    if (b.isAgentDocs) return 1;
-                    const aDocs = this.getDocsForTemplate(a.name, a._id);
-                    const bDocs = this.getDocsForTemplate(b.name, b._id);
-                    const aDate = aDocs.length > 0 ? new Date(aDocs[0].uploadedAt) : new Date(0);
+	            get sortedTemplates() {
+	                return [...this.templateSections].sort((a, b) => {
+	                    if (a.isSimpleFolder && !b.isSimpleFolder) return -1;
+	                    if (b.isSimpleFolder && !a.isSimpleFolder) return 1;
+	                    const aDocs = this.getDocsForTemplate(a.name, a._id);
+	                    const bDocs = this.getDocsForTemplate(b.name, b._id);
+	                    const aDate = aDocs.length > 0 ? new Date(aDocs[0].uploadedAt) : new Date(0);
                     const bDate = bDocs.length > 0 ? new Date(bDocs[0].uploadedAt) : new Date(0);
                     return bDate - aDate;
                 });
             },
 
-            getDocsForTemplate(tplName, tplId = '') {
-                if (tplId === '__agent_docs__' || tplName === 'Documents IA') {
-                    return this.generatedDocs.filter(d => d.isAgentDraft);
-                }
-                return this.generatedDocs.filter(d => !d.isAgentDraft && d.generatedFromName === tplName);
-            },
+	            getDocsForTemplate(tplName, tplId = '') {
+	                const folder = this.simpleFolderSections.find(section => section._id === tplId);
+	                if (folder) {
+	                    return this.generatedDocs.filter(d => {
+	                        if (!this.isSimpleDoc(d)) return false;
+	                        if (folder.folderId) return d.simpleFolderId === folder.folderId;
+	                        return (d.simpleFolder || d.generatedFromName || 'Documents IA') === folder.name;
+	                    });
+	                }
+	                return this.generatedDocs.filter(d => !this.isSimpleDoc(d) && d.generatedFromName === tplName);
+	            },
 
             getVisibleDocs(tplName, tplId) {
                 const all = this.getDocsForTemplate(tplName, tplId);
@@ -1711,11 +1845,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments`, {
                         credentials: 'include'
                     });
-                    const data = await res.json();
-                    if (data.success && data.attachments) {
-                        this.generatedDocs = data.attachments
-                            .filter(a => a.isGenerated)
-                            .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+	                    const data = await res.json();
+	                    if (data.success && data.attachments) {
+	                        this.documentFolders = data.documentFolders || [];
+	                        this.generatedDocs = data.attachments
+	                            .filter(a => a.isGenerated)
+	                            .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
                     }
                 } catch (e) {
                     console.error('[DocsModule] Load generated docs error:', e);
@@ -2233,14 +2368,22 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         <% if (moduleName === 'docs') { %>
         <div x-data="docsModule" x-cloak>
             
-            <div class="rm-toolbar" style="margin-bottom: 16px;">
-                <div class="rm-search">
-                    <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
-                    <input type="text" placeholder="Rechercher un modèle...">
-                </div>
-                <button type="button" @click="createRecordTemplate()" :disabled="creatingTemplate" class="rm-btn-primary" style="background:linear-gradient(135deg, #f59e0b, #f59e0bdd); border:none; box-shadow:0 2px 8px rgba(245, 158, 11, 0.25);">
-                    <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="16"></iconify-icon>
-                    <span x-text="creatingTemplate ? 'Création...' : 'Nouveau template'"></span>
+	            <div class="rm-toolbar" style="margin-bottom: 16px;">
+	                <div class="rm-search">
+	                    <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
+	                    <input type="text" placeholder="Rechercher un document...">
+	                </div>
+	                <button type="button" @click="createSimpleFolder()" :disabled="creatingFolder" class="rm-btn-secondary">
+	                    <iconify-icon :icon="creatingFolder ? 'line-md:loading-twotone-loop' : 'solar:folder-add-bold-duotone'" width="16"></iconify-icon>
+	                    <span x-text="creatingFolder ? 'Création...' : 'Nouveau dossier'"></span>
+	                </button>
+	                <button type="button" @click="createSimpleDoc()" :disabled="creatingSimpleDoc" class="rm-btn-primary">
+	                    <iconify-icon :icon="creatingSimpleDoc ? 'line-md:loading-twotone-loop' : 'solar:document-add-bold-duotone'" width="16"></iconify-icon>
+	                    <span x-text="creatingSimpleDoc ? 'Création...' : 'Nouveau doc'"></span>
+	                </button>
+	                <button type="button" @click="createRecordTemplate()" :disabled="creatingTemplate" class="rm-btn-primary" style="background:linear-gradient(135deg, #f59e0b, #f59e0bdd); border:none; box-shadow:0 2px 8px rgba(245, 158, 11, 0.25);">
+	                    <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="16"></iconify-icon>
+	                    <span x-text="creatingTemplate ? 'Création...' : 'Nouveau template'"></span>
                 </button>
             </div>
 
@@ -2264,22 +2407,27 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         <!-- Template header row -->
                         <div class="rm-item" style="cursor:pointer; border-bottom:none; margin-bottom:0;"
                              @click="toggleTemplate(tpl._id)">
-                            <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;">
-                                <iconify-icon icon="solar:file-text-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
-                                <iconify-icon icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
-                            </div>
+	                            <div class="rm-item-icon" :style="tpl.isSimpleFolder ? 'background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;' : 'background:linear-gradient(135deg,#f59e0b15,#f59e0b08); position:relative;'">
+	                                <iconify-icon :icon="tpl.isSimpleFolder ? 'solar:folder-with-files-bold-duotone' : 'solar:file-text-bold-duotone'" width="20" :style="'color:' + (tpl.isSimpleFolder ? '#4361ee' : '#f59e0b')"></iconify-icon>
+	                                <iconify-icon x-show="!tpl.isSimpleFolder" icon="solar:magic-stick-3-bold" width="9" style="color:#f59e0b; position:absolute; bottom:0; right:0;"></iconify-icon>
+	                            </div>
                             <div class="rm-item-body" style="min-width:0;">
                                 <div class="rm-item-title" x-text="tpl.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                                 <div class="rm-item-date" style="color:#94a3b8;">
                                     <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
-                                    <span x-text="getDocsForTemplate(tpl.name, tpl._id).length + (tpl.isAgentDocs ? ' brouillon(s)' : ' document(s) généré(s)')"></span>
+	                                    <span x-text="getDocsForTemplate(tpl.name, tpl._id).length + (tpl.isSimpleFolder ? ' doc(s)' : ' document(s) généré(s)')"></span>
                                     <template x-if="getDocsForTemplate(tpl.name, tpl._id).length > 0">
                                         <span style="margin-left:4px;">· <span x-text="formatDate(getDocsForTemplate(tpl.name, tpl._id)[0]?.uploadedAt)" style="color:#10b981;font-weight:500;"></span></span>
                                     </template>
                                 </div>
                             </div>
-                            <button x-show="!tpl.isAgentDocs" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
-                                class="rm-docs-generate-btn" style="flex-shrink:0;">
+	                            <button x-show="tpl.isSimpleFolder" @click.stop="createSimpleDoc(tpl)" :disabled="creatingSimpleDoc"
+	                                class="rm-docs-generate-btn" style="flex-shrink:0;background:#eef2ff;color:#4361ee;">
+	                                <iconify-icon :icon="creatingSimpleDoc ? 'line-md:loading-twotone-loop' : 'solar:document-add-bold-duotone'" width="12"></iconify-icon>
+	                                <span x-text="creatingSimpleDoc ? 'Création...' : 'Nouveau doc'"></span>
+	                            </button>
+	                            <button x-show="!tpl.isSimpleFolder" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
+	                                class="rm-docs-generate-btn" style="flex-shrink:0;">
                                 <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
                                 <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
                             </button>
@@ -2289,11 +2437,11 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         </div>
                         <!-- Expanded: generated files for this template -->
                         <div x-show="openTemplates.includes(tpl._id)" x-transition.duration.200ms>
-                            <template x-if="getDocsForTemplate(tpl.name, tpl._id).length === 0">
-                                <div style="padding:12px 16px 16px 56px; font-size:11px; color:#94a3b8; font-style:italic;">
-                                    Aucun document généré pour ce modèle
-                                </div>
-                            </template>
+	                            <template x-if="getDocsForTemplate(tpl.name, tpl._id).length === 0">
+	                                <div style="padding:12px 16px 16px 56px; font-size:11px; color:#94a3b8; font-style:italic;">
+	                                    <span x-text="tpl.isSimpleFolder ? 'Aucun document dans ce dossier' : 'Aucun document généré pour ce modèle'"></span>
+	                                </div>
+	                            </template>
                             <template x-for="(doc, dIdx) in getVisibleDocs(tpl.name, tpl._id)" :key="doc._id || dIdx">
                                 <div class="docs-tpl-file"
                                      @contextmenu.prevent.stop="openDocContext($event, doc)"

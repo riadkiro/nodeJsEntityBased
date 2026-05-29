@@ -4559,7 +4559,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Tools autorisés:",
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
-        "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation? }. Crée un document brouillon lié à la fiche.",
+        "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append.",
         "- generate_doc: { templateId, variables, outputName? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
@@ -4575,7 +4575,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"..."}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"...","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -5162,8 +5162,10 @@ async function applyAgentAction(req, record, entity, action) {
         const format = action.input?.format || 'A4';
         const orientation = action.input?.orientation || 'portrait';
         const dimensions = agentDefaultDocDimensions(format, orientation);
+        const simpleFolder = String(action.input?.folder || '').trim() || 'Documents IA';
+        const docName = action.input?.name || 'Document IA';
         const document = await Document.create({
-            name: action.input?.name || 'Document IA',
+            name: docName,
             format,
             orientation,
             dimensions,
@@ -5180,9 +5182,13 @@ async function applyAgentAction(req, record, entity, action) {
             isTemplate: false,
             isDraft: true,
             draftRecordId: record._id,
+            draftOutputName: docName,
+            draftOutputFormat: 'pdf',
             status: 'draft',
             linkedRecords: [agentLinkedRecordPayload(record, entity)],
             metadata: {
+                docKind: 'simple',
+                simpleFolder,
                 createdByAgent: true,
                 agentTool: action.tool,
                 agentActionId: action.id

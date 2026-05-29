@@ -38,7 +38,14 @@ router.get('/', async (req, res) => {
         // Fetch user-created folders
         let folders = [];
         if (DocumentFolder) {
-            folders = await DocumentFolder.find({ createdBy: req.user._id })
+            folders = await DocumentFolder.find({
+                createdBy: req.user._id,
+                $or: [
+                    { scope: 'global' },
+                    { scope: { $exists: false } },
+                    { recordId: null }
+                ]
+            })
                 .sort({ order: 1 })
                 .lean();
         }
@@ -878,16 +885,34 @@ router.post('/api/folders', async (req, res) => {
             return res.status(500).json({ success: false, error: 'DB error' });
         }
 
-        const { name, color } = req.body;
+        const { name, color, scope, recordId, entityId } = req.body;
         if (!name || !name.trim()) {
             return res.status(400).json({ success: false, error: 'Nom requis' });
         }
 
-        const count = await DocumentFolder.countDocuments({ createdBy: req.user._id });
+        const folderScope = scope === 'record' && recordId ? 'record' : 'global';
+        const folderQuery = {
+            createdBy: req.user._id,
+            scope: folderScope,
+            recordId: folderScope === 'record' ? recordId : null
+        };
+
+        const existingFolder = await DocumentFolder.findOne({
+            ...folderQuery,
+            name: name.trim()
+        });
+        if (existingFolder) {
+            return res.json({ success: true, folder: existingFolder });
+        }
+
+        const count = await DocumentFolder.countDocuments(folderQuery);
         const folder = await DocumentFolder.create({
             name: name.trim(),
             color: color || '#e2a03f',
             createdBy: req.user._id,
+            scope: folderScope,
+            recordId: folderScope === 'record' ? recordId : null,
+            entityId: folderScope === 'record' ? (entityId || null) : null,
             order: count
         });
 

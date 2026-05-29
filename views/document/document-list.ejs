@@ -18,10 +18,17 @@
     <!-- Tabs (pixel-perfect from record module) -->
     <div class="rm-toolbar" style="flex-direction:column; gap:0; padding-bottom:0;">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:0 6px;">
-        <div style="display:flex; align-items:center; gap:0; border-bottom:2px solid #f1f3f5; flex:1;">
-          <button @click="activeSection = 'templates'"
-                  :class="activeSection === 'templates' ? 'rm-docs-tab--active' : ''"
-                  class="rm-docs-tab">
+	        <div style="display:flex; align-items:center; gap:0; border-bottom:2px solid #f1f3f5; flex:1;">
+	          <button @click="activeSection = 'docs'"
+	                  :class="activeSection === 'docs' ? 'rm-docs-tab--active' : ''"
+	                  class="rm-docs-tab">
+	            <iconify-icon icon="solar:document-bold-duotone" width="15"></iconify-icon>
+	            Docs
+	            <span class="rm-docs-tab-count" x-text="documents.length" x-show="documents.length > 0"></span>
+	          </button>
+	          <button @click="activeSection = 'templates'"
+	                  :class="activeSection === 'templates' ? 'rm-docs-tab--active' : ''"
+	                  class="rm-docs-tab">
             <iconify-icon icon="solar:file-text-bold-duotone" width="15"></iconify-icon>
             Templates
             <span class="rm-docs-tab-count" x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
@@ -43,8 +50,59 @@
 
 
 
-    <!-- Templates list -->
-    <template x-if="activeSection === 'templates'">
+	    <!-- Editable documents list -->
+	    <template x-if="activeSection === 'docs'">
+	      <div class="rm-items-list" style="padding:12px 16px;">
+	        <div x-show="filteredDocs().length === 0 && !searchQuery" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+	          <iconify-icon icon="solar:document-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
+	          <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun document</p>
+	          <p style="font-size:11px; margin-top:4px;">Créez un document simple ou générez un document depuis un template</p>
+	          <a href="/account/<%= account_number %>/documents/new" class="rm-docs-generate-btn" style="margin:12px auto 0;">
+	            <iconify-icon icon="solar:add-circle-bold" width="13"></iconify-icon>
+	            Créer
+	          </a>
+	        </div>
+	        <div x-show="filteredDocs().length === 0 && searchQuery" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+	          <iconify-icon icon="solar:magnifer-broken" width="28" style="opacity:0.4"></iconify-icon>
+	          <p style="font-size:12px; margin-top:8px;">Aucun résultat pour "<span x-text="searchQuery" style="font-weight:600"></span>"</p>
+	        </div>
+	        <template x-for="(doc, idx) in filteredDocs()" :key="doc._id">
+	          <div class="rm-item" :style="'animation-delay:' + (idx * 50) + 'ms'" style="cursor:pointer;"
+	               @click="window.location.href = '/account/<%= account_number %>/documents/' + doc._id + '/edit-react'">
+	            <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08)">
+	              <iconify-icon icon="solar:document-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
+	            </div>
+	            <div class="rm-item-body">
+	              <div class="rm-item-title" x-text="doc.name || 'Sans titre'"></div>
+	              <div class="rm-item-date">
+	                <iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon>
+	                <span x-text="formatRelativeDate(doc.updatedAt || doc.createdAt)"></span>
+	                <template x-if="doc.isDraft">
+	                  <span style="margin-left:6px; color:#4361ee; font-weight:600;">Brouillon</span>
+	                </template>
+	                <template x-if="doc._relations && doc._relations.length > 0">
+	                  <span style="display:inline-flex;align-items:center;gap:4px;">
+	                    <span style="margin-left:6px; color:#94a3b8;">·</span>
+	                    <iconify-icon :icon="doc._relations[0].icon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (doc._relations[0].color || '#94a3b8')"></iconify-icon>
+	                    <span x-text="doc._relations[0].name" :style="'color:' + (doc._relations[0].color || '#4361ee') + '; font-weight:500;'"></span>
+	                  </span>
+	                </template>
+	              </div>
+	            </div>
+	            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'"
+	               class="rm-item-action" @click.stop title="Modifier" style="color:#4361ee;">
+	              <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+	            </a>
+	            <button @click.stop="confirmDelete(doc)" class="rm-item-action" title="Supprimer" style="color:#e74c3c;">
+	              <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16"></iconify-icon>
+	            </button>
+	          </div>
+	        </template>
+	      </div>
+	    </template>
+
+	    <!-- Templates list -->
+	    <template x-if="activeSection === 'templates'">
       <div class="rm-items-list" style="padding:12px 16px;">
         <!-- Empty state -->
         <div x-show="filteredTemplateDocs().length === 0 && !searchQuery" style="text-align:center; padding:40px 20px; color:#94a3b8;">
@@ -727,7 +785,7 @@ document.addEventListener('alpine:init', () => {
     generatedDocs: <%- JSON.stringify(generatedDocs || []) %>,
     uploadedDocs: <%- JSON.stringify(uploadedDocs || []) %>,
     searchQuery: '',
-    activeSection: 'templates',
+	    activeSection: 'docs',
     viewMode: 'table',
     showTemplateModal: false,
     templates: [],

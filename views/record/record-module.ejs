@@ -1924,9 +1924,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                return Array.from(byKey.values());
 	            },
 
-	            isSimpleDoc(doc) {
-	                return Boolean(doc?.isSimpleDoc || doc?.isAgentDraft);
-	            },
+		            isSimpleDoc(doc) {
+		                return Boolean(doc?.isSimpleDoc);
+		            },
 
 	            // Templates sorted by most recent generation (template with latest doc first)
 	            get sortedTemplates() {
@@ -2008,9 +2008,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             async loadGeneratedDocs() {
                 this.loading = true;
                 try {
-                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments`, {
-                        credentials: 'include'
-                    });
+	                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments?includeDrafts=true`, {
+	                        credentials: 'include'
+	                    });
 	                    const data = await res.json();
 	                    if (data.success && data.attachments) {
 	                        this.documentFolders = data.documentFolders || [];
@@ -2493,11 +2493,14 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 
 	            async deleteDocNow(doc, options = {}) {
 	                try {
-	                    const res = await fetch(doc.isAgentDraft
-	                        ? `/account/${this._accountNumber}/documents/api/${doc._id}`
-	                        : `/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
-                        method: 'DELETE', credentials: 'include'
-                    });
+		                    const deleteUrl = doc.isTemplateDraft
+		                        ? `/account/${this._accountNumber}/api/smartdoc/draft/${doc._id}`
+		                        : (doc.isAgentDraft
+		                            ? `/account/${this._accountNumber}/documents/api/${doc._id}`
+		                            : `/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`);
+		                    const res = await fetch(deleteUrl, {
+	                        method: 'DELETE', credentials: 'include'
+	                    });
                     const data = await res.json();
 	                    if (data.success) {
 	                        const idx = this.generatedDocs.findIndex(d => d._id === doc._id);

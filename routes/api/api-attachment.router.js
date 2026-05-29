@@ -720,8 +720,10 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             return Boolean(doc.metadata?.createdByAgent && !doc.draftSourceTemplateId && !doc.generatedFrom?.smartDocId);
         };
 
+        const includeTemplateDrafts = ['1', 'true', 'yes'].includes(String(req.query.includeDrafts || req.query.includeTemplateDrafts || '').toLowerCase());
         let enrichedAttachments = await enrichAttachmentsWithRagStatus(req, attachments);
         let agentDocuments = [];
+        let templateDraftDocuments = [];
 
         if (Document) {
             const snapshotIds = enrichedAttachments
@@ -800,11 +802,83 @@ router.get('/records/:recordId/attachments', async (req, res) => {
                     uploadedBy: null
                 };
             });
+
+            if (includeTemplateDrafts) {
+                let templateNameById = new Map();
+                try {
+                    const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+                    if (SmartDocTemplate) {
+                        const draftTemplateIds = await Document.distinct('draftSourceTemplateId', {
+                            isTemplate: false,
+                            isDraft: true,
+                            isGenerationSnapshot: { $ne: true },
+                            draftSourceTemplateId: { $exists: true, $ne: null },
+                            $or: [
+                                { draftRecordId: record._id },
+                                { 'linkedRecords.recordId': record._id }
+                            ]
+                        });
+                        const templates = draftTemplateIds.length
+                            ? await SmartDocTemplate.find({ _id: { $in: draftTemplateIds } })
+                                .select('_id name documentId')
+                                .lean()
+                            : [];
+                        templateNameById = new Map(templates.map(template => [cleanId(template._id), template.name || 'Template']));
+                    }
+                } catch (templateError) {
+                    console.warn('[Attachment] Could not enrich template draft names:', templateError.message);
+                }
+
+                const templateDrafts = await Document.find({
+                    isTemplate: false,
+                    isDraft: true,
+                    isGenerationSnapshot: { $ne: true },
+                    draftSourceTemplateId: { $exists: true, $ne: null },
+                    $or: [
+                        { draftRecordId: record._id },
+                        { 'linkedRecords.recordId': record._id }
+                    ]
+                })
+                    .select('_id name status createdAt updatedAt generatedFrom draftSourceTemplateId draftOutputFormat')
+                    .sort({ updatedAt: -1 })
+                    .limit(80)
+                    .lean();
+
+                templateDraftDocuments = templateDrafts.map(doc => {
+                    const smartDocId = cleanId(doc.generatedFrom?.smartDocId || doc.draftSourceTemplateId);
+                    const templateName = doc.generatedFrom?.templateName || templateNameById.get(smartDocId) || 'Template';
+                    return {
+                        _id: doc._id,
+                        filename: '',
+                        originalName: doc.name || `Brouillon ${templateName}`,
+                        mimeType: 'application/x-dexio-document',
+                        size: 0,
+                        sizeFormatted: 'Brouillon',
+                        category: 'document',
+                        folder: '',
+                        isGenerated: true,
+                        isAgentDraft: true,
+                        isTemplateDraft: true,
+                        isSimpleDoc: false,
+                        generatedFrom: {
+                            ...(doc.generatedFrom || {}),
+                            smartDocId
+                        },
+                        generatedFromName: templateName,
+                        generatedFromDocumentId: doc.generatedFrom?.templateId || null,
+                        snapshotDocumentId: doc._id,
+                        url: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
+                        editUrl: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
+                        uploadedAt: doc.updatedAt || doc.createdAt,
+                        uploadedBy: null
+                    };
+                });
+            }
         }
 
         res.json({
             success: true,
-            attachments: [...agentDocuments, ...enrichedAttachments],
+            attachments: [...agentDocuments, ...templateDraftDocuments, ...enrichedAttachments],
             driveFolders: record.driveFolders || [],
             documentFolders: documentFolders.map(folder => ({
                 _id: folder._id,

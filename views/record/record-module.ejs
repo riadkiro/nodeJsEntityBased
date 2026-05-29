@@ -1709,15 +1709,27 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                return data.folder;
 	            },
 
+	            nextSimpleDocName() {
+	                const baseName = 'Nouveau document';
+	                const existingNames = new Set(
+	                    this.generatedDocs
+	                        .map(doc => String(doc.originalName || doc.name || '').replace(/\.pdf$/i, '').trim().toLowerCase())
+	                        .filter(Boolean)
+	                );
+	                if (!existingNames.has(baseName.toLowerCase())) return baseName;
+	                let index = 2;
+	                while (existingNames.has(`${baseName} ${index}`.toLowerCase())) index += 1;
+	                return `${baseName} ${index}`;
+	            },
+
 	            async createSimpleDoc(folder = null) {
 	                if (this.creatingSimpleDoc) return;
-	                const name = (prompt('Nom du document', 'Nouveau document') || '').trim();
-	                if (!name) return;
 	                this.creatingSimpleDoc = true;
 	                try {
 	                    const targetFolder = folder || await this.ensureSimpleFolder('Documents IA');
 	                    const folderName = targetFolder?.name || 'Documents IA';
 	                    const folderId = targetFolder?.folderId || targetFolder?._id || null;
+	                    const name = this.nextSimpleDocName();
 	                    const docRes = await fetch(`/account/${this._accountNumber}/documents/api`, {
 	                        method: 'POST',
 	                        headers: { 'Content-Type': 'application/json' },

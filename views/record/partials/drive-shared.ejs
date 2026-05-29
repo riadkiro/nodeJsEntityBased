@@ -1381,7 +1381,10 @@ document.addEventListener('alpine:init', () => {
 
         async deleteFile(file) {
             if (!file._id) {
-                window.showMessage ? window.showMessage('Ce fichier ne peut pas être supprimé (ID manquant).', 'danger') : alert('Ce fichier ne peut pas être supprimé (ID manquant). Rechargez la page.');
+                const message = 'Liste des fichiers resynchronisée. Réessayez la suppression.';
+                if (window.showMessage) window.showMessage(message, 'warning');
+                else console.warn('[Drive]', message);
+                await this.loadFiles();
                 return;
             }
             if (this.confirmDeleteFileId !== file._id) {
@@ -1394,18 +1397,24 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${file._id}`, {
                     method: 'DELETE', credentials: 'include'
                 });
-                const data = await res.json();
+                let data = {};
+                try { data = await res.json(); } catch (_) { data = {}; }
                 if (data.success) {
                     const idx = this.allFiles.findIndex(f => f._id === file._id);
                     if (idx !== -1) this.allFiles.splice(idx, 1);
                     this.selectedIds = this.selectedIds.filter(id => id !== file._id);
                     if (window.showMessage) window.showMessage('Fichier supprimé', 'success');
                 } else {
-                    window.showMessage ? window.showMessage(data.error || 'Erreur lors de la suppression', 'danger') : alert(data.error || 'Erreur lors de la suppression');
+                    const message = res.status === 404
+                        ? 'Document resynchronisé. Réessayez la suppression.'
+                        : (data.error || 'Erreur lors de la suppression');
+                    if (res.status === 404) await this.loadFiles();
+                    if (window.showMessage) window.showMessage(message, res.status === 404 ? 'warning' : 'danger');
+                    else console.warn('[Drive]', message);
                 }
             } catch (e) {
                 console.error('[Drive] Delete error:', e);
-                window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
+                if (window.showMessage) window.showMessage('Erreur réseau', 'danger');
             }
         },
 

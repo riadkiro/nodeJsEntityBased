@@ -24,6 +24,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
 const {
     sanitizeUploadedFilename,
@@ -113,6 +114,47 @@ function attachmentRagStatusPayload(document, canonicalDocument = null, fallback
         ragConfigHash: document.ragConfigHash || fallback.ragConfigHash || '',
         sourceCache: Boolean(fallback.sourceCache)
     };
+}
+
+async function ensureAttachmentIdsPersisted(Record, record) {
+    if (!Record?.collection || !record?._id || !Array.isArray(record.attachments) || record.attachments.length === 0) {
+        return false;
+    }
+
+    const raw = await Record.collection.findOne(
+        { _id: record._id },
+        { projection: { attachments: 1 } }
+    );
+    const rawAttachments = Array.isArray(raw?.attachments) ? raw.attachments : [];
+    const missingIdIndexes = rawAttachments
+        .map((attachment, index) => (!attachment?._id ? index : -1))
+        .filter(index => index >= 0);
+
+    if (!missingIdIndexes.length) return false;
+
+    const nextAttachments = rawAttachments.map((attachment, index) => {
+        if (attachment?._id) return attachment;
+        const hydratedId = record.attachments[index]?._id;
+        return {
+            ...attachment,
+            _id: hydratedId && mongoose.Types.ObjectId.isValid(cleanId(hydratedId))
+                ? hydratedId
+                : new mongoose.Types.ObjectId()
+        };
+    });
+
+    await Record.collection.updateOne(
+        { _id: record._id },
+        { $set: { attachments: nextAttachments } }
+    );
+
+    nextAttachments.forEach((attachment, index) => {
+        if (record.attachments[index]) {
+            record.attachments[index]._id = attachment._id;
+        }
+    });
+
+    return true;
 }
 
 async function enrichAttachmentsWithRagStatus(req, attachments = []) {
@@ -478,6 +520,8 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
             return res.status(404).json({ error: 'Record introuvable' });
         }
 
+        await ensureAttachmentIdsPersisted(Record, record);
+
         const attachment = record.attachments?.id(req.params.attachmentId);
         if (!attachment) {
             return res.status(404).json({ error: 'Attachement introuvable' });
@@ -506,7 +550,6 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
         }
 
         // Remove from record using updateOne to bypass schema validations
-        const mongoose = require('mongoose');
         if (!mongoose.Types.ObjectId.isValid(req.params.attachmentId)) {
             return res.status(400).json({ error: 'ID de document invalide' });
         }
@@ -537,7 +580,8 @@ router.post('/records/:recordId/attachments/bulk-delete', async (req, res) => {
         const record = await Record.findById(req.params.recordId).select('attachments');
         if (!record) return res.status(404).json({ error: 'Record introuvable' });
 
-        const mongoose = require('mongoose');
+        await ensureAttachmentIdsPersisted(Record, record);
+
         const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
 
         // Delete physical files
@@ -618,6 +662,8 @@ router.get('/records/:recordId/attachments', async (req, res) => {
         if (!record) {
             return res.status(404).json({ error: 'Record introuvable' });
         }
+
+        await ensureAttachmentIdsPersisted(Record, record);
 
         const attachments = (record.attachments || [])
         .filter(att => !att.isDataRoomOnly)

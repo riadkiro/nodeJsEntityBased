@@ -3640,6 +3640,126 @@ function agentResolveTemplateRef(input = {}, lookup = {}) {
     return id ? { id, name: input.templateName || input.name || 'Template' } : null;
 }
 
+function agentGoalMentionsDocumentSource(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text) return false;
+    const templateReferenceOnly = /\b(a partir|depuis|selon)\b.*\b(template|modele|smartdoc)\b/.test(text)
+        && !/\b(doc|document|pdf|fichier|piece jointe|ocr|image|photo|cahier des charges|csc|dce)\b/.test(text);
+    if (templateReferenceOnly) return false;
+    return [
+        /\b(analyse|analyser|resume|resumer|synthese|synthetise|extrais|extraire|extrait|extraits)\b/,
+        /\b(cherche|trouve|identifie|verifie|controle|compare|audit|explique)\b/,
+        /\b(a partir|depuis|selon|d apres|sur la base|avec le contexte|dans le contexte)\b/,
+        /\b(du doc|du document|du pdf|du fichier|des docs|des documents|piece jointe|pieces jointes|ocr|image|photo)\b/,
+        /\b(cahier des charges|csc|dce|appel d offre|chapitre|page|pages|annexe|lot|lots)\b/
+    ].some(pattern => pattern.test(text));
+}
+
+function agentGoalLooksTemplateGeneration(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text || agentGoalMentionsDocumentSource(text)) return false;
+
+    const generationVerb = /\b(genere|generer|generez|cree|creer|creez|prepare|preparer|preparez|produis|produire|sort|sors|faire|fais|edite|editer)\b/.test(text);
+    const templateTarget = /\b(facture|devis|contrat|attestation|bon de commande|commande|offre|proposition|document|doc|pdf|modele|template|smartdoc)\b/.test(text);
+    const typedDocumentTarget = /\b(facture|devis|contrat|attestation|bon de commande|commande|offre|proposition|modele|template|smartdoc)\b/.test(text);
+    const demoFreeDocument = /\b(demo|demonstration|lorem|ipsum|exemple|placeholder|fictif|fictive)\b/.test(text) && !typedDocumentTarget;
+    if (demoFreeDocument) return false;
+    return generationVerb && templateTarget;
+}
+
+function agentTemplateGoalScore(goal, template = {}) {
+    const goalText = normalizeSearchText(goal);
+    const templateText = normalizeSearchText(`${template.name || ''} ${template.description || ''}`);
+    if (!goalText || !templateText) return 0;
+
+    let score = 0;
+    const goalTokens = new Set(tokenizeSearch(goalText));
+    const templateTokens = new Set(tokenizeSearch(templateText));
+    goalTokens.forEach(token => {
+        if (templateTokens.has(token)) score += 12;
+        else if (templateText.includes(token)) score += 5;
+    });
+
+    const exactName = normalizeSearchText(template.name || '');
+    if (exactName && goalText.includes(exactName)) score += 90;
+
+    const semanticPairs = [
+        [/(\bfacture\b|\binvoice\b|\bbill\b)/, /(\bfacture\b|\binvoice\b|\bbill\b)/],
+        [/(\bdevis\b|\boffre\b|\bproposition\b|\bquotation\b)/, /(\bdevis\b|\boffre\b|\bproposition\b|\bquotation\b)/],
+        [/(\bcontrat\b|\bconvention\b|\bagreement\b)/, /(\bcontrat\b|\bconvention\b|\bagreement\b)/],
+        [/(\battestation\b|\bcertificat\b|\bcertificate\b)/, /(\battestation\b|\bcertificat\b|\bcertificate\b)/],
+        [/(\bbon de commande\b|\bcommande\b|\border\b)/, /(\bbon de commande\b|\bcommande\b|\border\b)/]
+    ];
+    semanticPairs.forEach(([goalPattern, templatePattern]) => {
+        if (goalPattern.test(goalText) && templatePattern.test(templateText)) score += 70;
+    });
+
+    return score;
+}
+
+function agentBestTemplateForGoal(goal, toolCatalog = {}) {
+    if (!agentGoalLooksTemplateGeneration(goal)) return null;
+    const templates = Array.isArray(toolCatalog.templates) ? toolCatalog.templates : [];
+    if (!templates.length) return null;
+
+    const ranked = templates
+        .map(template => ({ template, score: agentTemplateGoalScore(goal, template) }))
+        .sort((a, b) => b.score - a.score);
+    const best = ranked[0];
+    if (!best) return null;
+
+    const genericTemplateMention = /\b(template|modele|smartdoc)\b/.test(normalizeSearchText(goal));
+    if (best.score >= 35 || (genericTemplateMention && templates.length === 1 && best.score >= 8)) {
+        return best.template;
+    }
+    return null;
+}
+
+function agentEnsureTemplateGenerationActions(actions = [], goal = '', parsed = {}, toolCatalog = {}) {
+    if ((actions || []).some(action => action.tool === 'generate_doc')) return actions;
+
+    const template = agentBestTemplateForGoal(goal, toolCatalog);
+    if (!template?.id) return actions;
+
+    const createDocIndex = (actions || []).findIndex(action => action.tool === 'create_doc');
+    const sourceAction = createDocIndex >= 0 ? actions[createDocIndex] : null;
+    const outputName = agentSafeString(
+        sourceAction?.input?.name || parsed?.outputName || '',
+        180
+    );
+    const forcedAction = {
+        id: sourceAction?.id || `act_${crypto.randomBytes(6).toString('hex')}`,
+        tool: 'generate_doc',
+        title: sourceAction?.title || `Générer ${template.name || 'le document'}`,
+        description: agentSafeString(
+            sourceAction?.description || `Utiliser le template "${template.name || 'SmartDoc'}" disponible pour cette fiche.`,
+            500
+        ),
+        status: 'proposed',
+        input: {
+            templateId: cleanId(template.id),
+            templateName: template.name || '',
+            variables: {},
+            outputName,
+            outputMode: 'draft'
+        },
+        preview: {
+            title: outputName || template.name || 'Template',
+            excerpt: 'Variables auto depuis la fiche et le template',
+            meta: 'Template SmartDoc'
+        },
+        diff: null
+    };
+
+    if (createDocIndex >= 0) {
+        const nextActions = [...actions];
+        nextActions[createDocIndex] = forcedAction;
+        return nextActions.slice(0, 10);
+    }
+
+    return [forcedAction, ...(actions || [])].slice(0, 10);
+}
+
 function agentResolveTaskRef(input = {}, lookup = {}) {
     const id = cleanId(input.taskId || input.id || input.targetId);
     if (id && lookup.taskById?.has(id)) return lookup.taskById.get(id);
@@ -4161,6 +4281,7 @@ function agentGoalHasContextKeyword(goal) {
 function agentGoalNeedsFullContext(goal) {
     const text = normalizeSearchText(goal);
     if (!text || agentGoalLooksStandalone(text)) return false;
+    if (agentGoalLooksTemplateGeneration(text)) return false;
 
     return agentGoalHasContextKeyword(text);
 }
@@ -4182,6 +4303,7 @@ function agentGoalLooksStandalone(goal) {
 function agentGoalShouldUseDocuments(goal) {
     const text = normalizeSearchText(goal);
     if (!text || agentGoalLooksStandalone(text)) return false;
+    if (agentGoalLooksTemplateGeneration(text)) return false;
 
     return [
         /\b(document|documents|doc|docs|pdf|fichier|fichiers|image|photo|ocr|piece jointe|pieces jointes)\b/,
@@ -4561,7 +4683,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
         "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append.",
-        "- generate_doc: { templateId, variables, outputName? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue.",
+        "- generate_doc: { templateId, variables, outputName? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
         "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
@@ -4569,6 +4691,9 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- update_event: { eventId, fields }. fields peut contenir title, date, endDate, duration, type, lieu, notes, status. Utilise eventId depuis le catalogue.",
         "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
         "Pour modifier une note, un document, un événement ou générer depuis un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
+        "Quand l'utilisateur demande de générer un document (facture, devis, contrat, attestation, offre...) et qu'un template du catalogue correspond, choisis toujours generate_doc avant create_doc.",
+        "Pour generate_doc, laisse variables vide sauf si l'utilisateur fournit clairement des valeurs; les variables manquantes seront remplies automatiquement par le template, la fiche et les valeurs par défaut.",
+        "N'utilise create_doc que pour un document libre sans template pertinent.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
         "Réponse compacte obligatoire: summary <= 400 caractères, plan <= 4 étapes, actions <= 10.",
@@ -4935,27 +5060,140 @@ function agentCloneWithoutMongoIds(value) {
     return output;
 }
 
-function agentTemplateContext(record = {}, entity = {}, template = {}, variables = {}, user = {}) {
+function agentTemplateFormatDate(value, mode = 'full') {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    if (mode === 'month') {
+        return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    }
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function agentTemplateValueToString(value) {
+    if (value === undefined || value === null) return '';
+    if (value instanceof Date) return agentTemplateFormatDate(value);
+    if (Array.isArray(value)) return value.map(agentTemplateValueToString).filter(Boolean).join(', ');
+    if (typeof value !== 'object') return String(value);
+    if (value.computedTitle) return String(value.computedTitle);
+    if (value.title) return String(value.title);
+    if (value.name) return String(value.name);
+    return JSON.stringify(value);
+}
+
+function agentTemplateCustomFields(record = {}, entity = {}) {
+    const result = {};
+    const fieldDefs = Array.isArray(entity?.customFields) ? entity.customFields : [];
+    const fields = record.customFields;
+
+    if (Array.isArray(fields)) {
+        fields.forEach(item => {
+            const fieldId = cleanId(item?.field_id?._id || item?.field_id);
+            if (!fieldId) return;
+            const fieldDef = fieldDefs.find(field => cleanId(field?._id) === fieldId);
+            const rawValue = item?.value !== undefined && item?.value !== null ? item.value : '';
+            const value = fieldDef?.type === 'date' && rawValue
+                ? agentTemplateFormatDate(rawValue)
+                : agentTemplateValueToString(rawValue);
+            const fieldName = fieldDef?.name || fieldDef?.label || '';
+            if (fieldName) result[fieldName] = value;
+            result[`cf_${fieldId}`] = value;
+        });
+        return result;
+    }
+
+    if (fields && typeof fields === 'object') {
+        const entries = fields instanceof Map ? Object.fromEntries(fields) : fields;
+        fieldDefs.forEach(fieldDef => {
+            const fieldId = cleanId(fieldDef?._id);
+            const fieldName = fieldDef?.name || fieldDef?.label || '';
+            const rawValue = entries[fieldId] ?? entries[fieldName] ?? '';
+            const value = fieldDef?.type === 'date' && rawValue
+                ? agentTemplateFormatDate(rawValue)
+                : agentTemplateValueToString(rawValue);
+            if (fieldName) result[fieldName] = value;
+            if (fieldId) result[`cf_${fieldId}`] = value;
+        });
+        Object.entries(entries).forEach(([key, item]) => {
+            if (result[key] === undefined) result[key] = agentTemplateValueToString(item);
+        });
+    }
+
+    return result;
+}
+
+function agentTemplateClassificationContext(record = {}, entity = {}) {
+    const context = {};
+    const allClassifications = [
+        ...(entity?.statusClassification ? [entity.statusClassification] : []),
+        ...(Array.isArray(entity?.classifications) ? entity.classifications : [])
+    ];
+    (record.classificationValues || []).forEach(value => {
+        const definition = allClassifications.find(item => cleanId(item?._id) === cleanId(value?.classificationId));
+        if (definition?.key) context[definition.key] = value.label || '';
+        if (value?.classificationId) context[cleanId(value.classificationId)] = value.label || '';
+    });
+    return context;
+}
+
+function agentTemplateContext(record = {}, entity = {}, template = {}, variables = {}, user = {}, company = {}) {
     const recordTitle = record.computedTitle || record.title || '';
+    const customFields = agentTemplateCustomFields(record, entity);
+    const classification = agentTemplateClassificationContext(record, entity);
+    const recordContext = {
+        title: record.title || '',
+        computedTitle: record.computedTitle || record.title || '',
+        description: record.description || '',
+        content: record.content || '',
+        status: record.status || '',
+        slug: record.slug || '',
+        date: record.date ? agentTemplateFormatDate(record.date) : '',
+        end_date: record.end_date ? agentTemplateFormatDate(record.end_date) : '',
+        createdAt: record.createdAt ? agentTemplateFormatDate(record.createdAt) : '',
+        updatedAt: record.updatedAt ? agentTemplateFormatDate(record.updatedAt) : '',
+        ...customFields
+    };
+    if (Object.keys(classification).length) recordContext.classification = classification;
+
+    const entityScoped = entity?.slug ? { [entity.slug]: recordContext } : {};
+
     return {
-        ...variables,
         templateName: template.name || '',
         recordTitle,
         title: recordTitle,
-        userName: user.name || user.email || '',
-        record: {
-            title: record.title || '',
-            computedTitle: record.computedTitle || '',
-            description: record.description || '',
-            content: record.content || '',
-            status: record.status || '',
-            date: record.date || '',
-            end_date: record.end_date || ''
-        },
+        computedTitle: recordTitle,
+        description: record.description || '',
+        slug: record.slug || '',
+        date: record.date ? agentTemplateFormatDate(record.date) : '',
+        end_date: record.end_date ? agentTemplateFormatDate(record.end_date) : '',
+        createdAt: record.createdAt ? agentTemplateFormatDate(record.createdAt) : '',
+        updatedAt: record.updatedAt ? agentTemplateFormatDate(record.updatedAt) : '',
+        ...customFields,
+        ...variables,
+        today: agentTemplateFormatDate(new Date()),
+        currentYear: new Date().getFullYear().toString(),
+        currentMonth: agentTemplateFormatDate(new Date(), 'month'),
+        currentTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        userName: user.name || user.fullName || user.email || '',
+        record: recordContext,
         entity: {
             name: entity?.name || '',
             nameSingular: entity?.nameSingular || '',
             slug: entity?.slug || ''
+        },
+        ...entityScoped,
+        user: {
+            name: user.name || user.fullName || user.email || '',
+            email: user.email || ''
+        },
+        company: {
+            name: company.name || '',
+            number: company.number || '',
+            address: company.address || '',
+            representative: company.representative || '',
+            vat: company.vat || '',
+            phone: company.phone || '',
+            email: company.email || ''
         },
         input: variables,
         inputs: variables,
@@ -4977,13 +5215,43 @@ function agentValueByPath(source = {}, pathValue = '') {
 }
 
 function agentResolveTemplateString(value, context = {}) {
-    return String(value || '').replace(/{{\s*([^}]+)\s*}}/g, (match, key) => {
+    let result = String(value || '').replace(
+        /<span[^>]*class="[^"]*template-token[^"]*"[^>]*data-token="([^"]*)"[^>]*>[^<]*<\/span>/gi,
+        (match, encodedTokenData) => {
+            try {
+                const decoded = encodedTokenData
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&#39;/g, "'");
+                const tokenData = JSON.parse(decoded);
+                const resolved = agentValueByPath(context, tokenData.path);
+                return agentTemplateValueToString(resolved);
+            } catch (error) {
+                console.warn('[RecordAI Agent] Could not parse template token:', error.message);
+                return '';
+            }
+        }
+    );
+
+    result = result.replace(
+        /<span[^>]*class="[^"]*template-token[^"]*"[^>]*data-token='([^']*)'[^>]*>[^<]*<\/span>/gi,
+        (match, tokenDataStr) => {
+            try {
+                const tokenData = JSON.parse(tokenDataStr);
+                const resolved = agentValueByPath(context, tokenData.path);
+                return agentTemplateValueToString(resolved);
+            } catch (_) {
+                return '';
+            }
+        }
+    );
+
+    return result.replace(/{{\s*([^}]+)\s*}}/g, (match, key) => {
         const clean = String(key || '').trim();
         const resolved = agentValueByPath(context, clean);
-        if (resolved === undefined || resolved === null) return '';
-        if (Array.isArray(resolved)) return resolved.join(', ');
-        if (typeof resolved === 'object') return JSON.stringify(resolved);
-        return String(resolved);
+        return agentTemplateValueToString(resolved);
     });
 }
 
@@ -5283,7 +5551,15 @@ async function applyAgentAction(req, record, entity, action) {
         if (!sourceDoc) throw new Error('Document template introuvable');
 
         const variables = agentTemplateVariables(template, action.input?.variables || {});
-        const context = agentTemplateContext(record, entity, template, variables, req.user || {});
+        let company = {};
+        try {
+            const Account = require('../../models/account.model');
+            const account = await Account.findOne({ account_number: req.account_number }).lean();
+            company = account?.company || {};
+        } catch (error) {
+            console.warn('[RecordAI Agent] Could not load account company for template context:', error.message);
+        }
+        const context = agentTemplateContext(record, entity, template, variables, req.user || {}, company);
         const outputName = agentResolveTemplateString(
             action.input?.outputName || template.outputNameTemplate || '{{templateName}} - {{recordTitle}}',
             context
@@ -5923,7 +6199,8 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             };
         }
 
-        const actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog);
+        let actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog);
+        actions = agentEnsureTemplateGenerationActions(actions, goal, parsed, toolCatalog);
         run.summary = agentSafeString(parsed.summary || 'Plan prêt à valider.', 3000);
         run.plan = agentNormalizePlan(parsed);
         run.proposedActions = actions;

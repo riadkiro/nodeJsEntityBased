@@ -42,13 +42,26 @@ function normalizePdfOutputName(name) {
     return cleanName || 'Document'
 }
 
-function stripEditorRuntimeArtifacts(html) {
+function stripEditorRuntimeArtifacts(html, options = {}) {
     if (!html) return ''
 
     const template = document.createElement('template')
     template.innerHTML = html
+    const runtimeSelectors = [
+        '.doc-block-delete-btn',
+        '[data-reflow-caret]',
+        options.preserveCaretMarker ? null : '[data-caret-marker]',
+        '[data-image-resize-overlay]',
+        '[data-placeholder-resize-overlay]',
+        '[data-placeholder-crop-overlay]',
+        '[data-placeholder-context-menu]',
+        '[data-atomic-caret]',
+        '.doc-image-placeholder-handle',
+        '.doc-image-crop-handle'
+    ].filter(Boolean).join(', ')
+
     template.content
-        .querySelectorAll('.doc-block-delete-btn, [data-reflow-caret], [data-caret-marker], [data-image-resize-overlay], [data-placeholder-resize-overlay], [data-placeholder-crop-overlay], [data-placeholder-context-menu], [data-atomic-caret], .doc-image-placeholder-handle, .doc-image-crop-handle')
+        .querySelectorAll(runtimeSelectors)
         .forEach(el => el.remove())
 
     const legacySpacerWalker = document.createTreeWalker(template.content, 4)
@@ -957,8 +970,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         if (!startEl) return false
 
         let markerInserted = false
+        for (let i = startIndex; i <= endIndex; i += 1) {
+            if (pageRefs.current[i]?.querySelector?.('[data-caret-marker="1"]')) {
+                markerInserted = true
+                break
+            }
+        }
         const sel = window.getSelection()
-        if (sel && sel.rangeCount > 0 && sel.getRangeAt(0).collapsed) {
+        if (!markerInserted && sel && sel.rangeCount > 0 && sel.getRangeAt(0).collapsed) {
             const anchor = sel.anchorNode
             for (let i = startIndex; i <= endIndex; i += 1) {
                 const el = pageRefs.current[i]
@@ -973,7 +992,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         for (let i = startIndex; i <= endIndex; i += 1) {
             const page = current.pages[i]
             const pageEl = pageRefs.current[i]
-            htmlParts.push(stripEditorRuntimeArtifacts(pageEl ? pageEl.innerHTML : (page?.content || '')))
+            htmlParts.push(stripEditorRuntimeArtifacts(pageEl ? pageEl.innerHTML : (page?.content || ''), {
+                preserveCaretMarker: true
+            }))
         }
 
         const combinedHtml = htmlParts.join('')
@@ -1314,6 +1335,30 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         const el = pageRefs.current[pageIndex]
         if (!el) return
 
+        if ((e.key === 'Backspace' || e.key === 'Delete') && !isMod(e)) {
+            const sel = window.getSelection()
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0)
+                const common = range.commonAncestorContainer
+                const rangeIsInPage = el.contains(common.nodeType === 1 ? common : common.parentNode)
+
+                if (rangeIsInPage && !range.collapsed) {
+                    e.preventDefault()
+                    document.querySelectorAll('[data-caret-marker="1"]').forEach(marker => marker.remove())
+                    range.deleteContents()
+                    range.collapse(true)
+                    sel.removeAllRanges()
+                    sel.addRange(range)
+                    insertCaretMarker()
+                    handlePageInput?.({
+                        target: el,
+                        inputType: e.key === 'Delete' ? 'deleteContentForward' : 'deleteContentBackward'
+                    }, pageIndex)
+                    return
+                }
+            }
+        }
+
         // ========== BLOCK ESCAPE LOGIC ==========
         // When cursor is inside a block element (blockquote, div[style], pre),
         // handle Enter to escape the block (Word/Google Docs behavior).
@@ -1417,6 +1462,18 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             if (!prevEl) return
             placeCaretAtEnd(prevEl)
             if (!repackPagesFrom(pageIndex - 1)) triggerSave()
+            return
+        }
+
+        // Delete at the end of a page should behave like a normal text editor:
+        // join the following page at the caret position, then reflow the tail.
+        if (
+            e.key === 'Delete' &&
+            pageIndex < (docRef.current?.pages?.length || 0) - 1 &&
+            isCaretAtEnd(el)
+        ) {
+            e.preventDefault()
+            if (!repackPagesFrom(pageIndex)) triggerSave()
             return
         }
 

@@ -677,6 +677,25 @@ export default function EditorHeader({
 
 	    const getCloseUrl = () => {
 	        if (window.self !== window.top) return 'smartdoc-cancel'
+	        const params = new URLSearchParams(window.location.search)
+	        const returnTo = params.get('returnTo')
+	        if (returnTo) {
+	            try {
+	                const target = new URL(returnTo, window.location.origin)
+	                if (target.origin === window.location.origin) {
+	                    return `${target.pathname}${target.search}${target.hash}`
+	                }
+	            } catch (_) {}
+	        }
+	        if (document.referrer) {
+	            try {
+	                const referrer = new URL(document.referrer)
+	                const current = new URL(window.location.href)
+	                if (referrer.origin === window.location.origin && referrer.href !== current.href) {
+	                    return `${referrer.pathname}${referrer.search}${referrer.hash}`
+	                }
+	            } catch (_) {}
+	        }
 	        const linkedRecord = doc?.linkedRecords?.[0]
 	        const recordId = doc?.draftRecordId || linkedRecord?.recordId
 	        const entitySlug = linkedRecord?.entitySlug
@@ -893,9 +912,9 @@ export default function EditorHeader({
                         <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
                     </button>
                 ) : (
-                    <a
-                        href={`/account/${accountNumber}/documents`}
-                        onClick={(e) => attemptNavigation(`/account/${accountNumber}/documents`, e)}
+	                    <a
+	                        href={getCloseUrl()}
+	                        onClick={(e) => attemptNavigation(getCloseUrl(), e)}
                         className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     >
                         <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
@@ -1098,7 +1117,7 @@ export default function EditorHeader({
                                 </div>
 
                                 {/* Action Button */}
-                                {doc.isDraft ? (
+	                                {(doc.isDraft || isSimpleEditableDoc) ? (
                                     <button
                                         onClick={handlePdfExport}
                                         disabled={!doc._id || isGeneratingPdf}

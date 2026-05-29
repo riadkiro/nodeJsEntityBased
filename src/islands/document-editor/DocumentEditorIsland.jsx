@@ -282,10 +282,12 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [autoSave, setAutoSave] = useState(true) // Auto-save toggle for template mode
     const [autoSaveLoaded, setAutoSaveLoaded] = useState(false) // Prevents flash before pref is loaded
 
-    // Effective template mode: server prop OR document flag
-    const effectiveTemplateMode = isTemplateMode || !!doc.isTemplate
+	    // Effective template mode: server prop OR document flag
+	    const effectiveTemplateMode = isTemplateMode || !!doc.isTemplate
+	    const isSimpleEditableDoc = doc?.metadata?.docKind === 'simple'
+	        || Boolean(doc?.metadata?.createdByAgent && !doc?.draftSourceTemplateId && !doc?.generatedFrom?.smartDocId)
 
-    // Formatting state (for toolbar display)
+	    // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
     const [currentFontSize, setCurrentFontSize] = useState(16)
     const [isBold, setIsBold] = useState(false)
@@ -1915,14 +1917,47 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     console.error('[SmartDoc] Finalize-draft failed:', result.error)
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
                     return
-                }
-                console.log('[SmartDoc] Draft finalized:', result.attachmentId || 'standalone document')
-                
-                // Prevent future auto-saves and mark as finalized
-                finalizedRef.current = true
-                
-                // Save finalized attachment to state
-                setFinalizedAttachment({
+	                }
+	                console.log('[SmartDoc] Draft finalized:', result.attachmentId || 'standalone document')
+
+	                const attachmentId = result.attachmentId || result.attachment?._id || replaceAttachmentId || null
+	                const attachment = result.attachment || {}
+	                const finalizedPatch = {
+	                    isDraft: false,
+	                    isGenerationSnapshot: true,
+	                    status: 'finalized',
+	                    sourceGeneratedAttachmentId: attachmentId,
+	                    generatedFile: {
+	                        ...(doc.generatedFile || {}),
+	                        filename: attachment.filename || doc.generatedFile?.filename,
+	                        originalName: attachment.originalName || `${result.outputName || doc.name}.pdf`,
+	                        mimeType: attachment.mimeType || doc.generatedFile?.mimeType || 'application/pdf',
+	                        size: attachment.size || doc.generatedFile?.size,
+	                        generatedAt: new Date().toISOString(),
+	                        generatedFromName: attachment.generatedFromName || doc.generatedFile?.generatedFromName,
+	                        downloadUrl: result.downloadUrl || attachment.url || doc.generatedFile?.downloadUrl,
+	                        recordId: targetRecordId || doc.generatedFile?.recordId || null,
+	                        attachmentId
+	                    }
+	                }
+	                setDoc(prev => ({ ...prev, ...finalizedPatch }))
+	                docRef.current = { ...docRef.current, ...finalizedPatch }
+	                hasUnsavedChangesRef.current = false
+	                setLastSaved(new Date())
+
+	                if (isSimpleEditableDoc) {
+	                    finalizedRef.current = false
+	                    if (window.showMessage) {
+	                        window.showMessage('Document enregistré', 'success')
+	                    }
+	                    return
+	                }
+
+	                // Prevent future auto-saves and mark as finalized for generated/template flows.
+	                finalizedRef.current = true
+
+	                // Save finalized attachment to state
+	                setFinalizedAttachment({
                     success: true,
                     mode: result.mode || (targetRecordId ? 'record-attachment' : 'standalone-document'),
                     downloadUrl: result.downloadUrl,
@@ -2102,7 +2137,7 @@ ${pagesHtml}
         } finally {
             setIsGeneratingPdf(false)
         }
-    }, [doc._id, doc.name, doc.pages, doc.margins, doc.dimensions, doc.headerHtml, doc.footerHtml, accountNumber])
+	    }, [doc._id, doc.name, doc.pages, doc.margins, doc.dimensions, doc.headerHtml, doc.footerHtml, doc.isDraft, doc.isGenerationSnapshot, doc.sourceGeneratedAttachmentId, doc.generatedFile, doc.draftRecordId, doc.linkedRecords, accountNumber, isSimpleEditableDoc])
 
     // ========== DIMENSION UPDATES ==========
     const updateDimensions = useCallback(() => {

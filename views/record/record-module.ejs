@@ -1525,12 +1525,16 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         }
         .rm-docs-tab:hover { color:#64748b; }
         .rm-docs-tab--active { color:#4361ee; border-bottom-color:#4361ee; }
-        .rm-docs-tab-count {
-            display:inline-flex; align-items:center; justify-content:center;
-            min-width:18px; height:18px; padding:0 5px;
-            border-radius:9px; font-size:10px; font-weight:700;
-            background:#4361ee15; color:#4361ee;
-        }
+	        .rm-docs-tab-count {
+	            display:inline-flex; align-items:center; justify-content:center;
+	            min-width:18px; height:18px; padding:0 5px;
+	            border-radius:9px; font-size:10px; font-weight:700;
+	            background:#4361ee15; color:#4361ee;
+	        }
+	        .rm-docs-tabs-bar {
+	            display:flex; align-items:center; gap:0; border-bottom:2px solid #f1f3f5;
+	            margin:-4px 0 14px;
+	        }
         .rm-docs-generate-btn {
             display:flex; align-items:center; gap:5px;
             padding:5px 12px; border-radius:8px;
@@ -1585,10 +1589,31 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             _entityId: '<%= entity._id %>',
             _entityName: '<%= (entity.name || "").replace(/'/g, "\\'") %>',
             _entityIcon: '<%= entity.icon || "solar:layers-bold-duotone" %>',
-            _entitySlug: '<%= entity.slug || "" %>',
-            _entityColor: '<%= entity.color || "" %>',
-            _recordId: '<%= record._id %>',
-            _recordTitle: '<%= ((record.computedTitle || record.title || "")).replace(/'/g, "\\'") %>',
+	            _entitySlug: '<%= entity.slug || "" %>',
+	            _entityColor: '<%= entity.color || "" %>',
+	            _recordId: '<%= record._id %>',
+	            _recordTitle: '<%= ((record.computedTitle || record.title || "")).replace(/'/g, "\\'") %>',
+	            activeDocsTab: 'templates',
+
+	            docsTabStorageKey() {
+	                return `record-docs-tab:${this._accountNumber}:${this._recordId}`;
+	            },
+
+	            loadPersistedDocsTab() {
+	                try {
+	                    const tab = localStorage.getItem(this.docsTabStorageKey());
+	                    return tab === 'documents' ? 'documents' : 'templates';
+	                } catch (_) {
+	                    return 'templates';
+	                }
+	            },
+
+	            setDocsTab(tab) {
+	                this.activeDocsTab = tab === 'documents' ? 'documents' : 'templates';
+	                try {
+	                    localStorage.setItem(this.docsTabStorageKey(), this.activeDocsTab);
+	                } catch (_) {}
+	            },
 
             async createRecordTemplate() {
                 if (this.creatingTemplate) return;
@@ -1636,11 +1661,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                             active: true
                         })
                     });
-                    const smartData = await smartRes.json();
-                    if (!smartData.success) throw new Error('Erreur creation smart doc');
-                    
-                    // 3. Redirect to the editor
-                    window.location.href = `/account/${this._accountNumber}/documents/${docData.document._id}/edit-react?isTemplate=true`;
+	                    const smartData = await smartRes.json();
+	                    if (!smartData.success) throw new Error('Erreur creation smart doc');
+
+	                    // 3. Redirect to the editor
+	                    const returnTo = encodeURIComponent(window.location.href);
+	                    window.location.href = `/account/${this._accountNumber}/documents/${docData.document._id}/edit-react?isTemplate=true&returnTo=${returnTo}`;
                 } catch (err) {
                     console.error(err);
                     window.showMessage ? window.showMessage("Erreur lors de la création du modèle", 'danger') : alert("Erreur lors de la création du modèle");
@@ -1774,7 +1800,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                    });
 	                    const docData = await docRes.json();
 	                    if (!docData.success) throw new Error(docData.error || 'Création impossible');
-	                    window.location.href = `/account/${this._accountNumber}/documents/${docData.document._id}/edit-react`;
+	                    const returnTo = encodeURIComponent(window.location.href);
+	                    window.location.href = `/account/${this._accountNumber}/documents/${docData.document._id}/edit-react?returnTo=${returnTo}`;
 	                } catch (err) {
 	                    console.error('[DocsModule] Simple doc creation error:', err);
 	                    window.showMessage ? window.showMessage(err.message || 'Erreur document', 'danger') : alert(err.message || 'Erreur document');
@@ -1783,7 +1810,15 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	            },
 
 	            get templateSections() {
-	                return [...this.simpleFolderSections, ...this.templates];
+	                return [...this.templates];
+	            },
+
+	            get documentSections() {
+	                return [...this.simpleFolderSections];
+	            },
+
+	            get documentCount() {
+	                return this.generatedDocs.filter(d => this.isSimpleDoc(d)).length;
 	            },
 
 	            get simpleFolderSections() {
@@ -1821,18 +1856,30 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                return Boolean(doc?.isSimpleDoc || doc?.isAgentDraft);
 	            },
 
-            // Templates sorted by most recent generation (template with latest doc first)
+	            // Templates sorted by most recent generation (template with latest doc first)
 	            get sortedTemplates() {
 	                return [...this.templateSections].sort((a, b) => {
-	                    if (a.isSimpleFolder && !b.isSimpleFolder) return -1;
-	                    if (b.isSimpleFolder && !a.isSimpleFolder) return 1;
 	                    const aDocs = this.getDocsForTemplate(a.name, a._id);
 	                    const bDocs = this.getDocsForTemplate(b.name, b._id);
 	                    const aDate = aDocs.length > 0 ? new Date(aDocs[0].uploadedAt) : new Date(0);
-                    const bDate = bDocs.length > 0 ? new Date(bDocs[0].uploadedAt) : new Date(0);
-                    return bDate - aDate;
-                });
-            },
+	                    const bDate = bDocs.length > 0 ? new Date(bDocs[0].uploadedAt) : new Date(0);
+	                    return bDate - aDate;
+	                });
+	            },
+
+	            get sortedDocumentSections() {
+	                return [...this.documentSections].sort((a, b) => {
+	                    const aDocs = this.getDocsForTemplate(a.name, a._id);
+	                    const bDocs = this.getDocsForTemplate(b.name, b._id);
+	                    const aDate = aDocs.length > 0 ? new Date(aDocs[0].uploadedAt) : new Date(0);
+	                    const bDate = bDocs.length > 0 ? new Date(bDocs[0].uploadedAt) : new Date(0);
+	                    return bDate - aDate;
+	                });
+	            },
+
+	            get visibleSections() {
+	                return this.activeDocsTab === 'documents' ? this.sortedDocumentSections : this.sortedTemplates;
+	            },
 
 	            getDocsForTemplate(tplName, tplId = '') {
 	                const folder = this.simpleFolderSections.find(section => section._id === tplId);
@@ -1865,13 +1912,14 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 }
             },
 
-            async init() {
-                await Promise.all([this.loadGeneratedDocs(), this.loadTemplates()]);
-                // Auto-open all templates that have generated docs
-                this.sortedTemplates.forEach(tpl => {
-                    if (this.getDocsForTemplate(tpl.name, tpl._id).length > 0) {
-                        this.openTemplates.push(tpl._id);
-                    }
+	            async init() {
+	                this.activeDocsTab = this.loadPersistedDocsTab();
+	                await Promise.all([this.loadGeneratedDocs(), this.loadTemplates()]);
+	                // Auto-open all templates that have generated docs
+	                [...this.sortedTemplates, ...this.sortedDocumentSections].forEach(tpl => {
+	                    if (this.getDocsForTemplate(tpl.name, tpl._id).length > 0) {
+	                        this.openTemplates.push(tpl._id);
+	                    }
                 });
                 // Listen for cancel from iframe
                 window.addEventListener('message', (e) => {
@@ -1927,11 +1975,13 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             },
 
-            openGeneratedDoc(doc) {
-                if (doc?.isAgentDraft && doc.editUrl) {
-                    window.location.href = doc.editUrl;
-                    return;
-                }
+	            openGeneratedDoc(doc) {
+	                if (doc?.isAgentDraft && doc.editUrl) {
+	                    const returnTo = encodeURIComponent(window.location.href);
+	                    const sep = doc.editUrl.includes('?') ? '&' : '?';
+	                    window.location.href = `${doc.editUrl}${sep}returnTo=${returnTo}`;
+	                    return;
+	                }
                 if (!doc?.filename) return;
                 window.openFileViewer('/account/' + this._accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf', null, null, { onEdit: () => this.editGeneratedDoc(doc) });
             },
@@ -2011,11 +2061,13 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this.generatingId = null;
             },
 
-            editGeneratedDoc(doc) {
-                if (doc?.isAgentDraft && doc.editUrl) {
-                    window.location.href = doc.editUrl;
-                    return;
-                }
+	            editGeneratedDoc(doc) {
+	                if (doc?.isAgentDraft && doc.editUrl) {
+	                    const returnTo = encodeURIComponent(window.location.href);
+	                    const sep = doc.editUrl.includes('?') ? '&' : '?';
+	                    window.location.href = `${doc.editUrl}${sep}returnTo=${returnTo}`;
+	                    return;
+	                }
                 if (!doc?.snapshotDocumentId) {
                     window.showMessage ? window.showMessage('Aucun snapshot éditable pour ce PDF', 'warning') : alert('Aucun snapshot éditable pour ce PDF');
                     return;
@@ -2415,7 +2467,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                    <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
 	                    <input type="text" placeholder="Rechercher un document...">
 	                </div>
-	                <div class="rm-actions-compact">
+	                <div class="rm-actions-compact" x-show="activeDocsTab === 'documents'">
 	                    <button type="button" @click="createSimpleFolder()" :disabled="creatingFolder" class="rm-btn-secondary">
 	                        <iconify-icon :icon="creatingFolder ? 'line-md:loading-twotone-loop' : 'solar:folder-add-bold-duotone'" width="16"></iconify-icon>
 	                        <span x-text="creatingFolder ? 'Création...' : 'Nouveau dossier'"></span>
@@ -2424,6 +2476,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                        <iconify-icon :icon="creatingSimpleDoc ? 'line-md:loading-twotone-loop' : 'solar:document-add-bold-duotone'" width="16"></iconify-icon>
 	                        <span x-text="creatingSimpleDoc ? 'Création...' : 'Nouveau doc'"></span>
 	                    </button>
+	                </div>
+	                <div class="rm-actions-compact" x-show="activeDocsTab === 'templates'">
 	                    <button type="button" @click="createRecordTemplate()" :disabled="creatingTemplate" class="rm-btn-primary" style="background:linear-gradient(135deg, #f59e0b, #f59e0bdd); border:none; box-shadow:0 2px 8px rgba(245, 158, 11, 0.25);">
 	                        <iconify-icon :icon="creatingTemplate ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="16"></iconify-icon>
 	                        <span x-text="creatingTemplate ? 'Création...' : 'Nouveau template'"></span>
@@ -2431,22 +2485,35 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 	                </div>
 	            </div>
 
-            <!-- Loading state -->
+	            <div class="rm-docs-tabs-bar">
+	                <button type="button" @click="setDocsTab('templates')" :class="activeDocsTab === 'templates' ? 'rm-docs-tab--active' : ''" class="rm-docs-tab">
+	                    <iconify-icon icon="solar:file-text-bold-duotone" width="15"></iconify-icon>
+	                    Templates
+	                    <span class="rm-docs-tab-count" x-text="templates.length" x-show="templates.length > 0"></span>
+	                </button>
+	                <button type="button" @click="setDocsTab('documents')" :class="activeDocsTab === 'documents' ? 'rm-docs-tab--active' : ''" class="rm-docs-tab">
+	                    <iconify-icon icon="solar:folder-with-files-bold-duotone" width="15"></iconify-icon>
+	                    Documents
+	                    <span class="rm-docs-tab-count" x-text="documentCount" x-show="documentCount > 0"></span>
+	                </button>
+	            </div>
+
+	            <!-- Loading state -->
             <div x-show="loading && loadingTemplates" style="text-align:center; padding:32px 0; color:#94a3b8;">
                 <iconify-icon icon="line-md:loading-twotone-loop" width="28"></iconify-icon>
                 <p style="font-size:12px; margin-top:8px;">Chargement...</p>
             </div>
 
             <!-- Empty state: no templates at all -->
-            <div x-show="!loading && !loadingTemplates && sortedTemplates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
-                <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
-                <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle disponible</p>
-                <p style="font-size:11px; margin-top:4px;">Vous pouvez créer un template spécifique pour cet enregistrement.</p>
-            </div>
+	            <div x-show="!loading && !loadingTemplates && visibleSections.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+	                <iconify-icon :icon="activeDocsTab === 'documents' ? 'solar:folder-with-files-bold-duotone' : 'solar:file-text-bold-duotone'" width="40" style="opacity:0.3"></iconify-icon>
+	                <p style="font-size:13px; margin-top:10px; font-weight:500;" x-text="activeDocsTab === 'documents' ? 'Aucun document disponible' : 'Aucun template disponible'"></p>
+	                <p style="font-size:11px; margin-top:4px;" x-text="activeDocsTab === 'documents' ? 'Créez un dossier ou un document simple pour cet enregistrement.' : 'Vous pouvez créer un template spécifique pour cet enregistrement.'"></p>
+	            </div>
 
-            <!-- Template accordion list -->
-            <div x-show="!loadingTemplates && sortedTemplates.length > 0" class="rm-items-list">
-                <template x-for="(tpl, tIdx) in sortedTemplates" :key="tpl._id">
+	            <!-- Template accordion list -->
+	            <div x-show="!loadingTemplates && visibleSections.length > 0" class="rm-items-list">
+	                <template x-for="(tpl, tIdx) in visibleSections" :key="tpl._id">
                     <div class="docs-tpl-section" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
                         <!-- Template header row -->
                         <div class="rm-item" style="cursor:pointer; border-bottom:none; margin-bottom:0;"

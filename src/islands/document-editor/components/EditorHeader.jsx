@@ -670,10 +670,12 @@ export default function EditorHeader({
 	    const [textColor, setTextColor] = useState('#000000')
 	    const [highlightColor, setHighlightColor] = useState('transparent')
 	    const [modalConfig, setModalConfig] = useState(null)
+	    const [isSavingDraft, setIsSavingDraft] = useState(false)
 	    const isSimpleEditableDoc = doc?.metadata?.docKind === 'simple'
 	        || Boolean(doc?.metadata?.createdByAgent && doc?.isDraft && !doc?.draftSourceTemplateId && !doc?.generatedFrom?.smartDocId)
 	    const draftActionLabel = isSimpleEditableDoc ? 'Enregistrer' : 'Finaliser et générer'
 	    const draftLoadingLabel = isSimpleEditableDoc ? 'Enregistrement...' : 'Génération...'
+	    const canSaveDraft = Boolean(doc?.isDraft && !isSimpleEditableDoc)
 
 	    const getCloseUrl = () => {
 	        if (window.self !== window.top) return 'smartdoc-cancel'
@@ -725,6 +727,29 @@ export default function EditorHeader({
     };
 
     const handleClose = (e) => attemptNavigation(getCloseUrl(), e);
+
+    const handleSaveDraft = async () => {
+        if (!doc?._id || isSavingDraft || isGeneratingPdf) return
+        setIsSavingDraft(true)
+        try {
+            const result = await forceSave()
+            if (result?.success === false) {
+                throw new Error(result.error || 'Erreur lors de l’enregistrement du brouillon')
+            }
+            if (window.showMessage) {
+                window.showMessage('Brouillon enregistré', 'success')
+            }
+        } catch (error) {
+            console.error('[DocumentEditor] Draft save failed:', error)
+            if (window.showMessage) {
+                window.showMessage(error?.message || 'Erreur lors de l’enregistrement du brouillon', 'danger')
+            } else {
+                alert(error?.message || 'Erreur lors de l’enregistrement du brouillon')
+            }
+        } finally {
+            setIsSavingDraft(false)
+        }
+    }
 
     const handleNameChange = (e) => {
         setDoc(prev => ({ ...prev, name: e.target.value }))
@@ -1091,6 +1116,21 @@ export default function EditorHeader({
                                     <span>Annuler</span>
                                 </button>
 
+                                {canSaveDraft && (
+                                    <button
+                                        onClick={handleSaveDraft}
+                                        disabled={!doc._id || isSavingDraft || isGeneratingPdf}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSavingDraft ? (
+                                            <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                        ) : (
+                                            <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
+                                        )}
+                                        <span>{isSavingDraft ? 'Enregistrement...' : 'Enregistrer comme brouillon'}</span>
+                                    </button>
+                                )}
+
                                 {/* Finaliser Button */}
                                 <button
                                     onClick={handlePdfExport}
@@ -1115,6 +1155,21 @@ export default function EditorHeader({
                                         Lié à {linkedEntities[0]?.name || doc.linkedRecords?.[0]?.entityName || 'Entreprise'}
                                     </span>
                                 </div>
+
+                                {canSaveDraft && (
+                                    <button
+                                        onClick={handleSaveDraft}
+                                        disabled={!doc._id || isSavingDraft || isGeneratingPdf}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSavingDraft ? (
+                                            <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                                        ) : (
+                                            <iconify-icon icon="solar:diskette-bold-duotone" width="18"></iconify-icon>
+                                        )}
+                                        <span>{isSavingDraft ? 'Enregistrement...' : 'Brouillon'}</span>
+                                    </button>
+                                )}
 
                                 {/* Action Button */}
 	                                {(doc.isDraft || isSimpleEditableDoc) ? (

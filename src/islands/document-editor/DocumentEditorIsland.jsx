@@ -539,7 +539,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Abort save if we detected a potentially dangerous state
         if (hasInvalidRef) {
             console.warn('[triggerSave] Aborting save: detected edition pages without valid refs')
-            return
+            return { success: false, error: 'Sauvegarde ignorée: contenu non prêt' }
         }
 
         const result = await saveDocument(currentDoc, accountNumber)
@@ -553,6 +553,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             setLastSaved(new Date())
             hasUnsavedChangesRef.current = false
         }
+        return result
     }, [accountNumber])
 
     // triggerSave — debounced auto-save, respects the autoSave toggle

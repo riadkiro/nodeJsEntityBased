@@ -703,6 +703,7 @@ function AgentActionCard({ action = {} }) {
     const failed = action.status === 'failed'
     const previewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
     const genericPreviewTools = ['update_note', 'create_doc', 'update_doc', 'generate_doc', 'use_template', 'update_task', 'create_event', 'update_event']
+    const resultUrl = action.result?.url || action.after?.url || ''
     const taskMeta = [
         action.preview?.meta,
         action.preview?.dueDate ? `Échéance: ${action.preview.dueDate}` : ''
@@ -729,6 +730,12 @@ function AgentActionCard({ action = {} }) {
                     <strong>{action.preview.title || action.input?.title || action.input?.name || action.tool}</strong>
                     <p>{shortText(previewText || action.preview.meta || '', 520)}</p>
                     {action.preview.meta && <small>{action.preview.meta}</small>}
+                    {resultUrl && (
+                        <a href={resultUrl} className="rai-agent-open-link">
+                            <Icon icon="solar:arrow-right-up-linear" width={13} />
+                            Ouvrir
+                        </a>
+                    )}
                 </div>
             )}
 
@@ -2759,6 +2766,8 @@ const styles = `
 .rai-agent-preview strong{display:block;font-size:11.5px;color:#334155;margin-bottom:2px;}
 .rai-agent-preview p{margin:0;font-size:10.5px;color:#64748b;line-height:1.4;}
 .rai-agent-preview small{display:block;margin-top:3px;font-size:10px;color:#94a3b8;font-weight:700;}
+.rai-agent-open-link{margin-top:7px;height:24px;display:inline-flex;align-items:center;gap:5px;border:1px solid #dbeafe;background:#fff;color:#4f46e5;border-radius:8px;padding:0 8px;font-size:10.5px;font-weight:900;text-decoration:none;}
+.rai-agent-open-link:hover{background:#eef2ff;border-color:#c7d2fe;}
 .rai-agent-preview.compact{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .rai-agent-preview.compact strong{margin:0;}
 .rai-agent-diff{display:flex;flex-direction:column;gap:4px;}

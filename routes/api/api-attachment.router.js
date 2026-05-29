@@ -611,6 +611,7 @@ router.patch('/records/:recordId/attachments/:attachmentId', async (req, res) =>
 router.get('/records/:recordId/attachments', async (req, res) => {
     try {
         const Record = await tenantCollection(req, 'Record');
+        const Document = await tenantCollection(req, 'Document');
         const record = await Record.findById(req.params.recordId).select('attachments driveFolders');
 
         if (!record) {
@@ -639,8 +640,46 @@ router.get('/records/:recordId/attachments', async (req, res) => {
         }));
 
         const enrichedAttachments = await enrichAttachmentsWithRagStatus(req, attachments);
+        let agentDocuments = [];
 
-        res.json({ success: true, attachments: enrichedAttachments, driveFolders: record.driveFolders || [] });
+        if (Document) {
+            const docs = await Document.find({
+                isTemplate: false,
+                isGenerationSnapshot: { $ne: true },
+                'metadata.createdByAgent': true,
+                $or: [
+                    { draftRecordId: record._id },
+                    { 'linkedRecords.recordId': record._id }
+                ]
+            })
+                .select('_id name status createdAt updatedAt generatedFrom linkedRecords metadata')
+                .sort({ updatedAt: -1 })
+                .limit(80)
+                .lean();
+
+            agentDocuments = docs.map(doc => ({
+                _id: doc._id,
+                filename: '',
+                originalName: doc.name || 'Document IA',
+                mimeType: 'application/x-dexio-document',
+                size: 0,
+                sizeFormatted: 'Brouillon',
+                category: 'document',
+                folder: '',
+                isGenerated: true,
+                isAgentDraft: true,
+                generatedFrom: doc.generatedFrom || {},
+                generatedFromName: 'Documents IA',
+                generatedFromDocumentId: doc.generatedFrom?.templateId || null,
+                snapshotDocumentId: doc._id,
+                url: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
+                editUrl: `/account/${req.account_number}/documents/${doc._id}/edit-react`,
+                uploadedAt: doc.updatedAt || doc.createdAt,
+                uploadedBy: null
+            }));
+        }
+
+        res.json({ success: true, attachments: [...agentDocuments, ...enrichedAttachments], driveFolders: record.driveFolders || [] });
     } catch (error) {
         console.error('[Attachment] List error:', error);
         res.status(500).json({ error: error.message });

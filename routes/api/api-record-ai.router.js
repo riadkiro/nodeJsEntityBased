@@ -5178,6 +5178,8 @@ async function applyAgentAction(req, record, entity, action) {
             entityId: record.entityId || entity?._id || null,
             createdBy: req.user._id,
             isTemplate: false,
+            isDraft: true,
+            draftRecordId: record._id,
             status: 'draft',
             linkedRecords: [agentLinkedRecordPayload(record, entity)],
             metadata: {

@@ -1638,23 +1638,40 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 }
             },
 
+            get templateSections() {
+                const sections = [...this.templates];
+                if (this.generatedDocs.some(d => d.isAgentDraft)) {
+                    sections.unshift({
+                        _id: '__agent_docs__',
+                        name: 'Documents IA',
+                        isAgentDocs: true
+                    });
+                }
+                return sections;
+            },
+
             // Templates sorted by most recent generation (template with latest doc first)
             get sortedTemplates() {
-                return [...this.templates].sort((a, b) => {
-                    const aDocs = this.getDocsForTemplate(a.name);
-                    const bDocs = this.getDocsForTemplate(b.name);
+                return [...this.templateSections].sort((a, b) => {
+                    if (a.isAgentDocs) return -1;
+                    if (b.isAgentDocs) return 1;
+                    const aDocs = this.getDocsForTemplate(a.name, a._id);
+                    const bDocs = this.getDocsForTemplate(b.name, b._id);
                     const aDate = aDocs.length > 0 ? new Date(aDocs[0].uploadedAt) : new Date(0);
                     const bDate = bDocs.length > 0 ? new Date(bDocs[0].uploadedAt) : new Date(0);
                     return bDate - aDate;
                 });
             },
 
-            getDocsForTemplate(tplName) {
-                return this.generatedDocs.filter(d => d.generatedFromName === tplName);
+            getDocsForTemplate(tplName, tplId = '') {
+                if (tplId === '__agent_docs__' || tplName === 'Documents IA') {
+                    return this.generatedDocs.filter(d => d.isAgentDraft);
+                }
+                return this.generatedDocs.filter(d => !d.isAgentDraft && d.generatedFromName === tplName);
             },
 
             getVisibleDocs(tplName, tplId) {
-                const all = this.getDocsForTemplate(tplName);
+                const all = this.getDocsForTemplate(tplName, tplId);
                 if (this.expandedTemplates.includes(tplId) || all.length <= 5) return all;
                 return all.slice(0, 5);
             },
@@ -1676,7 +1693,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 await Promise.all([this.loadGeneratedDocs(), this.loadTemplates()]);
                 // Auto-open all templates that have generated docs
                 this.sortedTemplates.forEach(tpl => {
-                    if (this.getDocsForTemplate(tpl.name).length > 0) {
+                    if (this.getDocsForTemplate(tpl.name, tpl._id).length > 0) {
                         this.openTemplates.push(tpl._id);
                     }
                 });
@@ -1731,6 +1748,15 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 if (!dateStr) return '';
                 const d = new Date(dateStr);
                 return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            },
+
+            openGeneratedDoc(doc) {
+                if (doc?.isAgentDraft && doc.editUrl) {
+                    window.location.href = doc.editUrl;
+                    return;
+                }
+                if (!doc?.filename) return;
+                window.openFileViewer('/account/' + this._accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf', null, null, { onEdit: () => this.editGeneratedDoc(doc) });
             },
 
             openDocContext(event, doc) {
@@ -1809,6 +1835,10 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             },
 
             editGeneratedDoc(doc) {
+                if (doc?.isAgentDraft && doc.editUrl) {
+                    window.location.href = doc.editUrl;
+                    return;
+                }
                 if (!doc?.snapshotDocumentId) {
                     window.showMessage ? window.showMessage('Aucun snapshot éditable pour ce PDF', 'warning') : alert('Aucun snapshot éditable pour ce PDF');
                     return;
@@ -1977,7 +2007,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 }
                 this.confirmingDocDelete = null;
                 try {
-                    const res = await fetch(`/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
+                    const res = await fetch(doc.isAgentDraft
+                        ? `/account/${this._accountNumber}/documents/api/${doc._id}`
+                        : `/account/${this._accountNumber}/api/records/${this._recordId}/attachments/${doc._id}`, {
                         method: 'DELETE', credentials: 'include'
                     });
                     const data = await res.json();
@@ -2219,14 +2251,14 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             </div>
 
             <!-- Empty state: no templates at all -->
-            <div x-show="!loading && !loadingTemplates && templates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
+            <div x-show="!loading && !loadingTemplates && sortedTemplates.length === 0" style="text-align:center; padding:40px 20px; color:#94a3b8;">
                 <iconify-icon icon="solar:file-text-bold-duotone" width="40" style="opacity:0.3"></iconify-icon>
                 <p style="font-size:13px; margin-top:10px; font-weight:500;">Aucun modèle disponible</p>
                 <p style="font-size:11px; margin-top:4px;">Vous pouvez créer un template spécifique pour cet enregistrement.</p>
             </div>
 
             <!-- Template accordion list -->
-            <div x-show="!loadingTemplates && templates.length > 0" class="rm-items-list">
+            <div x-show="!loadingTemplates && sortedTemplates.length > 0" class="rm-items-list">
                 <template x-for="(tpl, tIdx) in sortedTemplates" :key="tpl._id">
                     <div class="docs-tpl-section" :style="'animation-delay:' + (tIdx * 40) + 'ms'">
                         <!-- Template header row -->
@@ -2240,13 +2272,13 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                 <div class="rm-item-title" x-text="tpl.name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                                 <div class="rm-item-date" style="color:#94a3b8;">
                                     <iconify-icon icon="solar:documents-linear" width="12"></iconify-icon>
-                                    <span x-text="getDocsForTemplate(tpl.name).length + ' document(s) généré(s)'"></span>
-                                    <template x-if="getDocsForTemplate(tpl.name).length > 0">
-                                        <span style="margin-left:4px;">· <span x-text="formatDate(getDocsForTemplate(tpl.name)[0]?.uploadedAt)" style="color:#10b981;font-weight:500;"></span></span>
+                                    <span x-text="getDocsForTemplate(tpl.name, tpl._id).length + (tpl.isAgentDocs ? ' brouillon(s)' : ' document(s) généré(s)')"></span>
+                                    <template x-if="getDocsForTemplate(tpl.name, tpl._id).length > 0">
+                                        <span style="margin-left:4px;">· <span x-text="formatDate(getDocsForTemplate(tpl.name, tpl._id)[0]?.uploadedAt)" style="color:#10b981;font-weight:500;"></span></span>
                                     </template>
                                 </div>
                             </div>
-                            <button @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
+                            <button x-show="!tpl.isAgentDocs" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
                                 class="rm-docs-generate-btn" style="flex-shrink:0;">
                                 <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="12"></iconify-icon>
                                 <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer'"></span>
@@ -2257,7 +2289,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         </div>
                         <!-- Expanded: generated files for this template -->
                         <div x-show="openTemplates.includes(tpl._id)" x-transition.duration.200ms>
-                            <template x-if="getDocsForTemplate(tpl.name).length === 0">
+                            <template x-if="getDocsForTemplate(tpl.name, tpl._id).length === 0">
                                 <div style="padding:12px 16px 16px 56px; font-size:11px; color:#94a3b8; font-style:italic;">
                                     Aucun document généré pour ce modèle
                                 </div>
@@ -2265,7 +2297,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                             <template x-for="(doc, dIdx) in getVisibleDocs(tpl.name, tpl._id)" :key="doc._id || dIdx">
                                 <div class="docs-tpl-file"
                                      @contextmenu.prevent.stop="openDocContext($event, doc)"
-                                     @click="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf', null, null, { onEdit: () => editGeneratedDoc(doc) })">
+                                     @click="openGeneratedDoc(doc)">
                                     <span class="docs-tpl-file-date" style="margin-right:8px;">
                                         <iconify-icon icon="solar:calendar-linear" width="10"></iconify-icon>
                                         <span x-text="formatDate(doc.uploadedAt)"></span>
@@ -2275,23 +2307,23 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                     </div>
                                     <span class="docs-tpl-file-name" x-text="doc.originalName || 'Document'"></span>
                                     <span class="docs-tpl-file-size" x-text="doc.sizeFormatted || ''"></span>
-                                    <button @click.stop="renameGeneratedDoc(doc)" class="docs-tpl-file-dl"
+                                    <button @click.stop="renameGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="!doc.isAgentDraft"
                                         title="Renommer" style="color:#64748b;">
                                         <iconify-icon :icon="renamingDocId === doc._id ? 'line-md:loading-twotone-loop' : 'solar:text-field-focus-bold'" width="13"></iconify-icon>
                                     </button>
-                                    <button @click.stop="window.openFileViewer('/account/' + _accountNumber + '/uploads/attachments/' + doc.filename, doc.originalName || doc.generatedFromName || 'Document', doc.category || 'pdf', null, null, { onEdit: () => editGeneratedDoc(doc) })"
+                                    <button @click.stop="openGeneratedDoc(doc)"
                                         class="docs-tpl-file-dl" title="Voir">
                                         <iconify-icon icon="solar:eye-bold" width="13"></iconify-icon>
                                     </button>
-                                    <a :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename + '?dl=' + encodeURIComponent(doc.originalName || 'document')" 
+                                    <a x-show="!doc.isAgentDraft" :href="'/account/' + _accountNumber + '/uploads/attachments/' + doc.filename + '?dl=' + encodeURIComponent(doc.originalName || 'document')"
                                        download class="docs-tpl-file-dl" title="Télécharger" @click.stop>
                                         <iconify-icon icon="solar:download-bold" width="13"></iconify-icon>
                                     </a>
-                                    <button @click.stop="editGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="doc.snapshotDocumentId"
+                                    <button @click.stop="editGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="doc.snapshotDocumentId || doc.isAgentDraft"
                                         title="Modifier le snapshot" style="color:#4361ee;">
                                         <iconify-icon icon="solar:pen-bold" width="13"></iconify-icon>
                                     </button>
-                                    <button @click.stop="copyGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="doc.snapshotDocumentId"
+                                    <button @click.stop="copyGeneratedDoc(doc)" class="docs-tpl-file-dl" x-show="doc.snapshotDocumentId && !doc.isAgentDraft"
                                         :disabled="copyingDocId === doc._id" title="Copier vers un nouveau document" style="color:#10b981;">
                                         <iconify-icon :icon="copyingDocId === doc._id ? 'line-md:loading-twotone-loop' : 'solar:copy-bold'" width="13"></iconify-icon>
                                     </button>
@@ -2306,10 +2338,10 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                 </div>
                             </template>
                             <!-- Load more button -->
-                            <template x-if="getDocsForTemplate(tpl.name).length > 5 && !expandedTemplates.includes(tpl._id)">
+                            <template x-if="getDocsForTemplate(tpl.name, tpl._id).length > 5 && !expandedTemplates.includes(tpl._id)">
                                 <button @click.stop="expandTemplate(tpl._id)" class="docs-tpl-load-more">
                                     <iconify-icon icon="solar:add-circle-linear" width="13"></iconify-icon>
-                                    Voir tout (<span x-text="getDocsForTemplate(tpl.name).length"></span>)
+                                    Voir tout (<span x-text="getDocsForTemplate(tpl.name, tpl._id).length"></span>)
                                 </button>
                             </template>
                         </div>
@@ -2321,7 +2353,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 <div x-show="docContextMenu.show" x-cloak
                      @click.outside="closeDocContext()"
                      :style="'position:fixed;left:' + docContextMenu.x + 'px;top:' + docContextMenu.y + 'px;z-index:99999;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:4px;min-width:170px;'">
-                    <button type="button" @click="renameGeneratedDoc(docContextMenu.doc)"
+                    <button type="button" x-show="!docContextMenu.doc || !docContextMenu.doc.isAgentDraft" @click="renameGeneratedDoc(docContextMenu.doc)"
                         style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
                         <iconify-icon icon="solar:text-field-focus-bold" width="14"></iconify-icon>
                         Renommer
@@ -2331,7 +2363,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                         <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
                         Modifier
                     </button>
-                    <button type="button" @click="copyGeneratedDoc(docContextMenu.doc); closeDocContext()"
+                    <button type="button" x-show="!docContextMenu.doc || !docContextMenu.doc.isAgentDraft" @click="copyGeneratedDoc(docContextMenu.doc); closeDocContext()"
                         style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:transparent;border-radius:6px;font-size:12px;color:#334155;text-align:left;cursor:pointer;">
                         <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
                         Copier vers

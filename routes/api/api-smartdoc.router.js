@@ -1459,11 +1459,19 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         const contentPaddingBottom = hasFooter ? 8 : docMargins.bottom;
 
         if (domPagesContent && draftDoc.pages && draftDoc.pages.length > 0) {
-            for (let i = 0; i < draftDoc.pages.length; i++) {
-                if (domPagesContent[i] !== undefined) {
-                    draftDoc.pages[i].content = stripEditorArtifacts(domPagesContent[i] || '');
-                }
-            }
+            const previousPages = Array.isArray(draftDoc.pages) ? draftDoc.pages : [];
+            draftDoc.pages = domPagesContent.map((pageHtml, i) => {
+                const previous = previousPages[i] || previousPages[0] || {};
+                const base = typeof previous.toObject === 'function' ? previous.toObject() : previous;
+                return {
+                    content: stripEditorArtifacts(pageHtml || ''),
+                    mode: base.mode || 'edition',
+                    elements: Array.isArray(base.elements) ? base.elements : [],
+                    rows: Array.isArray(base.rows) ? base.rows : [],
+                    background: base.background || { color: '#ffffff' },
+                    order: i
+                };
+            });
             draftDoc.markModified('pages');
         }
 

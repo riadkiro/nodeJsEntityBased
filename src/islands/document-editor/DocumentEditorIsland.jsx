@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
+import { checkOverflow, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 import { getSelectedImage } from './hooks/useImageResize'
 
@@ -328,7 +328,6 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const pageRefs = useRef({})
     const editorRootRef = useRef(null)
     const docRef = useRef(doc) // Always current doc for callbacks
-    const isMergingRef = useRef(false) // Prevents race conditions during merge
     const isGlobalSelectionRef = useRef(false) // Ref mirror for stale-closure-safe access
     const isPastingRef = useRef(false) // Prevents double-reflow during paste (insertHTML triggers onInput)
     const reflowInProgressRef = useRef(false) // Prevents concurrent reflow execution
@@ -487,6 +486,16 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // Core save logic — extracted so both triggerSave and forceSave share it
     const executeSave = useCallback(async (docOverride = null) => {
         if (finalizedRef.current) return
+        let reflowWaits = 0
+        while (reflowInProgressRef.current && reflowWaits < 30) {
+            await new Promise(resolve => setTimeout(resolve, 100))
+            reflowWaits += 1
+        }
+        if (reflowInProgressRef.current) {
+            console.warn('[triggerSave] Aborting save: pagination still in progress')
+            return { success: false, error: 'Sauvegarde ignorée: pagination en cours' }
+        }
+
         // Read current content from page refs
         const currentDoc = { ...(docOverride || docRef.current) }
         currentDoc.pages = Array.isArray(currentDoc.pages) ? [...currentDoc.pages] : []
@@ -500,6 +509,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             .sort((a, b) => a - b)
         mountedPageIndexes.forEach(index => {
             const pageRef = pageRefs.current[index]
+            if (index >= currentDoc.pages.length) return
             if (!pageRef || currentDoc.pages[index]) return
             currentDoc.pages[index] = {
                 content: stripEditorRuntimeArtifacts(pageRef.innerHTML || ''),
@@ -926,6 +936,95 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         })
     }, [])
 
+    const repackPagesFrom = useCallback((startIndex) => {
+        if (reflowInProgressRef.current) {
+            console.log('[repackPagesFrom] Skipped: reflow already in progress')
+            return false
+        }
+
+        const current = docRef.current
+        if (!current?.pages?.length) return false
+        if (startIndex < 0 || startIndex >= current.pages.length - 1) return false
+        if (current.pages[startIndex]?.mode !== 'edition') return false
+
+        let endIndex = startIndex
+        while (endIndex + 1 < current.pages.length && current.pages[endIndex + 1]?.mode === 'edition') {
+            endIndex += 1
+        }
+        if (endIndex <= startIndex) return false
+
+        const startEl = pageRefs.current[startIndex]
+        if (!startEl) return false
+
+        let markerInserted = false
+        const sel = window.getSelection()
+        if (sel && sel.rangeCount > 0 && sel.getRangeAt(0).collapsed) {
+            const anchor = sel.anchorNode
+            for (let i = startIndex; i <= endIndex; i += 1) {
+                const el = pageRefs.current[i]
+                if (el && el.contains(anchor)) {
+                    markerInserted = !!insertCaretMarker()
+                    break
+                }
+            }
+        }
+
+        const htmlParts = []
+        for (let i = startIndex; i <= endIndex; i += 1) {
+            const page = current.pages[i]
+            const pageEl = pageRefs.current[i]
+            htmlParts.push(stripEditorRuntimeArtifacts(pageEl ? pageEl.innerHTML : (page?.content || '')))
+        }
+
+        const combinedHtml = htmlParts.join('')
+        if (!combinedHtml.trim()) return false
+
+        reflowInProgressRef.current = true
+
+        startEl.innerHTML = combinedHtml
+        for (let i = startIndex + 1; i <= endIndex; i += 1) {
+            if (pageRefs.current[i]) pageRefs.current[i].innerHTML = ''
+        }
+
+        const pages = [
+            ...current.pages.slice(0, startIndex),
+            { ...current.pages[startIndex], content: combinedHtml },
+            ...current.pages.slice(endIndex + 1)
+        ].map((page, index) => ({ ...page, order: index }))
+
+        const nextDoc = { ...current, pages }
+        docRef.current = nextDoc
+        setDoc(nextDoc)
+
+        requestAnimationFrame(() => {
+            reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+                requestAnimationFrame(() => {
+                    let restored = false
+                    if (markerInserted) {
+                        const entries = Object.entries(pageRefs.current || {})
+                            .map(([index, el]) => [Number(index), el])
+                            .filter(([index, el]) => Number.isInteger(index) && el)
+                            .sort((a, b) => a[0] - b[0])
+                        for (const [, el] of entries) {
+                            if (restoreCaretFromMarker(el)) {
+                                revealCaret(el)
+                                restored = true
+                                break
+                            }
+                        }
+                        if (!restored) {
+                            document.querySelectorAll('[data-caret-marker="1"]').forEach(marker => marker.remove())
+                        }
+                    }
+                    reflowInProgressRef.current = false
+                    triggerSave()
+                })
+            })
+        })
+
+        return true
+    }, [triggerSave])
+
     // ========== PAGE INPUT HANDLING ==========
     const handlePageInput = useCallback((e, pageIndex) => {
         saveSelection()
@@ -939,11 +1038,21 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // insertHTML triggers onInput, but handlePaste already calls reflowDocument
         // Running two concurrent reflows causes content loss!
         if (!isPastingRef.current) {
+            const inputType = e?.nativeEvent?.inputType || e?.inputType || ''
+            const shouldRepackTail =
+                inputType.startsWith('delete') ||
+                inputType === 'historyUndo' ||
+                inputType === 'insertFromDrop'
+
+            if (shouldRepackTail && repackPagesFrom(pageIndex)) {
+                return
+            }
+
             reflowDocument()
         }
 
         triggerSave()
-    }, [saveSelection, triggerSave, reflowDocument])
+    }, [saveSelection, triggerSave, reflowDocument, repackPagesFrom])
 
     // ========== PASTE HANDLING ==========
     const handlePaste = useCallback(async (e, pageIndex) => {
@@ -1299,46 +1408,15 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
 
-        // ✅ Backspace at start of page => merge into previous (Word-like)
+        // Backspace at start of page => rebuild the tail from the previous page.
+        // This avoids copying content backward and leaving stale source pages behind.
         if (e.key === 'Backspace' && pageIndex > 0 && isCaretAtStart(el)) {
             e.preventDefault()
-            console.log('[Merge] Backspace at start, merging page', pageIndex + 1, 'into', pageIndex)
 
             const prevEl = pageRefs.current[pageIndex - 1]
-            const curEl = el
-            if (!prevEl || !curEl) return
-
-            isMergingRef.current = true
-
-            // 1) Place caret at end of prev page + insert marker (junction point)
+            if (!prevEl) return
             placeCaretAtEnd(prevEl)
-            insertCaretMarker()
-
-            // 2) Pull content from current page into previous (Word-like)
-            const { movedAny, nextIsEmpty } = pullFromNextPageInto(prevEl, curEl)
-
-            // 3) Sync state + delete page only if truly empty
-            setDoc(prevDoc => {
-                const pages = [...prevDoc.pages]
-                pages[pageIndex - 1] = { ...pages[pageIndex - 1], content: prevEl.innerHTML }
-                pages[pageIndex] = { ...pages[pageIndex], content: curEl.innerHTML }
-
-                // If current page is now empty => remove it
-                if (nextIsEmpty && pages.length > 1) {
-                    pages.splice(pageIndex, 1)
-                }
-                return { ...prevDoc, pages }
-            })
-
-            // 4) After render: restore caret EXACT, reveal, reflow
-            requestAnimationFrame(() => {
-                isMergingRef.current = false
-                restoreCaretFromMarker(prevEl)   // ✅ caret at junction (not at top)
-                revealCaret(prevEl)              // ✅ show bottom if scrolled
-                reflowDocument()                 // ✅ cascade underflow/overflow
-            })
-
-            triggerSave()
+            if (!repackPagesFrom(pageIndex - 1)) triggerSave()
             return
         }
 
@@ -1393,7 +1471,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             triggerSave()
             return
         }
-    }, [triggerSave, reflowDocument, handlePageInput])
+    }, [triggerSave, reflowDocument, handlePageInput, repackPagesFrom])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
@@ -1906,7 +1984,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== PDF EXPORT ==========
     const handlePdfExport = useCallback(async () => {
-        if (!doc._id) {
+        const liveDoc = docRef.current || doc
+
+        if (!liveDoc._id) {
             console.warn('Document must be saved before PDF export')
             return
         }
@@ -1919,14 +1999,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Previously this checked `doc.isDraft && doc.draftRecordId`, which skipped
         // context-free drafts (Docs Hub flow) causing PDFs to only blob-download
         // without persisting anywhere, and drafts to accumulate in the DB.
-        const isRegenerableSnapshot = doc.isGenerationSnapshot || doc.sourceGeneratedAttachmentId || doc.generatedFile?.attachmentId
-        if (doc.isDraft || isRegenerableSnapshot || isSimpleEditableDoc) {
+        const isRegenerableSnapshot = liveDoc.isGenerationSnapshot || liveDoc.sourceGeneratedAttachmentId || liveDoc.generatedFile?.attachmentId
+        if (liveDoc.isDraft || isRegenerableSnapshot || isSimpleEditableDoc) {
             setIsGeneratingPdf(true)
             try {
                 // CRITICAL: Extract CURRENT DOM content from pageRefs (contenteditable is uncontrolled)
                 // The DB version (draftDoc.pages) is stale — user edits live only in the DOM until saved.
                 // We must pass pagesContent so the server uses the live editor content, not the DB snapshot.
-                const pages = doc.pages || []
+                const pages = liveDoc.pages || []
                 const pagesContent = pages.map((page, i) => {
                     const pageEl = pageRefs.current[i]
                     if (pageEl) {
@@ -1935,10 +2015,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     return sanitizeEditorPageHtml(page.content || '')
                 })
 
-                const targetRecordId = doc.draftRecordId || doc.generatedFile?.recordId || (doc.linkedRecords && doc.linkedRecords.length > 0 ? doc.linkedRecords[0].recordId : null)
-                const replaceAttachmentId = doc.sourceGeneratedAttachmentId || doc.generatedFile?.attachmentId || null
-                const outputName = normalizePdfOutputName(doc.name)
-                const result = await finalizeDraft(doc._id, targetRecordId, accountNumber, pagesContent, replaceAttachmentId, outputName)
+                const targetRecordId = liveDoc.draftRecordId || liveDoc.generatedFile?.recordId || (liveDoc.linkedRecords && liveDoc.linkedRecords.length > 0 ? liveDoc.linkedRecords[0].recordId : null)
+                const replaceAttachmentId = liveDoc.sourceGeneratedAttachmentId || liveDoc.generatedFile?.attachmentId || null
+                const outputName = normalizePdfOutputName(liveDoc.name)
+                const result = await finalizeDraft(liveDoc._id, targetRecordId, accountNumber, pagesContent, replaceAttachmentId, outputName)
                 if (!result.success) {
                     console.error('[SmartDoc] Finalize-draft failed:', result.error)
                     alert('Erreur lors de la génération: ' + (result.error || 'Erreur inconnue'))
@@ -1955,15 +2035,15 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 	                    status: 'finalized',
 	                    sourceGeneratedAttachmentId: attachmentId,
 	                    generatedFile: {
-	                        ...(doc.generatedFile || {}),
-	                        filename: attachment.filename || doc.generatedFile?.filename,
-	                        originalName: attachment.originalName || `${result.outputName || doc.name}.pdf`,
-	                        mimeType: attachment.mimeType || doc.generatedFile?.mimeType || 'application/pdf',
-	                        size: attachment.size || doc.generatedFile?.size,
+	                        ...(liveDoc.generatedFile || {}),
+	                        filename: attachment.filename || liveDoc.generatedFile?.filename,
+	                        originalName: attachment.originalName || `${result.outputName || outputName}.pdf`,
+	                        mimeType: attachment.mimeType || liveDoc.generatedFile?.mimeType || 'application/pdf',
+	                        size: attachment.size || liveDoc.generatedFile?.size,
 	                        generatedAt: new Date().toISOString(),
-	                        generatedFromName: attachment.generatedFromName || doc.generatedFile?.generatedFromName,
-	                        downloadUrl: result.downloadUrl || attachment.url || doc.generatedFile?.downloadUrl,
-	                        recordId: targetRecordId || doc.generatedFile?.recordId || null,
+	                        generatedFromName: attachment.generatedFromName || liveDoc.generatedFile?.generatedFromName,
+	                        downloadUrl: result.downloadUrl || attachment.url || liveDoc.generatedFile?.downloadUrl,
+	                        recordId: targetRecordId || liveDoc.generatedFile?.recordId || null,
 	                        attachmentId
 	                    }
 	                }
@@ -1988,10 +2068,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     success: true,
                     mode: result.mode || (targetRecordId ? 'record-attachment' : 'standalone-document'),
                     downloadUrl: result.downloadUrl,
-                    outputName: result.outputName || doc.name,
+                    outputName: result.outputName || outputName,
                     attachmentId: result.attachmentId,
                     attachment: result.attachment || { sizeFormatted: 'PDF' },
-                    linkedRecords: doc.linkedRecords || []
+                    linkedRecords: liveDoc.linkedRecords || []
                 })
             } finally {
                 setIsGeneratingPdf(false)

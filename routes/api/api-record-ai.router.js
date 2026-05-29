@@ -3335,6 +3335,24 @@ function agentMarkdownToHtml(markdown) {
     return html.join('\n') || '<p></p>';
 }
 
+function agentPlainTextFromHtmlish(value = '') {
+    return String(value || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6]|li|tr|section|article)>/gi, '\n')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\*\*/g, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s+/g, '\n')
+        .trim();
+}
+
 function agentNormalizeLabel(value) {
     return String(value || '')
         .normalize('NFD')
@@ -3583,6 +3601,33 @@ function agentToolLabel(tool) {
     return tool;
 }
 
+function agentNormalizeDocReplacements(replacements = []) {
+    if (!Array.isArray(replacements)) return [];
+    return replacements
+        .map(item => {
+            const search = agentSafeString(item?.search || item?.from || item?.find || item?.oldValue || '', 500);
+            const replace = agentSafeString(item?.replace || item?.to || item?.value || item?.newValue || '', 5000);
+            if (!search) return null;
+            return {
+                search,
+                replace,
+                label: agentSafeString(item?.label || item?.field || '', 120)
+            };
+        })
+        .filter(Boolean)
+        .slice(0, 30);
+}
+
+function agentIsTemplateBackedDocument(document = {}) {
+    return Boolean(
+        document?.draftSourceTemplateId
+        || document?.generatedFrom?.smartDocId
+        || document?.generatedFrom?.templateId
+        || document?.sourceGeneratedAttachmentId
+        || document?.generatedFile?.attachmentId
+    );
+}
+
 function agentCanonicalTool(tool) {
     const value = String(tool || '').trim();
     if (value === 'use_template') return 'generate_doc';
@@ -3781,6 +3826,45 @@ function agentExtractCommercialLineItems(goal = '') {
     return agentNormalizeCommercialLineItems(items);
 }
 
+function agentExtractCompanyTemplateVariables(goal = '') {
+    const source = String(goal || '').replace(/\s+/g, ' ').trim();
+    if (!source) return {};
+
+    const variables = {};
+    const representativeMatch = source.match(/\brepr[ée]sent[ée]e?\s+par\s+([^,.;]+)$/i)
+        || source.match(/\brepr[ée]sent[ée]e?\s+par\s+([^,.;]+)/i);
+    if (representativeMatch?.[1]) {
+        variables['company.representative'] = agentSafeString(representativeMatch[1], 160);
+    }
+
+    const companyMatch = source.match(/\b(?:ma\s+(?:ste|soci[eé]t[eé]|company)|mon\s+entreprise|prestataire)\s*(?:est|:)?\s+(.+?)(?:\s+repr[ée]sent[ée]e?\s+par\b|$)/i);
+    if (companyMatch?.[1]) {
+        let companyPart = agentSafeString(companyMatch[1], 500)
+            .replace(/\b(?:adresse|addr)\s*:?\s*/i, '')
+            .trim();
+        const addressMatch = companyPart.match(/^(.+?)\s+((?:\d+\s+)?(?:bd|boulevard|rue|avenue|av\.?|route|lot|res|résidence|imm|immeuble)\b.+)$/i);
+        if (addressMatch) {
+            variables['company.name'] = agentSafeString(addressMatch[1], 160);
+            variables['company.address'] = agentSafeString(addressMatch[2], 300);
+        } else {
+            const words = companyPart.split(/\s+/).filter(Boolean);
+            if (words.length > 1 && /^(bd|boulevard|rue|avenue|av\.?|route)$/i.test(words[1])) {
+                variables['company.name'] = agentSafeString(words[0], 160);
+                variables['company.address'] = agentSafeString(words.slice(1).join(' '), 300);
+            } else {
+                variables['company.name'] = agentSafeString(companyPart, 160);
+            }
+        }
+    }
+
+    const explicitAddress = source.match(/\badresse\s*:?\s*([^,.;]+?)(?:\s+repr[ée]sent[ée]e?\s+par\b|$)/i);
+    if (explicitAddress?.[1]) {
+        variables['company.address'] = agentSafeString(explicitAddress[1], 300);
+    }
+
+    return Object.fromEntries(Object.entries(variables).filter(([, value]) => value));
+}
+
 function agentBestTemplateForGoal(goal, toolCatalog = {}) {
     if (!agentGoalLooksTemplateGeneration(goal)) return null;
     const templates = Array.isArray(toolCatalog.templates) ? toolCatalog.templates : [];
@@ -3801,22 +3885,31 @@ function agentBestTemplateForGoal(goal, toolCatalog = {}) {
 
 function agentEnsureTemplateGenerationActions(actions = [], goal = '', parsed = {}, toolCatalog = {}) {
     const lineItems = agentExtractCommercialLineItems(goal);
+    const companyVariables = agentExtractCompanyTemplateVariables(goal);
     const existingGenerateIndex = (actions || []).findIndex(action => action.tool === 'generate_doc');
     if (existingGenerateIndex >= 0) {
-        if (!lineItems.length) return actions;
         const nextActions = [...actions];
         const current = nextActions[existingGenerateIndex];
         const currentItems = agentNormalizeCommercialLineItems(current.input?.lineItems || []);
-        if (currentItems.length) return actions;
+        const currentVariables = agentObjectInput(current.input?.variables || {});
+        const shouldPatchItems = lineItems.length && !currentItems.length;
+        const shouldPatchVariables = Object.keys(companyVariables).some(key => !currentVariables[key]);
+        if (!shouldPatchItems && !shouldPatchVariables) return actions;
         nextActions[existingGenerateIndex] = {
             ...current,
             input: {
                 ...(current.input || {}),
-                lineItems
+                variables: {
+                    ...companyVariables,
+                    ...currentVariables
+                },
+                lineItems: shouldPatchItems ? lineItems : currentItems
             },
             preview: {
                 ...(current.preview || {}),
-                excerpt: `${lineItems.length} ligne${lineItems.length > 1 ? 's' : ''} commerciale${lineItems.length > 1 ? 's' : ''}`
+                excerpt: shouldPatchItems
+                    ? `${lineItems.length} ligne${lineItems.length > 1 ? 's' : ''} commerciale${lineItems.length > 1 ? 's' : ''}`
+                    : 'Variables template enrichies'
             }
         };
         return nextActions;
@@ -3843,7 +3936,7 @@ function agentEnsureTemplateGenerationActions(actions = [], goal = '', parsed = 
         input: {
             templateId: cleanId(template.id),
             templateName: template.name || '',
-            variables: {},
+            variables: companyVariables,
             lineItems,
             outputName,
             outputMode: 'draft'
@@ -4096,7 +4189,8 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             const mode = ['replace', 'append'].includes(String(input.mode || '').toLowerCase())
                 ? String(input.mode).toLowerCase()
                 : 'replace';
-            if (!name && !contentMarkdown && !contentHtml) return;
+            const replacements = agentNormalizeDocReplacements(input.replacements || input.patches || []);
+            if (!name && !contentMarkdown && !contentHtml && !replacements.length) return;
             actions.push({
                 id,
                 tool,
@@ -4108,13 +4202,16 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     name,
                     contentMarkdown,
                     contentHtml,
+                    replacements,
                     mode
                 },
                 preview: {
                     title: name || document.name || 'Document',
-                    excerpt: shortPlainText(contentHtml || contentMarkdown || 'Nom uniquement', 520),
+                    excerpt: replacements.length
+                        ? `${replacements.length} remplacement${replacements.length > 1 ? 's' : ''} ciblé${replacements.length > 1 ? 's' : ''}`
+                        : shortPlainText(contentHtml || contentMarkdown || 'Nom uniquement', 520),
                     target: document.name || document.id,
-                    meta: mode === 'append' ? 'Ajout au document' : 'Remplacement du contenu'
+                    meta: replacements.length ? 'Patch ciblé' : (mode === 'append' ? 'Ajout au document' : 'Remplacement du contenu')
                 },
                 diff: [
                     ...(name ? [{
@@ -4130,7 +4227,14 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                         before: document.preview || '',
                         after: shortPlainText(contentHtml || contentMarkdown, 180),
                         reason: mode === 'append' ? 'Ajout au contenu existant' : 'Remplacement du contenu'
-                    }] : [])
+                    }] : []),
+                    ...replacements.map((replacement, index) => ({
+                        fieldId: `doc:${document.id}:replace:${index}`,
+                        label: replacement.label || 'Remplacement document',
+                        before: replacement.search,
+                        after: replacement.replace,
+                        reason: 'Conserver le design du document'
+                    }))
                 ]
             });
             return;
@@ -4682,7 +4786,7 @@ async function agentBuildToolCatalog(req, record, entity) {
         .limit(60)
         .lean();
     const documents = await Document.find(agentDocumentRecordQuery(record))
-        .select('name status isDraft draftOutputFormat generatedFrom generatedFile pages updatedAt createdAt')
+        .select('name status isDraft draftOutputFormat draftSourceTemplateId generatedFrom generatedFile pages updatedAt createdAt')
         .sort({ updatedAt: -1 })
         .limit(60)
         .lean();
@@ -4737,6 +4841,7 @@ async function agentBuildToolCatalog(req, record, entity) {
             status: document.status || '',
             draft: Boolean(document.isDraft),
             generatedFrom: document.generatedFrom?.templateName || document.generatedFile?.generatedFromName || '',
+            templateBacked: agentIsTemplateBackedDocument(document),
             pageCount: Array.isArray(document.pages) ? document.pages.length : 0,
             preview: shortPlainText(document.pages?.[0]?.content || '', 220),
             updatedAt: document.updatedAt || document.createdAt
@@ -4791,8 +4896,8 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
         "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche.",
-        "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append.",
-        "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite.",
+        "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, replacements?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append. replacements = [{search, replace, label?}] pour modifier sans casser le design.",
+        "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite. Tu peux aussi utiliser des variables à chemin pointé comme \"company.name\", \"company.address\", \"company.representative\" quand l'utilisateur veut remplacer une valeur de template standard.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
         "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
@@ -4800,6 +4905,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- update_event: { eventId, fields }. fields peut contenir title, date, endDate, duration, type, lieu, notes, status. Utilise eventId depuis le catalogue.",
         "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
         "Pour modifier une note, un document, un événement ou générer depuis un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
+        "Pour update_doc sur un document avec templateBacked=true ou generatedFrom renseigné, n'envoie jamais un contenu complet en mode replace: utilise replacements ciblés, ou régénère via generate_doc si l'utilisateur demande de repartir du template.",
         "Quand l'utilisateur demande de générer un document (facture, devis, contrat, attestation, offre...) et qu'un template du catalogue correspond, choisis toujours generate_doc avant create_doc.",
         "Pour generate_doc, laisse variables vide sauf si l'utilisateur fournit clairement des valeurs; les variables manquantes seront remplies automatiquement par le template, la fiche et les valeurs par défaut.",
         "Si la demande de facture/devis/offre contient une prestation, un produit ou un prix, ajoute lineItems: [{description, quantity, unitPrice, taxRate, amountMode:\"ht\"|\"ttc\"}] sans toucher aux variables.",
@@ -4810,7 +4916,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"...","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"...","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -5147,6 +5253,130 @@ function agentDocContentHtml(action = {}) {
     return agentMarkdownToHtml(action.input?.contentMarkdown || '');
 }
 
+function agentReplaceLiteralEverywhere(source = '', search = '', replacement = '') {
+    let output = String(source || '');
+    const rawSearch = String(search || '');
+    if (!rawSearch) return output;
+    const rawReplacement = String(replacement || '');
+    const escapedSearch = agentEscapeHtml(rawSearch);
+    const escapedReplacement = agentEscapeHtml(rawReplacement);
+
+    output = output.split(rawSearch).join(escapedReplacement);
+    if (escapedSearch !== rawSearch) {
+        output = output.split(escapedSearch).join(escapedReplacement);
+    }
+    return output;
+}
+
+function agentApplyDocumentReplacements(document = {}, replacements = []) {
+    const normalized = agentNormalizeDocReplacements(replacements);
+    if (!normalized.length) return false;
+
+    document.pages = Array.isArray(document.pages) ? document.pages : [];
+    document.pages = document.pages.map(page => {
+        let content = page?.content || '';
+        normalized.forEach(replacement => {
+            content = agentReplaceLiteralEverywhere(content, replacement.search, replacement.replace);
+        });
+        return { ...page, content };
+    });
+    if (document.headerHtml) {
+        normalized.forEach(replacement => {
+            document.headerHtml = agentReplaceLiteralEverywhere(document.headerHtml, replacement.search, replacement.replace);
+        });
+    }
+    if (document.footerHtml) {
+        normalized.forEach(replacement => {
+            document.footerHtml = agentReplaceLiteralEverywhere(document.footerHtml, replacement.search, replacement.replace);
+        });
+    }
+    return true;
+}
+
+function agentExtractPrestataireOverrides(value = '') {
+    const text = agentPlainTextFromHtmlish(value);
+    if (!text) return {};
+
+    const startPattern = /l['’]?entreprise\s*\(le prestataire\)|le prestataire/gi;
+    let sectionStart = -1;
+    let startMatch;
+    while ((startMatch = startPattern.exec(text)) !== null) {
+        sectionStart = startMatch.index;
+    }
+    const section = sectionStart >= 0 ? text.slice(sectionStart) : text;
+    const stop = section.search(/\n\s*(préambule|article\s+1|signatures?)\b/i);
+    const scoped = stop > 0 ? section.slice(0, stop) : section.slice(0, 1400);
+
+    const getLineValue = patterns => {
+        const lines = scoped.split('\n').map(line => line.trim()).filter(Boolean);
+        for (const line of lines) {
+            for (const pattern of patterns) {
+                const match = line.match(pattern);
+                if (match?.[1]) {
+                    return agentSafeString(match[1].replace(/\s{2,}/g, ' '), 500);
+                }
+            }
+        }
+        return '';
+    };
+
+    return {
+        name: getLineValue([
+            /(?:l['’]?entreprise\s*\(le prestataire\)|le prestataire)\s*:?\s*(.+)$/i,
+            /(?:soci[eé]t[eé]|ma\s+ste|company|prestataire)\s*:?\s*(.+)$/i
+        ]),
+        number: getLineValue([/(?:siret|num[eé]ro|ice|rc)\s*:?\s*(.+)$/i]),
+        address: getLineValue([/(?:adresse)\s*:?\s*(.+)$/i]),
+        representative: getLineValue([/(?:repr[eé]sent[eé]e?\s+par|representative)\s*:?\s*(.+)$/i])
+    };
+}
+
+function agentReplaceTemplateParagraphValue(html = '', labelPattern, value = '') {
+    if (!value) return html;
+    const safe = agentEscapeHtml(value);
+    const pattern = new RegExp(
+        `(<p[^>]*>\\s*<strong[^>]*>\\s*${labelPattern}\\s*:?\\s*<\\/strong>(?:&nbsp;|\\s)*)[\\s\\S]*?(<\\/p>)`,
+        'i'
+    );
+    return String(html || '').replace(pattern, `$1${safe}$2`);
+}
+
+function agentApplyPrestataireOverridesToPage(html = '', overrides = {}) {
+    if (!html || !Object.values(overrides || {}).some(Boolean)) return html;
+    let output = String(html);
+    const startMatch = output.match(/<p[^>]*>\s*<strong[^>]*>\s*L(?:'|&#39;|’)?entreprise\s*\(Le Prestataire\)/i);
+    if (!startMatch) return output;
+
+    const start = startMatch.index || 0;
+    const endCandidates = [
+        output.slice(start).search(/Ci-apr[èe]s\s+d[ée]nomm[ée][\s\S]{0,80}Prestataire/i),
+        output.slice(start).search(/<h[1-6][^>]*>[\s\S]{0,80}Pr[ée]ambule/i)
+    ].filter(index => index > 0);
+    const end = endCandidates.length ? start + Math.min(...endCandidates) : Math.min(output.length, start + 2500);
+    let segment = output.slice(start, end);
+
+    segment = agentReplaceTemplateParagraphValue(segment, `L(?:'|&#39;|’)?entreprise\\s*\\(Le Prestataire\\)`, overrides.name);
+    segment = agentReplaceTemplateParagraphValue(segment, `SIRET`, overrides.number);
+    segment = agentReplaceTemplateParagraphValue(segment, `Adresse`, overrides.address);
+    segment = agentReplaceTemplateParagraphValue(segment, `Repr[ée]sent[ée]e?\\s+par`, overrides.representative);
+
+    return `${output.slice(0, start)}${segment}${output.slice(end)}`;
+}
+
+function agentInferTemplateBackedReplacements(document = {}, action = {}) {
+    const source = action.input?.contentHtml || action.input?.contentMarkdown || '';
+    const prestataire = agentExtractPrestataireOverrides(source);
+    const hasPrestatairePatch = Object.values(prestataire).some(Boolean);
+    if (!hasPrestatairePatch) return false;
+
+    document.pages = Array.isArray(document.pages) ? document.pages : [];
+    document.pages = document.pages.map(page => ({
+        ...page,
+        content: agentApplyPrestataireOverridesToPage(page?.content || '', prestataire)
+    }));
+    return true;
+}
+
 function agentDefaultDocDimensions(format = 'A4', orientation = 'portrait') {
     const portrait = {
         A3: { width: 1123, height: 1587 },
@@ -5189,6 +5419,27 @@ function agentTemplateValueToString(value) {
     if (value.title) return String(value.title);
     if (value.name) return String(value.name);
     return JSON.stringify(value);
+}
+
+function agentSetByPath(target = {}, pathValue = '', value = '') {
+    const parts = String(pathValue || '').split('.').map(part => part.trim()).filter(Boolean);
+    if (parts.length < 2) return;
+    let current = target;
+    for (let index = 0; index < parts.length - 1; index += 1) {
+        const part = parts[index];
+        if (!current[part] || typeof current[part] !== 'object' || Array.isArray(current[part])) {
+            current[part] = {};
+        }
+        current = current[part];
+    }
+    current[parts[parts.length - 1]] = value;
+}
+
+function agentApplyDottedVariables(target = {}, variables = {}) {
+    Object.entries(agentObjectInput(variables)).forEach(([key, value]) => {
+        if (String(key || '').includes('.')) agentSetByPath(target, key, value);
+    });
+    return target;
 }
 
 function agentEscapeHtml(value = '') {
@@ -5352,7 +5603,7 @@ function agentTemplateContext(record = {}, entity = {}, template = {}, variables
 
     const entityScoped = entity?.slug ? { [entity.slug]: recordContext } : {};
 
-    return {
+    const context = {
         templateName: template.name || '',
         recordTitle,
         title: recordTitle,
@@ -5394,6 +5645,7 @@ function agentTemplateContext(record = {}, entity = {}, template = {}, variables
         inputs: variables,
         variables
     };
+    return agentApplyDottedVariables(context, variables);
 }
 
 function agentValueByPath(source = {}, pathValue = '') {
@@ -5686,7 +5938,6 @@ async function applyAgentAction(req, record, entity, action) {
         };
         if (action.input?.name) document.name = action.input.name;
         if (action.input?.contentMarkdown || action.input?.contentHtml) {
-            const nextContent = agentDocContentHtml(action);
             document.pages = Array.isArray(document.pages) ? document.pages : [];
             if (!document.pages[0]) {
                 document.pages.push({
@@ -5698,9 +5949,27 @@ async function applyAgentAction(req, record, entity, action) {
                     order: 0
                 });
             }
-            document.pages[0].content = action.input?.mode === 'append'
-                ? `${document.pages[0].content || ''}\n<hr>\n${nextContent}`
-                : nextContent;
+        }
+
+        const replacements = agentNormalizeDocReplacements(action.input?.replacements || []);
+        const hasContentPatch = Boolean(action.input?.contentMarkdown || action.input?.contentHtml);
+        if (replacements.length) {
+            agentApplyDocumentReplacements(document, replacements);
+            document.markModified('pages');
+            document.markModified('headerHtml');
+            document.markModified('footerHtml');
+        } else if (hasContentPatch) {
+            if (agentIsTemplateBackedDocument(document)) {
+                const patched = agentInferTemplateBackedReplacements(document, action);
+                if (!patched) {
+                    throw new Error("Modification refusée: ce document vient d'un template. Utilise des remplacements ciblés pour conserver le design.");
+                }
+            } else {
+                const nextContent = agentDocContentHtml(action);
+                document.pages[0].content = action.input?.mode === 'append'
+                    ? `${document.pages[0].content || ''}\n<hr>\n${nextContent}`
+                    : nextContent;
+            }
             document.markModified('pages');
         }
         document.metadata = {

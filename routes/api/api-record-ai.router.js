@@ -3697,6 +3697,90 @@ function agentTemplateGoalScore(goal, template = {}) {
     return score;
 }
 
+function agentParseCommercialAmount(value = '') {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const normalized = raw
+        .replace(/[^\d,.\s-]/g, '')
+        .replace(/\s/g, '')
+        .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+        .replace(/,(?=\d{1,2}$)/, '.');
+    const amount = Number(normalized);
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+function agentCleanCommercialDescription(value = '') {
+    let text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+
+    text = text
+        .replace(/[\s:;,.-]+$/g, '')
+        .replace(/^[\s:;,.-]+/g, '')
+        .replace(/^[\s\S]*\b(?:service|prestation|produit|ligne|objet)\s+/i, '')
+        .replace(/^[\s\S]*\bavec\s+(?:ca|ça|ceci|cela|le|la|un|une)?\s*/i, '')
+        .replace(/^[\s\S]*\b(?:facture|devis|offre|proposition)\s+(?:pour|avec|de|du|d'une|d'un)?\s*/i, '')
+        .replace(/\b(?:ht|ttc|hors taxes?|toutes taxes comprises|euros?|eur|€)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length > 8) text = words.slice(-8).join(' ');
+    if (!text) return '';
+
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function agentNormalizeCommercialLineItems(items = []) {
+    const rawItems = Array.isArray(items) ? items : [];
+    return rawItems
+        .map(item => {
+            const unitPrice = agentParseCommercialAmount(item?.unitPrice ?? item?.price ?? item?.amount ?? item?.total);
+            if (!unitPrice) return null;
+            const quantity = Math.max(1, Number(item?.quantity || item?.qty || 1) || 1);
+            const taxRate = Number.isFinite(Number(item?.taxRate)) ? Number(item.taxRate) : 20;
+            const mode = String(item?.amountMode || item?.mode || 'ht').toLowerCase() === 'ttc' ? 'ttc' : 'ht';
+            const description = agentSafeString(
+                agentCleanCommercialDescription(item?.description || item?.label || item?.name || item?.title || '') || 'Prestation',
+                180
+            );
+            return { description, quantity, unitPrice, taxRate, amountMode: mode };
+        })
+        .filter(Boolean)
+        .slice(0, 12);
+}
+
+function agentExtractCommercialLineItems(goal = '') {
+    const source = String(goal || '');
+    if (!source.trim()) return [];
+
+    const amountRegex = /(\d{1,3}(?:[\s.]\d{3})*(?:,\d{1,2})?|\d+(?:[,.]\d{1,2})?)\s*(?:€|eur|euro|euros)\b/gi;
+    const items = [];
+    let match;
+    while ((match = amountRegex.exec(source)) !== null) {
+        const amount = agentParseCommercialAmount(match[1]);
+        if (!amount) continue;
+
+        const before = source.slice(Math.max(0, match.index - 140), match.index);
+        const after = source.slice(match.index + match[0].length, match.index + match[0].length + 40);
+        const description = agentCleanCommercialDescription(before);
+        const quantityMatch = before.match(/(?:x|quantit[eé]|qt[eé])\s*(\d{1,3})\s*$/i);
+        const quantity = quantityMatch ? Math.max(1, Number(quantityMatch[1]) || 1) : 1;
+        const amountMode = /\bttc\b/i.test(after) ? 'ttc' : 'ht';
+        const taxMatch = source.match(/(?:tva|taxe)\s*(\d{1,2}(?:[,.]\d{1,2})?)\s*%/i);
+        const taxRate = taxMatch ? Number(String(taxMatch[1]).replace(',', '.')) || 20 : 20;
+
+        items.push({
+            description: description || 'Prestation',
+            quantity,
+            unitPrice: amount,
+            taxRate,
+            amountMode
+        });
+    }
+
+    return agentNormalizeCommercialLineItems(items);
+}
+
 function agentBestTemplateForGoal(goal, toolCatalog = {}) {
     if (!agentGoalLooksTemplateGeneration(goal)) return null;
     const templates = Array.isArray(toolCatalog.templates) ? toolCatalog.templates : [];
@@ -3716,7 +3800,27 @@ function agentBestTemplateForGoal(goal, toolCatalog = {}) {
 }
 
 function agentEnsureTemplateGenerationActions(actions = [], goal = '', parsed = {}, toolCatalog = {}) {
-    if ((actions || []).some(action => action.tool === 'generate_doc')) return actions;
+    const lineItems = agentExtractCommercialLineItems(goal);
+    const existingGenerateIndex = (actions || []).findIndex(action => action.tool === 'generate_doc');
+    if (existingGenerateIndex >= 0) {
+        if (!lineItems.length) return actions;
+        const nextActions = [...actions];
+        const current = nextActions[existingGenerateIndex];
+        const currentItems = agentNormalizeCommercialLineItems(current.input?.lineItems || []);
+        if (currentItems.length) return actions;
+        nextActions[existingGenerateIndex] = {
+            ...current,
+            input: {
+                ...(current.input || {}),
+                lineItems
+            },
+            preview: {
+                ...(current.preview || {}),
+                excerpt: `${lineItems.length} ligne${lineItems.length > 1 ? 's' : ''} commerciale${lineItems.length > 1 ? 's' : ''}`
+            }
+        };
+        return nextActions;
+    }
 
     const template = agentBestTemplateForGoal(goal, toolCatalog);
     if (!template?.id) return actions;
@@ -3740,12 +3844,13 @@ function agentEnsureTemplateGenerationActions(actions = [], goal = '', parsed = 
             templateId: cleanId(template.id),
             templateName: template.name || '',
             variables: {},
+            lineItems,
             outputName,
             outputMode: 'draft'
         },
         preview: {
             title: outputName || template.name || 'Template',
-            excerpt: 'Variables auto depuis la fiche et le template',
+            excerpt: lineItems.length ? `${lineItems.length} ligne commerciale` : 'Variables auto depuis la fiche et le template',
             meta: 'Template SmartDoc'
         },
         diff: null
@@ -4036,6 +4141,7 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             const template = agentResolveTemplateRef(input, toolLookup);
             if (!template?.id) return;
             const variables = agentObjectInput(input.variables || input.inputs || {});
+            const lineItems = agentNormalizeCommercialLineItems(input.lineItems || input.items || input.lines || []);
             const outputName = agentSafeString(input.outputName || input.name || '', 180);
             actions.push({
                 id,
@@ -4047,12 +4153,15 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     templateId: cleanId(template.id),
                     templateName: template.name || '',
                     variables,
+                    lineItems,
                     outputName,
                     outputMode: 'draft'
                 },
                 preview: {
                     title: outputName || template.name || 'Template',
-                    excerpt: `${Object.keys(variables).length} variable${Object.keys(variables).length > 1 ? 's' : ''}`,
+                    excerpt: lineItems.length
+                        ? `${lineItems.length} ligne${lineItems.length > 1 ? 's' : ''} commerciale${lineItems.length > 1 ? 's' : ''}`
+                        : `${Object.keys(variables).length} variable${Object.keys(variables).length > 1 ? 's' : ''}`,
                     meta: 'Template SmartDoc'
                 },
                 diff: null
@@ -4683,7 +4792,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
         "- create_doc: { name, contentMarkdown? ou contentHtml?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append.",
-        "- generate_doc: { templateId, variables, outputName? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite.",
+        "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite.",
         "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis.",
         "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
@@ -4693,6 +4802,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour modifier une note, un document, un événement ou générer depuis un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
         "Quand l'utilisateur demande de générer un document (facture, devis, contrat, attestation, offre...) et qu'un template du catalogue correspond, choisis toujours generate_doc avant create_doc.",
         "Pour generate_doc, laisse variables vide sauf si l'utilisateur fournit clairement des valeurs; les variables manquantes seront remplies automatiquement par le template, la fiche et les valeurs par défaut.",
+        "Si la demande de facture/devis/offre contient une prestation, un produit ou un prix, ajoute lineItems: [{description, quantity, unitPrice, taxRate, amountMode:\"ht\"|\"ttc\"}] sans toucher aux variables.",
         "N'utilise create_doc que pour un document libre sans template pertinent.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
@@ -4700,7 +4810,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"...","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentMarkdown":"...","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","contentMarkdown":"...","mode":"append"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -5079,6 +5189,91 @@ function agentTemplateValueToString(value) {
     if (value.title) return String(value.title);
     if (value.name) return String(value.name);
     return JSON.stringify(value);
+}
+
+function agentEscapeHtml(value = '') {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function agentFormatEuro(value) {
+    const amount = Number(value) || 0;
+    return `${new Intl.NumberFormat('fr-FR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount).replace(/\u202f/g, ' ')} €`;
+}
+
+function agentCommercialLineHt(line = {}) {
+    const unitPrice = Number(line.unitPrice) || 0;
+    const taxRate = Number.isFinite(Number(line.taxRate)) ? Number(line.taxRate) : 20;
+    return line.amountMode === 'ttc' ? unitPrice / (1 + taxRate / 100) : unitPrice;
+}
+
+function agentCommercialTotals(lineItems = []) {
+    const normalized = agentNormalizeCommercialLineItems(lineItems);
+    const subtotal = normalized.reduce((sum, line) => sum + (Number(line.quantity) || 1) * agentCommercialLineHt(line), 0);
+    const taxRate = normalized.length
+        ? (Number.isFinite(Number(normalized[0].taxRate)) ? Number(normalized[0].taxRate) : 20)
+        : 20;
+    const tax = subtotal * (taxRate / 100);
+    return { subtotal, taxRate, tax, total: subtotal + tax };
+}
+
+function agentCommercialTableRows(lineItems = []) {
+    return agentNormalizeCommercialLineItems(lineItems).map(line => {
+        const quantity = Number(line.quantity) || 1;
+        const unitPrice = agentCommercialLineHt(line);
+        const total = unitPrice * quantity;
+        return `<tr><td style="border:1px solid #d1d5db;padding:8px 14px;font-size:14px;">${agentEscapeHtml(line.description)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:center;font-size:14px;">${agentEscapeHtml(quantity)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">${agentFormatEuro(unitPrice)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">${agentFormatEuro(total)}</td></tr>`;
+    }).join('\n');
+}
+
+function agentApplyCommercialLinesToHtml(html = '', lineItems = []) {
+    const normalized = agentNormalizeCommercialLineItems(lineItems);
+    if (!normalized.length || !html) return html;
+
+    const rowsHtml = agentCommercialTableRows(normalized);
+    const totals = agentCommercialTotals(normalized);
+    let output = String(html);
+
+    let tableUpdated = false;
+    output = output.replace(
+        /(<table\b[\s\S]*?(?:Désignation|Designation)[\s\S]*?<tbody\b[^>]*>)([\s\S]*?)(<\/tbody>)/i,
+        (match, start, body, end) => {
+            tableUpdated = true;
+            return `${start}\n${rowsHtml}\n${end}`;
+        }
+    );
+
+    if (!tableUpdated) {
+        output = output
+            .replace(/Service\s*\/\s*Produit\s*1/i, agentEscapeHtml(normalized[0].description))
+            .replace(/Service\s*\/\s*Produit\s*2/i, '');
+    }
+
+    output = output
+        .replace(/(Sous-total\s*HT\s*<\/td>\s*<td\b[^>]*>)[\s\S]*?(<\/td>)/i, `$1${agentFormatEuro(totals.subtotal)}$2`)
+        .replace(/(TVA\s*\(\s*)\d+(?:[,.]\d+)?(\s*%\s*\)\s*<\/td>\s*<td\b[^>]*>)[\s\S]*?(<\/td>)/i, `$1${agentEscapeHtml(totals.taxRate)}$2${agentFormatEuro(totals.tax)}$3`)
+        .replace(/(Total\s*TTC\s*<\/td>\s*<td\b[^>]*>)[\s\S]*?(<\/td>)/i, `$1${agentFormatEuro(totals.total)}$2`);
+
+    return output;
+}
+
+function agentApplyCommercialLinesToPages(pages = [], lineItems = []) {
+    const normalized = agentNormalizeCommercialLineItems(lineItems);
+    if (!normalized.length) return pages;
+    return (Array.isArray(pages) ? pages : []).map((page, index) => {
+        if (index > 0 || !page || typeof page !== 'object') return page;
+        return {
+            ...page,
+            content: agentApplyCommercialLinesToHtml(page.content || '', normalized)
+        };
+    });
 }
 
 function agentTemplateCustomFields(record = {}, entity = {}) {
@@ -5564,7 +5759,9 @@ async function applyAgentAction(req, record, entity, action) {
             action.input?.outputName || template.outputNameTemplate || '{{templateName}} - {{recordTitle}}',
             context
         ) || `${template.name || sourceDoc.name || 'Document'} - ${record.computedTitle || record.title || 'Fiche'}`;
-        const pages = agentResolveTemplateObject(agentCloneWithoutMongoIds(sourceDoc.pages || []), context);
+        let pages = agentResolveTemplateObject(agentCloneWithoutMongoIds(sourceDoc.pages || []), context);
+        const lineItems = agentNormalizeCommercialLineItems(action.input?.lineItems || []);
+        pages = agentApplyCommercialLinesToPages(pages, lineItems);
         const headerHtml = agentResolveTemplateString(sourceDoc.headerHtml || '', context);
         const footerHtml = agentResolveTemplateString(sourceDoc.footerHtml || '', context);
 
@@ -5599,7 +5796,7 @@ async function applyAgentAction(req, record, entity, action) {
                 generatedAt: new Date()
             },
             linkedRecords: [agentLinkedRecordPayload(record, entity)],
-            extractedData: { agentVariables: variables },
+            extractedData: { agentVariables: variables, agentLineItems: lineItems },
             status: 'draft',
             metadata: {
                 createdByAgent: true,

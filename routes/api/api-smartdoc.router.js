@@ -914,7 +914,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             const pdfPath = path.join(outputDir, pdfFilename);
 
             try {
-                await generatePDF(resolvedHtml, pdfPath, docTemplate);
+                await generatePDF(resolvedHtml, pdfPath, docTemplate, req.account_number);
                 savedFilename = pdfFilename;
                 savedSize = fs.statSync(pdfPath).size;
             } catch (pdfErr) {
@@ -1646,7 +1646,7 @@ ${pagesHtml}
             const pdfFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.pdf';
             const pdfPath = path.join(outputDir, pdfFilename);
             try {
-                await generatePDF(fullHtml, pdfPath, draftDoc);
+                await generatePDF(fullHtml, pdfPath, draftDoc, req.account_number);
                 savedFilename = pdfFilename;
                 savedSize = fs.statSync(pdfPath).size;
                 console.log(`[SmartDoc] PDF generated: ${pdfFilename} (${savedSize} bytes)`);
@@ -3010,6 +3010,78 @@ function removeGeneratedFile(accountNumber, filename) {
     });
 }
 
+function safeDecodePath(value = '') {
+    try {
+        return decodeURIComponent(String(value || ''));
+    } catch (_) {
+        return String(value || '');
+    }
+}
+
+function attachmentImageMime(filePath = '') {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+    if (ext === '.png') return 'image/png';
+    if (ext === '.gif') return 'image/gif';
+    if (ext === '.webp') return 'image/webp';
+    if (ext === '.bmp') return 'image/bmp';
+    if (ext === '.svg') return 'image/svg+xml';
+    return 'application/octet-stream';
+}
+
+function resolveAttachmentImageFilePath(src = '', accountNumber) {
+    const rawSrc = String(src || '').trim();
+    if (!rawSrc || rawSrc.startsWith('data:') || !accountNumber) return '';
+
+    let pathname = '';
+    try {
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        pathname = new URL(rawSrc, appUrl).pathname;
+    } catch (_) {
+        pathname = rawSrc.split('?')[0].split('#')[0];
+    }
+
+    const decodedPath = safeDecodePath(pathname);
+    const prefixes = [
+        `/account/${accountNumber}/uploads/attachments/`,
+        `/uploads/attachments/${accountNumber}/`
+    ];
+    const prefix = prefixes.find(item => decodedPath.startsWith(item));
+    if (!prefix) return '';
+
+    const relativePath = decodedPath.slice(prefix.length);
+    if (!relativePath || relativePath.includes('..') || path.isAbsolute(relativePath)) return '';
+
+    const privatePath = path.join(__dirname, '../../private_uploads/attachments', String(accountNumber), relativePath);
+    if (fs.existsSync(privatePath)) return privatePath;
+
+    const publicPath = path.join(__dirname, '../../public/uploads/attachments', String(accountNumber), relativePath);
+    if (fs.existsSync(publicPath)) return publicPath;
+
+    return '';
+}
+
+function inlineAttachmentImagesForPdf(html = '', accountNumber) {
+    return String(html || '').replace(
+        /(<img\b[^>]*\bsrc=)(["'])([^"']+)(\2)/gi,
+        (match, prefix, quote, src, suffix) => {
+            const filePath = resolveAttachmentImageFilePath(src, accountNumber);
+            if (!filePath) return match;
+
+            try {
+                const stat = fs.statSync(filePath);
+                if (stat.size > 10 * 1024 * 1024) return match;
+                const mime = attachmentImageMime(filePath);
+                const dataUri = `data:${mime};base64,${fs.readFileSync(filePath).toString('base64')}`;
+                return `${prefix}${quote}${dataUri}${suffix}`;
+            } catch (error) {
+                console.warn('[SmartDoc] Could not inline attachment image for PDF:', error.message);
+                return match;
+            }
+        }
+    );
+}
+
 function stripEditorArtifacts(html = '') {
     return String(html)
         .replace(/<span\b[^>]*class=["'][^"']*\bdoc-block-delete-btn\b[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
@@ -3023,7 +3095,7 @@ function stripEditorArtifacts(html = '') {
  * Margins are expected to be embedded as CSS padding in the HTML content
  * (matching the editor's layout), so Puppeteer uses margin: 0.
  */
-async function generatePDF(html, outputPath, docTemplate) {
+async function generatePDF(html, outputPath, docTemplate, accountNumber = null) {
     let browser;
     try {
         browser = await puppeteer.launch({
@@ -3041,8 +3113,9 @@ async function generatePDF(html, outputPath, docTemplate) {
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
         const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
 
-        let wrappedHtml = html;
+        let wrappedHtml = inlineAttachmentImagesForPdf(html, accountNumber);
         if (!html.includes('<html') && !html.includes('<HTML')) {
+            const contentHtml = wrappedHtml;
             wrappedHtml = `
                 <!DOCTYPE html>
                 <html>
@@ -3166,7 +3239,7 @@ async function generatePDF(html, outputPath, docTemplate) {
                     </style>
                 </head>
                 <body>
-                    ${html}
+                    ${contentHtml}
                 </body>
                 </html>
             `;

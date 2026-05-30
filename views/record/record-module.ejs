@@ -532,6 +532,17 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                         <!-- Widget: single dynamic table -->
                                         <template x-if="wid && wid.startsWith('lines::')">
                                         <div class="ov-card ov-card-lines">
+                                            <template x-if="isSingleLineWidget(wid)">
+                                                <div class="ov-lines-single-header">
+                                                    <div class="ov-lines-single-icon">
+                                                        <iconify-icon icon="solar:notebook-bold-duotone" width="16"></iconify-icon>
+                                                    </div>
+                                                    <div style="min-width:0;">
+                                                        <div class="ov-lines-single-title" x-text="getLineWidgetTitle(wid)"></div>
+                                                        <div class="ov-lines-single-sub" x-text="getLineWidgetSubtitle(wid)"></div>
+                                                    </div>
+                                                </div>
+                                            </template>
                                             <script type="module" src="/dist/dynamicTable.js"></script>
                                             <div
                                                 data-island="dynamic-table"
@@ -675,6 +686,10 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     /* ── Dynamic Tables (Lignes) ── */
     .ov-card-lines{overflow:visible;}
     .ov-card-lines .ov-card-header{margin-bottom:0;}
+    .ov-lines-single-header{display:flex;align-items:center;gap:10px;padding:0 0 14px;margin-bottom:2px;border-bottom:1px solid #f1f3f5;}
+    .ov-lines-single-icon{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(0,171,85,.08);color:#00ab55;flex-shrink:0;}
+    .ov-lines-single-title{font-size:14px;font-weight:800;color:#0e1726;line-height:1.25;}
+    .ov-lines-single-sub{font-size:11px;font-weight:600;color:#94a3b8;margin-top:2px;}
     .ov-lines-tabs{display:flex;align-items:center;gap:0;padding:0 20px;border-bottom:1px solid #f1f3f5;margin-top:8px;}
     .ov-lines-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 16px 12px;border:none;border-bottom:2px solid transparent;background:transparent;color:#888da8;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:inherit;}
     .ov-lines-tab:hover{color:#0e1726;}
@@ -698,6 +713,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     .ov-lines-meta{font-size:11px;color:#bfc9d4;font-weight:500;}
     /* Dark: Lines */
     .dark .ov-lines-tabs{border-bottom-color:#1b2e4b;}
+    .dark .ov-lines-single-header{border-bottom-color:#1b2e4b;}
+    .dark .ov-lines-single-title{color:#e0e6ed;}
+    .dark .ov-lines-single-sub{color:#506690;}
     .dark .ov-lines-tab{color:#506690;}
     .dark .ov-lines-tab:hover,.dark .ov-lines-tab.active{color:#e0e6ed;}
     .dark .ov-lines-tab.active{border-bottom-color:#818cf8;}
@@ -1380,6 +1398,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     this.gridSchemas = (data.data || []).map(s => ({
                         id: String(s._id || ''),
                         name: s.label || s.name || 'Tableau dynamique',
+                        entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>,
                         icon: s.inputMode === 'table' ? 'solar:table-2-bold-duotone' : 'solar:notebook-bold-duotone'
                     })).filter(s => s.id);
                 } catch (e) {
@@ -1623,6 +1642,30 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 return raw.startsWith('lines::') ? raw.slice('lines::'.length) : '';
             },
 
+            getLineWidgetSchemaIds(widgetId) {
+                return this.getLineWidgetSchemaId(widgetId)
+                    .split(',')
+                    .map(id => id.trim())
+                    .filter(Boolean);
+            },
+
+            isSingleLineWidget(widgetId) {
+                return this.getLineWidgetSchemaIds(widgetId).length === 1;
+            },
+
+            getLineWidgetSchema(widgetId) {
+                const schemaId = this.getLineWidgetSchemaIds(widgetId)[0] || '';
+                return (this.gridSchemas || []).find(s => String(s.id) === String(schemaId)) || null;
+            },
+
+            getLineWidgetTitle(widgetId) {
+                return this.getLineWidgetSchema(widgetId)?.name || 'Tableau relationnel';
+            },
+
+            getLineWidgetSubtitle(widgetId) {
+                return this.getLineWidgetSchema(widgetId)?.entityName || <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>;
+            },
+
             openWidgetPicker(colId) {
                 const picker = window.Alpine && window.Alpine.store ? window.Alpine.store('widgetPicker') : null;
                 if (!picker) {
@@ -1630,6 +1673,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     return;
                 }
                 picker.initPicker({
+                    accountNumber: this._accountNumber,
+                    entityId: this._entityId,
+                    entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>,
                     gridSchemas: (this.gridSchemas || []).map(s => ({
                         id: s.id,
                         name: s.name,
@@ -1640,7 +1686,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     type: 'overview',
                     colId,
                     accountNumber: this._accountNumber,
-                    entityId: this._entityId
+                    entityId: this._entityId,
+                    entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>
                 });
             },
 

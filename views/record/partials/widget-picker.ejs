@@ -177,23 +177,32 @@
                         </div>
                     </template>
 
-                    <!-- 6. Dynamic Table -->
+                    <!-- 6. Relational / Dynamic Table -->
                     <template x-if="$store.widgetPicker.newWidget.type === 'dynamic-table'">
                         <div style="display: flex; flex-direction: column; gap: 16px;">
 	                            <div>
-	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Tableau dynamique à utiliser</label>
+	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Mode d'affichage</label>
 	                                <div style="display:flex;gap:8px;margin-bottom:12px;">
 	                                    <button type="button"
-	                                            @click="$store.widgetPicker.newWidget.config.displayMode = 'tabs'"
+	                                            @click="$store.widgetPicker.setDynamicTableMode('tabs')"
 	                                            :style="'flex:1;padding:9px 10px;border-radius:10px;border:' + ($store.widgetPicker.newWidget.config.displayMode !== 'panels' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.config.displayMode !== 'panels' ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + ($store.widgetPicker.newWidget.config.displayMode !== 'panels' ? '#4361ee' : '#64748b') + ';font-size:12px;font-weight:700;cursor:pointer;'">
-	                                        Plusieurs TD avec onglets
+	                                        Multiple avec onglets
 	                                    </button>
 	                                    <button type="button"
-	                                            @click="$store.widgetPicker.newWidget.config.displayMode = 'panels'"
+	                                            @click="$store.widgetPicker.setDynamicTableMode('panels')"
 	                                            :style="'flex:1;padding:9px 10px;border-radius:10px;border:' + ($store.widgetPicker.newWidget.config.displayMode === 'panels' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.config.displayMode === 'panels' ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + ($store.widgetPicker.newWidget.config.displayMode === 'panels' ? '#4361ee' : '#64748b') + ';font-size:12px;font-weight:700;cursor:pointer;'">
-	                                        Un TD par panel
+	                                        Single
 	                                    </button>
 	                                </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+                                        <label style="font-size: 12px; font-weight: 600; color: #374151;">Tableaux disponibles</label>
+                                        <button type="button"
+                                                @click="$store.widgetPicker.openSchemaCreator()"
+                                                style="display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(67,97,238,.25);background:rgba(67,97,238,.06);color:#4361ee;border-radius:9px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;">
+                                            <iconify-icon icon="solar:add-square-bold-duotone" width="13"></iconify-icon>
+                                            Créer un nouveau TD
+                                        </button>
+                                    </div>
 	                                <!-- Schema list -->
                                 <style>
                                     .wp-schema-row { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid #f3f4f6; cursor: pointer; transition: all 0.15s; }
@@ -204,6 +213,16 @@
                                     .wp-schema-row .wp-text { flex: 1; min-width: 0; overflow: hidden; }
                                     .wp-schema-row .wp-text .wp-name { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                                     .wp-schema-row .wp-text .wp-sub { font-size: 11px; color: #9ca3af; margin-top: 1px; white-space: nowrap; }
+                                    .wp-schema-row .wp-select-mark { width: 16px; height: 16px; border: 1.5px solid #9ca3af; background: #fff; color: #fff; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+                                    .wp-schema-row .wp-select-mark.wp-check { border-radius: 4px; }
+                                    .wp-schema-row .wp-select-mark.wp-radio { border-radius: 50%; }
+                                    .wp-schema-row.wp-selected .wp-select-mark { border-color: #4361ee; background: #4361ee; }
+                                    .wp-schema-row .wp-select-mark iconify-icon { opacity: 0; transition: opacity .1s; }
+                                    .wp-schema-row.wp-selected .wp-select-mark iconify-icon { opacity: 1; }
+                                    .wp-schema-row .wp-trash { width: 30px; height: 30px; border: 1px solid #fee2e2; border-radius: 9px; background: #fff; color: #ef4444; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: .62; transition: all .15s; }
+                                    .wp-schema-row:hover .wp-trash, .wp-schema-row .wp-trash.wp-confirm { opacity: 1; }
+                                    .wp-schema-row .wp-trash.wp-confirm { background: #ef4444; border-color: #ef4444; color: #fff; }
+                                    .wp-schema-row .wp-trash:disabled { cursor: wait; opacity: .6; }
                                 </style>
                                 <div style="display: flex; flex-direction: column; gap: 6px;"
                                      x-ref="schemaSortable"
@@ -212,20 +231,14 @@
                                         <div :data-id="s.id"
                                                class="wp-schema-row"
                                                :class="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id) ? 'wp-selected' : ''"
-                                               @click="(() => {
-                                                   const cfg = $store.widgetPicker.newWidget.config;
-                                                   if (!cfg.schemaIds) cfg.schemaIds = [];
-                                                   const idx = cfg.schemaIds.indexOf(s.id);
-                                                   if (idx >= 0) { cfg.schemaIds.splice(idx, 1); }
-                                                   else { cfg.schemaIds.push(s.id); }
-                                                   cfg.schemaId = cfg.schemaIds.length === 1 ? cfg.schemaIds[0] : '';
-                                               })()">
+                                               @click="$store.widgetPicker.toggleSchemaSelection(s.id)">
                                             <div class="schema-drag-handle wp-drag">
                                                 <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                             </div>
-                                            <input type="checkbox"
-                                                   style="accent-color: #4361ee; width: 16px; height: 16px; flex-shrink: 0; pointer-events: none; margin: 0;"
-                                                   :checked="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)">
+                                            <span class="wp-select-mark"
+                                                  :class="$store.widgetPicker.newWidget.config.displayMode === 'panels' ? 'wp-radio' : 'wp-check'">
+                                                <iconify-icon icon="solar:check-bold" width="11"></iconify-icon>
+                                            </span>
                                             <div class="wp-icon-box">
                                                 <iconify-icon icon="solar:notebook-bold-duotone" width="16" style="color: #00ab55;"></iconify-icon>
                                             </div>
@@ -233,6 +246,14 @@
                                                 <div class="wp-name" x-text="s.name"></div>
                                                 <div class="wp-sub">Direct — <span x-text="s.entityName || 'Entity'"></span></div>
                                             </div>
+                                            <button type="button"
+                                                    class="wp-trash"
+                                                    :class="$store.widgetPicker.pendingSchemaDeleteId === s.id ? 'wp-confirm' : ''"
+                                                    :disabled="$store.widgetPicker.deletingSchemaId === s.id"
+                                                    :title="$store.widgetPicker.pendingSchemaDeleteId === s.id ? 'Confirmer la suppression' : 'Supprimer ce TD'"
+                                                    @click.stop="$store.widgetPicker.deleteLineSchema(s.id, s.name)">
+                                                <iconify-icon :icon="$store.widgetPicker.deletingSchemaId === s.id ? 'svg-spinners:ring-resize' : ($store.widgetPicker.pendingSchemaDeleteId === s.id ? 'solar:trash-bin-trash-bold' : 'solar:trash-bin-trash-bold-duotone')" width="15"></iconify-icon>
+                                            </button>
                                         </div>
                                     </template>
                                 </div>
@@ -248,9 +269,9 @@
                             <div style="padding: 14px 16px; background: #f0fdf4; border-radius: 12px; border: 1px solid #dcfce7;">
                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                                     <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
-                                    <span style="font-size: 12px; font-weight: 700; color: #15803d;">Tableau dynamique</span>
+                                    <span style="font-size: 12px; font-weight: 700; color: #15803d;">Tableau relationnel</span>
                                 </div>
-	                                <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;">Choisis un TD seul pour un panel sans onglet, ou plusieurs TD dans le même panel avec onglets.</p>
+	                                <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;">Choisis un tableau existant ou crée un nouveau TD depuis zéro, puis affiche-le seul ou groupé avec onglets.</p>
                             </div>
 
                             <!-- Options as checkboxes (simple, like image 1) -->
@@ -324,6 +345,15 @@
                 config: {}
             },
             gridSchemas: [], // Passed on init
+            accountNumber: '',
+            entityId: '',
+            entityName: '',
+            schemaCreatorRequestId: '',
+            _schemaBridgeAttached: false,
+            pendingSchemaDeleteId: '',
+            deletingSchemaId: '',
+            _pendingSchemaDeleteTimer: null,
+            deletedSchemaIds: [],
             catalog: [
                 { type: 'note',    label: 'Note',       icon: 'solar:notes-bold-duotone',         color: '#f59e0b', desc: 'Bloc de texte simple' },
                 { type: 'tasks',   label: 'Checklist',  icon: 'solar:checklist-bold-duotone',      color: '#ec4899', desc: 'Gestion de tâches' },
@@ -332,8 +362,7 @@
                 { type: 'video',   label: 'Vidéo',      icon: 'solar:video-library-bold-duotone',  color: '#ef4444', desc: 'Lecteur vidéo ou YouTube' },
                 { type: 'link',    label: 'Lien',       icon: 'solar:link-round-bold-duotone',     color: '#3b82f6', desc: 'Accès rapide URL' },
                 { type: 'image',   label: 'Image',      icon: 'solar:gallery-bold-duotone',        color: '#10b981', desc: 'Visuel ou logo' },
-                { type: 'dynamic-table', label: 'TD groupé', icon: 'solar:list-check-bold-duotone',  color: '#00ab55', desc: 'Plusieurs TD avec onglets' },
-                { type: 'dynamic-table-single', label: 'TD single', icon: 'solar:table-2-bold-duotone',  color: '#6366f1', desc: 'Un TD par panel' },
+                { type: 'dynamic-table', label: 'Tableau relationnel', icon: 'solar:list-check-bold-duotone',  color: '#00ab55', desc: 'Single ou multiple' },
                 { type: 'separator', label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', desc: 'Ligne de division' },
                 { type: 'timeline', label: 'Timeline',  icon: 'solar:clock-circle-bold-duotone',   color: '#805dca', desc: 'Fil d\'actualité' },
                 { type: 'kpi',      label: 'KPI',       icon: 'solar:graph-up-bold-duotone',       color: '#e7515a', desc: 'Indicateur clé' },
@@ -342,8 +371,20 @@
                 { type: 'cards',    label: 'Cartes',    icon: 'solar:card-bold-duotone',           color: '#e2a03f', desc: 'Relation records' }
             ],
 
-            initPicker(data) {
-                this.gridSchemas = data.gridSchemas || [];
+            initPicker(data = {}) {
+                const incoming = Array.isArray(data.gridSchemas) ? data.gridSchemas : [];
+                const deletedIds = new Set((this.deletedSchemaIds || []).map(String));
+                const merged = new Map();
+                [...(this.gridSchemas || []), ...incoming].forEach(schema => {
+                    const id = String(schema?.id || schema?._id || '');
+                    if (!id || deletedIds.has(id)) return;
+                    merged.set(id, { ...schema, id });
+                });
+                this.gridSchemas = Array.from(merged.values());
+                this.accountNumber = data.accountNumber || this.accountNumber || '';
+                this.entityId = data.entityId || this.entityId || '';
+                this.entityName = data.entityName || this.entityName || '';
+                this.ensureSchemaCreateBridge();
             },
 
             initSchemaSortable(el) {
@@ -360,11 +401,51 @@
                 });
             },
 
+            syncSchemaId() {
+                const cfg = this.newWidget.config || {};
+                cfg.schemaIds = Array.isArray(cfg.schemaIds) ? cfg.schemaIds.map(String).filter(Boolean) : [];
+                cfg.schemaId = cfg.schemaIds.length === 1 ? cfg.schemaIds[0] : '';
+                this.newWidget.config = cfg;
+            },
+
+            setDynamicTableMode(mode) {
+                const cfg = this.newWidget.config || {};
+                cfg.displayMode = mode;
+                cfg.schemaIds = Array.isArray(cfg.schemaIds) ? cfg.schemaIds.map(String).filter(Boolean) : [];
+                if (mode === 'panels' && cfg.schemaIds.length > 1) {
+                    cfg.schemaIds = [cfg.schemaIds[0]];
+                }
+                this.newWidget.config = cfg;
+                this.syncSchemaId();
+                this.pendingSchemaDeleteId = '';
+            },
+
+            toggleSchemaSelection(schemaId) {
+                const id = String(schemaId || '');
+                if (!id) return;
+                const cfg = this.newWidget.config || {};
+                cfg.schemaIds = Array.isArray(cfg.schemaIds) ? cfg.schemaIds.map(String).filter(Boolean) : [];
+
+                if (cfg.displayMode === 'panels') {
+                    cfg.schemaIds = cfg.schemaIds.includes(id) ? [] : [id];
+                } else {
+                    const idx = cfg.schemaIds.indexOf(id);
+                    if (idx >= 0) cfg.schemaIds.splice(idx, 1);
+                    else cfg.schemaIds.push(id);
+                }
+
+                this.newWidget.config = cfg;
+                this.syncSchemaId();
+            },
+
             initOpen(target) {
                 this.target = target;
                 this.step = 'catalog';
                 this.saving = false;
+                this.pendingSchemaDeleteId = '';
+                this.deletingSchemaId = '';
                 this.newWidget = { _id: null, _catalogType: '', type: '', label: '', icon: '', color: '#4361ee', config: {} };
+                this.ensureSchemaCreateBridge();
                 this.open = true;
                 this.forceOverlayState(true);
             },
@@ -387,6 +468,8 @@
 	                        cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
 	                    }
 	                    if (!cfg.displayMode) cfg.displayMode = cfg.schemaIds.length > 1 ? 'tabs' : 'tabs';
+                        if (cfg.displayMode === 'panels' && cfg.schemaIds.length > 1) cfg.schemaIds = [cfg.schemaIds[0]];
+                        this.syncSchemaId();
 	                }
                 this.step = 'form';
                 this.open = true;
@@ -395,7 +478,112 @@
 
             close() {
                 this.open = false;
+                this.pendingSchemaDeleteId = '';
+                this.deletingSchemaId = '';
                 this.forceOverlayState(false);
+            },
+
+            ensureSchemaCreateBridge() {
+                if (this._schemaBridgeAttached) return;
+                this._schemaBridgeAttached = true;
+                window.addEventListener('dynamic-table-schema-created', (event) => {
+                    const detail = event.detail || {};
+                    if (!detail.requestId || detail.requestId !== this.schemaCreatorRequestId) return;
+                    this.handleCreatedLineSchema(detail.schema);
+                });
+            },
+
+            handleCreatedLineSchema(schema) {
+                if (!schema?._id) return;
+                const schemaId = String(schema._id);
+                this.deletedSchemaIds = (this.deletedSchemaIds || []).filter(id => String(id) !== schemaId);
+                const normalized = {
+                    id: schemaId,
+                    name: schema.label || schema.name || 'Nouveau TD',
+                    entityName: this.target?.entityName || this.entityName || 'Entity'
+                };
+                this.gridSchemas = [
+                    ...this.gridSchemas.filter(s => String(s.id) !== schemaId),
+                    normalized
+                ];
+                const cfg = this.newWidget.config || {};
+                cfg.schemaIds = Array.isArray(cfg.schemaIds) ? cfg.schemaIds : [];
+                if (!cfg.schemaIds.includes(schemaId)) cfg.schemaIds.push(schemaId);
+                if (cfg.displayMode === 'panels' && cfg.schemaIds.length > 1) cfg.schemaIds = [schemaId];
+                cfg.schemaId = cfg.schemaIds.length === 1 ? schemaId : '';
+                this.newWidget.config = cfg;
+                this.schemaCreatorRequestId = '';
+                this.step = 'form';
+                this.open = true;
+                this.forceOverlayState(true);
+                window.showMessage && window.showMessage('Nouveau TD créé et sélectionné', 'success');
+            },
+
+            openSchemaCreator() {
+                const accountNumber = this.target?.accountNumber || this.accountNumber;
+                const entityId = this.target?.entityId || this.entityId;
+                if (!accountNumber || !entityId) {
+                    window.showMessage ? window.showMessage('Contexte entité introuvable pour créer le TD.', 'warning') : alert('Contexte entité introuvable pour créer le TD.');
+                    return;
+                }
+                this.ensureSchemaCreateBridge();
+                const requestId = `wp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                this.schemaCreatorRequestId = requestId;
+
+                const detail = { accountNumber, entityId, requestId };
+                if (window.openDynamicTableCreateModal) {
+                    window.openDynamicTableCreateModal(detail);
+                    return;
+                }
+
+                window.dispatchEvent(new CustomEvent('open-dynamic-table-create-modal', { detail }));
+                setTimeout(() => {
+                    if (!document.querySelector('[data-dt-create-modal="1"]') && !window.openDynamicTableCreateModal) {
+                        window.showMessage ? window.showMessage('Modal de création TD indisponible. Recharge la page puis réessaie.', 'danger') : alert('Modal de création TD indisponible.');
+                    }
+                }, 350);
+            },
+
+            async deleteLineSchema(schemaId, schemaName = '') {
+                const id = String(schemaId || '');
+                const accountNumber = this.target?.accountNumber || this.accountNumber;
+                if (!id || !accountNumber) return;
+
+                if (this.pendingSchemaDeleteId !== id) {
+                    this.pendingSchemaDeleteId = id;
+                    clearTimeout(this._pendingSchemaDeleteTimer);
+                    this._pendingSchemaDeleteTimer = setTimeout(() => {
+                        if (this.pendingSchemaDeleteId === id) this.pendingSchemaDeleteId = '';
+                    }, 3200);
+                    window.showMessage && window.showMessage('Clique encore sur la corbeille pour confirmer la suppression du TD.', 'warning');
+                    return;
+                }
+
+                this.deletingSchemaId = id;
+                clearTimeout(this._pendingSchemaDeleteTimer);
+                try {
+                    const res = await fetch(`/account/${accountNumber}/api/line-schemas/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false) {
+                        throw new Error(data.error || `Erreur HTTP ${res.status}`);
+                    }
+
+                    this.gridSchemas = (this.gridSchemas || []).filter(s => String(s.id) !== id);
+                    if (!this.deletedSchemaIds.map(String).includes(id)) this.deletedSchemaIds = [...this.deletedSchemaIds, id];
+                    const cfg = this.newWidget.config || {};
+                    cfg.schemaIds = (Array.isArray(cfg.schemaIds) ? cfg.schemaIds : []).filter(selectedId => String(selectedId) !== id);
+                    this.newWidget.config = cfg;
+                    this.syncSchemaId();
+                    this.pendingSchemaDeleteId = '';
+                    window.showMessage && window.showMessage(`TD supprimé${schemaName ? ` : ${schemaName}` : ''}`, 'success');
+                } catch (e) {
+                    window.showMessage ? window.showMessage('Suppression impossible : ' + (e.message || 'erreur inconnue'), 'danger') : alert('Suppression impossible : ' + (e.message || 'erreur inconnue'));
+                } finally {
+                    this.deletingSchemaId = '';
+                }
             },
 
             forceOverlayState(open) {
@@ -458,6 +646,15 @@
                     this.newWidget.config.schemaIds = this.gridSchemas
                         .filter(s => checkedIds.includes(s.id))
                         .map(s => s.id);
+                    if (this.newWidget.config.displayMode === 'panels' && this.newWidget.config.schemaIds.length > 1) {
+                        this.newWidget.config.schemaIds = [this.newWidget.config.schemaIds[0]];
+                    }
+                    this.syncSchemaId();
+                    if (this.newWidget.config.displayMode === 'panels' && this.newWidget.config.schemaIds.length === 0) {
+                        this.saving = false;
+                        window.showMessage ? window.showMessage('Choisis un TD pour le mode Single.', 'warning') : alert('Choisis un TD pour le mode Single.');
+                        return;
+                    }
                 }
 
                 try {
@@ -630,6 +827,8 @@
     }
 })();
 </script>
+
+<script type="module" src="/dist/dynamicTable.js"></script>
 
 <style>
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }

@@ -305,6 +305,14 @@ module.exports = {
             const schema = await LineSchema.findByIdAndDelete(req.params.id);
             if (!schema) return res.status(404).json({ error: 'Schema not found' });
 
+            const Entity = await tenantCollection(req, 'Entity');
+            if (Entity) {
+                await Entity.updateMany(
+                    { 'gridSchemas.schemaId': schema._id },
+                    { $pull: { gridSchemas: { schemaId: schema._id } } }
+                );
+            }
+
             res.json({ success: true });
         } catch (error) {
             console.error('[LineSchema] Delete error:', error);

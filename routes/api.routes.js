@@ -1564,6 +1564,7 @@ router.post('/api/user/view-preferences', async (req, res) => {
             'gridColumnWidths',
             // Overview layout builder
             'rows',
+            'customWidgets',
             'noteWidget',
             // Record Agenda
             'agendaPrefs',
@@ -3914,4 +3915,3 @@ router.post('/api/user/theme', async (req, res) => {
 })
 
 module.exports = router
-

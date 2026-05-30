@@ -96,6 +96,10 @@ const userPreferencesSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.Mixed,
             default: undefined
         },
+        customWidgets: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
         // Record Agenda preferences
         agendaPrefs: {
             type: mongoose.Schema.Types.Mixed,

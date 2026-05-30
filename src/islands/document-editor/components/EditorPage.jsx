@@ -23,6 +23,12 @@ import {
     stripHeaderFooterLineFromElement
 } from '../utils/headerFooterPresets'
 
+const EDITOR_HISTORY_EVENT = 'dexio:document-editor-before-mutation'
+
+function requestEditorUndoCheckpoint(label) {
+    window.dispatchEvent(new CustomEvent(EDITOR_HISTORY_EVENT, { detail: { label } }))
+}
+
 export default function EditorPage({
     page,
     pageIndex,
@@ -641,6 +647,7 @@ export default function EditorPage({
         const deletePlaceholder = (placeholder) => {
             if (!placeholder || !el.contains(placeholder)) return
 
+            requestEditorUndoCheckpoint('delete-image-frame')
             const next = placeholder.nextSibling
             const prev = placeholder.previousSibling
             placeholder.remove()
@@ -727,24 +734,24 @@ export default function EditorPage({
             deleteButton.innerHTML = '×'
             deleteButton.style.cssText = `
                 position:absolute;
-                top:-12px;
-                right:-12px;
-                width:24px;
-                height:24px;
+                top:-14px;
+                right:-14px;
+                width:28px;
+                height:28px;
                 border-radius:999px;
-                border:2px solid #fff;
-                background:#ef4444;
+                border:3px solid #fff;
+                background:#dc2626;
                 color:#fff;
                 display:flex;
                 align-items:center;
                 justify-content:center;
                 padding:0;
-                font-size:16px;
+                font-size:20px;
                 font-weight:700;
                 line-height:1;
                 cursor:pointer;
                 pointer-events:auto;
-                box-shadow:0 2px 8px rgba(15,23,42,.22);
+                box-shadow:0 5px 16px rgba(185,28,28,.34), 0 1px 4px rgba(15,23,42,.28);
             `
             deleteButton.addEventListener('pointerdown', (event) => {
                 event.preventDefault()
@@ -1149,7 +1156,7 @@ export default function EditorPage({
         if (!el || page.mode !== 'edition') return
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
-        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay], [data-atomic-caret]'
+        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay], [data-atomic-caret], .doc-block-delete-btn'
 
         // Find the top-level block ancestor within the contenteditable
         const findTopBlock = (target) => {
@@ -1178,12 +1185,17 @@ export default function EditorPage({
             if (!block) return
 
             // Don't add duplicate buttons
-            if (block.querySelector('.doc-block-delete-btn')) return
+            if (block._docBlockDeleteButton?.isConnected || block.querySelector('.doc-block-delete-btn')) return
 
-            // Ensure the block has position:relative so the absolute delete button works
-            const pos = window.getComputedStyle(block).position
-            if (pos === 'static') {
-                block.style.position = 'relative'
+            if (block.tagName === 'TABLE') {
+                const editorPos = window.getComputedStyle(el).position
+                if (editorPos === 'static') el.style.position = 'relative'
+            } else {
+                // Ensure the block has position:relative so the absolute delete button works
+                const pos = window.getComputedStyle(block).position
+                if (pos === 'static') {
+                    block.style.position = 'relative'
+                }
             }
 
             // Create delete button
@@ -1200,9 +1212,11 @@ export default function EditorPage({
                 blockDeleted = true
                 ev.preventDefault()
                 ev.stopPropagation()
+                requestEditorUndoCheckpoint('delete-block')
                 // Insert a <p><br></p> where the block was, so cursor has somewhere to go
                 const p = document.createElement('p')
                 p.innerHTML = '<br>'
+                btn.remove()
                 block.replaceWith(p)
                 // Place cursor in the new paragraph
                 const sel = window.getSelection()
@@ -1220,8 +1234,29 @@ export default function EditorPage({
             btn.addEventListener('pointerdown', deleteBlockElement)
             btn.addEventListener('mousedown', deleteBlockElement)
             btn.addEventListener('click', deleteBlockElement)
+            btn.addEventListener('mouseleave', (event) => {
+                const related = event.relatedTarget
+                if (related && block.contains(related)) return
+                if (block._docBlockDeleteButton === btn) delete block._docBlockDeleteButton
+                btn.remove()
+            })
 
-            block.appendChild(btn)
+            if (block.tagName === 'TABLE') {
+                const blockRect = block.getBoundingClientRect()
+                const editorRect = el.getBoundingClientRect()
+                const localTop = Math.max(2, blockRect.top - editorRect.top - 14)
+                const localLeft = Math.min(
+                    Math.max(2, blockRect.right - editorRect.left - 14),
+                    Math.max(2, el.clientWidth - 30)
+                )
+                btn.style.top = `${localTop}px`
+                btn.style.left = `${localLeft}px`
+                btn.style.right = 'auto'
+                el.appendChild(btn)
+            } else {
+                block.appendChild(btn)
+            }
+            block._docBlockDeleteButton = btn
         }
 
         const handleMouseOut = (e) => {
@@ -1230,10 +1265,11 @@ export default function EditorPage({
 
             // Check if mouse is still inside the block
             const related = e.relatedTarget
-            if (related && block.contains(related)) return
+            const btn = block._docBlockDeleteButton || block.querySelector('.doc-block-delete-btn')
+            if (related && (block.contains(related) || btn?.contains?.(related))) return
 
             // Remove delete button and reset position
-            const btn = block.querySelector('.doc-block-delete-btn')
+            if (block._docBlockDeleteButton === btn) delete block._docBlockDeleteButton
             if (btn) btn.remove()
         }
 
@@ -1243,6 +1279,7 @@ export default function EditorPage({
         return () => {
             el.removeEventListener('mouseover', handleMouseOver)
             el.removeEventListener('mouseout', handleMouseOut)
+            el.querySelectorAll('.doc-block-delete-btn').forEach(btn => btn.remove())
         }
     }, [page.mode, pageIndex, handlePageInput])
 
@@ -1340,11 +1377,15 @@ export default function EditorPage({
 
             return null
         }
-        const removeTableTopSpacing = (table) => {
+        const hasTableTopSpacing = (table) => {
             if (!table || table.tagName !== 'TABLE') return false
             const computedTop = Number.parseFloat(window.getComputedStyle(table).marginTop || '0') || 0
             const inlineTop = Number.parseFloat(table.style.marginTop || '0') || 0
-            if (computedTop <= 0 && inlineTop <= 0) return false
+            return computedTop > 0 || inlineTop > 0
+        }
+
+        const removeTableTopSpacing = (table) => {
+            if (!hasTableTopSpacing(table)) return false
 
             table.style.marginTop = '0px'
             return true
@@ -1380,6 +1421,7 @@ export default function EditorPage({
         const deleteSelectedTable = (table) => {
             if (!table || !el.contains(table)) return
 
+            requestEditorUndoCheckpoint('delete-table')
             const next = table.nextElementSibling
             const prev = table.previousElementSibling
             table.remove()
@@ -1474,6 +1516,7 @@ export default function EditorPage({
                 if (adjacentEmptyBlockTable?.table) {
                     e.preventDefault()
                     e.stopPropagation()
+                    requestEditorUndoCheckpoint('remove-table-spacer')
                     adjacentEmptyBlockTable.emptyBlock.remove()
                     if (adjacentEmptyBlockTable.side === 'before') {
                         removeTableTopSpacing(adjacentEmptyBlockTable.table)
@@ -1487,13 +1530,11 @@ export default function EditorPage({
             const adjacent = getAdjacentAtomicBlock(range)
 
             if (adjacent?.block?.tagName === 'TABLE') {
-                if (
-                    e.key === 'Delete' &&
-                    adjacent.side === 'before' &&
-                    removeTableTopSpacing(adjacent.block)
-                ) {
+                if (e.key === 'Delete' && adjacent.side === 'before' && hasTableTopSpacing(adjacent.block)) {
                     e.preventDefault()
                     e.stopPropagation()
+                    requestEditorUndoCheckpoint('remove-table-spacing')
+                    removeTableTopSpacing(adjacent.block)
                     setCaretAroundAtomic(adjacent.block, 'before')
                     handlePageInput?.({ target: el }, pageIndex)
                     return

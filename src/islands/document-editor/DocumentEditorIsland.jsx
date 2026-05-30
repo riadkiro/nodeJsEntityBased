@@ -23,6 +23,8 @@ import { getSelectedImage } from './hooks/useImageResize'
 
 // Native keyboard detection - NO external library, CANNOT fail
 const isMod = (e) => e.ctrlKey || e.metaKey
+const EDITOR_HISTORY_EVENT = 'dexio:document-editor-before-mutation'
+const EDITOR_HISTORY_LIMIT = 80
 
 function sanitizeEditorPageHtml(html) {
     if (!html) return ''
@@ -356,11 +358,19 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const initialPaginationRef = useRef('')
     const autoSaveRef = useRef(true) // Ref mirror of autoSave for stale-closure-safe access
     const hasUnsavedChangesRef = useRef(false) // Tracks unsaved edits when auto-save is OFF
+    const selectedPageIndexRef = useRef(selectedPageIndex)
+    const undoStackRef = useRef([])
+    const redoStackRef = useRef([])
+    const restoringHistoryRef = useRef(false)
 
     // Keep docRef in sync
     useEffect(() => {
         docRef.current = doc
     })
+
+    useEffect(() => {
+        selectedPageIndexRef.current = selectedPageIndex
+    }, [selectedPageIndex])
 
     // Keep autoSaveRef in sync
     useEffect(() => {
@@ -669,6 +679,138 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     useEffect(() => {
         return () => clearTimeout(saveTimeoutRef.current)
     }, [])
+
+    const cloneForHistory = useCallback((value) => {
+        try {
+            return JSON.parse(JSON.stringify(value || {}))
+        } catch (_) {
+            return { ...(value || {}) }
+        }
+    }, [])
+
+    const buildLiveHistoryDoc = useCallback(() => {
+        const source = cloneForHistory(docRef.current || createDefaultDoc())
+        const pages = Array.isArray(source.pages) ? [...source.pages] : []
+        const mountedIndexes = Object.keys(pageRefs.current || {})
+            .map(index => Number(index))
+            .filter(index => Number.isInteger(index) && index >= 0)
+
+        const pageCount = Math.max(pages.length, mountedIndexes.length ? Math.max(...mountedIndexes) + 1 : 0, 1)
+        const nextPages = Array.from({ length: pageCount }).map((_, index) => {
+            const existing = pages[index] || {}
+            const pageEl = pageRefs.current[index]
+            const mode = existing.mode || 'edition'
+            return {
+                content: mode === 'edition' && pageEl
+                    ? stripEditorRuntimeArtifacts(pageEl.innerHTML || '')
+                    : (existing.content || ''),
+                elements: Array.isArray(existing.elements) ? existing.elements : [],
+                rows: Array.isArray(existing.rows) ? existing.rows : [],
+                mode,
+                background: existing.background || '#ffffff',
+                order: index
+            }
+        })
+
+        return { ...source, pages: nextPages }
+    }, [cloneForHistory])
+
+    const buildHistoryEntry = useCallback((label = 'edit') => {
+        const snapshotDoc = buildLiveHistoryDoc()
+        const selectedIndex = Math.min(
+            selectedPageIndexRef.current || 0,
+            Math.max(0, (snapshotDoc.pages?.length || 1) - 1)
+        )
+
+        return {
+            label,
+            doc: snapshotDoc,
+            selectedPageIndex: selectedIndex,
+            key: JSON.stringify({
+                pages: snapshotDoc.pages,
+                headerHtml: snapshotDoc.headerHtml || '',
+                footerHtml: snapshotDoc.footerHtml || '',
+                dimensions: snapshotDoc.dimensions || null,
+                margins: snapshotDoc.margins || null
+            })
+        }
+    }, [buildLiveHistoryDoc])
+
+    const pushUndoSnapshot = useCallback((label = 'edit') => {
+        if (restoringHistoryRef.current) return false
+
+        const entry = buildHistoryEntry(label)
+        const stack = undoStackRef.current
+        const last = stack[stack.length - 1]
+        if (last?.key === entry.key) return false
+
+        stack.push(entry)
+        if (stack.length > EDITOR_HISTORY_LIMIT) stack.shift()
+        redoStackRef.current = []
+        return true
+    }, [buildHistoryEntry])
+
+    const restoreHistoryEntry = useCallback((entry) => {
+        if (!entry?.doc) return false
+
+        const restoredDoc = cloneForHistory(entry.doc)
+        const restoredPageCount = restoredDoc.pages?.length || 1
+        const nextSelectedIndex = Math.min(entry.selectedPageIndex || 0, restoredPageCount - 1)
+
+        restoringHistoryRef.current = true
+        clearTimeout(saveTimeoutRef.current)
+        docRef.current = restoredDoc
+        setIsGlobalSelection(false)
+        isGlobalSelectionRef.current = false
+        setSelectedPageIndex(nextSelectedIndex)
+        setDoc(restoredDoc)
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const restoredPages = restoredDoc.pages || []
+                restoredPages.forEach((page, index) => {
+                    const pageEl = pageRefs.current[index]
+                    if (pageEl && page.mode === 'edition') {
+                        pageEl.innerHTML = page.content || ''
+                    }
+                })
+                restoringHistoryRef.current = false
+                triggerSave(restoredDoc)
+            })
+        })
+
+        return true
+    }, [cloneForHistory, triggerSave])
+
+    const handleEditorUndo = useCallback(() => {
+        const previous = undoStackRef.current.pop()
+        if (!previous) return false
+
+        const current = buildHistoryEntry('redo-base')
+        redoStackRef.current.push(current)
+        restoreHistoryEntry(previous)
+        return true
+    }, [buildHistoryEntry, restoreHistoryEntry])
+
+    const handleEditorRedo = useCallback(() => {
+        const next = redoStackRef.current.pop()
+        if (!next) return false
+
+        const current = buildHistoryEntry('undo-base')
+        undoStackRef.current.push(current)
+        if (undoStackRef.current.length > EDITOR_HISTORY_LIMIT) undoStackRef.current.shift()
+        restoreHistoryEntry(next)
+        return true
+    }, [buildHistoryEntry, restoreHistoryEntry])
+
+    useEffect(() => {
+        const handleBeforeMutation = (event) => {
+            pushUndoSnapshot(event.detail?.label || 'mutation')
+        }
+
+        window.addEventListener(EDITOR_HISTORY_EVENT, handleBeforeMutation)
+        return () => window.removeEventListener(EDITOR_HISTORY_EVENT, handleBeforeMutation)
+    }, [pushUndoSnapshot])
 
     // ========== INTERACTIVE CHECKBOXES (☐ ↔ ☑) ==========
     useEffect(() => {
@@ -1392,6 +1534,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                 if (rangeIsInPage && !range.collapsed) {
                     e.preventDefault()
+                    pushUndoSnapshot('delete-selection')
                     document.querySelectorAll('[data-caret-marker="1"]').forEach(marker => marker.remove())
                     range.deleteContents()
                     range.collapse(true)
@@ -1576,7 +1719,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             triggerSave()
             return
         }
-    }, [triggerSave, reflowDocument, handlePageInput, repackPagesFrom])
+    }, [triggerSave, reflowDocument, handlePageInput, repackPagesFrom, pushUndoSnapshot])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
@@ -1725,6 +1868,28 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // Unified window-level handler: Ctrl+A selects all, Delete/Backspace clears (DOM-first)
     useEffect(() => {
         const handleWindowKeyDown = (e) => {
+            const key = e.key?.toLowerCase()
+            const isModifierUndo = (e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey && !e.altKey
+            const isModifierRedo =
+                ((e.ctrlKey || e.metaKey) && key === 'y' && !e.altKey) ||
+                ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'z' && !e.altKey)
+
+            if (editorMode === 'edition' && isModifierRedo) {
+                if (handleEditorRedo()) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    return
+                }
+            }
+
+            if (editorMode === 'edition' && isModifierUndo) {
+                if (handleEditorUndo()) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    return
+                }
+            }
+
             // Ctrl+A for global selection — select all text across pages
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !e.shiftKey && !e.altKey) {
                 if (editorMode === 'edition') {
@@ -1743,6 +1908,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             if (isGlobalSelectionRef.current && (e.key === 'Delete' || e.key === 'Backspace')) {
                 e.preventDefault()
                 e.stopPropagation()
+                pushUndoSnapshot('delete-global-selection')
                 // 1) Clear DOM immediately (uncontrolled contenteditable)
                 Object.values(pageRefs.current || {}).forEach(el => {
                     if (el) el.innerHTML = ''
@@ -1773,6 +1939,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             // Any other key while global selection is active — cancel selection
             if (isGlobalSelectionRef.current && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
                 // Typing replaces the selection — clear all then let the key through
+                pushUndoSnapshot('replace-global-selection')
                 Object.values(pageRefs.current || {}).forEach(el => {
                     if (el) el.innerHTML = ''
                 })
@@ -1819,7 +1986,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             window.removeEventListener('copy', handleCopy)
             window.removeEventListener('click', handleClick)
         }
-    }, [editorMode, handleGlobalCopy, triggerSave]) // removed isGlobalSelection — using ref instead
+    }, [editorMode, handleGlobalCopy, handleEditorRedo, handleEditorUndo, pushUndoSnapshot, triggerSave]) // removed isGlobalSelection — using ref instead
 
     // ========== PAGE MANAGEMENT ==========
     const addPage = useCallback(() => {
@@ -1849,6 +2016,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     const deletePage = useCallback((index) => {
         if (doc.pages.length <= 1) return
+        pushUndoSnapshot('delete-page')
         setDoc(prev => {
             const pages = prev.pages.filter((_, i) => i !== index)
             return { ...prev, pages }
@@ -1857,7 +2025,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             setSelectedPageIndex(prev => prev - 1)
         }
         triggerSave()
-    }, [doc.pages.length, selectedPageIndex, triggerSave])
+    }, [doc.pages.length, selectedPageIndex, pushUndoSnapshot, triggerSave])
 
     const setPageMode = useCallback((index, mode) => {
         setDoc(prev => {
@@ -3041,31 +3209,32 @@ ${pagesHtml}
                 /* Delete button for blocks (injected by JS on mouseenter) */
                 .doc-block-delete-btn {
                     position: absolute;
-                    top: -10px;
-                    right: -10px;
-                    width: 22px;
-                    height: 22px;
+                    top: -14px;
+                    right: -14px;
+                    width: 28px;
+                    height: 28px;
                     border-radius: 50%;
-                    background: #ef4444;
+                    background: #dc2626;
                     color: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 14px;
-                    font-weight: bold;
+                    font-size: 20px;
+                    font-weight: 800;
                     line-height: 1;
                     cursor: pointer;
-                    z-index: 10;
-                    border: 2px solid white;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-                    transition: transform 0.15s, background 0.15s;
+                    z-index: 360;
+                    border: 3px solid white;
+                    box-shadow: 0 5px 16px rgba(185,28,28,0.34), 0 1px 4px rgba(15,23,42,0.28);
+                    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
                     pointer-events: auto;
                     opacity: 0;
                     animation: doc-block-fadein 0.15s ease forwards;
                 }
                 .doc-block-delete-btn:hover {
-                    background: #dc2626;
-                    transform: scale(1.15);
+                    background: #b91c1c;
+                    box-shadow: 0 7px 20px rgba(185,28,28,0.42), 0 1px 5px rgba(15,23,42,0.32);
+                    transform: scale(1.12);
                 }
                 @keyframes doc-block-fadein {
                     from { opacity: 0; transform: scale(0.8); }
@@ -3107,6 +3276,8 @@ ${pagesHtml}
                 lastSaved={lastSaved}
                 triggerSave={triggerSave}
                 forceSave={forceSave}
+                onUndo={handleEditorUndo}
+                onRedo={handleEditorRedo}
                 autoSave={autoSave}
                 setAutoSave={handleSetAutoSave}
                 handlePdfExport={handlePdfExport}

@@ -638,6 +638,8 @@ export default function EditorHeader({
     lastSaved,
     triggerSave,
     forceSave,
+    onUndo,
+    onRedo,
     autoSave,
     setAutoSave,
     handlePdfExport,
@@ -1266,14 +1268,20 @@ export default function EditorHeader({
             <div className="flex items-center px-3 py-1 gap-0.5 flex-nowrap" style={{ overflow: 'visible' }}>
                 {/* Undo / Redo */}
                 <button
-                    onMouseDown={(e) => { e.preventDefault(); document.execCommand('undo') }}
+                    onMouseDown={(e) => {
+                        e.preventDefault()
+                        if (!onUndo?.()) document.execCommand('undo')
+                    }}
                     className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Annuler (Ctrl+Z)"
                 >
                     <iconify-icon icon="tabler:arrow-back-up" width="18"></iconify-icon>
                 </button>
                 <button
-                    onMouseDown={(e) => { e.preventDefault(); document.execCommand('redo') }}
+                    onMouseDown={(e) => {
+                        e.preventDefault()
+                        if (!onRedo?.()) document.execCommand('redo')
+                    }}
                     className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Rétablir (Ctrl+Y)"
                 >

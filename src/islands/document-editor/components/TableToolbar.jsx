@@ -14,6 +14,11 @@ import { getPaginatedTableFragments, syncPaginatedTableFragmentStyles } from '..
 
 // ── Column resize logic ──
 const MIN_COLUMN_WIDTH = 48
+const EDITOR_HISTORY_EVENT = 'dexio:document-editor-before-mutation'
+
+function requestEditorUndoCheckpoint(label) {
+    window.dispatchEvent(new CustomEvent(EDITOR_HISTORY_EVENT, { detail: { label } }))
+}
 
 function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value))
@@ -577,6 +582,7 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, cont
         const allRows = activeTable.querySelectorAll('tr')
         if (allRows.length <= 1) return
 
+        requestEditorUndoCheckpoint('delete-table-row')
         row.remove()
         clearToolbar()
         onSave?.()
@@ -624,6 +630,7 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, cont
         const cols = getColCount()
         if (cols <= 1) return
 
+        requestEditorUndoCheckpoint('delete-table-column')
         getLinkedTables().forEach(table => {
             const rows = table.querySelectorAll('tr')
             rows.forEach(row => {
@@ -773,6 +780,7 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, cont
 
     const deleteTable = useCallback(() => {
         if (!activeTable) return
+        requestEditorUndoCheckpoint('delete-table')
         getLinkedTables().forEach(table => table.remove())
         clearToolbar?.()
         onSave?.()

@@ -9,115 +9,171 @@
  * 
  * Must be rendered inside each page wrapper (position:relative parent)
  */
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { getPaginatedTableFragments, syncPaginatedTableFragmentStyles } from '../utils/paginationUtils'
 
 // ── Column resize logic ──
-function enableColumnResize(table, onSave) {
-    if (!table || table._resizeCleanup) return
+const MIN_COLUMN_WIDTH = 48
 
-    table.style.tableLayout = 'fixed'
-    const rows = table.querySelectorAll('tr')
-    const firstRow = rows[0]
-    if (!firstRow) return
+function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value))
+}
 
-    // Ensure all cells have explicit widths
-    const cells = firstRow.children
-    const tableWidth = table.offsetWidth
-    Array.from(cells).forEach(cell => {
-        if (!cell.style.width) {
-            cell.style.width = `${cell.offsetWidth}px`
+function parseTransformScale(transform) {
+    if (!transform || transform === 'none') return null
+
+    const scaleMatch = transform.match(/scale\(([\d.]+)\)/)
+    if (scaleMatch) return parseFloat(scaleMatch[1])
+
+    const matrixMatch = transform.match(/^matrix\(([^,]+)/)
+    if (matrixMatch) return parseFloat(matrixMatch[1])
+
+    return null
+}
+
+function readElementScale(el) {
+    let zoom = 1
+    let current = el
+
+    while (current && current.nodeType === 1) {
+        const inlineScale = parseTransformScale(current.style?.transform || '')
+        const computedScale = parseTransformScale(window.getComputedStyle?.(current)?.transform || '')
+        const scale = inlineScale || computedScale
+
+        if (Number.isFinite(scale) && scale > 0) {
+            zoom *= scale
         }
-    })
 
-    // Create resize handles
-    const handles = []
-    for (let i = 0; i < cells.length - 1; i++) {
-        const handle = document.createElement('div')
-        handle.className = 'tt-col-resize-handle'
-        handle.dataset.colIndex = i
-        handle.style.cssText = `
-            position: absolute;
-            top: 0;
-            width: 6px;
-            height: 100%;
-            cursor: col-resize;
-            z-index: 10;
-            background: transparent;
-            transition: background 0.15s;
-        `
-        handle.addEventListener('mouseenter', () => {
-            handle.style.background = 'rgba(79, 70, 229, 0.3)'
-        })
-        handle.addEventListener('mouseleave', () => {
-            if (!handle._dragging) handle.style.background = 'transparent'
-        })
-        table.style.position = 'relative'
-        table.appendChild(handle)
-        handles.push(handle)
+        current = current.parentElement
     }
 
-    // Position handles
-    function positionHandles() {
-        const firstRowCells = table.querySelector('tr')?.children
-        if (!firstRowCells) return
-        let left = 0
-        for (let i = 0; i < firstRowCells.length - 1; i++) {
-            left += firstRowCells[i].offsetWidth
-            if (handles[i]) {
-                handles[i].style.left = `${left - 3}px`
-            }
-        }
-    }
-    positionHandles()
+    return Number.isFinite(zoom) && zoom > 0 ? zoom : 1
+}
 
-    // Drag handlers
-    handles.forEach((handle, idx) => {
-        handle.addEventListener('mousedown', (e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            handle._dragging = true
-            handle.style.background = 'rgba(79, 70, 229, 0.5)'
+function getEditorZoom(el) {
+    return readElementScale(el)
+}
 
-            const startX = e.clientX
-            const colCells = []
-            const nextColCells = []
-            rows.forEach(row => {
-                if (row.children[idx]) colCells.push(row.children[idx])
-                if (row.children[idx + 1]) nextColCells.push(row.children[idx + 1])
-            })
-            const startWidth = colCells[0]?.offsetWidth || 80
-            const nextStartWidth = nextColCells[0]?.offsetWidth || 80
+function getEditorContext(table) {
+    const editor = table?.closest?.('[contenteditable="true"]')
+    const wrapper = editor?.parentElement || table?.parentElement
+    if (!table || !editor || !wrapper) return null
 
-            function onMouseMove(ev) {
-                const diff = ev.clientX - startX
-                const newWidth = Math.max(40, startWidth + diff)
-                const nextNewWidth = Math.max(40, nextStartWidth - diff)
-                colCells.forEach(c => { c.style.width = `${newWidth}px` })
-                nextColCells.forEach(c => { c.style.width = `${nextNewWidth}px` })
-                positionHandles()
-            }
-            function onMouseUp() {
-                handle._dragging = false
-                handle.style.background = 'transparent'
-                document.removeEventListener('mousemove', onMouseMove)
-                document.removeEventListener('mouseup', onMouseUp)
-                onSave?.()
-            }
-            document.addEventListener('mousemove', onMouseMove)
-            document.addEventListener('mouseup', onMouseUp)
-        })
-    })
-
-    table._resizeCleanup = () => {
-        handles.forEach(h => h.remove())
-        table.style.tableLayout = ''
-        delete table._resizeCleanup
+    const zoom = getEditorZoom(editor)
+    return {
+        editor,
+        wrapper,
+        zoom,
+        wrapperRect: wrapper.getBoundingClientRect()
     }
 }
 
-function disableColumnResize(table) {
-    if (table?._resizeCleanup) {
-        table._resizeCleanup()
+function getSizingRow(table) {
+    return table?.querySelector?.('tbody tr') ||
+        Array.from(table?.querySelectorAll?.('tr') || []).find(row => row.offsetHeight > 0) ||
+        table?.querySelector?.('tr') ||
+        null
+}
+
+function getColumnCells(table, index) {
+    return Array.from(table?.querySelectorAll?.('tr') || [])
+        .map(row => row.children?.[index])
+        .filter(Boolean)
+}
+
+function getColumnWidths(table) {
+    const row = getSizingRow(table)
+    if (!row) return []
+
+    const ctx = getEditorContext(table)
+    const zoom = ctx?.zoom || 1
+    return Array.from(row.children || []).map(cell => (
+        cell.offsetWidth || (cell.getBoundingClientRect().width / zoom) || MIN_COLUMN_WIDTH
+    ))
+}
+
+function getDirectColGroup(table) {
+    return Array.from(table?.children || []).find(child => child.tagName === 'COLGROUP') || null
+}
+
+function ensureColGroup(table, count) {
+    let colgroup = getDirectColGroup(table)
+    if (!colgroup) {
+        colgroup = document.createElement('colgroup')
+        table.insertBefore(colgroup, table.firstChild)
+    }
+
+    while (colgroup.children.length < count) {
+        colgroup.appendChild(document.createElement('col'))
+    }
+    while (colgroup.children.length > count) {
+        colgroup.lastElementChild?.remove()
+    }
+
+    return colgroup
+}
+
+function prepareTableForResize(table, widths = null, tableWidth = null) {
+    if (!table) return []
+
+    const nextWidths = widths || getColumnWidths(table)
+    const nextTableWidth = tableWidth || table.offsetWidth || nextWidths.reduce((sum, width) => sum + width, 0)
+    table.style.tableLayout = 'fixed'
+    table.style.width = `${Math.max(1, nextTableWidth)}px`
+    table.style.maxWidth = '100%'
+
+    const colgroup = ensureColGroup(table, nextWidths.length)
+    nextWidths.forEach((width, index) => {
+        const col = colgroup.children[index]
+        if (col) col.style.width = `${Math.max(MIN_COLUMN_WIDTH, width)}px`
+        getColumnCells(table, index).forEach(cell => {
+            cell.style.removeProperty('width')
+            cell.style.removeProperty('min-width')
+            cell.style.removeProperty('max-width')
+        })
+    })
+
+    return nextWidths
+}
+
+function buildResizeOverlay(table) {
+    const ctx = getEditorContext(table)
+    const row = getSizingRow(table)
+    if (!ctx || !row) return null
+
+    const tableRect = table.getBoundingClientRect()
+    const top = (tableRect.top - ctx.wrapperRect.top) / ctx.zoom
+    const height = tableRect.height / ctx.zoom
+    const left = (tableRect.left - ctx.wrapperRect.left) / ctx.zoom
+    const right = (tableRect.right - ctx.wrapperRect.left) / ctx.zoom
+    const cells = Array.from(row.children || [])
+    const handles = []
+
+    cells.slice(0, -1).forEach((cell, index) => {
+        const rect = cell.getBoundingClientRect()
+        handles.push({
+            type: 'column',
+            index,
+            left: (rect.right - ctx.wrapperRect.left) / ctx.zoom,
+            top,
+            height
+        })
+    })
+
+    handles.push({
+        type: 'table',
+        index: Math.max(0, cells.length - 1),
+        left: right,
+        top,
+        height
+    })
+
+    return {
+        top,
+        left,
+        width: right - left,
+        height,
+        handles
     }
 }
 
@@ -188,6 +244,58 @@ export function useTableToolbar(contentRef, onSave) {
     const [activeTable, setActiveTable] = useState(null)
     const [activeCell, setActiveCell] = useState(null)
     const [toolbarPos, setToolbarPos] = useState({ top: 0, left: 0 })
+    const [contextMenu, setContextMenu] = useState(null)
+
+    const getEditorZoom = useCallback((el) => readElementScale(el), [])
+
+    const positionToolbarForTable = useCallback((table) => {
+        const el = contentRef?.current
+        if (!el || !table) return
+
+        const pageWrapper = el.parentElement
+        const tableRect = table.getBoundingClientRect()
+        const wrapperRect = pageWrapper.getBoundingClientRect()
+        const zoom = getEditorZoom(el)
+        const rawTop = (tableRect.top - wrapperRect.top) / zoom - 44
+
+        setToolbarPos({
+            top: Math.max(0, rawTop),
+            left: (tableRect.left - wrapperRect.left) / zoom
+        })
+    }, [contentRef, getEditorZoom])
+
+    const getLocalPoint = useCallback((event) => {
+        const el = contentRef?.current
+        const pageWrapper = el?.parentElement
+        if (!el || !pageWrapper || !event) return null
+
+        const wrapperRect = pageWrapper.getBoundingClientRect()
+        const zoom = getEditorZoom(el)
+        return {
+            x: (event.clientX - wrapperRect.left) / zoom,
+            y: (event.clientY - wrapperRect.top) / zoom
+        }
+    }, [contentRef, getEditorZoom])
+
+    const selectTable = useCallback((table, cell = null, event = null) => {
+        const el = contentRef?.current
+        if (!el || !table || !el.contains(table)) return
+
+        const selectedCell = cell || table.querySelector('td, th')
+        setActiveTable(table)
+        setActiveCell(selectedCell)
+        positionToolbarForTable(table)
+
+        if (event) {
+            const point = getLocalPoint(event) || { x: event.clientX, y: event.clientY }
+            setContextMenu({
+                x: point.x,
+                y: point.y,
+                table,
+                cell: selectedCell
+            })
+        }
+    }, [contentRef, getLocalPoint, positionToolbarForTable])
 
     useEffect(() => {
         // Use a small delay to ensure the contenteditable ref is populated after render
@@ -200,36 +308,45 @@ export function useTableToolbar(contentRef, onSave) {
                 const table = e.target.closest('table')
 
                 if (cell && table && el.contains(table)) {
-                    setActiveTable(table)
-                    setActiveCell(cell)
-
-                    // Position toolbar above the table, relative to the page wrapper
-                    const pageWrapper = el.parentElement
-                    const tableRect = table.getBoundingClientRect()
-                    const wrapperRect = pageWrapper.getBoundingClientRect()
-
-                    // Detect zoom
-                    let zoom = 1
-                    const scaledAncestor = el.closest('[style*="scale"]')
-                    if (scaledAncestor) {
-                        const match = scaledAncestor.style.transform?.match(/scale\(([\d.]+)\)/)
-                        if (match) zoom = parseFloat(match[1])
-                    }
-
-                    const rawTop = (tableRect.top - wrapperRect.top) / zoom - 44
-                    setToolbarPos({
-                        top: Math.max(0, rawTop),
-                        left: (tableRect.left - wrapperRect.left) / zoom
-                    })
+                    setContextMenu(null)
+                    selectTable(table, cell)
                 } else {
                     setActiveTable(null)
                     setActiveCell(null)
+                    setContextMenu(null)
                 }
             }
 
+            function handleContextMenu(e) {
+                const table = e.target.closest('table')
+                if (!table || !el.contains(table)) return
+
+                const cell = e.target.closest('td, th')
+                e.preventDefault()
+                e.stopPropagation()
+                selectTable(table, cell && table.contains(cell) ? cell : null, e)
+            }
+
+            function handleDocumentMouseDown(e) {
+                if (e.target.closest?.('[data-table-context-menu]')) return
+                setContextMenu(null)
+            }
+
+            function handleDocumentKeyDown(e) {
+                if (e.key === 'Escape') setContextMenu(null)
+            }
+
             el.addEventListener('click', handleClick)
+            el.addEventListener('contextmenu', handleContextMenu)
+            document.addEventListener('mousedown', handleDocumentMouseDown)
+            document.addEventListener('keydown', handleDocumentKeyDown)
             // Store cleanup on the ref so we can remove it
-            el._tableToolbarCleanup = () => el.removeEventListener('click', handleClick)
+            el._tableToolbarCleanup = () => {
+                el.removeEventListener('click', handleClick)
+                el.removeEventListener('contextmenu', handleContextMenu)
+                document.removeEventListener('mousedown', handleDocumentMouseDown)
+                document.removeEventListener('keydown', handleDocumentKeyDown)
+            }
         }, 50)
 
         return () => {
@@ -240,45 +357,69 @@ export function useTableToolbar(contentRef, onSave) {
                 delete el._tableToolbarCleanup
             }
         }
-    }, []) // Run once on mount
+    }, [contentRef, selectTable])
 
     const clearToolbar = useCallback(() => {
         setActiveTable(null)
         setActiveCell(null)
+        setContextMenu(null)
     }, [])
 
-    return { activeTable, activeCell, toolbarPos, clearToolbar, onSave }
+    const closeContextMenu = useCallback(() => {
+        setContextMenu(null)
+    }, [])
+
+    return { activeTable, activeCell, toolbarPos, contextMenu, selectTable, clearToolbar, closeContextMenu, onSave }
 }
 
 /**
  * TableToolbar component — renders the floating toolbar
  */
-export default function TableToolbar({ activeTable, activeCell, toolbarPos, clearToolbar, onSave }) {
+export default function TableToolbar({ activeTable, activeCell, toolbarPos, contextMenu, closeContextMenu, clearToolbar, onSave }) {
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showStylePicker, setShowStylePicker] = useState(false)
-    const [resizeActive, setResizeActive] = useState(false)
+    const [resizeOverlay, setResizeOverlay] = useState(null)
+    const [draggingHandle, setDraggingHandle] = useState(null)
+    const resizeRafRef = useRef(null)
 
-    // Close pickers when table changes
+    const updateResizeOverlay = useCallback(() => {
+        if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current)
+        resizeRafRef.current = requestAnimationFrame(() => {
+            resizeRafRef.current = null
+            setResizeOverlay(activeTable ? buildResizeOverlay(activeTable) : null)
+        })
+    }, [activeTable])
+
+    // Close pickers when table changes and keep resize handles aligned to the table.
     useEffect(() => {
         setShowColorPicker(false)
         setShowStylePicker(false)
-        // Cleanup resize handles on old table
-        return () => {
-            if (activeTable) disableColumnResize(activeTable)
-        }
-    }, [activeTable, activeCell])
+        updateResizeOverlay()
 
-    // Toggle column resize mode
-    const toggleResize = useCallback(() => {
-        if (!activeTable) return
-        if (resizeActive) {
-            disableColumnResize(activeTable)
-            setResizeActive(false)
-        } else {
-            enableColumnResize(activeTable, onSave)
-            setResizeActive(true)
+        if (!activeTable) {
+            setResizeOverlay(null)
+            return undefined
         }
-    }, [activeTable, resizeActive, onSave])
+
+        let observer = null
+        if (window.ResizeObserver) {
+            observer = new ResizeObserver(updateResizeOverlay)
+            observer.observe(activeTable)
+            const editor = activeTable.closest?.('[contenteditable="true"]')
+            if (editor) observer.observe(editor)
+        }
+
+        window.addEventListener('resize', updateResizeOverlay)
+        window.addEventListener('scroll', updateResizeOverlay, true)
+
+        return () => {
+            if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current)
+            resizeRafRef.current = null
+            observer?.disconnect?.()
+            window.removeEventListener('resize', updateResizeOverlay)
+            window.removeEventListener('scroll', updateResizeOverlay, true)
+        }
+    }, [activeTable, activeCell, updateResizeOverlay])
 
     // ── Helpers ──
     const getColIndex = useCallback(() => {
@@ -303,6 +444,88 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
         const firstTh = activeTable.querySelector('thead th') || activeTable.querySelector('th')
         return firstTh?.getAttribute('style') || ''
     }, [activeTable])
+
+    const getLinkedTables = useCallback(() => {
+        if (!activeTable) return []
+        return getPaginatedTableFragments(activeTable, activeTable.ownerDocument)
+    }, [activeTable])
+
+    const cleanTableRuntimeArtifacts = useCallback((table) => {
+        table.querySelectorAll('.doc-block-delete-btn, .tt-col-resize-handle, .tt-table-resize-handle, [data-atomic-caret]').forEach(node => node.remove())
+        table.removeAttribute('data-table-selected')
+        table.removeAttribute('data-paginated-table-key')
+        table.removeAttribute('data-paginated-table-fragment')
+        table.removeAttribute('data-paginated-table-continuation')
+        if (table.tHead?.style.display === 'none') table.tHead.style.removeProperty('display')
+        return table
+    }, [])
+
+    const beginResize = useCallback((handle, event) => {
+        if (!activeTable || !handle) return
+        event.preventDefault()
+        event.stopPropagation()
+
+        const ctx = getEditorContext(activeTable)
+        if (!ctx) return
+
+        const linkedTables = getLinkedTables().filter(Boolean)
+        const startWidths = prepareTableForResize(activeTable)
+        if (!startWidths.length) return
+
+        const startTableWidth = activeTable.offsetWidth || startWidths.reduce((sum, width) => sum + width, 0)
+        linkedTables.forEach(table => prepareTableForResize(table, startWidths, startTableWidth))
+
+        const startX = event.clientX
+        const tableMaxWidth = Math.max(startTableWidth, ctx.editor.clientWidth || startTableWidth)
+        const lastColumnIndex = startWidths.length - 1
+        const otherColumnsWidth = startWidths
+            .slice(0, -1)
+            .reduce((sum, width) => sum + width, 0)
+        const minTableWidth = Math.max(120, otherColumnsWidth + MIN_COLUMN_WIDTH)
+
+        setDraggingHandle(handle)
+        document.body.style.cursor = handle.type === 'table' ? 'ew-resize' : 'col-resize'
+        document.body.style.userSelect = 'none'
+
+        const applyResize = (moveEvent) => {
+            const diff = (moveEvent.clientX - startX) / ctx.zoom
+            const nextWidths = [...startWidths]
+            let nextTableWidth = startTableWidth
+
+            if (handle.type === 'table') {
+                nextTableWidth = clamp(startTableWidth + diff, minTableWidth, tableMaxWidth)
+                nextWidths[lastColumnIndex] = Math.max(
+                    MIN_COLUMN_WIDTH,
+                    startWidths[lastColumnIndex] + (nextTableWidth - startTableWidth)
+                )
+            } else {
+                const leftIndex = handle.index
+                const rightIndex = leftIndex + 1
+                const pairWidth = startWidths[leftIndex] + startWidths[rightIndex]
+                const nextLeft = clamp(startWidths[leftIndex] + diff, MIN_COLUMN_WIDTH, pairWidth - MIN_COLUMN_WIDTH)
+
+                nextWidths[leftIndex] = nextLeft
+                nextWidths[rightIndex] = pairWidth - nextLeft
+            }
+
+            linkedTables.forEach(table => prepareTableForResize(table, nextWidths, nextTableWidth))
+            updateResizeOverlay()
+        }
+
+        const finishResize = () => {
+            document.removeEventListener('mousemove', applyResize)
+            document.removeEventListener('mouseup', finishResize)
+            document.body.style.cursor = ''
+            document.body.style.userSelect = ''
+            setDraggingHandle(null)
+            syncPaginatedTableFragmentStyles(activeTable, activeTable.ownerDocument)
+            updateResizeOverlay()
+            onSave?.()
+        }
+
+        document.addEventListener('mousemove', applyResize)
+        document.addEventListener('mouseup', finishResize)
+    }, [activeTable, getLinkedTables, onSave, updateResizeOverlay])
 
     // ── Row operations ──
     const addRowBelow = useCallback(() => {
@@ -360,43 +583,40 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
     }, [activeTable, activeCell, clearToolbar, onSave])
 
     // ── Column operations ──
-    const addColumnRight = useCallback(() => {
+    const insertColumn = useCallback((side) => {
         if (!activeTable || !activeCell) return
         const colIdx = getColIndex()
-        const rows = activeTable.querySelectorAll('tr')
+        const insertAfter = side === 'right'
 
-        rows.forEach(row => {
-            const cells = row.children
-            const isHeader = row.parentElement.tagName === 'THEAD'
-            const newCell = document.createElement(isHeader ? 'th' : 'td')
-            newCell.style.cssText = isHeader ? getHeaderStyle() : getCellStyle()
-            newCell.innerHTML = isHeader ? 'Colonne' : '&nbsp;'
+        getLinkedTables().forEach(table => {
+            const rows = table.querySelectorAll('tr')
+            rows.forEach(row => {
+                const cells = row.children
+                const isHeader = row.parentElement.tagName === 'THEAD'
+                const newCell = document.createElement(isHeader ? 'th' : 'td')
+                const referenceCell = cells[colIdx] || cells[cells.length - 1]
+                newCell.style.cssText = referenceCell?.getAttribute('style') || (isHeader ? getHeaderStyle() : getCellStyle())
+                newCell.innerHTML = isHeader ? 'Colonne' : '&nbsp;'
 
-            if (colIdx + 1 < cells.length) {
-                row.insertBefore(newCell, cells[colIdx + 1])
-            } else {
-                row.appendChild(newCell)
-            }
+                const targetIndex = insertAfter ? colIdx + 1 : colIdx
+                if (targetIndex < cells.length) {
+                    row.insertBefore(newCell, cells[targetIndex])
+                } else {
+                    row.appendChild(newCell)
+                }
+            })
         })
+        syncPaginatedTableFragmentStyles(activeTable, activeTable.ownerDocument)
         onSave?.()
-    }, [activeTable, activeCell, getColIndex, getCellStyle, getHeaderStyle, onSave])
+    }, [activeTable, activeCell, getColIndex, getCellStyle, getHeaderStyle, getLinkedTables, onSave])
+
+    const addColumnRight = useCallback(() => {
+        insertColumn('right')
+    }, [insertColumn])
 
     const addColumnLeft = useCallback(() => {
-        if (!activeTable || !activeCell) return
-        const colIdx = getColIndex()
-        const rows = activeTable.querySelectorAll('tr')
-
-        rows.forEach(row => {
-            const cells = row.children
-            const isHeader = row.parentElement.tagName === 'THEAD'
-            const newCell = document.createElement(isHeader ? 'th' : 'td')
-            newCell.style.cssText = isHeader ? getHeaderStyle() : getCellStyle()
-            newCell.innerHTML = isHeader ? 'Colonne' : '&nbsp;'
-
-            row.insertBefore(newCell, cells[colIdx])
-        })
-        onSave?.()
-    }, [activeTable, activeCell, getColIndex, getCellStyle, getHeaderStyle, onSave])
+        insertColumn('left')
+    }, [insertColumn])
 
     const deleteColumn = useCallback(() => {
         if (!activeTable || !activeCell) return
@@ -404,16 +624,19 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
         const cols = getColCount()
         if (cols <= 1) return
 
-        const rows = activeTable.querySelectorAll('tr')
-        rows.forEach(row => {
-            if (row.children[colIdx]) {
-                row.children[colIdx].remove()
-            }
+        getLinkedTables().forEach(table => {
+            const rows = table.querySelectorAll('tr')
+            rows.forEach(row => {
+                if (row.children[colIdx]) {
+                    row.children[colIdx].remove()
+                }
+            })
         })
+        syncPaginatedTableFragmentStyles(activeTable, activeTable.ownerDocument)
 
         clearToolbar()
         onSave?.()
-    }, [activeTable, activeCell, getColIndex, getColCount, clearToolbar, onSave])
+    }, [activeTable, activeCell, getColIndex, getColCount, getLinkedTables, clearToolbar, onSave])
 
     // ── Cell color ──
     const setCellBackground = useCallback((color) => {
@@ -438,40 +661,182 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
     const applyTableStyle = useCallback((style) => {
         if (!activeTable) return
 
-        const headers = activeTable.querySelectorAll('thead th, thead td')
-        headers.forEach(th => {
-            th.style.backgroundColor = style.headerBg
-            th.style.color = style.headerColor
-            th.style.border = style.headerBorder
-            th.style.padding = '8px 12px'
-            th.style.fontWeight = '600'
-            th.style.fontSize = '14px'
-            th.style.textAlign = 'left'
-        })
+        const tables = getPaginatedTableFragments(activeTable, activeTable.ownerDocument)
+        tables.forEach(table => {
+            const headers = table.querySelectorAll('thead th, thead td')
+            headers.forEach(th => {
+                th.style.backgroundColor = style.headerBg
+                th.style.color = style.headerColor
+                th.style.border = style.headerBorder
+                th.style.padding = '8px 12px'
+                th.style.fontWeight = '600'
+                th.style.fontSize = '14px'
+                th.style.textAlign = 'left'
+            })
 
-        const cells = activeTable.querySelectorAll('tbody td')
-        cells.forEach(td => {
-            td.style.border = `1px solid ${style.borderColor}`
-            td.style.padding = '8px 12px'
-            td.style.fontSize = '14px'
+            const cells = table.querySelectorAll('tbody td')
+            cells.forEach(td => {
+                td.style.border = `1px solid ${style.borderColor}`
+                td.style.padding = '8px 12px'
+                td.style.fontSize = '14px'
 
-            if (style.stripedBg) {
-                const row = td.parentElement
-                const rowIdx = Array.from(row.parentElement.children).indexOf(row)
-                td.style.backgroundColor = rowIdx % 2 === 1 ? style.stripedBg : ''
-            } else {
-                td.style.removeProperty('background-color')
-            }
+                if (style.stripedBg) {
+                    const row = td.parentElement
+                    const rowIdx = Array.from(row.parentElement.children).indexOf(row)
+                    td.style.backgroundColor = rowIdx % 2 === 1 ? style.stripedBg : ''
+                } else {
+                    td.style.removeProperty('background-color')
+                }
+            })
         })
+        syncPaginatedTableFragmentStyles(activeTable, activeTable.ownerDocument)
 
         setShowStylePicker(false)
         onSave?.()
     }, [activeTable, onSave])
 
+    const buildLogicalTableClone = useCallback(() => {
+        if (!activeTable) return null
+
+        const tables = getLinkedTables()
+        const source = tables[0] || activeTable
+        const clone = cleanTableRuntimeArtifacts(source.cloneNode(true))
+
+        if (tables.length > 1) {
+            let targetBody = clone.tBodies?.[0]
+            if (!targetBody) {
+                targetBody = document.createElement('tbody')
+                clone.appendChild(targetBody)
+            }
+            targetBody.innerHTML = ''
+            tables.forEach(table => {
+                Array.from(table.querySelectorAll('tbody tr')).forEach(row => {
+                    targetBody.appendChild(row.cloneNode(true))
+                })
+            })
+
+            const lastFooter = tables.findLast?.(table => table.tFoot) || [...tables].reverse().find(table => table.tFoot)
+            if (clone.tFoot) clone.tFoot.remove()
+            if (lastFooter?.tFoot) clone.appendChild(lastFooter.tFoot.cloneNode(true))
+        }
+
+        return clone
+    }, [activeTable, cleanTableRuntimeArtifacts, getLinkedTables])
+
+    const copyTable = useCallback(async () => {
+        const clone = buildLogicalTableClone()
+        if (!clone) return
+
+        const html = clone.outerHTML
+        const text = clone.textContent || ''
+
+        try {
+            if (navigator.clipboard?.write && window.ClipboardItem) {
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': new Blob([html], { type: 'text/html' }),
+                        'text/plain': new Blob([text], { type: 'text/plain' })
+                    })
+                ])
+            } else {
+                const holder = document.createElement('div')
+                holder.contentEditable = 'true'
+                holder.style.cssText = 'position:fixed;left:-10000px;top:-10000px;'
+                holder.innerHTML = html
+                document.body.appendChild(holder)
+
+                const selection = window.getSelection()
+                const range = document.createRange()
+                range.selectNodeContents(holder)
+                selection.removeAllRanges()
+                selection.addRange(range)
+                document.execCommand('copy')
+                selection.removeAllRanges()
+                holder.remove()
+            }
+        } catch (err) {
+            console.warn('[TableToolbar] Table copy failed:', err)
+        }
+    }, [buildLogicalTableClone])
+
+    const duplicateTable = useCallback(() => {
+        if (!activeTable) return
+        const clone = buildLogicalTableClone()
+        if (!clone) return
+
+        const tables = getLinkedTables()
+        const anchor = tables[tables.length - 1] || activeTable
+        anchor.insertAdjacentElement('afterend', clone)
+        closeContextMenu?.()
+        onSave?.()
+    }, [activeTable, buildLogicalTableClone, closeContextMenu, getLinkedTables, onSave])
+
+    const deleteTable = useCallback(() => {
+        if (!activeTable) return
+        getLinkedTables().forEach(table => table.remove())
+        clearToolbar?.()
+        onSave?.()
+    }, [activeTable, clearToolbar, getLinkedTables, onSave])
+
+    const runContextAction = useCallback((action) => {
+        closeContextMenu?.()
+        action?.()
+    }, [closeContextMenu])
+
     // ── Don't render if no active table ──
     if (!activeTable) return null
 
     return (
+        <>
+        {resizeOverlay?.handles?.map((handle) => {
+            const isTableHandle = handle.type === 'table'
+            const isDragging =
+                draggingHandle?.type === handle.type &&
+                draggingHandle?.index === handle.index
+            const key = `${handle.type}-${handle.index}`
+
+            return (
+                <div
+                    key={key}
+                    className={isTableHandle ? 'tt-table-resize-handle' : 'tt-col-resize-handle'}
+                    data-col-index={handle.index}
+                    title={isTableHandle ? 'Redimensionner le tableau' : 'Redimensionner la colonne'}
+                    style={{
+                        position: 'absolute',
+                        top: `${handle.top}px`,
+                        left: `${handle.left - (isTableHandle ? 5 : 4)}px`,
+                        width: isTableHandle ? '10px' : '8px',
+                        height: `${handle.height}px`,
+                        zIndex: 130,
+                        cursor: isTableHandle ? 'ew-resize' : 'col-resize',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'stretch',
+                        pointerEvents: 'auto'
+                    }}
+                    onMouseDown={(event) => beginResize(handle, event)}
+                    onMouseEnter={(event) => {
+                        const line = event.currentTarget.firstElementChild
+                        if (line) line.style.background = '#4f46e5'
+                    }}
+                    onMouseLeave={(event) => {
+                        if (isDragging) return
+                        const line = event.currentTarget.firstElementChild
+                        if (line) line.style.background = 'transparent'
+                    }}
+                >
+                    <div
+                        style={{
+                            width: isTableHandle ? '3px' : '2px',
+                            height: '100%',
+                            borderRadius: '2px',
+                            background: isDragging ? '#4f46e5' : 'transparent',
+                            boxShadow: isDragging ? '0 0 0 1px rgba(79, 70, 229, 0.18)' : 'none'
+                        }}
+                    />
+                </div>
+            )
+        })}
         <div
             className="table-toolbar-root"
             style={{
@@ -503,16 +868,6 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
             <TtBtn icon="tabler:column-insert-left" title="Ajouter colonne à gauche" onClick={addColumnLeft} />
             <TtBtn icon="tabler:column-insert-right" title="Ajouter colonne à droite" onClick={addColumnRight} />
             <TtBtn icon="tabler:column-remove" title="Supprimer la colonne" onClick={deleteColumn} danger />
-
-            <TtSep />
-
-            {/* Column Resize Toggle */}
-            <TtBtn
-                icon="tabler:arrows-horizontal"
-                title={resizeActive ? "Désactiver le redimensionnement" : "Redimensionner les colonnes"}
-                onClick={toggleResize}
-                active={resizeActive}
-            />
 
             <TtSep />
 
@@ -660,6 +1015,40 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
                 }
             ` }} />
         </div>
+        {contextMenu && (
+            <div
+                data-table-context-menu="1"
+                style={{
+                    position: 'absolute',
+                    top: `${contextMenu.y}px`,
+                    left: `${contextMenu.x}px`,
+                    zIndex: 10000,
+                    minWidth: '210px',
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 16px 40px rgba(15, 23, 42, 0.16)',
+                    padding: '6px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px'
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+            >
+                <ContextMenuButton icon="tabler:row-insert-top" label="Ligne au-dessus" onClick={() => runContextAction(addRowAbove)} />
+                <ContextMenuButton icon="tabler:row-insert-bottom" label="Ligne en-dessous" onClick={() => runContextAction(addRowBelow)} />
+                <ContextMenuButton icon="tabler:row-remove" label="Supprimer la ligne" danger onClick={() => runContextAction(deleteRow)} />
+                <ContextMenuSeparator />
+                <ContextMenuButton icon="tabler:column-insert-left" label="Colonne à gauche" onClick={() => runContextAction(addColumnLeft)} />
+                <ContextMenuButton icon="tabler:column-insert-right" label="Colonne à droite" onClick={() => runContextAction(addColumnRight)} />
+                <ContextMenuButton icon="tabler:column-remove" label="Supprimer la colonne" danger onClick={() => runContextAction(deleteColumn)} />
+                <ContextMenuSeparator />
+                <ContextMenuButton icon="tabler:copy" label="Copier le tableau" onClick={() => runContextAction(copyTable)} />
+                <ContextMenuButton icon="tabler:copy-plus" label="Dupliquer le tableau" onClick={() => runContextAction(duplicateTable)} />
+                <ContextMenuButton icon="tabler:trash" label="Supprimer le tableau" danger onClick={() => runContextAction(deleteTable)} />
+            </div>
+        )}
+        </>
     )
 }
 
@@ -697,4 +1086,42 @@ function TtBtn({ icon, title, onClick, danger = false, active = false }) {
 // ── Separator ──
 function TtSep() {
     return <div style={{ width: '1px', height: '20px', background: '#e5e7eb', margin: '0 2px' }} />
+}
+
+function ContextMenuButton({ icon, label, onClick, danger = false }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '9px',
+                width: '100%',
+                height: '30px',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '0 9px',
+                background: 'transparent',
+                color: danger ? '#dc2626' : '#1f2937',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 500,
+                textAlign: 'left'
+            }}
+            onMouseOver={(e) => {
+                e.currentTarget.style.background = danger ? '#fef2f2' : '#f3f4f6'
+            }}
+            onMouseOut={(e) => {
+                e.currentTarget.style.background = 'transparent'
+            }}
+        >
+            <iconify-icon icon={icon} width="15"></iconify-icon>
+            <span>{label}</span>
+        </button>
+    )
+}
+
+function ContextMenuSeparator() {
+    return <div style={{ height: '1px', background: '#eef2f7', margin: '3px 4px' }} />
 }

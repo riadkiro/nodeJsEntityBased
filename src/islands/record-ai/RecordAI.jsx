@@ -825,13 +825,27 @@ function agentActionStatusIcon(status) {
     return 'solar:clock-circle-bold-duotone'
 }
 
-function AgentActionCard({ action = {}, selectable = false, selected = true, onToggle }) {
+function agentOpenLabel(tool) {
+    if (tool === 'create_note' || tool === 'update_note') return 'Ouvrir la note'
+    if (tool === 'create_doc' || tool === 'update_doc' || tool === 'generate_doc' || tool === 'use_template') return 'Ouvrir le document'
+    return 'Ouvrir'
+}
+
+function agentActionResultUrl(action = {}, noteBaseUrl = '') {
+    const directUrl = action.result?.url || action.after?.url || ''
+    if (directUrl) return directUrl
+    if (!['create_note', 'update_note'].includes(action.tool) || !noteBaseUrl) return ''
+    const noteId = action.result?.noteId || action.after?.noteId || action.input?.noteId || ''
+    return noteId ? `${noteBaseUrl}?noteId=${encodeURIComponent(String(noteId))}` : ''
+}
+
+function AgentActionCard({ action = {}, selectable = false, selected = true, onToggle, noteBaseUrl = '' }) {
     const color = agentToolColor(action.tool)
     const diff = Array.isArray(action.diff) ? action.diff : []
     const failed = action.status === 'failed'
     const previewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
     const genericPreviewTools = ['update_note', 'create_doc', 'update_doc', 'generate_doc', 'use_template', 'update_task', 'create_event', 'update_event']
-    const resultUrl = action.result?.url || action.after?.url || ''
+    const resultUrl = agentActionResultUrl(action, noteBaseUrl)
     const taskMeta = [
         action.preview?.meta,
         action.preview?.dueDate ? `Échéance: ${action.preview.dueDate}` : ''
@@ -871,7 +885,7 @@ function AgentActionCard({ action = {}, selectable = false, selected = true, onT
                     {resultUrl && (
                         <a href={resultUrl} className="rai-agent-open-link">
                             <Icon icon="solar:arrow-right-up-linear" width={13} />
-                            Ouvrir
+                            {agentOpenLabel(action.tool)}
                         </a>
                     )}
                 </div>
@@ -910,7 +924,7 @@ function AgentActionCard({ action = {}, selectable = false, selected = true, onT
     )
 }
 
-function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, draftPhrase = 'Analyse de la demande' }) {
+function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, draftPhrase = 'Analyse de la demande', noteBaseUrl = '' }) {
     const actions = Array.isArray(run.proposedActions) ? run.proposedActions : []
     const selectableActionIds = useMemo(
         () => actions.filter(action => ['proposed', 'failed'].includes(action.status)).map(action => action.id),
@@ -1006,6 +1020,7 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                                         selectable={['proposed', 'failed'].includes(action.status)}
                                         selected={selectedActionSet.has(action.id)}
                                         onToggle={toggleActionSelection}
+                                        noteBaseUrl={noteBaseUrl}
                                     />
                                 ))}
                             </div>
@@ -1072,8 +1087,9 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
     )
 }
 
-export default function RecordAI({ accountNumber, recordId, recordTitle, debugAdmin = false }) {
+export default function RecordAI({ accountNumber, recordId, entitySlug = '', recordTitle, debugAdmin = false }) {
     const apiBase = `/account/${accountNumber}/api/record-ai/${recordId}`
+    const noteBaseUrl = `/account/${accountNumber}/record/${entitySlug || 'record'}/${recordId}/notes`
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [record, setRecord] = useState({ title: recordTitle })
@@ -2502,6 +2518,7 @@ export default function RecordAI({ accountNumber, recordId, recordTitle, debugAd
                                         busy={agentBusyRunId === run._id}
                                         onOpenContext={openContextItem}
                                         draftPhrase={activeAgentPhrase}
+                                        noteBaseUrl={noteBaseUrl}
                                     />
                                 ))}
                             </div>
@@ -3068,13 +3085,13 @@ const styles = `
 .rai-agent-msg-bubble.plan{width:min(680px,100%);display:flex;flex-direction:column;gap:9px;}
 .rai-agent-msg-bubble.status{padding:7px 8px;background:transparent;border:none;box-shadow:none;}
 .rai-agent-msg-bubble.event{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;font-size:11.5px;font-weight:800;border-radius:999px;background:#f8fafc;box-shadow:none;}
-.rai-agent-msg-bubble.event.applied{border-color:#bbf7d0;background:#ecfdf5;color:#059669;}
+.rai-agent-msg-bubble.event.applied{border-color:rgba(16,185,129,.18);background:#fbfefc;color:#047857;}
 .rai-agent-msg-bubble.event.failed{border-color:#fecaca;background:#fff1f2;color:#e11d48;}
 .rai-agent-msg-bubble.event.undone{border-color:#e2e8f0;background:#f8fafc;color:#64748b;}
 .rai-agent-plan-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .rai-agent-plan-top strong{font-size:13px;color:#0f172a;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .rai-agent-run-status{height:22px;border-radius:999px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
-.rai-agent-run-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
+.rai-agent-run-status.applied{color:#047857;background:#fbfefc;border-color:rgba(16,185,129,.18);}
 .rai-agent-run-status.partial{color:#b45309;background:#fffbeb;border-color:#fde68a;}
 .rai-agent-run-status.error{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
 .rai-agent-run-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
@@ -3099,7 +3116,7 @@ const styles = `
 .rai-agent-plan-list small{display:block;margin-top:1px;font-size:10.5px;color:#94a3b8;line-height:1.35;}
 .rai-agent-actions{display:flex;flex-direction:column;gap:6px;}
 .rai-agent-action{border:1px solid #edf2f7;background:#fff;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;}
-.rai-agent-action.applied{border-color:#bbf7d0;background:#f0fdf4;}
+.rai-agent-action.applied{border-color:rgba(16,185,129,.18);background:linear-gradient(90deg,rgba(16,185,129,.035),#fff 44%);}
 .rai-agent-action.failed{border-color:#fecaca;background:#fff1f2;}
 .rai-agent-action.undone{background:#f8fafc;opacity:.78;}
 .rai-agent-action.rejected{background:#f8fafc;opacity:.72;}
@@ -3112,7 +3129,7 @@ const styles = `
 .rai-agent-action-title strong{font-size:12px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .rai-agent-action-title small{font-size:10.5px;color:#64748b;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .rai-agent-action-status{height:20px;border-radius:999px;padding:0 7px;display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:900;color:#4f46e5;background:#eef2ff;border:1px solid #dbeafe;white-space:nowrap;}
-.rai-agent-action-status.applied{color:#059669;background:#ecfdf5;border-color:#bbf7d0;}
+.rai-agent-action-status.applied{color:#047857;background:#fbfefc;border-color:rgba(16,185,129,.18);}
 .rai-agent-action-status.failed{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
 .rai-agent-action-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
 .rai-agent-action-status.rejected{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
@@ -3142,7 +3159,7 @@ const styles = `
 .rai-agent-primary:disabled,.rai-agent-secondary:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}
 .rai-agent-mini{cursor:pointer;}
 .rai-agent-mini.review{border-color:rgba(79,70,229,.18);background:#f8faff;}
-.rai-agent-mini.applied{border-color:#bbf7d0;background:#f0fdf4;}
+.rai-agent-mini.applied{border-color:rgba(16,185,129,.18);background:#fbfefc;}
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes raiDot{0%,80%,100%{opacity:.35;transform:translateY(0) scale(.88)}40%{opacity:1;transform:translateY(-2px) scale(1)}}
 @keyframes raiSheen{0%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}

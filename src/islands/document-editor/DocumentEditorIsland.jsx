@@ -11,7 +11,13 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { saveDocument, exportPdf, finalizeDraft, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
+import {
+    checkOverflow,
+    reflowAllPages,
+    doesContentOverflow,
+    hasTableUnderflowCandidate,
+    reflowTableUnderflowAllPages
+} from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 import { getSelectedImage } from './hooks/useImageResize'
 
@@ -55,9 +61,12 @@ function stripEditorRuntimeArtifacts(html, options = {}) {
         '[data-placeholder-resize-overlay]',
         '[data-placeholder-crop-overlay]',
         '[data-placeholder-context-menu]',
+        '[data-table-context-menu]',
         '[data-atomic-caret]',
         '.doc-image-placeholder-handle',
-        '.doc-image-crop-handle'
+        '.doc-image-crop-handle',
+        '.tt-col-resize-handle',
+        '.tt-table-resize-handle'
     ].filter(Boolean).join(', ')
 
     template.content
@@ -344,6 +353,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const isGlobalSelectionRef = useRef(false) // Ref mirror for stale-closure-safe access
     const isPastingRef = useRef(false) // Prevents double-reflow during paste (insertHTML triggers onInput)
     const reflowInProgressRef = useRef(false) // Prevents concurrent reflow execution
+    const initialPaginationRef = useRef('')
     const autoSaveRef = useRef(true) // Ref mirror of autoSave for stale-closure-safe access
     const hasUnsavedChangesRef = useRef(false) // Tracks unsaved edits when auto-save is OFF
 
@@ -815,7 +825,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // 2. After reflow completes, search ALL pages for the marker.
     // 3. Place cursor right after the marker, remove it, focus + scroll.
     // This guarantees the cursor follows content even across page boundaries.
-    const reflowDocument = useCallback(() => {
+    const reflowDocument = useCallback((options = {}) => {
+        const { saveAfter = false } = options
+
         // Prevent concurrent reflows - only one can run at a time
         if (reflowInProgressRef.current) {
             console.log('[reflowDocument] Skipped: reflow already in progress')
@@ -841,8 +853,15 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
         if (!hasOverflow) {
-            // No overflow: do not pull content backward automatically.
-            // That behavior can duplicate trailing pages because the editor DOM is uncontrolled.
+            // No overflow: compact split tables only. Paragraph pulling remains disabled,
+            // but table fragments can safely move rows up when space opens.
+            if (hasTableUnderflowCandidate(docRef, pageRefs)) {
+                reflowInProgressRef.current = true
+                reflowTableUnderflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+                    reflowInProgressRef.current = false
+                    if (saveAfter) triggerSave()
+                })
+            }
             return
         }
 
@@ -882,9 +901,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         const pageCountBefore = docRef.current?.pages?.length || 0
 
-        // Use reflowAllPages for iterative multi-page overflow handling
-        reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+        const finishReflow = () => {
             reflowInProgressRef.current = false
+            if (saveAfter) triggerSave()
 
             const pageCountAfter = docRef.current?.pages?.length || 0
 
@@ -945,9 +964,30 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     }
                 }
             })
+        }
 
+        // Use reflowAllPages for iterative multi-page overflow handling, then
+        // run the table-only compaction pass so split rows can reclaim space.
+        reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+            if (hasTableUnderflowCandidate(docRef, pageRefs)) {
+                reflowTableUnderflowAllPages(docRef, setDoc, pageRefs, 100, finishReflow)
+                return
+            }
+            finishReflow()
         })
-    }, [])
+    }, [triggerSave])
+
+    useEffect(() => {
+        const docKey = doc?._id || 'new-document'
+        if (!docKey || initialPaginationRef.current === docKey) return
+        initialPaginationRef.current = docKey
+
+        const timer = window.setTimeout(() => {
+            reflowDocument({ saveAfter: true })
+        }, 250)
+
+        return () => window.clearTimeout(timer)
+    }, [doc?._id, reflowDocument])
 
     const repackPagesFrom = useCallback((startIndex) => {
         if (reflowInProgressRef.current) {
@@ -1018,7 +1058,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         setDoc(nextDoc)
 
         requestAnimationFrame(() => {
-            reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+            const finishRepack = () => {
                 requestAnimationFrame(() => {
                     let restored = false
                     if (markerInserted) {
@@ -1040,6 +1080,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     reflowInProgressRef.current = false
                     triggerSave()
                 })
+            }
+
+            reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+                if (hasTableUnderflowCandidate(docRef, pageRefs)) {
+                    reflowTableUnderflowAllPages(docRef, setDoc, pageRefs, 100, finishRepack)
+                    return
+                }
+                finishRepack()
             })
         })
 
@@ -2285,7 +2333,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             box-sizing: border-box;
             line-height: 1.6;
         }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f5f5f5; font-weight: 600; }
     </style>

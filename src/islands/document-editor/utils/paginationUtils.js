@@ -10,6 +10,536 @@
 const UNDERFLOW_THRESHOLD_PX = 5
 const MAX_PULL_ITERATIONS = 50
 const MAX_OVERFLOW_ITERATIONS = 100 // Safety limit for overflow extraction
+let tableSplitCounter = 0
+
+function isElementNode(node) {
+    return node && node.nodeType === 1
+}
+
+function isTableNode(node) {
+    return isElementNode(node) && node.tagName === 'TABLE'
+}
+
+function tableBodyRows(tableNode) {
+    if (!isTableNode(tableNode)) return []
+
+    const bodyRows = Array.from(tableNode.tBodies || [])
+        .flatMap(body => Array.from(body.rows || []))
+    if (bodyRows.length) return bodyRows
+
+    return Array.from(tableNode.rows || []).filter(row => {
+        const parentTag = row.parentElement?.tagName
+        return parentTag !== 'THEAD' && parentTag !== 'TFOOT'
+    })
+}
+
+function tableBodyPrototype(tableNode) {
+    return tableNode?.tBodies?.[0] || null
+}
+
+function ensureTableBody(tableNode) {
+    let body = tableBodyPrototype(tableNode)
+    if (!body) {
+        body = document.createElement('tbody')
+        tableNode.appendChild(body)
+    }
+    return body
+}
+
+function tableHeaderSignature(tableNode) {
+    if (!isTableNode(tableNode)) return ''
+    const headerText = Array.from(tableNode.tHead?.rows || [])
+        .map(row => Array.from(row.cells || []).map(cell => cell.textContent.trim()).join('|'))
+        .join('||')
+    const firstRow = tableBodyRows(tableNode)[0]
+    const columnCount = firstRow?.cells?.length || tableNode.tHead?.rows?.[0]?.cells?.length || 0
+    return `${columnCount}:${headerText}`.replace(/\s+/g, ' ').trim()
+}
+
+function ensurePaginatedTableKey(tableNode) {
+    if (!isTableNode(tableNode)) return ''
+    if (!tableNode.dataset.paginatedTableKey) {
+        tableSplitCounter += 1
+        tableNode.dataset.paginatedTableKey = `table_${Date.now()}_${tableSplitCounter}`
+    }
+    tableNode.dataset.paginatedTableFragment = '1'
+    return tableNode.dataset.paginatedTableKey
+}
+
+function setTableContinuation(tableNode, isContinuation) {
+    if (!isTableNode(tableNode)) return false
+
+    let changed = false
+    const nextValue = isContinuation ? '1' : '0'
+    if (tableNode.dataset.paginatedTableContinuation !== nextValue) {
+        tableNode.dataset.paginatedTableContinuation = nextValue
+        changed = true
+    }
+
+    if (tableNode.tHead) {
+        if (isContinuation) {
+            if (tableNode.tHead.style.display !== 'none') {
+                tableNode.tHead.style.display = 'none'
+                changed = true
+            }
+        } else if (tableNode.tHead.style.display === 'none') {
+            tableNode.tHead.style.removeProperty('display')
+            changed = true
+        }
+    }
+
+    return changed
+}
+
+function getPageRefEntries(pageRefs) {
+    return Object.entries(pageRefs?.current || pageRefs || {})
+        .map(([index, el]) => [Number(index), el])
+        .filter(([index, el]) => Number.isInteger(index) && el)
+        .sort((a, b) => a[0] - b[0])
+}
+
+function syncPageRefsToDoc(docRef, setDoc, pageRefs) {
+    const current = docRef?.current
+    if (!current?.pages?.length || !setDoc) return
+
+    const pages = current.pages.map((page, index) => {
+        const pageEl = pageRefs?.current?.[index]
+        return pageEl ? { ...page, content: pageEl.innerHTML } : page
+    })
+    const nextDoc = { ...current, pages }
+    docRef.current = nextDoc
+    setDoc(nextDoc)
+}
+
+export function getPaginatedTableFragments(tableNode, root = null) {
+    if (!isTableNode(tableNode)) return []
+
+    const key = tableNode.dataset.paginatedTableKey || ''
+    if (!key) return [tableNode]
+
+    const scope = root?.querySelectorAll ? root : tableNode.ownerDocument
+    const fragments = Array.from(scope.querySelectorAll('table[data-paginated-table-key]'))
+        .filter(table => table.dataset.paginatedTableKey === key)
+
+    return fragments.length ? fragments : [tableNode]
+}
+
+function getDirectTableColGroup(tableNode) {
+    return Array.from(tableNode?.children || [])
+        .find(child => child.tagName === 'COLGROUP') || null
+}
+
+function ensureTableColGroup(tableNode, count) {
+    let colgroup = getDirectTableColGroup(tableNode)
+    if (!colgroup) {
+        colgroup = document.createElement('colgroup')
+        tableNode.insertBefore(colgroup, tableNode.firstChild)
+    }
+
+    while (colgroup.children.length < count) {
+        colgroup.appendChild(document.createElement('col'))
+    }
+    while (colgroup.children.length > count) {
+        colgroup.lastElementChild?.remove()
+    }
+
+    return colgroup
+}
+
+function getColumnModelCells(tableNode) {
+    const headerCells = Array.from(tableNode?.tHead?.rows?.[0]?.cells || [])
+    const bodyCells = Array.from(tableBodyRows(tableNode)[0]?.cells || [])
+    const firstRowCells = Array.from(tableNode?.querySelector?.('tr')?.cells || [])
+
+    const widestCells = [headerCells, bodyCells, firstRowCells]
+        .reduce((widest, cells) => (cells.length > widest.length ? cells : widest), [])
+
+    return {
+        headerCells,
+        bodyCells,
+        cells: widestCells
+    }
+}
+
+function getSourceColumnModel(sourceTable) {
+    const sourceColGroup = getDirectTableColGroup(sourceTable)
+    const sourceCols = Array.from(sourceColGroup?.children || [])
+    const { headerCells, bodyCells, cells } = getColumnModelCells(sourceTable)
+    const count = cells.length || sourceCols.length
+
+    const columns = Array.from({ length: count }).map((_, index) => {
+        const col = sourceCols[index]
+        const headerCell = headerCells[index]
+        const bodyCell = bodyCells[index]
+        const fallbackCell = cells[index]
+
+        return {
+            width:
+                col?.style?.width ||
+                col?.getAttribute?.('width') ||
+                headerCell?.style?.width ||
+                headerCell?.getAttribute?.('width') ||
+                bodyCell?.style?.width ||
+                bodyCell?.getAttribute?.('width') ||
+                fallbackCell?.style?.width ||
+                fallbackCell?.getAttribute?.('width') ||
+                '',
+            minWidth:
+                col?.style?.minWidth ||
+                headerCell?.style?.minWidth ||
+                bodyCell?.style?.minWidth ||
+                fallbackCell?.style?.minWidth ||
+                '',
+            maxWidth:
+                col?.style?.maxWidth ||
+                headerCell?.style?.maxWidth ||
+                bodyCell?.style?.maxWidth ||
+                fallbackCell?.style?.maxWidth ||
+                ''
+        }
+    })
+
+    const hasColumnModel = sourceCols.length > 0 || columns.some(column => (
+        column.width || column.minWidth || column.maxWidth
+    ))
+
+    return { columns, hasColumnModel }
+}
+
+export function syncPaginatedTableFragmentStyles(sourceTable, root = null) {
+    if (!isTableNode(sourceTable)) return 0
+
+    const fragments = getPaginatedTableFragments(sourceTable, root)
+
+    const sourceTableStyle = sourceTable.getAttribute('style') || ''
+    const sourceClassName = sourceTable.getAttribute('class')
+    const { columns, hasColumnModel } = getSourceColumnModel(sourceTable)
+
+    fragments.forEach(table => {
+        const key = table.dataset.paginatedTableKey
+        const fragmentFlag = table.dataset.paginatedTableFragment
+        const continuationFlag = table.dataset.paginatedTableContinuation
+
+        table.setAttribute('style', sourceTableStyle)
+        if (sourceClassName !== null) table.setAttribute('class', sourceClassName)
+        else table.removeAttribute('class')
+
+        if (key) table.dataset.paginatedTableKey = key
+        if (fragmentFlag) table.dataset.paginatedTableFragment = fragmentFlag
+        if (continuationFlag) table.dataset.paginatedTableContinuation = continuationFlag
+
+        if (hasColumnModel && columns.length) {
+            const colgroup = ensureTableColGroup(table, columns.length)
+            columns.forEach((column, index) => {
+                const col = colgroup.children[index]
+                if (!col) return
+
+                if (column.width) col.style.width = column.width
+                else col.style.removeProperty('width')
+
+                if (column.minWidth) col.style.minWidth = column.minWidth
+                else col.style.removeProperty('min-width')
+
+                if (column.maxWidth) col.style.maxWidth = column.maxWidth
+                else col.style.removeProperty('max-width')
+            })
+
+            Array.from(table.rows || []).forEach(row => {
+                Array.from(row.cells || []).forEach(cell => {
+                    cell.style.removeProperty('width')
+                    cell.style.removeProperty('min-width')
+                    cell.style.removeProperty('max-width')
+                })
+            })
+        } else {
+            getDirectTableColGroup(table)?.remove()
+        }
+    })
+
+    return fragments.length
+}
+
+export function normalizePaginatedTableContinuations(pageRefs, docRef = null, setDoc = null) {
+    const entries = getPageRefEntries(pageRefs)
+    if (!entries.length) return false
+
+    const seenKeys = new Set()
+    let changed = false
+
+    entries.forEach(([, pageEl]) => {
+        Array.from(pageEl.querySelectorAll('table[data-paginated-table-key]')).forEach(table => {
+            const key = table.dataset.paginatedTableKey
+            if (!key) return
+
+            table.dataset.paginatedTableFragment = '1'
+            const isContinuation = seenKeys.has(key)
+            if (setTableContinuation(table, isContinuation)) changed = true
+            if (!isContinuation) seenKeys.add(key)
+        })
+    })
+
+    if (changed && docRef && setDoc) {
+        syncPageRefsToDoc(docRef, setDoc, pageRefs)
+    }
+
+    return changed
+}
+
+export function hasTableUnderflowCandidate(docRef, pageRefs) {
+    const d = docRef?.current
+    if (!d?.pages?.length) return false
+
+    for (let i = 0; i < d.pages.length - 1; i += 1) {
+        if (d.pages[i]?.mode !== 'edition' || d.pages[i + 1]?.mode !== 'edition') continue
+
+        const pageEl = pageRefs?.current?.[i]
+        const nextPageEl = pageRefs?.current?.[i + 1]
+        if (!pageEl || !nextPageEl || doesContentOverflow(pageEl)) continue
+
+        const nextNode = firstContentNode(nextPageEl)
+        if (!isTableNode(nextNode)) continue
+
+        const hasVisibleContinuationHead =
+            nextNode.dataset.paginatedTableKey &&
+            nextNode.tHead &&
+            nextNode.tHead.style.display !== 'none'
+
+        if (hasVisibleContinuationHead || getAvailableSpacePx(pageEl) > UNDERFLOW_THRESHOLD_PX) {
+            return true
+        }
+    }
+
+    return false
+}
+
+function tablesCanMerge(firstTable, secondTable) {
+    if (!isTableNode(firstTable) || !isTableNode(secondTable)) return false
+
+    const firstKey = firstTable.dataset.paginatedTableKey || ''
+    const secondKey = secondTable.dataset.paginatedTableKey || ''
+    if (firstKey && secondKey) return firstKey === secondKey
+
+    const oneIsKnownFragment = firstTable.dataset.paginatedTableFragment === '1'
+        || secondTable.dataset.paginatedTableFragment === '1'
+    if (!oneIsKnownFragment) return false
+
+    return tableHeaderSignature(firstTable) === tableHeaderSignature(secondTable)
+}
+
+function isEmptySeparatorNode(node) {
+    if (!node) return false
+    if (node.nodeType === 3) return !node.textContent.trim()
+    return isEffectivelyEmpty(nodeToHtml(node))
+}
+
+function nextContentSibling(node) {
+    let current = node?.nextSibling || null
+    const separators = []
+    while (current && isEmptySeparatorNode(current)) {
+        separators.push(current)
+        current = current.nextSibling
+    }
+    return { node: current, separators }
+}
+
+function previousContentNode(container) {
+    let current = container?.lastChild || null
+    while (current && isEmptySeparatorNode(current)) current = current.previousSibling
+    return current
+}
+
+function firstContentNode(container) {
+    let current = container?.firstChild || null
+    while (current && isEmptySeparatorNode(current)) current = current.nextSibling
+    return current
+}
+
+function mergeTableFragments(firstTable, secondTable, separators = []) {
+    if (!tablesCanMerge(firstTable, secondTable)) return false
+
+    const key = ensurePaginatedTableKey(firstTable)
+    secondTable.dataset.paginatedTableKey = key
+    secondTable.dataset.paginatedTableFragment = '1'
+
+    const targetBody = ensureTableBody(firstTable)
+    tableBodyRows(secondTable).forEach(row => {
+        targetBody.appendChild(row)
+    })
+
+    if (secondTable.tFoot) {
+        if (firstTable.tFoot) firstTable.tFoot.remove()
+        firstTable.appendChild(secondTable.tFoot)
+    }
+
+    separators.forEach(separator => separator.remove())
+    secondTable.remove()
+    return true
+}
+
+function normalizeAdjacentSplitTables(container) {
+    if (!container) return false
+
+    let changed = false
+    let current = firstContentNode(container)
+
+    while (current) {
+        const { node: next, separators } = nextContentSibling(current)
+        if (isTableNode(current) && isTableNode(next) && mergeTableFragments(current, next, separators)) {
+            changed = true
+            continue
+        }
+        current = next
+    }
+
+    return changed
+}
+
+function appendTableHeaderParts(sourceTable, targetTable) {
+    Array.from(sourceTable.childNodes || []).forEach(child => {
+        if (!isElementNode(child)) return
+        if (['CAPTION', 'COLGROUP', 'THEAD'].includes(child.tagName)) {
+            targetTable.appendChild(child.cloneNode(true))
+        }
+    })
+}
+
+function buildTableFragment(tableNode, rowClones, footerClone = null) {
+    if (!rowClones.length) return ''
+
+    const tableClone = tableNode.cloneNode(false)
+    ensurePaginatedTableKey(tableClone)
+    appendTableHeaderParts(tableNode, tableClone)
+    setTableContinuation(tableClone, true)
+
+    const sourceBody = tableBodyPrototype(tableNode)
+    const bodyClone = sourceBody ? sourceBody.cloneNode(false) : document.createElement('tbody')
+    rowClones.forEach(row => bodyClone.appendChild(row))
+    tableClone.appendChild(bodyClone)
+
+    if (footerClone) tableClone.appendChild(footerClone.cloneNode(true))
+
+    return tableClone.outerHTML
+}
+
+function removeTableIfEmpty(tableNode) {
+    if (!isTableNode(tableNode)) return
+    if (tableBodyRows(tableNode).length > 0) return
+    if (tableNode.tFoot) return
+    tableNode.remove()
+}
+
+/**
+ * Split an overflowing table by rows.
+ *
+ * The current page keeps the first rows that fit. The overflow fragment keeps
+ * header metadata for style/merge matching but hides it visually, and carries
+ * the footer so totals stay on the last fragment after subsequent passes.
+ */
+function splitTableNode(pageEl, tableNode) {
+    const rows = tableBodyRows(tableNode)
+    if (!rows.length) return null
+    ensurePaginatedTableKey(tableNode)
+    setTableContinuation(tableNode, false)
+
+    const footerClone = tableNode.tFoot ? tableNode.tFoot.cloneNode(true) : null
+    if (tableNode.tFoot) tableNode.tFoot.remove()
+
+    const extractedRows = []
+    let currentRows = tableBodyRows(tableNode)
+
+    while (doesContentOverflow(pageEl) && currentRows.length > 0) {
+        const row = currentRows[currentRows.length - 1]
+        extractedRows.unshift(row.cloneNode(true))
+        row.remove()
+        currentRows = tableBodyRows(tableNode)
+    }
+
+    if (!extractedRows.length) {
+        if (footerClone && isTableNode(tableNode) && !tableNode.tFoot) {
+            tableNode.appendChild(footerClone)
+        }
+        return null
+    }
+
+    removeTableIfEmpty(tableNode)
+    return buildTableFragment(tableNode, extractedRows, footerClone)
+}
+
+function cloneEmptyTableForContinuation(tableNode) {
+    const clone = tableNode.cloneNode(false)
+    ensurePaginatedTableKey(tableNode)
+    clone.dataset.paginatedTableKey = tableNode.dataset.paginatedTableKey
+    clone.dataset.paginatedTableFragment = '1'
+    appendTableHeaderParts(tableNode, clone)
+    setTableContinuation(clone, tableNode.dataset.paginatedTableContinuation === '1')
+
+    const sourceBody = tableBodyPrototype(tableNode)
+    clone.appendChild(sourceBody ? sourceBody.cloneNode(false) : document.createElement('tbody'))
+    return clone
+}
+
+function pullRowsFromNextTable(currentPageEl, nextPageEl) {
+    const nextTable = firstContentNode(nextPageEl)
+    if (!isTableNode(nextTable)) return false
+
+    let currentTable = previousContentNode(currentPageEl)
+    let createdContinuationTable = false
+    if (!isTableNode(currentTable) || !tablesCanMerge(currentTable, nextTable)) {
+        currentTable = cloneEmptyTableForContinuation(nextTable)
+        currentPageEl.appendChild(currentTable)
+        createdContinuationTable = true
+    } else {
+        const key = ensurePaginatedTableKey(currentTable)
+        nextTable.dataset.paginatedTableKey = key
+        nextTable.dataset.paginatedTableFragment = '1'
+    }
+
+    const targetBody = ensureTableBody(currentTable)
+    let movedAny = false
+
+    while (tableBodyRows(nextTable).length > 0) {
+        const row = tableBodyRows(nextTable)[0]
+        const clone = row.cloneNode(true)
+        targetBody.appendChild(clone)
+
+        if (doesContentFit(currentPageEl)) {
+            targetBody.removeChild(clone)
+            targetBody.appendChild(row)
+            movedAny = true
+        } else {
+            targetBody.removeChild(clone)
+            break
+        }
+    }
+
+    if (!movedAny && createdContinuationTable) {
+        currentTable.remove()
+        return false
+    }
+
+    if (movedAny && tableBodyRows(nextTable).length === 0) {
+        const footer = nextTable.tFoot
+        if (footer) {
+            const footerClone = footer.cloneNode(true)
+            if (currentTable.tFoot) currentTable.tFoot.remove()
+            currentTable.appendChild(footerClone)
+
+            if (doesContentFit(currentPageEl)) {
+                footer.remove()
+            } else {
+                footerClone.remove()
+            }
+        }
+        removeTableIfEmpty(nextTable)
+    }
+
+    if (createdContinuationTable && tableBodyRows(currentTable).length === 0) {
+        currentTable.remove()
+    }
+
+    removeLeadingEmptyNodes(nextPageEl)
+    return movedAny
+}
 
 /**
  * Check if HTML content is effectively empty
@@ -263,6 +793,7 @@ export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComp
                 continue
             }
 
+            normalizeAdjacentSplitTables(el)
             const overflows = doesContentOverflow(el)
             if (!overflows) continue
 
@@ -376,6 +907,8 @@ export function extractOverflow(element) {
     const overflowParts = []
     let iterations = 0
 
+    normalizeAdjacentSplitTables(element)
+
     while (doesContentOverflow(element) && element.childNodes.length > 0 && iterations < MAX_OVERFLOW_ITERATIONS) {
         iterations++
         const lastNode = element.lastChild
@@ -400,6 +933,15 @@ export function extractOverflow(element) {
 
         // If an element-level node, try to split block content
         if (lastNode.nodeType === 1 && doesContentOverflow(element)) {
+            if (isTableNode(lastNode)) {
+                const splitResult = splitTableNode(element, lastNode)
+                if (splitResult) {
+                    overflowParts.unshift(splitResult)
+                    if (!doesContentOverflow(element)) break
+                    continue
+                }
+            }
+
             // For block elements (p, div, blockquote, etc.), try splitting content inside
             const blockTags = ['P', 'DIV', 'BLOCKQUOTE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE']
             if (blockTags.includes(lastNode.tagName) && lastNode.childNodes.length > 1) {
@@ -555,6 +1097,112 @@ export function checkUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
     return tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs)
 }
 
+export function checkTableUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
+    if (!element || !doc?.pages) return false
+
+    const currentPage = doc.pages[pageIndex]
+    if (!currentPage || currentPage.mode !== 'edition') return false
+    if (pageIndex >= doc.pages.length - 1) return false
+
+    const nextPage = doc.pages[pageIndex + 1]
+    if (nextPage && nextPage.mode !== 'edition') return false
+
+    const nextPageRef = pageRefs.current[pageIndex + 1]
+    if (!nextPageRef || doesContentOverflow(element)) return false
+
+    normalizeAdjacentSplitTables(element)
+    normalizeAdjacentSplitTables(nextPageRef)
+
+    const availableSpace = getAvailableSpacePx(element)
+    if (availableSpace <= UNDERFLOW_THRESHOLD_PX) return false
+
+    removeLeadingEmptyNodes(nextPageRef)
+    if (!isTableNode(firstContentNode(nextPageRef))) return false
+
+    const moved = pullRowsFromNextTable(element, nextPageRef)
+    if (!moved) return false
+
+    const currentHtmlSnapshot = element.innerHTML
+    const nextHtmlSnapshot = nextPageRef.innerHTML
+
+    setDoc(prevDoc => {
+        if (pageRefs.current[pageIndex] !== element) return prevDoc
+        if (pageRefs.current[pageIndex + 1] !== nextPageRef) return prevDoc
+
+        const newDoc = { ...prevDoc, pages: [...prevDoc.pages] }
+        if (!newDoc.pages[pageIndex]) return prevDoc
+
+        newDoc.pages[pageIndex] = { ...newDoc.pages[pageIndex], content: currentHtmlSnapshot }
+
+        if (pageIndex + 1 >= newDoc.pages.length) return newDoc
+
+        const nextPageState = { ...newDoc.pages[pageIndex + 1], content: nextHtmlSnapshot }
+        const nextIsEmpty =
+            isEffectivelyEmpty(nextPageState.content) &&
+            (!nextPageState.elements || nextPageState.elements.length === 0) &&
+            (!nextPageState.rows || nextPageState.rows.length === 0)
+
+        if (nextIsEmpty) {
+            if (newDoc.pages.length > 1) newDoc.pages.splice(pageIndex + 1, 1)
+        } else {
+            newDoc.pages[pageIndex + 1] = nextPageState
+        }
+
+        return newDoc
+    })
+
+    return true
+}
+
+/**
+ * Compact split tables only. This intentionally avoids the generic paragraph
+ * underflow path, so row pulls stay predictable for generated docs, pasted
+ * tables and table-toolbar edits.
+ */
+export function reflowTableUnderflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComplete = null) {
+    let pass = 0
+
+    function doPass() {
+        if (pass >= maxPasses) {
+            console.warn('[reflowTableUnderflowAllPages] Hit max passes limit:', maxPasses)
+            if (onComplete) onComplete()
+            return
+        }
+        pass++
+
+        const d = docRef.current
+        if (!d?.pages?.length) {
+            if (onComplete) onComplete()
+            return
+        }
+
+        const normalized = normalizePaginatedTableContinuations(pageRefs, docRef, setDoc)
+        if (normalized) {
+            requestAnimationFrame(() => {
+                setTimeout(doPass, 35)
+            })
+            return
+        }
+
+        for (let i = 0; i < d.pages.length - 1; i++) {
+            const el = pageRefs.current[i]
+            if (!el) continue
+
+            const moved = checkTableUnderflow(el, i, d, setDoc, pageRefs)
+            if (moved) {
+                requestAnimationFrame(() => {
+                    setTimeout(doPass, 35)
+                })
+                return
+            }
+        }
+
+        if (onComplete) onComplete()
+    }
+
+    requestAnimationFrame(doPass)
+}
+
 /**
  * Reflow underflow safely across the whole document.
  *
@@ -617,6 +1265,9 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
     while (iterations < MAX_PULL_ITERATIONS) {
         iterations++
 
+        normalizeAdjacentSplitTables(element)
+        normalizeAdjacentSplitTables(nextPageRef)
+
         const availableSpace = getAvailableSpacePx(element)
         if (availableSpace <= UNDERFLOW_THRESHOLD_PX) break
 
@@ -624,6 +1275,15 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
 
         const firstNode = nextPageRef.firstChild
         if (!firstNode) break
+
+        if (isTableNode(firstNode)) {
+            const pulledRows = pullRowsFromNextTable(element, nextPageRef)
+            if (pulledRows) {
+                movedAny = true
+                continue
+            }
+            break
+        }
 
         // Try whole node
         const clone = firstNode.cloneNode(true)
@@ -641,7 +1301,7 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
             element.removeChild(clone)
 
             // Try partial pull
-            const pulled = pullTextChunkFromNextPage(element, nextPageRef)
+            const pulled = isTableNode(firstNode) ? false : pullTextChunkFromNextPage(element, nextPageRef)
             if (pulled) movedAny = true
             break
         }

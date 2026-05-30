@@ -14,12 +14,27 @@ const IntegrationProvider = require('../../src/integrations/models/IntegrationPr
 const IntegrationAction = require('../../src/integrations/models/IntegrationAction.model');
 const IntegrationConnectionSchema = require('../../src/integrations/models/IntegrationConnection.model').schema;
 const IntegrationLogSchema = require('../../src/integrations/models/IntegrationLog.model').schema;
+const {
+    OPENAI_WEB_SEARCH_SOURCES_INCLUDE,
+    appendWebSearchInstructions,
+    buildOpenAIWebSearchTool,
+    ensureOpenAIResponsesAction,
+    shouldUseOpenAIWebSearch
+} = require('../../src/integrations/openaiActions');
 const GlobalTaskList = require('../../models/task-list.model');
 const GlobalRecordTask = require('../../models/record-task.model');
 
 const router = express.Router();
 
 const RECORD_AI_MODEL = process.env.RECORD_AI_MODEL || process.env.AI_ASSISTANT_MODEL || 'gpt-5.5';
+const RECORD_AI_WEB_SEARCH_MODEL = process.env.RECORD_AI_WEB_SEARCH_MODEL ||
+    process.env.OPENAI_WEB_SEARCH_MODEL ||
+    'gpt-5.5';
+const RECORD_AI_WEB_SEARCH_ENABLED = process.env.OPENAI_WEB_SEARCH_ENABLED !== 'false' &&
+    process.env.RECORD_AI_WEB_SEARCH_ENABLED !== 'false';
+const RECORD_AI_WEB_SEARCH_CONTEXT_SIZE = ['low', 'medium', 'high'].includes(String(process.env.RECORD_AI_WEB_SEARCH_CONTEXT_SIZE || process.env.OPENAI_WEB_SEARCH_CONTEXT_SIZE || '').toLowerCase())
+    ? String(process.env.RECORD_AI_WEB_SEARCH_CONTEXT_SIZE || process.env.OPENAI_WEB_SEARCH_CONTEXT_SIZE).toLowerCase()
+    : 'medium';
 const MAX_STORED_MESSAGES = 80;
 const MAX_STORED_MESSAGE_CHARS = 24000;
 const MAX_CONTEXT_CHARS = Number(process.env.RECORD_AI_MAX_CONTEXT_CHARS || 32000);
@@ -472,6 +487,18 @@ function getTenantIntegrationModels(req) {
         conn.model('IntegrationLog', IntegrationLogSchema);
 
     return { ConnectionModel, LogModel };
+}
+
+function recordAiWebSearchToolOptionsFromEnv() {
+    return {
+        searchContextSize: RECORD_AI_WEB_SEARCH_CONTEXT_SIZE,
+        userLocation: {
+            country: process.env.RECORD_AI_WEB_SEARCH_COUNTRY || process.env.OPENAI_WEB_SEARCH_COUNTRY,
+            city: process.env.RECORD_AI_WEB_SEARCH_CITY || process.env.OPENAI_WEB_SEARCH_CITY,
+            region: process.env.RECORD_AI_WEB_SEARCH_REGION || process.env.OPENAI_WEB_SEARCH_REGION,
+            timezone: process.env.RECORD_AI_WEB_SEARCH_TIMEZONE || process.env.OPENAI_WEB_SEARCH_TIMEZONE
+        }
+    };
 }
 
 function extractResponsesText(data) {
@@ -2787,28 +2814,40 @@ async function callLocalRecordAI({ instructions, input, historyMessages = [], ru
 async function callRecordAI(req, { conversationId, recordId, instructions, input, previousResponseId, engineSettings = {}, historyMessages = [], maxOutputTokens = RECORD_AI_OUTPUT_TOKENS }) {
     const responseRuntime = resolveResponseRuntime(engineSettings);
     const outputTokens = boundedInt(maxOutputTokens, RECORD_AI_OUTPUT_TOKENS, 500, 12000);
+    const shouldSearchWeb = RECORD_AI_WEB_SEARCH_ENABLED && shouldUseOpenAIWebSearch(input);
+    const effectiveRuntime = shouldSearchWeb
+        ? {
+            engine: 'openai',
+            provider: 'openai',
+            model: RECORD_AI_WEB_SEARCH_MODEL,
+            configured: true,
+            fallback: responseRuntime.engine === 'local',
+            warning: responseRuntime.engine === 'local' ? 'Recherche web détectée, bascule automatique vers OpenAI.' : ''
+        }
+        : responseRuntime;
 
-    if (responseRuntime.engine === 'local') {
+    if (effectiveRuntime.engine === 'local') {
         const result = await callLocalRecordAI({
             instructions,
             input,
             historyMessages,
-            runtime: responseRuntime,
+            runtime: effectiveRuntime,
             maxOutputTokens: outputTokens
         });
-        return { ...result, runtime: responseRuntime };
+        return { ...result, runtime: effectiveRuntime };
     }
 
     const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
-    const action = await IntegrationAction.findOne({
-        providerKey: 'openai',
-        actionKey: 'responses'
-    });
-
-    if (!action) throw new Error('Responses action not found. Please seed the OpenAI actions.');
+    const action = await ensureOpenAIResponsesAction(
+        IntegrationAction,
+        shouldSearchWeb ? RECORD_AI_WEB_SEARCH_MODEL : (effectiveRuntime.model || RECORD_AI_MODEL)
+    );
+    const responseModel = shouldSearchWeb
+        ? RECORD_AI_WEB_SEARCH_MODEL
+        : (effectiveRuntime.model || RECORD_AI_MODEL);
 
     const inputPayload = {
-        model: responseRuntime.model || RECORD_AI_MODEL,
+        model: responseModel,
         input,
         max_output_tokens: outputTokens,
         store: true,
@@ -2820,9 +2859,17 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
         }
     };
 
-    if (instructions) inputPayload.instructions = instructions;
+    if (shouldSearchWeb) {
+        inputPayload.instructions = appendWebSearchInstructions(instructions);
+        inputPayload.tools = [buildOpenAIWebSearchTool(recordAiWebSearchToolOptionsFromEnv())];
+        inputPayload.tool_choice = 'auto';
+        inputPayload.include = OPENAI_WEB_SEARCH_SOURCES_INCLUDE;
+    } else if (instructions) {
+        inputPayload.instructions = instructions;
+    }
+
     if (previousResponseId) inputPayload.previous_response_id = previousResponseId;
-    if (!/^gpt-5(?:[.-]|$)/.test(responseRuntime.model || RECORD_AI_MODEL)) inputPayload.temperature = 0.35;
+    if (!/^gpt-5(?:[.-]|$)/.test(inputPayload.model)) inputPayload.temperature = 0.35;
 
     const result = await IntegrationService.executeAction({
         ProviderModel: IntegrationProvider,
@@ -2847,7 +2894,7 @@ async function callRecordAI(req, { conversationId, recordId, instructions, input
     return {
         content,
         responseId: result.data?.id || result.raw?.id || '',
-        runtime: responseRuntime
+        runtime: effectiveRuntime
     };
 }
 
@@ -3278,11 +3325,25 @@ router.post('/:recordId/conversations/:conversationId/messages', async (req, res
             ? normalizeSelection({})
             : latestConversationDocumentSelection(conversation);
         const reusingConversationDocuments = !hasSelectedContext && documentSelectionItemCount(conversationDocumentSelection) > 0;
-        const selection = hasSelectedContext ? requestedSelection : conversationDocumentSelection;
-        const hasContextForRequest = selectionItemCount(selection) > 0;
-        const contextSource = hasSelectedContext
+        let selection = hasSelectedContext ? requestedSelection : conversationDocumentSelection;
+        let contextSource = hasSelectedContext
             ? 'selected'
             : (reusingConversationDocuments ? 'conversation-documents' : 'none');
+        let chatContextDecision = agentContextDecision(message, requestedSelection);
+        if (!hasSelectedContext && !reusingConversationDocuments && chatContextDecision.mode === 'full') {
+            const autoSelection = await agentDefaultSelection(req, record, entity, message);
+            if (selectionItemCount(autoSelection) > 0) {
+                selection = autoSelection;
+                contextSource = documentSelectionItemCount(autoSelection) > 0
+                    ? 'auto-matched-document'
+                    : 'auto-matched-record-context';
+                chatContextDecision = {
+                    ...chatContextDecision,
+                    reason: contextSource
+                };
+            }
+        }
+        const hasContextForRequest = selectionItemCount(selection) > 0;
         const engineSettings = await getRecordAiEngineSettings(req);
         const engineRuntime = resolveEngineRuntime(engineSettings);
         const responseRuntime = engineRuntime.response;
@@ -3399,9 +3460,25 @@ function agentMarkdownToHtml(markdown) {
     let list = [];
     let listType = 'ul';
 
-    const inline = (value) => agentEscapeHtml(value)
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>');
+    const inline = (value) => {
+        const links = [];
+        let escaped = agentEscapeHtml(value).replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (match, label, url) => {
+            const key = `@@AGENT_LINK_${links.length}@@`;
+            links.push(`<a href="${url}" target="_blank" rel="noopener">${label}</a>`);
+            return key;
+        });
+
+        escaped = escaped
+            .replace(/(^|[\s(])((?:https?:\/\/)[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        links.forEach((link, index) => {
+            escaped = escaped.replace(`@@AGENT_LINK_${index}@@`, link);
+        });
+
+        return escaped;
+    };
 
     const flushList = () => {
         if (!list.length) return;
@@ -3410,11 +3487,77 @@ function agentMarkdownToHtml(markdown) {
         listType = 'ul';
     };
 
-    lines.forEach(line => {
-        const trimmed = line.trim();
+    const tableRow = (line) => {
+        const trimmed = String(line || '').trim();
+        if (!trimmed.includes('|')) return null;
+        const cells = trimmed
+            .replace(/^\|/, '')
+            .replace(/\|$/, '')
+            .split('|')
+            .map(cell => cell.trim());
+        return cells.length >= 2 ? cells : null;
+    };
+
+    const isTableSeparator = (cells = []) => cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+    const looksLikeFieldRow = (cells = []) => cells.length >= 3 && cells.some(cell => /https?:\/\/|@|\+?\d[\d\s().-]{5,}/.test(cell));
+    const tableHeaders = (width) => {
+        const defaults = ['Nom', 'Résumé', 'Adresse', 'Téléphone', 'Email', 'Site / source', 'Remarque'];
+        return Array.from({ length: width }, (_, index) => defaults[index] || `Info ${index + 1}`);
+    };
+
+    const pushTable = (rows = []) => {
+        const normalizedRows = rows
+            .map(row => row.map(cell => cell.trim()).filter((cell, index, all) => cell || index < all.length - 1))
+            .filter(row => row.length >= 2);
+        if (!normalizedRows.length) return;
+
+        let header = normalizedRows[0];
+        let bodyRows = normalizedRows.slice(1);
+
+        if (bodyRows.length && isTableSeparator(bodyRows[0])) {
+            bodyRows = bodyRows.slice(1);
+        } else if (normalizedRows.length === 1 || looksLikeFieldRow(header)) {
+            const width = Math.max(...normalizedRows.map(row => row.length));
+            header = tableHeaders(width);
+            bodyRows = normalizedRows;
+        }
+
+        const width = Math.max(header.length, ...bodyRows.map(row => row.length));
+        const paddedHeader = Array.from({ length: width }, (_, index) => header[index] || `Info ${index + 1}`);
+        const paddedRows = bodyRows.map(row => Array.from({ length: width }, (_, index) => row[index] || ''));
+        if (!paddedRows.length) return;
+
+        html.push([
+            '<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;">',
+            `<thead><tr>${paddedHeader.map(cell => `<th style="border:1px solid #dbe3ef;background:#f8fafc;padding:8px;text-align:left;font-weight:700;color:#334155;">${inline(cell)}</th>`).join('')}</tr></thead>`,
+            `<tbody>${paddedRows.map(row => `<tr>${row.map(cell => `<td style="border:1px solid #e5eaf2;padding:8px;vertical-align:top;color:#334155;line-height:1.45;">${inline(cell)}</td>`).join('')}</tr>`).join('')}</tbody>`,
+            '</table>'
+        ].join(''));
+    };
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const trimmed = lines[index].trim();
         if (!trimmed) {
             flushList();
-            return;
+            continue;
+        }
+
+        const firstTableRow = tableRow(trimmed);
+        if (firstTableRow) {
+            const rows = [firstTableRow];
+            let cursor = index + 1;
+            while (cursor < lines.length) {
+                const nextRow = tableRow(lines[cursor]);
+                if (!nextRow) break;
+                rows.push(nextRow);
+                cursor += 1;
+            }
+            if (rows.length >= 2 || looksLikeFieldRow(firstTableRow)) {
+                flushList();
+                pushTable(rows);
+                index = cursor - 1;
+                continue;
+            }
         }
 
         const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
@@ -3422,7 +3565,7 @@ function agentMarkdownToHtml(markdown) {
             flushList();
             const level = Math.min(3, heading[1].length + 1);
             html.push(`<h${level}>${inline(heading[2])}</h${level}>`);
-            return;
+            continue;
         }
 
         const bullet = trimmed.match(/^[-*]\s+(.+)$/);
@@ -3430,7 +3573,7 @@ function agentMarkdownToHtml(markdown) {
             if (list.length && listType !== 'ul') flushList();
             listType = 'ul';
             list.push(bullet[1]);
-            return;
+            continue;
         }
 
         const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
@@ -3438,12 +3581,12 @@ function agentMarkdownToHtml(markdown) {
             if (list.length && listType !== 'ol') flushList();
             listType = 'ol';
             list.push(numbered[1]);
-            return;
+            continue;
         }
 
         flushList();
         html.push(`<p>${inline(trimmed)}</p>`);
-    });
+    }
 
     flushList();
     return html.join('\n') || '<p></p>';
@@ -4072,8 +4215,8 @@ function agentTemplateGoalScore(goal, template = {}) {
     return score;
 }
 
-function agentParseCommercialAmount(value = '') {
-    const raw = String(value || '').trim();
+function agentParseCommercialAmount(value = '', { allowZero = false } = {}) {
+    const raw = String(value === null || value === undefined ? '' : value).trim();
     if (!raw) return null;
     const normalized = raw
         .replace(/[^\d,.\s-]/g, '')
@@ -4081,7 +4224,7 @@ function agentParseCommercialAmount(value = '') {
         .replace(/\.(?=\d{3}(?:\D|$))/g, '')
         .replace(/,(?=\d{1,2}$)/, '.');
     const amount = Number(normalized);
-    return Number.isFinite(amount) && amount > 0 ? amount : null;
+    return Number.isFinite(amount) && (allowZero ? amount >= 0 : amount > 0) ? amount : null;
 }
 
 function agentCleanCommercialDescription(value = '') {
@@ -4109,19 +4252,25 @@ function agentNormalizeCommercialLineItems(items = []) {
     const rawItems = Array.isArray(items) ? items : [];
     return rawItems
         .map(item => {
-            const unitPrice = agentParseCommercialAmount(item?.unitPrice ?? item?.price ?? item?.amount ?? item?.total);
-            if (!unitPrice) return null;
+            const unitPrice = agentParseCommercialAmount(item?.unitPrice ?? item?.price ?? item?.amount ?? item?.total, { allowZero: true });
+            if (unitPrice === null) return null;
             const quantity = Math.max(1, Number(item?.quantity || item?.qty || 1) || 1);
             const taxRate = Number.isFinite(Number(item?.taxRate)) ? Number(item.taxRate) : 20;
             const mode = String(item?.amountMode || item?.mode || 'ht').toLowerCase() === 'ttc' ? 'ttc' : 'ht';
+            const rawDescription = String(item?.description || item?.label || item?.name || item?.title || '')
+                .replace(/\s+/g, ' ')
+                .replace(/^[\s:;,.-]+/g, '')
+                .replace(/[\s:;,.-]+$/g, '')
+                .trim();
             const description = agentSafeString(
-                agentCleanCommercialDescription(item?.description || item?.label || item?.name || item?.title || '') || 'Prestation',
-                180
+                rawDescription || 'Prestation',
+                500
             );
-            return { description, quantity, unitPrice, taxRate, amountMode: mode };
+            const unit = agentSafeString(item?.unit || item?.unite || item?.unité || item?.u || '', 40);
+            return { description, unit, quantity, unitPrice, taxRate, amountMode: mode };
         })
         .filter(Boolean)
-        .slice(0, 12);
+        .slice(0, 80);
 }
 
 function agentExtractCommercialLineItems(goal = '') {
@@ -4154,6 +4303,102 @@ function agentExtractCommercialLineItems(goal = '') {
     }
 
     return agentNormalizeCommercialLineItems(items);
+}
+
+function agentMarkdownTableCells(line = '') {
+    const trimmed = String(line || '').trim();
+    if (!trimmed.includes('|')) return null;
+    const cells = trimmed
+        .replace(/^\|/, '')
+        .replace(/\|$/, '')
+        .split('|')
+        .map(cell => cell.trim());
+    return cells.length >= 2 ? cells : null;
+}
+
+function agentLooksMarkdownSeparator(cells = []) {
+    return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+}
+
+function agentParseCommercialQuantity(value = '') {
+    const normalized = String(value || '')
+        .replace(/\s/g, '')
+        .replace(',', '.')
+        .replace(/[^\d.-]/g, '');
+    const quantity = Number(normalized);
+    return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+}
+
+function agentExtractCommercialLineItemsFromMarkdown(markdown = '') {
+    const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+    const items = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const firstRow = agentMarkdownTableCells(lines[index]);
+        if (!firstRow) continue;
+
+        const rows = [firstRow];
+        let cursor = index + 1;
+        while (cursor < lines.length) {
+            const row = agentMarkdownTableCells(lines[cursor]);
+            if (!row) break;
+            rows.push(row);
+            cursor += 1;
+        }
+        index = cursor - 1;
+        if (rows.length < 3 || !agentLooksMarkdownSeparator(rows[1])) continue;
+
+        const headers = rows[0].map(header => normalizeSearchText(header));
+        const findHeader = (patterns) => headers.findIndex(header => patterns.some(pattern => pattern.test(header)));
+        const descriptionIndex = findHeader([/designation/, /libelle/, /produit/, /prestation/, /article/, /materiau/]);
+        const quantityIndex = findHeader([/quantite/, /^qte$/, /^qty$/]);
+        if (descriptionIndex < 0 || quantityIndex < 0) continue;
+
+        const unitIndex = findHeader([/^u$/, /unite/, /^unit$/]);
+        const specIndex = findHeader([/caracteristique/, /specification/, /description/, /resume/, /remarque/]);
+        const priceIndex = findHeader([/prix.*unit/, /^pu$/, /montant.*unit/]);
+        const taxIndex = findHeader([/tva/, /taxe/]);
+
+        rows.slice(2).forEach(row => {
+            const descriptionParts = [
+                row[descriptionIndex],
+                specIndex >= 0 && specIndex !== descriptionIndex ? row[specIndex] : ''
+            ].filter(Boolean);
+            const description = descriptionParts.join(' — ');
+            if (!description) return;
+            const unitPrice = priceIndex >= 0
+                ? agentParseCommercialAmount(row[priceIndex], { allowZero: true })
+                : 0;
+            const taxRate = taxIndex >= 0 && Number.isFinite(Number(String(row[taxIndex]).replace(',', '.')))
+                ? Number(String(row[taxIndex]).replace(',', '.'))
+                : 20;
+            items.push({
+                description,
+                unit: unitIndex >= 0 ? row[unitIndex] : '',
+                quantity: agentParseCommercialQuantity(row[quantityIndex]),
+                unitPrice: unitPrice === null ? 0 : unitPrice,
+                taxRate,
+                amountMode: 'ht'
+            });
+        });
+    }
+
+    return agentNormalizeCommercialLineItems(items);
+}
+
+function agentExtractCommercialLineItemsFromParsed(parsed = {}) {
+    const actions = Array.isArray(parsed?.actions) ? parsed.actions : [];
+    const explicitItems = actions
+        .flatMap(action => action?.input?.lineItems || action?.input?.items || action?.input?.lines || [])
+        .filter(Boolean);
+    const normalizedExplicit = agentNormalizeCommercialLineItems(explicitItems);
+    if (normalizedExplicit.length) return normalizedExplicit;
+
+    const noteMarkdown = actions
+        .filter(action => ['create_note', 'update_note'].includes(agentNormalizeToolName(action?.tool || action?.type || action?.name)))
+        .map(action => action?.input?.contentMarkdown || action?.input?.markdown || action?.input?.content || '')
+        .join('\n\n');
+    return agentExtractCommercialLineItemsFromMarkdown(noteMarkdown);
 }
 
 function agentExtractCompanyTemplateVariables(goal = '') {
@@ -4214,7 +4459,9 @@ function agentBestTemplateForGoal(goal, toolCatalog = {}) {
 }
 
 function agentEnsureTemplateGenerationActions(actions = [], goal = '', parsed = {}, toolCatalog = {}) {
-    const lineItems = agentExtractCommercialLineItems(goal);
+    const parsedLineItems = agentExtractCommercialLineItemsFromParsed(parsed);
+    const goalLineItems = agentExtractCommercialLineItems(goal);
+    const lineItems = parsedLineItems.length ? parsedLineItems : goalLineItems;
     const companyVariables = agentExtractCompanyTemplateVariables(goal);
     const existingGenerateIndex = (actions || []).findIndex(action => action.tool === 'generate_doc');
     if (existingGenerateIndex >= 0) {
@@ -5434,6 +5681,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Réponds en français et uniquement en JSON valide, sans markdown, sans bloc ```.",
         "Tools autorisés:",
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
+        "Pour create_note et update_note, produis un Markdown propre et lisible: titres courts, synthèse en 2-3 phrases, puis tableau Markdown quand il y a des fournisseurs, médecins, contacts, prix ou coordonnées. N'utilise jamais des lignes brutes séparées par | sans en-tête. Colonnes recommandées pour contacts/fournisseurs: Nom, Activité, Adresse, Téléphone, Email, Site/source, Remarque. Garde les URLs en liens Markdown [libellé](https://...). Évite les longues URL Google Maps brutes: mets [Itinéraire](url) ou [Google Maps](url).",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
         "- create_doc: { name, contentMarkdown? ou contentHtml?, contentPages?, pageCount?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche. Par défaut: A4 portrait. Si l'utilisateur demande plusieurs pages, utilise contentPages avec un élément par page; ne mets jamais Page 2/Page 3 dans la même page HTML.",
         "Pour create_doc, produis un vrai document structuré et exploitable comme une bonne note: titre, introduction courte, sections hiérarchisées, listes/tableaux si utiles, conclusion/sources quand le contexte est documentaire. Utilise du HTML sémantique simple (h1/h2/h3/p/ul/ol/table) sans wrappers html/body, sans position fixed/absolute, sans height/min-height en vh/% et sans CSS global.",
@@ -5450,7 +5698,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour update_doc sur un document avec templateBacked=true ou generatedFrom renseigné, n'envoie jamais un contenu complet en mode replace: utilise replacements ciblés, ou régénère via generate_doc si l'utilisateur demande de repartir du template.",
         "Quand l'utilisateur demande de générer un document (facture, devis, contrat, attestation, offre...) et qu'un template du catalogue correspond, choisis toujours generate_doc avant create_doc.",
         "Pour generate_doc, laisse variables vide sauf si l'utilisateur fournit clairement des valeurs; les variables manquantes seront remplies automatiquement par le template, la fiche et les valeurs par défaut.",
-        "Si la demande de facture/devis/offre contient une prestation, un produit ou un prix, ajoute lineItems: [{description, quantity, unitPrice, taxRate, amountMode:\"ht\"|\"ttc\"}] sans toucher aux variables.",
+        "Si la demande de facture/devis/offre contient une prestation, un produit, une unité, une quantité ou un prix, ajoute toujours lineItems: [{description, unit?, quantity, unitPrice, taxRate, amountMode:\"ht\"|\"ttc\"}] sans toucher aux variables. Si le prix unitaire est inconnu, mets unitPrice:0 et garde la ligne: ne laisse jamais lineItems vide quand des postes avec unités/quantités sont extraits.",
         "N'utilise create_doc que pour un document libre sans template pertinent.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
@@ -5787,6 +6035,11 @@ function agentLinkedRecordPayload(record = {}, entity = {}) {
 
 function agentDocumentUrl(req, documentId) {
     return `/account/${req.account_number}/documents/${documentId}/edit-react`;
+}
+
+function agentNoteUrl(req, record, entity, noteId) {
+    const slug = entity?.slug || entity?.alias || 'record';
+    return `/account/${req.account_number}/record/${slug}/${record._id}/notes?noteId=${encodeURIComponent(cleanId(noteId))}`;
 }
 
 function agentDocContentHtml(action = {}) {
@@ -6196,7 +6449,10 @@ function agentCommercialTableRows(lineItems = []) {
         const quantity = Number(line.quantity) || 1;
         const unitPrice = agentCommercialLineHt(line);
         const total = unitPrice * quantity;
-        return `<tr><td style="border:1px solid #d1d5db;padding:8px 14px;font-size:14px;">${agentEscapeHtml(line.description)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:center;font-size:14px;">${agentEscapeHtml(quantity)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">${agentFormatEuro(unitPrice)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">${agentFormatEuro(total)}</td></tr>`;
+        const description = line.unit && !/\bunit[eé]\b|—\s*U(?:nit[eé])?\s*:/i.test(line.description)
+            ? `${line.description} — Unité : ${line.unit}`
+            : line.description;
+        return `<tr><td style="border:1px solid #d1d5db;padding:8px 14px;font-size:14px;">${agentEscapeHtml(description)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:center;font-size:14px;">${agentEscapeHtml(quantity)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">${agentFormatEuro(unitPrice)}</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">${agentFormatEuro(total)}</td></tr>`;
     }).join('\n');
 }
 
@@ -6541,8 +6797,8 @@ async function applyAgentAction(req, record, entity, action) {
 
         return {
             before: null,
-            after: { noteId: cleanId(note._id), title: note.title },
-            result: { noteId: cleanId(note._id), title: note.title },
+            after: { noteId: cleanId(note._id), title: note.title, url: agentNoteUrl(req, record, entity, note._id) },
+            result: { noteId: cleanId(note._id), title: note.title, url: agentNoteUrl(req, record, entity, note._id) },
             inverse: { tool: 'archive_note', noteId: cleanId(note._id) }
         };
     }
@@ -6579,8 +6835,8 @@ async function applyAgentAction(req, record, entity, action) {
 
         return {
             before,
-            after: { noteId: cleanId(note._id), title: note.title },
-            result: { noteId: cleanId(note._id), title: note.title },
+            after: { noteId: cleanId(note._id), title: note.title, url: agentNoteUrl(req, record, entity, note._id) },
+            result: { noteId: cleanId(note._id), title: note.title, url: agentNoteUrl(req, record, entity, note._id) },
             inverse: { tool: 'restore_note', note: before }
         };
     }

@@ -1,5 +1,5 @@
 /**
- * Seed OpenAI Provider and Chat Completion Action
+ * Seed OpenAI Provider, Chat Completion Action, and Responses Action
  * Run: node scripts/seed-openai-provider.js
  */
 
@@ -9,6 +9,7 @@ const dbConfig = require('../config/db');
 // Import models
 const IntegrationProvider = require('../src/integrations/models/IntegrationProvider.model');
 const IntegrationAction = require('../src/integrations/models/IntegrationAction.model');
+const { buildOpenAIResponsesActionData } = require('../src/integrations/openaiActions');
 
 async function seedOpenAI() {
     try {
@@ -147,7 +148,18 @@ async function seedOpenAI() {
         console.log('✅ Chat Completion action created/updated:', chatAction.actionKey);
 
         // ============================================
-        // 3. Set as test action for the provider
+        // 3. Create/Update Responses Action
+        // ============================================
+        const responsesActionData = buildOpenAIResponsesActionData('gpt-5.5');
+        const responsesAction = await IntegrationAction.findOneAndUpdate(
+            { providerKey: 'openai', actionKey: 'responses' },
+            responsesActionData,
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+        console.log('✅ Responses action created/updated:', responsesAction.actionKey);
+
+        // ============================================
+        // 4. Set as test action for the provider
         // ============================================
         await IntegrationProvider.findByIdAndUpdate(provider._id, {
             testActionId: chatAction._id

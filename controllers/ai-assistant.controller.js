@@ -20,6 +20,25 @@ const IntegrationProvider = require("../src/integrations/models/IntegrationProvi
 const IntegrationAction = require("../src/integrations/models/IntegrationAction.model");
 const IntegrationConnectionSchema = require("../src/integrations/models/IntegrationConnection.model").schema;
 const IntegrationLogSchema = require("../src/integrations/models/IntegrationLog.model").schema;
+const {
+    OPENAI_WEB_SEARCH_SOURCES_INCLUDE,
+    appendWebSearchInstructions,
+    buildOpenAIWebSearchTool,
+    ensureOpenAIResponsesAction,
+    extractOpenAIResponsesText,
+    shouldUseOpenAIWebSearch
+} = require("../src/integrations/openaiActions");
+
+const AI_ASSISTANT_MODEL = process.env.AI_ASSISTANT_MODEL || "gpt-4o-mini";
+const AI_ASSISTANT_WEB_SEARCH_MODEL = process.env.AI_ASSISTANT_WEB_SEARCH_MODEL ||
+    process.env.OPENAI_WEB_SEARCH_MODEL ||
+    process.env.RECORD_AI_WEB_SEARCH_MODEL ||
+    "gpt-5.5";
+const AI_ASSISTANT_WEB_SEARCH_ENABLED = process.env.OPENAI_WEB_SEARCH_ENABLED !== "false" &&
+    process.env.AI_ASSISTANT_WEB_SEARCH_ENABLED !== "false";
+const AI_ASSISTANT_WEB_SEARCH_CONTEXT_SIZE = ["low", "medium", "high"].includes(String(process.env.AI_ASSISTANT_WEB_SEARCH_CONTEXT_SIZE || process.env.OPENAI_WEB_SEARCH_CONTEXT_SIZE || "").toLowerCase())
+    ? String(process.env.AI_ASSISTANT_WEB_SEARCH_CONTEXT_SIZE || process.env.OPENAI_WEB_SEARCH_CONTEXT_SIZE).toLowerCase()
+    : "medium";
 
 /**
  * Get tenant-specific Connection and Log models
@@ -35,6 +54,49 @@ function getTenantIntegrationModels(req) {
         conn.model("IntegrationLog", IntegrationLogSchema);
 
     return { ConnectionModel, LogModel };
+}
+
+function isGpt5Model(model = "") {
+    return /^gpt-5(?:[.-]|$)/.test(String(model || ""));
+}
+
+function latestUserContent(messages = []) {
+    const userMessage = [...messages].reverse().find(message => message?.role === "user");
+    return String(userMessage?.content || "");
+}
+
+function messagesToResponsesPayload(messages = []) {
+    const systemInstructions = messages
+        .filter(message => message?.role === "system")
+        .map(message => String(message.content || "").trim())
+        .filter(Boolean)
+        .join("\n\n");
+
+    const input = messages
+        .filter(message => message?.role !== "system")
+        .map(message => {
+            const role = message.role === "assistant" ? "Assistant" : "Utilisateur";
+            return `${role}:\n${String(message.content || "").trim()}`;
+        })
+        .filter(Boolean)
+        .join("\n\n");
+
+    return {
+        instructions: systemInstructions,
+        input: input || latestUserContent(messages)
+    };
+}
+
+function webSearchToolOptionsFromEnv() {
+    return {
+        searchContextSize: AI_ASSISTANT_WEB_SEARCH_CONTEXT_SIZE,
+        userLocation: {
+            country: process.env.AI_ASSISTANT_WEB_SEARCH_COUNTRY || process.env.OPENAI_WEB_SEARCH_COUNTRY,
+            city: process.env.AI_ASSISTANT_WEB_SEARCH_CITY || process.env.OPENAI_WEB_SEARCH_CITY,
+            region: process.env.AI_ASSISTANT_WEB_SEARCH_REGION || process.env.OPENAI_WEB_SEARCH_REGION,
+            timezone: process.env.AI_ASSISTANT_WEB_SEARCH_TIMEZONE || process.env.OPENAI_WEB_SEARCH_TIMEZONE
+        }
+    };
 }
 
 // ── Context builder ──────────────────────────────────────────
@@ -556,11 +618,55 @@ async function callAI(req, messages) {
         // Provider & Action are GLOBAL models (not in tenant DB)
         // Connection & Log are TENANT models (registered on tenant connection)
         const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
+        const shouldSearchWeb = AI_ASSISTANT_WEB_SEARCH_ENABLED &&
+            shouldUseOpenAIWebSearch(latestUserContent(messages));
 
         // Find OpenAI provider (global DB)
         const provider = await IntegrationProvider.findOne({ key: "openai" });
         if (!provider) {
             throw new Error("OpenAI provider not configured. Please set up the OpenAI integration first.");
+        }
+
+        if (shouldSearchWeb) {
+            const action = await ensureOpenAIResponsesAction(IntegrationAction, AI_ASSISTANT_WEB_SEARCH_MODEL);
+            const responsesPayload = messagesToResponsesPayload(messages);
+            const input = {
+                model: AI_ASSISTANT_WEB_SEARCH_MODEL,
+                input: responsesPayload.input,
+                instructions: appendWebSearchInstructions(responsesPayload.instructions),
+                max_output_tokens: 2200,
+                store: false,
+                metadata: {
+                    feature: "ai-assistant",
+                    account_number: String(req.account_number || "")
+                },
+                tools: [buildOpenAIWebSearchTool(webSearchToolOptionsFromEnv())],
+                tool_choice: "auto",
+                include: OPENAI_WEB_SEARCH_SOURCES_INCLUDE
+            };
+
+            if (!isGpt5Model(input.model)) input.temperature = 0.4;
+
+            const result = await IntegrationService.executeAction({
+                ProviderModel: IntegrationProvider,
+                ActionModel: IntegrationAction,
+                ConnectionModel,
+                LogModel,
+                workspaceId: req.account_number,
+                providerKey: "openai",
+                actionId: action._id.toString(),
+                input,
+                timeoutMs: 120000
+            });
+
+            if (!result.success) {
+                console.error("[AIAssistant] Responses web search call failed:", JSON.stringify(result, null, 2));
+                throw new Error(result.error || result.errorMessage || "AI web search call failed");
+            }
+
+            return extractOpenAIResponsesText(result.data) ||
+                extractOpenAIResponsesText(result.raw) ||
+                "Pas de réponse";
         }
 
         // Find chat-completion action (global DB) — support both actionKey formats
@@ -589,7 +695,7 @@ async function callAI(req, messages) {
             providerKey: "openai",
             actionId: action._id.toString(),
             input: {
-                model: "gpt-4o-mini",
+                model: AI_ASSISTANT_MODEL,
                 messages,
                 temperature: 0.4,
                 max_tokens: 2000,

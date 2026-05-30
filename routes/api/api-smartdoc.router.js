@@ -1631,7 +1631,10 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             box-sizing: border-box;
             line-height: 1.6;
         }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f5f5f5; font-weight: 600; }
     </style>
@@ -2810,7 +2813,10 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecor
             box-sizing: border-box;
             line-height: 1.6;
         }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f5f5f5; font-weight: 600; }
     </style>
@@ -3245,7 +3251,10 @@ async function generatePDF(html, outputPath, docTemplate, accountNumber = null) 
                             box-sizing: border-box;
                             line-height: 1.6;
                         }
-                        table { width: 100%; border-collapse: collapse; }
+                        table { width: 100%; border-collapse: collapse; break-inside: auto; page-break-inside: auto; }
+                        thead { display: table-header-group; }
+                        tfoot { display: table-footer-group; }
+                        tr { break-inside: avoid; page-break-inside: avoid; }
                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                         th { background-color: #f5f5f5; font-weight: 600; }
                     </style>

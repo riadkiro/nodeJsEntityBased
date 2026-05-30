@@ -517,6 +517,23 @@ function pullRowsFromNextTable(currentPageEl, nextPageEl) {
         }
     }
 
+    if (!movedAny && tableBodyRows(nextTable).length === 0 && nextTable.tFoot) {
+        const footerClone = nextTable.tFoot.cloneNode(true)
+        const previousFooter = currentTable.tFoot ? currentTable.tFoot.cloneNode(true) : null
+        if (currentTable.tFoot) currentTable.tFoot.remove()
+        currentTable.appendChild(footerClone)
+
+        if (doesContentFit(currentPageEl)) {
+            nextTable.tFoot.remove()
+            removeTableIfEmpty(nextTable)
+            removeLeadingEmptyNodes(nextPageEl)
+            return true
+        }
+
+        footerClone.remove()
+        if (previousFooter) currentTable.appendChild(previousFooter)
+    }
+
     if (!movedAny && createdContinuationTable) {
         currentTable.remove()
         return false
@@ -614,6 +631,27 @@ function removeEmptyPagesBeforeTableContinuations(docRef, setDoc, pageRefs) {
         pages.splice(index, 1)
         removed = true
         index -= 1
+    }
+
+    for (let index = pages.length - 1; index > 0; index -= 1) {
+        const page = pages[index]
+        if (page?.mode !== 'edition') break
+
+        const pageEl = pageRefs?.current?.[index]
+        if (!isEmptyEditionPage(page, pageEl)) break
+
+        const previousPage = pages[index - 1]
+        const previousPageEl = pageRefs?.current?.[index - 1]
+        const previousLast = previousPageEl ? previousContentNode(previousPageEl) : null
+        const previousEndsSplitTable =
+            previousPage?.mode === 'edition' &&
+            isTableNode(previousLast) &&
+            !!previousLast.dataset.paginatedTableKey
+
+        if (!previousEndsSplitTable) break
+
+        pages.splice(index, 1)
+        removed = true
     }
 
     if (!removed) return false
@@ -1156,7 +1194,7 @@ export function checkUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
     return tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs)
 }
 
-export function checkTableUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
+export function checkTableUnderflow(element, pageIndex, doc, setDoc, pageRefs, docRef = null) {
     if (!element || !doc?.pages) return false
 
     const currentPage = doc.pages[pageIndex]
@@ -1207,6 +1245,8 @@ export function checkTableUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
             newDoc.pages[pageIndex + 1] = nextPageState
         }
 
+        newDoc.pages = newDoc.pages.map((page, index) => ({ ...page, order: index }))
+        if (docRef) docRef.current = newDoc
         return newDoc
     })
 
@@ -1254,7 +1294,7 @@ export function reflowTableUnderflowAllPages(docRef, setDoc, pageRefs, maxPasses
             const el = pageRefs.current[i]
             if (!el) continue
 
-            const moved = checkTableUnderflow(el, i, d, setDoc, pageRefs)
+            const moved = checkTableUnderflow(el, i, d, setDoc, pageRefs, docRef)
             if (moved) {
                 requestAnimationFrame(() => {
                     setTimeout(doPass, 35)

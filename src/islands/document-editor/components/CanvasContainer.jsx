@@ -245,7 +245,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                     }}
                 >
                     {doc.pages.map((page, pageIndex) => (
-                        <div key={pageIndex} className="relative">
+                        <div key={`${doc.pages.length}-${pageIndex}-${page.mode || 'edition'}`} className="relative">
                             <div
                                 className="relative mb-3 flex items-center justify-center"
                                 data-print-hide="true"

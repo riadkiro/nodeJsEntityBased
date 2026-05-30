@@ -1250,6 +1250,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Running two concurrent reflows causes content loss!
         if (!isPastingRef.current) {
             const inputType = e?.nativeEvent?.inputType || e?.inputType || ''
+            if (inputType === 'tableResize' && repackPagesFrom(0)) {
+                return
+            }
+
             const shouldRepackTail =
                 inputType.startsWith('delete') ||
                 inputType === 'historyUndo' ||

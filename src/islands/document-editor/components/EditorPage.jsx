@@ -59,7 +59,7 @@ export default function EditorPage({
     // Table toolbar for edition mode
     const tableToolbarProps = useTableToolbar(
         contentRef,
-        () => handlePageInput?.({ target: contentRef.current }, pageIndex)
+        (eventLike = null) => handlePageInput?.({ target: contentRef.current, ...(eventLike || {}) }, pageIndex)
     )
     const { selectTable: selectTableForToolbar, clearToolbar: clearTableToolbar } = tableToolbarProps
 

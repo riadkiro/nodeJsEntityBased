@@ -525,7 +525,7 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, cont
             setDraggingHandle(null)
             syncPaginatedTableFragmentStyles(activeTable, activeTable.ownerDocument)
             updateResizeOverlay()
-            onSave?.()
+            onSave?.({ inputType: 'tableResize' })
         }
 
         document.addEventListener('mousemove', applyResize)

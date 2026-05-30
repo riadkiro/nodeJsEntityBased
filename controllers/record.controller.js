@@ -53,6 +53,152 @@ async function getInverseRelations(EntityModel, entityId) {
     return inverseRelations;
 }
 
+function extractEmailsFromValue(value) {
+    const emails = new Set();
+    const scan = (v) => {
+        if (v === null || v === undefined) return;
+        if (Array.isArray(v)) return v.forEach(scan);
+        if (typeof v === 'object') return Object.values(v).forEach(scan);
+        String(v).replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, (match) => {
+            emails.add(match.toLowerCase());
+            return match;
+        });
+    };
+    scan(value);
+    return [...emails];
+}
+
+function normalizeEmailContactName(record, fallbackEmail) {
+    return record?.title || record?.computedTitle || fallbackEmail?.split('@')[0] || 'Contact';
+}
+
+async function buildRecordMailContext(req, entity, record) {
+    const contacts = new Map();
+    const addContact = ({ email, name, source, priority = 3, recordId = null, relationLabel = '' }) => {
+        const cleanEmail = String(email || '').trim().toLowerCase();
+        if (!cleanEmail || !cleanEmail.includes('@')) return;
+        const existing = contacts.get(cleanEmail);
+        const next = {
+            email: cleanEmail,
+            name: name || cleanEmail.split('@')[0],
+            source,
+            priority,
+            recordId: recordId ? String(recordId) : '',
+            relationLabel
+        };
+        if (!existing || next.priority < existing.priority) contacts.set(cleanEmail, next);
+    };
+
+    const isEmailField = (field) => {
+        const haystack = `${field?.name || ''} ${field?.label || ''} ${field?.type || ''} ${field?.subtype || ''}`.toLowerCase();
+        return haystack.includes('email') || haystack.includes('mail');
+    };
+
+    for (const email of extractEmailsFromValue(record.email)) {
+        addContact({ email, name: normalizeEmailContactName(record, email), source: 'record', priority: 1, recordId: record._id });
+    }
+    for (const cf of (record.customFields || [])) {
+        const field = cf.field_id || {};
+        const found = isEmailField(field) ? extractEmailsFromValue(cf.value) : extractEmailsFromValue(cf.value);
+        found.forEach(email => addContact({
+            email,
+            name: normalizeEmailContactName(record, email),
+            source: isEmailField(field) ? 'record_field' : 'record_text',
+            priority: isEmailField(field) ? 1 : 2,
+            recordId: record._id
+        }));
+    }
+
+    try {
+        const RecordModel = await tenantCollection(req, "Record");
+        const relationDefs = new Map((entity.relations || []).map(rel => [rel.key, rel]));
+        const relatedIds = [];
+        const relationById = new Map();
+        for (const relValue of (record.relations || [])) {
+            const relDef = relationDefs.get(relValue.relationKey);
+            const values = Array.isArray(relValue.value) ? relValue.value : [relValue.value];
+            values.filter(Boolean).forEach(id => {
+                const sid = String(id);
+                relatedIds.push(id);
+                relationById.set(sid, relDef?.label || 'Relation');
+            });
+        }
+        if (relatedIds.length > 0) {
+            const relatedRecords = await RecordModel.find({ _id: { $in: relatedIds } })
+                .populate('customFields.field_id')
+                .select('title computedTitle email customFields')
+                .lean();
+            for (const related of relatedRecords) {
+                const relationLabel = relationById.get(String(related._id)) || 'Relation';
+                for (const email of extractEmailsFromValue(related.email)) {
+                    addContact({ email, name: normalizeEmailContactName(related, email), source: 'relation', priority: 2, recordId: related._id, relationLabel });
+                }
+                for (const cf of (related.customFields || [])) {
+                    const field = cf.field_id || {};
+                    if (!isEmailField(field)) continue;
+                    extractEmailsFromValue(cf.value).forEach(email => addContact({
+                        email,
+                        name: normalizeEmailContactName(related, email),
+                        source: 'relation_field',
+                        priority: 2,
+                        recordId: related._id,
+                        relationLabel
+                    }));
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[RecordMailContext] relation scan failed:', e.message);
+    }
+
+    try {
+        const account = await Account.findOne({ account_number: req.account_number }).lean();
+        for (const member of (account?.users || []).filter(u => u.status !== 'removed')) {
+            addContact({
+                email: member.email,
+                name: member.name || member.email?.split('@')[0],
+                source: 'workspace',
+                priority: 4
+            });
+        }
+    } catch (e) {
+        console.error('[RecordMailContext] team scan failed:', e.message);
+    }
+
+    const contactList = [...contacts.values()].sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+    let mails = [];
+    try {
+        const Mail = await tenantCollection(req, "Mail");
+        if (Mail && contactList.length > 0) {
+            const emailRegexes = contactList.slice(0, 30).map(c => new RegExp(c.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+            mails = await Mail.find({ email: { $in: emailRegexes } })
+                .sort({ date: -1, createdAt: -1 })
+                .limit(30)
+                .lean();
+        }
+    } catch (e) {
+        console.error('[RecordMailContext] mail scan failed:', e.message);
+    }
+
+    return {
+        contacts: contactList,
+        filters: contactList.map(c => c.email),
+        mails: mails.map(mail => ({
+            id: String(mail._id || mail.id),
+            legacyId: mail.id,
+            from: `${mail.firstName || ''} ${mail.lastName || ''}`.trim() || mail.email,
+            email: mail.email,
+            title: mail.title || '(sans objet)',
+            date: mail.date,
+            type: mail.type,
+            isUnread: !!mail.isUnread,
+            isImportant: !!mail.isImportant,
+            hasAttachments: (mail.attachments || []).length > 0,
+            preview: mail.displayDescription || String(mail.description || '').replace(/<[^>]+>/g, '').slice(0, 140)
+        }))
+    };
+}
+
 
 /**
  * Auto-generate a default form layout from entity.customFields
@@ -2295,9 +2441,9 @@ module.exports = {
                 });
             }
 
-            // For 'fiche' module, load full entity + record data
+            // For modules that need field/relation context, load full entity + record data.
             let entity, record;
-            if (moduleName === 'fiche' || moduleName === 'overview') {
+            if (moduleName === 'fiche' || moduleName === 'overview' || moduleName === 'emails') {
                 await tenantCollection(req, "FieldTemplate");
                 await tenantCollection(req, "Classification");
                 entity = await EntityModel.findOne({ slug: req.params.entityName })
@@ -2319,8 +2465,11 @@ module.exports = {
                 return res.status(400).send("Invalid Record ID");
             }
 
-            if (moduleName === 'fiche' || moduleName === 'overview') {
+            if (moduleName === 'fiche' || moduleName === 'overview' || moduleName === 'emails') {
                 record = await RecordModel.findById(req.params.id);
+                if (moduleName === 'emails') {
+                    record = await RecordModel.findById(req.params.id).populate('customFields.field_id');
+                }
             } else {
                 record = await RecordModel.findById(req.params.id)
                     .select('title image _id entityId attachments');
@@ -2596,6 +2745,15 @@ module.exports = {
 
             // ═══ Load Team Data for Team Module ═══
             let teamModuleData = null;
+            let recordMailContext = null;
+            if (moduleName === 'emails') {
+                try {
+                    recordMailContext = await buildRecordMailContext(req, entity, record);
+                } catch (e) {
+                    console.error('[RecordMailContext]', e);
+                    recordMailContext = { contacts: [], filters: [], mails: [] };
+                }
+            }
             if (moduleName === 'team') {
                 try {
                     const account = await Account.findOne({ account_number: req.account_number }).lean();
@@ -2706,6 +2864,7 @@ module.exports = {
                 fichePreferences: fichePreferences || {},
                 isDraft: record.isDraft || false,
                 teamModuleData: teamModuleData || null,
+                recordMailContext: recordMailContext || null,
                 account_number: req.account_number,
                 user: req.user,
                 workspaceRole: req.workspaceRole,

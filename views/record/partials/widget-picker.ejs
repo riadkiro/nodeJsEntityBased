@@ -1,6 +1,7 @@
 <!-- ╪══════════════ Unified Widget Picker Modal ══════════════╪ -->
 <template x-teleport="body">
-    <div x-show="$store.widgetPicker.open" 
+    <div data-widget-picker-overlay
+         x-show="$store.widgetPicker.open"
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
          style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); background: rgba(0,0,0,0.25);"
@@ -8,27 +9,27 @@
          @click.self="$store.widgetPicker.close()"
          @keydown.escape.window="$store.widgetPicker.close()"
          x-cloak>
-        
+
         <div @click.stop
              style="background: white; border-radius: 20px; padding: 0; width: 100%; max-width: 480px; margin: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.04); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;"
              x-show="$store.widgetPicker.open"
              x-transition:enter="transition ease-out duration-250 delay-50"
              x-transition:enter-start="opacity-0 scale-95 translate-y-3" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
-            
+
             <!-- Modal Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #f3f4f6;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
                          :style="'background: ' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color + '12' : 'rgba(67,97,238,0.08)')">
-                        <iconify-icon :icon="$store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.icon : 'solar:widget-add-bold-duotone'" 
-                                      width="20" 
+                        <iconify-icon :icon="$store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.icon : 'solar:widget-add-bold-duotone'"
+                                      width="20"
                                       :style="'color:' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color : '#4361ee')"></iconify-icon>
                     </div>
                     <div>
-                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3;" 
+                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3;"
                             x-text="$store.widgetPicker.step === 'form' ? 'Configurer ' + $store.widgetPicker.newWidget.label : 'Ajouter un widget'"></h3>
-                        <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;" 
-                           x-text="$store.widgetPicker.step === 'form' ? ($store.widgetPicker.catalog.find(c => c.type === $store.widgetPicker.newWidget.type)?.desc || 'Personnalisez les paramètres') : 'Choisissez un composant à insérer'"></p>
+                        <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;"
+                           x-text="$store.widgetPicker.step === 'form' ? ($store.widgetPicker.catalog.find(c => c.type === ($store.widgetPicker.newWidget._catalogType || $store.widgetPicker.newWidget.type))?.desc || 'Personnalisez les paramètres') : 'Choisissez un composant à insérer'"></p>
                     </div>
                 </div>
                 <button type="button" @click="$store.widgetPicker.close()"
@@ -42,10 +43,10 @@
             <div x-show="$store.widgetPicker.step === 'catalog'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                     <template x-for="w in $store.widgetPicker.catalog" :key="w.type">
-                        <button type="button" 
+                        <button type="button"
                                 @click="$store.widgetPicker.selectType(w.type)"
                                 style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 14px; border: 1px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s;"
-                                onmouseover="this.style.borderColor='rgba(67,97,238,0.3)';this.style.background='rgba(67,97,238,0.02)';this.style.transform='translateY(-1px)'" 
+                                onmouseover="this.style.borderColor='rgba(67,97,238,0.3)';this.style.background='rgba(67,97,238,0.02)';this.style.transform='translateY(-1px)'"
                                 onmouseout="this.style.borderColor='#f3f4f6';this.style.background='white';this.style.transform='translateY(0)'">
                             <div style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
                                  :style="'background: ' + w.color + '10'">
@@ -61,18 +62,18 @@
             <!-- Modal Content (Form) -->
             <div x-show="$store.widgetPicker.step === 'form'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
                 <div style="display: flex; flex-direction: column; gap: 20px;">
-                    
+
                     <!-- Common: Title -->
                     <div>
                         <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
-                        <input type="text" x-model="$store.widgetPicker.newWidget.label" 
+                        <input type="text" x-model="$store.widgetPicker.newWidget.label"
                                style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none; transition: border-color 0.15s; box-sizing: border-box; color: #111827;"
                                onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                placeholder="Ex: Ma Note, Stats...">
                     </div>
 
                     <!-- Dynamic Fields based on type -->
-                    
+
                     <!-- 1. HTML / Rich Text -->
                     <template x-if="$store.widgetPicker.newWidget.type === 'html'">
                         <div>
@@ -100,14 +101,14 @@
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <div>
                                 <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de destination</label>
-                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url"
                                        style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
                                        onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                        placeholder="https://...">
                             </div>
                             <div>
                                 <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Description (facultatif)</label>
-                                <input type="text" x-model="$store.widgetPicker.newWidget.config.description" 
+                                <input type="text" x-model="$store.widgetPicker.newWidget.config.description"
                                        style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
                                        onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                        placeholder="Bouton vers...">
@@ -124,14 +125,33 @@
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <div>
                                 <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de la page</label>
-                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url"
                                        style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
                                        onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                        placeholder="https://...">
                             </div>
                             <div>
                                 <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Hauteur (px)</label>
-                                <input type="number" x-model="$store.widgetPicker.newWidget.config.height" 
+                                <input type="number" x-model="$store.widgetPicker.newWidget.config.height"
+                                       style="width: 200px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- 4b. Video -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'video'">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de la vidéo</label>
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url"
+                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                       placeholder="https://youtube.com/... ou https://.../video.mp4">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Hauteur (px)</label>
+                                <input type="number" x-model="$store.widgetPicker.newWidget.config.height"
                                        style="width: 200px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
                                        onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
                             </div>
@@ -143,14 +163,14 @@
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <div>
                                 <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de l'image</label>
-                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url"
                                        style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
                                        onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                        placeholder="https://...">
                             </div>
                             <div>
                                 <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Texte alternatif</label>
-                                <input type="text" x-model="$store.widgetPicker.newWidget.config.alt" 
+                                <input type="text" x-model="$store.widgetPicker.newWidget.config.alt"
                                        style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
                                        onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
                             </div>
@@ -160,9 +180,21 @@
                     <!-- 6. Dynamic Table -->
                     <template x-if="$store.widgetPicker.newWidget.type === 'dynamic-table'">
                         <div style="display: flex; flex-direction: column; gap: 16px;">
-                            <div>
-                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Tableau dynamique à utiliser</label>
-                                <!-- Schema list -->
+	                            <div>
+	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Tableau dynamique à utiliser</label>
+	                                <div style="display:flex;gap:8px;margin-bottom:12px;">
+	                                    <button type="button"
+	                                            @click="$store.widgetPicker.newWidget.config.displayMode = 'tabs'"
+	                                            :style="'flex:1;padding:9px 10px;border-radius:10px;border:' + ($store.widgetPicker.newWidget.config.displayMode !== 'panels' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.config.displayMode !== 'panels' ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + ($store.widgetPicker.newWidget.config.displayMode !== 'panels' ? '#4361ee' : '#64748b') + ';font-size:12px;font-weight:700;cursor:pointer;'">
+	                                        Plusieurs TD avec onglets
+	                                    </button>
+	                                    <button type="button"
+	                                            @click="$store.widgetPicker.newWidget.config.displayMode = 'panels'"
+	                                            :style="'flex:1;padding:9px 10px;border-radius:10px;border:' + ($store.widgetPicker.newWidget.config.displayMode === 'panels' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.config.displayMode === 'panels' ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + ($store.widgetPicker.newWidget.config.displayMode === 'panels' ? '#4361ee' : '#64748b') + ';font-size:12px;font-weight:700;cursor:pointer;'">
+	                                        Un TD par panel
+	                                    </button>
+	                                </div>
+	                                <!-- Schema list -->
                                 <style>
                                     .wp-schema-row { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid #f3f4f6; cursor: pointer; transition: all 0.15s; }
                                     .wp-schema-row:hover { border-color: #e5e7eb; }
@@ -218,7 +250,7 @@
                                     <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
                                     <span style="font-size: 12px; font-weight: 700; color: #15803d;">Tableau dynamique</span>
                                 </div>
-                                <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;">Ce widget affiche un tableau dynamique éditable. Le mode Split Doc permet de visualiser les documents générés.</p>
+	                                <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;">Choisis un TD seul pour un panel sans onglet, ou plusieurs TD dans le même panel avec onglets.</p>
                             </div>
 
                             <!-- Options as checkboxes (simple, like image 1) -->
@@ -242,7 +274,7 @@
                                 <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
                                 <span style="font-size: 12px; font-weight: 700; color: #15803d;" x-text="$store.widgetPicker.newWidget.label"></span>
                             </div>
-                            <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;" 
+                            <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;"
                                x-text="$store.widgetPicker.catalog.find(c => c.type === $store.widgetPicker.newWidget.type)?.desc || 'Ce widget sera ajouté à votre onglet.'"></p>
                         </div>
                     </template>
@@ -284,6 +316,7 @@
             target: null, // { type: 'sidebar', entityId } | { type: 'tab', tabKey, rowId, colId }
             newWidget: {
                 _id: null, // For edit mode
+                _catalogType: '',
                 type: '',
                 label: '',
                 icon: '',
@@ -296,9 +329,11 @@
                 { type: 'tasks',   label: 'Checklist',  icon: 'solar:checklist-bold-duotone',      color: '#ec4899', desc: 'Gestion de tâches' },
                 { type: 'html',    label: 'HTML',       icon: 'solar:code-bold-duotone',           color: '#f97316', desc: 'Contenu personnalisé' },
                 { type: 'iframe',  label: 'Embed',      icon: 'solar:monitor-bold-duotone',        color: '#06b6d4', desc: 'Page web externe' },
+                { type: 'video',   label: 'Vidéo',      icon: 'solar:video-library-bold-duotone',  color: '#ef4444', desc: 'Lecteur vidéo ou YouTube' },
                 { type: 'link',    label: 'Lien',       icon: 'solar:link-round-bold-duotone',     color: '#3b82f6', desc: 'Accès rapide URL' },
                 { type: 'image',   label: 'Image',      icon: 'solar:gallery-bold-duotone',        color: '#10b981', desc: 'Visuel ou logo' },
-                { type: 'dynamic-table', label: 'Tableau', icon: 'solar:list-check-bold-duotone',  color: '#00ab55', desc: 'Données structurées' },
+                { type: 'dynamic-table', label: 'TD groupé', icon: 'solar:list-check-bold-duotone',  color: '#00ab55', desc: 'Plusieurs TD avec onglets' },
+                { type: 'dynamic-table-single', label: 'TD single', icon: 'solar:table-2-bold-duotone',  color: '#6366f1', desc: 'Un TD par panel' },
                 { type: 'separator', label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', desc: 'Ligne de division' },
                 { type: 'timeline', label: 'Timeline',  icon: 'solar:clock-circle-bold-duotone',   color: '#805dca', desc: 'Fil d\'actualité' },
                 { type: 'kpi',      label: 'KPI',       icon: 'solar:graph-up-bold-duotone',       color: '#e7515a', desc: 'Indicateur clé' },
@@ -329,14 +364,16 @@
                 this.target = target;
                 this.step = 'catalog';
                 this.saving = false;
-                this.newWidget = { _id: null, type: '', label: '', icon: '', color: '#4361ee', config: {} };
+                this.newWidget = { _id: null, _catalogType: '', type: '', label: '', icon: '', color: '#4361ee', config: {} };
                 this.open = true;
+                this.forceOverlayState(true);
             },
 
             openEditWidget(target, widget) {
                 this.target = target;
                 this.newWidget = {
                     _id: widget._id,
+                    _catalogType: '',
                     type: widget.type,
                     label: widget.label,
                     icon: widget.icon,
@@ -344,12 +381,13 @@
                     config: JSON.parse(JSON.stringify(widget.config || {}))
                 };
                 // Backwards-compat: migrate schemaId → schemaIds for dynamic-table
-                if (widget.type === 'dynamic-table') {
-                    const cfg = this.newWidget.config;
-                    if (!cfg.schemaIds || cfg.schemaIds.length === 0) {
-                        cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
-                    }
-                }
+	                if (widget.type === 'dynamic-table') {
+	                    const cfg = this.newWidget.config;
+	                    if (!cfg.schemaIds || cfg.schemaIds.length === 0) {
+	                        cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
+	                    }
+	                    if (!cfg.displayMode) cfg.displayMode = cfg.schemaIds.length > 1 ? 'tabs' : 'tabs';
+	                }
                 this.step = 'form';
                 this.open = true;
                 this.saving = false;
@@ -357,20 +395,34 @@
 
             close() {
                 this.open = false;
+                this.forceOverlayState(false);
+            },
+
+            forceOverlayState(open) {
+                const apply = () => {
+                    document.querySelectorAll('[data-widget-picker-overlay]').forEach(el => {
+                        el.style.display = open ? 'flex' : 'none';
+                    });
+                };
+                apply();
+                setTimeout(apply, 0);
+                setTimeout(apply, 180);
             },
 
             selectType(type) {
                 const w = this.catalog.find(c => c.type === type);
                 if (!w) return;
+                const actualType = type === 'dynamic-table-single' ? 'dynamic-table' : type;
 
                 const defaults = {
                     'note': { config: { content: '' } },
                     'tasks': { config: { tasks: [] } },
                     'html': { config: { content: '' } },
                     'iframe': { config: { url: '', height: 300 } },
+                    'video': { config: { url: '', height: 320 } },
                     'link': { config: { url: '', description: '', newTab: true } },
                     'image': { config: { url: '', alt: '' } },
-                    'dynamic-table': { config: { schemaId: '', schemaIds: [], enableAdd: true, enableDocPreview: false } },
+	                    'dynamic-table': { config: { schemaId: '', schemaIds: [], displayMode: type === 'dynamic-table-single' ? 'panels' : 'tabs', enableAdd: true, enableDocPreview: false } },
                     'timeline': { config: {} },
                     'kpi': { config: {} },
                     'chart': { config: {} },
@@ -379,9 +431,10 @@
                     'separator': { config: {} }
                 };
 
-                const d = defaults[type] || { config: {} };
+                const d = defaults[actualType] || { config: {} };
                 this.newWidget = {
-                    type,
+                    _catalogType: type,
+                    type: actualType,
                     label: w.label,
                     icon: w.icon,
                     color: w.color,
@@ -397,7 +450,7 @@
 
             async save() {
                 this.saving = true;
-                
+
                 // Finalize schema order for dynamic-table
                 if (this.newWidget.type === 'dynamic-table') {
                     const checkedIds = this.newWidget.config.schemaIds || [];
@@ -415,6 +468,8 @@
                             await this.saveToSidebar();
                         } else if (this.target.type === 'tab') {
                             await this.saveToTab();
+                        } else if (this.target.type === 'overview') {
+                            await this.saveToOverview();
                         }
                     }
 
@@ -433,35 +488,81 @@
                 }
             },
 
-            async saveToSidebar() {
-                const url = `/account/${this.target.accountNumber}/api/entity/${this.target.entityId}/sidebar-widgets`;
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(this.newWidget)
-                });
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error);
-            },
+	            _expandedWidgetsForSave() {
+	                const widget = JSON.parse(JSON.stringify(this.newWidget));
+                    delete widget._catalogType;
+	                if (
+	                    widget.type !== 'dynamic-table' ||
+	                    widget._id ||
+	                    widget.config?.displayMode !== 'panels' ||
+	                    !Array.isArray(widget.config?.schemaIds) ||
+	                    widget.config.schemaIds.length <= 1
+	                ) {
+	                    return [widget];
+	                }
 
-            async saveToTab() {
-                window.dispatchEvent(new CustomEvent('insert-tab-widget', {
-                    detail: {
-                        target: this.target,
-                        widget: JSON.parse(JSON.stringify(this.newWidget))
-                    }
-                }));
-            },
+	                return widget.config.schemaIds.map(schemaId => {
+	                    const schema = this.gridSchemas.find(s => s.id === schemaId);
+	                    return {
+	                        ...widget,
+	                        label: schema?.name || widget.label,
+	                        config: {
+	                            ...widget.config,
+	                            schemaId,
+	                            schemaIds: [schemaId],
+	                            displayMode: 'single'
+	                        }
+	                    };
+	                });
+	            },
+
+	            async saveToSidebar() {
+	                const url = `/account/${this.target.accountNumber}/api/entity/${this.target.entityId}/sidebar-widgets`;
+	                const widgets = this._expandedWidgetsForSave();
+	                for (const widget of widgets) {
+	                    const res = await fetch(url, {
+	                        method: 'POST',
+	                        headers: { 'Content-Type': 'application/json' },
+	                        credentials: 'include',
+	                        body: JSON.stringify(widget)
+	                    });
+	                    const data = await res.json();
+	                    if (!data.success) throw new Error(data.error);
+	                }
+	            },
+
+	            async saveToTab() {
+	                for (const widget of this._expandedWidgetsForSave()) {
+	                    window.dispatchEvent(new CustomEvent('insert-tab-widget', {
+	                        detail: {
+	                            target: this.target,
+	                            widget
+	                        }
+	                    }));
+	                }
+	            },
+
+	            async saveToOverview() {
+	                for (const widget of this._expandedWidgetsForSave()) {
+	                    window.dispatchEvent(new CustomEvent('insert-overview-widget', {
+	                        detail: {
+	                            target: this.target,
+	                            widget
+	                        }
+	                    }));
+	                }
+	            },
 
             async saveExistingWidget() {
                 console.log('[widgetPicker] saveExistingWidget:', this.newWidget);
                 const url = `/account/${this.target.accountNumber}/api/entity/${this.target.entityId}/sidebar-widgets/${this.newWidget._id}`;
+                const payload = JSON.parse(JSON.stringify(this.newWidget));
+                delete payload._catalogType;
                 const res = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify(this.newWidget)
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error);
@@ -469,7 +570,7 @@
 
             async deleteExistingWidget(target, widgetId) {
                 console.log('[widgetPicker] deleteExistingWidget called with:', JSON.stringify(target), widgetId);
-                
+
                 // Double-click safety: first click arms, second click within 3s actually deletes
                 if (this._pendingDeleteId !== widgetId) {
                     this._pendingDeleteId = widgetId;
@@ -492,12 +593,12 @@
                     }, 3000);
                     return;
                 }
-                
+
                 // Second click - actually delete
                 this._pendingDeleteId = null;
                 clearTimeout(this._pendingDeleteTimer);
                 console.log('[widgetPicker] Confirmed! Sending DELETE request...');
-                
+
                 try {
                     const url = `/account/${target.accountNumber}/api/entity/${target.entityId}/sidebar-widgets/${widgetId}`;
                     console.log('[widgetPicker] DELETE URL:', url);

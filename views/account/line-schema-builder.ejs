@@ -9,8 +9,8 @@
             <a href="/account/<%= account_number %>/line-schemas" class="btn btn-outline-secondary btn-sm" style="flex-shrink:0;">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </a>
-            <input type="text" x-model="schema.name" class="lsb-name-input" placeholder="Nom du tableau…" />
-            <input type="text" x-model="schema.slug" class="lsb-name-input" style="max-width:180px; font-size:13px; font-weight:500; color:#9ca3af;" placeholder="slug_id" />
+            <input type="text" x-model="schema.name" @input="syncSlugFromName()" class="lsb-name-input" placeholder="Nom du tableau…" autocomplete="off" spellcheck="false" data-line-schema-new-reset="1" data-line-schema-model="schema.name" />
+            <input type="text" x-model="schema.slug" @input="slugTouched = true; schema.slug = slugify(schema.slug)" class="lsb-name-input" style="max-width:180px; font-size:13px; font-weight:500; color:#9ca3af;" placeholder="slug_id" autocomplete="off" spellcheck="false" data-line-schema-new-reset="1" data-line-schema-model="schema.slug" />
         </div>
         <div class="lsb-topbar-right">
             <button @click="saveSchema()" class="btn btn-primary btn-sm" :disabled="saving" style="display:flex; align-items:center; gap:6px;">
@@ -97,7 +97,7 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="lsb-col-table">
+                    <table class="lsb-col-table lsb-builder-table">
                         <thead>
                             <tr>
                                 <th style="width:30px;"></th>
@@ -155,9 +155,27 @@
                         </tbody>
                     </table>
                 </div>
-                <div x-show="schema.columns.length === 0" class="py-8 text-center text-sm text-gray-400">
+                <div x-show="schema.columns.length === 0" class="lsb-empty-builder">
                     <iconify-icon icon="solar:tuning-2-broken" width="28" style="display:block; margin:0 auto 6px; opacity:0.4;"></iconify-icon>
-                    Aucune colonne. Cliquez sur « + Colonne » pour commencer.
+                    <div class="lsb-empty-title">Aucune colonne</div>
+                    <div class="lsb-empty-actions">
+                        <button type="button" @click="addColumnOfType('text', 'Libelle')" class="lsb-quick-add">
+                            <iconify-icon icon="solar:text-bold" width="14"></iconify-icon>
+                            Texte
+                        </button>
+                        <button type="button" @click="addColumnOfType('number', 'Quantite')" class="lsb-quick-add">
+                            <iconify-icon icon="solar:hashtag-square-bold-duotone" width="14"></iconify-icon>
+                            Nombre
+                        </button>
+                        <button type="button" @click="addColumnOfType('date', 'Date')" class="lsb-quick-add">
+                            <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
+                            Date
+                        </button>
+                        <button type="button" @click="applyInvoiceCalcPack()" class="lsb-quick-add primary">
+                            <iconify-icon icon="solar:calculator-bold-duotone" width="14"></iconify-icon>
+                            Facturation
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -176,7 +194,7 @@
                         <!-- Description -->
                         <div>
                             <label class="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400">Description</label>
-                            <input type="text" x-model="schema.description" class="form-input form-input-sm" placeholder="Description optionnelle" />
+                            <input type="text" x-model="schema.description" class="form-input form-input-sm" placeholder="Description optionnelle" autocomplete="off" spellcheck="false" data-line-schema-new-reset="1" data-line-schema-model="schema.description" />
                         </div>
 
                         <!-- Afficher sur (entités) -->
@@ -191,9 +209,9 @@
                                 </template>
                                 <span x-show="(schema.appliesTo.entityIds || []).length === 0" style="font-size:10px; color:#9ca3af;">Global (toutes les entités)</span>
                             </div>
-                            <div class="relative" x-data="{ open: false }">
-                                <input type="text" x-model="entitySearch" @focus="open = true" @click="open = true" class="form-input form-input-sm" placeholder="Rechercher…" />
-                                <div x-show="open" x-cloak @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            <div class="relative" x-data="{ open: false, touched: false }" @line-schema-builder-reset.window="open = false; touched = false">
+                                <input type="text" x-model="entitySearch" @click="touched = true; open = true" @input="touched = true; open = true" class="form-input form-input-sm" placeholder="Rechercher…" autocomplete="off" spellcheck="false" data-line-schema-new-reset="1" data-line-schema-model="entitySearch" />
+                                <div x-show="open && touched" x-cloak @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                                     <template x-for="ent in filteredEntities" :key="ent._id">
                                         <button type="button" @click="toggleEntityId(ent._id); entitySearch = ''" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-white/5" :class="(schema.appliesTo.entityIds || []).includes(ent._id) ? 'text-primary font-semibold' : 'text-gray-600 dark:text-gray-300'">
                                             <iconify-icon :icon="ent.icon || 'solar:box-bold-duotone'" width="12" :style="ent.color ? 'color:'+ent.color : ''"></iconify-icon>
@@ -644,6 +662,11 @@ function lineSchemaBuilder() {
         },
 
         saving: false, expandedCol: null,
+        isNewSchema: !existingSchema?._id,
+        slugTouched: !!existingSchema?.slug,
+        userStartedEditing: false,
+        isResettingAutofill: false,
+        autofillObserver: null,
         parametersOpen: true,
         catalogueOpen: true,
         totalsOpen: true,
@@ -657,12 +680,42 @@ function lineSchemaBuilder() {
             return this.allEntities.filter(e => e.name.toLowerCase().includes(q));
         },
 
+        slugify(value, fallback = '') {
+            const base = String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+            return base || fallback;
+        },
+
+        keyify(value, fallback = '') {
+            const base = String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            return base || fallback;
+        },
+
+        syncSlugFromName() {
+            if (!this.slugTouched || !this.schema.slug) {
+                this.schema.slug = this.slugify(this.schema.name);
+            }
+        },
+
         getEntityName(id) {
             const ent = this.allEntities.find(e => String(e._id) === String(id));
             return ent ? ent.name : String(id);
         },
 
         init() {
+            this.installBuilderAntiAutofill();
+            if (this.isNewSchema) {
+                this.resetNewSchemaAutofill();
+            }
             this.$nextTick(() => {
                 if (this.$refs.columnsSortable && typeof Sortable !== 'undefined') {
                     Sortable.create(this.$refs.columnsSortable, {
@@ -684,6 +737,67 @@ function lineSchemaBuilder() {
             });
         },
 
+        installBuilderAntiAutofill() {
+            const root = this.$root;
+            const apply = () => {
+                root.querySelectorAll('input[type="text"], input:not([type]), textarea').forEach((input) => {
+                    if (input.dataset.lsbAntiAutofill === '1') return;
+                    input.dataset.lsbAntiAutofill = '1';
+                    input.setAttribute('autocomplete', 'new-password');
+                    input.setAttribute('autocorrect', 'off');
+                    input.setAttribute('autocapitalize', 'off');
+                    input.setAttribute('spellcheck', 'false');
+                    input.setAttribute('name', `lsb_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+                    input.setAttribute('readonly', 'readonly');
+
+                    const unlock = () => input.removeAttribute('readonly');
+                    input.addEventListener('pointerdown', unlock, { once: true });
+                    input.addEventListener('keydown', unlock, { once: true });
+                    input.addEventListener('focus', () => setTimeout(unlock, 0), { once: true });
+                    input.addEventListener('input', () => {
+                        if (!this.isResettingAutofill) this.userStartedEditing = true;
+                    });
+                });
+            };
+
+            apply();
+            if (this.autofillObserver) this.autofillObserver.disconnect();
+            this.autofillObserver = new MutationObserver(apply);
+            this.autofillObserver.observe(root, { childList: true, subtree: true });
+        },
+
+        resetNewSchemaAutofill() {
+            const clear = () => {
+                if (this.userStartedEditing) return;
+                this.isResettingAutofill = true;
+                this.schema.name = '';
+                this.schema.slug = '';
+                this.schema.description = '';
+                this.entitySearch = '';
+                this.slugTouched = false;
+                window.dispatchEvent(new CustomEvent('line-schema-builder-reset'));
+                document.querySelectorAll('[data-line-schema-new-reset="1"]').forEach((input) => {
+                    input.value = '';
+                });
+                this.schema.name = '';
+                this.schema.slug = '';
+                this.schema.description = '';
+                this.entitySearch = '';
+                this.slugTouched = false;
+                window.dispatchEvent(new CustomEvent('line-schema-builder-reset'));
+                this.$nextTick(() => {
+                    this.isResettingAutofill = false;
+                });
+            };
+            this.$nextTick(() => {
+                clear();
+                setTimeout(clear, 120);
+                setTimeout(clear, 600);
+                setTimeout(clear, 1500);
+                setTimeout(clear, 3000);
+            });
+        },
+
         toggleEntityId(entityId) {
             if (!this.schema.appliesTo.entityIds) this.schema.appliesTo.entityIds = [];
             const idx = this.schema.appliesTo.entityIds.indexOf(entityId);
@@ -698,6 +812,26 @@ function lineSchemaBuilder() {
                 config: { normalRange: { min: null, max: null } },
                 _tempId: 'col_' + Date.now() + '_' + Math.random(), _showWhenStr: ''
             };
+            this.schema.columns.push(col);
+            this.expandedCol = this.schema.columns.length - 1;
+        },
+
+        addColumnOfType(type, label) {
+            const key = this.keyify(label, `col_${this.schema.columns.length + 1}`);
+            const col = {
+                key,
+                label,
+                type,
+                required: false,
+                visible: true,
+                width: type === 'textarea' ? 'XL' : 'M',
+                order: this.schema.columns.length,
+                showWhen: {},
+                config: type === 'number' ? { normalRange: { min: null, max: null } } : {},
+                _tempId: 'col_' + Date.now() + '_' + Math.random(),
+                _showWhenStr: ''
+            };
+            if (type === 'money') col.config = { currency: 'EUR', decimals: 2 };
             this.schema.columns.push(col);
             this.expandedCol = this.schema.columns.length - 1;
         },
@@ -928,10 +1062,26 @@ function lineSchemaBuilder() {
         },
 
         async saveSchema() {
-            if (!this.schema.name || !this.schema.slug) { alert('Nom et Slug sont requis'); return; }
+            this.schema.name = String(this.schema.name || '').trim();
+            this.schema.slug = this.slugify(this.schema.slug || this.schema.name);
+            if (!this.schema.name) { alert('Nom requis'); return; }
             this.saving = true;
+            const usedKeys = new Set();
             const cleanColumns = this.schema.columns.map((col, i) => {
-                const clean = { ...col, order: i };
+                const label = String(col.label || col.key || `Colonne ${i + 1}`).trim();
+                const baseKey = this.keyify(col.key || label, `col_${i + 1}`);
+                let key = baseKey;
+                let counter = 2;
+                while (usedKeys.has(key)) {
+                    key = `${baseKey}_${counter}`;
+                    counter++;
+                }
+                usedKeys.add(key);
+
+                col.key = key;
+                col.label = label;
+
+                const clean = { ...col, key, label, type: col.type || 'text', width: col.width || 'M', order: i };
                 delete clean._tempId; delete clean._showWhenStr;
                 if (clean.config) {
                     const cfg = { ...clean.config };

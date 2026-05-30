@@ -20,11 +20,12 @@ const tableStyle = {
     width: '100%',
     borderCollapse: 'collapse',
     fontSize: '12.5px',
-    tableLayout: 'fixed'
+    tableLayout: 'fixed',
+    borderSpacing: 0
 }
 
 const thStyle = {
-    padding: '10px 12px',
+    padding: '9px 10px',
     fontSize: '10px',
     fontWeight: 700,
     textTransform: 'uppercase',
@@ -41,7 +42,7 @@ const thStyle = {
 }
 
 const tdStyle = {
-    padding: '8px 12px',
+    padding: '6px 10px',
     borderBottom: '1px solid #f1f3f5',
     verticalAlign: 'middle',
     color: '#0e1726',
@@ -50,7 +51,7 @@ const tdStyle = {
 }
 
 const tdRelation = {
-    padding: '4px 8px',
+    padding: '4px 10px',
     minWidth: '120px',
     borderBottom: '1px solid #f1f3f5',
     verticalAlign: 'middle',
@@ -91,7 +92,8 @@ const removeBtn = {
     transition: 'all 0.15s',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    marginLeft: 'auto'
 }
 
 const addBtnStyle = {
@@ -105,11 +107,12 @@ const addBtnStyle = {
     fontWeight: 500,
     color: '#888da8',
     background: 'transparent',
-    border: 'none',
+    border: '1px solid transparent',
     borderRadius: '0',
     cursor: 'pointer',
     transition: 'all 0.15s',
-    lineHeight: 1
+    lineHeight: 1,
+    outline: 'none'
 }
 
 const relationInputStyle = {
@@ -396,14 +399,22 @@ export default function DataTable({
     return (
         <div style={tableWrapStyle} className="dt-compact-skin">
             <table style={tableStyle} ref={tableRef}>
+                <colgroup>
+                    <col style={{ width: '28px' }} />
+                    {relCol && <col />}
+                    {visibleCols.map(col => (
+                        <col key={col.key} />
+                    ))}
+                    <col style={{ width: '44px' }} />
+                </colgroup>
                 <thead>
                     <tr>
                         <th style={{ ...thStyle, width: '28px', minWidth: '28px', maxWidth: '28px' }}></th>
                         {relCol && (
-                            <th
-                                data-col-key="__relation"
-                                style={{ ...thStyle, width: getColWidth('__relation', relCol) + 'px' }}
-                            >
+	                            <th
+	                                data-col-key="__relation"
+	                                style={thStyle}
+	                            >
                                 {relCol.label || 'Article'}
                                 <div
                                     style={resizeHandleStyle}
@@ -415,10 +426,10 @@ export default function DataTable({
                         )}
                         {visibleCols.map(col => (
                             <th
-                                key={col.key}
-                                data-col-key={col.key}
-                                style={{ ...thStyle, width: getColWidth(col.key, col) + 'px' }}
-                            >
+	                                key={col.key}
+	                                data-col-key={col.key}
+	                                style={thStyle}
+	                            >
                                 {col.label}
                                 <div
                                     style={resizeHandleStyle}
@@ -428,7 +439,7 @@ export default function DataTable({
                                 />
                             </th>
                         ))}
-                        <th style={{ ...thStyle, width: '36px', minWidth: '36px', maxWidth: '36px' }}></th>
+                        <th style={{ ...thStyle, width: '44px', minWidth: '44px', maxWidth: '44px', paddingRight: 10, textAlign: 'right' }}></th>
                     </tr>
                 </thead>
                 <tbody ref={tbodyRef}>
@@ -525,6 +536,11 @@ export default function DataTable({
                 body.dt-dragging * {
                     user-select: none !important;
                     -webkit-user-select: none !important;
+                }
+
+                .dt-compact-skin button:focus {
+                    outline: none !important;
+                    box-shadow: none !important;
                 }
 
                 .dt-compact-skin .dt-inline-input,
@@ -714,7 +730,7 @@ function TableRow({
                 </td>
             ))}
 
-            <td style={{ ...tdStyle, padding: '1px 4px', textAlign: 'center', width: '36px' }}>
+            <td style={{ ...tdStyle, padding: '1px 10px 1px 4px', textAlign: 'right', width: '44px', minWidth: '44px' }}>
                 <button
                     type="button"
                     style={removeBtn}

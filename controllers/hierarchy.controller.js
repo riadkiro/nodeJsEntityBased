@@ -9,10 +9,10 @@ const iconLibrariesCache = {};
 
 // Generate a unique slug for a given model
 async function uniqueSlug(Model, name) {
-    const base = name.toLowerCase()
+    const base = String(name || '').toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+        .replace(/^-|-$/g, '') || 'item';
     const existing = await Model.findOne({ slug: base });
     if (!existing) return base;
     let counter = 2;
@@ -169,7 +169,11 @@ module.exports = {
     createEnvironment: async (req, res) => {
         try {
             const EnvironmentModel = await tenantCollection(req, "Environment");
-            const { name, icon, color, image } = req.body;
+            const { icon, color, image } = req.body;
+            const name = String(req.body.name || '').trim();
+            if (!name) {
+                return res.status(400).json({ error: "Le nom de l'environnement est requis" });
+            }
             const count = await EnvironmentModel.countDocuments();
             const slug = await uniqueSlug(EnvironmentModel, name);
             const newEnv = new EnvironmentModel({
@@ -205,7 +209,13 @@ module.exports = {
             const EnvironmentModel = await tenantCollection(req, "Environment");
             const { id, name, icon, color, image } = req.body;
             const update = {};
-            if (name !== undefined) update.name = name;
+            if (name !== undefined) {
+                const cleanName = String(name || '').trim();
+                if (!cleanName) {
+                    return res.status(400).json({ error: "Le nom de l'environnement est requis" });
+                }
+                update.name = cleanName;
+            }
             if (icon !== undefined) update.icon = icon;
             if (color !== undefined) update.color = color;
             if (image !== undefined) update.image = image;
@@ -466,22 +476,32 @@ module.exports = {
     },
 
     createSpace: async (req, res) => {
-        const SpaceModel = await tenantCollection(req, "Space");
-        const { name, color, icon, environmentId } = req.body;
-        // Default order to end
-        const count = await SpaceModel.countDocuments();
-        const spaceData = {
-            name,
-            slug: await uniqueSlug(SpaceModel, name),
-            owner: req.user._id,
-            color,
-            icon,
-            order: count
-        };
-        if (environmentId) spaceData.environmentId = environmentId;
-        const newSpace = new SpaceModel(spaceData);
-        await newSpace.save();
-        res.json(newSpace);
+        try {
+            const SpaceModel = await tenantCollection(req, "Space");
+            const { color, icon, environmentId } = req.body;
+            const name = String(req.body.name || '').trim();
+            if (!name) {
+                return res.status(400).json({ error: "Le nom de l'espace est requis" });
+            }
+
+            const countQuery = environmentId ? { environmentId } : {};
+            const count = await SpaceModel.countDocuments(countQuery);
+            const spaceData = {
+                name,
+                slug: await uniqueSlug(SpaceModel, name),
+                owner: req.user._id,
+                color,
+                icon,
+                order: count
+            };
+            if (environmentId) spaceData.environmentId = environmentId;
+            const newSpace = new SpaceModel(spaceData);
+            await newSpace.save();
+            res.json(newSpace);
+        } catch (error) {
+            console.error("[Hierarchy] Create space failed:", error);
+            res.status(500).json({ error: error.message || "Erreur lors de la creation de l'espace" });
+        }
     },
 
     createFolder: async (req, res) => {

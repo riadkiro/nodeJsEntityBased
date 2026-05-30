@@ -11,6 +11,7 @@ import SchemaTabBar from './components/SchemaTabBar'
 import DataTable from './components/DataTable'
 import Toolbar from './components/Toolbar'
 import TotalsBar from './components/TotalsBar'
+import CreateDynamicTableModal from './components/CreateDynamicTableModal'
 import { computeFormulaColumns } from './utils/formula'
 import { computeTotalsRows } from './utils/totals'
 
@@ -322,7 +323,7 @@ export default function DynamicTable({
     entityId,
     schemaFilter = ''
 }) {
-    const { schemas, activeSchemaId, setActiveSchemaId, loading: schemasLoading } = useSchemas({
+    const { schemas, activeSchemaId, setActiveSchemaId, appendSchema, loading: schemasLoading } = useSchemas({
         accountNumber, entityId, schemaFilter
     })
 
@@ -360,6 +361,7 @@ export default function DynamicTable({
     const [snapshotPendingDeleteId, setSnapshotPendingDeleteId] = useState('')
     const [showHistoryPanel, setShowHistoryPanel] = useState(false)
     const [savePresetModal, setSavePresetModal] = useState(INITIAL_SAVE_PRESET_MODAL)
+    const [createSchemaOpen, setCreateSchemaOpen] = useState(false)
     const deleteTimerRef = useRef(null)
     const [visibleSchemaIds, setVisibleSchemaIds] = useState([])
     const [columnWidthsMap, setColumnWidthsMap] = useState({}) // { [schemaId]: { [colKey]: width } }
@@ -367,6 +369,7 @@ export default function DynamicTable({
 
     const storageKey = `dt_visible_tabs:${accountNumber || ''}:${entityId || ''}:${recordId || ''}:${schemaFilter || ''}`
     const prefsViewId = `dynamic-table:${recordId || ''}`
+    const canCreateSchemas = !!accountNumber && !!entityId && !schemaFilter
 
     // ── Load column widths from server ──
     useEffect(() => {
@@ -542,6 +545,46 @@ export default function DynamicTable({
     const showAllSchemas = useCallback(() => {
         setVisibleSchemaIds(schemas.map(s => String(s._id)))
     }, [schemas])
+
+    const seedEmptyRowsForSchema = useCallback((schema) => {
+        const schemaId = schema?._id
+        if (!schemaId) return
+        setLinesMap(prev => {
+            if (prev[schemaId]?.length) return prev
+            const newMap = { ...prev }
+            newMap[schemaId] = Array.from({ length: 3 }, (_, i) => ({
+                _tempId: 'tmp_' + Date.now() + '_' + Math.random() + '_' + i,
+                schemaId,
+                lineType: schema.defaultLineType || schema.lineTypes?.[0] || 'default',
+                values: {},
+                computed: {},
+                order: i
+            }))
+            linesMapRef.current = newMap
+            return newMap
+        })
+    }, [setLinesMap, linesMapRef])
+
+    const handleSchemaCreated = useCallback((schema) => {
+        if (!schema?._id) return
+        const schemaId = String(schema._id)
+        appendSchema(schema)
+        setActiveSchemaId(schema._id)
+        seedEmptyRowsForSchema(schema)
+
+        setVisibleSchemaIds(prev => {
+            const base = (prev && prev.length > 0)
+                ? prev.map(String)
+                : schemas.map(s => String(s._id))
+            const next = base.includes(schemaId) ? base : [...base, schemaId]
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify(next))
+            } catch (e) {
+                console.warn('[DynamicTable] visible tabs persist failed:', e)
+            }
+            return next
+        })
+    }, [appendSchema, setActiveSchemaId, seedEmptyRowsForSchema, schemas, storageKey])
 
     const effectiveVisibleIds = visibleSchemaIds.length > 0
         ? visibleSchemaIds
@@ -1177,14 +1220,47 @@ export default function DynamicTable({
             <div style={styles.panel}>
                 <div style={styles.empty}>
                     <p>Aucun tableau dynamique disponible pour cette entité</p>
+                    {canCreateSchemas && (
+                        <button
+                            type="button"
+                            data-dt-create-schema="1"
+                            onClick={() => setCreateSchemaOpen(true)}
+                            style={{
+                                marginTop: 10,
+                                border: '1px solid #4361ee',
+                                background: '#4361ee',
+                                color: '#fff',
+                                borderRadius: 9,
+                                fontSize: 12,
+                                fontWeight: 800,
+                                padding: '8px 12px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 7
+                            }}
+                        >
+                            <iconify-icon icon="solar:add-square-bold-duotone" width="14"></iconify-icon>
+                            Nouveau TD
+                        </button>
+                    )}
                 </div>
+                {canCreateSchemas && (
+                    <CreateDynamicTableModal
+                        open={createSchemaOpen}
+                        accountNumber={accountNumber}
+                        entityId={entityId}
+                        onClose={() => setCreateSchemaOpen(false)}
+                        onCreated={handleSchemaCreated}
+                    />
+                )}
             </div>
         )
     }
 
     return (
         <div style={styles.panel}>
-            {(schemas.length > 1 || schemas.find(s => s._id === activeSchemaId)?.snapshotConfig?.enabled) && (
+            {(canCreateSchemas || schemas.length > 1 || schemas.find(s => s._id === activeSchemaId)?.snapshotConfig?.enabled) && (
                 <SchemaTabBar
                     schemas={schemas}
                     activeSchemaId={activeSchemaId}
@@ -1196,6 +1272,7 @@ export default function DynamicTable({
                     showHistory={showHistoryPanel}
                     onToggleHistory={() => setShowHistoryPanel(v => !v)}
                     hasSnapshots={!!schemas.find(s => s._id === activeSchemaId)?.snapshotConfig?.enabled}
+                    onCreateSchema={canCreateSchemas ? () => setCreateSchemaOpen(true) : undefined}
                 />
             )}
 
@@ -2142,6 +2219,15 @@ export default function DynamicTable({
                     )}
                 </div>
             ))}
+            {canCreateSchemas && (
+                <CreateDynamicTableModal
+                    open={createSchemaOpen}
+                    accountNumber={accountNumber}
+                    entityId={entityId}
+                    onClose={() => setCreateSchemaOpen(false)}
+                    onCreated={handleSchemaCreated}
+                />
+            )}
         </div>
     )
 }

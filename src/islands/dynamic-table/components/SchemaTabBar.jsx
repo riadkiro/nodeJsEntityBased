@@ -9,9 +9,9 @@ const tabBarStyle = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '8px',
-    padding: '0 10px',
+    padding: '0 8px',
     borderBottom: '1px solid #f1f3f5',
-    minHeight: '36px'
+    minHeight: '34px'
 }
 
 const tabsRailStyle = {
@@ -28,7 +28,7 @@ const pillBase = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 14px 10px',
+    padding: '7px 10px 9px',
     borderRadius: '0',
     fontSize: '12.5px',
     fontWeight: 600,
@@ -91,12 +91,28 @@ const menuButton = {
     color: '#888da8',
     fontSize: 11,
     fontWeight: 500,
-    padding: '4px 9px',
+    padding: '4px 8px',
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
     cursor: 'pointer',
     transition: 'all 0.15s'
+}
+
+const createButton = {
+    border: '1px solid rgba(67,97,238,0.2)',
+    borderRadius: '7px',
+    background: 'rgba(67,97,238,0.06)',
+    color: '#4361ee',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '4px 9px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    whiteSpace: 'nowrap'
 }
 
 const menuPanel = {
@@ -130,7 +146,8 @@ export default function SchemaTabBar({
     onShowAllSchemas,
     showHistory = false,
     onToggleHistory,
-    hasSnapshots = false
+    hasSnapshots = false,
+    onCreateSchema
 }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const menuRef = useRef(null)
@@ -187,6 +204,27 @@ export default function SchemaTabBar({
 
             {/* Right-side controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                {onCreateSchema && (
+                    <button
+                        type="button"
+                        data-dt-create-schema="1"
+                        style={createButton}
+                        onClick={onCreateSchema}
+                        title="Nouveau tableau dynamique"
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(67,97,238,0.12)'
+                            e.currentTarget.style.borderColor = 'rgba(67,97,238,0.34)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(67,97,238,0.06)'
+                            e.currentTarget.style.borderColor = 'rgba(67,97,238,0.2)'
+                        }}
+                    >
+                        <iconify-icon icon="solar:add-square-bold-duotone" width="13"></iconify-icon>
+                        Nouveau TD
+                    </button>
+                )}
+
                 {/* Historique toggle */}
                 {hasSnapshots && (
                     <button

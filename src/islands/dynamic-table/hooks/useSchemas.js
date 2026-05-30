@@ -51,12 +51,25 @@ export default function useSchemas({ accountNumber, entityId, schemaFilter }) {
 
     useEffect(() => { loadSchemas() }, [loadSchemas])
 
+    const appendSchema = useCallback((schema) => {
+        if (!schema?._id) return
+        setSchemas(prev => {
+            const schemaId = String(schema._id)
+            const exists = prev.some(s => String(s._id) === schemaId)
+            return exists
+                ? prev.map(s => (String(s._id) === schemaId ? schema : s))
+                : [...prev, schema]
+        })
+        setActiveSchemaId(schema._id)
+    }, [])
+
     const activeSchema = schemas.find(s => s._id === activeSchemaId) || null
 
     return {
         schemas,
         activeSchemaId,
         setActiveSchemaId,
+        appendSchema,
         activeSchema,
         loading,
         error,

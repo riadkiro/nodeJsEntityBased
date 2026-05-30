@@ -1,5 +1,108 @@
 const { tenantCollection } = require('../middleware/tenant');
 
+function slugify(value, fallback = 'schema') {
+    const base = String(value || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    return base || fallback;
+}
+
+function columnKey(value, index, used) {
+    const raw = String(value || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || `col_${index + 1}`;
+    let key = raw;
+    let counter = 2;
+    while (used.has(key)) {
+        key = `${raw}_${counter}`;
+        counter++;
+    }
+    used.add(key);
+    return key;
+}
+
+function normalizeColumns(columns = []) {
+    const used = new Set();
+    return (Array.isArray(columns) ? columns : []).map((col, i) => {
+        col = col || {};
+        const label = String(col.label || col.key || `Colonne ${i + 1}`).trim();
+        const key = columnKey(col.key || label, i, used);
+        return {
+            ...col,
+            key,
+            label,
+            type: col.type || 'text',
+            width: col.width || 'M',
+            visible: col.visible !== false,
+            order: col.order ?? i,
+            config: col.config || {}
+        };
+    });
+}
+
+function normalizeEntityIds(appliesTo) {
+    const ids = appliesTo?.entityIds;
+    if (!Array.isArray(ids)) return [];
+    return ids
+        .map(id => {
+            if (!id) return '';
+            if (typeof id === 'object') return String(id._id || id.id || id);
+            return String(id);
+        })
+        .map(id => id.trim())
+        .filter(Boolean);
+}
+
+async function attachSchemaToConfiguredEntities(req, schema, appliesTo) {
+    const entityIds = normalizeEntityIds(appliesTo);
+    if (!entityIds.length || !schema?._id) return;
+
+    const Entity = await tenantCollection(req, 'Entity');
+    if (!Entity) return;
+
+    for (const entityId of entityIds) {
+        const entity = await Entity.findById(entityId).select('gridSchemas');
+        if (!entity) continue;
+
+        const gridSchemas = Array.isArray(entity.gridSchemas) ? entity.gridSchemas : [];
+        if (gridSchemas.length === 0) continue;
+        if (gridSchemas.some(gs => String(gs.schemaId) === String(schema._id))) continue;
+
+        const maxOrder = gridSchemas.reduce((max, gs) => {
+            const order = Number(gs?.order);
+            return Number.isFinite(order) ? Math.max(max, order) : max;
+        }, -1);
+
+        entity.gridSchemas.push({
+            schemaId: schema._id,
+            position: 'main',
+            order: maxOrder + 1,
+            label: schema.name
+        });
+        await entity.save();
+    }
+}
+
+async function uniqueLineSchemaSlug(LineSchema, requestedSlug, currentId = null) {
+    const base = slugify(requestedSlug);
+    let slug = base;
+    let counter = 2;
+    const queryFor = (candidate) => {
+        const query = { slug: candidate };
+        if (currentId) query._id = { $ne: currentId };
+        return query;
+    };
+    while (await LineSchema.findOne(queryFor(slug)).select('_id').lean()) {
+        slug = `${base}-${counter}`;
+        counter++;
+    }
+    return slug;
+}
+
 module.exports = {
     // ─── List all schemas ──────────────────────────────────────────────
     list: async (req, res) => {
@@ -96,6 +199,9 @@ module.exports = {
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
             const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig, catalogGroupBy } = req.body;
+            const cleanName = String(name || '').trim();
+            if (!cleanName) return res.status(400).json({ error: 'Name is required' });
+            const cleanSlug = await uniqueLineSchemaSlug(LineSchema, slug || cleanName);
 
             // Sanitize snapshotConfig: empty strings → null for ObjectId fields
             const cleanSnapshot = snapshotConfig ? {
@@ -105,8 +211,8 @@ module.exports = {
             } : undefined;
 
             const schema = new LineSchema({
-                name,
-                slug,
+                name: cleanName,
+                slug: cleanSlug,
                 description,
                 inputMode: inputMode || 'catalog',
                 dataMode: dataMode || 'items',
@@ -115,10 +221,7 @@ module.exports = {
                 appliesTo: appliesTo || {},
                 sourceEntityId: sourceEntityId || null,
                 lineTypes: lineTypes || ['product'],
-                columns: (columns || []).map((col, i) => ({
-                    ...col,
-                    order: col.order ?? i
-                })),
+                columns: normalizeColumns(columns),
                 totals: totals || {},
                 snapshotConfig: cleanSnapshot,
                 catalogGroupBy: catalogGroupBy ? {
@@ -129,6 +232,7 @@ module.exports = {
             });
 
             await schema.save();
+            await attachSchemaToConfiguredEntities(req, schema, appliesTo);
             res.status(201).json({ data: schema });
         } catch (error) {
             console.error('[LineSchema] Create error:', error);
@@ -145,8 +249,12 @@ module.exports = {
             const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig, catalogGroupBy } = req.body;
 
             const updateData = {};
-            if (name !== undefined) updateData.name = name;
-            if (slug !== undefined) updateData.slug = slug;
+            if (name !== undefined) {
+                const cleanName = String(name || '').trim();
+                if (!cleanName) return res.status(400).json({ error: 'Name is required' });
+                updateData.name = cleanName;
+            }
+            if (slug !== undefined) updateData.slug = await uniqueLineSchemaSlug(LineSchema, slug || name, req.params.id);
             if (description !== undefined) updateData.description = description;
             if (inputMode !== undefined) updateData.inputMode = inputMode;
             if (dataMode !== undefined) updateData.dataMode = dataMode;
@@ -156,10 +264,7 @@ module.exports = {
             if (sourceEntityId !== undefined) updateData.sourceEntityId = sourceEntityId || null;
             if (lineTypes !== undefined) updateData.lineTypes = lineTypes;
             if (columns !== undefined) {
-                updateData.columns = columns.map((col, i) => ({
-                    ...col,
-                    order: col.order ?? i
-                }));
+                updateData.columns = normalizeColumns(columns);
             }
             if (totals !== undefined) updateData.totals = totals;
             if (snapshotConfig !== undefined) {

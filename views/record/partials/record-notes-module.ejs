@@ -191,17 +191,33 @@
     font-size: 13px;
     font-weight: 700;
     color: #0e1726;
-    white-space: nowrap;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.3;
+    min-width: 0;
+    padding-right: 52px;
+    white-space: normal;
+}
+
+.note-list-item-title > span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 
 .note-list-item-title .pin-icon {
     color: #f59e0b;
     flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.note-list-item-title iconify-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .note-list-item-preview {
@@ -2891,14 +2907,16 @@ document.addEventListener('alpine:init', () => {
         formatDate(d) {
             if (!d) return '';
             const date = new Date(d);
+            if (Number.isNaN(date.getTime())) return '';
             const now = new Date();
-            const diff = now - date;
-            // Less than 24h: show time
-            if (diff < 86400000) {
-                return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-            }
-            // Less than 7 days: show day name
-            if (diff < 604800000) {
+            const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const diffDays = Math.round((today - dateDay) / 86400000);
+            const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+            if (diffDays === 0) return time;
+            if (diffDays === 1) return 'Hier ' + time;
+            if (diffDays > 1 && diffDays < 7) {
                 return date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
             }
             return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });

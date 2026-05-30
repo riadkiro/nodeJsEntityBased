@@ -459,6 +459,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         var _hiddenFields = (_fichePrefs && _fichePrefs.hiddenFields) ? _fichePrefs.hiddenFields : [];
         var _ovFields = (typeof overviewFields !== 'undefined' && overviewFields.length > 0) ? overviewFields : _ficheFields.map(function(f){ return Object.assign({}, f, { layoutWidth: 12 }); });
     %>
+    <%- include('partials/widget-picker') %>
     <div x-data="ovLayoutBuilder()" :class="layoutMode ? 'ov-dm' : ''">
         <!-- Design mode banner -->
         <div class="ov-dm-banner">
@@ -528,6 +529,20 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                             ></div>
                                         </div>
                                         </template>
+                                        <!-- Widget: single dynamic table -->
+                                        <template x-if="wid && wid.startsWith('lines::')">
+                                        <div class="ov-card ov-card-lines">
+                                            <script type="module" src="/dist/dynamicTable.js"></script>
+                                            <div
+                                                data-island="dynamic-table"
+                                                data-account-number="<%= account_number %>"
+                                                data-record-id="<%= record._id %>"
+                                                data-entity-id="<%= entity._id %>"
+                                                :data-schema-filter="getLineWidgetSchemaId(wid)"
+                                                data-compact="false"
+                                            ></div>
+                                        </div>
+                                        </template>
                                         <!-- Widget: agenda -->
                                         <template x-if="wid === 'agenda'">
                                         <div class="ov-card ov-card-agenda">
@@ -540,24 +555,85 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                                             <%- include('partials/ov-widget-notes', { _recBase: _recBase }) %>
                                         </div>
                                         </template>
+                                        <!-- Widget: custom picker widgets -->
+                                        <template x-if="isCustomWidget(wid)">
+                                        <div class="ov-card ov-card-custom">
+                                            <div class="ov-card-header">
+                                                <iconify-icon :icon="getCustomWidget(wid).icon || customWidgetIcon(getCustomWidget(wid).type)" width="16" :style="'color:' + (getCustomWidget(wid).color || '#4361ee')"></iconify-icon>
+                                                <span x-text="getCustomWidget(wid).label || customWidgetLabel(getCustomWidget(wid).type)"></span>
+                                            </div>
+
+                                            <template x-if="getCustomWidget(wid).type === 'iframe'">
+                                                <div>
+                                                    <template x-if="customWidgetConfig(wid).url">
+                                                        <iframe class="ov-custom-frame" :src="customWidgetConfig(wid).url" :style="'height:' + (customWidgetConfig(wid).height || 300) + 'px'" allowfullscreen loading="lazy"></iframe>
+                                                    </template>
+                                                    <template x-if="!customWidgetConfig(wid).url">
+                                                        <div class="ov-custom-empty">URL iframe manquante</div>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'video'">
+                                                <div>
+                                                    <template x-if="customWidgetConfig(wid).url && isEmbeddableVideo(customWidgetConfig(wid).url)">
+                                                        <iframe class="ov-custom-frame" :src="videoEmbedUrl(customWidgetConfig(wid).url)" :style="'height:' + (customWidgetConfig(wid).height || 320) + 'px'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
+                                                    </template>
+                                                    <template x-if="customWidgetConfig(wid).url && !isEmbeddableVideo(customWidgetConfig(wid).url)">
+                                                        <video class="ov-custom-video" :src="customWidgetConfig(wid).url" :style="'max-height:' + (customWidgetConfig(wid).height || 320) + 'px'" controls></video>
+                                                    </template>
+                                                    <template x-if="!customWidgetConfig(wid).url">
+                                                        <div class="ov-custom-empty">URL vidéo manquante</div>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'image'">
+                                                <div>
+                                                    <template x-if="customWidgetConfig(wid).url">
+                                                        <img class="ov-custom-image" :src="customWidgetConfig(wid).url" :alt="customWidgetConfig(wid).alt || getCustomWidget(wid).label || 'Image'">
+                                                    </template>
+                                                    <template x-if="!customWidgetConfig(wid).url">
+                                                        <div class="ov-custom-empty">URL image manquante</div>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'html'">
+                                                <div class="ov-custom-html" x-html="customWidgetConfig(wid).content || ''"></div>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'note' || getCustomWidget(wid).type === 'notes'">
+                                                <div class="ov-custom-note" x-text="customWidgetConfig(wid).content || 'Note vide'"></div>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'link'">
+                                                <a class="ov-custom-link" :href="customWidgetConfig(wid).url || '#'" :target="customWidgetConfig(wid).newTab ? '_blank' : '_self'" rel="noopener">
+                                                    <span x-text="customWidgetConfig(wid).description || customWidgetConfig(wid).url || 'Lien'"></span>
+                                                    <iconify-icon icon="solar:arrow-right-up-linear" width="14"></iconify-icon>
+                                                </a>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'separator'">
+                                                <div class="ov-custom-separator"></div>
+                                            </template>
+
+                                            <template x-if="getCustomWidget(wid).type === 'tasks'">
+                                                <div class="ov-custom-empty">Checklist prête à configurer</div>
+                                            </template>
+
+                                            <template x-if="['timeline','kpi','chart','fields','cards'].includes(getCustomWidget(wid).type)">
+                                                <div class="ov-custom-empty" x-text="customWidgetLabel(getCustomWidget(wid).type) + ' prêt à configurer'"></div>
+                                            </template>
+                                        </div>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
                             <!-- Add widget button OUTSIDE sortable container -->
-                                <div class="ov-add-widget-btn" style="position:relative;" x-data="{ pickerOpen: false }" @click.outside="pickerOpen = false">
-                                    <div @click="pickerOpen = !pickerOpen" style="display:flex;align-items:center;gap:6px;width:100%;justify-content:center;">
-                                        <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                                        <span>Widget</span>
-                                    </div>
-                                    <div class="ov-widget-picker" x-show="pickerOpen" x-cloak>
-                                        <template x-for="w in _availableWidgets()" :key="w.id">
-                                            <div class="ov-widget-picker-item" @click="addWidget(col.id, w.id); pickerOpen = false">
-                                                <iconify-icon :icon="w.icon" width="15" :style="'color:' + w.color"></iconify-icon>
-                                                <span x-text="w.label"></span>
-                                            </div>
-                                        </template>
-                                        <div x-show="_availableWidgets().length === 0" style="padding:10px;text-align:center;color:#888da8;font-size:11px;">Tous les widgets sont placés</div>
-                                    </div>
+                                <div class="ov-add-widget-btn" @click="openWidgetPicker(col.id)">
+                                    <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                    <span>Widget</span>
                                 </div>
                         </div>
                     </template>
@@ -730,9 +806,20 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     .ov-dm .ov-col-toolbar{display:flex;gap:4px;position:absolute;top:-8px;right:8px;z-index:25;}
     .ov-dm .ov-col-toolbar button{width:18px;height:18px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;color:#888da8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;}
     .ov-dm .ov-col-toolbar button:hover{border-color:#4361ee;color:#4361ee;background:rgba(67,97,238,.05);}
-    .ov-widget-picker{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;padding:6px;max-height:200px;overflow-y:auto;}
-    .ov-widget-picker-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:500;color:#0e1726;cursor:pointer;transition:background .15s;}
-    .ov-widget-picker-item:hover{background:#f0f3ff;}
+    .ov-card-custom{overflow:hidden;}
+    .ov-custom-frame{display:block;width:100%;min-height:180px;border:1px solid #eef2f7;border-radius:12px;background:#f8fafc;}
+    .ov-custom-video{display:block;width:100%;border-radius:12px;background:#0f172a;}
+    .ov-custom-image{display:block;width:100%;max-height:460px;object-fit:contain;border-radius:12px;background:#f8fafc;}
+    .ov-custom-html{font-size:13px;line-height:1.65;color:#334155;overflow:auto;}
+    .ov-custom-note{padding:13px 14px;border:1px solid #ede9fe;border-radius:12px;background:linear-gradient(135deg,#fbfaff,#fff);font-size:13px;line-height:1.65;color:#475569;white-space:pre-wrap;}
+    .ov-custom-link{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid #dbeafe;border-radius:12px;background:#eff6ff;color:#2563eb;text-decoration:none;font-size:13px;font-weight:800;}
+    .ov-custom-link span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .ov-custom-separator{height:1px;background:linear-gradient(90deg,transparent,#dbe3ee,transparent);margin:4px 0;}
+    .ov-custom-empty{display:flex;align-items:center;justify-content:center;min-height:86px;border:1px dashed #dbe3ee;border-radius:12px;background:#fbfcff;color:#94a3b8;font-size:12px;font-weight:700;text-align:center;}
+    .dark .ov-custom-frame,.dark .ov-custom-image,.dark .ov-custom-empty{background:#0b1320;border-color:#253b5c;}
+    .dark .ov-custom-html,.dark .ov-custom-note{color:#cbd5e1;}
+    .dark .ov-custom-note{background:#111c2d;border-color:#253b5c;}
+    .dark .ov-custom-link{background:#111c2d;border-color:#253b5c;color:#93c5fd;}
     .ov-dm-banner{display:none;}
     .ov-dm .ov-dm-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.15);border-radius:12px;margin-bottom:16px;font-size:12px;color:#4361ee;font-weight:600;}
     </style>
@@ -1219,6 +1306,9 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
             _viewId: 'overview_<%= entity._id %>',
+            gridSchemas: [],
+            customWidgets: {},
+            _overviewWidgetListener: null,
             _sortables: [],
             _resizing: null,
 
@@ -1230,6 +1320,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             init() {
                 this.rows = JSON.parse(JSON.stringify(this._defaultRows));
                 this._loadLayout();
+                this._loadGridSchemas();
                 this.$watch('$store.app.layoutMode', (v) => {
                     this.layoutMode = v;
                     if (v) {
@@ -1245,6 +1336,8 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 }
                 window.addEventListener('mousemove', (e) => this._onResizeMove(e));
                 window.addEventListener('mouseup', () => this._onResizeEnd());
+                this._overviewWidgetListener = (e) => this.insertWidgetFromPicker(e.detail || {});
+                window.addEventListener('insert-overview-widget', this._overviewWidgetListener);
             },
 
             // MutationObserver watches for Alpine x-for DOM changes and re-inits Sortables
@@ -1275,15 +1368,30 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     const data = await res.json();
                     if (data.success && data.preferences && data.preferences.rows) {
                         this.rows = data.preferences.rows;
+                        this.customWidgets = this._normalizeCustomWidgets(data.preferences.customWidgets);
                     }
                 } catch (e) { /* use defaults */ }
+            },
+
+            async _loadGridSchemas() {
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/line-schemas/by-context?entityId=${this._entityId}`, { credentials: 'include' });
+                    const data = await res.json();
+                    this.gridSchemas = (data.data || []).map(s => ({
+                        id: String(s._id || ''),
+                        name: s.label || s.name || 'Tableau dynamique',
+                        icon: s.inputMode === 'table' ? 'solar:table-2-bold-duotone' : 'solar:notebook-bold-duotone'
+                    })).filter(s => s.id);
+                } catch (e) {
+                    this.gridSchemas = [];
+                }
             },
 
             async _saveLayout() {
                 try {
                     await fetch(`/account/${this._accountNumber}/api/user/view-preferences`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows } })
+                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets } })
                     });
                 } catch (e) { console.error('[OvLayout] save error', e); }
             },
@@ -1477,6 +1585,18 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 return ids;
             },
 
+            _normalizeCustomWidgets(value) {
+                if (!value) return {};
+                if (Array.isArray(value)) {
+                    return value.reduce((acc, widget) => {
+                        if (widget && widget.id) acc[String(widget.id)] = widget;
+                        return acc;
+                    }, {});
+                }
+                if (typeof value === 'object') return value;
+                return {};
+            },
+
             // Available widgets not yet placed
             _availableWidgets() {
                 const all = [
@@ -1484,7 +1604,13 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     { id: 'tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981' },
                     { id: 'docs', label: 'Documents', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
                     { id: 'drive', label: 'Fichiers récents', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899' },
-                    { id: 'lines', label: 'Traitement', icon: 'solar:document-text-bold-duotone', color: '#6366f1' },
+                    { id: 'lines', label: 'TD avec onglets', icon: 'solar:document-text-bold-duotone', color: '#6366f1' },
+                    ...(this.gridSchemas || []).map(s => ({
+                        id: `lines::${s.id}`,
+                        label: s.name,
+                        icon: s.icon || 'solar:table-2-bold-duotone',
+                        color: '#00ab55'
+                    })),
                     { id: 'agenda', label: 'Rendez-vous', icon: 'solar:calendar-bold-duotone', color: '#14b8a6' },
                     { id: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' }
                 ];
@@ -1492,22 +1618,179 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 return all.filter(w => !placed.includes(w.id));
             },
 
-            addWidget(colId, widgetId) {
+            getLineWidgetSchemaId(widgetId) {
+                const raw = String(widgetId || '');
+                return raw.startsWith('lines::') ? raw.slice('lines::'.length) : '';
+            },
+
+            openWidgetPicker(colId) {
+                const picker = window.Alpine && window.Alpine.store ? window.Alpine.store('widgetPicker') : null;
+                if (!picker) {
+                    window.showMessage ? window.showMessage('Sélecteur de widgets indisponible', 'danger') : alert('Sélecteur de widgets indisponible');
+                    return;
+                }
+                picker.initPicker({
+                    gridSchemas: (this.gridSchemas || []).map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>
+                    }))
+                });
+                picker.initOpen({
+                    type: 'overview',
+                    colId,
+                    accountNumber: this._accountNumber,
+                    entityId: this._entityId
+                });
+            },
+
+            insertWidgetFromPicker(detail) {
+                const target = detail?.target || {};
+                const widget = detail?.widget || null;
+                if (target.type && target.type !== 'overview') return;
+                const colId = target.colId;
+                if (!colId || !widget) return;
+
+                const widgetIds = this._overviewWidgetIdsFromPickerWidget(widget);
+                widgetIds.forEach(widgetId => {
+                    this.addWidget(colId, widgetId, { save: false, allowDuplicate: widgetId.startsWith('cw_') });
+                });
+                this._saveLayout();
+                this.$nextTick(() => this._reinitSortables());
+            },
+
+            _overviewWidgetIdsFromPickerWidget(widget) {
+                const type = String(widget.type || '');
+                if (type === 'dynamic-table') {
+                    const cfg = widget.config || {};
+                    const schemaIds = Array.isArray(cfg.schemaIds) ? cfg.schemaIds.map(String).filter(Boolean) : [];
+                    const schemaId = String(cfg.schemaId || '').trim();
+                    const mode = String(cfg.displayMode || 'tabs');
+
+                    if (mode === 'panels' || mode === 'single') {
+                        const ids = schemaIds.length ? schemaIds : (schemaId ? [schemaId] : []);
+                        return ids.length ? ids.map(id => `lines::${id}`) : ['lines'];
+                    }
+                    if (schemaIds.length) return [`lines::${schemaIds.join(',')}`];
+                    if (schemaId) return [`lines::${schemaId}`];
+                    return ['lines'];
+                }
+
+                const id = 'cw_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                const normalized = {
+                    id,
+                    type,
+                    label: widget.label || this.customWidgetLabel(type),
+                    icon: widget.icon || this.customWidgetIcon(type),
+                    color: widget.color || '#4361ee',
+                    config: JSON.parse(JSON.stringify(widget.config || {}))
+                };
+                this.customWidgets = { ...this.customWidgets, [id]: normalized };
+                return [id];
+            },
+
+            addWidget(colId, widgetId, options = {}) {
+                if (!options.allowDuplicate && this._placedWidgets().includes(widgetId)) {
+                    window.showMessage && window.showMessage('Ce widget est déjà placé', 'info');
+                    return;
+                }
                 this.rows.forEach(r => r.columns.forEach(c => {
                     if (c.id === colId) c.widgetIds.push(widgetId);
                 }));
-                this._saveLayout();
+                if (options.save !== false) this._saveLayout();
             },
 
             removeWidget(widgetId) {
                 this.rows.forEach(r => r.columns.forEach(c => {
                     c.widgetIds = (c.widgetIds || []).filter(w => w !== widgetId);
                 }));
+                if (String(widgetId || '').startsWith('cw_')) {
+                    const next = { ...this.customWidgets };
+                    delete next[widgetId];
+                    this.customWidgets = next;
+                }
                 this._saveLayout();
             },
 
             isWidgetVisible(widgetId) {
                 return this._placedWidgets().includes(widgetId);
+            },
+
+            isCustomWidget(widgetId) {
+                return !!(this.customWidgets && this.customWidgets[widgetId]);
+            },
+
+            getCustomWidget(widgetId) {
+                return (this.customWidgets && this.customWidgets[widgetId]) || { type: '', label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
+            },
+
+            customWidgetConfig(widgetId) {
+                return this.getCustomWidget(widgetId).config || {};
+            },
+
+            customWidgetIcon(type) {
+                const icons = {
+                    note: 'solar:notes-bold-duotone',
+                    notes: 'solar:notes-bold-duotone',
+                    tasks: 'solar:checklist-bold-duotone',
+                    html: 'solar:code-bold-duotone',
+                    iframe: 'solar:monitor-bold-duotone',
+                    video: 'solar:video-library-bold-duotone',
+                    link: 'solar:link-round-bold-duotone',
+                    image: 'solar:gallery-bold-duotone',
+                    separator: 'solar:minus-circle-bold-duotone',
+                    timeline: 'solar:clock-circle-bold-duotone',
+                    kpi: 'solar:graph-up-bold-duotone',
+                    chart: 'solar:chart-bold-duotone',
+                    fields: 'solar:layers-bold-duotone',
+                    cards: 'solar:card-bold-duotone'
+                };
+                return icons[type] || 'solar:widget-bold-duotone';
+            },
+
+            customWidgetLabel(type) {
+                const labels = {
+                    note: 'Note',
+                    notes: 'Notes',
+                    tasks: 'Checklist',
+                    html: 'HTML',
+                    iframe: 'Embed',
+                    video: 'Vidéo',
+                    link: 'Lien',
+                    image: 'Image',
+                    separator: 'Séparateur',
+                    timeline: 'Timeline',
+                    kpi: 'KPI',
+                    chart: 'Graphique',
+                    fields: 'Champs',
+                    cards: 'Cartes'
+                };
+                return labels[type] || 'Widget';
+            },
+
+            isEmbeddableVideo(url) {
+                const value = String(url || '').toLowerCase();
+                return value.includes('youtube.com') || value.includes('youtu.be') || value.includes('vimeo.com');
+            },
+
+            videoEmbedUrl(url) {
+                const value = String(url || '').trim();
+                try {
+                    const parsed = new URL(value);
+                    if (parsed.hostname.includes('youtu.be')) {
+                        const id = parsed.pathname.split('/').filter(Boolean)[0];
+                        return id ? `https://www.youtube.com/embed/${id}` : value;
+                    }
+                    if (parsed.hostname.includes('youtube.com')) {
+                        const id = parsed.searchParams.get('v') || parsed.pathname.split('/').filter(Boolean).pop();
+                        return id ? `https://www.youtube.com/embed/${id}` : value;
+                    }
+                    if (parsed.hostname.includes('vimeo.com')) {
+                        const id = parsed.pathname.split('/').filter(Boolean).pop();
+                        return id ? `https://player.vimeo.com/video/${id}` : value;
+                    }
+                } catch (e) { /* keep original URL */ }
+                return value;
             }
         }));
     });
@@ -3075,56 +3358,128 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         <%- include('../record/partials/record-tasks-module', { _isTasksTab: moduleName === 'tasks' }) %>
 
         <% if (moduleName === 'emails') { %>
-        <div class="rm-items-list">
-            
-            <div class="rm-item" style="animation-delay:0ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#0ea5e915,#0ea5e908)">
-                    <iconify-icon icon="solar:letter-opened-bold-duotone" width="20" style="color:#0ea5e9"></iconify-icon>
+        <style>
+            .record-mail-shell{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+            .record-mail-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+            .record-mail-search{height:38px;border:1px solid #dbe4f0;border-radius:10px;background:#fff;padding:0 12px 0 36px;font-size:13px;min-width:260px;outline:none}
+            .record-mail-search:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)}
+            .record-mail-search-wrap{position:relative;display:flex;align-items:center}
+            .record-mail-search-wrap iconify-icon{position:absolute;left:12px;color:#94a3b8}
+            .record-mail-context{border:1px solid #dbeafe;background:linear-gradient(135deg,#f8fcff,#fff);border-radius:12px;padding:14px}
+            .record-mail-context h4{font-size:13px;font-weight:800;color:#0f172a;margin:0 0 10px;display:flex;align-items:center;gap:7px}
+            .record-mail-chip{display:flex;align-items:center;gap:8px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;padding:8px 9px;margin-bottom:8px;min-width:0}
+            .record-mail-chip-icon{width:28px;height:28px;border-radius:8px;background:#e0f2fe;color:#0ea5e9;display:flex;align-items:center;justify-content:center;flex:none}
+            .record-mail-chip-main{min-width:0;flex:1}
+            .record-mail-chip-name{font-size:12px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .record-mail-chip-email{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .record-mail-chip-source{font-size:10px;font-weight:800;color:#0ea5e9;background:#e0f2fe;border-radius:999px;padding:3px 7px;white-space:nowrap}
+            .record-mail-empty{border:1px dashed #cbd5e1;border-radius:12px;padding:28px;text-align:center;color:#64748b;background:#fff}
+            .record-mail-empty iconify-icon{display:block;margin:0 auto 8px;color:#0ea5e9}
+            .record-mail-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px;font-size:11px;color:#94a3b8}
+            .record-mail-meta span{display:inline-flex;align-items:center;gap:4px}
+            @media(max-width:1100px){.record-mail-shell{grid-template-columns:1fr}.record-mail-context{order:-1}.record-mail-toolbar{align-items:stretch;flex-direction:column}.record-mail-search{width:100%}}
+        </style>
+        <%
+            const _mailCtx = recordMailContext || { contacts: [], filters: [], mails: [] };
+            const _mailSourceLabel = (source) => ({
+                record: 'Fiche',
+                record_field: 'Fiche',
+                record_text: 'Fiche',
+                relation: 'Relation',
+                relation_field: 'Relation',
+                workspace: 'Equipe'
+            }[source] || 'Contexte');
+            const _formatMailDate = (d) => {
+                if (!d) return '';
+                const date = new Date(d);
+                return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+            };
+        %>
+        <div class="record-mail-shell" x-data="{ q: '', mails: <%- JSON.stringify(_mailCtx.mails || []).replace(/<\//g, '<\\/') %>, get filtered(){ const needle = this.q.trim().toLowerCase(); if(!needle) return this.mails; return this.mails.filter(m => [m.title,m.email,m.from,m.preview].join(' ').toLowerCase().includes(needle)); } }">
+            <div>
+                <div class="record-mail-toolbar">
+                    <div class="record-mail-search-wrap">
+                        <iconify-icon icon="solar:magnifer-linear" width="16"></iconify-icon>
+                        <input class="record-mail-search" type="search" x-model="q" placeholder="Filtrer les emails du record">
+                    </div>
                 </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Envoi résultats bilan sanguin</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 20/04/2026</div>
+
+                <template x-if="filtered.length === 0">
+                    <div class="record-mail-empty">
+                        <iconify-icon icon="solar:letter-unread-bold-duotone" width="30"></iconify-icon>
+                        <div style="font-weight:800;color:#0f172a;margin-bottom:4px">Aucun email dans la sphère record</div>
+                        <div style="font-size:12px">Ajoutez un email sur la fiche, une relation ou un membre d'équipe pour activer le filtre automatique.</div>
+                    </div>
+                </template>
+
+                <div class="rm-items-list" x-show="filtered.length > 0">
+                    <template x-for="(mail, idx) in filtered" :key="mail.id">
+                        <div class="rm-item" :style="'animation-delay:' + Math.min(idx * 40, 240) + 'ms'">
+                            <div class="rm-item-icon" style="background:linear-gradient(135deg,#0ea5e915,#0ea5e908)">
+                                <iconify-icon :icon="mail.type === 'sent_mail' ? 'solar:letter-opened-bold-duotone' : 'solar:letter-bold-duotone'" width="20" style="color:#0ea5e9"></iconify-icon>
+                            </div>
+                            <div class="rm-item-body">
+                                <div class="rm-item-title" x-text="mail.title"></div>
+                                <div class="record-mail-meta">
+                                    <span><iconify-icon icon="solar:user-rounded-linear" width="12"></iconify-icon><span x-text="mail.from"></span></span>
+                                    <span><iconify-icon icon="solar:letter-linear" width="12"></iconify-icon><span x-text="mail.email"></span></span>
+                                    <span x-show="mail.date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon><span x-text="new Date(mail.date).toLocaleDateString('fr-FR')"></span></span>
+                                    <span x-show="mail.hasAttachments"><iconify-icon icon="solar:paperclip-linear" width="12"></iconify-icon>Pieces jointes</span>
+                                </div>
+                            </div>
+                            <span class="rm-item-badge" :style="mail.isUnread ? 'background:#0ea5e915;color:#0ea5e9' : 'background:#10b98115;color:#10b981'" x-text="mail.isUnread ? 'Non lu' : (mail.type === 'sent_mail' ? 'Envoye' : 'Lu')"></span>
+                            <a class="rm-item-action" title="Ouvrir dans Mailbox" :href="'/account/<%= account_number %>/mailbox/inbox'"><iconify-icon icon="solar:arrow-right-up-linear" width="16"></iconify-icon></a>
+                        </div>
+                    </template>
                 </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Envoyé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
             </div>
 
-            <div class="rm-item" style="animation-delay:60ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#0ea5e915,#0ea5e908)">
-                    <iconify-icon icon="solar:letter-bold-duotone" width="20" style="color:#0ea5e9"></iconify-icon>
+            <aside class="record-mail-context">
+                <h4><iconify-icon icon="solar:target-bold-duotone" width="16" style="color:#0ea5e9"></iconify-icon>Sphere record</h4>
+                <% if ((_mailCtx.contacts || []).length === 0) { %>
+                    <div style="font-size:12px;color:#64748b;line-height:1.45">Aucun email detecte dans cette fiche pour le moment.</div>
+                <% } %>
+                <% (_mailCtx.contacts || []).slice(0, 12).forEach(function(contact) { %>
+                    <div class="record-mail-chip">
+                        <div class="record-mail-chip-icon"><iconify-icon icon="solar:user-id-bold-duotone" width="15"></iconify-icon></div>
+                        <div class="record-mail-chip-main">
+                            <div class="record-mail-chip-name"><%= contact.name %></div>
+                            <div class="record-mail-chip-email"><%= contact.email %></div>
+                        </div>
+                        <span class="record-mail-chip-source"><%= _mailSourceLabel(contact.source) %></span>
+                    </div>
+                <% }) %>
+                <div style="border-top:1px solid #e2e8f0;margin-top:12px;padding-top:12px;font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px">
+                    <iconify-icon icon="solar:filter-bold-duotone" width="14" style="color:#0ea5e9"></iconify-icon>
+                    <span><%= (_mailCtx.filters || []).length %> filtre(s) priorises pour l'IA et la mailbox</span>
                 </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Confirmation RDV 28/04</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 18/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Envoyé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:120ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#0ea5e915,#0ea5e908)">
-                    <iconify-icon icon="solar:letter-opened-bold-duotone" width="20" style="color:#0ea5e9"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Rappel renouvellement ordonnance</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 15/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#0ea5e915;color:#0ea5e9">Lu</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
-
-            <div class="rm-item" style="animation-delay:180ms">
-                <div class="rm-item-icon" style="background:linear-gradient(135deg,#0ea5e915,#0ea5e908)">
-                    <iconify-icon icon="solar:letter-bold-duotone" width="20" style="color:#0ea5e9"></iconify-icon>
-                </div>
-                <div class="rm-item-body">
-                    <div class="rm-item-title">Prescription spécialiste</div>
-                    <div class="rm-item-date"><iconify-icon icon="solar:calendar-linear" width="12"></iconify-icon> 10/04/2026</div>
-                </div>
-                <span class="rm-item-badge" style="background:#10b98115;color:#10b981">Envoyé</span>
-                <button class="rm-item-action" title="Options"><iconify-icon icon="solar:menu-dots-bold" width="16"></iconify-icon></button>
-            </div>
+            </aside>
         </div>
+        <script>
+            (function(){
+                const recordEmailContext = {
+                    recordId: '<%= record._id %>',
+                    recordTitle: <%- JSON.stringify(record.title || record.computedTitle || '') %>,
+                    contacts: <%- JSON.stringify((_mailCtx.contacts || []).slice(0, 20)).replace(/<\//g, '<\\/') %>,
+                    filters: <%- JSON.stringify(_mailCtx.filters || []).replace(/<\//g, '<\\/') %>
+                };
+                const emailContext = {
+                    id: 'record-email-' + recordEmailContext.recordId,
+                    subject: 'Sphere email - ' + (recordEmailContext.recordTitle || 'record'),
+                    from: 'Contexte record',
+                    fromEmail: recordEmailContext.filters[0] || '',
+                    body: 'Contacts prioritaires:\\n' + recordEmailContext.contacts.map(c => '- ' + c.name + ' <' + c.email + '> [' + c.source + ']').join('\\n'),
+                    hasAttachments: false,
+                    recordEmailContext
+                };
+                const emit = () => window.dispatchEvent(new CustomEvent('ai-assistant:email-context-changed', {
+                    detail: { emailContext }
+                }));
+                window.__RECORD_EMAIL_CONTEXT__ = recordEmailContext;
+                if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', emit, { once: true });
+                setTimeout(emit, 800);
+            })();
+        </script>
         <% } %>
 
         <% if (moduleName === 'notes') { %>
@@ -4647,6 +5002,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             hiddenFields: [..._initialHidden],
             deletingFieldKey: '',
             _sortableInstance: null,
+            _saveTimer: null,
 
             toggleConfig() {
                 if (!_ficheRecordModuleCanEdit) return;
@@ -4655,6 +5011,10 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     this.$nextTick(() => this._initSortable());
                 } else {
                     this._destroySortable();
+                    if (this._saveTimer) {
+                        clearTimeout(this._saveTimer);
+                        this._saveTimer = null;
+                    }
                     this._savePreferences();
                 }
             },
@@ -4713,20 +5073,50 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 
             resetLayout() {
                 this.hiddenFields = [];
-                // Reset DOM order to original
-                const list = this.$el.querySelector('.ov-fields-list');
-                if (list) {
-                    const items = [...list.children];
-                    // Sort by original data-index (if exists) — just let server return default next reload
-                }
                 // Save empty preferences (reset)
                 this._savePreferences(true);
             },
 
-            _getFieldOrder() {
+            _getFieldItems() {
                 const list = this.$refs.ficheFieldsList;
                 if (!list) return [];
-                return [...list.querySelectorAll('.ov-ef[data-field-key]')].map(el => el.dataset.fieldKey);
+                return [...list.querySelectorAll(':scope > .ov-ef[data-field-key]')]
+                    .filter(el => !el.classList.contains('sortable-fallback'));
+            },
+
+            _getFieldOrder() {
+                return this._getFieldItems().map(el => el.dataset.fieldKey);
+            },
+
+            _applyFieldOrder(order) {
+                const list = this.$refs.ficheFieldsList;
+                if (!list || !Array.isArray(order)) return;
+                const items = this._getFieldItems();
+                const byKey = new Map(items.map(el => [el.dataset.fieldKey, el]));
+                const seen = new Set();
+                const fragment = document.createDocumentFragment();
+
+                order.forEach(key => {
+                    const el = byKey.get(key);
+                    if (!el || seen.has(key)) return;
+                    fragment.appendChild(el);
+                    seen.add(key);
+                });
+
+                items.forEach(el => {
+                    const key = el.dataset.fieldKey;
+                    if (!seen.has(key)) fragment.appendChild(el);
+                });
+
+                list.appendChild(fragment);
+            },
+
+            _savePreferencesSoon() {
+                if (this._saveTimer) clearTimeout(this._saveTimer);
+                this._saveTimer = setTimeout(() => {
+                    this._saveTimer = null;
+                    this._savePreferences();
+                }, 250);
             },
 
             _initSortable() {
@@ -4743,18 +5133,26 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 this._sortableInstance = Sortable.create(list, {
                     animation: 200,
                     handle: '.fiche-drag-handle',
-                    draggable: '.ov-ef',
+                    draggable: '.ov-ef[data-field-key]',
                     ghostClass: 'sortable-ghost',
                     chosenClass: 'sortable-chosen',
                     dragClass: 'sortable-drag',
                     direction: 'vertical',
-                    forceFallback: true,
-                    fallbackTolerance: 3,
+                    swapThreshold: 0.65,
+                    fallbackTolerance: 4,
                     onEnd: (evt) => {
-                        // DOM is already reordered by SortableJS
+                        const movedKey = evt.item && evt.item.dataset ? evt.item.dataset.fieldKey : '';
+                        if (!movedKey) return;
+
+                        const order = this._getFieldOrder().filter(key => key !== movedKey);
+                        let newIndex = this._getFieldItems().findIndex(el => el.dataset.fieldKey === movedKey);
+                        if (newIndex < 0) newIndex = evt.newIndex || 0;
+                        order.splice(newIndex, 0, movedKey);
+                        this._applyFieldOrder(order);
+                        this._savePreferencesSoon();
                     }
                 });
-                console.log('[FicheConfig] SortableJS initialized on', list.children.length, 'fields');
+                console.log('[FicheConfig] SortableJS initialized on', this._getFieldItems().length, 'fields');
             },
 
             _destroySortable() {

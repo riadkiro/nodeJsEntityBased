@@ -26,6 +26,11 @@
 
 /* ── Columns Table ── */
 .lsb-col-table { width: 100%; border-collapse: collapse; }
+.lsb-builder-table { table-layout: auto; }
+.lsb-builder-table th:nth-child(2), .lsb-builder-table td:nth-child(2) { min-width: 112px; }
+.lsb-builder-table th:nth-child(3), .lsb-builder-table td:nth-child(3) { min-width: 150px; }
+.lsb-builder-table th:nth-child(4), .lsb-builder-table td:nth-child(4) { min-width: 132px; }
+.lsb-builder-table th:nth-child(5), .lsb-builder-table td:nth-child(5) { min-width: 82px; }
 .lsb-col-table th { padding: 6px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; text-align: left; border-bottom: 1px solid #e5e7eb; user-select: none; }
 .dark .lsb-col-table th { color: #4a5568; border-color: #1b2e4b; }
 .lsb-col-table td { padding: 4px 6px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
@@ -48,6 +53,17 @@
 .lsb-row-btn { padding: 3px; border-radius: 4px; border: none; background: transparent; cursor: pointer; line-height: 1; transition: all 0.12s; color: #9ca3af; }
 .lsb-row-btn:hover { color: #4361ee; background: rgba(67,97,238,0.08); }
 .lsb-row-btn.delete:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
+.lsb-empty-builder { padding: 34px 18px; text-align: center; color: #94a3b8; background: linear-gradient(180deg, #fff, #fbfdff); }
+.dark .lsb-empty-builder { background: #0e1726; color: #64748b; }
+.lsb-empty-title { font-size: 13px; font-weight: 800; color: #64748b; margin-bottom: 12px; }
+.dark .lsb-empty-title { color: #94a3b8; }
+.lsb-empty-actions { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.lsb-quick-add { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #dbe4f0; background: #fff; color: #334155; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .16s ease; }
+.lsb-quick-add:hover { border-color: #4361ee; color: #4361ee; box-shadow: 0 8px 18px rgba(67,97,238,.12); transform: translateY(-1px); }
+.lsb-quick-add.primary { background: #4361ee; color: #fff; border-color: #4361ee; }
+.lsb-quick-add.primary:hover { color: #fff; background: #3451d1; }
+.dark .lsb-quick-add { background: #111d2e; border-color: #253b5c; color: #dbe4f0; }
 
 /* ── Inline config expand ── */
 .lsb-config-row td { background: #fafbfc; padding: 10px 12px !important; border-bottom: 2px solid #e5e7eb; }

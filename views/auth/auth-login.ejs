@@ -107,19 +107,19 @@
                         <div>
                             <label for="email" class="block text-sm font-semibold mb-1">Email</label>
                             <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <span class="absolute inset-y-0 left-0 flex items-center justify-center text-gray-400 pointer-events-none" style="width: 2.75rem;">
                                     <iconify-icon icon="solar:letter-bold" width="16"></iconify-icon>
                                 </span>
-                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required value="<%= locals.unverifiedEmail || '' %>" />
+                                <input id="email" name="email" type="email" class="form-input" style="padding-left: 2.75rem;" placeholder="email@exemple.com" required value="<%= locals.unverifiedEmail || '' %>" />
                             </div>
                         </div>
                         <div>
                             <label for="password" class="block text-sm font-semibold mb-1">Mot de passe</label>
                             <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <span class="absolute inset-y-0 left-0 flex items-center justify-center text-gray-400 pointer-events-none" style="width: 2.75rem;">
                                     <iconify-icon icon="solar:lock-password-bold" width="16"></iconify-icon>
                                 </span>
-                                <input id="password" name="password" type="password" class="form-input pl-9" placeholder="Entrez votre mot de passe" required />
+                                <input id="password" name="password" type="password" class="form-input" style="padding-left: 2.75rem;" placeholder="Entrez votre mot de passe" required />
                             </div>
                         </div>
 
@@ -131,8 +131,8 @@
                             <a href="/auth/forgot-password" class="text-xs text-primary hover:underline">Mot de passe oublié ?</a>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-full">
-                            <iconify-icon icon="solar:login-2-bold" width="18" class="mr-2"></iconify-icon>
+                        <button type="submit" class="btn btn-primary w-full gap-2">
+                            <iconify-icon icon="solar:login-2-bold" width="18"></iconify-icon>
                             SE CONNECTER
                         </button>
                     </form>

@@ -556,8 +556,18 @@
                         <!-- Dynamic Table Type -->
                         <template x-if="newWidget.type === 'dynamic-table'">
                             <div class="space-y-3">
-                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tableaux Ã  inclure</label>
-                                <p style="font-size: 10px; color: #9ca3af; margin: -4px 0 8px;">Cochez les tableaux Ã  afficher. Plusieurs = onglets.</p>
+	                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tableaux Ã  inclure</label>
+	                                <p style="font-size: 10px; color: #9ca3af; margin: -4px 0 8px;">Cochez les tableaux Ã  afficher.</p>
+	                                <div style="display:flex;gap:8px;margin-bottom:10px;">
+	                                    <button type="button" @click="newWidget.config.displayMode = 'tabs'"
+	                                            :style="'flex:1;padding:8px 9px;border-radius:9px;border:' + (newWidget.config.displayMode !== 'panels' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + (newWidget.config.displayMode !== 'panels' ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + (newWidget.config.displayMode !== 'panels' ? '#4361ee' : '#64748b') + ';font-size:11px;font-weight:700;cursor:pointer;'">
+	                                        Avec onglets
+	                                    </button>
+	                                    <button type="button" @click="newWidget.config.displayMode = 'panels'"
+	                                            :style="'flex:1;padding:8px 9px;border-radius:9px;border:' + (newWidget.config.displayMode === 'panels' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + (newWidget.config.displayMode === 'panels' ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + (newWidget.config.displayMode === 'panels' ? '#4361ee' : '#64748b') + ';font-size:11px;font-weight:700;cursor:pointer;'">
+	                                        Un par panel
+	                                    </button>
+	                                </div>
                                 <div x-show="loadingSchemaCatalog" style="text-align: center; padding: 12px;">
                                     <iconify-icon icon="svg-spinners:ring-resize" width="18" style="color: #4361ee;"></iconify-icon>
                                     <span style="font-size: 11px; color: #9ca3af; margin-left: 6px;">Chargement...</span>
@@ -2414,7 +2424,7 @@
                     });
                 },
 
-                toggleSchema(id) {
+	                toggleSchema(id) {
                     if (!this.newWidget.config.schemaIds) this.newWidget.config.schemaIds = [];
                     const idx = this.newWidget.config.schemaIds.indexOf(id);
                     if (idx >= 0) {
@@ -2423,10 +2433,36 @@
                         this.newWidget.config.schemaIds.push(id);
                     }
                     // Sync single schemaId for legacy
-                    this.newWidget.config.schemaId = this.newWidget.config.schemaIds.length > 0 ? this.newWidget.config.schemaIds[0] : '';
-                },
+	                    this.newWidget.config.schemaId = this.newWidget.config.schemaIds.length > 0 ? this.newWidget.config.schemaIds[0] : '';
+	                },
 
-                selectWidgetType(type) {
+	                expandedWidgetsForSave() {
+	                    const widget = JSON.parse(JSON.stringify(this.newWidget));
+	                    if (
+	                        widget.type !== 'dynamic-table' ||
+	                        this.editingWidgetId ||
+	                        widget.config?.displayMode !== 'panels' ||
+	                        !Array.isArray(widget.config?.schemaIds) ||
+	                        widget.config.schemaIds.length <= 1
+	                    ) {
+	                        return [widget];
+	                    }
+	                    return widget.config.schemaIds.map(schemaId => {
+	                        const schema = this.availableSchemas.find(s => s._id === schemaId);
+	                        return {
+	                            ...widget,
+	                            label: schema?.label || schema?.name || widget.label,
+	                            config: {
+	                                ...widget.config,
+	                                schemaId,
+	                                schemaIds: [schemaId],
+	                                displayMode: 'single'
+	                            }
+	                        };
+	                    });
+	                },
+
+	                selectWidgetType(type) {
                     const defaults = {
                         'html': { label: 'HTML', icon: 'solar:code-bold-duotone', color: '#f97316', config: { content: '' } },
                         'link': { label: 'Lien', icon: 'solar:link-round-bold-duotone', color: '#3b82f6', config: { url: '', description: '', newTab: true } },
@@ -2436,7 +2472,7 @@
                         'links-group': { label: 'Liens Rapides', icon: 'solar:bookmark-bold-duotone', color: '#8b5cf6', config: { links: [{ label: '', url: '', icon: '', target: '_blank' }] } },
                         'separator': { label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
                         'tasks': { label: 'Tasks', icon: 'solar:checklist-bold-duotone', color: '#ec4899', config: { tasks: [{ label: '', done: false }] } },
-                        'dynamic-table': { label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#00ab55', config: { schemaId: '', schemaIds: [], enableAdd: true, enableDocPreview: false } }
+	                        'dynamic-table': { label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#00ab55', config: { schemaId: '', schemaIds: [], displayMode: 'tabs', enableAdd: true, enableDocPreview: false } }
                     };
                     const d = defaults[type] || {};
                     this.newWidget = {
@@ -2470,13 +2506,18 @@
 
                         console.log('[Sidebar-Widget] Saving widget with config:', JSON.stringify(this.newWidget.config));
 
-                        const res = await fetch(url, {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify(this.newWidget)
-                        });
-                        const data = await res.json();
+	                        const widgets = method === 'POST' ? this.expandedWidgetsForSave() : [this.newWidget];
+	                        let data = { success: true };
+	                        for (const widget of widgets) {
+	                            const res = await fetch(url, {
+	                                method,
+	                                headers: { 'Content-Type': 'application/json' },
+	                                credentials: 'include',
+	                                body: JSON.stringify(widget)
+	                            });
+	                            data = await res.json();
+	                            if (!data.success) break;
+	                        }
                         if (data.success) {
                             this.widgetCatalogOpen = false;
                             this.resetWidgetForm();
@@ -2501,10 +2542,11 @@
                     // Backwards-compat: migrate schemaId â†’ schemaIds for dynamic-table
                     if (type === 'dynamic-table') {
                         const cfg = this.newWidget.config;
-                        if (!cfg.schemaIds || cfg.schemaIds.length === 0) {
-                            cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
-                        }
-                        this.loadAvailableSchemas();
+	                        if (!cfg.schemaIds || cfg.schemaIds.length === 0) {
+	                            cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
+	                        }
+	                        if (!cfg.displayMode) cfg.displayMode = 'tabs';
+	                        this.loadAvailableSchemas();
                     } else if (type === 'note') {
                         this.ensureNoteBindings();
                         this.loadWidgetNotes();
@@ -3611,9 +3653,6 @@
     <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.some(function(w) { return w.cardTemplate; })) { %>
         <script type="module" src="/dist/cardRendererWidget.js"></script>
     <% } %>
-
-
-
 
 
 

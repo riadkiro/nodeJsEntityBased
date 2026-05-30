@@ -354,6 +354,10 @@ function firstContentNode(container) {
     return current
 }
 
+function isFirstContentNode(container, node) {
+    return !!node && firstContentNode(container) === node
+}
+
 function mergeTableFragments(firstTable, secondTable, separators = []) {
     if (!tablesCanMerge(firstTable, secondTable)) return false
 
@@ -446,8 +450,9 @@ function splitTableNode(pageEl, tableNode) {
 
     const extractedRows = []
     let currentRows = tableBodyRows(tableNode)
+    const minRowsToKeep = isFirstContentNode(pageEl, tableNode) ? 1 : 0
 
-    while (doesContentOverflow(pageEl) && currentRows.length > 0) {
+    while (doesContentOverflow(pageEl) && currentRows.length > minRowsToKeep) {
         const row = currentRows[currentRows.length - 1]
         extractedRows.unshift(row.cloneNode(true))
         row.remove()
@@ -577,6 +582,47 @@ function removeLeadingEmptyNodes(container) {
         removed = true
     }
     return removed
+}
+
+function isEmptyEditionPage(page, pageEl = null) {
+    if (!page || page.mode !== 'edition') return false
+    const html = pageEl ? pageEl.innerHTML : (page.content || '')
+    return isEffectivelyEmpty(html) &&
+        (!page.elements || page.elements.length === 0) &&
+        (!page.rows || page.rows.length === 0)
+}
+
+function removeEmptyPagesBeforeTableContinuations(docRef, setDoc, pageRefs) {
+    const current = docRef?.current
+    if (!current?.pages?.length || current.pages.length <= 1 || !setDoc) return false
+
+    let pages = [...current.pages]
+    let removed = false
+
+    for (let index = 0; index < pages.length - 1; index += 1) {
+        const page = pages[index]
+        const nextPage = pages[index + 1]
+        if (page?.mode !== 'edition' || nextPage?.mode !== 'edition') continue
+
+        const pageEl = pageRefs?.current?.[index]
+        const nextPageEl = pageRefs?.current?.[index + 1]
+        const nextFirst = firstContentNode(nextPageEl)
+        const nextStartsSplitTable = isTableNode(nextFirst) && !!nextFirst.dataset.paginatedTableKey
+
+        if (!nextStartsSplitTable || !isEmptyEditionPage(page, pageEl)) continue
+
+        pages.splice(index, 1)
+        removed = true
+        index -= 1
+    }
+
+    if (!removed) return false
+
+    pages = pages.map((page, index) => ({ ...page, order: index }))
+    const nextDoc = { ...current, pages }
+    docRef.current = nextDoc
+    setDoc(nextDoc)
+    return true
 }
 
 /**
@@ -887,6 +933,12 @@ export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComp
                 setTimeout(doPass, 50)
             })
         } else {
+            if (removeEmptyPagesBeforeTableContinuations(docRef, setDoc, pageRefs)) {
+                requestAnimationFrame(() => {
+                    setTimeout(doPass, 35)
+                })
+                return
+            }
             console.log(`[reflowAllPages] Stable after ${pass} passes, ${docRef.current?.pages?.length} pages`)
             if (onComplete) onComplete()
         }
@@ -940,6 +992,13 @@ export function extractOverflow(element) {
                     if (!doesContentOverflow(element)) break
                     continue
                 }
+
+                // A very narrow column can make a single row taller than the
+                // available page body. In that case, removing the whole table
+                // would create blank pages and keep pushing the same row
+                // forward. Keep the unsplittable row visible on this page and
+                // only move rows already extracted in this pass.
+                if (isFirstContentNode(element, lastNode)) break
             }
 
             // For block elements (p, div, blockquote, etc.), try splitting content inside
@@ -1178,6 +1237,13 @@ export function reflowTableUnderflowAllPages(docRef, setDoc, pageRefs, maxPasses
 
         const normalized = normalizePaginatedTableContinuations(pageRefs, docRef, setDoc)
         if (normalized) {
+            requestAnimationFrame(() => {
+                setTimeout(doPass, 35)
+            })
+            return
+        }
+
+        if (removeEmptyPagesBeforeTableContinuations(docRef, setDoc, pageRefs)) {
             requestAnimationFrame(() => {
                 setTimeout(doPass, 35)
             })

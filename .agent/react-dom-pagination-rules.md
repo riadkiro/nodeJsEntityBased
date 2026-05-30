@@ -146,3 +146,89 @@ const reflowDocument = useCallback(() => {
 | Trigger après edit | `onKeyDown` | `onInput` |
 | Split texte avec styles | `element.textContent = x` | `TreeWalker` + text node |
 | Récursion RAF | Appel direct avec state | Orchestrateur central |
+
+---
+
+## Mémo Défi Technique: Resize de Colonnes + Tableaux Paginés
+
+### Contexte
+Sur le document `Facture - Fourniture de matériaux de construction - Moulay Rachid.pdf`, réduire la première colonne au minimum (`48px`) faisait exploser la hauteur des lignes. Le tableau se découpait en plusieurs fragments/pages. Quand on essayait ensuite de remettre la colonne à sa taille d'origine, on voyait parfois:
+
+- des pages vides créées après le tableau;
+- du contenu qui semblait disparaître visuellement;
+- des fragments de tableau qui ne remontaient pas alors qu'il y avait assez d'espace;
+- le `tfoot`/totaux isolé sur une page;
+- un état correct uniquement après reload, signe que le DOM visible et le state React n'étaient plus alignés.
+
+### Cause Racine
+L'éditeur utilise des `contenteditable` non contrôlés. Quand le nombre de pages change pendant un reflow, React peut réutiliser un DOM de page à un nouvel index si les clés sont trop stables (`key={pageIndex}`). Résultat: `pageRefs` et `docRef.current.pages` peuvent temporairement pointer vers des réalités différentes.
+
+Le resize de table est aussi une opération structurelle, pas un simple `onInput`. Il modifie:
+
+- le `colgroup` de tous les fragments;
+- la hauteur réelle des lignes;
+- le nombre de pages;
+- la position des fragments et du footer.
+
+Une passe d'underflow incrémentale ne suffit pas toujours après un resize extrême.
+
+### Fix Appliqué
+Commit de référence: `4e85765 Stabilize table resize repagination`.
+
+Principes appliqués:
+
+1. Sur `mouseup` du resize de colonne, envoyer un `inputType: 'tableResize'`.
+2. Dans `handlePageInput`, traiter `tableResize` comme une opération structurelle et lancer `repackPagesFrom(0)`.
+3. Recomposer le document depuis le début, puis repaginer proprement via `reflowAllPages`.
+4. Utiliser une clé de page sensible au nombre de pages:
+
+```jsx
+key={`${doc.pages.length}-${pageIndex}-${page.mode || 'edition'}`}
+```
+
+Cela force le remount des surfaces `contenteditable` quand le nombre de pages change, donc le DOM visible reprend le state paginé correct.
+
+5. Dans le compactage de tableaux:
+   - supprimer les pages vides terminales créées par un split de tableau;
+   - permettre au `tfoot` de remonter quand il tient dans le fragment précédent;
+   - mettre `docRef.current = newDoc` immédiatement après un `setDoc` de table-underflow pour éviter que la boucle suivante lise un vieux document.
+
+### Règle à Retenir
+Un resize de colonne sur un tableau paginé doit être traité comme une repagination complète, pas comme une simple sauvegarde.
+
+```jsx
+// ✅ BON
+onSave?.({ inputType: 'tableResize' })
+
+// puis
+if (inputType === 'tableResize' && repackPagesFrom(0)) {
+    return
+}
+```
+
+### Test Produit Obligatoire
+Pour valider ce type de fix, faire le scénario complet dans le navigateur:
+
+1. Ouvrir le snapshot du document généré.
+2. Mesurer l'état initial: nombre de pages, nombre de lignes `tbody`, largeurs de colonnes.
+3. Réduire la première colonne au minimum.
+4. Attendre la stabilisation du reflow.
+5. Vérifier:
+   - aucune page vide;
+   - toutes les lignes conservées;
+   - le tableau peut se fragmenter sur plusieurs pages sans perdre de contenu.
+6. Remettre la colonne à sa largeur initiale.
+7. Vérifier:
+   - retour au nombre de pages initial si le contenu tient;
+   - largeurs restaurées;
+   - toutes les lignes conservées;
+   - aucun `tfoot` isolé inutilement;
+   - aucun contenu visible perdu.
+
+Résultat attendu du test de référence:
+
+```text
+before:   pages=2, rows=8, widths=[391,75,87,95]
+shrunk:   pages=9, rows=8, widths=[48,418,87,95], emptyPages=0
+restored: pages=2, rows=8, widths=[391,75,87,95], emptyPages=0
+```

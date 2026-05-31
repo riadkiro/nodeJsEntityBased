@@ -2480,6 +2480,17 @@ module.exports = {
                 layout: "layout-app"
             });
 
+            let defaultHiddenRecordModules = [];
+            try {
+                const ViewModel = await tenantCollection(req, "View");
+                const hubView = await ViewModel.findOne({ viewType: 'hub', hubRecord: record._id }).select('settings.hiddenRecordModules').lean();
+                if (Array.isArray(hubView?.settings?.hiddenRecordModules)) {
+                    defaultHiddenRecordModules = hubView.settings.hiddenRecordModules;
+                }
+            } catch (e) {
+                console.warn('[ModulePage] Hub module defaults skipped:', e.message);
+            }
+
             // Guest/External: verify access via RecordAccess grants
             const {
                 canAccessRecord,
@@ -2872,6 +2883,7 @@ module.exports = {
                 sharedDataRooms: req.sharedDataRooms || [],
                 accessibleRecordModules,
                 accessibleRecordModulePermissions,
+                defaultHiddenRecordModules,
                 layout: "layout-app"
             });
         } catch (error) {

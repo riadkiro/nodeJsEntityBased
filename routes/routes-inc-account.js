@@ -204,6 +204,153 @@ router.get("/api/tasks-hub", async (req, res) => {
     }
 });
 
+// Home Overview API — global widgets for the account home hub
+router.get("/api/home-overview", async (req, res) => {
+    try {
+        const _tc = require('../middleware/tenant').tenantCollection;
+        const Entity = await _tc(req, "Entity");
+        const Record = await _tc(req, "Record");
+
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+
+        const [allLists, allTasks] = await Promise.all([
+            TaskListModel.find({}).lean(),
+            RecordTaskModel.find({}).lean()
+        ]);
+
+        const recordIds = new Set();
+        allLists.forEach(list => { if (list?.recordId) recordIds.add(list.recordId.toString()); });
+        allTasks.forEach(task => { if (task?.recordId) recordIds.add(task.recordId.toString()); });
+
+        const records = recordIds.size
+            ? await Record.find({ _id: { $in: [...recordIds] } })
+                .select('title computedTitle referenceTitle entityId updatedAt createdAt')
+                .lean()
+            : [];
+        const recordMap = {};
+        records.forEach(record => { recordMap[record._id.toString()] = record; });
+
+        const entityIds = [...new Set(records.map(record => record.entityId?.toString()).filter(Boolean))];
+        const entities = entityIds.length
+            ? await Entity.find({ _id: { $in: entityIds } }).select('name slug icon color').lean()
+            : [];
+        const entityMap = {};
+        entities.forEach(entity => { entityMap[entity._id.toString()] = entity; });
+
+        const listMap = {};
+        allLists.forEach(list => { listMap[list._id.toString()] = list; });
+
+        const isDone = task => String(task?.status || '') === 'Terminé';
+        const inToday = value => {
+            if (!value) return false;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return false;
+            return date >= start && date < end;
+        };
+        const isBeforeToday = value => {
+            if (!value) return false;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return false;
+            return date < start;
+        };
+        const isTodayList = list => /^(g[eé]n[eé]ral|t[âa]ches?\s+du\s+jour)$/i.test(String(list?.label || '').trim());
+        const cleanLabel = label => String(label || '').trim().toLowerCase() === 'général' ? 'Tâches du jour' : (String(label || '').trim() || 'Tâches du jour');
+        const recordTitle = record => record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
+
+        const taskRows = allTasks.map(task => {
+            const list = listMap[task.taskListId?.toString?.() || ''];
+            const record = recordMap[task.recordId?.toString?.() || list?.recordId?.toString?.() || ''];
+            const entity = record?.entityId ? entityMap[record.entityId.toString()] : null;
+            const entitySlug = entity?.slug || '';
+            const taskId = task._id.toString();
+            const recordId = record?._id?.toString?.() || '';
+            return {
+                id: taskId,
+                title: String(task.title || '').trim() || 'Sans titre',
+                status: task.status || 'À faire',
+                statusColor: task.statusColor || '#9ca3af',
+                priority: task.priority || 'Aucune',
+                priorityColor: task.priorityColor || '',
+                dueDate: task.dueDate || null,
+                startDate: task.startDate || null,
+                listLabel: cleanLabel(list?.label),
+                listIsToday: isTodayList(list),
+                recordId,
+                recordTitle: recordTitle(record),
+                entityName: entity?.name || 'Sans entité',
+                entitySlug,
+                entityIcon: entity?.icon || 'solar:folder-bold-duotone',
+                entityColor: entity?.color || '#4361ee',
+                link: recordId && entitySlug ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks?openTask=${taskId}` : `/account/${req.account_number}/tasks`
+            };
+        });
+
+        const todayTasks = taskRows
+            .filter(task => task.status !== 'Terminé' && (inToday(task.dueDate) || inToday(task.startDate) || task.listIsToday))
+            .sort((a, b) => {
+                const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
+                const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
+                if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+                const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
+                const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
+                return ad - bd;
+            });
+
+        const recentRecordsRaw = await Record.find({})
+            .select('title computedTitle referenceTitle entityId icon color updatedAt createdAt')
+            .sort({ updatedAt: -1 })
+            .limit(8)
+            .lean();
+        const recentEntityIds = [...new Set(recentRecordsRaw.map(record => record.entityId?.toString()).filter(Boolean))];
+        const recentEntities = recentEntityIds.length
+            ? await Entity.find({ _id: { $in: recentEntityIds } }).select('name slug icon color').lean()
+            : [];
+        const recentEntityMap = {};
+        recentEntities.forEach(entity => { recentEntityMap[entity._id.toString()] = entity; });
+        const recentRecords = recentRecordsRaw.map(record => {
+            const entity = record.entityId ? recentEntityMap[record.entityId.toString()] : null;
+            const entitySlug = entity?.slug || '';
+            const recordId = record._id.toString();
+            return {
+                id: recordId,
+                title: recordTitle(record),
+                entityName: entity?.name || 'Sans entité',
+                entitySlug,
+                icon: record.icon || entity?.icon || 'solar:folder-bold-duotone',
+                color: record.color || entity?.color || '#4361ee',
+                updatedAt: record.updatedAt || record.createdAt || null,
+                link: entitySlug ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/overview` : `/account/${req.account_number}/home`
+            };
+        });
+
+        const totalTasks = taskRows.length;
+        const doneTasks = taskRows.filter(isDone).length;
+        const openTasks = totalTasks - doneTasks;
+        const overdueCount = taskRows.filter(task => task.status !== 'Terminé' && isBeforeToday(task.dueDate)).length;
+
+        res.json({
+            success: true,
+            todayTasks,
+            recentRecords,
+            stats: {
+                totalTasks,
+                doneTasks,
+                openTasks,
+                todayTasks: todayTasks.length,
+                overdueCount,
+                listsCount: allLists.length,
+                recordsCount: await Record.countDocuments({})
+            }
+        });
+    } catch (error) {
+        console.error('[HomeOverview] Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
@@ -759,4 +906,3 @@ router.get("/test-progressive/:entityName", async (req, res) => {
 });
 
 module.exports = router;
-

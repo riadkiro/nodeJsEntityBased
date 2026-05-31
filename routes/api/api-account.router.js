@@ -36,10 +36,6 @@ router.post('/space-templates/:id/apply', requirePerm('entities.manage'), hierar
 router.get('/list', accountController.list_Api);
 //On post create new product
 router.post('/add', accountController.save_Api);
-//Single page
-router.get('/:id', accountController.singlePage_Api)
-//Delete
-router.delete('/:id', accountController.delete_Api);
 
 router.get('/hierarchy/list', hierarchyController.getHierarchy);
 // Environment CRUD
@@ -60,6 +56,7 @@ router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/entity/:entityId/fields', hierarchyController.getEntityFields);
 router.post('/hierarchy/link-entity', requirePerm('entities.manage'), hierarchyController.linkEntity);
+router.post('/hierarchy/hub', requirePerm('entities.manage'), hierarchyController.createHub);
 router.post('/hierarchy/link-cockpit', requirePerm('entities.manage'), hierarchyController.linkCockpit);
 router.post('/hierarchy/promote-space-to-environment', requirePerm('entities.manage'), hierarchyController.promoteSpaceToEnvironment);
 router.post('/hierarchy/promote-folder-to-environment', requirePerm('entities.manage'), hierarchyController.promoteFolderToEnvironment);
@@ -177,5 +174,9 @@ router.get('/account/stats', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error fetching account stats' });
     }
 });
+
+// Single page / delete catch-alls must stay after specific API routes.
+router.get('/:id', accountController.singlePage_Api);
+router.delete('/:id', accountController.delete_Api);
 
 module.exports = router;

@@ -1,36 +1,1580 @@
-<!-- Page Home -->
+<%- include('../record/partials/widget-picker') %>
+
 <style>
-    .home-bg-wrapper {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: url('/images/bg-01.jpg');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        z-index: -1;
+    .home-overview-shell {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 8px 6px 32px;
     }
-    .home-bg-wrapper::after {
-        content: '';
+    .home-ov-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+    .home-ov-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+    .home-ov-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4361ee;
+        background: linear-gradient(135deg, rgba(67,97,238,.12), rgba(16,185,129,.08));
+        border: 1px solid rgba(67,97,238,.12);
+    }
+    .home-ov-title h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: 0;
+    }
+    .home-ov-title p {
+        margin: 3px 0 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: #7b86a2;
+    }
+    .home-ov-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .home-ov-btn {
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #334155;
+        padding: 0 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all .15s ease;
+        white-space: nowrap;
+    }
+    .home-ov-btn:hover {
+        border-color: #4361ee;
+        color: #4361ee;
+        box-shadow: 0 10px 26px rgba(67,97,238,.10);
+    }
+    .home-ov-btn.active {
+        border-color: #4361ee;
+        color: #fff;
+        background: #4361ee;
+        box-shadow: 0 14px 30px rgba(67,97,238,.22);
+    }
+    .ov-dm-banner {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(67,97,238,.16);
+        background: linear-gradient(135deg, rgba(67,97,238,.07), rgba(16,185,129,.04));
+        color: #4361ee;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .ov-dm .ov-dm-banner { display: flex; }
+    .ov-dm-banner button {
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(67,97,238,.22);
+        background: #fff;
+        color: #4361ee;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+    .home-loading {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 14px 16px;
+        border: 1px solid #e8edf4;
+        border-radius: 14px;
+        background: #fff;
+        color: #7b86a2;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .ov-layout-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .ov-layout-row {
+        position: relative;
+        border-radius: 14px;
+        transition: all .15s ease;
+    }
+    .ov-dm .ov-layout-row {
+        padding: 12px;
+        border: 1px dashed rgba(67,97,238,.22);
+        background: rgba(67,97,238,.025);
+    }
+    .ov-layout-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 16px;
+        align-items: start;
+    }
+    .ov-layout-col {
+        position: relative;
+        min-width: 0;
+    }
+    .ov-col-widgets {
+        min-height: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .ov-widget-wrap {
+        position: relative;
+        min-width: 0;
+    }
+    .ov-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #e8edf4;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 14px 34px rgba(15,23,42,.04);
+    }
+    .ov-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px 10px;
+    }
+    .ov-card-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 900;
+    }
+    .ov-card-title iconify-icon {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        color: var(--ov-color, #4361ee);
+        background: color-mix(in srgb, var(--ov-color, #4361ee) 13%, white);
+    }
+    .ov-card-link {
+        color: #7b86a2;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .ov-card-link:hover { color: #4361ee; }
+    .ov-card-body {
+        padding: 8px 18px 18px;
+    }
+    .home-task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .home-task-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 11px 12px;
+        border: 1px solid #eef2f7;
+        border-radius: 11px;
+        background: #fbfcff;
+        transition: all .15s ease;
+    }
+    .home-task-item:hover {
+        border-color: #dbe5f4;
+        background: #fff;
+        box-shadow: 0 10px 24px rgba(15,23,42,.05);
+    }
+    .home-task-check {
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+        border: 1px solid #cdd7e6;
+        background: #fff;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .home-task-check:hover {
+        border-color: #10b981;
+        color: #10b981;
+        background: rgba(16,185,129,.08);
+    }
+    .home-task-main {
+        min-width: 0;
+    }
+    .home-task-title {
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 800;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .home-task-meta {
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+        color: #7b86a2;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .home-task-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #cbd5e1;
+    }
+    .home-task-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 21px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 900;
+    }
+    .home-task-badge.overdue {
+        background: #fef2f2;
+        color: #ef4444;
+    }
+    .home-task-open {
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #7b86a2;
+        background: #f8fafc;
+    }
+    .home-task-open:hover {
+        color: #4361ee;
+        background: #eef2ff;
+    }
+    .home-empty {
+        min-height: 118px;
+        border: 1px dashed #dbe3ee;
+        border-radius: 12px;
+        background: #fbfcff;
+        color: #94a3b8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .home-stat-top {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .home-ring {
+        --pct: 0;
+        width: 106px;
+        height: 106px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: conic-gradient(#10b981 calc(var(--pct) * 1%), #e8edf4 0);
+    }
+    .home-ring-inner {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .home-ring-value {
+        font-size: 22px;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1;
+    }
+    .home-ring-label {
+        margin-top: 4px;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+    .home-stat-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+    }
+    .home-stat-legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .home-stat-legend-row span:first-child {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+    }
+    .home-stat-legend-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+    }
+    .home-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .home-stat-card {
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        padding: 10px;
+        text-align: center;
+    }
+    .home-stat-card strong {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 900;
+    }
+    .home-stat-card span {
+        margin-top: 3px;
+        color: #7b86a2;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+    .home-record-list,
+    .home-quick-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+    .home-record-item,
+    .home-quick-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 12px;
+        border: 1px solid #eef2f7;
+        border-radius: 11px;
+        background: #fbfcff;
+        text-decoration: none;
+        transition: all .15s ease;
+    }
+    .home-record-item:hover,
+    .home-quick-item:hover {
+        border-color: #dbe5f4;
+        background: #fff;
+        transform: translateY(-1px);
+    }
+    .home-record-left,
+    .home-quick-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+    .home-mini-icon {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--item-color, #4361ee);
+        background: color-mix(in srgb, var(--item-color, #4361ee) 12%, white);
+    }
+    .home-record-text,
+    .home-quick-text {
+        min-width: 0;
+    }
+    .home-record-text strong,
+    .home-quick-text strong {
+        display: block;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 900;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .home-record-text span,
+    .home-quick-text span {
+        display: block;
+        margin-top: 2px;
+        color: #7b86a2;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .ov-widget-toolbar {
+        display: none;
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.3);
+        top: -10px;
+        right: 10px;
+        z-index: 35;
+        align-items: center;
+        gap: 4px;
+    }
+    .ov-dm .ov-widget-toolbar { display: flex; }
+    .ov-widget-toolbar button {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #7b86a2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(15,23,42,.08);
+        transition: all .15s ease;
+    }
+    .ov-widget-toolbar button:hover {
+        color: #4361ee;
+        border-color: #4361ee;
+    }
+    .ov-widget-toolbar button.danger:hover {
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+    .ov-widget-drag { cursor: grab; }
+    .ov-row-toolbar,
+    .ov-col-toolbar {
+        display: none;
+        position: absolute;
+        z-index: 34;
+        gap: 4px;
+    }
+    .ov-dm .ov-row-toolbar,
+    .ov-dm .ov-col-toolbar { display: flex; }
+    .ov-row-toolbar {
+        top: -12px;
+        left: 12px;
+    }
+    .ov-col-toolbar {
+        top: -10px;
+        left: 10px;
+    }
+    .ov-row-toolbar button,
+    .ov-col-toolbar button {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #7b86a2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(15,23,42,.08);
+    }
+    .ov-row-toolbar button:hover,
+    .ov-col-toolbar button:hover {
+        color: #4361ee;
+        border-color: #4361ee;
+    }
+    .ov-add-widget-btn,
+    .ov-add-row-btn {
+        display: none;
+    }
+    .ov-dm .ov-add-widget-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 42px;
+        border: 2px dashed #dbe3ee;
+        border-radius: 12px;
+        background: transparent;
+        color: #7b86a2;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .ov-dm .ov-add-widget-btn:hover {
+        border-color: #4361ee;
+        color: #4361ee;
+        background: rgba(67,97,238,.04);
+    }
+    .ov-dm .ov-add-row-btn {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 44px;
+        border: 2px dashed #dbe3ee;
+        border-radius: 13px;
+        background: transparent;
+        color: #7b86a2;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+    .ov-dm .ov-add-row-btn:hover {
+        border-color: #4361ee;
+        color: #4361ee;
+        background: rgba(67,97,238,.04);
+    }
+    .ov-sort-ghost {
+        opacity: .22;
+        border: 2px dashed #4361ee !important;
+        border-radius: 12px;
+        background: rgba(67,97,238,.06) !important;
+    }
+    .ov-custom-frame {
+        display: block;
+        width: 100%;
+        min-height: 220px;
+        border: 1px solid #eef2f7;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+    .ov-custom-video {
+        display: block;
+        width: 100%;
+        border-radius: 12px;
+        background: #0f172a;
+    }
+    .ov-custom-image {
+        display: block;
+        width: 100%;
+        max-height: 460px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+    .ov-custom-html {
+        color: #334155;
+        font-size: 13px;
+        line-height: 1.65;
+        overflow: auto;
+    }
+    .ov-custom-note {
+        padding: 13px 14px;
+        border: 1px solid #ede9fe;
+        border-radius: 12px;
+        background: linear-gradient(135deg,#fbfaff,#fff);
+        color: #475569;
+        font-size: 13px;
+        line-height: 1.65;
+        white-space: pre-wrap;
+    }
+    .ov-custom-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 1px solid #dbeafe;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #2563eb;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+    }
+    .ov-custom-link span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .ov-custom-separator {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #dbe3ee, transparent);
+        margin: 4px 0;
+    }
+    .ov-custom-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 92px;
+        border: 1px dashed #dbe3ee;
+        border-radius: 12px;
+        background: #fbfcff;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        text-align: center;
+    }
+    .dark .home-ov-title h1,
+    .dark .ov-card-title,
+    .dark .home-task-title,
+    .dark .home-ring-value,
+    .dark .home-stat-card strong,
+    .dark .home-record-text strong,
+    .dark .home-quick-text strong { color: #f8fafc; }
+    .dark .home-ov-btn,
+    .dark .ov-card,
+    .dark .home-loading,
+    .dark .ov-widget-toolbar button,
+    .dark .ov-row-toolbar button,
+    .dark .ov-col-toolbar button { background: #0f172a; border-color: #253b5c; }
+    .dark .home-task-item,
+    .dark .home-record-item,
+    .dark .home-quick-item,
+    .dark .home-stat-card,
+    .dark .home-empty,
+    .dark .ov-custom-empty { background: #111c2d; border-color: #253b5c; }
+    .dark .home-ring-inner { background: #0f172a; }
+    .dark .ov-custom-html,
+    .dark .ov-custom-note { color: #cbd5e1; }
+    .dark .ov-custom-note { background: #111c2d; border-color: #253b5c; }
+    @media (max-width: 1024px) {
+        .ov-layout-grid { grid-template-columns: 1fr; }
+        .ov-layout-col { grid-column: 1 / -1 !important; }
+        .home-stat-top { grid-template-columns: 1fr; justify-items: center; }
+        .home-stat-legend { width: 100%; }
+    }
+    @media (max-width: 640px) {
+        .home-overview-shell { padding: 2px 0 24px; }
+        .home-ov-header { align-items: flex-start; flex-direction: column; }
+        .home-ov-actions { width: 100%; justify-content: flex-start; }
+        .home-ov-btn { flex: 1 1 auto; }
+        .home-task-item { grid-template-columns: auto 1fr; }
+        .home-task-open { grid-column: 2; justify-self: start; }
+        .home-stat-grid { grid-template-columns: 1fr; }
     }
 </style>
 
-<div class="home-bg-wrapper"></div>
-
-<div class="min-h-[calc(100vh-200px)] flex items-center justify-center relative z-10">
-    <div class="text-center">
-        <div class="mb-6">
-            <iconify-icon icon="solar:home-2-bold-duotone" class="text-7xl text-white/50"></iconify-icon>
+<div class="home-overview-shell" x-data="homeOverviewHub()" :class="layoutMode ? 'ov-dm' : ''">
+    <div class="home-ov-header">
+        <div class="home-ov-title">
+            <div class="home-ov-icon">
+                <iconify-icon icon="solar:widget-5-bold-duotone" width="24"></iconify-icon>
+            </div>
+            <div>
+                <h1>Overview hub</h1>
+                <p>Vue globale configurable de votre espace.</p>
+            </div>
         </div>
-        <h1 class="text-2xl font-semibold text-white mb-2">Bienvenue !</h1>
-        <p class="text-white/70">Votre espace de travail est prêt.</p>
+        <div class="home-ov-actions">
+            <a class="home-ov-btn" href="/account/<%= account_number %>/tasks">
+                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone"></iconify-icon>
+                Tâches
+            </a>
+            <button type="button" class="home-ov-btn" :class="layoutMode ? 'active' : ''" @click="toggleLayoutMode()">
+                <iconify-icon icon="solar:settings-minimalistic-bold-duotone"></iconify-icon>
+                <span x-text="layoutMode ? 'Terminer' : 'Config'"></span>
+            </button>
+        </div>
     </div>
+
+    <div class="ov-dm-banner">
+        <span>Mode configuration actif : réorganisez les lignes, déplacez les widgets et ajoutez de nouveaux blocs.</span>
+        <button type="button" @click="toggleLayoutMode(false)">Terminé</button>
+    </div>
+
+    <div x-show="loadingData" class="home-loading">
+        <iconify-icon icon="solar:refresh-circle-bold-duotone"></iconify-icon>
+        Chargement de l'overview...
+    </div>
+
+    <div x-show="dataError" class="home-loading" style="border-color:#fecaca;color:#ef4444;background:#fff7f7;">
+        <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+        <span x-text="dataError"></span>
+    </div>
+
+    <div x-ref="ovRowContainer" class="ov-layout-stack" x-show="!loadingData">
+        <template x-for="row in rows" :key="row.id">
+            <div class="ov-layout-row" :data-row-id="row.id">
+                <div class="ov-row-toolbar">
+                    <button type="button" class="ov-row-drag" title="Déplacer la ligne">
+                        <iconify-icon icon="solar:hamburger-menu-bold"></iconify-icon>
+                    </button>
+                    <button type="button" title="Supprimer la ligne" @click="removeRow(row.id)">
+                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone"></iconify-icon>
+                    </button>
+                </div>
+                <div class="ov-layout-grid">
+                    <template x-for="(col, colIndex) in row.columns" :key="col.id">
+                        <div class="ov-layout-col" :data-col-id="col.id" :style="'grid-column: span ' + (col.width || 12) + ' / span ' + (col.width || 12)">
+                            <div class="ov-col-toolbar">
+                                <button type="button" title="Réduire" @click="resizeColumn(row.id, col.id, -1)">
+                                    <iconify-icon icon="solar:minus-bold"></iconify-icon>
+                                </button>
+                                <button type="button" title="Agrandir" @click="resizeColumn(row.id, col.id, 1)">
+                                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                                </button>
+                                <button type="button" title="Diviser" @click="splitColumn(row.id, col.id)">
+                                    <iconify-icon icon="solar:widget-add-bold-duotone"></iconify-icon>
+                                </button>
+                                <button type="button" title="Supprimer la colonne" @click="removeColumn(row.id, col.id)">
+                                    <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone"></iconify-icon>
+                                </button>
+                            </div>
+                            <div class="ov-col-widgets" :data-col-id="col.id">
+                                <template x-for="wid in col.widgetIds" :key="wid">
+                                    <div class="ov-widget-wrap" :data-widget-id="wid">
+                                        <div class="ov-widget-toolbar">
+                                            <button type="button" class="ov-widget-drag" title="Déplacer">
+                                                <iconify-icon icon="solar:hamburger-menu-bold"></iconify-icon>
+                                            </button>
+                                            <button type="button" x-show="isCustomWidget(wid)" title="Modifier" @click="editCustomWidget(wid)">
+                                                <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                            </button>
+                                            <button type="button" class="danger" title="Masquer" @click="removeWidget(wid)">
+                                                <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+                                            </button>
+                                        </div>
+
+                                        <template x-if="wid === 'today-tasks'">
+                                            <div class="ov-card" style="--ov-color:#10b981">
+                                                <div class="ov-card-header">
+                                                    <div class="ov-card-title">
+                                                        <iconify-icon icon="solar:checklist-minimalistic-bold-duotone"></iconify-icon>
+                                                        <span>Tâches du jour</span>
+                                                    </div>
+                                                    <a class="ov-card-link" href="/account/<%= account_number %>/tasks">Voir tout →</a>
+                                                </div>
+                                                <div class="ov-card-body">
+                                                    <template x-if="todayTasks.length === 0">
+                                                        <div class="home-empty">
+                                                            <iconify-icon icon="solar:check-circle-bold-duotone" width="30"></iconify-icon>
+                                                            Aucune tâche à faire aujourd'hui.
+                                                        </div>
+                                                    </template>
+                                                    <div class="home-task-list" x-show="todayTasks.length > 0">
+                                                        <template x-for="task in todayTasks.slice(0, 9)" :key="task.id">
+                                                            <div class="home-task-item">
+                                                                <button type="button" class="home-task-check" @click="completeTask(task)" :disabled="completingTaskId === task.id">
+                                                                    <iconify-icon :icon="completingTaskId === task.id ? 'solar:refresh-circle-bold-duotone' : 'solar:check-read-bold-duotone'"></iconify-icon>
+                                                                </button>
+                                                                <div class="home-task-main">
+                                                                    <div class="home-task-title" x-text="task.title"></div>
+                                                                    <div class="home-task-meta">
+                                                                        <span x-text="task.recordTitle"></span>
+                                                                        <span class="home-task-dot"></span>
+                                                                        <span x-text="task.entityName"></span>
+                                                                        <span class="home-task-badge" :class="isOverdue(task.dueDate) ? 'overdue' : ''" x-show="task.dueDate || task.startDate">
+                                                                            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon>
+                                                                            <span x-text="formatTaskDate(task.dueDate || task.startDate)"></span>
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <a class="home-task-open" :href="task.link" title="Ouvrir">
+                                                                    <iconify-icon icon="solar:arrow-right-up-bold-duotone"></iconify-icon>
+                                                                </a>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="wid === 'stats'">
+                                            <div class="ov-card" style="--ov-color:#4361ee">
+                                                <div class="ov-card-header">
+                                                    <div class="ov-card-title">
+                                                        <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
+                                                        <span>Résumé global</span>
+                                                    </div>
+                                                </div>
+                                                <div class="ov-card-body">
+                                                    <div class="home-stat-top">
+                                                        <div class="home-ring" :style="'--pct:' + completionRate">
+                                                            <div class="home-ring-inner">
+                                                                <div class="home-ring-value" x-text="completionRate + '%'"></div>
+                                                                <div class="home-ring-label">Avancement</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="home-stat-legend">
+                                                            <div class="home-stat-legend-row">
+                                                                <span><i class="home-stat-legend-dot"></i> Terminées</span>
+                                                                <strong x-text="stats.doneTasks || 0"></strong>
+                                                            </div>
+                                                            <div class="home-stat-legend-row">
+                                                                <span><i class="home-stat-legend-dot" style="background:#cbd5e1"></i> Restantes</span>
+                                                                <strong x-text="stats.openTasks || 0"></strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="home-stat-grid">
+                                                        <template x-for="card in statCards()" :key="card.label">
+                                                            <div class="home-stat-card">
+                                                                <strong x-text="card.value"></strong>
+                                                                <span x-text="card.label"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="wid === 'recent-records'">
+                                            <div class="ov-card" style="--ov-color:#f59e0b">
+                                                <div class="ov-card-header">
+                                                    <div class="ov-card-title">
+                                                        <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
+                                                        <span>Activité récente</span>
+                                                    </div>
+                                                </div>
+                                                <div class="ov-card-body">
+                                                    <template x-if="recentRecords.length === 0">
+                                                        <div class="home-empty">
+                                                            <iconify-icon icon="solar:folder-open-bold-duotone" width="30"></iconify-icon>
+                                                            Aucun record récent.
+                                                        </div>
+                                                    </template>
+                                                    <div class="home-record-list" x-show="recentRecords.length > 0">
+                                                        <template x-for="record in recentRecords" :key="record.id">
+                                                            <a class="home-record-item" :href="record.link">
+                                                                <div class="home-record-left">
+                                                                    <div class="home-mini-icon" :style="'--item-color:' + (record.color || '#4361ee')">
+                                                                        <iconify-icon :icon="record.icon || 'solar:folder-bold-duotone'"></iconify-icon>
+                                                                    </div>
+                                                                    <div class="home-record-text">
+                                                                        <strong x-text="record.title"></strong>
+                                                                        <span x-text="record.entityName + ' · ' + formatDate(record.updatedAt)"></span>
+                                                                    </div>
+                                                                </div>
+                                                                <iconify-icon icon="solar:alt-arrow-right-bold-duotone" style="color:#94a3b8"></iconify-icon>
+                                                            </a>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="wid === 'quick-links'">
+                                            <div class="ov-card" style="--ov-color:#8b5cf6">
+                                                <div class="ov-card-header">
+                                                    <div class="ov-card-title">
+                                                        <iconify-icon icon="solar:bolt-circle-bold-duotone"></iconify-icon>
+                                                        <span>Raccourcis</span>
+                                                    </div>
+                                                </div>
+                                                <div class="ov-card-body">
+                                                    <div class="home-quick-list">
+                                                        <template x-for="link in quickLinks()" :key="link.href">
+                                                            <a class="home-quick-item" :href="link.href">
+                                                                <div class="home-quick-left">
+                                                                    <div class="home-mini-icon" :style="'--item-color:' + link.color">
+                                                                        <iconify-icon :icon="link.icon"></iconify-icon>
+                                                                    </div>
+                                                                    <div class="home-quick-text">
+                                                                        <strong x-text="link.label"></strong>
+                                                                        <span x-text="link.desc"></span>
+                                                                    </div>
+                                                                </div>
+                                                                <iconify-icon icon="solar:alt-arrow-right-bold-duotone" style="color:#94a3b8"></iconify-icon>
+                                                            </a>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="isCustomWidget(wid)">
+                                            <div class="ov-card ov-card-custom" :style="'--ov-color:' + (getCustomWidget(wid).color || '#4361ee')">
+                                                <template x-if="getCustomWidget(wid).type !== 'separator'">
+                                                    <div class="ov-card-header">
+                                                        <div class="ov-card-title">
+                                                            <iconify-icon :icon="getCustomWidget(wid).icon || customWidgetIcon(getCustomWidget(wid).type)"></iconify-icon>
+                                                            <span x-text="getCustomWidget(wid).label || customWidgetLabel(getCustomWidget(wid).type)"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <div class="ov-card-body">
+                                                    <template x-if="getCustomWidget(wid).type === 'note'">
+                                                        <div class="ov-custom-note" x-text="customWidgetConfig(wid).content || 'Note vide'"></div>
+                                                    </template>
+                                                    <template x-if="getCustomWidget(wid).type === 'html'">
+                                                        <div class="ov-custom-html" x-html="customWidgetConfig(wid).content || ''"></div>
+                                                    </template>
+                                                    <template x-if="getCustomWidget(wid).type === 'iframe'">
+                                                        <iframe class="ov-custom-frame" :src="customWidgetConfig(wid).url || 'about:blank'" :style="'height:' + (customWidgetConfig(wid).height || 300) + 'px'"></iframe>
+                                                    </template>
+                                                    <template x-if="getCustomWidget(wid).type === 'video'">
+                                                        <div>
+                                                            <template x-if="isEmbeddableVideo(customWidgetConfig(wid).url)">
+                                                                <iframe class="ov-custom-frame" :src="videoEmbedUrl(customWidgetConfig(wid).url)" :style="'height:' + (customWidgetConfig(wid).height || 320) + 'px'" allowfullscreen></iframe>
+                                                            </template>
+                                                            <template x-if="!isEmbeddableVideo(customWidgetConfig(wid).url)">
+                                                                <video class="ov-custom-video" :src="customWidgetConfig(wid).url" :style="'height:' + (customWidgetConfig(wid).height || 320) + 'px'" controls></video>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="getCustomWidget(wid).type === 'image'">
+                                                        <img class="ov-custom-image" :src="customWidgetConfig(wid).url" :alt="customWidgetConfig(wid).alt || getCustomWidget(wid).label || 'Image'">
+                                                    </template>
+                                                    <template x-if="getCustomWidget(wid).type === 'link'">
+                                                        <a class="ov-custom-link" :href="customWidgetConfig(wid).url || '#'" :target="customWidgetConfig(wid).newTab === false ? '_self' : '_blank'">
+                                                            <span x-text="customWidgetConfig(wid).description || customWidgetConfig(wid).url || 'Lien'"></span>
+                                                            <iconify-icon icon="solar:arrow-right-up-bold-duotone"></iconify-icon>
+                                                        </a>
+                                                    </template>
+                                                    <template x-if="getCustomWidget(wid).type === 'separator'">
+                                                        <div class="ov-custom-separator"></div>
+                                                    </template>
+                                                    <template x-if="!['note','html','iframe','video','image','link','separator'].includes(getCustomWidget(wid).type)">
+                                                        <div class="ov-custom-empty">Widget personnalisé à configurer.</div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <button type="button" class="ov-add-widget-btn" @click="openWidgetPicker(col.id)">
+                                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                                    Ajouter un widget
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <button type="button" class="ov-add-row-btn" @click="addRow()">
+        <iconify-icon icon="solar:add-square-bold-duotone"></iconify-icon>
+        Ajouter une ligne
+    </button>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('homeOverviewHub', () => ({
+        layoutMode: false,
+        loadingData: true,
+        dataError: '',
+        stats: { totalTasks: 0, doneTasks: 0, openTasks: 0, todayTasks: 0, overdueCount: 0, listsCount: 0, recordsCount: 0 },
+        todayTasks: [],
+        recentRecords: [],
+        rows: [],
+        customWidgets: {},
+        completingTaskId: '',
+        _defaultRows: [
+            { id: 'home_r1', columns: [
+                { id: 'home_c1', width: 8, widgetIds: ['today-tasks'] },
+                { id: 'home_c2', width: 4, widgetIds: ['stats', 'quick-links'] }
+            ] },
+            { id: 'home_r2', columns: [
+                { id: 'home_c3', width: 12, widgetIds: ['recent-records'] }
+            ] }
+        ],
+        _accountNumber: '<%= account_number %>',
+        _viewId: 'home_overview_hub',
+        _layoutVersion: 1,
+        _sortables: [],
+        _observer: null,
+        _sortableTimer: null,
+        _sortableIniting: false,
+        _isDragging: false,
+        _insertWidgetListener: null,
+        _updateWidgetListener: null,
+
+        init() {
+            this.rows = JSON.parse(JSON.stringify(this._defaultRows));
+            this.loadLayout();
+            this.loadData();
+            this.layoutMode = !!this.$store.app.layoutMode;
+            this.$watch('$store.app.layoutMode', (value) => {
+                this.layoutMode = !!value;
+                if (this.layoutMode) this.$nextTick(() => this._startObserver());
+                else {
+                    this._stopObserver();
+                    this._destroySortables();
+                }
+            });
+            if (this.layoutMode) this.$nextTick(() => this._startObserver());
+            this._insertWidgetListener = (event) => this.insertWidgetFromPicker(event.detail || {});
+            this._updateWidgetListener = (event) => this.updateCustomWidget(event.detail || {});
+            window.addEventListener('insert-home-overview-widget', this._insertWidgetListener);
+            window.addEventListener('update-home-overview-widget', this._updateWidgetListener);
+        },
+
+        async loadData() {
+            this.loadingData = true;
+            this.dataError = '';
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/home-overview`, { credentials: 'include' });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Chargement impossible');
+                this.stats = { ...this.stats, ...(data.stats || {}) };
+                this.todayTasks = Array.isArray(data.todayTasks) ? data.todayTasks : [];
+                this.recentRecords = Array.isArray(data.recentRecords) ? data.recentRecords : [];
+            } catch (error) {
+                console.error('[HomeOverview] load error:', error);
+                this.dataError = error.message || 'Erreur de chargement';
+            } finally {
+                this.loadingData = false;
+            }
+        },
+
+        async loadLayout() {
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/user/view-preferences/${this._viewId}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.success && data.preferences && data.preferences.rows) {
+                    const migrated = this._migrateLayoutPreferences(data.preferences);
+                    this.rows = migrated.rows;
+                    this.customWidgets = migrated.customWidgets;
+                    if (migrated.changed) this.saveLayout();
+                }
+            } catch (_) {
+                this.rows = JSON.parse(JSON.stringify(this._defaultRows));
+            }
+        },
+
+        _migrateLayoutPreferences(preferences = {}) {
+            const rows = this._normalizeRows(Array.isArray(preferences.rows) ? preferences.rows : this._defaultRows);
+            const customWidgets = this._normalizeCustomWidgets(preferences.customWidgets);
+            const changed = Number(preferences.overviewLayoutVersion || 0) !== this._layoutVersion;
+            return { rows, customWidgets, changed };
+        },
+
+        _normalizeRows(rows) {
+            return JSON.parse(JSON.stringify(rows || [])).map((row, rowIndex) => ({
+                id: row.id || `home_r_${rowIndex}_${Date.now()}`,
+                columns: (Array.isArray(row.columns) && row.columns.length ? row.columns : [{ width: 12, widgetIds: [] }]).map((col, colIndex) => ({
+                    id: col.id || `home_c_${rowIndex}_${colIndex}_${Date.now()}`,
+                    width: Math.min(12, Math.max(2, Number(col.width || 12))),
+                    widgetIds: Array.isArray(col.widgetIds) ? col.widgetIds.filter(Boolean) : []
+                }))
+            })).filter(row => row.columns.length);
+        },
+
+        _normalizeCustomWidgets(value) {
+            if (!value) return {};
+            if (Array.isArray(value)) {
+                return value.reduce((acc, widget) => {
+                    if (widget && widget.id) acc[String(widget.id)] = widget;
+                    return acc;
+                }, {});
+            }
+            return typeof value === 'object' ? value : {};
+        },
+
+        async saveLayout() {
+            try {
+                await fetch(`/account/${this._accountNumber}/api/user/view-preferences`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        viewId: this._viewId,
+                        preferences: {
+                            rows: this.rows,
+                            customWidgets: this.customWidgets,
+                            overviewLayoutVersion: this._layoutVersion
+                        }
+                    })
+                });
+            } catch (error) {
+                console.error('[HomeOverview] layout save error:', error);
+            }
+        },
+
+        toggleLayoutMode(force = null) {
+            const next = force === null ? !this.layoutMode : !!force;
+            this.layoutMode = next;
+            if (this.$store?.app) this.$store.app.layoutMode = next;
+            if (next) this.$nextTick(() => this._startObserver());
+            else {
+                this._stopObserver();
+                this._destroySortables();
+            }
+        },
+
+        _startObserver() {
+            this._stopObserver();
+            this._scheduleSortableInit();
+            const container = this.$refs.ovRowContainer;
+            if (!container) return;
+            this._observer = new MutationObserver(() => {
+                if (!this._sortableIniting && !this._isDragging) this._scheduleSortableInit();
+            });
+            this._observer.observe(container, { childList: true, subtree: true });
+        },
+
+        _stopObserver() {
+            if (this._observer) {
+                this._observer.disconnect();
+                this._observer = null;
+            }
+            if (this._sortableTimer) {
+                clearTimeout(this._sortableTimer);
+                this._sortableTimer = null;
+            }
+        },
+
+        _scheduleSortableInit() {
+            if (this._sortableTimer) clearTimeout(this._sortableTimer);
+            this._sortableTimer = setTimeout(() => this._initSortables(), 80);
+        },
+
+        _initSortables() {
+            this._sortableIniting = true;
+            this._destroySortables();
+            if (typeof Sortable === 'undefined') {
+                this._sortableIniting = false;
+                return;
+            }
+            const self = this;
+            const rowContainer = this.$refs.ovRowContainer;
+            if (rowContainer) {
+                this._sortables.push(new Sortable(rowContainer, {
+                    animation: 150,
+                    handle: '.ov-row-drag',
+                    ghostClass: 'ov-sort-ghost',
+                    draggable: '.ov-layout-row',
+                    onStart() { self._isDragging = true; },
+                    onEnd(evt) {
+                        self._isDragging = false;
+                        const rowId = evt.item.dataset.rowId;
+                        if (!rowId || evt.oldIndex === evt.newIndex) return;
+                        if (evt.item.parentNode) evt.item.parentNode.removeChild(evt.item);
+                        const rows = evt.from.querySelectorAll(':scope > .ov-layout-row');
+                        if (evt.oldIndex >= rows.length) evt.from.appendChild(evt.item);
+                        else evt.from.insertBefore(evt.item, rows[evt.oldIndex] || null);
+                        const idx = self.rows.findIndex(row => row.id === rowId);
+                        if (idx === -1) return;
+                        const [moved] = self.rows.splice(idx, 1);
+                        self.rows.splice(evt.newIndex, 0, moved);
+                        self.saveLayout();
+                    }
+                }));
+            }
+            this.$el.querySelectorAll('.ov-col-widgets').forEach(colEl => {
+                this._sortables.push(new Sortable(colEl, {
+                    animation: 150,
+                    handle: '.ov-widget-drag',
+                    ghostClass: 'ov-sort-ghost',
+                    draggable: '.ov-widget-wrap',
+                    group: 'home-overview-widgets',
+                    filter: '.ov-add-widget-btn',
+                    onStart() { self._isDragging = true; },
+                    onEnd(evt) {
+                        self._isDragging = false;
+                        const widgetId = evt.item.dataset.widgetId;
+                        const fromColId = evt.from.dataset.colId;
+                        const toColId = evt.to.dataset.colId;
+                        if (!widgetId || !fromColId || !toColId) return;
+                        const toWidgets = Array.from(evt.to.querySelectorAll(':scope > .ov-widget-wrap'));
+                        let newIdx = toWidgets.indexOf(evt.item);
+                        if (newIdx === -1) newIdx = toWidgets.length;
+                        if (evt.item.parentNode) evt.item.parentNode.removeChild(evt.item);
+                        const fromWidgets = Array.from(evt.from.querySelectorAll(':scope > .ov-widget-wrap'));
+                        if (evt.oldIndex >= fromWidgets.length) evt.from.appendChild(evt.item);
+                        else evt.from.insertBefore(evt.item, fromWidgets[evt.oldIndex] || null);
+
+                        let fromCol = null;
+                        let toCol = null;
+                        self.rows.forEach(row => row.columns.forEach(col => {
+                            if (col.id === fromColId) fromCol = col;
+                            if (col.id === toColId) toCol = col;
+                        }));
+                        if (!fromCol || !toCol) return;
+                        const oldIndex = fromCol.widgetIds.indexOf(widgetId);
+                        if (oldIndex === -1) return;
+                        fromCol.widgetIds.splice(oldIndex, 1);
+                        toCol.widgetIds.splice(newIdx, 0, widgetId);
+                        self.saveLayout();
+                    }
+                }));
+            });
+            this._sortableIniting = false;
+        },
+
+        _destroySortables() {
+            this._sortables.forEach(sortable => {
+                try { sortable.destroy(); } catch (_) {}
+            });
+            this._sortables = [];
+        },
+
+        addRow() {
+            this.rows.push({
+                id: `home_r_${Date.now()}`,
+                columns: [{ id: `home_c_${Date.now()}`, width: 12, widgetIds: [] }]
+            });
+            this.saveLayout();
+            this.$nextTick(() => this._scheduleSortableInit());
+        },
+
+        removeRow(rowId) {
+            if (this.rows.length <= 1) return;
+            this.rows = this.rows.filter(row => row.id !== rowId);
+            this.saveLayout();
+        },
+
+        splitColumn(rowId, colId) {
+            const row = this.rows.find(item => item.id === rowId);
+            if (!row) return;
+            const index = row.columns.findIndex(col => col.id === colId);
+            if (index === -1) return;
+            const col = row.columns[index];
+            if ((col.width || 12) < 4) return;
+            const half = Math.floor((col.width || 12) / 2);
+            col.width = (col.width || 12) - half;
+            row.columns.splice(index + 1, 0, { id: `home_c_${Date.now()}`, width: half, widgetIds: [] });
+            this.saveLayout();
+        },
+
+        removeColumn(rowId, colId) {
+            const row = this.rows.find(item => item.id === rowId);
+            if (!row || row.columns.length <= 1) return;
+            const index = row.columns.findIndex(col => col.id === colId);
+            if (index === -1) return;
+            const [removed] = row.columns.splice(index, 1);
+            const neighbor = row.columns[Math.min(index, row.columns.length - 1)];
+            if (neighbor) {
+                neighbor.width = Math.min(12, Number(neighbor.width || 12) + Number(removed.width || 0));
+                neighbor.widgetIds = [...(neighbor.widgetIds || []), ...(removed.widgetIds || [])];
+            }
+            this.saveLayout();
+        },
+
+        resizeColumn(rowId, colId, delta) {
+            const row = this.rows.find(item => item.id === rowId);
+            if (!row) return;
+            const col = row.columns.find(item => item.id === colId);
+            if (!col) return;
+            col.width = Math.min(12, Math.max(2, Number(col.width || 12) + delta));
+            this.saveLayout();
+        },
+
+        _placedWidgets() {
+            const ids = [];
+            this.rows.forEach(row => row.columns.forEach(col => ids.push(...(col.widgetIds || []))));
+            return ids;
+        },
+
+        openWidgetPicker(colId) {
+            const picker = window.Alpine?.store ? window.Alpine.store('widgetPicker') : null;
+            if (!picker) {
+                window.showMessage ? window.showMessage('Sélecteur de widgets indisponible', 'danger') : alert('Sélecteur de widgets indisponible');
+                return;
+            }
+            picker.initPicker({ accountNumber: this._accountNumber });
+            picker.initOpen({ type: 'home-overview', colId, accountNumber: this._accountNumber });
+        },
+
+        insertWidgetFromPicker(detail) {
+            const target = detail?.target || {};
+            const widget = detail?.widget || null;
+            if (target.type && target.type !== 'home-overview') return;
+            if (!target.colId || !widget) return;
+            const widgetIds = this._homeWidgetIdsFromPickerWidget(widget);
+            widgetIds.forEach(widgetId => {
+                this.addWidget(target.colId, widgetId, { save: false, allowDuplicate: widgetId.startsWith('cw_') });
+            });
+            this.saveLayout();
+            this.$nextTick(() => this._scheduleSortableInit());
+        },
+
+        _homeWidgetIdsFromPickerWidget(widget) {
+            const map = {
+                'home-today-tasks': 'today-tasks',
+                'home-stats': 'stats',
+                'home-recent-records': 'recent-records',
+                'home-quick-links': 'quick-links'
+            };
+            const type = String(widget.type || '');
+            if (map[type]) return [map[type]];
+            const id = `cw_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            this.customWidgets = {
+                ...this.customWidgets,
+                [id]: {
+                    id,
+                    type,
+                    label: widget.label || this.customWidgetLabel(type),
+                    icon: widget.icon || this.customWidgetIcon(type),
+                    color: widget.color || '#4361ee',
+                    config: JSON.parse(JSON.stringify(widget.config || {}))
+                }
+            };
+            return [id];
+        },
+
+        addWidget(colId, widgetId, options = {}) {
+            if (!options.allowDuplicate && this._placedWidgets().includes(widgetId)) {
+                window.showMessage && window.showMessage('Ce widget est déjà placé', 'info');
+                return;
+            }
+            this.rows.forEach(row => row.columns.forEach(col => {
+                if (col.id === colId) col.widgetIds.push(widgetId);
+            }));
+            if (options.save !== false) this.saveLayout();
+        },
+
+        removeWidget(widgetId) {
+            this.rows.forEach(row => row.columns.forEach(col => {
+                col.widgetIds = (col.widgetIds || []).filter(id => id !== widgetId);
+            }));
+            if (String(widgetId || '').startsWith('cw_')) {
+                const next = { ...this.customWidgets };
+                delete next[widgetId];
+                this.customWidgets = next;
+            }
+            this.saveLayout();
+        },
+
+        isCustomWidget(widgetId) {
+            return !!(this.customWidgets && this.customWidgets[widgetId]);
+        },
+
+        getCustomWidget(widgetId) {
+            return (this.customWidgets && this.customWidgets[widgetId]) || { type: '', label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
+        },
+
+        customWidgetConfig(widgetId) {
+            return this.getCustomWidget(widgetId).config || {};
+        },
+
+        editCustomWidget(widgetId) {
+            if (!this.isCustomWidget(widgetId)) return;
+            const picker = window.Alpine?.store ? window.Alpine.store('widgetPicker') : null;
+            if (!picker) return;
+            const widget = this.getCustomWidget(widgetId);
+            picker.initPicker({ accountNumber: this._accountNumber });
+            picker.openEditWidget(
+                { type: 'home-overview', accountNumber: this._accountNumber },
+                {
+                    _id: widget.id || widgetId,
+                    type: widget.type,
+                    label: widget.label,
+                    icon: widget.icon,
+                    color: widget.color,
+                    config: JSON.parse(JSON.stringify(widget.config || {}))
+                }
+            );
+        },
+
+        updateCustomWidget(detail) {
+            const target = detail?.target || {};
+            const widget = detail?.widget || null;
+            if (target.type && target.type !== 'home-overview') return;
+            const id = String(widget?._id || widget?.id || '');
+            if (!id || !this.customWidgets[id]) return;
+            const payload = JSON.parse(JSON.stringify(widget));
+            delete payload._catalogType;
+            delete payload._id;
+            this.customWidgets = {
+                ...this.customWidgets,
+                [id]: {
+                    ...this.customWidgets[id],
+                    ...payload,
+                    id,
+                    config: JSON.parse(JSON.stringify(payload.config || {}))
+                }
+            };
+            this.saveLayout();
+        },
+
+        async completeTask(task) {
+            if (!task?.id || this.completingTaskId) return;
+            this.completingTaskId = task.id;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${task.id}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: 'Terminé' })
+                });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+                this.todayTasks = this.todayTasks.filter(item => item.id !== task.id);
+                this.stats.doneTasks = Number(this.stats.doneTasks || 0) + 1;
+                this.stats.openTasks = Math.max(0, Number(this.stats.openTasks || 0) - 1);
+                this.stats.todayTasks = Math.max(0, Number(this.stats.todayTasks || 0) - 1);
+            } catch (error) {
+                window.showMessage ? window.showMessage(error.message || 'Mise à jour impossible', 'danger') : alert(error.message || 'Mise à jour impossible');
+            } finally {
+                this.completingTaskId = '';
+            }
+        },
+
+        get completionRate() {
+            const total = Number(this.stats.totalTasks || 0);
+            if (!total) return 0;
+            return Math.round((Number(this.stats.doneTasks || 0) / total) * 100);
+        },
+
+        statCards() {
+            return [
+                { label: "Aujourd'hui", value: this.stats.todayTasks || 0 },
+                { label: 'Ouvertes', value: this.stats.openTasks || 0 },
+                { label: 'En retard', value: this.stats.overdueCount || 0 },
+                { label: 'Records', value: this.stats.recordsCount || 0 }
+            ];
+        },
+
+        quickLinks() {
+            const base = `/account/${this._accountNumber}`;
+            return [
+                { label: 'Tâches', desc: 'Toutes les listes', href: `${base}/tasks`, icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981' },
+                { label: 'Agenda', desc: 'Événements globaux', href: `${base}/agenda`, icon: 'solar:calendar-bold-duotone', color: '#14b8a6' },
+                { label: 'Drive', desc: 'Fichiers du compte', href: `${base}/drive`, icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899' },
+                { label: 'Notes', desc: 'Notes centralisées', href: `${base}/notes`, icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' }
+            ];
+        },
+
+        formatDate(value) {
+            if (!value) return '';
+            try {
+                return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+            } catch (_) {
+                return '';
+            }
+        },
+
+        formatTaskDate(value) {
+            if (!value) return '';
+            try {
+                const date = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const day = new Date(date);
+                day.setHours(0, 0, 0, 0);
+                if (day.getTime() === today.getTime()) return "Aujourd'hui";
+                return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+            } catch (_) {
+                return '';
+            }
+        },
+
+        isOverdue(value) {
+            if (!value) return false;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return false;
+            date.setHours(0, 0, 0, 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return date < today;
+        },
+
+        customWidgetIcon(type) {
+            const icons = {
+                note: 'solar:notes-bold-duotone',
+                tasks: 'solar:checklist-bold-duotone',
+                html: 'solar:code-bold-duotone',
+                iframe: 'solar:monitor-bold-duotone',
+                video: 'solar:video-library-bold-duotone',
+                link: 'solar:link-round-bold-duotone',
+                image: 'solar:gallery-bold-duotone',
+                separator: 'solar:minus-circle-bold-duotone',
+                timeline: 'solar:clock-circle-bold-duotone',
+                kpi: 'solar:graph-up-bold-duotone',
+                chart: 'solar:chart-bold-duotone',
+                fields: 'solar:layers-bold-duotone',
+                cards: 'solar:card-bold-duotone'
+            };
+            return icons[type] || 'solar:widget-bold-duotone';
+        },
+
+        customWidgetLabel(type) {
+            const labels = {
+                note: 'Note',
+                tasks: 'Checklist',
+                html: 'HTML',
+                iframe: 'Embed',
+                video: 'Vidéo',
+                link: 'Lien',
+                image: 'Image',
+                separator: 'Séparateur',
+                timeline: 'Timeline',
+                kpi: 'KPI',
+                chart: 'Graphique',
+                fields: 'Champs',
+                cards: 'Cartes'
+            };
+            return labels[type] || 'Widget';
+        },
+
+        isEmbeddableVideo(url) {
+            const value = String(url || '').toLowerCase();
+            return value.includes('youtube.com') || value.includes('youtu.be') || value.includes('vimeo.com');
+        },
+
+        videoEmbedUrl(url) {
+            const value = String(url || '').trim();
+            try {
+                const parsed = new URL(value);
+                if (parsed.hostname.includes('youtu.be')) {
+                    const id = parsed.pathname.split('/').filter(Boolean)[0];
+                    return id ? `https://www.youtube.com/embed/${id}` : value;
+                }
+                if (parsed.hostname.includes('youtube.com')) {
+                    const id = parsed.searchParams.get('v') || parsed.pathname.split('/').filter(Boolean).pop();
+                    return id ? `https://www.youtube.com/embed/${id}` : value;
+                }
+                if (parsed.hostname.includes('vimeo.com')) {
+                    const id = parsed.pathname.split('/').filter(Boolean).pop();
+                    return id ? `https://player.vimeo.com/video/${id}` : value;
+                }
+            } catch (_) {}
+            return value;
+        }
+    }));
+});
+</script>

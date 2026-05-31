@@ -29,7 +29,7 @@
                         <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3;"
                             x-text="$store.widgetPicker.step === 'form' ? 'Configurer ' + $store.widgetPicker.newWidget.label : 'Ajouter un widget'"></h3>
                         <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;"
-                           x-text="$store.widgetPicker.step === 'form' ? ($store.widgetPicker.catalog.find(c => c.type === ($store.widgetPicker.newWidget._catalogType || $store.widgetPicker.newWidget.type))?.desc || 'Personnalisez les paramètres') : 'Choisissez un composant à insérer'"></p>
+                           x-text="$store.widgetPicker.step === 'form' ? ($store.widgetPicker.catalogItem($store.widgetPicker.newWidget._catalogType || $store.widgetPicker.newWidget.type)?.desc || 'Personnalisez les paramètres') : 'Choisissez un composant à insérer'"></p>
                     </div>
                 </div>
                 <button type="button" @click="$store.widgetPicker.close()"
@@ -42,7 +42,7 @@
             <!-- Modal Content (Catalog) -->
             <div x-show="$store.widgetPicker.step === 'catalog'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                    <template x-for="w in $store.widgetPicker.catalog" :key="w.type">
+                    <template x-for="w in $store.widgetPicker.visibleCatalog()" :key="w.type">
                         <button type="button"
                                 @click="$store.widgetPicker.selectType(w.type)"
                                 style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 14px; border: 1px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s;"
@@ -296,7 +296,7 @@
                                 <span style="font-size: 12px; font-weight: 700; color: #15803d;" x-text="$store.widgetPicker.newWidget.label"></span>
                             </div>
                             <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;"
-                               x-text="$store.widgetPicker.catalog.find(c => c.type === $store.widgetPicker.newWidget.type)?.desc || 'Ce widget sera ajouté à votre onglet.'"></p>
+                               x-text="$store.widgetPicker.catalogItem($store.widgetPicker.newWidget.type)?.desc || 'Ce widget sera ajouté à votre onglet.'"></p>
                         </div>
                     </template>
 
@@ -355,8 +355,18 @@
             _pendingSchemaDeleteTimer: null,
             deletedSchemaIds: [],
             catalog: [
+                { type: 'overview-fields', label: 'Informations', icon: 'solar:card-bold-duotone', color: '#4361ee', desc: 'Champs principaux de la fiche', targets: ['overview'], instant: true },
+                { type: 'overview-tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', desc: 'Tâches liées au record', targets: ['overview'], instant: true },
+                { type: 'overview-docs', label: 'Docs', icon: 'solar:document-text-bold-duotone', color: '#f59e0b', desc: 'Documents modèles liés', targets: ['overview'], instant: true },
+                { type: 'overview-drive', label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', desc: 'Fichiers récents', targets: ['overview'], instant: true },
+                { type: 'overview-agenda', label: 'Agenda', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', desc: 'Prochain événement', targets: ['overview'], instant: true },
+                { type: 'overview-notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', desc: 'Notes liées au record', targets: ['overview'], instant: true },
+                { type: 'home-today-tasks', label: 'Tâches du jour', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', desc: 'Toutes les tâches à faire aujourd’hui', targets: ['home-overview'], instant: true },
+                { type: 'home-stats', label: 'Résumé', icon: 'solar:chart-square-bold-duotone', color: '#6366f1', desc: 'Synthèse globale du compte', targets: ['home-overview'], instant: true },
+                { type: 'home-recent-records', label: 'Activité récente', icon: 'solar:history-bold-duotone', color: '#f59e0b', desc: 'Records récemment modifiés', targets: ['home-overview'], instant: true },
+                { type: 'home-quick-links', label: 'Raccourcis', icon: 'solar:bolt-circle-bold-duotone', color: '#8b5cf6', desc: 'Accès rapides aux hubs', targets: ['home-overview'], instant: true },
                 { type: 'note',    label: 'Note',       icon: 'solar:notes-bold-duotone',         color: '#f59e0b', desc: 'Bloc de texte simple' },
-                { type: 'tasks',   label: 'Checklist',  icon: 'solar:checklist-bold-duotone',      color: '#ec4899', desc: 'Gestion de tâches' },
+                { type: 'tasks',   label: 'Checklist',  icon: 'solar:checklist-bold-duotone',      color: '#ec4899', desc: 'Gestion de tâches', targets: ['sidebar', 'tab'] },
                 { type: 'html',    label: 'HTML',       icon: 'solar:code-bold-duotone',           color: '#f97316', desc: 'Contenu personnalisé' },
                 { type: 'iframe',  label: 'Embed',      icon: 'solar:monitor-bold-duotone',        color: '#06b6d4', desc: 'Page web externe' },
                 { type: 'video',   label: 'Vidéo',      icon: 'solar:video-library-bold-duotone',  color: '#ef4444', desc: 'Lecteur vidéo ou YouTube' },
@@ -370,6 +380,19 @@
                 { type: 'fields',   label: 'Champs',    icon: 'solar:layers-bold-duotone',         color: '#2196f3', desc: 'Vue data synthèse' },
                 { type: 'cards',    label: 'Cartes',    icon: 'solar:card-bold-duotone',           color: '#e2a03f', desc: 'Relation records' }
             ],
+
+            visibleCatalog() {
+                const targetType = this.target?.type || '';
+                return (this.catalog || []).filter(item => {
+                    if (targetType === 'home-overview' && item.type === 'dynamic-table') return false;
+                    if (!Array.isArray(item.targets) || item.targets.length === 0) return true;
+                    return item.targets.includes(targetType);
+                });
+            },
+
+            catalogItem(type) {
+                return (this.catalog || []).find(c => c.type === type) || null;
+            },
 
             initPicker(data = {}) {
                 const incoming = Array.isArray(data.gridSchemas) ? data.gridSchemas : [];
@@ -598,11 +621,21 @@
             },
 
             selectType(type) {
-                const w = this.catalog.find(c => c.type === type);
+                const w = this.catalogItem(type);
                 if (!w) return;
                 const actualType = type === 'dynamic-table-single' ? 'dynamic-table' : type;
 
                 const defaults = {
+                    'overview-fields': { config: {} },
+                    'overview-tasks': { config: {} },
+                    'overview-docs': { config: {} },
+                    'overview-drive': { config: {} },
+                    'overview-agenda': { config: {} },
+                    'overview-notes': { config: {} },
+                    'home-today-tasks': { config: {} },
+                    'home-stats': { config: {} },
+                    'home-recent-records': { config: {} },
+                    'home-quick-links': { config: {} },
                     'note': { config: { content: '' } },
                     'tasks': { config: { tasks: [] } },
                     'html': { config: { content: '' } },
@@ -629,7 +662,7 @@
                     config: JSON.parse(JSON.stringify(d.config))
                 };
 
-                if (type === 'separator') {
+                if (w.instant || type === 'separator') {
                     this.save();
                 } else {
                     this.step = 'form';
@@ -650,9 +683,9 @@
                         this.newWidget.config.schemaIds = [this.newWidget.config.schemaIds[0]];
                     }
                     this.syncSchemaId();
-                    if (this.newWidget.config.displayMode === 'panels' && this.newWidget.config.schemaIds.length === 0) {
+                    if (this.newWidget.config.schemaIds.length === 0) {
                         this.saving = false;
-                        window.showMessage ? window.showMessage('Choisis un TD pour le mode Single.', 'warning') : alert('Choisis un TD pour le mode Single.');
+                        window.showMessage ? window.showMessage('Choisis ou crée un TD avant d’ajouter ce widget.', 'warning') : alert('Choisis ou crée un TD avant d’ajouter ce widget.');
                         return;
                     }
                 }
@@ -667,6 +700,8 @@
                             await this.saveToTab();
                         } else if (this.target.type === 'overview') {
                             await this.saveToOverview();
+                        } else if (this.target.type === 'home-overview') {
+                            await this.saveToHomeOverview();
                         }
                     }
 
@@ -750,7 +785,23 @@
 	                }
 	            },
 
+	            async saveToHomeOverview() {
+	                const eventName = this.newWidget._id ? 'update-home-overview-widget' : 'insert-home-overview-widget';
+	                for (const widget of this._expandedWidgetsForSave()) {
+	                    window.dispatchEvent(new CustomEvent(eventName, {
+	                        detail: {
+	                            target: this.target,
+	                            widget
+	                        }
+	                    }));
+	                }
+	            },
+
             async saveExistingWidget() {
+                if (this.target?.type === 'home-overview') {
+                    await this.saveToHomeOverview();
+                    return;
+                }
                 console.log('[widgetPicker] saveExistingWidget:', this.newWidget);
                 const url = `/account/${this.target.accountNumber}/api/entity/${this.target.entityId}/sidebar-widgets/${this.newWidget._id}`;
                 const payload = JSON.parse(JSON.stringify(this.newWidget));

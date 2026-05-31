@@ -18,6 +18,13 @@ const ViewSchema = new mongoose.Schema({
         default: null
     },
 
+    // Direct sidebar shortcut to a record (personal "Hub" experience)
+    hubRecord: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Record',
+        default: null
+    },
+
     icon: String,
     color: String,
     order: { type: Number, default: 0 },
@@ -25,7 +32,7 @@ const ViewSchema = new mongoose.Schema({
     // Type of display
     viewType: {
         type: String,
-        enum: ['list', 'kanban', 'checklist', 'calendar', 'table', 'cockpit', 'doc-listing'],
+        enum: ['list', 'kanban', 'checklist', 'calendar', 'table', 'cockpit', 'doc-listing', 'hub'],
         default: 'list'
     },
 
@@ -68,6 +75,8 @@ const ViewSchema = new mongoose.Schema({
             field: String,
             direction: { type: String, enum: ['asc', 'desc'], default: 'asc' }
         },
+        // Default hidden record modules for direct record/hub views.
+        hiddenRecordModules: [String],
         // For doc-listing views: references the SmartDocTemplate to list docs from
         smartDocTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'SmartDocTemplate', default: null }
     },

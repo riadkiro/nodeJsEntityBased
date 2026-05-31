@@ -23,6 +23,24 @@ const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? lo
 const _recordModulePermissions = (locals.accessibleRecordModulePermissions && typeof locals.accessibleRecordModulePermissions === 'object') ? locals.accessibleRecordModulePermissions : null;
 const _currentModulePermissions = _recordModulePermissions ? (_recordModulePermissions[moduleName] || { view: false, edit: false }) : { view: true, edit: true };
 const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissions.edit === true : true;
+const _defaultHiddenRecordModules = Array.isArray(locals.defaultHiddenRecordModules) ? locals.defaultHiddenRecordModules : [];
+const _recordModuleNavItems = [
+    { key:'overview', icon:'solar:widget-5-bold-duotone', color:'#6366f1', label:'Overview' },
+    { key:'fiche', icon:'solar:card-bold-duotone', color:'#4361ee', label:'Fiche' },
+    { key:'docs', icon:'solar:document-text-bold-duotone', color:'#f59e0b', label:'Docs' },
+    { key:'drive', icon:'solar:cloud-storage-bold-duotone', color:'#ec4899', label:'Drive' },
+    { key:'data-room', icon:'solar:shield-keyhole-bold-duotone', color:'#0f766e', label:'Data Room' },
+    { key:'tasks', icon:'solar:checklist-minimalistic-bold-duotone', color:'#10b981', label:'Tasks' },
+    { key:'agenda', icon:'solar:calendar-bold-duotone', color:'#14b8a6', label:'Agenda' },
+    { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
+    { key:'emails', icon:'solar:letter-bold-duotone', color:'#0ea5e9', label:'Emails' },
+    { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
+    { key:'ai', icon:'solar:magic-stick-3-bold-duotone', color:'#4f46e5', label:'IA' },
+    { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Accès' }
+];
+const _visibleRecordModuleNavItems = _sharedDataRoomOnly
+    ? _recordModuleNavItems.filter(function(m){ return m.key === 'data-room'; })
+    : (_allowedRecordModules ? _recordModuleNavItems.filter(function(m){ return _allowedRecordModules.includes(m.key); }) : _recordModuleNavItems);
 %>
 
 <style>
@@ -31,12 +49,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     display:flex; align-items:center; gap:20px; padding:28px 32px;
     background:linear-gradient(135deg, <%= _modColor %>08, <%= _modColor %>04);
     border:1px solid <%= _modColor %>20; border-radius:16px; margin-bottom:28px;
-    position:relative; overflow:hidden;
+    position:relative; overflow:visible; z-index:40;
 }
 .rm-hero::before {
     content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px;
     background:radial-gradient(circle, <%= _modColor %>12, transparent 70%);
-    border-radius:50%; pointer-events:none;
+    border-radius:50%; pointer-events:none; z-index:0;
 }
 .rm-hero-icon {
     width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center;
@@ -69,7 +87,35 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 }
 .rm-btn-secondary:hover { color:#4361ee; border-color:#c7d2fe; background:#f8fbff; }
 .rm-actions-compact { display:flex; align-items:center; gap:8px; margin-left:auto; }
-.rm-nav { display:flex; gap:4px; margin-bottom:24px; padding:4px; background:#f8fafc; border-radius:12px; border:1px solid #e0e6ed; overflow-x:auto; }
+.rm-hero-actions { display:flex; align-items:center; gap:8px; z-index:50; position:relative; }
+.rm-header-btn { font-size:12px; padding:8px 14px; min-height:34px; font-weight:700; }
+.rm-header-btn--widgets { color:#6366f1; border-color:#c7d2fe; background:#fff; }
+.rm-header-btn--widgets:hover { color:#4f46e5; background:#f5f7ff; border-color:#a5b4fc; }
+.rm-tab-config { position:relative; z-index:60; }
+.rm-tab-config-menu {
+    position:absolute; top:calc(100% + 10px); right:0; width:286px; z-index:70;
+    background:#fff; border:1px solid #e0e6ed; border-radius:14px;
+    box-shadow:0 18px 45px rgba(15,23,42,.12); overflow:hidden;
+}
+.rm-tab-config-head { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid #f1f3f5; font-size:13px; font-weight:800; color:#0e1726; }
+.rm-tab-config-list { display:flex; flex-direction:column; padding:6px; max-height:360px; overflow:auto; }
+.rm-tab-config-row {
+    display:flex; align-items:center; gap:10px; width:100%; border:0; background:transparent;
+    padding:8px 8px; border-radius:10px; cursor:pointer; font-family:inherit; text-align:left;
+    transition:background .15s;
+}
+.rm-tab-config-row:hover { background:#f8fafc; }
+.rm-tab-config-row:disabled { cursor:default; opacity:.78; }
+.rm-tab-config-row:disabled:hover { background:transparent; }
+.rm-tab-config-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.rm-tab-config-label { flex:1; min-width:0; font-size:12.5px; font-weight:700; color:#0e1726; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rm-tab-config-state { font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.3px; }
+.rm-switch { width:34px; height:20px; border-radius:999px; background:#e2e8f0; padding:2px; display:inline-flex; align-items:center; transition:background .18s; flex-shrink:0; }
+.rm-switch span { width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.2); transform:translateX(0); transition:transform .18s; }
+.rm-switch.on { background:#6366f1; }
+.rm-switch.on span { transform:translateX(14px); }
+.rm-tab-config-note { padding:9px 14px 12px; border-top:1px solid #f1f3f5; color:#94a3b8; font-size:11px; line-height:1.35; }
+.rm-nav { display:flex; gap:4px; margin-bottom:24px; padding:4px; background:#f8fafc; border-radius:12px; border:1px solid #e0e6ed; overflow-x:auto; position:relative; z-index:1; }
 .rm-nav a { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:500; color:#888da8; text-decoration:none; transition:all .2s; white-space:nowrap; }
 .rm-nav a:hover { background:#fff; color:#0e1726; }
 .rm-nav a.active { background:#fff; color:#0e1726; box-shadow:0 1px 3px rgba(0,0,0,.08); font-weight:600; }
@@ -215,6 +261,16 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 .dark .rm-hero { background:linear-gradient(135deg, <%= _modColor %>10, <%= _modColor %>05); border-color:<%= _modColor %>30; }
 .dark .rm-hero-info h1 { color:#e0e6ed; }
 .dark .rm-hero-info p { color:#888da8; }
+.dark .rm-header-btn--widgets { background:#0e1726; border-color:#253b5c; color:#818cf8; }
+.dark .rm-header-btn--widgets:hover { background:#111c2d; border-color:#6366f1; color:#c4b5fd; }
+.dark .rm-tab-config-menu { background:#0e1726; border-color:#253b5c; box-shadow:0 18px 45px rgba(0,0,0,.32); }
+.dark .rm-tab-config-head { border-color:#253b5c; color:#e0e6ed; }
+.dark .rm-tab-config-row:hover { background:#1b2e4b; }
+.dark .rm-tab-config-label { color:#e0e6ed; }
+.dark .rm-tab-config-state { color:#506690; }
+.dark .rm-switch { background:#334155; }
+.dark .rm-switch.on { background:#6366f1; }
+.dark .rm-tab-config-note { border-color:#253b5c; color:#506690; }
 .dark .rm-nav { background:#1b2e4b; border-color:#253b5c; }
 .dark .rm-nav a { color:#888da8; }
 .dark .rm-nav a:hover,.dark .rm-nav a.active { background:#0e1726; color:#e0e6ed; }
@@ -388,7 +444,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 }
 </style>
 
-<div class="rm-page" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } %>>
+<div class="rm-page" x-data="recordModuleShell()" @keydown.escape.window="configOpen = false" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } %>>
     <a href="<%= _sharedDataRoomOnly ? ('/account/' + account_number + '/shared-with-you') : ('/account/' + account_number + '/record/' + entity.slug + '/list') %>" class="rm-back">
         <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
         Retour à <strong><%= _sharedDataRoomOnly ? 'Shared with you' : entity.name %></strong>
@@ -407,43 +463,51 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             <h1 id="record-hero-title"><%= record.title || 'Sans titre' %></h1>
             <p><%= entity.nameSingular || entity.name %></p>
         </div>
-        <% if (moduleName !== 'team' && !_sharedDataRoomOnly && _canEditCurrentModule) { %>
-        <div class="rm-hero-actions" style="display:flex;align-items:center;gap:8px;z-index:1;">
-            <button type="button" onclick="createDraftRecord()" class="rm-btn-primary" style="background:linear-gradient(135deg,<%= entity.color || '#4361ee' %>,<%= entity.color || '#4361ee' %>dd);font-size:12px;padding:7px 14px;border:none;cursor:pointer;">
-                <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
-                Nouveau
-            </button>
-            <form method="POST" action="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>" onsubmit="return confirm('Supprimer cet enregistrement ?')" style="margin:0;">
-                <button type="submit" class="rm-btn-primary" style="background:linear-gradient(135deg,#e7515a,#e7515add);font-size:12px;padding:7px 14px;">
-                    <iconify-icon icon="solar:trash-bin-trash-bold" width="15"></iconify-icon>
-                    Supprimer
+        <% if (!_sharedDataRoomOnly) { %>
+        <div class="rm-hero-actions">
+            <div class="rm-tab-config" @click.outside="configOpen = false">
+                <button type="button" class="rm-btn-secondary rm-header-btn" @click="configOpen = !configOpen">
+                    <iconify-icon icon="solar:tuning-2-bold-duotone" width="15"></iconify-icon>
+                    Config
                 </button>
-            </form>
+                <div class="rm-tab-config-menu" x-show="configOpen" x-transition.origin.top.right x-cloak>
+                    <div class="rm-tab-config-head">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="16" style="color:#6366f1"></iconify-icon>
+                        Onglets
+                    </div>
+                    <div class="rm-tab-config-list">
+                        <template x-for="tab in tabs" :key="tab.key">
+                            <button type="button"
+                                    class="rm-tab-config-row"
+                                    :disabled="isTabLocked(tab.key)"
+                                    @click="toggleTab(tab.key)">
+                                <span class="rm-tab-config-icon" :style="'background:' + tab.color + '14'">
+                                    <iconify-icon :icon="tab.icon" width="16" :style="'color:' + tab.color"></iconify-icon>
+                                </span>
+                                <span class="rm-tab-config-label" x-text="tab.label"></span>
+                                <span class="rm-tab-config-state" x-text="isTabEnabled(tab.key) ? 'On' : 'Off'"></span>
+                                <span class="rm-switch" :class="isTabEnabled(tab.key) ? 'on' : ''"><span></span></span>
+                            </button>
+                        </template>
+                    </div>
+                    <div class="rm-tab-config-note">Overview reste disponible pour garder l'accès aux widgets.</div>
+                </div>
+            </div>
+            <% if (moduleName === 'overview') { %>
+            <button type="button" class="rm-btn-secondary rm-header-btn rm-header-btn--widgets" @click="$store.app.layoutMode = true">
+                <iconify-icon icon="solar:widget-add-bold-duotone" width="15"></iconify-icon>
+                Widgets
+            </button>
+            <% } %>
         </div>
         <% } %>
     </div>
     <% } %>
 
     <nav class="rm-nav">
-        <% const _allMods = [
-            { key:'overview', icon:'solar:widget-5-bold-duotone', color:'#6366f1', label:'Overview' },
-            { key:'fiche', icon:'solar:card-bold-duotone', color:'#4361ee', label:'Fiche' },
-            { key:'docs', icon:'solar:document-text-bold-duotone', color:'#f59e0b', label:'Docs' },
-            { key:'drive', icon:'solar:cloud-storage-bold-duotone', color:'#ec4899', label:'Drive' },
-            { key:'data-room', icon:'solar:shield-keyhole-bold-duotone', color:'#0f766e', label:'Data Room' },
-            { key:'tasks', icon:'solar:checklist-minimalistic-bold-duotone', color:'#10b981', label:'Tasks' },
-            { key:'agenda', icon:'solar:calendar-bold-duotone', color:'#14b8a6', label:'Agenda' },
-            { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
-            { key:'emails', icon:'solar:letter-bold-duotone', color:'#0ea5e9', label:'Emails' },
-            { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
-            { key:'ai', icon:'solar:magic-stick-3-bold-duotone', color:'#4f46e5', label:'IA' },
-            { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Accès' }
-        ]; %>
-        <% const _visibleMods = _sharedDataRoomOnly
-            ? _allMods.filter(function(m){ return m.key === 'data-room'; })
-            : (_allowedRecordModules ? _allMods.filter(function(m){ return _allowedRecordModules.includes(m.key); }) : _allMods); %>
-        <% _visibleMods.forEach(function(m) { %>
+        <% _visibleRecordModuleNavItems.forEach(function(m) { %>
         <a href="<%= _recBase %>/<%= m.key %>" class="<%= moduleName === m.key ? 'active' : '' %>"
+           x-show="isTabVisible('<%= m.key %>')"
            style="<%= moduleName === m.key ? 'color:' + m.color : '' %>">
             <iconify-icon icon="<%= m.icon %>" width="16" style="color:<%= m.color %>"></iconify-icon>
             <%= m.label %>
@@ -464,7 +528,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
         <!-- Design mode banner -->
         <div class="ov-dm-banner">
             <iconify-icon icon="tabler:layout-dashboard" width="16"></iconify-icon>
-            <span>Mode mise en page activé — Glissez les widgets pour réorganiser</span>
+            <span>Mode widgets activé - ajoutez TD, docs, tâches ou réorganisez la page</span>
             <button type="button" @click="$store.app.layoutMode = false" style="margin-left:auto;padding:4px 12px;border-radius:6px;border:1px solid rgba(67,97,238,.2);background:#fff;color:#4361ee;font-size:11px;font-weight:600;cursor:pointer;">Terminé</button>
         </div>
 
@@ -1318,12 +1382,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
             _defaultRows: [
                 { id: 'r1', columns: [{ id: 'c1', width: 8, widgetIds: ['fields'] }, { id: 'c2', width: 4, widgetIds: ['tasks','docs'] }] },
                 { id: 'r2', columns: [{ id: 'c3', width: 12, widgetIds: ['drive'] }] },
-                { id: 'r3', columns: [{ id: 'c4', width: 12, widgetIds: ['lines'] }] },
-                { id: 'r4', columns: [{ id: 'c5', width: 12, widgetIds: ['agenda'] }] }
+                { id: 'r3', columns: [{ id: 'c4', width: 12, widgetIds: ['agenda'] }] }
             ],
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
             _viewId: 'overview_<%= entity._id %>',
+            _layoutVersion: 2,
             gridSchemas: [],
             customWidgets: {},
             _overviewWidgetListener: null,
@@ -1385,10 +1449,37 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     const res = await fetch(`/account/${this._accountNumber}/api/user/view-preferences/${this._viewId}`, { credentials: 'include' });
                     const data = await res.json();
                     if (data.success && data.preferences && data.preferences.rows) {
-                        this.rows = data.preferences.rows;
-                        this.customWidgets = this._normalizeCustomWidgets(data.preferences.customWidgets);
+                        const migrated = this._migrateLayoutPreferences(data.preferences);
+                        this.rows = migrated.rows;
+                        this.customWidgets = migrated.customWidgets;
+                        if (migrated.changed) this._saveLayout();
                     }
                 } catch (e) { /* use defaults */ }
+            },
+
+            _migrateLayoutPreferences(preferences = {}) {
+                let rows = JSON.parse(JSON.stringify(Array.isArray(preferences.rows) ? preferences.rows : this._defaultRows));
+                const customWidgets = this._normalizeCustomWidgets(preferences.customWidgets);
+                const storedVersion = Number(preferences.overviewLayoutVersion || 0);
+                let changed = storedVersion !== this._layoutVersion;
+
+                rows.forEach(row => (row.columns || []).forEach(col => {
+                    const before = Array.isArray(col.widgetIds) ? col.widgetIds : [];
+                    const after = before.filter(widgetId => widgetId !== 'lines');
+                    if (after.length !== before.length) changed = true;
+                    col.widgetIds = after;
+                }));
+
+                if (storedVersion < this._layoutVersion) {
+                    const standardIds = ['fields', 'tasks', 'docs', 'drive', 'agenda', 'notes'];
+                    const placedStandardIds = this._collectWidgetIds(rows).filter(id => standardIds.includes(id));
+                    if (placedStandardIds.length === 1 && placedStandardIds[0] === 'fields') {
+                        rows = JSON.parse(JSON.stringify(this._defaultRows));
+                        changed = true;
+                    }
+                }
+
+                return { rows, customWidgets, changed };
             },
 
             async _loadGridSchemas() {
@@ -1410,7 +1501,7 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                 try {
                     await fetch(`/account/${this._accountNumber}/api/user/view-preferences`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets } })
+                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets, overviewLayoutVersion: this._layoutVersion } })
                     });
                 } catch (e) { console.error('[OvLayout] save error', e); }
             },
@@ -1599,8 +1690,12 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 
             // Get all widget IDs currently placed
             _placedWidgets() {
+                return this._collectWidgetIds(this.rows);
+            },
+
+            _collectWidgetIds(rows = this.rows) {
                 const ids = [];
-                this.rows.forEach(r => r.columns.forEach(c => ids.push(...(c.widgetIds || []))));
+                (rows || []).forEach(r => (r.columns || []).forEach(c => ids.push(...(c.widgetIds || []))));
                 return ids;
             },
 
@@ -1623,7 +1718,6 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
                     { id: 'tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981' },
                     { id: 'docs', label: 'Documents', icon: 'solar:document-text-bold-duotone', color: '#f59e0b' },
                     { id: 'drive', label: 'Fichiers récents', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899' },
-                    { id: 'lines', label: 'TD avec onglets', icon: 'solar:document-text-bold-duotone', color: '#6366f1' },
                     ...(this.gridSchemas || []).map(s => ({
                         id: `lines::${s.id}`,
                         label: s.name,
@@ -1708,6 +1802,16 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 
             _overviewWidgetIdsFromPickerWidget(widget) {
                 const type = String(widget.type || '');
+                const overviewWidgetMap = {
+                    'overview-fields': 'fields',
+                    'overview-tasks': 'tasks',
+                    'overview-docs': 'docs',
+                    'overview-drive': 'drive',
+                    'overview-agenda': 'agenda',
+                    'overview-notes': 'notes'
+                };
+                if (overviewWidgetMap[type]) return [overviewWidgetMap[type]];
+
                 if (type === 'dynamic-table') {
                     const cfg = widget.config || {};
                     const schemaIds = Array.isArray(cfg.schemaIds) ? cfg.schemaIds.map(String).filter(Boolean) : [];
@@ -1716,11 +1820,11 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
 
                     if (mode === 'panels' || mode === 'single') {
                         const ids = schemaIds.length ? schemaIds : (schemaId ? [schemaId] : []);
-                        return ids.length ? ids.map(id => `lines::${id}`) : ['lines'];
+                        return ids.map(id => `lines::${id}`);
                     }
                     if (schemaIds.length) return [`lines::${schemaIds.join(',')}`];
                     if (schemaId) return [`lines::${schemaId}`];
-                    return ['lines'];
+                    return [];
                 }
 
                 const id = 'cw_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -6151,6 +6255,112 @@ const _canEditCurrentModule = _recordModulePermissions ? _currentModulePermissio
     });
     </script>
     <% } %>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+        const recordModuleTabs = <%- JSON.stringify(_visibleRecordModuleNavItems).replace(/</g, '\\u003C') %>;
+        const recordModuleDefaultHiddenTabs = <%- JSON.stringify(_defaultHiddenRecordModules).replace(/</g, '\\u003C') %>;
+        Alpine.data('recordModuleShell', () => ({
+            accountNumber: '<%= account_number %>',
+            entityId: '<%= entity._id %>',
+            currentModule: '<%= moduleName %>',
+            tabs: recordModuleTabs,
+            hiddenTabs: Array.isArray(recordModuleDefaultHiddenTabs) ? [...recordModuleDefaultHiddenTabs] : [],
+            configOpen: false,
+            savingTabs: false,
+
+            init() {
+                this.hiddenTabs = this.normalizeHiddenTabs(this.hiddenTabs);
+                this.loadStoredTabs();
+                this.loadTabPreferences();
+            },
+
+            get storageKey() {
+                return `record_module_tabs_${this.accountNumber}_${this.entityId}`;
+            },
+
+            get viewId() {
+                return `record_module_tabs_${this.entityId}`;
+            },
+
+            isTabLocked(key) {
+                return key === 'overview' || this.tabs.length <= 1;
+            },
+
+            isTabEnabled(key) {
+                return this.isTabLocked(key) || !this.hiddenTabs.includes(key);
+            },
+
+            isTabVisible(key) {
+                return this.isTabEnabled(key) || key === this.currentModule;
+            },
+
+            normalizeHiddenTabs(value) {
+                const allowed = new Set((this.tabs || []).map(tab => String(tab.key)));
+                if (!Array.isArray(value)) return [];
+                return value
+                    .map(key => String(key))
+                    .filter((key, idx, arr) => allowed.has(key) && !this.isTabLocked(key) && arr.indexOf(key) === idx);
+            },
+
+            loadStoredTabs() {
+                try {
+                    const raw = window.localStorage.getItem(this.storageKey);
+                    if (raw) this.hiddenTabs = this.normalizeHiddenTabs(JSON.parse(raw));
+                } catch (e) { /* local fallback only */ }
+            },
+
+            persistStoredTabs() {
+                try {
+                    window.localStorage.setItem(this.storageKey, JSON.stringify(this.hiddenTabs));
+                } catch (e) { /* preferences API remains source of truth */ }
+            },
+
+            async loadTabPreferences() {
+                try {
+                    const res = await fetch(`/account/${this.accountNumber}/api/user/view-preferences/${this.viewId}`, { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success && data.preferences && Array.isArray(data.preferences.hiddenRecordModules)) {
+                        this.hiddenTabs = this.normalizeHiddenTabs(data.preferences.hiddenRecordModules);
+                        this.persistStoredTabs();
+                    }
+                } catch (e) {
+                    console.warn('[RecordTabs] Preference load skipped:', e);
+                }
+            },
+
+            toggleTab(key) {
+                key = String(key || '');
+                if (!key || this.isTabLocked(key)) return;
+                if (this.hiddenTabs.includes(key)) {
+                    this.hiddenTabs = this.hiddenTabs.filter(item => item !== key);
+                } else {
+                    this.hiddenTabs = this.normalizeHiddenTabs([...this.hiddenTabs, key]);
+                }
+                this.saveTabPreferences();
+            },
+
+            async saveTabPreferences() {
+                this.persistStoredTabs();
+                this.savingTabs = true;
+                try {
+                    await fetch(`/account/${this.accountNumber}/api/user/view-preferences`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            viewId: this.viewId,
+                            preferences: { hiddenRecordModules: this.hiddenTabs }
+                        })
+                    });
+                } catch (e) {
+                    console.warn('[RecordTabs] Preference save skipped:', e);
+                }
+                this.savingTabs = false;
+            }
+        }));
+    });
+    </script>
 
     <!-- Global: Create Draft Record -->
     <script>

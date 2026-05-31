@@ -1,6 +1,6 @@
 <div class="ov-card-header">
     <iconify-icon icon="solar:calendar-bold-duotone" width="18" style="color:#14b8a6"></iconify-icon>
-    <span>Prochains rendez-vous</span>
+    <span>Prochain événement</span>
     <a href="<%= _recBase %>/agenda" class="ov-card-link">Voir tout →</a>
 </div>
 <div class="ov-agenda-row"
@@ -16,7 +16,7 @@
                      this.events = data.events
                          .filter(e => e.date && new Date(e.date) >= now)
                          .sort((a, b) => new Date(a.date) - new Date(b.date))
-                         .slice(0, 3)
+                         .slice(0, 1)
                          .map(e => {
                              const d = new Date(e.date);
                              const statusCls = data.entityData?.statusClassification;
@@ -39,7 +39,7 @@
     <!-- Loading skeleton -->
     <template x-if="loading">
         <div style="display:flex;gap:10px;padding:8px 0">
-            <template x-for="i in 3" :key="i">
+            <template x-for="i in 1" :key="i">
                 <div style="flex:1;height:52px;border-radius:8px;background:#f1f5f9;animation:pulse 1.5s infinite"></div>
             </template>
         </div>

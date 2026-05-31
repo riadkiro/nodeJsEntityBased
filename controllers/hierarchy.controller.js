@@ -6,13 +6,18 @@ const { sanitizeViewFilters } = require('../services/record-filter-query');
 
 // Cache for loaded icon libraries
 const iconLibrariesCache = {};
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'ai', 'team'];
 
-// Generate a unique slug for a given model
-async function uniqueSlug(Model, name) {
-    const base = String(name || '').toLowerCase()
+function slugBase(name) {
+    return String(name || '').toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') || 'item';
+}
+
+// Generate a unique slug for a given model
+async function uniqueSlug(Model, name) {
+    const base = slugBase(name);
     const existing = await Model.findOne({ slug: base });
     if (!existing) return base;
     let counter = 2;
@@ -316,7 +321,7 @@ module.exports = {
                 folders.forEach(f => {
                     let isChild = false;
                     if (parentType === 'space' && f.spaces.includes(parentId) && f.parentFolders.length === 0) isChild = true;
-                    else if ((parentType === 'folder' || parentType === 'environment') && f.parentFolders.includes(parentId)) isChild = true;
+                    else if (['folder', 'environment', 'workstation'].includes(parentType) && f.parentFolders.includes(parentId)) isChild = true;
 
                     if (isChild) {
                         const itemType = f.type || 'folder';
@@ -337,11 +342,27 @@ module.exports = {
                 views.forEach(v => {
                     let isChild = false;
                     if (parentType === 'space' && v.spaces.includes(parentId) && v.folders.length === 0) isChild = true;
-                    else if ((parentType === 'folder' || parentType === 'environment') && v.folders.includes(parentId)) isChild = true;
+                    else if (['folder', 'environment', 'workstation'].includes(parentType) && v.folders.includes(parentId)) isChild = true;
 
                     if (isChild) {
-                        // Cockpit view
-                        if (v.viewType === 'cockpit') {
+                        if (v.viewType === 'hub') {
+                            const entity = v.entity ? entities.find(e => e.id === v.entity.toString()) : null;
+                            const entitySlug = entity ? entity.slug : v.slug;
+                            const recordId = v.hubRecord ? v.hubRecord.toString() : '';
+                            results.push({
+                                type: 'hub',
+                                id: v.id,
+                                name: v.name,
+                                icon: v.icon || 'solar:widget-5-bold-duotone',
+                                color: v.color,
+                                order: v.order,
+                                link: recordId ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/overview` : '#',
+                                entityId: v.entity,
+                                entitySlug,
+                                recordId,
+                                viewType: 'hub'
+                            });
+                        } else if (v.viewType === 'cockpit') {
                             results.push({
                                 type: 'cockpit',
                                 id: v.id,
@@ -420,7 +441,7 @@ module.exports = {
                 let Model;
                 if (item.type === 'space') Model = SpaceModel;
                 else if (['folder', 'environment'].includes(item.type)) Model = FolderModel;
-                else if (item.type === 'entity' || item.type === 'cockpit') Model = ViewModel;
+                else if (['entity', 'cockpit', 'hub'].includes(item.type)) Model = ViewModel;
 
                 if (Model) {
                     await Model.findByIdAndUpdate(item.id, { order: item.order });
@@ -443,7 +464,7 @@ module.exports = {
             const ViewModel = await tenantCollection(req, "View");
             const EntityModel = await tenantCollection(req, "Entity");
 
-            if (itemType === 'entity' || itemType === 'cockpit') {
+            if (['entity', 'cockpit', 'hub'].includes(itemType)) {
                 // Determine if we are moving a View or a Legacy Entity
                 let targetModel = ViewModel;
                 let item = await ViewModel.findById(itemId);
@@ -457,7 +478,9 @@ module.exports = {
                     await targetModel.updateOne({ _id: itemId }, { $pull: { folders: oldParentId, spaces: oldParentId } });
                 }
                 if (newParentId) {
-                    const update = newParentType === 'folder' ? { $addToSet: { folders: newParentId } } : { $addToSet: { spaces: newParentId } };
+                    const update = ['folder', 'environment', 'workstation'].includes(newParentType)
+                        ? { $addToSet: { folders: newParentId } }
+                        : { $addToSet: { spaces: newParentId } };
                     await targetModel.updateOne({ _id: itemId }, update);
                 }
             } else if (itemType === 'folder' || itemType === 'environment') {
@@ -616,12 +639,23 @@ module.exports = {
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
-        if (type === 'entity' || type === 'cockpit') {
+        if (['entity', 'cockpit', 'hub'].includes(type)) {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
         }
         if (Model) await Model.findByIdAndUpdate(id, { name: newName });
+        if (type === 'hub' && Model) {
+            const ViewModel = await tenantCollection(req, "View");
+            const RecordModel = await tenantCollection(req, "Record");
+            const view = await ViewModel.findById(id).lean();
+            if (view?.hubRecord) {
+                await RecordModel.findByIdAndUpdate(view.hubRecord, {
+                    title: newName,
+                    computedTitle: newName
+                });
+            }
+        }
         res.json({ success: true });
     },
 
@@ -630,7 +664,7 @@ module.exports = {
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
-        if (type === 'entity' || type === 'cockpit') {
+        if (['entity', 'cockpit', 'hub'].includes(type)) {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
@@ -641,6 +675,12 @@ module.exports = {
         if (color !== undefined) update.color = color;
 
         if (Model) await Model.findByIdAndUpdate(id, update);
+        if (type === 'hub' && Model) {
+            const ViewModel = await tenantCollection(req, "View");
+            const RecordModel = await tenantCollection(req, "Record");
+            const view = await ViewModel.findById(id).lean();
+            if (view?.hubRecord) await RecordModel.findByIdAndUpdate(view.hubRecord, update);
+        }
         res.json({ success: true });
     },
 
@@ -649,7 +689,7 @@ module.exports = {
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
-        if (type === 'entity' || type === 'cockpit') {
+        if (['entity', 'cockpit', 'hub'].includes(type)) {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
@@ -672,6 +712,7 @@ module.exports = {
                 slug: e.slug,
                 icon: e.icon,
                 color: e.color,
+                image: e.image || '',
                 fieldsCount: (e.customFields || []).length
             }))
         });
@@ -911,6 +952,159 @@ module.exports = {
         });
         await newView.save();
         res.json({ success: true, view: newView });
+    },
+
+    createHub: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+            const ViewModel = await tenantCollection(req, "View");
+            const FolderModel = await tenantCollection(req, "Folder");
+            const SpaceModel = await tenantCollection(req, "Space");
+
+            const hubName = String(req.body.name || '').trim();
+            const parentId = String(req.body.parentId || '').trim();
+            const parentType = String(req.body.parentType || '').trim();
+
+            if (!hubName) return res.status(400).json({ error: "Le nom du hub est requis" });
+            if (!parentId || !['space', 'folder', 'environment', 'workstation'].includes(parentType)) {
+                return res.status(400).json({ error: "Parent de hub invalide" });
+            }
+            if (!mongoose.Types.ObjectId.isValid(parentId)) {
+                return res.status(400).json({ error: "Parent de hub invalide" });
+            }
+
+            let parent = null;
+            let resolvedParentType = parentType;
+            if (parentType === 'space') {
+                parent = await SpaceModel.findById(parentId).lean();
+                if (!parent) {
+                    parent = await FolderModel.findById(parentId).lean();
+                    if (parent) resolvedParentType = parent.type || 'folder';
+                }
+            } else {
+                parent = await FolderModel.findById(parentId).lean();
+                if (!parent) {
+                    parent = await SpaceModel.findById(parentId).lean();
+                    if (parent) resolvedParentType = 'space';
+                }
+            }
+            if (!parent) return res.status(400).json({ error: "Dossier ou espace introuvable pour créer ce hub" });
+
+            let entity = null;
+            const requestedEntityId = String(req.body.entityId || '').trim();
+            if (requestedEntityId) {
+                if (!mongoose.Types.ObjectId.isValid(requestedEntityId)) {
+                    return res.status(400).json({ error: "Entité existante invalide" });
+                }
+                entity = await EntityModel.findById(requestedEntityId);
+                if (!entity) {
+                    return res.status(404).json({ error: "Entité existante introuvable" });
+                }
+            }
+
+            if (!entity) {
+                const requestedEntityName = String(req.body.entityName || '').trim();
+                const createNewEntity = req.body.createNewEntity === true || req.body.entityMode === 'new';
+                const parentEntityHint = parent?.name ? `Ma ${String(parent.name).toLowerCase()}` : '';
+                const entityNameCandidates = (requestedEntityName
+                    ? [requestedEntityName]
+                    : [parent?.name || '', parentEntityHint, 'Hubs'])
+                    .map(name => String(name || '').trim())
+                    .filter(Boolean);
+                const entityName = entityNameCandidates[0];
+
+                if (!createNewEntity) {
+                    for (const candidateName of entityNameCandidates) {
+                        const candidateSlug = slugBase(candidateName);
+                        const escapedName = candidateName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        entity = await EntityModel.findOne({ slug: candidateSlug });
+                        if (!entity) {
+                            entity = await EntityModel.findOne({ name: new RegExp(`^${escapedName}$`, 'i') });
+                        }
+                        if (entity) break;
+                    }
+                }
+
+                if (!entity) {
+                    entity = new EntityModel({
+                        name: entityName,
+                        nameSingular: entityName,
+                        namePlural: entityName,
+                        slug: await uniqueSlug(EntityModel, entityName),
+                        icon: req.body.entityIcon || 'solar:users-group-rounded-bold-duotone',
+                        color: req.body.entityColor || '#8b5cf6',
+                        image: req.body.entityImage || '',
+                        enabledStandardFields: ['title', 'description'],
+                        referenceTitleTokens: [{ t: 'field', id: 'title' }],
+                        createdBy: req.user._id
+                    });
+                    await entity.save();
+                }
+            }
+
+            const hubIcon = req.body.icon || entity.icon || 'solar:widget-5-bold-duotone';
+            const hubColor = req.body.color || entity.color || '#8b5cf6';
+            const visibleModules = Array.isArray(req.body.visibleModules)
+                ? req.body.visibleModules.map(key => String(key)).filter(key => RECORD_MODULE_KEYS.includes(key))
+                : [];
+            const hiddenRecordModules = visibleModules.length > 0
+                ? RECORD_MODULE_KEYS.filter(key => key !== 'overview' && !visibleModules.includes(key))
+                : [];
+            const recordData = {
+                entityId: entity._id,
+                title: hubName,
+                computedTitle: hubName,
+                image: req.body.entityImage || entity.image || '',
+                icon: hubIcon,
+                color: hubColor,
+                published: true,
+                status: 'published',
+                createdBy: req.user._id
+            };
+
+            try {
+                const denormService = require('../services/record-denorm.service');
+                const denorm = await denormService.computeDenorm(recordData, entity.toObject ? entity.toObject() : entity, RecordModel, EntityModel);
+                Object.assign(recordData, denorm);
+            } catch (denormErr) {
+                recordData.computedTitle = recordData.computedTitle || hubName;
+            }
+
+            const record = new RecordModel(recordData);
+            await record.save();
+
+            const view = new ViewModel({
+                name: hubName,
+                slug: await uniqueSlug(ViewModel, hubName),
+                entity: entity._id,
+                hubRecord: record._id,
+                icon: hubIcon,
+                color: hubColor,
+                viewType: 'hub',
+                settings: { hiddenRecordModules },
+                createdBy: req.user._id,
+                order: 0,
+                spaces: resolvedParentType === 'space' ? [parentId] : [],
+                folders: resolvedParentType === 'space' ? [] : [parentId]
+            });
+            await view.save();
+
+            res.json({
+                success: true,
+                hub: {
+                    id: view._id.toString(),
+                    name: view.name,
+                    entityId: entity._id.toString(),
+                    entitySlug: entity.slug,
+                    recordId: record._id.toString(),
+                    link: `/account/${req.account_number}/record/${entity.slug}/${record._id}/overview`
+                }
+            });
+        } catch (error) {
+            console.error("[Hierarchy] Create hub failed:", error);
+            res.status(500).json({ error: error.message || "Erreur lors de la creation du hub" });
+        }
     },
 
     linkCockpit: async (req, res) => {

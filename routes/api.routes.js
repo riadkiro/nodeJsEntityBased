@@ -913,6 +913,19 @@ const TaskList = require('../models/task-list.model')
 const RecordTask = require('../models/record-task.model')
 const TaskComment = require('../models/task-comment.model')
 
+const cleanTaskText = (value, fallback = '') => {
+    if (typeof value !== 'string') return fallback
+    const text = value.trim()
+    if (!text) return fallback
+    if (['false', 'null', 'undefined'].includes(text.toLowerCase())) return fallback
+    return text
+}
+
+const cleanTaskListLabel = (value) => {
+    const label = cleanTaskText(value, 'Tâches du jour')
+    return label.toLowerCase() === 'général' ? 'Tâches du jour' : label
+}
+
 /**
  * GET /account/:account_number/api/record/:recordId/task-lists
  * Get all task lists for a specific record with task counts
@@ -945,7 +958,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 : defaultStatuses
             return {
                 _id: l._id.toString(),
-                label: l.label,
+                label: cleanTaskListLabel(l.label),
                 color: l.color || '#6366f1',
                 viewMode: l.viewMode || 'kanban',
                 statuses: listStatuses,
@@ -953,7 +966,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
                 tasks: sorted.slice(0, 10).map(t => ({
                     _id: t._id.toString(),
-                    title: t.title,
+                    title: cleanTaskText(t.title, 'Sans titre'),
                     description: t.description || '',
                     status: t.status,
                     statusColor: t.statusColor,
@@ -1025,12 +1038,13 @@ router.put('/api/task-lists/:listId/statuses', async (req, res) => {
 router.post('/api/record/:recordId/task-lists', async (req, res) => {
     try {
         const { label, color } = req.body
-        if (!label?.trim()) return res.status(400).json({ error: 'Label required' })
+        const cleanLabel = cleanTaskText(label)
+        if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
 
         const maxOrder = await TaskList.findOne({ recordId: req.params.recordId }).sort({ order: -1 }).lean()
         const list = await TaskList.create({
             recordId: req.params.recordId,
-            label: label.trim(),
+            label: cleanLabel,
             color: color || '#6366f1',
             order: (maxOrder?.order || 0) + 1
         })
@@ -1043,18 +1057,45 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
 })
 
 /**
+ * POST /account/:account_number/api/record/:recordId/task-lists/reorder
+ * Reorder task lists for a specific record
+ */
+router.post('/api/record/:recordId/task-lists/reorder', async (req, res) => {
+    try {
+        const { listIds } = req.body
+        if (!Array.isArray(listIds)) return res.status(400).json({ error: 'listIds array required' })
+
+        const bulkOps = listIds
+            .filter(Boolean)
+            .map((id, index) => ({
+                updateOne: {
+                    filter: { _id: id, recordId: req.params.recordId },
+                    update: { $set: { order: index } }
+                }
+            }))
+        if (bulkOps.length > 0) await TaskList.bulkWrite(bulkOps)
+
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Reorder task lists error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * PUT /account/:account_number/api/task-lists/:listId
  * Rename a task list
  */
 router.put('/api/task-lists/:listId', async (req, res) => {
     try {
         const { label } = req.body
-        if (!label?.trim()) return res.status(400).json({ error: 'Label required' })
+        const cleanLabel = cleanTaskText(label)
+        if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
 
-        const list = await TaskList.findByIdAndUpdate(req.params.listId, { label: label.trim() }, { new: true })
+        const list = await TaskList.findByIdAndUpdate(req.params.listId, { label: cleanLabel }, { new: true })
         if (!list) return res.status(404).json({ error: 'List not found' })
 
-        res.json({ success: true, label: list.label })
+        res.json({ success: true, label: cleanTaskListLabel(list.label) })
     } catch (error) {
         console.error('[API] Rename task list error:', error)
         res.status(500).json({ error: error.message })
@@ -1108,7 +1149,7 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
         const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
         res.json({ success: true, tasks: tasks.map(t => ({
             _id: t._id.toString(),
-            title: t.title,
+            title: cleanTaskText(t.title, 'Sans titre'),
             description: t.description || '',
             status: t.status,
             statusColor: t.statusColor,
@@ -1132,7 +1173,8 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
 router.post('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
         const { title, description, priority, startDate, dueDate, assignedTo, status } = req.body
-        if (!title?.trim()) return res.status(400).json({ error: 'Title required' })
+        const cleanTitle = cleanTaskText(title)
+        if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
 
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
@@ -1150,7 +1192,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
         const task = await RecordTask.create({
             taskListId: req.params.listId,
             recordId: list.recordId,
-            title: title.trim(),
+            title: cleanTitle,
             description: description || '',
             status: taskStatus,
             statusColor: statusColors[taskStatus] || '#9ca3af',
@@ -1187,12 +1229,13 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
 router.put('/api/record-tasks/:taskId/rename', async (req, res) => {
     try {
         const { title } = req.body
-        if (!title?.trim()) return res.status(400).json({ error: 'Title required' })
+        const cleanTitle = cleanTaskText(title)
+        if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
 
-        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { title: title.trim() }, { new: true })
+        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { title: cleanTitle }, { new: true })
         if (!task) return res.status(404).json({ error: 'Task not found' })
 
-        res.json({ success: true, title: task.title })
+        res.json({ success: true, title: cleanTaskText(task.title, 'Sans titre') })
     } catch (error) {
         console.error('[API] Rename task error:', error)
         res.status(500).json({ error: error.message })
@@ -1248,6 +1291,7 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
     try {
         const task = await RecordTask.findById(req.params.taskId).lean()
         if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
+        task.title = cleanTaskText(task.title, 'Sans titre')
         res.json({ success: true, task })
     } catch (err) {
         console.error('[API] Get task error:', err)
@@ -1277,6 +1321,12 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
                 updates[f] = req.body[f]
             }
         })
+
+        if (updates.title !== undefined) {
+            const cleanTitle = cleanTaskText(updates.title)
+            if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
+            updates.title = cleanTitle
+        }
 
         // Auto-set color fields
         if (updates.status) updates.statusColor = statusColors[updates.status] || '#9ca3af'
@@ -1325,7 +1375,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             success: true,
             task: {
                 _id: task._id.toString(),
-                title: task.title,
+                title: cleanTaskText(task.title, 'Sans titre'),
                 description: task.description || '',
                 status: task.status,
                 statusColor: task.statusColor,
@@ -1565,6 +1615,8 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Overview layout builder
             'rows',
             'customWidgets',
+            'overviewLayoutVersion',
+            'hiddenRecordModules',
             'noteWidget',
             // Record Agenda
             'agendaPrefs',

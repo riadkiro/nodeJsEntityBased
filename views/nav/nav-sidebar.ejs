@@ -331,6 +331,49 @@
       .sidebar li::marker {
         list-style: none !important;
       }
+
+      /* Compact hierarchy spacing for Spaces. */
+      .sidebar-spaces-area .sidebar-spaces-heading {
+        margin-left: -0.5rem !important;
+        margin-right: -0.5rem !important;
+        padding-left: 0.625rem !important;
+        padding-right: 0.5rem !important;
+      }
+      .sidebar-spaces-area .sidebar-space-row {
+        margin-left: -0.5rem !important;
+        margin-right: -0.5rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.375rem !important;
+      }
+      .sidebar-spaces-area .sidebar-space-inner {
+        margin-left: 0.125rem !important;
+        margin-right: 0.25rem !important;
+      }
+      .sidebar-spaces-area .sidebar-space-inner > iconify-icon {
+        margin-left: 0 !important;
+      }
+      .sidebar-spaces-area .sidebar-space-label {
+        padding-left: 0.375rem !important;
+        padding-right: 0.25rem !important;
+      }
+      .sidebar-spaces-area .sidebar-space-actions,
+      .sidebar-spaces-area .sidebar-child-actions {
+        padding-right: 0.25rem !important;
+      }
+      .sidebar-spaces-area .sidebar-space-children {
+        margin-left: 0.375rem !important;
+        margin-right: 0 !important;
+      }
+      .sidebar-spaces-area .sidebar-child-row > iconify-icon {
+        margin-left: 0.25rem !important;
+      }
+      .sidebar-spaces-area .sidebar-child-row a {
+        margin-left: 0.25rem !important;
+      }
+      .sidebar-spaces-area .sidebar-nested-list {
+        margin-left: 0.5rem !important;
+        padding-left: 0.375rem !important;
+      }
     </style>
     <div
       x-data="{
@@ -478,8 +521,7 @@
       <div
         class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold"
         x-data="sidebarHierarchy()"
-        @contextmenu.prevent="openSidebarBackgroundMenu($event)"
-        @click="openSidebarBackgroundMenu($event)">
+        @contextmenu.prevent="openSidebarBackgroundMenu($event)">
 
 
         <!-- ═══ SIDEBAR MODE WRAPPER (Admin vs Spaces toggle) ═══ -->
@@ -751,10 +793,10 @@
         </div><!-- end x-show admin -->
 
         <!-- ═══ SPACES SECTION (visible by default, hidden when admin is shown) ═══ -->
-        <div x-show="!showAdmin" x-collapse x-cloak>
+        <div x-show="!showAdmin" x-collapse x-cloak class="sidebar-spaces-area">
         <div>
           <h2
-            class="-mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold text-[13px] tracking-wide dark:bg-dark dark:bg-opacity-[0.08]">
+            class="sidebar-spaces-heading -mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold text-[13px] tracking-wide dark:bg-dark dark:bg-opacity-[0.08]">
             <div class="flex items-center gap-2">
               <iconify-icon :icon="activeEnvironmentIcon || 'solar:share-circle-bold-duotone'" width="18" height="18" :style="activeEnvironmentColor ? 'color:' + activeEnvironmentColor : ''"></iconify-icon>
               <span x-text="(activeEnvironmentName || 'Spaces') + ' (' + realSpacesCount + ')'">Spaces</span>
@@ -772,7 +814,7 @@
               <template x-for="child in displayHierarchy" :key="child.id">
                 <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                   <div
-                    class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub -mx-2 px-2 py-1.5"
+                    class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub -mx-2 px-2 py-1.5"
                     :class="subActive.includes(child.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                     @mouseenter="hovered = true" @mouseleave="hovered = false"
                     @contextmenu.prevent="openEditMenu($event, child.type, child, hierarchy[0])">
@@ -798,7 +840,8 @@
                       </template>
                     </div>
 
-                    <div class="flex items-center gap-1 pr-4 transition-opacity"
+                    <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
+                      x-show="['folder', 'environment', 'workstation'].includes(child.type)"
                       :class="hovered ? 'opacity-100' : 'opacity-0'">
                       <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                         class="cursor-pointer hover:text-primary"
@@ -808,10 +851,10 @@
 
                   <!-- Nested children for Folders -->
                   <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)"
-                    x-collapse class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
+                    x-collapse class="sidebar-nested-list sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                     <template x-for="subChild in child.children" :key="subChild.id">
                       <li x-data="{ hovered: false }" class="relative block" :data-id="subChild.id" :data-type="subChild.type">
-                        <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
+                        <div class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
                           :class="isExpanded(subChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                           @mouseenter="hovered = true" @mouseleave="hovered = false"
                           @contextmenu.prevent="openEditMenu($event, subChild.type, subChild, child)">
@@ -848,9 +891,9 @@
           <ul class="sortable-root" data-parent-type="root">
             <template x-for="item in hierarchy" :key="item.id">
               <li class="menu nav-item" :data-id="item.id" data-type="space">
-                <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                <div class="sidebar-space-row nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
                   :class="activeDropdown.includes(item.id) ? 'bg-gray-100/50 dark:bg-gray-800/50' : ''">
-                  <div x-data="{ hovered: false }" class="flex items-center mx-2 cursor-pointer flex-1"
+                  <div x-data="{ hovered: false }" class="sidebar-space-inner flex items-center mx-2 cursor-pointer flex-1"
                     @mouseenter="hovered = true" @mouseleave="hovered = false" @click="toggle(item.id)"
                     @contextmenu.prevent="openEditMenu($event, 'space', item)">
                     <iconify-icon
@@ -860,7 +903,7 @@
                     
                     <template x-if="editingId !== item.id">
                       <span
-                        class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2"
+                        class="sidebar-space-label text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2"
                         x-text="item.name"></span>
                     </template>
                     <template x-if="editingId === item.id">
@@ -871,7 +914,7 @@
                     </template>
                   </div>
 
-                  <div class="flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div class="sidebar-space-actions flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     <iconify-icon icon="solar:add-square-linear" width="16" height="16"
                       class="cursor-pointer hover:text-primary"
                       @click.stop="openCreateMenu($event, item)"></iconify-icon>
@@ -886,11 +929,11 @@
                 </div>
 
                 <ul x-cloak x-show="activeDropdown.includes(item.id)" x-collapse
-                  class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 mx-2 mb-2">
+                  class="sidebar-space-children sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 mx-2 mb-2">
                   <template x-for="child in item.children" :key="child.id">
                     <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
-                        class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub"
+                        class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub"
                         :class="subActive.includes(child.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                         @mouseenter="hovered = true" @mouseleave="hovered = false"
                         @contextmenu.prevent="openEditMenu($event, child.type, child, item)">
@@ -916,7 +959,8 @@
                           </template>
                         </div>
 
-                        <div class="flex items-center gap-1 pr-4 transition-opacity"
+                        <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
+                          x-show="['folder', 'environment', 'workstation'].includes(child.type)"
                           :class="hovered ? 'opacity-100' : 'opacity-0'">
                           <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                             class="cursor-pointer hover:text-primary"
@@ -927,12 +971,12 @@
 
                       <!-- Nested children for Folders/Environments -->
                       <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)"
-                        x-collapse class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
+                        x-collapse class="sidebar-nested-list sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
                             class="relative block" :data-id="subChild.id" :data-type="subChild.type">
-                            <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
+                            <div class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
                               :class="isExpanded(subChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''" @mouseenter="hovered = true"
                               @mouseleave="hovered = false"
                               @contextmenu.prevent="openEditMenu($event, subChild.type, subChild, child)">
@@ -955,7 +999,8 @@
                                     @blur="saveRename(subChild)" x-init="$nextTick(() => $el.focus())">
                                 </template>
                               </div>
-                              <div class="flex items-center gap-1 pr-4 transition-opacity"
+                              <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
+                                x-show="['folder', 'environment', 'workstation'].includes(subChild.type)"
                                 :class="hovered ? 'opacity-100' : 'opacity-0'">
                                 <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                                   class="cursor-pointer hover:text-primary"
@@ -967,10 +1012,10 @@
 
                             <ul x-show="['folder', 'environment'].includes(subChild.type) && isExpanded(subChild.id)"
                               x-collapse
-                              class="sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
+                              class="sidebar-nested-list sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                               <template x-for="subSubChild in subChild.children" :key="subSubChild.id">
                                 <li x-data="{ hovered: false }"
-                                  class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub3"
+                                  class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub3"
                                   :class="isExpanded(subSubChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                                   @mouseenter="hovered = true" @mouseleave="hovered = false"
                                   @contextmenu.prevent="openEditMenu($event, subSubChild.type, subSubChild, subChild)"
@@ -991,7 +1036,8 @@
                                         @blur="saveRename(subSubChild)" x-init="$nextTick(() => $el.focus())">
                                     </template>
                                   </div>
-                                  <div class="flex items-center gap-1 pr-4 transition-opacity"
+                                  <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
+                                    x-show="['folder', 'environment', 'workstation'].includes(subSubChild.type)"
                                     :class="hovered ? 'opacity-100' : 'opacity-0'">
                                     <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                                       class="cursor-pointer hover:text-primary"
@@ -1251,6 +1297,162 @@
             </div>
           </div>
           </template>
+
+          <!-- Hub Modal -->
+          <template x-teleport="body">
+          <div class="fixed inset-0 bg-[black]/60 z-[999] hidden overflow-y-auto" :class="showHubModal && '!block'">
+            <div class="flex items-start justify-center min-h-screen px-4" @click.self="closeHubModal()">
+              <div x-show="showHubModal" x-transition x-transition.duration.300
+                class="panel border-0 py-1 px-4 rounded-lg overflow-hidden w-full max-w-md my-8 bg-white dark:bg-[#1b2e4b]">
+                <div class="flex items-center justify-between p-5 font-semibold text-lg dark:text-white">
+                  <span>Nouveau hub</span>
+                  <button type="button" @click="closeHubModal()" class="text-white-dark hover:text-dark">
+                    <iconify-icon icon="solar:close-circle-bold" width="24" height="24"></iconify-icon>
+                  </button>
+                </div>
+                <div class="p-5">
+                  <form @submit.prevent="submitCreateHub">
+                    <div class="relative mb-4">
+                      <label class="mb-2 block text-sm font-bold">Nom du hub</label>
+                      <input type="text" x-model="hubName" x-ref="hubNameInput" :placeholder="hubNamePlaceholder()"
+                        class="form-input w-full" />
+                    </div>
+                    <div class="relative mb-5">
+                      <label class="mb-2 block text-sm font-bold">Entité</label>
+                      <div class="mb-3 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1 text-xs font-bold dark:bg-gray-800">
+                        <button type="button" class="rounded-md px-3 py-2 transition"
+                          :class="hubEntityMode === 'new' ? 'bg-white text-primary shadow-sm dark:bg-[#0e1726]' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'"
+                          @click="hubEntityMode = 'new'; hubAppsOpen = false; $nextTick(() => mountHubColorPicker())">
+                          Nouvelle
+                        </button>
+                        <button type="button" class="rounded-md px-3 py-2 transition"
+                          :class="hubEntityMode === 'existing' ? 'bg-white text-primary shadow-sm dark:bg-[#0e1726]' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'"
+                          @click="hubEntityMode = 'existing'; destroyHubPickers(); loadAllEntities()">
+                          Existante
+                        </button>
+                      </div>
+                      <template x-if="showHubModal && hubEntityMode === 'new'">
+                        <div class="space-y-3">
+                          <input type="text" x-model="hubEntityName" :placeholder="hubEntityPlaceholder()"
+                            class="form-input w-full" />
+
+                          <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-[#0e1726]">
+                            <div class="flex items-center justify-between gap-3">
+                              <button type="button"
+                                class="group relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border transition hover:border-primary"
+                                :style="'background:' + hubEntityColor + '18;border-color:' + hubEntityColor + '35'"
+                                @click="openHubEntityImagePicker()"
+                                title="Choisir une image">
+                                <template x-if="hubEntityImage">
+                                  <img :src="hubEntityImage" alt="" class="h-full w-full object-cover" />
+                                </template>
+                                <template x-if="!hubEntityImage">
+                                  <iconify-icon :icon="hubEntityIcon" width="22" :style="'color:' + hubEntityColor"></iconify-icon>
+                                </template>
+                                <span class="absolute inset-0 hidden items-center justify-center bg-black/35 text-white group-hover:flex">
+                                  <iconify-icon icon="solar:gallery-add-bold-duotone" width="16"></iconify-icon>
+                                </span>
+                              </button>
+                              <div class="min-w-0 flex-1">
+                                <div class="text-sm font-bold text-gray-800 dark:text-white">Identité de l'entité</div>
+                                <div class="truncate text-xs text-gray-400" x-text="hubEntityImage ? 'Image, icône et couleur configurées' : 'Icône et couleur configurées'"></div>
+                              </div>
+                              <div class="flex shrink-0 items-center gap-2">
+                                <div x-ref="hubIconPicker"
+                                  data-island="icon-picker"
+                                  data-name="hubEntityIcon"
+                                  data-value="solar:users-group-rounded-bold-duotone"
+                                  :data-value="hubEntityIcon"
+                                  @icon-selected.stop="hubEntityIcon = $event.detail.icon"
+                                  title="Changer l'icône"></div>
+                                <div x-ref="hubEntityColorPicker" title="Changer la couleur"></div>
+                                <button type="button"
+                                  class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800"
+                                  @click="openHubEntityImagePicker()"
+                                  title="Changer l'image">
+                                  <iconify-icon icon="solar:gallery-bold-duotone" width="17"></iconify-icon>
+                                </button>
+                              </div>
+                            </div>
+                            <template x-if="hubEntityImage">
+                              <button type="button" class="mt-2 text-xs font-semibold text-danger hover:underline"
+                                @click="hubEntityImage = ''">
+                                Retirer l'image
+                              </button>
+                            </template>
+                          </div>
+
+                          <div class="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-[#0e1726]">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left"
+                              @click="hubAppsOpen = !hubAppsOpen">
+                              <span class="flex min-w-0 items-center gap-2">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                  <iconify-icon icon="solar:widget-5-bold-duotone" width="16"></iconify-icon>
+                                </span>
+                                <span class="min-w-0">
+                                  <span class="block text-sm font-bold text-gray-800 dark:text-white">Apps actives par défaut</span>
+                                  <span class="block text-xs text-gray-400" x-text="hubEnabledModulesCount() + ' activées'"></span>
+                                </span>
+                              </span>
+                              <iconify-icon icon="solar:alt-arrow-down-linear" width="16" class="text-gray-400 transition"
+                                :class="hubAppsOpen ? 'rotate-180' : ''"></iconify-icon>
+                            </button>
+                            <div x-show="hubAppsOpen" x-transition class="mt-2 grid grid-cols-2 gap-2">
+                              <template x-for="mod in hubModuleOptions" :key="mod.key">
+                                <button type="button"
+                                  class="flex items-center gap-2 rounded-lg border px-2 py-2 text-left text-xs font-bold transition"
+                                  :class="isHubModuleEnabled(mod.key) ? 'border-primary/30 bg-primary/10 text-primary' : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-[#0e1726] dark:text-gray-400'"
+                                  :disabled="mod.key === 'overview'"
+                                  @click="toggleHubModule(mod.key)">
+                                  <iconify-icon :icon="mod.icon" width="15" :style="'color:' + mod.color"></iconify-icon>
+                                  <span class="min-w-0 flex-1 truncate" x-text="mod.label"></span>
+                                  <span class="h-4 w-7 rounded-full p-0.5 transition"
+                                    :class="isHubModuleEnabled(mod.key) ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'">
+                                    <span class="block h-3 w-3 rounded-full bg-white transition"
+                                      :class="isHubModuleEnabled(mod.key) ? 'translate-x-3' : ''"></span>
+                                  </span>
+                                </button>
+                              </template>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                      <template x-if="hubEntityMode === 'existing'">
+                        <div class="space-y-2">
+                          <input type="text" x-model="hubEntitySearch" placeholder="Rechercher une entité..."
+                            class="form-input w-full" />
+                          <div class="max-h-44 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-[#0e1726]">
+                            <template x-for="entity in filteredHubEntities()" :key="entity.id">
+                              <button type="button"
+                                class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                :class="hubEntityId === entity.id ? 'bg-primary/10 text-primary' : 'text-gray-700 dark:text-gray-200'"
+                                @click="hubEntityId = entity.id">
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                                  :style="'background:' + (entity.color || '#4361ee') + '16;color:' + (entity.color || '#4361ee')">
+                                  <iconify-icon :icon="entity.icon || 'solar:database-bold-duotone'" width="15"></iconify-icon>
+                                </span>
+                                <span class="min-w-0 flex-1 truncate" x-text="entity.namePlural || entity.name"></span>
+                                <iconify-icon x-show="hubEntityId === entity.id" icon="solar:check-circle-bold" width="16"></iconify-icon>
+                              </button>
+                            </template>
+                            <div x-show="filteredHubEntities().length === 0" class="px-3 py-5 text-center text-xs text-gray-400">
+                              Aucune entité trouvée
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full" :disabled="!canSubmitHub()">
+                      <span x-show="hubSubmitting"
+                        class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
+                      Créer
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          </template>
         </div>
         </div><!-- end x-show spaces -->
         </div><!-- end x-data showAdmin wrapper -->
@@ -1285,6 +1487,19 @@
               creationType: 'folder',
               creationIcon: '',
               creationColor: '',
+              showHubModal: false,
+              hubName: '',
+              hubEntityMode: 'new',
+              hubEntityId: '',
+              hubEntityName: '',
+              hubEntityIcon: 'solar:users-group-rounded-bold-duotone',
+              hubEntityColor: '#8b5cf6',
+              hubEntityImage: '',
+              hubEntitySearch: '',
+              hubVisibleModules: ['overview', 'fiche', 'drive', 'agenda', 'ai', 'tasks', 'notes'],
+              hubAppsOpen: false,
+              hubColorPicker: null,
+              hubSubmitting: false,
               showIconEditModal: false,
               editingIcon: '',
               editingColor: '',
@@ -1340,6 +1555,21 @@
               availableColors: [
                 '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f',
                 '#2196f3', '#3b3f5c', '#818181', '#673ab7', '#ff4081'
+              ],
+
+              hubModuleOptions: [
+                { key:'overview', icon:'solar:widget-5-bold-duotone', color:'#6366f1', label:'Overview' },
+                { key:'fiche', icon:'solar:card-bold-duotone', color:'#4361ee', label:'Fiche' },
+                { key:'docs', icon:'solar:document-text-bold-duotone', color:'#f59e0b', label:'Docs' },
+                { key:'drive', icon:'solar:cloud-storage-bold-duotone', color:'#ec4899', label:'Drive' },
+                { key:'data-room', icon:'solar:shield-keyhole-bold-duotone', color:'#0f766e', label:'Data Room' },
+                { key:'tasks', icon:'solar:checklist-minimalistic-bold-duotone', color:'#10b981', label:'Tasks' },
+                { key:'agenda', icon:'solar:calendar-bold-duotone', color:'#14b8a6', label:'Agenda' },
+                { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
+                { key:'emails', icon:'solar:letter-bold-duotone', color:'#0ea5e9', label:'Emails' },
+                { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
+                { key:'ai', icon:'solar:magic-stick-3-bold-duotone', color:'#4f46e5', label:'IA' },
+                { key:'team', icon:'solar:users-group-rounded-bold-duotone', color:'#7c3aed', label:'Accès' }
               ],
 
               wizardOperatorOptions: [
@@ -1506,6 +1736,42 @@
 
               selectedWizardEntity() {
                 return this.allEntities.find(e => e.id === this.wizardExistingCollection) || null;
+              },
+
+              hubNamePlaceholder() {
+                return 'Mercedes CLA';
+              },
+
+              hubEntityPlaceholder() {
+                return 'Mes voitures';
+              },
+
+              openHubModal() {
+                this.destroyHubPickers();
+                this.hubName = '';
+                this.hubEntityMode = 'new';
+                this.hubEntityId = '';
+                this.hubEntityName = '';
+                this.hubEntityIcon = 'solar:users-group-rounded-bold-duotone';
+                this.hubEntityColor = '#8b5cf6';
+                this.hubEntityImage = '';
+                this.hubEntitySearch = '';
+                this.hubVisibleModules = ['overview', 'fiche', 'drive', 'agenda', 'ai', 'tasks', 'notes'];
+                this.hubAppsOpen = false;
+                this.hubSubmitting = false;
+                this.showHubModal = true;
+                Alpine.store('sidebar').showMenu = false;
+                Alpine.store('sidebar').showEditMenu = false;
+                this.loadAllEntities();
+                this.$nextTick(() => {
+                  this.mountHubColorPicker();
+                  if (this.$refs.hubNameInput) this.$refs.hubNameInput.focus();
+                });
+              },
+
+              closeHubModal() {
+                this.destroyHubPickers();
+                this.showHubModal = false;
               },
 
               prepareNewRecordsWizard() {
@@ -1958,19 +2224,13 @@
               editingName: '',
               realSpacesCount: 0,
 
-              // When an environment has exactly 1 populated space, flatten it:
-              // show the space's children directly, but keep empty spaces visible.
+              // Keep the Space wrapper visible even when there is only one Space.
+              // Otherwise creating the first child makes the Space look like it disappeared.
               get isSingleSpaceEnv() {
-                return this.hierarchy.length === 1
-                  && this.hierarchy[0].type === 'space'
-                  && (this.hierarchy[0].children || []).length > 0;
+                return false;
               },
 
               get displayHierarchy() {
-                if (this.isSingleSpaceEnv) {
-                  // Auto-expand the single space's children as root items
-                  return this.hierarchy[0].children || [];
-                }
                 return this.hierarchy;
               },
               menuMode: 'main', // 'main' or 'data'
@@ -2301,6 +2561,42 @@
                 return this.expandedIds.includes(id);
               },
 
+              findHierarchyPlacement(id, list = this.hierarchy, depth = 0) {
+                const targetId = String(id || '');
+                if (!targetId) return null;
+                for (const item of list || []) {
+                  if (String(item.id) === targetId) return { item, depth };
+                  const found = this.findHierarchyPlacement(targetId, item.children || [], depth + 1);
+                  if (found) return found;
+                }
+                return null;
+              },
+
+              openHierarchyBranch(id) {
+                const found = this.findHierarchyPlacement(id);
+                if (!found) return false;
+                const itemId = String(found.item.id);
+                if (found.depth === 0 || found.item.type === 'space') {
+                  if (!this.activeDropdown.includes(itemId)) this.activeDropdown.push(itemId);
+                } else if (found.depth === 1) {
+                  if (!this.subActive.includes(itemId)) this.subActive.push(itemId);
+                } else if (!this.expandedIds.includes(itemId)) {
+                  this.expandedIds.push(itemId);
+                }
+                return true;
+              },
+
+              openCreatedItemPath(parent, createdItem = null) {
+                this.openHierarchyBranch(parent?.id);
+                const createdId = createdItem?.id || createdItem?._id;
+                const created = this.findHierarchyPlacement(createdId);
+                if (created && ['space', 'folder', 'environment', 'workstation'].includes(created.item.type)) {
+                  this.openHierarchyBranch(createdId);
+                }
+                this.saveSidebarPrefs();
+                this.$nextTick(() => this.initDragAndDrop());
+              },
+
               async loadSidebarPrefs() {
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 try {
@@ -2405,6 +2701,10 @@
               },
 
               async openSidebarBackgroundMenu(event) {
+                if (event?.type !== 'contextmenu') {
+                  return;
+                }
+
                 const target = event?.target;
                 if (target?.closest?.('[data-id][data-type], a, button, input, select, textarea, .hierarchy-popover')) {
                   return;
@@ -2470,6 +2770,106 @@
                 );
               },
 
+              filteredHubEntities() {
+                const search = String(this.hubEntitySearch || '').trim().toLowerCase();
+                const entities = this.allEntities || [];
+                if (!search) return entities;
+                return entities.filter(e => {
+                  const name = String(e.name || '').toLowerCase();
+                  const plural = String(e.namePlural || '').toLowerCase();
+                  const singular = String(e.nameSingular || '').toLowerCase();
+                  return name.includes(search) || plural.includes(search) || singular.includes(search);
+                });
+              },
+
+              destroyHubPickers() {
+                try {
+                  const iconPicker = this.$refs?.hubIconPicker;
+                  if (iconPicker?._iconPickerRoot) {
+                    iconPicker._iconPickerRoot.unmount();
+                    iconPicker._iconPickerRoot = null;
+                    iconPicker.dataset.mounted = '';
+                    iconPicker.innerHTML = '';
+                  }
+                } catch (err) {
+                  console.warn('[HubModal] Icon picker cleanup failed', err);
+                }
+                try {
+                  if (this.hubColorPicker) {
+                    this.hubColorPicker.destroy();
+                    this.hubColorPicker = null;
+                  }
+                } catch (err) {
+                  console.warn('[HubModal] Color picker cleanup failed', err);
+                  this.hubColorPicker = null;
+                }
+              },
+
+              mountHubColorPicker() {
+                this.$nextTick(() => {
+                  const el = this.$refs?.hubEntityColorPicker;
+                  if (!el || typeof window.ColorPicker !== 'function') return;
+                  try {
+                    if (this.hubColorPicker) {
+                      this.hubColorPicker.destroy();
+                      this.hubColorPicker = null;
+                    }
+                    this.hubColorPicker = new window.ColorPicker(el, {
+                      name: 'hubEntityColor',
+                      value: this.hubEntityColor,
+                      colors: this.availableColors,
+                      allowClear: false,
+                      zIndex: 10000,
+                      onSelect: (color) => {
+                        this.hubEntityColor = color || '#8b5cf6';
+                      }
+                    });
+                  } catch (err) {
+                    console.warn('[HubModal] Color picker mount failed', err);
+                  }
+                });
+              },
+
+              openHubEntityImagePicker() {
+                const picker = Alpine.store('imagePicker');
+                if (!picker || typeof picker.open !== 'function') {
+                  alert("Sélecteur d'image indisponible");
+                  return;
+                }
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                picker.open({
+                  accountNumber: accountNum,
+                  multiple: false,
+                  onSelect: (image) => {
+                    this.hubEntityImage = image?.url || '';
+                  }
+                });
+              },
+
+              hubEnabledModulesCount() {
+                return this.hubModuleOptions.filter(mod => this.isHubModuleEnabled(mod.key)).length;
+              },
+
+              canSubmitHub() {
+                if (this.hubSubmitting || !String(this.hubName || '').trim()) return false;
+                if (this.hubEntityMode === 'existing') return Boolean(this.hubEntityId);
+                return true;
+              },
+
+              isHubModuleEnabled(key) {
+                return key === 'overview' || this.hubVisibleModules.includes(key);
+              },
+
+              toggleHubModule(key) {
+                key = String(key || '');
+                if (!key || key === 'overview') return;
+                if (this.hubVisibleModules.includes(key)) {
+                  this.hubVisibleModules = this.hubVisibleModules.filter(item => item !== key);
+                } else {
+                  this.hubVisibleModules = [...this.hubVisibleModules, key];
+                }
+              },
+
               async linkExistingEntity(entity, options = {}) {
                 const viewType = this.pendingViewType;
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
@@ -2507,6 +2907,56 @@
                 window.dispatchEvent(new CustomEvent('open-space-modal', {
                   detail: { space: null, environmentId: this.activeEnvironmentId }
                 }));
+              },
+
+              async submitCreateHub() {
+                const parent = Alpine.store('sidebar').contextItem;
+                const name = this.hubName.trim();
+                if (!name || !parent) return;
+
+                this.hubSubmitting = true;
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                try {
+                  const endpoint = `/account/${accountNum}/api/hierarchy/hub`;
+                  const existingEntityId = this.hubEntityMode === 'existing' ? this.hubEntityId : '';
+                  const isNewEntity = this.hubEntityMode !== 'existing';
+                  const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      name,
+                      entityId: existingEntityId,
+                      entityName: existingEntityId ? '' : this.hubEntityName.trim(),
+                      entityMode: isNewEntity ? 'new' : 'existing',
+                      createNewEntity: isNewEntity,
+                      entityIcon: isNewEntity ? this.hubEntityIcon : '',
+                      entityColor: isNewEntity ? this.hubEntityColor : '',
+                      entityImage: isNewEntity ? this.hubEntityImage : '',
+                      visibleModules: isNewEntity ? this.hubVisibleModules : [],
+                      parentId: parent.id,
+                      parentType: parent.type
+                    })
+                  });
+                  const raw = await res.text();
+                  let data = {};
+                  if (raw) {
+                    try { data = JSON.parse(raw); } catch (_) { data = {}; }
+                  }
+                  if (!res.ok) {
+                    const textMessage = raw && !raw.trim().startsWith('<') ? raw.trim() : '';
+                    const fallback = res.status === 404
+                      ? `Route de création du hub introuvable (${endpoint})`
+                      : `HTTP ${res.status}`;
+                    throw new Error(data.error || data.message || textMessage || fallback);
+                  }
+                  this.closeHubModal();
+                  await this.fetchHierarchy(true);
+                  this.openCreatedItemPath(parent, data.hub || data);
+                } catch (e) {
+                  alert("Erreur: " + e.message);
+                } finally {
+                  this.hubSubmitting = false;
+                }
               },
 
               async createItem(type, viewType = 'list') {
@@ -2572,8 +3022,10 @@
                     const err = await res.json();
                     throw new Error(err.error || `HTTP ${res.status}`);
                   }
+                  const createdItem = await res.json();
                   this.showCreateModal = false;
-                  await this.fetchHierarchy();
+                  await this.fetchHierarchy(true);
+                  this.openCreatedItemPath(parent, createdItem);
                 } catch (e) { alert("Erreur: " + e.message); }
                 finally { this.isSubmitting = false; }
               },
@@ -3167,26 +3619,27 @@
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
                   @click="createItem('folder')">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:folder-2-bold-duotone" width="18" height="18"></iconify-icon>
+                    <iconify-icon icon="solar:folder-2-bold-duotone" width="18" height="18" style="color: #f59e0b"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Dossier</span>
                   </div>
                 </li>
 
-                <!-- Records -->
+                <!-- Collection -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
                   @click="openRecordsWizard(); $store.sidebar.showMenu = false;">
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:database-bold-duotone" width="18" height="18" style="color: #4361ee"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Records</span>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Collection</span>
                   </div>
                 </li>
 
-                <!-- Deck -->
+                <!-- Hub -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="alert('Deck (Démo) : Bientôt disponible !'); $store.sidebar.showMenu = false;">
+                  x-show="!['entity', 'hub'].includes($store.sidebar.contextItem?.type)"
+                  @click="openHubModal()">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:gallery-wide-bold-duotone" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Deck</span>
+                    <iconify-icon icon="solar:widget-5-bold-duotone" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Hub</span>
                   </div>
                 </li>
 
@@ -3199,14 +3652,6 @@
                   </div>
                 </li>
 
-                <!-- Cockpit -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="$store.sidebar.showMenu = false; window.location.href = '/account/<%= account_number %>/page-builder/cockpit/new?parentId=' + $store.sidebar.contextItem?.id + '&parentType=' + $store.sidebar.contextItem?.type">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="18" height="18" style="color: #10b981"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Cockpit</span>
-                  </div>
-                </li>
               </ul>
             </div>
           </template>
@@ -3320,32 +3765,32 @@
             </template>
 
             <!-- Sinon, afficher la liste complète (pour space, folder, environment) -->
-            <template x-if="$store.sidebar.contextItem?.type !== 'entity'">
+            <template x-if="!['entity', 'hub'].includes($store.sidebar.contextItem?.type)">
               <div>
                 <!-- Dossier -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
                   @click="createItem('folder')">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:folder-2-line-duotone" width="18" height="18"></iconify-icon>
+                    <iconify-icon icon="solar:folder-2-bold-duotone" width="18" height="18" style="color: #f59e0b"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Dossier</span>
                   </div>
                 </li>
 
-                <!-- Records -->
+                <!-- Collection -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
                   @click="openRecordsWizard()">
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:database-bold-duotone" width="18" height="18" style="color: #4361ee"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Records</span>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Collection</span>
                   </div>
                 </li>
 
-                <!-- Deck -->
+                <!-- Hub -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="alert('Deck (Démo) : Bientôt disponible !'); $store.sidebar.showEditMenu = false;">
+                  @click="openHubModal()">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:gallery-wide-bold-duotone" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Deck</span>
+                    <iconify-icon icon="solar:widget-5-bold-duotone" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Hub</span>
                   </div>
                 </li>
 
@@ -3358,14 +3803,6 @@
                   </div>
                 </li>
 
-                <!-- Cockpit -->
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="alert('Cockpit (Démo) : Bientôt disponible !'); $store.sidebar.showEditMenu = false;">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="18" height="18" style="color: #10b981"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Cockpit</span>
-                  </div>
-                </li>
               </div>
             </template>
 

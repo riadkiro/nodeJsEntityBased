@@ -1,7 +1,7 @@
 <%# ═══ TASKS MODULE — Two-level: Lists → Tasks ═══ %>
 <% var _isTasksTabLocal = (typeof _isTasksTab !== 'undefined') ? _isTasksTab : true; %>
 <style>
-    .tl-wrap { max-width: 820px; }
+    .tl-wrap { max-width: 1120px; }
     /* ─── Full-screen kanban app ─── */
     .tl-wrap.tl-fs-active { max-width: 100%; }
     .rm-page:has(.tl-wrap.tl-fs-active) { max-width: 100%; }
@@ -94,6 +94,17 @@
         position: relative; z-index: 1;
     }
     .tl-card:hover { border-color: #e0e6ed; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transform: translateX(2px); }
+    .tl-list-drag {
+        width: 18px; height: 28px; margin-left: -4px; flex-shrink: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #cbd5e1; cursor: grab; opacity: 0;
+        transition: color 0.15s, opacity 0.15s;
+    }
+    .tl-card:hover .tl-list-drag { opacity: 1; }
+    .tl-list-drag:hover { color: #4361ee; }
+    .tl-list-drag:active { cursor: grabbing; }
+    .tl-list-ghost { opacity: 0.35; background: #eef2ff; border-color: #c7d2fe; }
+    .tl-list-chosen { box-shadow: 0 10px 26px rgba(67,97,238,0.14); }
     .tl-card-icon {
         width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
@@ -220,11 +231,30 @@
     .tl-preview-smenu button:hover { background: #f1f5f9; }
     .tl-preview-sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     /* ─── Add list input ─── */
+    .tl-overview-layout {
+        display: grid; grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 24px; align-items: start;
+    }
+    .tl-overview-main { min-width: 0; }
+    .tl-list-detail-view { max-width: 820px; }
+    .tl-list-toolbar {
+        display: flex; justify-content: flex-end; align-items: center;
+        margin-bottom: 12px;
+    }
+    .tl-add-list-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 9px 14px; border-radius: 10px; border: none;
+        background: linear-gradient(135deg, #4361ee, #6366f1);
+        color: #fff; font-size: 12px; font-weight: 700;
+        cursor: pointer; font-family: inherit; transition: all 0.2s;
+        box-shadow: 0 8px 18px rgba(67,97,238,0.16);
+    }
+    .tl-add-list-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(67,97,238,0.22); }
     .tl-add {
         display: flex; align-items: center; gap: 10px;
         padding: 12px 18px; border-radius: 12px;
         border: 1.5px dashed #e0e6ed; background: #fff;
-        transition: all 0.25s; margin-top: 4px;
+        transition: all 0.25s; margin-bottom: 12px;
     }
     .tl-add:focus-within { border-color: #4361ee; border-style: solid; box-shadow: 0 0 0 3px #4361ee10; }
     .tl-add input {
@@ -240,7 +270,73 @@
         opacity: 0; pointer-events: none;
     }
     .tl-add:focus-within .tl-add-btn { opacity: 1; pointer-events: auto; }
+    .tl-add.tl-add-open .tl-add-btn { opacity: 1; pointer-events: auto; }
     .tl-add-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px #4361ee40; }
+    .tl-add-cancel {
+        width: 28px; height: 28px; border: none; border-radius: 8px;
+        background: transparent; color: #94a3b8; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: all 0.15s;
+    }
+    .tl-add-cancel:hover { background: #f1f5f9; color: #ef4444; }
+    /* ─── Progress sidebar ─── */
+    .tl-progress-panel {
+        position: sticky; top: 16px;
+        background: #fff; border: 1px solid #e8ecf1; border-radius: 14px;
+        padding: 16px; box-shadow: 0 8px 24px rgba(15,23,42,0.04);
+    }
+    .tl-progress-head {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 10px; margin-bottom: 14px;
+    }
+    .tl-progress-title {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13px; font-weight: 800; color: #0e1726;
+    }
+    .tl-progress-pct {
+        padding: 4px 8px; border-radius: 999px;
+        background: #10b98112; color: #10b981;
+        font-size: 11px; font-weight: 800;
+    }
+    .tl-progress-body { display: flex; align-items: center; gap: 16px; padding: 2px 0 14px; }
+    .tl-progress-donut {
+        position: relative; width: 94px; height: 94px; border-radius: 50%;
+        flex-shrink: 0; background: #e2e8f0;
+    }
+    .tl-progress-donut-center {
+        position: absolute; inset: 14px; border-radius: 50%; background: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .tl-progress-donut-main { font-size: 22px; font-weight: 850; color: #0f172a; line-height: 1; }
+    .tl-progress-donut-label {
+        font-size: 8.5px; font-weight: 700; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: .5px; margin-top: 2px;
+    }
+    .tl-progress-legend { display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; }
+    .tl-progress-legend-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+    .tl-progress-dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+    .tl-progress-legend-label {
+        flex: 1; min-width: 0; color: #475569; font-size: 11.5px;
+        font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tl-progress-legend-count { color: #0f172a; font-size: 12px; font-weight: 800; }
+    .tl-progress-metrics {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 12px;
+    }
+    .tl-progress-metric {
+        min-width: 0; border-radius: 10px; background: #f8fafc;
+        padding: 10px 8px; text-align: center;
+    }
+    .tl-progress-metric-value { font-size: 16px; font-weight: 850; color: #0f172a; line-height: 1; }
+    .tl-progress-metric-label {
+        margin-top: 4px; font-size: 9.5px; font-weight: 700;
+        color: #94a3b8; text-transform: uppercase; letter-spacing: .35px;
+    }
+    .tl-progress-empty {
+        border-top: 1px solid #f1f5f9; padding-top: 12px;
+        color: #94a3b8; font-size: 12px; line-height: 1.4;
+    }
     /* ─── Task items inside a list ─── */
     .tl-task {
         display: flex; align-items: center; gap: 12px;
@@ -371,9 +467,23 @@
     /* ─── Dark mode ─── */
     .dark .tl-card { background: #0e1726; border-color: #253b5c; }
     .dark .tl-card:hover { border-color: #3b82f6; }
+    .dark .tl-list-drag { color: #506690; }
+    .dark .tl-list-drag:hover { color: #818cf8; }
+    .dark .tl-list-ghost { background: #1b2e4b; border-color: #4361ee; }
     .dark .tl-card-name { color: #e0e6ed; }
     .dark .tl-add { background: #0e1726; border-color: #253b5c; }
     .dark .tl-add input { color: #e0e6ed; }
+    .dark .tl-add-cancel:hover { background: #1b2e4b; }
+    .dark .tl-progress-panel { background: #0e1726; border-color: #253b5c; box-shadow: none; }
+    .dark .tl-progress-title,
+    .dark .tl-progress-donut-main,
+    .dark .tl-progress-legend-count,
+    .dark .tl-progress-metric-value { color: #e0e6ed; }
+    .dark .tl-progress-donut-center { background: #0e1726; }
+    .dark .tl-progress-legend-label { color: #94a3b8; }
+    .dark .tl-progress-metrics,
+    .dark .tl-progress-empty { border-color: #253b5c; }
+    .dark .tl-progress-metric { background: #1b2e4b; }
     .dark .tl-task { background: #0e1726; }
     .dark .tl-task:hover { background: #1b2e4b; }
     .dark .tl-task-title { color: #e0e6ed; }
@@ -913,6 +1023,17 @@
     .dark .tl-color-grid { background: #1b2e4b; border-color: #253b5c; }
     .dark .tl-card-count { color: #506690; }
     .dark .tl-card-progress { background: #253b5c; }
+    @media (max-width: 1040px) {
+        .tl-overview-layout { grid-template-columns: 1fr; }
+        .tl-progress-panel { position: static; order: -1; }
+        .tl-list-toolbar { justify-content: flex-start; }
+    }
+    @media (max-width: 560px) {
+        .tl-progress-body { align-items: flex-start; flex-direction: column; }
+        .tl-progress-metrics { grid-template-columns: 1fr; }
+        .tl-add { align-items: stretch; flex-wrap: wrap; }
+        .tl-add input { min-width: 180px; }
+    }
 </style>
 
 <div class="tl-wrap" :class="{'tl-fs-active': kanbanList}" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null; statusMgrListId = null; detailStatusMenu = false; detailPriorityMenu = false" @contextmenu.prevent>
@@ -920,62 +1041,79 @@
     <% if (_isTasksTabLocal) { %>
     <!-- ════════ VIEW 1: LISTS ════════ -->
     <template x-if="!activeList && !kanbanList">
-        <div>
-            <!-- Add list -->
-            <div class="tl-add">
-                <iconify-icon icon="solar:add-circle-linear" width="18" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
-                <input type="text" placeholder="Nouvelle liste de tâches..."
-                       x-model="newListName"
-                       @keydown.enter="addList()"
-                       @keydown.escape="newListName = ''">
-                <button type="button" class="tl-add-btn" @click="addList()">Créer</button>
-            </div>
+        <div class="tl-overview-layout">
+            <div class="tl-overview-main">
+                <div class="tl-list-toolbar" x-show="!addingList">
+                    <button type="button" class="tl-add-list-btn" @click="addingList = true; $nextTick(() => { if ($refs.newListInput) $refs.newListInput.focus(); })">
+                        <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+                        Ajouter une liste de tâches
+                    </button>
+                </div>
 
-            <!-- Loading -->
-            <div x-show="loading" style="text-align:center; padding:32px;">
-                <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
-            </div>
+                <!-- Add list -->
+                <div class="tl-add tl-add-open" x-show="addingList" x-transition>
+                    <iconify-icon icon="solar:add-circle-linear" width="18" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                    <input type="text" placeholder="Nom de la liste..."
+                           x-ref="newListInput"
+                           x-model="newListName"
+                           x-init="newListName = normalizeDraftValue(newListName)"
+                           @input="newListName = normalizeDraftValue(newListName)"
+                           @keydown.enter="addList()"
+                           @keydown.escape="addingList = false; newListName = ''">
+                    <button type="button" class="tl-add-btn" @click="addList()">Créer</button>
+                    <button type="button" class="tl-add-cancel" @click="addingList = false; newListName = ''" title="Annuler">
+                        <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                    </button>
+                </div>
 
-            <!-- List cards -->
-            <div class="tl-grid" x-show="!loading">
-                <template x-for="(list, idx) in lists" :key="list._id">
-                    <div class="tl-card" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === list._id}" :style="'animation-delay:' + idx * 50 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
-                        <div style="display:flex;align-items:center;gap:14px;width:100%" @click="if(editingListId !== list._id) toggleExpand(list._id)">
-                            <div class="tl-card-icon" :style="'background:' + list.color + '12'">
-                                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" :style="'color:' + list.color"></iconify-icon>
-                            </div>
-                            <div class="tl-card-body">
-                                <div class="tl-card-name" x-show="editingListId !== list._id" x-text="list.label"></div>
-                                <input x-show="editingListId === list._id" class="tl-inline-edit" style="font-size:14px;font-weight:600"
-                                       x-model="editListLabel"
-                                       @click.stop
-                                       @keydown.enter="saveListName(list)"
-                                       @keydown.escape="editingListId = null"
-                                       @blur="saveListName(list)">
-                                <div class="tl-card-count">
-                                    <span x-text="list.count"></span> tâche<span x-show="list.count !== 1">s</span>
-                                    <template x-if="list.doneCount > 0">
-                                        <span style="margin-left:4px;color:#10b981">· <span x-text="list.doneCount"></span> terminée<span x-show="list.doneCount !== 1">s</span></span>
-                                    </template>
-                                    <span class="tl-kanban-link" @click.stop="openKanban(list)">
-                                        <iconify-icon icon="solar:widget-5-bold-duotone" width="12"></iconify-icon>
-                                        Vue kanban
-                                    </span>
+                <!-- Loading -->
+                <div x-show="loading" style="text-align:center; padding:32px;">
+                    <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
+                </div>
+
+                <!-- List cards -->
+                <div class="tl-grid tl-list-grid" x-show="!loading"
+                     x-init="$nextTick(() => initListSortable($el))"
+                     x-effect="lists.length; $nextTick(() => initListSortable($el))">
+                    <template x-for="(list, idx) in lists" :key="list._id">
+                        <div class="tl-card" :data-list-id="list._id" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === list._id}" :style="'animation-delay:' + idx * 50 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
+                            <div style="display:flex;align-items:center;gap:14px;width:100%" @click="if(editingListId !== list._id) toggleExpand(list._id)">
+                                <iconify-icon icon="solar:hamburger-menu-linear" width="14" class="tl-list-drag" @click.stop title="Réorganiser"></iconify-icon>
+                                <div class="tl-card-icon" :style="'background:' + list.color + '12'">
+                                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" :style="'color:' + list.color"></iconify-icon>
                                 </div>
+                                <div class="tl-card-body">
+                                    <div class="tl-card-name" x-show="editingListId !== list._id" x-text="list.label"></div>
+                                    <input x-show="editingListId === list._id" class="tl-inline-edit" style="font-size:14px;font-weight:600"
+                                           x-model="editListLabel"
+                                           @click.stop
+                                           @keydown.enter="saveListName(list)"
+                                           @keydown.escape="editingListId = null"
+                                           @blur="saveListName(list)">
+                                    <div class="tl-card-count">
+                                        <span x-text="list.count"></span> tâche<span x-show="list.count !== 1">s</span>
+                                        <template x-if="list.doneCount > 0">
+                                            <span style="margin-left:4px;color:#10b981">· <span x-text="list.doneCount"></span> terminée<span x-show="list.doneCount !== 1">s</span></span>
+                                        </template>
+                                        <span class="tl-kanban-link" @click.stop="openKanban(list)">
+                                            <iconify-icon icon="solar:widget-5-bold-duotone" width="12"></iconify-icon>
+                                            Vue kanban
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="tl-card-progress" x-show="list.count > 0">
+                                    <div class="tl-card-progress-bar" :style="'width:' + (list.count ? Math.round(list.doneCount/list.count*100) : 0) + '%;background:' + list.color"></div>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-right-linear" width="16" class="tl-card-toggle" :class="{'expanded': expandedListIds.includes(list._id)}" @click.stop="toggleExpand(list._id)"></iconify-icon>
                             </div>
-                            <div class="tl-card-progress" x-show="list.count > 0">
-                                <div class="tl-card-progress-bar" :style="'width:' + (list.count ? Math.round(list.doneCount/list.count*100) : 0) + '%;background:' + list.color"></div>
-                            </div>
-                            <iconify-icon icon="solar:alt-arrow-right-linear" width="16" class="tl-card-toggle" :class="{'expanded': expandedListIds.includes(list._id)}" @click.stop="toggleExpand(list._id)"></iconify-icon>
-                        </div>
 
-                        <!-- Expandable task preview -->
-                        <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
-                            <div class="sortable-tasks-container" :data-list-id="list._id"
-                                 x-init="$nextTick(() => initPreviewSortable($el, list))"
-                                 x-effect="if(expandedListIds.includes(list._id)) $nextTick(() => initPreviewSortable($el, list))">
-                            <template x-for="(pt, ptIdx) in (list.tasks || [])" :key="pt._id">
-                                <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé'}"
+                            <!-- Expandable task preview -->
+                            <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
+                                <div class="sortable-tasks-container" :data-list-id="list._id"
+                                     x-init="$nextTick(() => initPreviewSortable($el, list))"
+                                     x-effect="if(expandedListIds.includes(list._id)) $nextTick(() => initPreviewSortable($el, list))">
+                                <template x-for="(pt, ptIdx) in (list.tasks || [])" :key="pt._id">
+                                    <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé'}"
                                      :data-task-id="pt._id"
                                      @click.stop="openDetail(list, pt)"
                                      @contextmenu.prevent.stop="openTaskCtx($event, list, pt)">
@@ -1033,6 +1171,8 @@
                             <div class="tl-preview-add">
                                 <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
                                 <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask[list._id]"
+                                       x-init="previewNewTask[list._id] = normalizeDraftValue(previewNewTask[list._id])"
+                                       @input="previewNewTask[list._id] = normalizeDraftValue(previewNewTask[list._id])"
                                        @keydown.enter="previewAddTask(list)"
                                        @keydown.escape="previewNewTask[list._id] = ''">
                             </div>
@@ -1046,14 +1186,62 @@
             <div class="tl-empty" x-show="!loading && lists.length === 0">
                 <iconify-icon icon="solar:clipboard-list-bold-duotone" width="40" style="color:#d1d5db;margin-bottom:10px"></iconify-icon>
                 <span style="font-size:14px;font-weight:600;color:#94a3b8">Aucune liste</span>
-                <span style="font-size:12px;color:#bfc9d4;margin-top:2px">Créez une liste ci-dessus pour organiser vos tâches</span>
+                <span style="font-size:12px;color:#bfc9d4;margin-top:2px">Ajoutez une liste pour organiser vos tâches</span>
             </div>
+            </div>
+
+            <aside class="tl-progress-panel" x-show="!loading" x-transition>
+                <div class="tl-progress-head">
+                    <div class="tl-progress-title">
+                        <iconify-icon icon="solar:chart-2-bold-duotone" width="17" style="color:#10b981"></iconify-icon>
+                        Avancement
+                    </div>
+                    <span class="tl-progress-pct" x-text="completionPct + '%'"></span>
+                </div>
+
+                <div class="tl-progress-body">
+                    <div class="tl-progress-donut" :style="'background:conic-gradient(' + taskProgressConic + ')'">
+                        <div class="tl-progress-donut-center">
+                            <span class="tl-progress-donut-main" x-text="totalTasks"></span>
+                            <span class="tl-progress-donut-label">tâches</span>
+                        </div>
+                    </div>
+                    <div class="tl-progress-legend">
+                        <template x-for="item in progressLegend" :key="item.label">
+                            <div class="tl-progress-legend-row">
+                                <span class="tl-progress-dot" :style="'background:' + item.color"></span>
+                                <span class="tl-progress-legend-label" x-text="item.label"></span>
+                                <span class="tl-progress-legend-count" x-text="item.count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="tl-progress-metrics">
+                    <div class="tl-progress-metric">
+                        <div class="tl-progress-metric-value" x-text="lists.length"></div>
+                        <div class="tl-progress-metric-label">Listes</div>
+                    </div>
+                    <div class="tl-progress-metric">
+                        <div class="tl-progress-metric-value" x-text="totalTasks"></div>
+                        <div class="tl-progress-metric-label">Total</div>
+                    </div>
+                    <div class="tl-progress-metric">
+                        <div class="tl-progress-metric-value" x-text="completedTasks"></div>
+                        <div class="tl-progress-metric-label">Terminées</div>
+                    </div>
+                </div>
+
+                <div class="tl-progress-empty" x-show="totalTasks === 0">
+                    Les tâches ajoutées dans vos listes alimenteront ce graphique.
+                </div>
+            </aside>
         </div>
     </template>
 
     <!-- ════════ VIEW 2: TASKS INSIDE A LIST ════════ -->
     <template x-if="activeList && !kanbanList">
-        <div>
+        <div class="tl-list-detail-view">
             <!-- Back -->
             <button class="tl-back" @click="activeList = null; tasks = [];">
                 <iconify-icon icon="solar:alt-arrow-left-linear" width="14"></iconify-icon>
@@ -1074,6 +1262,8 @@
                 <div style="width:20px;height:20px;border-radius:6px;border:2px solid #d1d5db;flex-shrink:0"></div>
                 <input type="text" placeholder="Ajouter une tâche..."
                        x-model="newTaskTitle"
+                       x-init="newTaskTitle = normalizeDraftValue(newTaskTitle)"
+                       @input="newTaskTitle = normalizeDraftValue(newTaskTitle)"
                        @keydown.enter="addTask()"
                        @keydown.escape="newTaskTitle = ''">
                 <button type="button" class="tl-task-add-btn" @click="addTask()">
@@ -1329,6 +1519,8 @@
                                     <input type="text" class="tl-kb-add-input"
                                            placeholder="Nom de la tâche..."
                                            x-model="kanbanNewTitle"
+                                           x-init="kanbanNewTitle = normalizeDraftValue(kanbanNewTitle)"
+                                           @input="kanbanNewTitle = normalizeDraftValue(kanbanNewTitle)"
                                            @keydown.enter="kanbanAddTask(kanbanList, s.label)"
                                            @keydown.escape="kanbanAddStatus = null; kanbanAddListId = null; kanbanNewTitle = ''"
                                            @click.outside="kanbanAddStatus = null; kanbanAddListId = null; kanbanNewTitle = ''">
@@ -1561,6 +1753,7 @@ document.addEventListener('alpine:init', () => {
         activeList: null,
         loading: true,
         loadingTasks: false,
+        addingList: false,
         showDone: false,
         newListName: '',
         newTaskTitle: '',
@@ -1598,6 +1791,8 @@ document.addEventListener('alpine:init', () => {
         statusMgrColorIdx: null,
         _kanbanInstances: {},
         _sortableInstances: {},
+        _listSortable: null,
+        _preListDragIds: [],
         ctxColors: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6b7280'],
         statusColors: ['#9ca3af','#3b82f6','#f59e0b','#22c55e','#ef4444','#6366f1','#06b6d4','#10b981','#f97316','#ec4899','#8b5cf6','#dc2626','#0891b2','#7c3aed'],
         defaultStatuses: [
@@ -1631,8 +1826,110 @@ document.addEventListener('alpine:init', () => {
         get doneTasks() {
             return this.tasks.filter(t => t.status === 'Terminé');
         },
+        get totalTasks() {
+            return this.lists.reduce((sum, list) => sum + this.listTaskCount(list), 0);
+        },
+        get completedTasks() {
+            return Math.min(this.totalTasks, this.lists.reduce((sum, list) => sum + this.listDoneCount(list), 0));
+        },
+        get remainingTasks() {
+            return Math.max(0, this.totalTasks - this.completedTasks);
+        },
+        get completionPct() {
+            return this.totalTasks ? Math.round((this.completedTasks / this.totalTasks) * 100) : 0;
+        },
+        get progressLegend() {
+            return [
+                { label: 'Terminées', color: '#22c55e', count: this.completedTasks },
+                { label: 'Restantes', color: '#cbd5e1', count: this.remainingTasks }
+            ];
+        },
+        get taskProgressConic() {
+            return this.buildProgressConic(this.progressLegend, this.totalTasks);
+        },
+
+        normalizeDraftValue(value) {
+            if (value === false || value === null || value === undefined) return '';
+            const text = String(value);
+            if (['false', 'null', 'undefined'].includes(text.trim().toLowerCase())) return '';
+            return text;
+        },
+
+        cleanTaskTitle(value) {
+            return this.normalizeDraftValue(value).trim();
+        },
+
+        displayTaskText(value, fallback = 'Sans titre') {
+            return this.cleanTaskTitle(value) || fallback;
+        },
+
+        displayTaskListLabel(value) {
+            const label = this.displayTaskText(value, 'Tâches du jour');
+            return label.toLowerCase() === 'général' ? 'Tâches du jour' : label;
+        },
+
+        listTaskCount(list = {}) {
+            const count = Number(list.count);
+            if (Number.isFinite(count)) return Math.max(0, count);
+            return Array.isArray(list.tasks) ? list.tasks.length : 0;
+        },
+
+        listDoneCount(list = {}) {
+            const doneCount = Number(list.doneCount);
+            if (Number.isFinite(doneCount)) return Math.min(this.listTaskCount(list), Math.max(0, doneCount));
+            return Array.isArray(list.tasks) ? list.tasks.filter(t => t.status === 'Terminé').length : 0;
+        },
+
+        buildProgressConic(items, total) {
+            if (!total) return '#e2e8f0 0deg 360deg';
+            let angle = 0;
+            const parts = [];
+            items.forEach(item => {
+                if (!item.count) return;
+                const nextAngle = angle + (item.count / total) * 360;
+                parts.push(`${item.color} ${angle}deg ${nextAngle}deg`);
+                angle = nextAngle;
+            });
+            if (angle < 360) parts.push(`#e2e8f0 ${angle}deg 360deg`);
+            return parts.join(', ');
+        },
+
+        normalizeTask(task = {}) {
+            return {
+                ...task,
+                title: this.displayTaskText(task.title),
+                description: typeof task.description === 'string' ? task.description : '',
+                status: typeof task.status === 'string' && task.status.trim() ? task.status : 'À faire',
+                statusColor: typeof task.statusColor === 'string' && task.statusColor ? task.statusColor : this.getStatusColor(task.status),
+                priority: typeof task.priority === 'string' && task.priority ? task.priority : 'Aucune',
+                priorityColor: typeof task.priorityColor === 'string' ? task.priorityColor : '',
+                assignedTo: typeof task.assignedTo === 'string' ? task.assignedTo : ''
+            };
+        },
+
+        normalizeList(list = {}) {
+            const id = String(list._id || '');
+            if (id && this.previewNewTask[id] === undefined) this.previewNewTask[id] = '';
+            return {
+                ...list,
+                _id: id,
+                label: this.displayTaskListLabel(list.label),
+                color: typeof list.color === 'string' && list.color ? list.color : '#6366f1',
+                tasks: (list.tasks || []).map(task => this.normalizeTask(task))
+            };
+        },
+
+        resetDraftInputs() {
+            this.newListName = '';
+            this.newTaskTitle = '';
+            this.kanbanNewTitle = '';
+            this.addingList = false;
+            Object.keys(this.previewNewTask || {}).forEach(key => { this.previewNewTask[key] = ''; });
+        },
 
         async init() {
+            this.resetDraftInputs();
+            this.$nextTick(() => this.resetDraftInputs());
             // Get current user ID for chat bubble alignment
             const userEl = document.querySelector('[data-user-id]');
             if (userEl) this._currentUserId = userEl.dataset.userId || '';
@@ -1672,9 +1969,9 @@ document.addEventListener('alpine:init', () => {
                         // Find or create a synthetic list reference
                         let list = this.lists.find(l => l._id === data.task.taskListId);
                         if (!list) {
-                            list = { _id: data.task.taskListId, label: 'Général', tasks: [data.task], statuses: this.defaultStatuses };
+                            list = this.normalizeList({ _id: data.task.taskListId, label: 'Tâches du jour', tasks: [data.task], statuses: this.defaultStatuses });
                         }
-                        this.openDetail(list, data.task);
+                        this.openDetail(list, this.normalizeTask(data.task));
                     }
                 } catch (err) { console.error('[TaskLists] Fallback open-task-detail error:', err); }
             });
@@ -1784,19 +2081,19 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, { credentials: 'include' });
                 const data = await res.json();
                 if (data.success) {
-                    this.lists = data.lists || [];
-                    // Auto-create "Général" if no lists exist
+                    this.lists = (data.lists || []).map(list => this.normalizeList(list));
+                    // Auto-create "Tâches du jour" if no lists exist
                     if (this.lists.length === 0) {
                         const cr = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ label: 'Général', color: '#6366f1' })
+                            body: JSON.stringify({ label: 'Tâches du jour', color: '#6366f1' })
                         });
                         const crData = await cr.json();
                         if (crData.success && crData.list) {
                             crData.list.tasks = [];
-                            this.lists.push(crData.list);
+                            this.lists.push(this.normalizeList(crData.list));
                         }
                     }
                     if (this.lists.length > 0) {
@@ -1808,18 +2105,23 @@ document.addEventListener('alpine:init', () => {
         },
 
         async addList() {
-            if (!this.newListName.trim()) return;
+            const label = this.cleanTaskTitle(this.newListName);
+            this.newListName = label;
+            if (!label) return;
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ label: this.newListName.trim() })
+                    body: JSON.stringify({ label })
                 });
                 const data = await res.json();
                 if (data.success && data.list) {
-                    this.lists.push(data.list);
+                    const newList = this.normalizeList(data.list);
+                    this.lists.push(newList);
+                    if (newList._id && !this.expandedListIds.includes(newList._id)) this.expandedListIds.push(newList._id);
                     this.newListName = '';
+                    this.addingList = false;
                 }
             } catch (e) { console.error('[TaskLists] Create error:', e); }
         },
@@ -1829,6 +2131,59 @@ document.addEventListener('alpine:init', () => {
             if (idx >= 0) { this.expandedListIds.splice(idx, 1); }
             else { this.expandedListIds.push(listId); }
             this.previewStatusMenu = null;
+        },
+
+        initListSortable(el) {
+            if (!el || typeof Sortable === 'undefined') return;
+            if (this._listSortable?.el === el) return;
+            if (this._listSortable) {
+                try { this._listSortable.destroy(); } catch (e) {}
+                this._listSortable = null;
+            }
+
+            const comp = this;
+            this._listSortable = Sortable.create(el, {
+                animation: 180,
+                handle: '.tl-list-drag',
+                draggable: '.tl-card',
+                ghostClass: 'tl-list-ghost',
+                chosenClass: 'tl-list-chosen',
+                onStart() {
+                    comp._preListDragIds = comp.lists.map(list => list._id);
+                },
+                onEnd(evt) {
+                    const oldIndex = evt.oldDraggableIndex ?? evt.oldIndex;
+                    const newIndex = evt.newDraggableIndex ?? evt.newIndex;
+                    if (oldIndex === newIndex || oldIndex == null || newIndex == null) return;
+
+                    const parent = evt.from;
+                    const item = evt.item;
+                    if (oldIndex < newIndex) parent.insertBefore(item, parent.children[oldIndex]);
+                    else parent.insertBefore(item, parent.children[oldIndex + 1]);
+
+                    const movedId = comp._preListDragIds[oldIndex];
+                    const fromIdx = comp.lists.findIndex(list => list._id === movedId);
+                    if (fromIdx < 0) return;
+                    const nextLists = [...comp.lists];
+                    const [moved] = nextLists.splice(fromIdx, 1);
+                    nextLists.splice(newIndex, 0, moved);
+                    nextLists.forEach((list, idx) => { list.order = idx; });
+                    comp.lists = nextLists;
+                    comp._persistListOrder(nextLists);
+                }
+            });
+            this._listSortable.el = el;
+        },
+
+        async _persistListOrder(lists) {
+            try {
+                await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ listIds: lists.map(list => list._id) })
+                });
+            } catch (e) { console.error('[TaskLists] Reorder lists error:', e); }
         },
 
         async previewToggle(list, pt) {
@@ -1842,6 +2197,7 @@ document.addEventListener('alpine:init', () => {
                 'À faire': '#9ca3af', 'En cours': '#3b82f6',
                 'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
             };
+            const wasDone = pt.status === 'Terminé';
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${pt._id}/status`, {
                     method: 'POST',
@@ -1853,14 +2209,17 @@ document.addEventListener('alpine:init', () => {
                 if (data.success) {
                     pt.status = data.status;
                     pt.statusColor = data.statusColor;
-                    // Update counts
-                    list.doneCount = (list.tasks || []).filter(t => t.status === 'Terminé').length;
+                    const isDone = pt.status === 'Terminé';
+                    if (wasDone !== isDone) {
+                        list.doneCount = Math.max(0, (Number(list.doneCount) || 0) + (isDone ? 1 : -1));
+                    }
                 }
             } catch (e) { console.error('[TaskLists] Preview status error:', e); }
         },
 
         async previewAddTask(list) {
-            const title = (this.previewNewTask[list._id] || '').trim();
+            const title = this.cleanTaskTitle(this.previewNewTask[list._id]);
+            this.previewNewTask[list._id] = title;
             if (!title) return;
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, {
@@ -1872,7 +2231,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success && data.task) {
                     if (!list.tasks) list.tasks = [];
-                    list.tasks.unshift(data.task);
+                    list.tasks.unshift(this.normalizeTask(data.task));
                     list.count = (list.count || 0) + 1;
                     this.previewNewTask[list._id] = '';
                 }
@@ -1890,7 +2249,7 @@ document.addEventListener('alpine:init', () => {
 
         async previewSaveTitle(pt) {
             if (!this.previewEditId) return;
-            const newTitle = this.previewEditTitle.trim();
+            const newTitle = this.cleanTaskTitle(this.previewEditTitle);
             this.previewEditId = null;
             if (!newTitle || newTitle === pt.title) return;
             const oldTitle = pt.title;
@@ -2023,23 +2382,25 @@ document.addEventListener('alpine:init', () => {
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, { credentials: 'include' });
                 const data = await res.json();
-                if (data.success) this.tasks = data.tasks || [];
+                if (data.success) this.tasks = (data.tasks || []).map(task => this.normalizeTask(task));
             } catch (e) { console.error('[TaskLists] Load tasks error:', e); }
             this.loadingTasks = false;
         },
 
         async addTask() {
-            if (!this.newTaskTitle.trim() || !this.activeList) return;
+            const title = this.cleanTaskTitle(this.newTaskTitle);
+            this.newTaskTitle = title;
+            if (!title || !this.activeList) return;
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${this.activeList._id}/tasks`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ title: this.newTaskTitle.trim() })
+                    body: JSON.stringify({ title })
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
-                    this.tasks.unshift(data.task);
+                    this.tasks.unshift(this.normalizeTask(data.task));
                     this.newTaskTitle = '';
                     this.activeList.count = (this.activeList.count || 0) + 1;
                 }
@@ -2100,7 +2461,7 @@ document.addEventListener('alpine:init', () => {
 
         async saveListName(list) {
             if (!this.editingListId) return;
-            const newLabel = this.editListLabel.trim();
+            const newLabel = this.cleanTaskTitle(this.editListLabel);
             this.editingListId = null;
             if (!newLabel || newLabel === list.label) return;
             const oldLabel = list.label;
@@ -2128,7 +2489,7 @@ document.addEventListener('alpine:init', () => {
 
         async saveTaskName(task) {
             if (!this.editingTaskId) return;
-            const newTitle = this.editTaskTitle.trim();
+            const newTitle = this.cleanTaskTitle(this.editTaskTitle);
             this.editingTaskId = null;
             if (!newTitle || newTitle === task.title) return;
             const oldTitle = task.title;
@@ -2219,7 +2580,7 @@ document.addEventListener('alpine:init', () => {
                 try {
                     const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, { credentials: 'include' });
                     const data = await res.json();
-                    if (data.success) list.tasks = data.tasks || [];
+                    if (data.success) list.tasks = (data.tasks || []).map(task => this.normalizeTask(task));
                 } catch (e) { console.error('[TaskLists] Load tasks for kanban:', e); }
             }
             // Force Alpine reactivity: clear first, then set on nextTick
@@ -2249,7 +2610,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         async kanbanAddTask(list, status) {
-            const title = this.kanbanNewTitle.trim();
+            const title = this.cleanTaskTitle(this.kanbanNewTitle);
+            this.kanbanNewTitle = title;
             if (!title) return;
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks`, {
@@ -2261,7 +2623,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success && data.task) {
                     if (!list.tasks) list.tasks = [];
-                    list.tasks.push(data.task);
+                    list.tasks.push(this.normalizeTask(data.task));
                     list.count = (list.count || 0) + 1;
                     if (status === 'Terminé') list.doneCount = (list.doneCount || 0) + 1;
                     this.kanbanNewTitle = '';
@@ -2358,7 +2720,7 @@ document.addEventListener('alpine:init', () => {
         // ─── Detail panel ───
         openDetail(list, task) {
             this.detailList = list;
-            this.detailTask = { ...task };
+            this.detailTask = this.normalizeTask(task);
             this.detailComments = [];
             this.detailNewComment = '';
             this.loadComments(task._id);
@@ -2368,6 +2730,11 @@ document.addEventListener('alpine:init', () => {
         async saveDetail(field, value) {
             if (!this.detailTask) return;
             const taskId = this.detailTask._id;
+            if (field === 'title') {
+                value = this.cleanTaskTitle(value);
+                if (!value) return;
+                this.detailTask.title = value;
+            }
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
                     method: 'PUT',
@@ -2377,15 +2744,16 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
+                    const normalizedTask = this.normalizeTask(data.task);
                     // Sync back into the list.tasks array
                     if (this.detailList) {
                         const arr = this.detailList.tasks || [];
                         const idx = arr.findIndex(t => t._id === taskId);
                         if (idx >= 0) {
-                            Object.assign(arr[idx], data.task);
+                            Object.assign(arr[idx], normalizedTask);
                         }
                         // Also update detailTask with returned data
-                        Object.assign(this.detailTask, data.task);
+                        Object.assign(this.detailTask, normalizedTask);
                         // Update counts
                         this.detailList.doneCount = arr.filter(t => t.status === 'Terminé').length;
                     }

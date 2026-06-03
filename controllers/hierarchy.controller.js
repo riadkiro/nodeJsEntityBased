@@ -7,6 +7,59 @@ const { sanitizeViewFilters } = require('../services/record-filter-query');
 // Cache for loaded icon libraries
 const iconLibrariesCache = {};
 const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'ai', 'team'];
+const FOLDER_CONTAINER_TYPES = ['folder', 'environment', 'workstation'];
+const MAX_FOLDER_CONTAINER_DEPTH = 2;
+
+function normalizeId(value) {
+    return value ? String(value) : '';
+}
+
+function folderDepth(folderId, folders, visited = new Set()) {
+    const targetId = normalizeId(folderId);
+    if (!targetId || visited.has(targetId)) return -1;
+    visited.add(targetId);
+
+    const folder = folders.find(f => normalizeId(f._id) === targetId);
+    if (!folder) return -1;
+
+    const parents = (folder.parentFolders || []).map(normalizeId).filter(Boolean);
+    if (parents.length === 0) return 0;
+
+    const parentDepths = parents.map(parentId => folderDepth(parentId, folders, new Set(visited)));
+    const deepestParent = Math.max(...parentDepths);
+    return deepestParent < 0 ? 0 : deepestParent + 1;
+}
+
+function maxFolderSubtreeOffset(folderId, folders, offset = 0, visited = new Set()) {
+    const targetId = normalizeId(folderId);
+    if (!targetId || visited.has(targetId)) return offset;
+    visited.add(targetId);
+
+    const childFolders = folders.filter(folder =>
+        (folder.parentFolders || []).map(normalizeId).includes(targetId)
+    );
+
+    return childFolders.reduce((maxDepth, child) => {
+        return Math.max(maxDepth, maxFolderSubtreeOffset(child._id, folders, offset + 1, new Set(visited)));
+    }, offset);
+}
+
+async function canPlaceFolderContainer(FolderModel, itemId, itemType, parentId, parentType) {
+    if (itemType === 'environment' && parentType !== 'environment-root') return false;
+    if (!FOLDER_CONTAINER_TYPES.includes(itemType || 'folder')) return true;
+
+    const folders = await FolderModel.find({})
+        .select('_id parentFolders spaces environmentId type')
+        .lean();
+    const parentDepth = parentType === 'environment-root'
+        ? -1
+        : parentType === 'space'
+            ? 0
+            : folderDepth(parentId, folders);
+    const subtreeOffset = itemId ? maxFolderSubtreeOffset(itemId, folders) : 0;
+
+    return parentDepth + 1 + subtreeOffset <= MAX_FOLDER_CONTAINER_DEPTH;
+}
 
 function slugBase(name) {
     return String(name || '').toLowerCase()
@@ -177,7 +230,7 @@ module.exports = {
             const { icon, color, image } = req.body;
             const name = String(req.body.name || '').trim();
             if (!name) {
-                return res.status(400).json({ error: "Le nom de l'environnement est requis" });
+                return res.status(400).json({ error: "Le nom de l'espace est requis" });
             }
             const count = await EnvironmentModel.countDocuments();
             const slug = await uniqueSlug(EnvironmentModel, name);
@@ -217,7 +270,7 @@ module.exports = {
             if (name !== undefined) {
                 const cleanName = String(name || '').trim();
                 if (!cleanName) {
-                    return res.status(400).json({ error: "Le nom de l'environnement est requis" });
+                    return res.status(400).json({ error: "Le nom de l'espace est requis" });
                 }
                 update.name = cleanName;
             }
@@ -236,6 +289,8 @@ module.exports = {
         try {
             const EnvironmentModel = await tenantCollection(req, "Environment");
             const SpaceModel = await tenantCollection(req, "Space");
+            const FolderModel = await tenantCollection(req, "Folder");
+            const ViewModel = await tenantCollection(req, "View");
             const { id } = req.body;
             // Don't delete if it's the last environment
             const count = await EnvironmentModel.countDocuments();
@@ -247,6 +302,14 @@ module.exports = {
             if (remainingEnv) {
                 // Reassign spaces from the deleted env to the first remaining env
                 await SpaceModel.updateMany(
+                    { environmentId: id },
+                    { $set: { environmentId: remainingEnv._id } }
+                );
+                await FolderModel.updateMany(
+                    { environmentId: id },
+                    { $set: { environmentId: remainingEnv._id } }
+                );
+                await ViewModel.updateMany(
                     { environmentId: id },
                     { $set: { environmentId: remainingEnv._id } }
                 );
@@ -304,6 +367,7 @@ module.exports = {
                 ...f,
                 id: f._id.toString(),
                 spaces: (f.spaces || []).map(id => id.toString()),
+                environmentId: f.environmentId ? f.environmentId.toString() : null,
                 parentFolders: (f.parentFolders || []).map(id => id.toString())
             }));
             const entities = rawEntities.map(e => ({ ...e, id: e._id.toString() }));
@@ -311,6 +375,7 @@ module.exports = {
                 ...v,
                 id: v._id.toString(),
                 spaces: (v.spaces || []).map(id => id.toString()),
+                environmentId: v.environmentId ? v.environmentId.toString() : null,
                 folders: (v.folders || []).map(id => id.toString())
             }));
 
@@ -320,7 +385,8 @@ module.exports = {
                 // Folders
                 folders.forEach(f => {
                     let isChild = false;
-                    if (parentType === 'space' && f.spaces.includes(parentId) && f.parentFolders.length === 0) isChild = true;
+                    if (parentType === 'environment-root' && f.environmentId === parentId && f.spaces.length === 0 && f.parentFolders.length === 0) isChild = true;
+                    else if (parentType === 'space' && f.spaces.includes(parentId) && f.parentFolders.length === 0) isChild = true;
                     else if (['folder', 'environment', 'workstation'].includes(parentType) && f.parentFolders.includes(parentId)) isChild = true;
 
                     if (isChild) {
@@ -341,7 +407,8 @@ module.exports = {
                 // Views (New "View" approach)
                 views.forEach(v => {
                     let isChild = false;
-                    if (parentType === 'space' && v.spaces.includes(parentId) && v.folders.length === 0) isChild = true;
+                    if (parentType === 'environment-root' && v.environmentId === parentId && v.spaces.length === 0 && v.folders.length === 0) isChild = true;
+                    else if (parentType === 'space' && v.spaces.includes(parentId) && v.folders.length === 0) isChild = true;
                     else if (['folder', 'environment', 'workstation'].includes(parentType) && v.folders.includes(parentId)) isChild = true;
 
                     if (isChild) {
@@ -402,7 +469,7 @@ module.exports = {
                 return results.sort((a, b) => (a.order || 0) - (b.order || 0));
             };
 
-            const hierarchy = spaces.map(s => ({
+            const sectionItems = spaces.map(s => ({
                 type: 'space',
                 id: s.id,
                 name: s.name,
@@ -411,13 +478,16 @@ module.exports = {
                 order: s.order,
                 children: buildTree(s.id, 'space'),
                 link: '#'
-            })).sort((a, b) => (a.order || 0) - (b.order || 0));
+            }));
+            const directEnvironmentItems = envId ? buildTree(envId, 'environment-root') : [];
+            const hierarchy = [...sectionItems, ...directEnvironmentItems]
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
 
             res.json({
                 success: true,
                 dbName: SpaceModel.db.name,
                 account: req.account_number,
-                realSpacesCount: spaces.length,
+                realSpacesCount: hierarchy.length,
                 hierarchy
             });
 
@@ -440,7 +510,7 @@ module.exports = {
             const ops = items.map(async (item) => {
                 let Model;
                 if (item.type === 'space') Model = SpaceModel;
-                else if (['folder', 'environment'].includes(item.type)) Model = FolderModel;
+                else if (['folder', 'environment', 'workstation'].includes(item.type)) Model = FolderModel;
                 else if (['entity', 'cockpit', 'hub'].includes(item.type)) Model = ViewModel;
 
                 if (Model) {
@@ -464,7 +534,11 @@ module.exports = {
             const ViewModel = await tenantCollection(req, "View");
             const EntityModel = await tenantCollection(req, "Entity");
 
-            if (['entity', 'cockpit', 'hub'].includes(itemType)) {
+            if (itemType === 'space') {
+                if (newParentId && newParentType !== 'environment-root') {
+                    return res.status(400).json({ error: "Les sections doivent rester au niveau racine" });
+                }
+            } else if (['entity', 'cockpit', 'hub'].includes(itemType)) {
                 // Determine if we are moving a View or a Legacy Entity
                 let targetModel = ViewModel;
                 let item = await ViewModel.findById(itemId);
@@ -475,20 +549,45 @@ module.exports = {
                 }
 
                 if (oldParentId) {
-                    await targetModel.updateOne({ _id: itemId }, { $pull: { folders: oldParentId, spaces: oldParentId } });
+                    await targetModel.updateOne(
+                        { _id: itemId },
+                        { $pull: { folders: oldParentId, spaces: oldParentId }, $unset: { environmentId: "" } }
+                    );
                 }
                 if (newParentId) {
-                    const update = ['folder', 'environment', 'workstation'].includes(newParentType)
-                        ? { $addToSet: { folders: newParentId } }
-                        : { $addToSet: { spaces: newParentId } };
+                    let update;
+                    if (newParentType === 'environment-root') {
+                        update = { $set: { environmentId: newParentId } };
+                    } else if (['folder', 'environment', 'workstation'].includes(newParentType)) {
+                        update = { $addToSet: { folders: newParentId }, $unset: { environmentId: "" } };
+                    } else {
+                        update = { $addToSet: { spaces: newParentId }, $unset: { environmentId: "" } };
+                    }
                     await targetModel.updateOne({ _id: itemId }, update);
                 }
-            } else if (itemType === 'folder' || itemType === 'environment') {
+            } else if (['folder', 'environment', 'workstation'].includes(itemType)) {
+                if (newParentId) {
+                    const canPlace = await canPlaceFolderContainer(FolderModel, itemId, itemType, newParentId, newParentType);
+                    if (!canPlace) {
+                        return res.status(400).json({ error: "Impossible de placer un dossier à ce niveau" });
+                    }
+                }
+
                 if (oldParentId) {
-                    await FolderModel.updateOne({ _id: itemId }, { $pull: { parentFolders: oldParentId, spaces: oldParentId } });
+                    await FolderModel.updateOne(
+                        { _id: itemId },
+                        { $pull: { parentFolders: oldParentId, spaces: oldParentId }, $unset: { environmentId: "" } }
+                    );
                 }
                 if (newParentId) {
-                    const update = (newParentType === 'folder' || newParentType === 'environment') ? { $addToSet: { parentFolders: newParentId } } : { $addToSet: { spaces: newParentId } };
+                    let update;
+                    if (newParentType === 'environment-root') {
+                        update = { $set: { environmentId: newParentId } };
+                    } else if (['folder', 'environment', 'workstation'].includes(newParentType)) {
+                        update = { $addToSet: { parentFolders: newParentId }, $unset: { environmentId: "" } };
+                    } else {
+                        update = { $addToSet: { spaces: newParentId }, $unset: { environmentId: "" } };
+                    }
                     await FolderModel.updateOne({ _id: itemId }, update);
                 }
             }
@@ -504,7 +603,7 @@ module.exports = {
             const { color, icon, environmentId } = req.body;
             const name = String(req.body.name || '').trim();
             if (!name) {
-                return res.status(400).json({ error: "Le nom de l'espace est requis" });
+                return res.status(400).json({ error: "Le nom de la section est requis" });
             }
 
             const countQuery = environmentId ? { environmentId } : {};
@@ -523,21 +622,27 @@ module.exports = {
             res.json(newSpace);
         } catch (error) {
             console.error("[Hierarchy] Create space failed:", error);
-            res.status(500).json({ error: error.message || "Erreur lors de la creation de l'espace" });
+            res.status(500).json({ error: error.message || "Erreur lors de la creation de la section" });
         }
     },
 
     createFolder: async (req, res) => {
         const FolderModel = await tenantCollection(req, "Folder");
         const { name, parentId, parentType, type, icon, color } = req.body;
+        const folderType = type || 'folder';
+        const canPlace = await canPlaceFolderContainer(FolderModel, null, folderType, parentId, parentType);
+        if (!canPlace) {
+            return res.status(400).json({ error: "Impossible de créer un sous-dossier à ce niveau" });
+        }
         // Basic order strategy: 0 (or count if scoped query, but 0 is fine for now as user can drag)
         const slug = await uniqueSlug(FolderModel, name);
         const folderData = { name, slug, createdBy: req.user._id, order: 0 };
         if (type) folderData.type = type;
         if (icon) folderData.icon = icon;
         if (color) folderData.color = color;
+        if (parentType === 'environment-root') folderData.environmentId = parentId;
         if (parentType === 'space') folderData.spaces = [parentId];
-        if (parentType === 'folder' || parentType === 'environment') folderData.parentFolders = [parentId];
+        if (['folder', 'environment', 'workstation'].includes(parentType)) folderData.parentFolders = [parentId];
         const newFolder = new FolderModel(folderData);
         await newFolder.save();
         res.json(newFolder);
@@ -624,6 +729,7 @@ module.exports = {
             createdBy: req.user._id,
             order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
+            environmentId: parentType === 'environment-root' ? parentId : null,
             folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });
         await newView.save();
@@ -948,6 +1054,7 @@ module.exports = {
             createdBy: req.user._id,
             order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
+            environmentId: parentType === 'environment-root' ? parentId : null,
             folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });
         await newView.save();
@@ -961,13 +1068,14 @@ module.exports = {
             const ViewModel = await tenantCollection(req, "View");
             const FolderModel = await tenantCollection(req, "Folder");
             const SpaceModel = await tenantCollection(req, "Space");
+            const EnvironmentModel = await tenantCollection(req, "Environment");
 
             const hubName = String(req.body.name || '').trim();
             const parentId = String(req.body.parentId || '').trim();
             const parentType = String(req.body.parentType || '').trim();
 
             if (!hubName) return res.status(400).json({ error: "Le nom du hub est requis" });
-            if (!parentId || !['space', 'folder', 'environment', 'workstation'].includes(parentType)) {
+            if (!parentId || !['environment-root', 'space', 'folder', 'environment', 'workstation'].includes(parentType)) {
                 return res.status(400).json({ error: "Parent de hub invalide" });
             }
             if (!mongoose.Types.ObjectId.isValid(parentId)) {
@@ -976,7 +1084,9 @@ module.exports = {
 
             let parent = null;
             let resolvedParentType = parentType;
-            if (parentType === 'space') {
+            if (parentType === 'environment-root') {
+                parent = await EnvironmentModel.findById(parentId).lean();
+            } else if (parentType === 'space') {
                 parent = await SpaceModel.findById(parentId).lean();
                 if (!parent) {
                     parent = await FolderModel.findById(parentId).lean();
@@ -989,7 +1099,7 @@ module.exports = {
                     if (parent) resolvedParentType = 'space';
                 }
             }
-            if (!parent) return res.status(400).json({ error: "Dossier ou espace introuvable pour créer ce hub" });
+            if (!parent) return res.status(400).json({ error: "Dossier, section ou espace introuvable pour créer ce hub" });
 
             let entity = null;
             const requestedEntityId = String(req.body.entityId || '').trim();
@@ -1086,7 +1196,8 @@ module.exports = {
                 createdBy: req.user._id,
                 order: 0,
                 spaces: resolvedParentType === 'space' ? [parentId] : [],
-                folders: resolvedParentType === 'space' ? [] : [parentId]
+                environmentId: resolvedParentType === 'environment-root' ? parentId : null,
+                folders: ['folder', 'environment', 'workstation'].includes(resolvedParentType) ? [parentId] : []
             });
             await view.save();
 
@@ -1118,7 +1229,8 @@ module.exports = {
             createdBy: req.user._id,
             order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
-            folders: (parentType === 'folder' || parentType === 'environment') ? [parentId] : []
+            environmentId: parentType === 'environment-root' ? parentId : null,
+            folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });
         await newView.save();
         res.json({ success: true, view: newView });
@@ -1179,6 +1291,11 @@ module.exports = {
 
             // 3. For each view, trace up to find the space → environment
             for (const view of views) {
+                // Check if the view is directly in an environment (shown as Espace in the UI)
+                if (view.environmentId) {
+                    return res.json({ success: true, environmentId: view.environmentId.toString() });
+                }
+
                 // Check if the view is directly in a space
                 if (view.spaces && view.spaces.length > 0) {
                     const space = await SpaceModel.findById(view.spaces[0]).lean();
@@ -1196,6 +1313,11 @@ module.exports = {
                         visited.add(folderId.toString());
                         const folder = await FolderModel.findById(folderId).lean();
                         if (!folder) break;
+
+                        // Direct folder under an environment
+                        if (folder.environmentId) {
+                            return res.json({ success: true, environmentId: folder.environmentId.toString() });
+                        }
 
                         // If this folder is in a space, find the environment
                         if (folder.spaces && folder.spaces.length > 0) {
@@ -1765,11 +1887,10 @@ module.exports = {
     },
 
     /**
-     * Promote a Folder → Environment
+     * Promote a Folder → Environment (shown as Espace in the UI)
      * 1. Create a new Environment with the folder's name/icon
-     * 2. Create a new Space inside the environment
-     * 3. Move all folder children (sub-folders, views) into the new Space
-     * 4. Delete the original folder
+     * 2. Move all folder children (sub-folders, views) directly into the new Environment
+     * 3. Delete the original folder
      */
     promoteFolderToEnvironment: async (req, res) => {
         try {
@@ -1777,7 +1898,6 @@ module.exports = {
             if (!folderId) return res.status(400).json({ error: "folderId is required" });
 
             const EnvironmentModel = await tenantCollection(req, "Environment");
-            const SpaceModel = await tenantCollection(req, "Space");
             const FolderModel = await tenantCollection(req, "Folder");
             const ViewModel = await tenantCollection(req, "View");
 
@@ -1798,32 +1918,19 @@ module.exports = {
             });
             await newEnv.save();
 
-            // 3. Create a Space inside the new environment
-            const spaceSlug = await uniqueSlug(SpaceModel, originalFolder.name);
-            const newSpace = new SpaceModel({
-                name: originalFolder.name,
-                slug: spaceSlug,
-                icon: originalFolder.icon || 'solar:planet-3-bold-duotone',
-                color: originalFolder.color || '#6366f1',
-                environmentId: newEnv._id,
-                order: 0,
-                owner: req.user._id
-            });
-            await newSpace.save();
-
-            // 4. Move children: sub-folders that had this folder as parent → now belong to the Space
+            // 3. Move children: sub-folders that had this folder as parent → now belong directly to the Environment
             await FolderModel.updateMany(
                 { parentFolders: folderId },
-                { $pull: { parentFolders: folderId }, $addToSet: { spaces: newSpace._id } }
+                { $pull: { parentFolders: folderId }, $set: { environmentId: newEnv._id } }
             );
 
-            // 5. Move children: views that had this folder → now belong to the Space
+            // 4. Move children: views that had this folder → now belong directly to the Environment
             await ViewModel.updateMany(
                 { folders: folderId },
-                { $pull: { folders: folderId }, $addToSet: { spaces: newSpace._id } }
+                { $pull: { folders: folderId }, $set: { environmentId: newEnv._id } }
             );
 
-            // 6. Delete the original folder
+            // 5. Delete the original folder
             await FolderModel.findByIdAndDelete(folderId);
 
             console.log(`[Hierarchy] Promoted folder "${originalFolder.name}" to environment "${newEnv.name}"`);

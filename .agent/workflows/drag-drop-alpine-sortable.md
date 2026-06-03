@@ -326,3 +326,192 @@ const panels = container.querySelectorAll(':scope > .panel-sortable-item');
 - [ ] Drop indicator a `pointer-events: none` ?
 - [ ] Les `data-*` attributs sont sur les items (pas des bindings Alpine dynamiques sur le clone) ?
 - [ ] **Jamais** de commentaires JS (`/* */`, `//`) dans les expressions Alpine (`@change`, `x-data`, etc.)
+
+---
+
+# Rapport Dexapp Sidebar — Alpine + SortableJS
+
+## Contexte
+
+La sidebar Dexapp rend l'arbre de navigation avec Alpine (`x-for`) et utilise
+SortableJS uniquement pour l'interaction de drag & drop. Le composant principal
+est `views/nav/nav-sidebar.ejs`, avec persistence serveur via
+`controllers/hierarchy.controller.js`.
+
+Le mécanisme doit se comporter comme ClickUp : fluide, sans doublons visuels,
+sans disparition temporaire, avec des dossiers qui restent fermés sauf action
+explicite de l'utilisateur.
+
+## Invariants produit de la sidebar
+
+- **Section racine uniquement** : une section ne peut pas être créée ou déposée
+  dans une autre section ou dans un dossier.
+- Les types de section sont actuellement :
+  - `space` pour les vraies sections racine créées par la modale de section.
+  - `environment` pour l'ancien type de section stocké dans `Folder`.
+- Les dossiers sont limités à **3 niveaux visuels** :
+  - niveau 1 : dossier à la racine de l'espace actif ;
+  - niveau 2 : dossier dans un dossier niveau 1 ;
+  - niveau 3 : dossier dans un dossier niveau 2.
+- Un dossier niveau 3 peut recevoir des éléments non-conteneurs comme
+  `entity` / collection, `hub`, cockpit, document, etc.
+- Un dossier niveau 3 ne peut pas recevoir de `folder`, `environment`,
+  `workstation` ou `space`.
+- Déplacer un dossier déjà rempli doit tenir compte de toute la profondeur de
+  son sous-arbre. Exemple : un dossier qui contient déjà un sous-dossier ne peut
+  pas être déplacé dans un niveau 2 si cela crée un niveau 4.
+- Les règles UI doivent être doublées côté API. Ne jamais se contenter de cacher
+  une option dans le menu.
+
+## Architecture stable retenue
+
+### 1. Sortable ne possède jamais le DOM final
+
+La sidebar suit strictement le pattern :
+
+1. Sortable affiche le ghost et le preview.
+2. Au `onEnd`, on résout le parent cible par ID.
+3. On annule le déplacement DOM effectué par Sortable.
+4. On modifie `this.hierarchy` côté Alpine.
+5. Alpine reconstruit le DOM final.
+6. On envoie `move` puis `reorder` au serveur.
+
+Fonctions clés :
+
+- `handleDrop(evt, group)`
+- `revertSortableDomMove(evt)`
+- `optimisticallyMoveHierarchyItem(...)`
+- `applyOptimisticHierarchyMove(moveResult)`
+- `syncHierarchyAfterDrop(...)`
+
+### 2. Re-render forcé après déplacement optimiste
+
+Un bug critique observé : après un drop dans un dossier vide, l'état Alpine était
+correct, l'API répondait succès, mais le DOM gardait l'ancien placeholder
+`Ajouter` jusqu'au refresh.
+
+Correction retenue :
+
+- Maintenir `hierarchyRenderKey`.
+- Utiliser `:key="getHierarchyRenderKey(item)"` sur tous les `x-for`.
+- Incrémenter `hierarchyRenderKey` après `fetchHierarchy(true)` et après
+  `applyOptimisticHierarchyMove`.
+- Normaliser les IDs avec `getHierarchyItemId(item)` car certains objets peuvent
+  avoir `_id` au lieu de `id`.
+
+Sans cette clé de rendu, Alpine peut réutiliser un scope imbriqué périmé après
+un move cross-container.
+
+### 3. Les listes Sortable doivent avoir un parent explicite
+
+Chaque liste imbriquée doit porter :
+
+```html
+data-parent-id="..."
+data-parent-type="..."
+```
+
+Les drops vides passent par `.add-placeholder[data-parent-id][data-parent-type]`.
+Cela permet de résoudre proprement le parent cible même si le dossier est vide.
+
+### 4. `onMove` sert à refuser les moves impossibles
+
+`onMove` doit appeler une fonction centrale, par exemple :
+
+```javascript
+onMove: (evt) => this.canAcceptSortableMove(evt)
+```
+
+Cette fonction doit refuser immédiatement :
+
+- une section déposée ailleurs qu'à la racine ;
+- un dossier qui créerait un niveau 4 ;
+- un dossier contenant déjà un sous-arbre trop profond pour le parent cible.
+
+Mais le `onEnd` doit refaire la même validation. `onMove` améliore l'UX, mais
+ne suffit pas comme garde logique.
+
+### 5. Le serveur garde les mêmes invariants
+
+Les endpoints sensibles doivent refuser les états invalides :
+
+- `POST /api/hierarchy/folder`
+- `POST /api/hierarchy/move`
+
+Pour les dossiers, le serveur calcule :
+
+- la profondeur du parent cible ;
+- la profondeur maximale du sous-arbre déplacé ;
+- la validité du type `environment` uniquement à la racine.
+
+Les collections/hubs restent autorisés au niveau 3 car ils ne sont pas des
+conteneurs de dossiers.
+
+## Règles de drop précises
+
+### Drop d'un item dans un dossier ouvert
+
+Le dossier doit être ouvert explicitement par l'utilisateur. Ne pas ouvrir un
+dossier fermé au simple survol. Le survol créait trop de cas étranges : plusieurs
+dossiers restaient ouverts après un drag abandonné.
+
+### Drop sur un dossier fermé
+
+Un drop sur la ligne d'un dossier fermé doit être interprété comme un reorder
+avant/après, pas comme "mettre dedans".
+
+### Drop dans un dossier vide
+
+Le placeholder `Ajouter` doit rester une cible de drop. Après dépôt réussi,
+le placeholder disparaît automatiquement si la liste contient un vrai enfant.
+S'il redevient vide, le placeholder réapparaît.
+
+### Reorder vers le haut et vers le bas
+
+Ne jamais se fier à `evt.oldIndex` / `evt.newIndex` seuls pour muter les données.
+Les index DOM peuvent être faux après preview Sortable. Toujours résoudre par ID,
+puis calculer l'index final via les siblings Alpine.
+
+## Signaux de bug déjà rencontrés
+
+- Un élément apparaît deux fois jusqu'au refresh : Sortable a gardé un DOM node
+  pendant qu'Alpine rendait le même item.
+- Un élément disparaît jusqu'au refresh : Alpine a gardé un scope imbriqué périmé
+  ou l'item n'avait pas de `id` normalisé.
+- Drop sauvegardé côté serveur mais invisible localement : problème de rendu
+  Alpine, pas de persistence.
+- Reorder vers le haut aléatoire : index DOM utilisés à la place des IDs.
+- Drop dans un dossier vide impossible : placeholder absent de Sortable ou sans
+  `data-parent-id`.
+- Erreur `lastElementChild` dans Sortable : container détruit par Alpine pendant
+  le cleanup dragover. Éviter les refetch immédiats après drop et protéger
+  `_onDragOver`.
+
+## Checklist navigateur obligatoire
+
+À refaire après chaque changement de drag/drop sidebar :
+
+- Créer un arbre temporaire `Root > Niv 2 > Niv 3`.
+- Vérifier que le menu de `Niv 3` affiche collection/hub/document mais pas
+  dossier/section.
+- Tenter de créer un dossier niveau 4 via API : doit répondre `400`.
+- Tenter de déposer un dossier dans `Niv 3` : il doit rester à sa place.
+- Déposer une collection dans `Niv 3` : elle doit apparaître sans refresh.
+- Déposer un dossier dans `Niv 2` : doit rester autorisé.
+- Reorder un item vers le haut puis vers le bas au même niveau.
+- Déplacer un item hors d'un dossier vers la racine et vérifier l'absence de
+  doublon immédiat.
+- Attendre la synchro puis vérifier que le DOM reste identique.
+- Faire un `fetchHierarchy(true)` ou refresh serveur et vérifier la persistence.
+- Capturer des screenshots avant/après.
+- Vérifier la console : aucune erreur Alpine, aucune erreur Sortable, aucun
+  `Sync failed`.
+
+## Règle de commit pour cette zone
+
+Quand une modification touche la sidebar DnD, inclure dans le résumé :
+
+- fichiers modifiés ;
+- invariants produit impactés ;
+- scénarios navigateur testés ;
+- si les endpoints API ont aussi été protégés.

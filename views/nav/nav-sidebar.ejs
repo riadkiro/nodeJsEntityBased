@@ -360,9 +360,25 @@
       .sidebar-spaces-area .sidebar-child-actions {
         padding-right: 0.25rem !important;
       }
+      .sidebar-spaces-area .sidebar-action-plus {
+        display: none;
+      }
+      .sidebar-spaces-area .sidebar-space-row:hover .sidebar-action-plus,
+      .sidebar-spaces-area .sidebar-child-row:hover .sidebar-action-plus {
+        display: inline-block;
+      }
+      .sidebar-spaces-area .sidebar-row-caret {
+        flex: 0 0 auto;
+        color: #94a3b8;
+        transition: color 0.15s ease;
+      }
+      .sidebar-spaces-area .sidebar-row-caret:hover {
+        color: #4361ee;
+      }
       .sidebar-spaces-area .sidebar-space-children {
         margin-left: 0.375rem !important;
         margin-right: 0 !important;
+        margin-bottom: 0.125rem !important;
       }
       .sidebar-spaces-area .sidebar-child-row > iconify-icon {
         margin-left: 0.25rem !important;
@@ -373,6 +389,22 @@
       .sidebar-spaces-area .sidebar-nested-list {
         margin-left: 0.5rem !important;
         padding-left: 0.375rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.125rem !important;
+      }
+      .sidebar-spaces-area .hierarchy-empty-drop {
+        min-height: 1.75rem;
+      }
+      .sidebar-spaces-area .hierarchy-empty-drop:has(> li[data-id]) {
+        min-height: 0;
+      }
+      .sidebar-spaces-area .hierarchy-empty-drop:has(> li[data-id][data-type]) > .add-placeholder {
+        display: none !important;
+      }
+      .sidebar-spaces-area .hierarchy-empty-drop .add-placeholder {
+        min-height: 1.625rem;
+        border: 1px dashed rgba(67, 97, 238, 0.28);
+        background: rgba(67, 97, 238, 0.04);
       }
     </style>
     <div
@@ -451,11 +483,11 @@
           <span style="font-size:8px; color:#6366f1; font-weight:600; text-align:center; line-height:1.1;">Promouvoir</span>
         </div>
 
-        <!-- Add Environment Button -->
+        <!-- Add Space Button -->
         <a href="javascript:;"
            @click="openCreateModal()"
            class="mini-rail-item add-env-btn"
-           title="Ajouter un environnement"
+           title="Ajouter un espace"
            style="opacity: 0.5; border: 1px dashed var(--rail-divider); margin-top: 4px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 6V18M6 12H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -792,26 +824,26 @@
         </li>
         </div><!-- end x-show admin -->
 
-        <!-- ═══ SPACES SECTION (visible by default, hidden when admin is shown) ═══ -->
+        <!-- ═══ ACTIVE SPACE SECTION (visible by default, hidden when admin is shown) ═══ -->
         <div x-show="!showAdmin" x-collapse x-cloak class="sidebar-spaces-area">
         <div>
           <h2
             class="sidebar-spaces-heading -mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold text-[13px] tracking-wide dark:bg-dark dark:bg-opacity-[0.08]">
             <div class="flex items-center gap-2">
               <iconify-icon :icon="activeEnvironmentIcon || 'solar:share-circle-bold-duotone'" width="18" height="18" :style="activeEnvironmentColor ? 'color:' + activeEnvironmentColor : ''"></iconify-icon>
-              <span x-text="(activeEnvironmentName || 'Spaces') + ' (' + realSpacesCount + ')'">Spaces</span>
+              <span x-text="(activeEnvironmentName || 'Espaces') + ' (' + realSpacesCount + ')'">Espaces</span>
             </div>
             <div class="flex items-center gap-1 pr-2">
               <iconify-icon icon="solar:add-square-bold" width="18" height="18"
                 class="cursor-pointer text-primary hover:scale-110 transition-transform"
-                @click="window.dispatchEvent(new CustomEvent('open-space-modal', { detail: { space: null, environmentId: activeEnvironmentId } }))"></iconify-icon>
+                @click="openEnvironmentCreateMenu($event)"></iconify-icon>
             </div>
           </h2>
 
           <!-- ═══ SINGLE-SPACE MODE: show children directly (no space wrapper) ═══ -->
           <template x-if="isSingleSpaceEnv">
             <ul class="sortable-root" data-parent-type="root">
-              <template x-for="child in displayHierarchy" :key="child.id">
+              <template x-for="child in displayHierarchy" :key="getHierarchyRenderKey(child)">
                 <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                   <div
                     class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub -mx-2 px-2 py-1.5"
@@ -822,13 +854,13 @@
                         :icon="getIcon(child, child.children && child.children.length > 0, subActive.includes(child.id), hovered)"
                         class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
                         :style="child.color ? 'color: ' + child.color : ''"
-                        @click.stop="if(['folder', 'environment'].includes(child.type)) { toggleSub(child.id); }"></iconify-icon>
+                        @click.stop="if(isContainerItem(child)) { toggleSub(child.id); }"></iconify-icon>
 
                     <div class="flex-1 min-w-0">
                       <template x-if="editingId !== child.id">
                         <a :href="child.link || '#'" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors"
                           :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
-                          @click="if(['folder', 'environment'].includes(child.type)) { $event.preventDefault(); toggleSub(child.id); }">
+                          @click="if(isContainerItem(child)) { $event.preventDefault(); toggleSub(child.id); }">
                           <span x-text="child.name"></span>
                         </a>
                       </template>
@@ -840,19 +872,23 @@
                       </template>
                     </div>
 
-                    <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
-                      x-show="['folder', 'environment', 'workstation'].includes(child.type)"
-                      :class="hovered ? 'opacity-100' : 'opacity-0'">
+                    <div class="sidebar-child-actions flex items-center gap-1 pr-4"
+                      x-show="['folder', 'environment', 'workstation'].includes(child.type)">
                       <iconify-icon icon="solar:add-square-linear" width="14" height="14"
-                        class="cursor-pointer hover:text-primary"
+                        class="sidebar-action-plus cursor-pointer hover:text-primary"
                         @click.stop="openCreateMenu($event, child)"></iconify-icon>
+                      <iconify-icon x-show="!subActive.includes(child.id)"
+                        icon="solar:alt-arrow-right-linear" width="14" height="14"
+                        class="sidebar-row-caret cursor-pointer"
+                        @click.stop="toggleSub(child.id)"></iconify-icon>
                     </div>
                   </div>
 
                   <!-- Nested children for Folders -->
-                  <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)"
-                    x-collapse class="sidebar-nested-list sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
-                    <template x-for="subChild in child.children" :key="subChild.id">
+                  <ul x-show="isContainerItem(child) && subActive.includes(child.id)"
+                    :data-parent-id="child.id" :data-parent-type="child.type"
+                    x-collapse.duration.120ms class="sidebar-nested-list sub-menu hierarchy-sub-menu hierarchy-empty-drop text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
+                    <template x-for="subChild in child.children" :key="getHierarchyRenderKey(subChild)">
                       <li x-data="{ hovered: false }" class="relative block" :data-id="subChild.id" :data-type="subChild.type">
                         <div class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
                           :class="isExpanded(subChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
@@ -862,12 +898,12 @@
                             :icon="getIcon(subChild, subChild.children && subChild.children.length > 0, isExpanded(subChild.id), hovered)"
                             class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
                             :style="subChild.color ? 'color: ' + subChild.color : ''"
-                            @click.stop="if(['folder', 'environment'].includes(subChild.type)) { toggleExpand(subChild.id); }"></iconify-icon>
+                            @click.stop="if(isContainerItem(subChild)) { toggleExpand(subChild.id); }"></iconify-icon>
                           <div class="flex-1 truncate min-w-0">
                             <template x-if="editingId !== subChild.id">
                               <a :href="subChild.link || '#'" class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
                                 :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
-                                @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); toggleExpand(subChild.id); }"
+                                @click="if(isContainerItem(subChild)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                 x-text="subChild.name"></a>
                             </template>
                             <template x-if="editingId === subChild.id">
@@ -880,6 +916,13 @@
                         </div>
                       </li>
                     </template>
+                    <li x-show="!child.children || child.children.length === 0"
+                      class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors cursor-pointer add-placeholder"
+                      :data-parent-id="child.id" :data-parent-type="child.type" @click.stop="openCreateMenu($event, child)">
+                      <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16"
+                        height="16"></iconify-icon>
+                      <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
+                    </li>
                   </ul>
                 </li>
               </template>
@@ -889,13 +932,14 @@
           <!-- ═══ MULTI-SPACE MODE: normal hierarchy with space wrappers ═══ -->
           <template x-if="!isSingleSpaceEnv">
           <ul class="sortable-root" data-parent-type="root">
-            <template x-for="item in hierarchy" :key="item.id">
-              <li class="menu nav-item" :data-id="item.id" data-type="space">
+            <template x-for="item in hierarchy" :key="getHierarchyRenderKey(item)">
+              <li class="menu nav-item" :data-id="item.id" :data-type="item.type">
                 <div class="sidebar-space-row nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-                  :class="activeDropdown.includes(item.id) ? 'bg-gray-100/50 dark:bg-gray-800/50' : ''">
+                  :class="activeDropdown.includes(item.id) || isItemActive(item.link) ? 'bg-gray-100/50 dark:bg-gray-800/50' : ''">
                   <div x-data="{ hovered: false }" class="sidebar-space-inner flex items-center mx-2 cursor-pointer flex-1"
-                    @mouseenter="hovered = true" @mouseleave="hovered = false" @click="toggle(item.id)"
-                    @contextmenu.prevent="openEditMenu($event, 'space', item)">
+                    @mouseenter="hovered = true" @mouseleave="hovered = false"
+                    @click="if (isContainerItem(item)) { toggle(item.id); } else if (item.link && item.link !== '#') { window.location.href = item.link; }"
+                    @contextmenu.prevent="openEditMenu($event, item.type, item)">
                     <iconify-icon
                       :icon="getIcon(item, item.children && item.children.length > 0, activeDropdown.includes(item.id), hovered)"
                       class="ml-1" width="18" height="18"
@@ -904,6 +948,7 @@
                     <template x-if="editingId !== item.id">
                       <span
                         class="sidebar-space-label text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2"
+                        :class="isItemActive(item.link) ? '!text-primary font-bold' : ''"
                         x-text="item.name"></span>
                     </template>
                     <template x-if="editingId === item.id">
@@ -914,23 +959,22 @@
                     </template>
                   </div>
 
-                  <div class="sidebar-space-actions flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div class="sidebar-space-actions flex items-center gap-2 pr-4"
+                    x-show="isContainerItem(item)">
                     <iconify-icon icon="solar:add-square-linear" width="16" height="16"
-                      class="cursor-pointer hover:text-primary"
+                      class="sidebar-action-plus cursor-pointer hover:text-primary"
                       @click.stop="openCreateMenu($event, item)"></iconify-icon>
-                    <div class="rtl:rotate-180 transition-transform"
-                      :class="{'!rotate-90' : activeDropdown.includes(item.id)}"
-                      x-show="item.children && item.children.length > 0">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M9 5L15 12L9 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </div>
+                    <iconify-icon x-show="!activeDropdown.includes(item.id)"
+                      icon="solar:alt-arrow-right-linear" width="14" height="14"
+                      class="sidebar-row-caret cursor-pointer"
+                      @click.stop="toggle(item.id)"></iconify-icon>
                   </div>
                 </div>
 
-                <ul x-cloak x-show="activeDropdown.includes(item.id)" x-collapse
-                  class="sidebar-space-children sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 mx-2 mb-2">
-                  <template x-for="child in item.children" :key="child.id">
+                <ul x-cloak x-show="activeDropdown.includes(item.id)" x-collapse.duration.120ms
+                  :data-parent-id="item.id" :data-parent-type="item.type"
+                  class="sidebar-space-children sub-menu hierarchy-sub-menu hierarchy-empty-drop text-gray-500 dark:text-gray-400 mx-2 mb-2">
+                  <template x-for="child in item.children" :key="getHierarchyRenderKey(child)">
                     <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
                         class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub"
@@ -941,13 +985,13 @@
                             :icon="getIcon(child, child.children && child.children.length > 0, subActive.includes(child.id), hovered)"
                             class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
                           :style="child.color ? 'color: ' + child.color : ''"
-                          @click.stop="if(['folder', 'environment'].includes(child.type)) { toggleSub(child.id); }"></iconify-icon>
+                          @click.stop="if(isContainerItem(child)) { toggleSub(child.id); }"></iconify-icon>
 
                         <div class="flex-1 min-w-0">
                           <template x-if="editingId !== child.id">
                             <a :href="child.link || '#'" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors"
                               :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
-                              @click="if(['folder', 'environment'].includes(child.type)) { $event.preventDefault(); toggleSub(child.id); }">
+                              @click="if(isContainerItem(child)) { $event.preventDefault(); toggleSub(child.id); }">
                               <span x-text="child.name"></span>
                             </a>
                           </template>
@@ -959,20 +1003,24 @@
                           </template>
                         </div>
 
-                        <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
-                          x-show="['folder', 'environment', 'workstation'].includes(child.type)"
-                          :class="hovered ? 'opacity-100' : 'opacity-0'">
+                        <div class="sidebar-child-actions flex items-center gap-1 pr-4"
+                          x-show="['folder', 'environment', 'workstation'].includes(child.type)">
                           <iconify-icon icon="solar:add-square-linear" width="14" height="14"
-                            class="cursor-pointer hover:text-primary"
+                            class="sidebar-action-plus cursor-pointer hover:text-primary"
                             @click.stop="openCreateMenu($event, child)"></iconify-icon>
+                          <iconify-icon x-show="!subActive.includes(child.id)"
+                            icon="solar:alt-arrow-right-linear" width="14" height="14"
+                            class="sidebar-row-caret cursor-pointer"
+                            @click.stop="toggleSub(child.id)"></iconify-icon>
                         </div>
 
                       </div>
 
                       <!-- Nested children for Folders/Environments -->
-                      <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)"
-                        x-collapse class="sidebar-nested-list sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
-                        <template x-for="subChild in child.children" :key="subChild.id">
+                      <ul x-show="isContainerItem(child) && subActive.includes(child.id)"
+                        :data-parent-id="child.id" :data-parent-type="child.type"
+                        x-collapse.duration.120ms class="sidebar-nested-list sub-menu hierarchy-sub-menu hierarchy-empty-drop text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
+                        <template x-for="subChild in child.children" :key="getHierarchyRenderKey(subChild)">
                           <li x-data="{ hovered: false }"
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
                             class="relative block" :data-id="subChild.id" :data-type="subChild.type">
@@ -984,12 +1032,12 @@
                                 :icon="getIcon(subChild, subChild.children && subChild.children.length > 0, isExpanded(subChild.id), hovered)"
                                 class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
                                 :style="subChild.color ? 'color: ' + subChild.color : ''"
-                                @click.stop="if(['folder', 'environment'].includes(subChild.type)) { toggleExpand(subChild.id); }"></iconify-icon>
+                                @click.stop="if(isContainerItem(subChild)) { toggleExpand(subChild.id); }"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
                                 <template x-if="editingId !== subChild.id">
                                   <a :href="subChild.link || '#'" class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
                                     :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
-                                    @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); toggleExpand(subChild.id); }"
+                                    @click="if(isContainerItem(subChild)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                     x-text="subChild.name"></a>
                                 </template>
                                 <template x-if="editingId === subChild.id">
@@ -999,28 +1047,34 @@
                                     @blur="saveRename(subChild)" x-init="$nextTick(() => $el.focus())">
                                 </template>
                               </div>
-                              <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
-                                x-show="['folder', 'environment', 'workstation'].includes(subChild.type)"
-                                :class="hovered ? 'opacity-100' : 'opacity-0'">
+                              <div class="sidebar-child-actions flex items-center gap-1 pr-4"
+                                x-show="['folder', 'environment', 'workstation'].includes(subChild.type)">
                                 <iconify-icon icon="solar:add-square-linear" width="14" height="14"
-                                  class="cursor-pointer hover:text-primary"
+                                  class="sidebar-action-plus cursor-pointer hover:text-primary"
                                   @click.stop="openCreateMenu($event, subChild)"></iconify-icon>
+                                <iconify-icon x-show="!isExpanded(subChild.id)"
+                                  icon="solar:alt-arrow-right-linear" width="14" height="14"
+                                  class="sidebar-row-caret cursor-pointer"
+                                  @click.stop="toggleExpand(subChild.id)"></iconify-icon>
                               </div>
 
 
                             </div>
 
-                            <ul x-show="['folder', 'environment'].includes(subChild.type) && isExpanded(subChild.id)"
-                              x-collapse
-                              class="sidebar-nested-list sub-menu hierarchy-sub-menu text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
-                              <template x-for="subSubChild in subChild.children" :key="subSubChild.id">
+                            <ul x-show="isContainerItem(subChild) && isExpanded(subChild.id)"
+                              :data-parent-id="subChild.id" :data-parent-type="subChild.type"
+                              x-collapse.duration.120ms
+                              class="sidebar-nested-list sub-menu hierarchy-sub-menu hierarchy-empty-drop text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
+                              <template x-for="subSubChild in subChild.children" :key="getHierarchyRenderKey(subSubChild)">
                                 <li x-data="{ hovered: false }"
                                   class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub3"
                                   :class="isExpanded(subSubChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                                   @mouseenter="hovered = true" @mouseleave="hovered = false"
                                   @contextmenu.prevent="openEditMenu($event, subSubChild.type, subSubChild, subChild)"
                                   :data-id="subSubChild.id" :data-type="subSubChild.type">
-                                  <iconify-icon :icon="getIcon(subSubChild)" class="ml-2" width="16" height="16"
+                                  <iconify-icon
+                                    :icon="getIcon(subSubChild, subSubChild.children && subSubChild.children.length > 0, isExpanded(subSubChild.id), hovered)"
+                                    class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
                                     :style="subSubChild.color ? 'color: ' + subSubChild.color : ''"></iconify-icon>
                                   <div class="flex-1 truncate">
                                     <template x-if="editingId !== subSubChild.id">
@@ -1036,19 +1090,22 @@
                                         @blur="saveRename(subSubChild)" x-init="$nextTick(() => $el.focus())">
                                     </template>
                                   </div>
-                                  <div class="sidebar-child-actions flex items-center gap-1 pr-4 transition-opacity"
-                                    x-show="['folder', 'environment', 'workstation'].includes(subSubChild.type)"
-                                    :class="hovered ? 'opacity-100' : 'opacity-0'">
+                                  <div class="sidebar-child-actions flex items-center gap-1 pr-4"
+                                    x-show="['folder', 'environment', 'workstation'].includes(subSubChild.type)">
                                     <iconify-icon icon="solar:add-square-linear" width="14" height="14"
-                                      class="cursor-pointer hover:text-primary"
+                                      class="sidebar-action-plus cursor-pointer hover:text-primary"
                                       @click.stop="openCreateMenu($event, subSubChild)"></iconify-icon>
+                                    <iconify-icon x-show="!isExpanded(subSubChild.id)"
+                                      icon="solar:alt-arrow-right-linear" width="14" height="14"
+                                      class="sidebar-row-caret cursor-pointer"
+                                      @click.stop="toggleExpand(subSubChild.id)"></iconify-icon>
                                   </div>
                                 </li>
                               </template>
                               <li
-                                x-show="(!subChild.children || subChild.children.length === 0) && dragOverFolderId !== subChild.id"
+                                x-show="!subChild.children || subChild.children.length === 0"
                                 class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors cursor-pointer add-placeholder"
-                                :data-parent-id="subChild.id" @click.stop="openCreateMenu($event, subChild)">
+                                :data-parent-id="subChild.id" :data-parent-type="subChild.type" @click.stop="openCreateMenu($event, subChild)">
                                 <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16"
                                   height="16"></iconify-icon>
                                 <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
@@ -1056,9 +1113,9 @@
                             </ul>
                           </li>
                         </template>
-                        <li x-show="(!child.children || child.children.length === 0) && dragOverFolderId !== child.id"
+                        <li x-show="!child.children || child.children.length === 0"
                           class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors cursor-pointer add-placeholder"
-                          :data-parent-id="child.id" @click.stop="openCreateMenu($event, child)">
+                          :data-parent-id="child.id" :data-parent-type="child.type" @click.stop="openCreateMenu($event, child)">
                           <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16"
                             height="16"></iconify-icon>
                           <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
@@ -1067,6 +1124,13 @@
 
                     </li>
                   </template>
+                  <li x-show="isContainerItem(item) && (!item.children || item.children.length === 0)"
+                    class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors cursor-pointer add-placeholder"
+                    :data-parent-id="item.id" :data-parent-type="item.type" @click.stop="openCreateMenu($event, item)">
+                    <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16"
+                      height="16"></iconify-icon>
+                    <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
+                  </li>
                 </ul>
               </li>
             </template>
@@ -1470,11 +1534,16 @@
 
             Alpine.data('sidebarHierarchy', () => ({
               hierarchy: [],
+              hierarchyRenderKey: 0,
               activeDropdown: [],
               subActive: [],
               expandedIds: [],
               savePrefsTimeout: null,
               dragOverFolderId: null,
+              pendingDropParent: null,
+              dragSession: null,
+              hoverOpenTimer: null,
+              hoverOpenTargetId: null,
               sortableInstances: [],
               sidebarPopoverCloseHandler: null,
               sidebarPopoverCloseTimer: null,
@@ -1615,12 +1684,17 @@
                   this.activeEnvironmentName = e.detail.environment?.name || '';
                   this.activeEnvironmentIcon = e.detail.environment?.icon || '';
                   this.activeEnvironmentColor = e.detail.environment?.color || '';
-                  this.fetchHierarchy();
+                  this.fetchHierarchy(true);
                 });
 
                 // Listen for space creation/edit from the Space modal
-                window.addEventListener('space-modal-saved', () => {
-                  this.fetchHierarchy(true);
+                window.addEventListener('space-modal-saved', async (e) => {
+                  await this.fetchHierarchy(true);
+                  const created = e.detail?.newSpace || null;
+                  if (created) {
+                    this.openHierarchyBranch(created.id || created._id);
+                    this.saveSidebarPrefs();
+                  }
                 });
               },
 
@@ -2244,11 +2318,22 @@
               tempViewType: 'list',
 
               async fetchHierarchy(force = false) {
-                const now = Date.now();
                 if (this.isLoadingHierarchy) {
-                  console.warn("[Sidebar] fetchHierarchy skipped: already fetching");
-                  return;
+                  if (!force) {
+                    console.warn("[Sidebar] fetchHierarchy skipped: already fetching");
+                    return;
+                  }
+                  let waitCount = 0;
+                  while (this.isLoadingHierarchy && waitCount < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    waitCount++;
+                  }
+                  if (this.isLoadingHierarchy) {
+                    console.warn("[Sidebar] fetchHierarchy force skipped: previous fetch still running");
+                    return;
+                  }
                 }
+                const now = Date.now();
                 if (!force && now - this.lastFetchTime < 300) {
                   console.warn("[Sidebar] fetchHierarchy skipped: rate limit cooldown");
                   return;
@@ -2281,13 +2366,14 @@
                   await new Promise(r => setTimeout(r, 0));
 
                   this.hierarchy = data.hierarchy || [];
+                  this.hierarchyRenderKey += 1;
                   this.realSpacesCount = data.realSpacesCount || 0;
                   if (data.dbName) console.log(`[Sidebar] Connected to Tenant DB: ${data.dbName}`);
 
-                  this.detectActiveItem();
-
                   // Load sidebar preferences
                   await this.loadSidebarPrefs();
+                  this.detectActiveItem();
+                  this.normalizeOpenStateArrays();
 
                   // Initialize D&D after render
                   this.$nextTick(() => {
@@ -2301,11 +2387,488 @@
                 }
               },
 
+              findDropListForParent(parentId) {
+                const targetId = String(parentId || '');
+                if (!targetId) return null;
+                return Array.from(document.querySelectorAll('.hierarchy-sub-menu[data-parent-id]'))
+                  .find(el => String(el.dataset.parentId || '') === targetId) || null;
+              },
+
+              getParentContextFromList(listEl) {
+                if (!listEl) return null;
+
+                if (listEl.dataset?.parentType === 'root' || listEl.classList.contains('sortable-root')) {
+                  return {
+                    id: this.activeEnvironmentId || null,
+                    type: this.activeEnvironmentId ? 'environment-root' : null,
+                    el: listEl
+                  };
+                }
+
+                if (listEl.dataset?.parentId) {
+                  return {
+                    id: listEl.dataset.parentId,
+                    type: listEl.dataset.parentType,
+                    el: listEl
+                  };
+                }
+
+                const parentContainer = listEl.closest('[data-id][data-type]');
+                if (!parentContainer) return null;
+                return {
+                  id: parentContainer.getAttribute('data-id'),
+                  type: parentContainer.getAttribute('data-type'),
+                  el: listEl
+                };
+              },
+
+              getDirectHierarchyRow(itemEl) {
+                if (!itemEl) return null;
+                return Array.from(itemEl.children || [])
+                  .find(child => child.matches?.('.sidebar-space-row, .sidebar-child-row')) || null;
+              },
+
+              findHierarchyItemElement(itemId) {
+                const targetId = String(itemId || '');
+                if (!targetId) return null;
+                return Array.from(document.querySelectorAll('.sidebar-spaces-area li[data-id][data-type]'))
+                  .find(el => String(el.getAttribute('data-id') || '') === targetId) || null;
+              },
+
+              beginHierarchyDrag() {
+                this.clearHoverOpenTimer();
+                this.dragSession = {
+                  activeDropdown: [...this.activeDropdown].map(id => String(id)),
+                  subActive: [...this.subActive].map(id => String(id)),
+                  expandedIds: [...this.expandedIds].map(id => String(id))
+                };
+              },
+
+              clearHoverOpenTimer() {
+                if (this.hoverOpenTimer) clearTimeout(this.hoverOpenTimer);
+                this.hoverOpenTimer = null;
+                this.hoverOpenTargetId = null;
+              },
+
+              closeTransientDragOpenTargets(keepIds = []) {
+                const session = this.dragSession;
+                this.clearHoverOpenTimer();
+                if (!session) return;
+
+                const keep = new Set((keepIds || []).filter(Boolean).map(id => String(id)));
+                const keepOriginalOrTarget = (ids, originalIds) => {
+                  const original = new Set((originalIds || []).map(id => String(id)));
+                  return [...new Set((ids || []).filter(Boolean).map(id => String(id)))]
+                    .filter(id => original.has(id) || keep.has(id));
+                };
+
+                this.activeDropdown = keepOriginalOrTarget(this.activeDropdown, session.activeDropdown);
+                this.subActive = keepOriginalOrTarget(this.subActive, session.subActive);
+                this.expandedIds = keepOriginalOrTarget(this.expandedIds, session.expandedIds);
+                this.dragSession = null;
+              },
+
+              getContainerElementFromDropElement(element) {
+                const containerEl = element?.closest?.('[data-id][data-type]');
+                if (!containerEl) return null;
+
+                const targetId = containerEl.getAttribute('data-id');
+                const targetType = containerEl.getAttribute('data-type');
+                if (!targetId || !this.isContainerItem(targetType)) return null;
+                return containerEl;
+              },
+
+              resolveExplicitDropParentFromElement(element, ignoredItemId = null) {
+                if (!element || typeof element.closest !== 'function') return null;
+                const ignoredId = String(ignoredItemId || '');
+                const isIgnoredParent = (id) => ignoredId && String(id || '') === ignoredId;
+
+                const placeholder = element.closest('.add-placeholder[data-parent-id][data-parent-type]');
+                if (placeholder && !isIgnoredParent(placeholder.dataset.parentId)) {
+                  return {
+                    id: placeholder.dataset.parentId,
+                    type: placeholder.dataset.parentType,
+                    source: 'placeholder'
+                  };
+                }
+
+                const directItem = element.matches?.('li[data-id][data-type]') ? element : null;
+                const row = element.closest('.sidebar-space-row, .sidebar-child-row');
+                const rowItem = directItem || row?.closest?.('li[data-id][data-type]');
+                const rowType = rowItem?.getAttribute?.('data-type');
+                if (rowItem && !isIgnoredParent(rowItem.getAttribute('data-id')) && this.isContainerItem(rowType)) {
+                  return {
+                    id: rowItem.getAttribute('data-id'),
+                    type: rowType,
+                    source: 'row'
+                  };
+                }
+
+                const dropList = element.closest('.hierarchy-sub-menu[data-parent-id][data-parent-type]');
+                if (dropList && !isIgnoredParent(dropList.dataset.parentId)) {
+                  return {
+                    id: dropList.dataset.parentId,
+                    type: dropList.dataset.parentType,
+                    source: 'list'
+                  };
+                }
+
+                return null;
+              },
+
+              resolveDropIntent(evt, parent) {
+                if (!parent?.id) return 'inside';
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientY !== 'number') return 'inside';
+
+                const enrichedParent = this.captureDropParentMetrics(parent);
+                return this.resolveDropIntentFromMetrics(evt, enrichedParent);
+              },
+
+              captureDropParentMetrics(parent) {
+                if (!parent?.id) return parent;
+
+                const enrichedParent = { ...parent };
+                const targetItemEl = this.findHierarchyItemElement(parent.id);
+                const row = this.getDirectHierarchyRow(targetItemEl);
+                const rowRect = row?.getBoundingClientRect?.();
+                if (rowRect) {
+                  enrichedParent.rowTop = rowRect.top;
+                  enrichedParent.rowBottom = rowRect.bottom;
+                  enrichedParent.rowHeight = rowRect.height;
+                }
+
+                const targetChildrenList = this.findDropListForParent(parent.id);
+                const placeholder = targetChildrenList?.querySelector(':scope > .add-placeholder[data-parent-id]');
+                const placeholderRect = placeholder?.getBoundingClientRect?.();
+                if (placeholderRect) {
+                  enrichedParent.placeholderTop = placeholderRect.top;
+                  enrichedParent.placeholderBottom = placeholderRect.bottom;
+                }
+
+                return enrichedParent;
+              },
+
+              resolveDropIntentFromMetrics(evt, parent) {
+                if (!parent?.id) return 'inside';
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientY !== 'number') return 'inside';
+
+                const pointerY = originalEvent.clientY;
+                const rowTop = Number(parent.rowTop);
+                const rowHeight = Number(parent.rowHeight);
+                const placeholderBottom = Number(parent.placeholderBottom);
+
+                if (parent.source === 'placeholder' && Number.isFinite(placeholderBottom)) {
+                  return 'inside';
+                }
+
+                if (parent.source === 'row' && Number.isFinite(rowTop) && Number.isFinite(rowHeight)) {
+                  if (this.isDropContainerOpen(parent.id)) return 'inside';
+                  return pointerY < rowTop + (rowHeight * 0.5) ? 'before' : 'after';
+                }
+
+                if (parent.source === 'list' && Number.isFinite(placeholderBottom)) {
+                  return pointerY > placeholderBottom + 8 ? 'after' : 'inside';
+                }
+
+                return 'inside';
+              },
+
+              refreshDropParentIntent(evt, parent) {
+                if (!parent?.id) return parent;
+                const refreshedParent = { ...parent };
+                refreshedParent.intent = this.resolveDropIntentFromMetrics(evt, refreshedParent);
+                return refreshedParent;
+              },
+
+              refreshEndDropParentIntent(evt, parent) {
+                const refreshedParent = this.refreshDropParentIntent(evt, parent);
+                if (!refreshedParent?.id || refreshedParent.source !== 'row' || refreshedParent.intent !== 'after') {
+                  return refreshedParent;
+                }
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientY !== 'number') return refreshedParent;
+
+                const placement = this.findHierarchyPlacement(refreshedParent.id);
+                if (!placement || placement.depth === 0) return refreshedParent;
+                if (!this.isDropContainerOpen(refreshedParent.id)) return refreshedParent;
+
+                const draggedRow = this.getDirectHierarchyRow(evt?.item);
+                const draggedHeight = draggedRow?.getBoundingClientRect?.().height || 0;
+                const rowBottom = Number(refreshedParent.rowBottom);
+                if (Number.isFinite(rowBottom) && draggedHeight && originalEvent.clientY <= rowBottom + draggedHeight + 8) {
+                  refreshedParent.intent = 'inside';
+                }
+
+                return refreshedParent;
+              },
+
+              isHierarchyAncestor(ancestorId, descendantId) {
+                const ancestor = String(ancestorId || '');
+                const descendant = String(descendantId || '');
+                if (!ancestor || !descendant || ancestor === descendant) return false;
+
+                const path = this.findHierarchyPath(descendant);
+                if (!path || path.length < 2) return false;
+                return path.slice(0, -1).some(item => String(item.id) === ancestor);
+              },
+
+              isPointerWithinDropSnapshot(evt, parent) {
+                if (!parent?.id) return false;
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientY !== 'number') return false;
+
+                const rowTop = Number(parent.rowTop);
+                const rowBottom = Number(parent.rowBottom);
+                if (!Number.isFinite(rowTop) || !Number.isFinite(rowBottom)) return false;
+
+                return originalEvent.clientY >= rowTop - 8 && originalEvent.clientY <= rowBottom + 8;
+              },
+
+              isDropContainerOpen(id) {
+                const targetId = String(id || '');
+                if (!targetId) return false;
+                return [
+                  ...(this.activeDropdown || []),
+                  ...(this.subActive || []),
+                  ...(this.expandedIds || [])
+                ].some(openId => String(openId) === targetId);
+              },
+
+              resolveCoordinateDropParent(evt, ignoredItemId = null) {
+                const originalEvent = evt?.originalEvent;
+                if (
+                  typeof originalEvent?.clientX !== 'number' ||
+                  typeof originalEvent?.clientY !== 'number'
+                ) {
+                  return null;
+                }
+
+                const ignoredId = String(ignoredItemId || evt?.item?.getAttribute?.('data-id') || '');
+                const pointerX = originalEvent.clientX;
+                const pointerY = originalEvent.clientY;
+                const rows = Array.from(document.querySelectorAll('.sidebar-spaces-area .sidebar-space-row, .sidebar-spaces-area .sidebar-child-row'));
+                let best = null;
+
+                for (const row of rows) {
+                  const item = row.closest('li[data-id][data-type]');
+                  if (!item) continue;
+                  const id = item.getAttribute('data-id');
+                  const type = item.getAttribute('data-type');
+                  if (!id || String(id) === ignoredId || !this.isContainerItem(type)) continue;
+
+                  const rect = row.getBoundingClientRect();
+                  const withinX = pointerX >= rect.left - 18 && pointerX <= rect.right + 18;
+                  const withinY = pointerY >= rect.top - 4 && pointerY <= rect.bottom + 48;
+                  if (!withinX || !withinY) continue;
+
+                  const centerY = rect.top + rect.height / 2;
+                  const distance = Math.abs(pointerY - centerY);
+                  if (!best || distance < best.distance) {
+                    best = {
+                      id,
+                      type,
+                      source: 'row',
+                      intent: this.isDropContainerOpen(id)
+                        ? 'inside'
+                        : (pointerY < rect.top + (rect.height * 0.5) ? 'before' : 'after'),
+                      rowTop: rect.top,
+                      rowBottom: rect.bottom,
+                      rowHeight: rect.height,
+                      distance
+                    };
+                  }
+                }
+
+                if (!best) return null;
+                const { distance, ...parent } = best;
+                return parent;
+              },
+
+              resolveAdjacentContainerDrop(evt, itemEl, parentEl) {
+                const originalEvent = evt?.originalEvent;
+                if (
+                  !itemEl ||
+                  !parentEl ||
+                  typeof originalEvent?.clientY !== 'number' ||
+                  typeof originalEvent?.clientX !== 'number'
+                ) {
+                  return null;
+                }
+
+                const pointerX = originalEvent.clientX;
+                const pointerY = originalEvent.clientY;
+                const siblings = Array.from(parentEl.querySelectorAll(':scope > li[data-id][data-type]'));
+                const itemIndex = siblings.findIndex(el => el === itemEl);
+                if (itemIndex === -1) return null;
+
+                const candidates = [siblings[itemIndex - 1], siblings[itemIndex + 1]].filter(Boolean);
+                for (const candidate of candidates) {
+                  const id = candidate.getAttribute('data-id');
+                  const type = candidate.getAttribute('data-type');
+                  if (!id || !this.isContainerItem(type)) continue;
+
+                  const row = this.getDirectHierarchyRow(candidate);
+                  const rect = row?.getBoundingClientRect?.();
+                  if (!rect) continue;
+
+                  const insideX = pointerX >= rect.left - 18 && pointerX <= rect.right + 18;
+                  const insideY = pointerY >= rect.top - 4 && pointerY <= rect.bottom + 48;
+                  if (!insideX || !insideY) continue;
+
+                  return {
+                    id,
+                    type,
+                    source: 'row',
+                    intent: this.isDropContainerOpen(id)
+                      ? 'inside'
+                      : (pointerY < rect.top + (rect.height * 0.5) ? 'before' : 'after'),
+                    rowTop: rect.top,
+                    rowBottom: rect.bottom,
+                    rowHeight: rect.height
+                  };
+                }
+
+                return null;
+              },
+
+              isDropParentStillRelevant(evt, parent) {
+                if (!parent?.id) return false;
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientY !== 'number') return true;
+
+                const targetItemEl = this.findHierarchyItemElement(parent.id);
+                const row = this.getDirectHierarchyRow(targetItemEl);
+                const rowRect = row?.getBoundingClientRect?.();
+                if (!rowRect) return false;
+
+                const targetChildrenList = this.findDropListForParent(parent.id);
+                const placeholder = targetChildrenList?.querySelector(':scope > .add-placeholder[data-parent-id]');
+                const placeholderRect = placeholder?.getBoundingClientRect?.();
+                const upper = rowRect.top - 104;
+                const lower = Math.max(rowRect.bottom, placeholderRect?.bottom || 0) + 104;
+                return originalEvent.clientY >= upper && originalEvent.clientY <= lower;
+              },
+
+              resolveSameLevelDropContext(evt, explicitDropParent) {
+                if (!explicitDropParent?.id) return null;
+                if (!['before', 'after'].includes(explicitDropParent.intent)) return null;
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientY !== 'number') return null;
+
+                const targetItemEl = this.findHierarchyItemElement(explicitDropParent.id);
+                if (!targetItemEl || targetItemEl === evt?.item) return null;
+                if (!this.isContainerItem(targetItemEl.getAttribute('data-type'))) return null;
+
+                const row = this.getDirectHierarchyRow(targetItemEl);
+                const parentListEl = targetItemEl.parentElement;
+                const parentContext = this.getParentContextFromList(parentListEl);
+                if (!row || !parentListEl || !parentContext) return null;
+
+                const pointerY = originalEvent.clientY;
+                const rowRect = row.getBoundingClientRect();
+                const targetChildrenList = this.findDropListForParent(explicitDropParent.id);
+                const placeholder = targetChildrenList?.querySelector(':scope > .add-placeholder[data-parent-id]');
+                const placeholderRect = placeholder?.getBoundingClientRect?.();
+                const rowAfterLimit = Math.max(rowRect.bottom, placeholderRect?.bottom || 0) + 96;
+                if (pointerY > rowAfterLimit && explicitDropParent.source !== 'row') return null;
+
+                const siblings = Array.from(parentListEl.querySelectorAll(':scope > li[data-id][data-type]'));
+                const targetIndex = siblings.findIndex(el => String(el.getAttribute('data-id')) === String(explicitDropParent.id));
+                if (targetIndex === -1) return null;
+
+                return {
+                  id: parentContext.id,
+                  type: parentContext.type,
+                  el: parentContext.el,
+                  insertIndex: explicitDropParent.intent === 'before' ? targetIndex : targetIndex + 1
+                };
+              },
+
+              resolveExplicitDropParentFromEvent(evt) {
+                const candidates = [];
+                const originalEvent = evt?.originalEvent;
+                const ignoredItemId = evt?.item?.getAttribute?.('data-id');
+                const coordinateParent = this.resolveCoordinateDropParent(evt, ignoredItemId);
+                if (coordinateParent) return coordinateParent;
+
+                if (evt?.related) candidates.push(evt.related);
+                if (originalEvent?.target) candidates.push(originalEvent.target);
+                if (typeof originalEvent?.clientX === 'number' && typeof originalEvent?.clientY === 'number') {
+                  candidates.push(...document.elementsFromPoint(originalEvent.clientX, originalEvent.clientY));
+                }
+                if (evt?.to) candidates.push(evt.to);
+
+                for (const candidate of candidates) {
+                  const parent = this.resolveExplicitDropParentFromElement(candidate, ignoredItemId);
+                  if (parent?.id && parent?.type) {
+                    const enrichedParent = this.captureDropParentMetrics(parent);
+                    enrichedParent.intent = this.resolveDropIntentFromMetrics(evt, enrichedParent);
+                    return enrichedParent;
+                  }
+                }
+
+                return null;
+              },
+
+              patchSortableDragOverGuard() {
+                if (!window.Sortable || Sortable.__dexioDragOverGuard) return;
+                const originalDragOver = Sortable.prototype?._onDragOver;
+                if (typeof originalDragOver !== 'function') return;
+
+                Sortable.prototype._onDragOver = function (...args) {
+                  if (!this?.el) return false;
+
+                  try {
+                    return originalDragOver.apply(this, args);
+                  } catch (error) {
+                    if (String(error?.message || '').includes('lastElementChild')) {
+                      return false;
+                    }
+                    throw error;
+                  }
+                };
+
+                Sortable.__dexioDragOverGuard = true;
+              },
+
+              isEnvironmentRootDropFromEvent(evt) {
+                if (!this.activeEnvironmentId) return false;
+
+                const originalEvent = evt?.originalEvent;
+                if (typeof originalEvent?.clientX !== 'number' || typeof originalEvent?.clientY !== 'number') {
+                  return false;
+                }
+
+                const rootEl = document.querySelector('ul[data-parent-type="root"]');
+                if (!rootEl) return false;
+
+                const elements = document.elementsFromPoint(originalEvent.clientX, originalEvent.clientY);
+                for (const element of elements) {
+                  const row = element.closest?.('.sidebar-space-row');
+                  const item = row?.closest?.('li[data-id][data-type]');
+                  if (row && item && item.parentElement === rootEl) {
+                    const rect = row.getBoundingClientRect();
+                    return originalEvent.clientY >= rect.top && originalEvent.clientY <= rect.bottom;
+                  }
+                }
+
+                return false;
+              },
+
               initDragAndDrop() {
                 if (typeof Sortable === 'undefined') {
                   console.warn('[Sidebar] Sortable.js not loaded');
                   return;
                 }
+                this.patchSortableDragOverGuard();
 
                 // Destroy existing instances first
                 this.sortableInstances.forEach(instance => {
@@ -2315,72 +2878,43 @@
                 });
                 this.sortableInstances = [];
 
-                // Root list (Spaces) - use data attribute to avoid wrong container
+                // Root list for the active Espace - use data attribute to avoid wrong container
                 const rootEl = document.querySelector('ul[data-parent-type="root"]');
                 if (rootEl) {
-                  console.log('[Sidebar] Initializing Sortable for spaces');
+                  console.log('[Sidebar] Initializing Sortable for active espace root');
                   const rootSortable = new Sortable(rootEl, {
-                    group: { name: 'spaces', pull: true, put: false },
+                    group: { name: 'hierarchy', pull: true, put: true },
+                    draggable: '> li[data-id][data-type]',
                     animation: 150,
-                    onEnd: (evt) => this.handleDrop(evt, 'space')
+                    emptyInsertThreshold: 28,
+                    swapThreshold: 0.65,
+                    onStart: () => {
+                      this.beginHierarchyDrag();
+                    },
+                    onMove: (evt) => this.canAcceptSortableMove(evt),
+                    onEnd: (evt) => {
+                      this.dragOverFolderId = null;
+                      this.handleDrop(evt, 'space');
+                    }
                   });
                   this.sortableInstances.push(rootSortable);
                 } else {
-                  console.warn('[Sidebar] Root spaces container not found');
+                  console.warn('[Sidebar] Active espace root container not found');
                 }
 
                 // Nested lists (Folders/Entities) inside spaces and folders
-                const nestedEls = document.querySelectorAll('.sub-menu');
+                const nestedEls = document.querySelectorAll('.hierarchy-sub-menu');
                 nestedEls.forEach(el => {
                   const nestedSortable = new Sortable(el, {
-                    group: 'nested',
+                    group: { name: 'hierarchy', pull: true, put: true },
+                    draggable: '> li[data-id][data-type]',
                     animation: 150,
-                    fallbackOnBody: true,
+                    emptyInsertThreshold: 28,
                     swapThreshold: 0.65,
-                    filter: '.add-placeholder',  // Prevent dragging "Ajouter" button
-                    onMove: (evt) => {
-                      // Auto-expand empty folders when dragging over them
-                      const toEl = evt.to;
-                      const parentContainer = toEl.closest('[data-id]');
-                      if (parentContainer) {
-                        const folderId = parentContainer.getAttribute('data-id');
-                        const folderType = parentContainer.getAttribute('data-type');
-
-                        // Check if it's a folder and if it's closed
-                        if (['folder', 'environment'].includes(folderType)) {
-                          // Find in hierarchy to check if it has children or is empty
-                          const findFolder = (list) => {
-                            for (const item of list) {
-                              if (item.id === folderId) return item;
-                              if (item.children) {
-                                const found = findFolder(item.children);
-                                if (found) return found;
-                              }
-                            }
-                            return null;
-                          };
-
-                          const folder = findFolder(this.hierarchy);
-
-                          // Auto-open if folder exists and not already in subActive or expandedIds
-                          if (folder) {
-                            // Check if it's first-level (direct child of space)
-                            const isFirstLevel = this.hierarchy.some(space =>
-                              space.children && space.children.some(child => child.id === folderId)
-                            );
-
-                            if (isFirstLevel && !this.subActive.includes(folderId)) {
-                              this.subActive.push(folderId);
-                            } else if (!isFirstLevel && !this.expandedIds.includes(folderId)) {
-                              this.expandedIds.push(folderId);
-                            }
-                          }
-                        }
-
-                        // Track for hiding Add button
-                        this.dragOverFolderId = folderId;
-                      }
+                    onStart: () => {
+                      this.beginHierarchyDrag();
                     },
+                    onMove: (evt) => this.canAcceptSortableMove(evt),
                     onEnd: (evt) => {
                       this.dragOverFolderId = null; // Clear on drop or cancel
                       this.handleDrop(evt, 'nested');
@@ -2397,35 +2931,23 @@
                 const parentEl = evt.to;
                 const oldParentEl = evt.from;
 
-                // Optimization: If index didn't change and parent didn't change, do nothing
-                if (newIndex === oldIndex && parentEl === oldParentEl) return;
-
                 const id = itemEl.getAttribute('data-id');
                 const type = itemEl.getAttribute('data-type');
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
 
                 // --- 1. Identify New Parent ---
-                let newParentId = null;
-                let newParentType = null;
-
-                // For root spaces, parentEl will be the .sortable-root UL
-                if (parentEl.classList.contains('sortable-root')) {
-                  // Root level - no parent
-                  newParentId = null;
-                  newParentType = null;
-                } else {
-                  // Nested item - find the parent container
-                  const newParentContainer = parentEl.closest('[data-id]');
-                  if (newParentContainer) {
-                    newParentId = newParentContainer.getAttribute('data-id');
-                    newParentType = newParentContainer.getAttribute('data-type');
-                  }
-                }
+                const initialParentContext = this.getParentContextFromList(parentEl) || {};
+                let newParentId = initialParentContext.id || null;
+                let newParentType = initialParentContext.type || null;
+                let reorderParentEl = initialParentContext.el || parentEl;
+                let targetNewIndex = newIndex;
 
                 // --- 2. Identify Old Parent ---
                 let oldParentId_Val = null;
-                if (oldParentEl.classList.contains('sortable-root')) {
-                  oldParentId_Val = null;
+                if (oldParentEl.dataset?.parentType === 'root' || oldParentEl.classList.contains('sortable-root')) {
+                  oldParentId_Val = this.activeEnvironmentId || null;
+                } else if (oldParentEl.dataset?.parentId) {
+                  oldParentId_Val = oldParentEl.dataset.parentId;
                 } else {
                   const oldParentContainer = oldParentEl.closest('[data-id]');
                   if (oldParentContainer) {
@@ -2433,16 +2955,133 @@
                   }
                 }
 
+                const pendingDropParent = this.refreshDropParentIntent(evt, this.pendingDropParent);
+                const endDropParent = this.refreshEndDropParentIntent(evt, this.resolveExplicitDropParentFromEvent(evt));
+                let explicitDropParent = endDropParent;
+                if (!endDropParent?.id && this.isDropParentStillRelevant(evt, pendingDropParent)) {
+                  explicitDropParent = pendingDropParent;
+                }
+                if (
+                  pendingDropParent?.id &&
+                  endDropParent?.id &&
+                  String(pendingDropParent.id) !== String(endDropParent.id) &&
+                  this.isHierarchyAncestor(pendingDropParent.id, endDropParent.id)
+                ) {
+                  explicitDropParent = endDropParent;
+                }
+                if (
+                  pendingDropParent?.id &&
+                  endDropParent?.id &&
+                  String(pendingDropParent.id) === String(endDropParent.id) &&
+                  endDropParent.intent === 'inside'
+                ) {
+                  explicitDropParent = endDropParent;
+                } else if (
+                  pendingDropParent?.id &&
+                  endDropParent?.id &&
+                  String(pendingDropParent.id) === String(endDropParent.id)
+                ) {
+                  explicitDropParent = pendingDropParent;
+                } else if (
+                  pendingDropParent?.id &&
+                  endDropParent?.id &&
+                  String(pendingDropParent.id) !== String(endDropParent.id) &&
+                  ['inside', 'before', 'after'].includes(pendingDropParent.intent) &&
+                  this.isPointerWithinDropSnapshot(evt, pendingDropParent)
+                ) {
+                  explicitDropParent = pendingDropParent;
+                }
+                this.pendingDropParent = null;
+
+                const sameLevelDrop = this.resolveSameLevelDropContext(evt, explicitDropParent);
+                if (sameLevelDrop) {
+                  newParentId = sameLevelDrop.id;
+                  newParentType = sameLevelDrop.type;
+                  reorderParentEl = sameLevelDrop.el;
+                  targetNewIndex = sameLevelDrop.insertIndex;
+                } else if (explicitDropParent && String(explicitDropParent.id) !== String(id)) {
+                  newParentId = explicitDropParent.id;
+                  newParentType = explicitDropParent.type;
+                  reorderParentEl = this.findDropListForParent(explicitDropParent.id) || parentEl;
+                }
+                const forceEnvironmentRootDrop = !sameLevelDrop && !explicitDropParent && this.isEnvironmentRootDropFromEvent(evt);
+                if (forceEnvironmentRootDrop) {
+                  newParentId = this.activeEnvironmentId || null;
+                  newParentType = this.activeEnvironmentId ? 'environment-root' : null;
+                  reorderParentEl = document.querySelector('ul[data-parent-type="root"]') || parentEl;
+                  targetNewIndex = newIndex;
+                }
+
+                const adjacentContainerDrop = this.resolveAdjacentContainerDrop(evt, itemEl, parentEl);
+                if (
+                  adjacentContainerDrop &&
+                  adjacentContainerDrop.intent === 'inside' &&
+                  String(adjacentContainerDrop.id) !== String(id)
+                ) {
+                  newParentId = adjacentContainerDrop.id;
+                  newParentType = adjacentContainerDrop.type;
+                  reorderParentEl = this.findDropListForParent(adjacentContainerDrop.id) || parentEl;
+                  targetNewIndex = Number.isInteger(newIndex) ? newIndex : 0;
+                }
+
+                this.closeTransientDragOpenTargets();
+
+                if (!this.canMoveHierarchyItemIntoParent(id, type, newParentId, newParentType)) {
+                  console.warn('[Sidebar] Drop refused: folder depth limit reached', { id, type, newParentId, newParentType });
+                  this.revertSortableDomMove(evt);
+                  await this.waitForSortableCleanup();
+                  this.$nextTick(() => this.initDragAndDrop());
+                  return;
+                }
+
+                // If Sortable did not change anything and no explicit parent was chosen,
+                // close temporary hover-opened folders and leave the tree untouched.
+                if (
+                  newIndex === oldIndex &&
+                  parentEl === oldParentEl &&
+                  String(newParentId || '') === String(oldParentId_Val || '')
+                ) {
+                  return;
+                }
+
                 console.log(`[Sidebar] Drop: ${type}#${id} | From: ${oldParentId_Val || 'root'} -> To: ${newParentId || 'root'} | Idx: ${oldIndex} -> ${newIndex}`);
 
-                // --- 3. Optimistic Local Update (Optional - Sortable already moved it in DOM) ---
-                // We'll rely on server sync and fetchHierarchy for now, or you can update this.hierarchy manually
+                // --- 3. Capture order and update local tree immediately ---
+                // Alpine owns the x-for DOM. Sortable is only the preview layer, so
+                // compute the final order from this.hierarchy by ID, not from DOM indexes.
+                this.revertSortableDomMove(evt);
+                const moveResult = this.optimisticallyMoveHierarchyItem(
+                  id,
+                  type,
+                  newParentId,
+                  newParentType,
+                  targetNewIndex,
+                  explicitDropParent
+                );
+
+                if (!moveResult) {
+                  console.warn('[Sidebar] Drop ignored: unable to resolve hierarchy move', { id, type, newParentId, newParentType });
+                  this.fetchHierarchy(true);
+                  return;
+                }
+
+                targetNewIndex = moveResult.insertIndex;
+                const items = moveResult.siblings.map((item, index) => ({
+                  id: item.id || item._id,
+                  type: item.type,
+                  order: index
+                }));
+
+                await this.waitForSortableCleanup();
+                this.applyOptimisticHierarchyMove(moveResult);
+                this.cleanupDroppedItemDuplicates(id, newParentId, newParentType, itemEl);
+                this.$nextTick(() => this.cleanupDroppedItemDuplicates(id, newParentId, newParentType));
 
                 // --- 4. API Requests ---
                 try {
                   // Move API (only if parent changed)
                   if (String(newParentId || '') !== String(oldParentId_Val || '')) {
-                    await fetch(`/account/${accountNum}/api/hierarchy/move`, {
+                    const moveRes = await fetch(`/account/${accountNum}/api/hierarchy/move`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -2453,32 +3092,18 @@
                         oldParentId: oldParentId_Val
                       })
                     });
+                    if (!moveRes.ok) throw new Error(`Move failed (${moveRes.status})`);
                   }
 
-                  // Reorder API (always, to update order field)
-                  // Get all siblings at the same level
-                  let siblings;
-                  if (parentEl.classList.contains('sortable-root')) {
-                    // Root level - get all space LI elements
-                    siblings = Array.from(parentEl.querySelectorAll(':scope > li[data-id][data-type="space"]'));
-                  } else {
-                    // Nested level - get all child LI elements with data-id
-                    siblings = Array.from(parentEl.querySelectorAll(':scope > li[data-id]'));
-                  }
-
-                  const items = siblings.map((el, index) => ({
-                    id: el.getAttribute('data-id'),
-                    type: el.getAttribute('data-type'),
-                    order: index
-                  }));
-
-                  await fetch(`/account/${accountNum}/api/hierarchy/reorder`, {
+                  const reorderRes = await fetch(`/account/${accountNum}/api/hierarchy/reorder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ items })
                   });
+                  if (!reorderRes.ok) throw new Error(`Reorder failed (${reorderRes.status})`);
 
                   console.log("[Sidebar] Sync success", items);
+                  await this.syncHierarchyAfterDrop(newParentId, newParentType, id);
 
                 } catch (e) {
                   console.error("Sync failed", e);
@@ -2487,46 +3112,316 @@
                 }
               },
 
+              getHierarchyItemId(item) {
+                return String(item?.id || item?._id || '');
+              },
+
+              getHierarchyRenderKey(item) {
+                const id = this.getHierarchyItemId(item);
+                return `${this.hierarchyRenderKey}:${id || item?.slug || item?.name || 'item'}`;
+              },
+
+              cloneHierarchyList(list) {
+                return (list || []).map(item => ({
+                  ...item,
+                  id: this.getHierarchyItemId(item),
+                  children: this.cloneHierarchyList(item.children || [])
+                }));
+              },
+
+              detachHierarchyItem(list, itemId) {
+                const targetId = String(itemId || '');
+                if (!targetId || !Array.isArray(list)) return null;
+
+                for (let index = 0; index < list.length; index++) {
+                  const item = list[index];
+                  if (this.getHierarchyItemId(item) === targetId) {
+                    return list.splice(index, 1)[0];
+                  }
+
+                  const removed = this.detachHierarchyItem(item.children || [], targetId);
+                  if (removed) return removed;
+                }
+
+                return null;
+              },
+
+              findHierarchyItem(id, list = this.hierarchy) {
+                const targetId = String(id || '');
+                if (!targetId) return null;
+
+                for (const item of list || []) {
+                  if (this.getHierarchyItemId(item) === targetId) return item;
+                  const found = this.findHierarchyItem(targetId, item.children || []);
+                  if (found) return found;
+                }
+
+                return null;
+              },
+
+              getHierarchyChildrenForParent(parentId, parentType, root) {
+                if (
+                  parentType === 'environment-root' ||
+                  !parentId ||
+                  String(parentId) === String(this.activeEnvironmentId || '')
+                ) {
+                  return root;
+                }
+
+                const parent = this.findHierarchyItem(parentId, root);
+                if (!parent) return null;
+                if (!Array.isArray(parent.children)) parent.children = [];
+                return parent.children;
+              },
+
+              isFolderLikeType(type) {
+                return ['folder', 'environment', 'workstation'].includes(type);
+              },
+
+              isSectionLikeType(type) {
+                return ['space', 'environment'].includes(type);
+              },
+
+              isHierarchyRootParent(parentId, parentType) {
+                return (
+                  parentType === 'environment-root' ||
+                  !parentId ||
+                  String(parentId) === String(this.activeEnvironmentId || '')
+                );
+              },
+
+              getParentHierarchyDepth(parentId, parentType, root = this.hierarchy) {
+                const targetId = typeof parentId === 'object'
+                  ? this.getHierarchyItemId(parentId)
+                  : String(parentId || '');
+                const targetType = typeof parentId === 'object'
+                  ? parentId?.type
+                  : parentType;
+
+                if (
+                  targetType === 'environment-root' ||
+                  !targetId ||
+                  String(targetId) === String(this.activeEnvironmentId || '')
+                ) {
+                  return -1;
+                }
+
+                const placement = this.findHierarchyPlacement(targetId, root);
+                if (placement) return placement.depth;
+                return targetType === 'space' ? 0 : -1;
+              },
+
+              getMaxFolderLikeDepthOffset(item, offset = 0) {
+                if (!item) return -1;
+
+                let maxDepth = this.isFolderLikeType(item.type) ? offset : -1;
+                for (const child of item.children || []) {
+                  maxDepth = Math.max(maxDepth, this.getMaxFolderLikeDepthOffset(child, offset + 1));
+                }
+
+                return maxDepth;
+              },
+
+              canCreateSectionAtParent(parent) {
+                const targetParent = parent || this.environmentRootItem();
+                return Boolean(targetParent && this.isHierarchyRootParent(targetParent.id, targetParent.type));
+              },
+
+              canCreateFolderLikeChild(parent) {
+                if (!parent || !this.isContainerItem(parent)) return false;
+                return this.getParentHierarchyDepth(parent) < 2;
+              },
+
+              canCreateItemOfType(type, parent) {
+                if (!parent || !this.isContainerItem(parent)) return false;
+                if (type === 'environment') return this.canCreateSectionAtParent(parent);
+                if (this.isFolderLikeType(type)) return this.canCreateFolderLikeChild(parent);
+                return true;
+              },
+
+              canMoveHierarchyItemIntoParent(itemOrId, itemType, newParentId, newParentType, root = this.hierarchy) {
+                const item = typeof itemOrId === 'object' && itemOrId !== null
+                  ? itemOrId
+                  : this.findHierarchyItem(itemOrId, root) || { id: itemOrId, type: itemType, children: [] };
+                const type = item.type || itemType;
+
+                if (this.isSectionLikeType(type) && !this.isHierarchyRootParent(newParentId, newParentType)) {
+                  return false;
+                }
+                if (type === 'space') return true;
+                if (!this.isFolderLikeType(type)) return true;
+
+                const parentDepth = this.getParentHierarchyDepth(newParentId, newParentType, root);
+                const subtreeMaxOffset = Math.max(0, this.getMaxFolderLikeDepthOffset(item));
+
+                return parentDepth + 1 + subtreeMaxOffset <= 2;
+              },
+
+              canAcceptSortableMove(evt) {
+                const itemEl = evt?.dragged || evt?.item;
+                if (!itemEl) return true;
+
+                const type = itemEl.getAttribute?.('data-type');
+                if (!this.isFolderLikeType(type) && !this.isSectionLikeType(type)) return true;
+
+                const id = itemEl.getAttribute?.('data-id');
+                const parentContext = this.getParentContextFromList(evt?.to);
+                if (!parentContext) return true;
+
+                return this.canMoveHierarchyItemIntoParent(
+                  id,
+                  type,
+                  parentContext.id,
+                  parentContext.type
+                );
+              },
+
+              resolveHierarchyInsertIndex(targetSiblings, fallbackIndex, explicitDropParent) {
+                if (explicitDropParent?.id && ['before', 'after'].includes(explicitDropParent.intent)) {
+                  const targetIndex = (targetSiblings || []).findIndex(item =>
+                    this.getHierarchyItemId(item) === String(explicitDropParent.id)
+                  );
+
+                  if (targetIndex !== -1) {
+                    return explicitDropParent.intent === 'before' ? targetIndex : targetIndex + 1;
+                  }
+                }
+
+                if (Number.isInteger(fallbackIndex)) {
+                  return Math.max(0, Math.min(fallbackIndex, targetSiblings.length));
+                }
+
+                return targetSiblings.length;
+              },
+
+              revertSortableDomMove(evt) {
+                const itemEl = evt?.item;
+                const fromEl = evt?.from;
+                if (!itemEl || !fromEl) return;
+
+                const siblingsWithoutItem = Array.from(fromEl.querySelectorAll(':scope > li[data-id][data-type]'))
+                  .filter(el => el !== itemEl);
+                const ref = siblingsWithoutItem[evt.oldIndex] || fromEl.querySelector(':scope > .add-placeholder') || null;
+
+                if (itemEl.parentElement !== fromEl || itemEl.nextSibling !== ref) {
+                  fromEl.insertBefore(itemEl, ref);
+                }
+              },
+
+              waitForSortableCleanup() {
+                return new Promise(resolve => {
+                  requestAnimationFrame(() => requestAnimationFrame(resolve));
+                });
+              },
+
+              applyOptimisticHierarchyMove(moveResult) {
+                if (!moveResult?.root) return false;
+                const nextRoot = this.cloneHierarchyList(moveResult.root);
+                this.hierarchy = nextRoot;
+                this.hierarchyRenderKey += 1;
+                this.realSpacesCount = nextRoot.length;
+                return true;
+              },
+
+              optimisticallyMoveHierarchyItem(itemId, itemType, newParentId, newParentType, newIndex, explicitDropParent = null) {
+                if (newParentId && this.isHierarchyAncestor(itemId, newParentId)) return null;
+
+                const root = this.cloneHierarchyList(this.hierarchy);
+                const movedItem = this.detachHierarchyItem(root, itemId);
+                if (!movedItem) return null;
+
+                movedItem.id = this.getHierarchyItemId(movedItem);
+                if (!movedItem.id) return null;
+                movedItem.type = movedItem.type || itemType;
+                if (!this.canMoveHierarchyItemIntoParent(movedItem, movedItem.type, newParentId, newParentType, root)) {
+                  return null;
+                }
+                const targetSiblings = this.getHierarchyChildrenForParent(newParentId, newParentType, root);
+                if (!targetSiblings) return null;
+
+                const insertIndex = this.resolveHierarchyInsertIndex(targetSiblings, newIndex, explicitDropParent);
+                targetSiblings.splice(insertIndex, 0, movedItem);
+                targetSiblings.forEach((item, index) => { item.order = index; });
+
+                return {
+                  root,
+                  siblings: targetSiblings,
+                  insertIndex
+                };
+              },
+
+              cleanupDroppedItemDuplicates(itemId, newParentId, newParentType, preferredEl = null) {
+                const targetId = String(itemId || '');
+                if (!targetId) return;
+
+                const matches = Array.from(document.querySelectorAll('.sidebar-spaces-area li[data-id][data-type]'))
+                  .filter(el => String(el.getAttribute('data-id')) === targetId);
+                if (matches.length <= 1) return;
+
+                const desiredParentEl = newParentType === 'environment-root'
+                  ? document.querySelector('ul[data-parent-type="root"]')
+                  : this.findDropListForParent(newParentId);
+                const keep = (desiredParentEl && matches.find(el => el.parentElement === desiredParentEl))
+                  || (preferredEl && matches.includes(preferredEl) ? preferredEl : null)
+                  || matches[0];
+
+                matches.forEach(el => {
+                  if (el !== keep) el.remove();
+                });
+
+                Array.from(document.querySelectorAll('.sortable-fallback, .sortable-drag'))
+                  .filter(el => String(el.getAttribute('data-id') || '') === targetId)
+                  .forEach(el => el.remove());
+              },
+
               isItemActive(link) {
                 if (!link || link === '#') return false;
-                return decodeURIComponent(window.location.pathname) === decodeURIComponent(link);
+                const current = decodeURIComponent(window.location.pathname);
+                const target = decodeURIComponent(String(link).split('?')[0]);
+                if (current === target) return true;
+                // Match sub-paths: /record/serveur/ID/overview matches /record/serveur/ID
+                if (target.length > 1 && current.startsWith(target + '/')) return true;
+                return false;
               },
 
               detectActiveItem() {
                 const currentPath = decodeURIComponent(window.location.pathname);
-                for (const space of this.hierarchy) {
-                  for (const child of space.children || []) {
-                    // Check child (Folder or Entity)
-                    if (child.link && decodeURIComponent(child.link) === currentPath) {
-                      this.activeDropdown = [space.id];
-                      this.subActive = [];
-                      return;
-                    }
-                    // Check if it's a folder/environment with sub-children
-                    if (['folder', 'environment'].includes(child.type) && child.children) {
-                      for (const sub of child.children) {
-                        if (sub.link && decodeURIComponent(sub.link) === currentPath) {
-                          this.activeDropdown = [space.id];
-                          this.subActive = [child.id];
-                          return;
-                        }
-                        // Check sub-sub-children
-                        if (['folder', 'environment'].includes(sub.type) && sub.children) {
-                          for (const subSub of sub.children) {
-                            if (subSub.link && decodeURIComponent(subSub.link) === currentPath) {
-                              this.activeDropdown = [space.id];
-                              this.subActive = [child.id];
-                              return;
-                            }
-                          }
-                        }
-                      }
+                const matchesPath = (link) => {
+                  if (!link) return false;
+                  const target = decodeURIComponent(String(link).split('?')[0]);
+                  return currentPath === target || (target.length > 1 && currentPath.startsWith(target + '/'));
+                };
+                const openAncestors = (ancestors) => {
+                  for (const [index, ancestor] of ancestors.entries()) {
+                    if (index === 0) {
+                      const ancestorId = String(ancestor.id);
+                      if (!this.activeDropdown.includes(ancestorId)) this.activeDropdown.push(ancestorId);
+                    } else if (index === 1) {
+                      const ancestorId = String(ancestor.id);
+                      if (!this.subActive.includes(ancestorId)) this.subActive.push(ancestorId);
+                    } else {
+                      const ancestorId = String(ancestor.id);
+                      if (!this.expandedIds.includes(ancestorId)) this.expandedIds.push(ancestorId);
                     }
                   }
-                }
+                };
+                const walk = (items, ancestors = []) => {
+                  for (const item of items || []) {
+                    if (matchesPath(item.link)) {
+                      openAncestors(ancestors);
+                      return true;
+                    }
+                    if (this.isContainerItem(item) && walk(item.children || [], [...ancestors, item])) {
+                      return true;
+                    }
+                  }
+                  return false;
+                };
+                walk(this.hierarchy);
               },
 
               toggle(id) {
+                id = String(id);
                 if (this.activeDropdown.includes(id)) {
                   this.activeDropdown = this.activeDropdown.filter(x => x !== id);
                 } else {
@@ -2536,6 +3431,7 @@
               },
 
               toggleSub(id) {
+                id = String(id);
                 if (this.subActive.includes(id)) {
                   this.subActive = this.subActive.filter(x => x !== id);
                 } else {
@@ -2545,6 +3441,7 @@
               },
 
               toggleExpand(id, forceOpen = false) {
+                id = String(id);
                 if (forceOpen) {
                   if (!this.expandedIds.includes(id)) this.expandedIds.push(id);
                 } else {
@@ -2558,32 +3455,160 @@
               },
 
               isExpanded(id) {
-                return this.expandedIds.includes(id);
+                return this.expandedIds.includes(String(id));
+              },
+
+              isContainerItem(item) {
+                const type = typeof item === 'object' && item !== null ? item.type : item;
+                return ['environment-root', 'space', 'folder', 'environment', 'workstation'].includes(type);
+              },
+
+              scheduleOpenDropTargetFromElement(element) {
+                const containerEl = this.getContainerElementFromDropElement(element);
+                const targetId = containerEl?.getAttribute?.('data-id');
+                if (!targetId) {
+                  this.clearHoverOpenTimer();
+                  return false;
+                }
+
+                if (this.hoverOpenTargetId === targetId) return true;
+
+                this.clearHoverOpenTimer();
+                this.hoverOpenTargetId = targetId;
+                this.hoverOpenTimer = setTimeout(() => {
+                  this.openDropTargetFromElement(containerEl);
+                  this.hoverOpenTimer = null;
+                  this.hoverOpenTargetId = null;
+                }, 420);
+                return true;
+              },
+
+              openDropTargetFromElement(element) {
+                const containerEl = this.getContainerElementFromDropElement(element);
+                if (!containerEl) return false;
+
+                const targetId = containerEl.getAttribute('data-id');
+                const targetType = containerEl.getAttribute('data-type');
+                if (!targetId || !this.isContainerItem(targetType)) return false;
+
+                const target = this.findHierarchyPlacement(targetId);
+                if (!target) return false;
+
+                if (target.depth === 0) {
+                  if (!this.activeDropdown.includes(targetId)) this.activeDropdown.push(targetId);
+                } else if (target.depth === 1) {
+                  if (!this.subActive.includes(targetId)) this.subActive.push(targetId);
+                } else if (!this.expandedIds.includes(targetId)) {
+                  this.expandedIds.push(targetId);
+                }
+                this.dragOverFolderId = targetId;
+                return true;
+              },
+
+              environmentRootItem() {
+                if (!this.activeEnvironmentId) return null;
+                return {
+                  id: this.activeEnvironmentId,
+                  type: 'environment-root',
+                  name: this.activeEnvironmentName || 'Espace',
+                  icon: this.activeEnvironmentIcon || 'solar:share-circle-bold-duotone',
+                  color: this.activeEnvironmentColor || '#4361ee',
+                  children: this.hierarchy || [],
+                  link: '#'
+                };
               },
 
               findHierarchyPlacement(id, list = this.hierarchy, depth = 0) {
                 const targetId = String(id || '');
                 if (!targetId) return null;
                 for (const item of list || []) {
-                  if (String(item.id) === targetId) return { item, depth };
+                  if (this.getHierarchyItemId(item) === targetId) return { item, depth };
                   const found = this.findHierarchyPlacement(targetId, item.children || [], depth + 1);
                   if (found) return found;
                 }
                 return null;
               },
 
-              openHierarchyBranch(id) {
-                const found = this.findHierarchyPlacement(id);
-                if (!found) return false;
-                const itemId = String(found.item.id);
-                if (found.depth === 0 || found.item.type === 'space') {
-                  if (!this.activeDropdown.includes(itemId)) this.activeDropdown.push(itemId);
-                } else if (found.depth === 1) {
-                  if (!this.subActive.includes(itemId)) this.subActive.push(itemId);
-                } else if (!this.expandedIds.includes(itemId)) {
-                  this.expandedIds.push(itemId);
+              findHierarchyPath(id, list = this.hierarchy, path = []) {
+                const targetId = String(id || '');
+                if (!targetId) return null;
+                for (const item of list || []) {
+                  const nextPath = [...path, item];
+                  if (String(item.id) === targetId) return nextPath;
+                  const found = this.findHierarchyPath(targetId, item.children || [], nextPath);
+                  if (found) return found;
                 }
+                return null;
+              },
+
+              openHierarchyPath(id, includeTarget = true) {
+                const path = this.findHierarchyPath(id);
+                if (!path) return false;
+
+                const nodesToOpen = includeTarget ? path : path.slice(0, -1);
+                nodesToOpen.forEach((item, index) => {
+                  if (!this.isContainerItem(item)) return;
+                  const itemId = String(item.id);
+                  if (index === 0 || item.type === 'space') {
+                    if (!this.activeDropdown.includes(itemId)) this.activeDropdown.push(itemId);
+                  } else if (index === 1) {
+                    if (!this.subActive.includes(itemId)) this.subActive.push(itemId);
+                  } else if (!this.expandedIds.includes(itemId)) {
+                    this.expandedIds.push(itemId);
+                  }
+                });
+
+                this.normalizeOpenStateArrays();
+                this.reconcileOpenContainerDom(nodesToOpen.map(item => item.id));
                 return true;
+              },
+
+              normalizeOpenStateArrays() {
+                const uniqueIds = (ids) => [...new Set((ids || []).filter(Boolean).map(id => String(id)))];
+                this.activeDropdown = uniqueIds(this.activeDropdown);
+                this.subActive = uniqueIds(this.subActive);
+                this.expandedIds = uniqueIds(this.expandedIds);
+              },
+
+              reconcileOpenContainerDom(ids = []) {
+                const targetIds = [...new Set((ids || []).filter(Boolean).map(id => String(id)))];
+                if (targetIds.length === 0) return;
+
+                const reveal = () => {
+                  targetIds.forEach(id => {
+                    const list = this.findDropListForParent(id);
+                    if (!list) return;
+                    list.hidden = false;
+                    list.style.display = 'block';
+                    list.style.height = 'auto';
+                    list.style.overflow = 'visible';
+                  });
+                };
+
+                this.$nextTick(() => {
+                  reveal();
+                  requestAnimationFrame(() => {
+                    reveal();
+                    requestAnimationFrame(reveal);
+                  });
+                });
+              },
+
+              openHierarchyBranch(id) {
+                return this.openHierarchyPath(id, true);
+              },
+
+              async syncHierarchyAfterDrop(newParentId, newParentType, movedId) {
+                this.dragOverFolderId = null;
+                this.normalizeOpenStateArrays();
+                this.saveSidebarPrefs();
+
+                // The tree was already updated through the Alpine data model. Avoid
+                // clearing/refetching here: destroying Sortable containers while the
+                // browser finishes dragover cleanup triggers Sortable null-element errors.
+                await new Promise(resolve => setTimeout(resolve, 120));
+                await new Promise(resolve => this.$nextTick(resolve));
+                this.$nextTick(() => this.initDragAndDrop());
               },
 
               openCreatedItemPath(parent, createdItem = null) {
@@ -2618,7 +3643,7 @@
                     // Restore all state arrays
                     this.activeDropdown = savedIds.filter(id => this.hierarchy.some(item => item.id === id));
                     this.subActive = savedIds.filter(id => {
-                      // First-level children of spaces
+                      // First-level children of root containers
                       return this.hierarchy.some(space => space.children && space.children.some(child => child.id === id));
                     });
                     this.expandedIds = savedIds.filter(id => {
@@ -2661,18 +3686,27 @@
                   customIcon = item.icon;
                 }
 
-                const effectivelyHasChildren = hasChildren || ['space', 'folder', 'environment'].includes(type);
-                if (effectivelyHasChildren && hovered && ['folder', 'environment'].includes(type)) {
+                const effectivelyHasChildren = hasChildren || this.isContainerItem(type);
+                if (effectivelyHasChildren && (expanded || hovered) && ['folder', 'environment', 'workstation'].includes(type)) {
                   return expanded ? 'solar:folder-open-line-duotone' : 'solar:folder-2-line-duotone';
                 }
 
                 if (customIcon) return customIcon;
 
-                if (type === 'space') return 'solar:planet-3-bold-duotone';
+                if (type === 'environment-root') return this.activeEnvironmentIcon || 'solar:share-circle-bold-duotone';
+                if (type === 'space') return 'solar:layers-minimalistic-line-duotone';
                 if (type === 'folder') return 'solar:folder-2-line-duotone';
                 if (type === 'environment') return 'solar:layers-minimalistic-line-duotone';
+                if (type === 'workstation') return 'solar:case-round-bold-duotone';
                 if (type === 'entity') return 'solar:database-bold';
+                if (type === 'hub') return 'solar:widget-5-bold-duotone';
                 return 'solar:file-text-line-duotone';
+              },
+
+              async openEnvironmentCreateMenu(event) {
+                const parent = this.environmentRootItem();
+                if (!parent) return;
+                await this.openCreateMenu(event, parent);
               },
 
               async openCreateMenu(event, item) {
@@ -2690,6 +3724,9 @@
               },
 
               getDefaultCreateParent() {
+                const activeRoot = this.environmentRootItem();
+                if (activeRoot) return activeRoot;
+
                 if (this.isSingleSpaceEnv && this.hierarchy[0]) {
                   return { ...this.hierarchy[0], type: 'space' };
                 }
@@ -2903,10 +3940,25 @@
                 this.installSidebarPopoverGuard();
               },
 
-              createSpace() {
+              createSection() {
+                const parent = Alpine.store('sidebar').contextItem;
+                Alpine.store('sidebar').showMenu = false;
+                Alpine.store('sidebar').showEditMenu = false;
+
+                if (!this.canCreateSectionAtParent(parent || this.environmentRootItem())) {
+                  alert("Les sections se créent uniquement au niveau racine.");
+                  return;
+                }
+
+                const environmentId = parent?.id || this.activeEnvironmentId;
+                if (!environmentId) return;
                 window.dispatchEvent(new CustomEvent('open-space-modal', {
-                  detail: { space: null, environmentId: this.activeEnvironmentId }
+                  detail: { space: null, environmentId }
                 }));
+              },
+
+              createSpace() {
+                this.createSection();
               },
 
               async submitCreateHub() {
@@ -2960,6 +4012,14 @@
               },
 
               async createItem(type, viewType = 'list') {
+                const parent = Alpine.store('sidebar').contextItem;
+                if (!this.canCreateItemOfType(type, parent)) {
+                  alert("Impossible de créer un sous-dossier à ce niveau.");
+                  Alpine.store('sidebar').showMenu = false;
+                  Alpine.store('sidebar').showEditMenu = false;
+                  return;
+                }
+
                 this.creationType = type;
                 this.pendingViewType = viewType;
                 this.creationName = '';
@@ -3002,6 +4062,12 @@
                 const viewType = this.pendingViewType;
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 const parent = Alpine.store('sidebar').contextItem;
+
+                if (!this.canCreateItemOfType(type, parent)) {
+                  this.isSubmitting = false;
+                  alert("Impossible de créer un sous-dossier à ce niveau.");
+                  return;
+                }
 
                 const url = ['folder', 'environment'].includes(type) ? 'folder' : 'entity';
                 try {
@@ -3205,7 +4271,7 @@
                 // ═══ SortableJS: Reorder envs + accept space/folder drops ═══
                 const self = this;
                 this._sortable = Sortable.create(this.$el, {
-                  group: { name: 'env-rail', put: ['spaces', 'nested'] },
+                  group: { name: 'env-rail', put: ['hierarchy'] },
                   animation: 200,
                   draggable: '.env-rail-sortable-item',
                   filter: '.add-env-btn,.env-rail-space-dropzone,.env-rail-drop-placeholder',
@@ -3225,8 +4291,10 @@
 
                     if (itemId && itemType === 'space') {
                       self.promoteSpaceToEnvironment(itemId);
-                    } else if (itemId && itemType === 'folder') {
+                    } else if (itemId && ['folder', 'environment', 'workstation'].includes(itemType)) {
                       self.promoteFolderToEnvironment(itemId);
+                    } else {
+                      window.dispatchEvent(new CustomEvent('space-modal-saved'));
                     }
                   },
 
@@ -3445,7 +4513,7 @@
                   {
                     icon: 'solar:add-circle-bold-duotone',
                     iconColor: 'var(--primary)',
-                    label: 'Nouvel environnement',
+                    label: 'Nouvel espace',
                     action: () => self.openCreateModal()
                   }
                 ]);
@@ -3560,7 +4628,7 @@
                   console.log('[EnvironmentRail] Space promoted successfully:', data.environment.name);
                 } catch (err) {
                   console.error('[EnvironmentRail] promoteSpaceToEnvironment error:', err);
-                  alert('Erreur lors de la promotion du space en environnement');
+                  alert('Erreur lors de la promotion de la section en espace');
                 }
               },
 
@@ -3591,7 +4659,7 @@
                   console.log('[EnvironmentRail] Folder promoted successfully:', data.environment.name);
                 } catch (err) {
                   console.error('[EnvironmentRail] promoteFolderToEnvironment error:', err);
-                  alert('Erreur lors de la promotion du dossier en environnement');
+                  alert('Erreur lors de la promotion du dossier en espace');
                 }
               }
             };
@@ -3617,6 +4685,16 @@
               </h2>
               <ul class="space-y-0.5">
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  x-show="canCreateSectionAtParent($store.sidebar.contextItem)"
+                  @click="createSection()">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18" height="18" style="color: #6366f1"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Section</span>
+                  </div>
+                </li>
+
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  x-show="canCreateFolderLikeChild($store.sidebar.contextItem)"
                   @click="createItem('folder')">
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:folder-2-bold-duotone" width="18" height="18" style="color: #f59e0b"></iconify-icon>
@@ -3769,6 +4847,7 @@
               <div>
                 <!-- Dossier -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  x-show="canCreateFolderLikeChild($store.sidebar.contextItem)"
                   @click="createItem('folder')">
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:folder-2-bold-duotone" width="18" height="18" style="color: #f59e0b"></iconify-icon>
@@ -4463,7 +5542,7 @@
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nouvel environnement</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nouvel espace</h3>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Choisissez un modèle ou commencez à zéro</p>
             </div>
             <button @click="modalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
@@ -4480,7 +5559,7 @@
                 <iconify-icon icon="solar:add-circle-bold-duotone" width="26" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
               </div>
               <div class="text-left">
-                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-primary">Environnement vide</div>
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-primary">Espace vide</div>
                 <div class="text-xs text-gray-400 dark:text-gray-500">Créez de zéro et ajoutez vos propres collections</div>
               </div>
               <iconify-icon icon="solar:alt-arrow-right-linear" width="18" class="ml-auto text-gray-300 group-hover:text-primary transition-colors"></iconify-icon>
@@ -4573,7 +5652,7 @@
                 </button>
               </template>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white" x-text="editingEnv ? 'Modifier' : (selectedTemplateId ? 'Personnaliser' : 'Nouvel environnement')"></h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white" x-text="editingEnv ? 'Modifier l\'espace' : (selectedTemplateId ? 'Personnaliser' : 'Nouvel espace')"></h3>
                 <template x-if="selectedTemplateObj">
                   <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
                     <iconify-icon :icon="selectedTemplateObj.icon" width="12" :style="'color:' + selectedTemplateObj.color"></iconify-icon>
@@ -5170,7 +6249,7 @@
   }
 </script>
 
-<!-- ═══ Standalone Space Modal (outside nav to avoid transform issues) ═══ -->
+<!-- ═══ Standalone Section Modal (outside nav to avoid transform issues) ═══ -->
 <div x-data="spaceModalComponent()">
   <div :style="modalOpen ? 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;' : 'display:none;'"
        @keydown.escape.window="modalOpen && (modalOpen = false)">
@@ -5182,7 +6261,7 @@
 
       <!-- Modal Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" x-text="editingSpace ? 'Modifier l\'espace' : 'Nouvel espace'"></h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" x-text="editingSpace ? 'Modifier la section' : 'Nouvelle section'"></h3>
         <button @click="modalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
           <iconify-icon icon="solar:close-circle-bold" width="22"></iconify-icon>
         </button>
@@ -5200,7 +6279,7 @@
 
         <!-- Name -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nom de l'espace</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nom de la section</label>
           <input type="text" x-model="formName" x-ref="spaceNameInput"
                  placeholder="Ex: Ventes, Marketing, Support..."
                  autocomplete="off" spellcheck="false"
@@ -5287,7 +6366,7 @@
       editingSpace: null,
       environmentId: null,
       formName: '',
-      formIcon: 'solar:share-circle-bold-duotone',
+      formIcon: 'solar:layers-minimalistic-bold-duotone',
       formColor: '#4361ee',
       iconSearch: '',
       iconResults: [],
@@ -5302,6 +6381,7 @@
       ],
 
       defaultIcons: [
+        'solar:layers-minimalistic-bold-duotone',
         'solar:share-circle-bold-duotone',
         'solar:bag-heart-bold-duotone',
         'solar:magnet-bold-duotone',
@@ -5340,13 +6420,13 @@
             // Edit mode
             this.editingSpace = space;
             this.formName = space.name;
-            this.formIcon = space.icon || 'solar:share-circle-bold-duotone';
+            this.formIcon = space.icon || 'solar:layers-minimalistic-bold-duotone';
             this.formColor = space.color || '#4361ee';
           } else {
             // Create mode
             this.editingSpace = null;
             this.formName = '';
-            this.formIcon = 'solar:share-circle-bold-duotone';
+            this.formIcon = 'solar:layers-minimalistic-bold-duotone';
             this.formColor = this.presetColors[Math.floor(Math.random() * this.presetColors.length)];
           }
           this.iconSearch = '';
@@ -5397,7 +6477,7 @@
             this.modalOpen = false;
             window.dispatchEvent(new CustomEvent('space-modal-saved', { detail: {} }));
           } else {
-            // Create new space
+            // Create new section
             const body = {
               name: this.formName.trim(),
               icon: this.formIcon,

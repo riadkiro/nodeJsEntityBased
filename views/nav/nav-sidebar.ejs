@@ -283,36 +283,6 @@
         cursor: grabbing;
       }
 
-      /* ═══ Space-to-Environment Drop Zone ═══ */
-      .env-rail-drop-active {
-        background: rgba(99, 102, 241, 0.12) !important;
-        box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.4), 0 0 20px rgba(99, 102, 241, 0.15);
-        transition: all 0.2s ease;
-      }
-      .dark .env-rail-drop-active {
-        background: rgba(99, 102, 241, 0.15) !important;
-        box-shadow: inset 0 0 0 2px rgba(129, 140, 248, 0.4), 0 0 20px rgba(129, 140, 248, 0.12);
-      }
-      .env-rail-drop-placeholder {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        padding: 10px 6px;
-        border-radius: 12px;
-        border: 2px dashed rgba(99, 102, 241, 0.5);
-        background: rgba(99, 102, 241, 0.08);
-        margin-top: 4px;
-        animation: env-drop-pulse 1.5s ease-in-out infinite;
-      }
-      .env-rail-drop-active .env-rail-drop-placeholder {
-        display: flex;
-      }
-      @keyframes env-drop-pulse {
-        0%, 100% { opacity: 0.6; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.05); }
-      }
-
       /* The app theme adds dash markers and large padding to every .sub-menu link.
          The dynamic hierarchy already renders its own icons, so keep those rows compact. */
       .sidebar ul.hierarchy-sub-menu li a,
@@ -505,12 +475,6 @@
         <!-- flex:1 fills ALL remaining vertical space so drop works anywhere below the icons -->
         <div class="env-rail-space-dropzone" style="flex: 1; width: 100%; min-height: 40px;">
           <!-- Items dropped here are processed and removed -->
-        </div>
-
-        <!-- Drop placeholder (visible when dragging a space over) -->
-        <div class="env-rail-drop-placeholder">
-          <iconify-icon icon="solar:arrow-to-down-left-bold-duotone" width="18" style="color: #6366f1;"></iconify-icon>
-          <span style="font-size:8px; color:#6366f1; font-weight:600; text-align:center; line-height:1.1;">Promouvoir</span>
         </div>
 
         <!-- Add Space Button -->
@@ -4344,7 +4308,7 @@
                   group: { name: 'env-rail', put: ['hierarchy'] },
                   animation: 200,
                   draggable: '.env-rail-sortable-item',
-                  filter: '.add-env-btn,.env-rail-space-dropzone,.env-rail-drop-placeholder',
+                  filter: '.add-env-btn,.env-rail-space-dropzone',
                   ghostClass: 'env-rail-ghost',
                   dragClass: 'env-rail-dragging',
                   chosenClass: 'env-rail-chosen',
@@ -4364,8 +4328,6 @@
 
                     // Remove the dropped DOM element (SortableJS moved it here)
                     evt.item.remove();
-                    self.$el.classList.remove('env-rail-drop-active');
-
                     if (itemId && itemType === 'space') {
                       self.promoteSpaceToEnvironment(itemId);
                     } else if (itemId && ['folder', 'environment', 'workstation'].includes(itemType)) {
@@ -4395,7 +4357,7 @@
                     if (ref) {
                       evt.from.insertBefore(evt.item, ref);
                     } else {
-                      const envBoundary = evt.from.querySelector('.env-rail-space-dropzone, .env-rail-drop-placeholder, .add-env-btn');
+                      const envBoundary = evt.from.querySelector('.env-rail-space-dropzone, .add-env-btn');
                       if (envBoundary) {
                         evt.from.insertBefore(evt.item, envBoundary);
                       } else {
@@ -4414,18 +4376,6 @@
                   }
                 });
 
-                // ═══ Visual feedback for space drag-over ═══
-                this.$el.addEventListener('dragenter', () => {
-                  this.$el.classList.add('env-rail-drop-active');
-                });
-                this.$el.addEventListener('dragleave', (e) => {
-                  if (!this.$el.contains(e.relatedTarget)) {
-                    this.$el.classList.remove('env-rail-drop-active');
-                  }
-                });
-                document.addEventListener('dragend', () => {
-                  this.$el.classList.remove('env-rail-drop-active');
-                });
               },
 
               async refreshEnvironments() {

@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Logical name after sidebar refactor: Space (rail item).
+// Collection/model name stays Environment for backward compatibility.
 const EnvironmentSchema = new mongoose.Schema({
     name: { type: String, required: true },
     slug: { type: String, required: true },

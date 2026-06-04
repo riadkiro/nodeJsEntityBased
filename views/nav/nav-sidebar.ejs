@@ -446,7 +446,7 @@
            x-data="environmentRail()"
            x-init="await init()"
            @contextmenu.prevent="showRailContextMenu($event)"
-           @environment-updated.window="await refreshEnvironments()"
+           @environment-updated.window="await handleEnvironmentUpdated($event)"
            style="scrollbar-width: none; -ms-overflow-style: none;">
 
         <!-- Dynamic Environment Icons -->
@@ -456,6 +456,12 @@
              @contextmenu.prevent.stop="showEnvContextMenu($event, env)"
              :data-active="activeEnvId === env.id"
              :data-env-id="env.id"
+             :data-id="env.id"
+             data-type="rail-space"
+             data-source="env-rail"
+             :data-name="env.name"
+             :data-icon="env.icon || ''"
+             :data-color="env.color || ''"
              class="mini-rail-item env-rail-sortable-item"
              :title="env.name"
              :style="activeEnvId === env.id ? 'color:' + env.color : ''">
@@ -2913,8 +2919,15 @@
                       this.beginHierarchyDrag();
                     },
                     onMove: (evt) => this.isHierarchyDragBlocked(evt) ? false : this.canAcceptSortableMove(evt),
+                    onAdd: (evt) => {
+                      if (this.isRailDropItem(evt.item)) {
+                        this.handleRailDropIntoHierarchy(evt, 'space');
+                      }
+                    },
                     onEnd: (evt) => {
                       this.dragOverFolderId = null;
+                      if (this.isRailDropItem(evt.item)) return;
+                      if (this.isDroppingIntoRail(evt)) return;
                       this.handleDrop(evt, 'space');
                     }
                   });
@@ -2940,13 +2953,168 @@
                       this.beginHierarchyDrag();
                     },
                     onMove: (evt) => this.isHierarchyDragBlocked(evt) ? false : this.canAcceptSortableMove(evt),
+                    onAdd: (evt) => {
+                      if (this.isRailDropItem(evt.item)) {
+                        this.handleRailDropIntoHierarchy(evt, 'nested');
+                      }
+                    },
                     onEnd: (evt) => {
                       this.dragOverFolderId = null; // Clear on drop or cancel
+                      if (this.isRailDropItem(evt.item)) return;
+                      if (this.isDroppingIntoRail(evt)) return;
                       this.handleDrop(evt, 'nested');
                     }
                   });
                   this.sortableInstances.push(nestedSortable);
                 });
+              },
+
+              isRailDropItem(itemEl) {
+                if (!itemEl || typeof itemEl.getAttribute !== 'function') return false;
+                return (
+                  itemEl.getAttribute('data-source') === 'env-rail' ||
+                  (itemEl.hasAttribute('data-env-id') && itemEl.getAttribute('data-type') === 'rail-space')
+                );
+              },
+
+              isDroppingIntoRail(evt) {
+                const target = evt?.to;
+                return Boolean(
+                  target?.classList?.contains('env-rail-list') ||
+                  target?.closest?.('.env-rail-list')
+                );
+              },
+
+              getRailDropSpaceId(itemEl) {
+                if (!itemEl || typeof itemEl.getAttribute !== 'function') return '';
+                return itemEl.getAttribute('data-env-id') || itemEl.getAttribute('data-id') || '';
+              },
+
+              getSortableInsertIndex(evt) {
+                if (Number.isInteger(evt?.newDraggableIndex)) return evt.newDraggableIndex;
+                if (Number.isInteger(evt?.newIndex)) return evt.newIndex;
+                return null;
+              },
+
+              resolveRailDropContext(evt) {
+                const parentEl = evt?.to;
+                const initialParentContext = this.getParentContextFromList(parentEl) || {};
+                let parentId = initialParentContext.id || this.activeEnvironmentId || null;
+                let parentType = initialParentContext.type || (this.activeEnvironmentId ? 'environment-root' : null);
+                let insertIndex = this.getSortableInsertIndex(evt);
+
+                const pendingDropParent = this.refreshDropParentIntent(evt, this.pendingDropParent);
+                const endDropParent = this.refreshEndDropParentIntent(evt, this.resolveExplicitDropParentFromEvent(evt));
+                let explicitDropParent = endDropParent;
+                if (!endDropParent?.id && this.isDropParentStillRelevant(evt, pendingDropParent)) {
+                  explicitDropParent = pendingDropParent;
+                }
+                this.pendingDropParent = null;
+
+                const sameLevelDrop = this.resolveSameLevelDropContext(evt, explicitDropParent);
+                if (sameLevelDrop) {
+                  parentId = sameLevelDrop.id;
+                  parentType = sameLevelDrop.type;
+                  insertIndex = sameLevelDrop.insertIndex;
+                } else if (explicitDropParent?.id) {
+                  parentId = explicitDropParent.id;
+                  parentType = explicitDropParent.type;
+                  if (explicitDropParent.source === 'placeholder') {
+                    insertIndex = this.getSortableInsertIndex(evt);
+                  } else if (explicitDropParent.intent === 'inside') {
+                    const targetChildrenList = this.findDropListForParent(explicitDropParent.id);
+                    const siblingCount = targetChildrenList
+                      ? targetChildrenList.querySelectorAll(':scope > li[data-id][data-type]').length
+                      : 0;
+                    insertIndex = Number.isInteger(insertIndex) ? insertIndex : siblingCount;
+                  }
+                }
+
+                const forceEnvironmentRootDrop = !sameLevelDrop && !explicitDropParent && this.isEnvironmentRootDropFromEvent(evt);
+                if (forceEnvironmentRootDrop) {
+                  parentId = this.activeEnvironmentId || null;
+                  parentType = this.activeEnvironmentId ? 'environment-root' : null;
+                  insertIndex = this.getSortableInsertIndex(evt);
+                }
+
+                return {
+                  parentId,
+                  parentType,
+                  insertIndex
+                };
+              },
+
+              canAcceptRailSpaceDrop(itemEl, parentId, parentType) {
+                const railSpaceId = this.getRailDropSpaceId(itemEl);
+                if (!railSpaceId || !this.activeEnvironmentId) return false;
+                if (String(railSpaceId) === String(this.activeEnvironmentId)) return false;
+
+                if (this.isHierarchyRootParent(parentId, parentType)) return true;
+
+                return this.canMoveHierarchyItemIntoParent(
+                  { id: `rail-${railSpaceId}`, type: 'folder', children: [] },
+                  'folder',
+                  parentId,
+                  parentType
+                );
+              },
+
+              async handleRailDropIntoHierarchy(evt, group) {
+                const itemEl = evt.item;
+                const railSpaceId = this.getRailDropSpaceId(itemEl);
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+                // The rail uses clone mode. Alpine owns the final DOM, so the clone
+                // must disappear immediately and the server result drives the render.
+                if (itemEl?.parentElement) itemEl.remove();
+                this.dragOverFolderId = null;
+
+                const dropContext = this.resolveRailDropContext(evt);
+                this.closeTransientDragOpenTargets([dropContext.parentId]);
+
+                if (!this.canAcceptRailSpaceDrop(itemEl, dropContext.parentId, dropContext.parentType)) {
+                  console.warn('[Sidebar] Rail drop refused', { railSpaceId, dropContext });
+                  this.$nextTick(() => this.initDragAndDrop());
+                  return;
+                }
+
+                try {
+                  const res = await fetch(`/account/${accountNum}/api/hierarchy/demote-space-to-hierarchy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      spaceId: railSpaceId,
+                      targetSpaceId: this.activeEnvironmentId,
+                      parentId: dropContext.parentId,
+                      parentType: dropContext.parentType,
+                      insertIndex: dropContext.insertIndex
+                    })
+                  });
+                  const data = await res.json();
+                  if (!res.ok || data.error) {
+                    throw new Error(data.error || `Move failed (${res.status})`);
+                  }
+
+                  window.dispatchEvent(new CustomEvent('environment-updated', {
+                    detail: {
+                      force: true,
+                      removedSpaceId: data.removedSpaceId || railSpaceId,
+                      targetSpaceId: data.targetSpaceId || this.activeEnvironmentId
+                    }
+                  }));
+                  await this.fetchHierarchy(true);
+
+                  const createdId = data.item?.id || data.section?.id || data.folder?.id;
+                  if (createdId) {
+                    this.openHierarchyBranch(createdId);
+                    this.saveSidebarPrefs();
+                  }
+                  this.$nextTick(() => this.initDragAndDrop());
+                } catch (error) {
+                  console.error('[Sidebar] Rail drop sync failed:', error);
+                  alert(error.message || "Erreur lors du déplacement de l'espace");
+                  await this.fetchHierarchy(true);
+                }
               },
 
               async handleDrop(evt, group) {
@@ -3285,6 +3453,14 @@
               canAcceptSortableMove(evt) {
                 const itemEl = evt?.dragged || evt?.item;
                 if (!itemEl) return true;
+
+                if (this.isRailDropItem(itemEl)) {
+                  const parentContext = this.getParentContextFromList(evt?.to) || {
+                    id: this.activeEnvironmentId || null,
+                    type: this.activeEnvironmentId ? 'environment-root' : null
+                  };
+                  return this.canAcceptRailSpaceDrop(itemEl, parentContext.id, parentContext.type);
+                }
 
                 const type = itemEl.getAttribute?.('data-type');
                 if (!this.isFolderLikeType(type) && !this.isSectionLikeType(type)) return true;
@@ -4296,7 +4472,7 @@
                 // Listen for modal save events to refresh the list
                 window.addEventListener('env-modal-saved', async (e) => {
                   const detail = e.detail || {};
-                  await this.refreshEnvironments();
+                  await this.refreshEnvironments({ force: true });
                   if (detail.newEnv) {
                     this.selectEnvironment(detail.newEnv, true);
                   }
@@ -4305,16 +4481,19 @@
                 // ═══ SortableJS: Reorder envs + accept space/folder drops ═══
                 const self = this;
                 this._sortable = Sortable.create(this.$el, {
-                  group: { name: 'env-rail', put: ['hierarchy'] },
+                  group: { name: 'env-rail', pull: 'clone', put: ['hierarchy'], revertClone: true },
                   animation: 200,
                   draggable: '.env-rail-sortable-item',
                   filter: '.add-env-btn,.env-rail-space-dropzone',
                   ghostClass: 'env-rail-ghost',
                   dragClass: 'env-rail-dragging',
                   chosenClass: 'env-rail-chosen',
+                  onClone(evt) {
+                    self.prepareRailClone(evt);
+                  },
                   onMove(evt) {
                     const draggedIsEnv = Boolean(evt.dragged?.dataset?.envId);
-                    if (draggedIsEnv && evt.related && !evt.related.matches?.('.env-rail-sortable-item[data-env-id]')) {
+                    if (draggedIsEnv && evt.to === self.$el && evt.related && !evt.related.matches?.('.env-rail-sortable-item[data-env-id]')) {
                       return false;
                     }
                     return true;
@@ -4338,6 +4517,12 @@
                   },
 
                   onEnd(evt) {
+                    if (evt.pullMode === 'clone' || evt.to !== evt.from) {
+                      self.cleanupRailCloneArtifacts();
+                      self.$nextTick(() => self.cleanupRailCloneArtifacts());
+                      return;
+                    }
+
                     const envId = evt.item.dataset.envId;
                     if (!envId) return;
 
@@ -4378,13 +4563,92 @@
 
               },
 
-              async refreshEnvironments() {
+              prepareRailClone(evt) {
+                const clone = evt?.clone;
+                if (!clone) return;
+
+                clone.setAttribute('x-ignore', '');
+                clone.setAttribute('data-rail-clone', 'true');
+
+                const stripAlpineAttrs = (element) => {
+                  Array.from(element.attributes || []).forEach(attr => {
+                    if (
+                      attr.name.startsWith('x-') ||
+                      attr.name.startsWith('@') ||
+                      attr.name.startsWith(':')
+                    ) {
+                      element.removeAttribute(attr.name);
+                    }
+                  });
+                };
+
+                stripAlpineAttrs(clone);
+                clone.querySelectorAll('*').forEach(stripAlpineAttrs);
+              },
+
+              cleanupRailCloneArtifacts(extraRemovedIds = []) {
+                const railEl = this.$el || document.querySelector('.env-rail-list');
+                if (!railEl) return;
+
+                const validIds = new Set((this.environments || []).map(env => String(env.id)));
+                const removedIds = new Set((extraRemovedIds || []).filter(Boolean).map(id => String(id)));
+
+                Array.from(railEl.querySelectorAll('.env-rail-sortable-item')).forEach(el => {
+                  const envId = el.getAttribute('data-env-id') || el.getAttribute('data-id') || '';
+                  const shouldRemove = (
+                    el.getAttribute('data-rail-clone') === 'true' ||
+                    el.classList.contains('sortable-drag') ||
+                    el.classList.contains('sortable-fallback') ||
+                    !envId ||
+                    removedIds.has(String(envId)) ||
+                    (validIds.size > 0 && !validIds.has(String(envId)))
+                  );
+
+                  if (shouldRemove) el.remove();
+                });
+
+                document.querySelectorAll('[data-rail-clone="true"], .sortable-fallback.env-rail-sortable-item, .sortable-drag.env-rail-sortable-item')
+                  .forEach(el => el.remove());
+              },
+
+              async handleEnvironmentUpdated(event = null) {
+                const detail = event?.detail || {};
+                const removedId = detail.removedSpaceId || detail.removedEnvironmentId;
+
+                if (removedId) {
+                  this.environments = this.environments.filter(env => String(env.id) !== String(removedId));
+                  this.cleanupRailCloneArtifacts([removedId]);
+                  this.$nextTick(() => this.cleanupRailCloneArtifacts([removedId]));
+                  if (String(this.activeEnvId || '') === String(removedId)) {
+                    const fallback = detail.targetSpaceId
+                      ? this.environments.find(env => String(env.id) === String(detail.targetSpaceId))
+                      : null;
+                    this.activeEnvId = null;
+                    if (fallback) this.selectEnvironment(fallback, true, false);
+                  }
+                }
+
+                await this.refreshEnvironments({ force: Boolean(detail.force || removedId) });
+              },
+
+              async refreshEnvironments(options = {}) {
+                const force = Boolean(options.force);
                 const now = Date.now();
                 if (this.isLoadingEnvironments) {
+                  if (force) {
+                    let waitCount = 0;
+                    while (this.isLoadingEnvironments && waitCount < 30) {
+                      await new Promise(resolve => setTimeout(resolve, 50));
+                      waitCount++;
+                    }
+                    if (!this.isLoadingEnvironments) {
+                      return this.refreshEnvironments({ force: true });
+                    }
+                  }
                   console.warn('[EnvironmentRail] refreshEnvironments skipped: already loading');
                   return;
                 }
-                if (now - this.lastRefreshTime < 300) {
+                if (!force && now - this.lastRefreshTime < 300) {
                   console.warn('[EnvironmentRail] refreshEnvironments skipped: rate limit cooldown');
                   return;
                 }
@@ -4397,6 +4661,7 @@
                   if (!res.ok) throw new Error(`HTTP ${res.status}`);
                   const data = await res.json();
                   this.environments = data.environments || [];
+                  this.$nextTick(() => this.cleanupRailCloneArtifacts());
 
                   if (this.environments.length > 0 && !this.activeEnvId) {
                     // Try to auto-detect the correct environment from the current URL
@@ -4604,7 +4869,7 @@
                   if (wasActive) {
                     this.activeEnvId = null;
                   }
-                  await this.refreshEnvironments();
+                  await this.refreshEnvironments({ force: true });
                   // If we deleted the active env, select the env that inherited the spaces
                   if (wasActive && this.environments.length > 0) {
                     const targetEnv = data.reassignedTo 

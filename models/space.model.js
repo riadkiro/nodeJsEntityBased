@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Logical name after sidebar refactor: Section (top-level item inside a rail Space).
+// Collection/model name stays Space for backward compatibility with existing data.
 const SpaceSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -15,7 +17,7 @@ const SpaceSchema = new mongoose.Schema({
   color: String,
   order: { type: Number, default: 0 },
 
-  // Parent environment
+  // Parent rail Space (legacy field name: environmentId)
   environmentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Environment'

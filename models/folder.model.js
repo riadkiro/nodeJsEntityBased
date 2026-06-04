@@ -3,14 +3,21 @@ const mongoose = require('mongoose');
 const FolderSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true },
-  type: { type: String, default: 'folder' }, // 'folder' | 'workstation'
+  type: { type: String, default: 'folder' }, // 'folder' | legacy 'environment' | 'workstation'
   description: String,
 
-  // Multi-space
+  // Parent sections (legacy field name: spaces)
   spaces: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Space'
   }],
+
+  // Direct parent rail Space (legacy model name: Environment)
+  environmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Environment',
+    default: null
+  },
 
   // Multi-parent
   parentFolders: [{

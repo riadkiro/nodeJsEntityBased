@@ -38,7 +38,12 @@ router.get('/list', accountController.list_Api);
 router.post('/add', accountController.save_Api);
 
 router.get('/hierarchy/list', hierarchyController.getHierarchy);
-// Environment CRUD
+// Rail Space CRUD (legacy name: Environment)
+router.get('/hierarchy/spaces', hierarchyController.listSpaces);
+router.post('/hierarchy/spaces', requirePerm('entities.manage'), hierarchyController.createRailSpace);
+router.post('/hierarchy/spaces/update', requirePerm('entities.manage'), hierarchyController.updateRailSpace);
+router.post('/hierarchy/spaces/delete', requirePerm('entities.manage'), hierarchyController.deleteRailSpace);
+router.post('/hierarchy/spaces/reorder', requirePerm('entities.manage'), hierarchyController.reorderRailSpaces);
 router.get('/hierarchy/environments', hierarchyController.listEnvironments);
 router.post('/hierarchy/environment', requirePerm('entities.manage'), hierarchyController.createEnvironment);
 router.post('/hierarchy/environment/update', requirePerm('entities.manage'), hierarchyController.updateEnvironment);
@@ -47,6 +52,9 @@ router.post('/hierarchy/environment/reorder', requirePerm('entities.manage'), hi
 router.post('/hierarchy/move', requirePerm('entities.manage'), hierarchyController.move);
 router.post('/hierarchy/reorder', requirePerm('entities.manage'), hierarchyController.reorder);
 router.post('/hierarchy/space', requirePerm('entities.manage'), hierarchyController.createSpace);
+router.post('/hierarchy/space/update', requirePerm('entities.manage'), hierarchyController.updateSpaceCompat);
+router.post('/hierarchy/section', requirePerm('entities.manage'), hierarchyController.createSection);
+router.post('/hierarchy/section/update', requirePerm('entities.manage'), hierarchyController.updateSection);
 router.post('/hierarchy/folder', requirePerm('entities.manage'), hierarchyController.createFolder);
 router.post('/hierarchy/entity', requirePerm('entities.manage'), hierarchyController.createEntity);
 router.post('/hierarchy/rename', requirePerm('entities.manage'), hierarchyController.renameItem);
@@ -58,15 +66,32 @@ router.get('/hierarchy/entity/:entityId/fields', hierarchyController.getEntityFi
 router.post('/hierarchy/link-entity', requirePerm('entities.manage'), hierarchyController.linkEntity);
 router.post('/hierarchy/hub', requirePerm('entities.manage'), hierarchyController.createHub);
 router.post('/hierarchy/link-cockpit', requirePerm('entities.manage'), hierarchyController.linkCockpit);
+router.post('/hierarchy/promote-section-to-space', requirePerm('entities.manage'), hierarchyController.promoteSectionToSpace);
+router.post('/hierarchy/promote-folder-to-space', requirePerm('entities.manage'), hierarchyController.promoteFolderToSpace);
 router.post('/hierarchy/promote-space-to-environment', requirePerm('entities.manage'), hierarchyController.promoteSpaceToEnvironment);
 router.post('/hierarchy/promote-folder-to-environment', requirePerm('entities.manage'), hierarchyController.promoteFolderToEnvironment);
+router.post('/hierarchy/demote-space-to-hierarchy', requirePerm('entities.manage'), hierarchyController.demoteSpaceToHierarchy);
+router.post('/hierarchy/demote-environment-to-hierarchy', requirePerm('entities.manage'), hierarchyController.demoteEnvironmentToHierarchy);
 
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
 router.get('/hierarchy/icons', hierarchyController.getIcons);
+router.get('/hierarchy/find-space', hierarchyController.findSpaceByEntitySlug);
 router.get('/hierarchy/find-environment', hierarchyController.findEnvironmentByEntitySlug);
 
 // Environment image upload
 const envImageUpload = uploadToDynamic((req) => `public/${req.account_number}/uploads/environments`);
+router.post('/hierarchy/spaces/upload-image', envImageUpload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No file uploaded' });
+        }
+        const imagePath = `/${req.account_number}/uploads/environments/${req.file.filename}`;
+        res.json({ success: true, imagePath });
+    } catch (error) {
+        console.error('[Hierarchy] Upload space image error:', error);
+        res.status(500).json({ success: false, error: 'Upload failed' });
+    }
+});
 router.post('/hierarchy/environment/upload-image', envImageUpload.single('image'), (req, res) => {
     try {
         if (!req.file) {

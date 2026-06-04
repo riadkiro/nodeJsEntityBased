@@ -386,6 +386,31 @@
       .sidebar-spaces-area .sidebar-child-row a {
         margin-left: 0.25rem !important;
       }
+      .sidebar-spaces-area .sidebar-space-row:hover,
+      .sidebar-spaces-area .sidebar-child-row:hover {
+        background-color: #f8fafc !important;
+      }
+      .dark .sidebar-spaces-area .sidebar-space-row:hover,
+      .dark .sidebar-spaces-area .sidebar-child-row:hover {
+        background-color: rgba(255, 255, 255, 0.06) !important;
+      }
+      .sidebar-spaces-area .sidebar-space-row:hover .sidebar-space-inner,
+      .sidebar-spaces-area .sidebar-space-row:hover .sidebar-space-actions,
+      .sidebar-spaces-area .sidebar-child-row:hover .sidebar-child-actions,
+      .sidebar-spaces-area .sidebar-child-row:hover > iconify-icon,
+      .sidebar-spaces-area .sidebar-child-row:hover a,
+      .sidebar-spaces-area .sidebar-child-row a:hover,
+      .sidebar-spaces-area .sidebar-child-row button:hover {
+        background-color: transparent !important;
+      }
+      .sidebar-spaces-area .sidebar-row-caret,
+      .sidebar-spaces-area .sidebar-action-plus {
+        border-radius: 4px;
+      }
+      .sidebar-spaces-area .sidebar-row-caret:hover,
+      .sidebar-spaces-area .sidebar-action-plus:hover {
+        background-color: transparent !important;
+      }
       .sidebar-spaces-area .sidebar-nested-list {
         margin-left: 0.5rem !important;
         padding-left: 0.375rem !important;
@@ -405,6 +430,11 @@
         min-height: 1.625rem;
         border: 1px dashed rgba(67, 97, 238, 0.28);
         background: rgba(67, 97, 238, 0.04);
+      }
+      .sidebar-spaces-area .sidebar-rename-input {
+        cursor: text;
+        user-select: text;
+        -webkit-user-select: text;
       }
     </style>
     <div
@@ -847,12 +877,13 @@
                 <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                   <div
                     class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub -mx-2 px-2 py-1.5"
-                    :class="subActive.includes(child.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                     @mouseenter="hovered = true" @mouseleave="hovered = false"
                     @contextmenu.prevent="openEditMenu($event, child.type, child, hierarchy[0])">
                       <iconify-icon
                         :icon="getIcon(child, child.children && child.children.length > 0, subActive.includes(child.id), hovered)"
-                        class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
+                        class="ml-2 cursor-pointer bg-transparent"
+                        :width="getHierarchyIconSize(child, subActive.includes(child.id))"
+                        :height="getHierarchyIconSize(child, subActive.includes(child.id))"
                         :style="child.color ? 'color: ' + child.color : ''"
                         @click.stop="if(isContainerItem(child)) { toggleSub(child.id); }"></iconify-icon>
 
@@ -866,8 +897,9 @@
                       </template>
                       <template x-if="editingId === child.id">
                         <input x-ref="editInput" type="text"
-                          class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                          class="sidebar-rename-input form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                           x-model="editingName" @keyup.enter="saveRename(child)" @blur="saveRename(child)"
+                          @mousedown.stop @touchstart.stop @click.stop
                           x-init="$nextTick(() => $el.focus())">
                       </template>
                     </div>
@@ -877,8 +909,8 @@
                       <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                         class="sidebar-action-plus cursor-pointer hover:text-primary"
                         @click.stop="openCreateMenu($event, child)"></iconify-icon>
-                      <iconify-icon x-show="!subActive.includes(child.id)"
-                        icon="solar:alt-arrow-right-linear" width="14" height="14"
+                      <iconify-icon
+                        :icon="subActive.includes(child.id) ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-right-linear'" width="14" height="14"
                         class="sidebar-row-caret cursor-pointer"
                         @click.stop="toggleSub(child.id)"></iconify-icon>
                     </div>
@@ -891,12 +923,13 @@
                     <template x-for="subChild in child.children" :key="getHierarchyRenderKey(subChild)">
                       <li x-data="{ hovered: false }" class="relative block" :data-id="subChild.id" :data-type="subChild.type">
                         <div class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
-                          :class="isExpanded(subChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                           @mouseenter="hovered = true" @mouseleave="hovered = false"
                           @contextmenu.prevent="openEditMenu($event, subChild.type, subChild, child)">
                           <iconify-icon
                             :icon="getIcon(subChild, subChild.children && subChild.children.length > 0, isExpanded(subChild.id), hovered)"
-                            class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
+                            class="ml-2 cursor-pointer bg-transparent"
+                            :width="getHierarchyIconSize(subChild, isExpanded(subChild.id))"
+                            :height="getHierarchyIconSize(subChild, isExpanded(subChild.id))"
                             :style="subChild.color ? 'color: ' + subChild.color : ''"
                             @click.stop="if(isContainerItem(subChild)) { toggleExpand(subChild.id); }"></iconify-icon>
                           <div class="flex-1 truncate min-w-0">
@@ -908,9 +941,9 @@
                             </template>
                             <template x-if="editingId === subChild.id">
                               <input x-ref="editInput" type="text"
-                                class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                                class="sidebar-rename-input form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                                 x-model="editingName" @keyup.enter="saveRename(subChild)"
-                                @blur="saveRename(subChild)" x-init="$nextTick(() => $el.focus())">
+                                @blur="saveRename(subChild)" @mousedown.stop @touchstart.stop @click.stop x-init="$nextTick(() => $el.focus())">
                             </template>
                           </div>
                         </div>
@@ -934,8 +967,7 @@
           <ul class="sortable-root" data-parent-type="root">
             <template x-for="item in hierarchy" :key="getHierarchyRenderKey(item)">
               <li class="menu nav-item" :data-id="item.id" :data-type="item.type">
-                <div class="sidebar-space-row nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-                  :class="activeDropdown.includes(item.id) || isItemActive(item.link) ? 'bg-gray-100/50 dark:bg-gray-800/50' : ''">
+                <div class="sidebar-space-row nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                   <div x-data="{ hovered: false }" class="sidebar-space-inner flex items-center mx-2 cursor-pointer flex-1"
                     @mouseenter="hovered = true" @mouseleave="hovered = false"
                     @click="if (isContainerItem(item)) { toggle(item.id); } else if (item.link && item.link !== '#') { window.location.href = item.link; }"
@@ -953,8 +985,9 @@
                     </template>
                     <template x-if="editingId === item.id">
                       <input x-ref="editInput" type="text"
-                        class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                        class="sidebar-rename-input form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                         x-model="editingName" @keyup.enter="saveRename(item)" @blur="saveRename(item)"
+                        @mousedown.stop @touchstart.stop @click.stop
                         x-init="$nextTick(() => $el.focus())">
                     </template>
                   </div>
@@ -964,8 +997,8 @@
                     <iconify-icon icon="solar:add-square-linear" width="16" height="16"
                       class="sidebar-action-plus cursor-pointer hover:text-primary"
                       @click.stop="openCreateMenu($event, item)"></iconify-icon>
-                    <iconify-icon x-show="!activeDropdown.includes(item.id)"
-                      icon="solar:alt-arrow-right-linear" width="14" height="14"
+                    <iconify-icon
+                      :icon="activeDropdown.includes(item.id) ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-right-linear'" width="14" height="14"
                       class="sidebar-row-caret cursor-pointer"
                       @click.stop="toggle(item.id)"></iconify-icon>
                   </div>
@@ -978,12 +1011,13 @@
                     <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
                         class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub"
-                        :class="subActive.includes(child.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                         @mouseenter="hovered = true" @mouseleave="hovered = false"
                         @contextmenu.prevent="openEditMenu($event, child.type, child, item)">
                           <iconify-icon
                             :icon="getIcon(child, child.children && child.children.length > 0, subActive.includes(child.id), hovered)"
-                            class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
+                            class="ml-2 cursor-pointer bg-transparent"
+                            :width="getHierarchyIconSize(child, subActive.includes(child.id))"
+                            :height="getHierarchyIconSize(child, subActive.includes(child.id))"
                           :style="child.color ? 'color: ' + child.color : ''"
                           @click.stop="if(isContainerItem(child)) { toggleSub(child.id); }"></iconify-icon>
 
@@ -997,8 +1031,9 @@
                           </template>
                           <template x-if="editingId === child.id">
                             <input x-ref="editInput" type="text"
-                              class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                              class="sidebar-rename-input form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                               x-model="editingName" @keyup.enter="saveRename(child)" @blur="saveRename(child)"
+                              @mousedown.stop @touchstart.stop @click.stop
                               x-init="$nextTick(() => $el.focus())">
                           </template>
                         </div>
@@ -1008,8 +1043,8 @@
                           <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                             class="sidebar-action-plus cursor-pointer hover:text-primary"
                             @click.stop="openCreateMenu($event, child)"></iconify-icon>
-                          <iconify-icon x-show="!subActive.includes(child.id)"
-                            icon="solar:alt-arrow-right-linear" width="14" height="14"
+                          <iconify-icon
+                            :icon="subActive.includes(child.id) ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-right-linear'" width="14" height="14"
                             class="sidebar-row-caret cursor-pointer"
                             @click.stop="toggleSub(child.id)"></iconify-icon>
                         </div>
@@ -1025,12 +1060,14 @@
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
                             class="relative block" :data-id="subChild.id" :data-type="subChild.type">
                             <div class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
-                              :class="isExpanded(subChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''" @mouseenter="hovered = true"
+                              @mouseenter="hovered = true"
                               @mouseleave="hovered = false"
                               @contextmenu.prevent="openEditMenu($event, subChild.type, subChild, child)">
                               <iconify-icon
                                 :icon="getIcon(subChild, subChild.children && subChild.children.length > 0, isExpanded(subChild.id), hovered)"
-                                class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
+                                class="ml-2 cursor-pointer bg-transparent"
+                                :width="getHierarchyIconSize(subChild, isExpanded(subChild.id))"
+                                :height="getHierarchyIconSize(subChild, isExpanded(subChild.id))"
                                 :style="subChild.color ? 'color: ' + subChild.color : ''"
                                 @click.stop="if(isContainerItem(subChild)) { toggleExpand(subChild.id); }"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
@@ -1042,9 +1079,9 @@
                                 </template>
                                 <template x-if="editingId === subChild.id">
                                   <input x-ref="editInput" type="text"
-                                    class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                                    class="sidebar-rename-input form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                                     x-model="editingName" @keyup.enter="saveRename(subChild)"
-                                    @blur="saveRename(subChild)" x-init="$nextTick(() => $el.focus())">
+                                    @blur="saveRename(subChild)" @mousedown.stop @touchstart.stop @click.stop x-init="$nextTick(() => $el.focus())">
                                 </template>
                               </div>
                               <div class="sidebar-child-actions flex items-center gap-1 pr-4"
@@ -1052,8 +1089,8 @@
                                 <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                                   class="sidebar-action-plus cursor-pointer hover:text-primary"
                                   @click.stop="openCreateMenu($event, subChild)"></iconify-icon>
-                                <iconify-icon x-show="!isExpanded(subChild.id)"
-                                  icon="solar:alt-arrow-right-linear" width="14" height="14"
+                                <iconify-icon
+                                  :icon="isExpanded(subChild.id) ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-right-linear'" width="14" height="14"
                                   class="sidebar-row-caret cursor-pointer"
                                   @click.stop="toggleExpand(subChild.id)"></iconify-icon>
                               </div>
@@ -1068,13 +1105,14 @@
                               <template x-for="subSubChild in subChild.children" :key="getHierarchyRenderKey(subSubChild)">
                                 <li x-data="{ hovered: false }"
                                   class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub3"
-                                  :class="isExpanded(subSubChild.id) ? 'bg-gray-100/40 dark:bg-gray-800' : ''"
                                   @mouseenter="hovered = true" @mouseleave="hovered = false"
                                   @contextmenu.prevent="openEditMenu($event, subSubChild.type, subSubChild, subChild)"
                                   :data-id="subSubChild.id" :data-type="subSubChild.type">
                                   <iconify-icon
                                     :icon="getIcon(subSubChild, subSubChild.children && subSubChild.children.length > 0, isExpanded(subSubChild.id), hovered)"
-                                    class="ml-2 cursor-pointer bg-transparent" width="16" height="16"
+                                    class="ml-2 cursor-pointer bg-transparent"
+                                    :width="getHierarchyIconSize(subSubChild, isExpanded(subSubChild.id))"
+                                    :height="getHierarchyIconSize(subSubChild, isExpanded(subSubChild.id))"
                                     :style="subSubChild.color ? 'color: ' + subSubChild.color : ''"></iconify-icon>
                                   <div class="flex-1 truncate">
                                     <template x-if="editingId !== subSubChild.id">
@@ -1085,9 +1123,9 @@
                                     </template>
                                     <template x-if="editingId === subSubChild.id">
                                       <input x-ref="editInput" type="text"
-                                        class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
+                                        class="sidebar-rename-input form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                                         x-model="editingName" @keyup.enter="saveRename(subSubChild)"
-                                        @blur="saveRename(subSubChild)" x-init="$nextTick(() => $el.focus())">
+                                        @blur="saveRename(subSubChild)" @mousedown.stop @touchstart.stop @click.stop x-init="$nextTick(() => $el.focus())">
                                     </template>
                                   </div>
                                   <div class="sidebar-child-actions flex items-center gap-1 pr-4"
@@ -1095,8 +1133,8 @@
                                     <iconify-icon icon="solar:add-square-linear" width="14" height="14"
                                       class="sidebar-action-plus cursor-pointer hover:text-primary"
                                       @click.stop="openCreateMenu($event, subSubChild)"></iconify-icon>
-                                    <iconify-icon x-show="!isExpanded(subSubChild.id)"
-                                      icon="solar:alt-arrow-right-linear" width="14" height="14"
+                                    <iconify-icon
+                                      :icon="isExpanded(subSubChild.id) ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-right-linear'" width="14" height="14"
                                       class="sidebar-row-caret cursor-pointer"
                                       @click.stop="toggleExpand(subSubChild.id)"></iconify-icon>
                                   </div>
@@ -2307,6 +2345,21 @@
               get displayHierarchy() {
                 return this.hierarchy;
               },
+
+              setHierarchyDragDisabled(disabled = Boolean(this.editingId)) {
+                this.sortableInstances.forEach(instance => {
+                  if (instance && typeof instance.option === 'function') {
+                    instance.option('disabled', Boolean(disabled));
+                  }
+                });
+              },
+
+              isHierarchyDragBlocked(evt = null) {
+                if (this.editingId) return true;
+                const target = evt?.originalEvent?.target || evt?.target;
+                return Boolean(target?.closest?.('input, textarea, select, button, [contenteditable="true"], .sidebar-rename-input'));
+              },
+
               menuMode: 'main', // 'main' or 'data'
               allEntities: [],
               entitySearch: '',
@@ -2885,13 +2938,17 @@
                   const rootSortable = new Sortable(rootEl, {
                     group: { name: 'hierarchy', pull: true, put: true },
                     draggable: '> li[data-id][data-type]',
+                    disabled: Boolean(this.editingId),
+                    filter: 'input, textarea, select, button, [contenteditable="true"], .sidebar-rename-input',
+                    preventOnFilter: false,
                     animation: 150,
                     emptyInsertThreshold: 28,
                     swapThreshold: 0.65,
-                    onStart: () => {
+                    onStart: (evt) => {
+                      if (this.isHierarchyDragBlocked(evt)) return false;
                       this.beginHierarchyDrag();
                     },
-                    onMove: (evt) => this.canAcceptSortableMove(evt),
+                    onMove: (evt) => this.isHierarchyDragBlocked(evt) ? false : this.canAcceptSortableMove(evt),
                     onEnd: (evt) => {
                       this.dragOverFolderId = null;
                       this.handleDrop(evt, 'space');
@@ -2908,13 +2965,17 @@
                   const nestedSortable = new Sortable(el, {
                     group: { name: 'hierarchy', pull: true, put: true },
                     draggable: '> li[data-id][data-type]',
+                    disabled: Boolean(this.editingId),
+                    filter: 'input, textarea, select, button, [contenteditable="true"], .sidebar-rename-input',
+                    preventOnFilter: false,
                     animation: 150,
                     emptyInsertThreshold: 28,
                     swapThreshold: 0.65,
-                    onStart: () => {
+                    onStart: (evt) => {
+                      if (this.isHierarchyDragBlocked(evt)) return false;
                       this.beginHierarchyDrag();
                     },
-                    onMove: (evt) => this.canAcceptSortableMove(evt),
+                    onMove: (evt) => this.isHierarchyDragBlocked(evt) ? false : this.canAcceptSortableMove(evt),
                     onEnd: (evt) => {
                       this.dragOverFolderId = null; // Clear on drop or cancel
                       this.handleDrop(evt, 'nested');
@@ -3703,6 +3764,12 @@
                 return 'solar:file-text-line-duotone';
               },
 
+              getHierarchyIconSize(item, expanded = false, baseSize = 16) {
+                const type = typeof item === 'object' && item !== null ? item.type : item;
+                if (expanded && ['folder', 'environment', 'workstation'].includes(type)) return baseSize + 2;
+                return baseSize;
+              },
+
               async openEnvironmentCreateMenu(event) {
                 const parent = this.environmentRootItem();
                 if (!parent) return;
@@ -4099,6 +4166,8 @@
               startRename(item) {
                 this.editingId = item.id;
                 this.editingName = item.name;
+                this.setHierarchyDragDisabled(true);
+                this.$nextTick(() => this.setHierarchyDragDisabled(true));
                 Alpine.store('sidebar').showEditMenu = false;
               },
 
@@ -4145,6 +4214,7 @@
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 const newName = this.editingName;
                 this.editingId = null;
+                this.$nextTick(() => this.setHierarchyDragDisabled(false));
 
                 if (!newName || newName === item.name) return;
 
@@ -4278,6 +4348,13 @@
                   ghostClass: 'env-rail-ghost',
                   dragClass: 'env-rail-dragging',
                   chosenClass: 'env-rail-chosen',
+                  onMove(evt) {
+                    const draggedIsEnv = Boolean(evt.dragged?.dataset?.envId);
+                    if (draggedIsEnv && evt.related && !evt.related.matches?.('.env-rail-sortable-item[data-env-id]')) {
+                      return false;
+                    }
+                    return true;
+                  },
 
                   // When a SPACE or FOLDER is dropped from sidebar → promote it
                   onAdd(evt) {
@@ -4305,22 +4382,32 @@
                     const oldIdx = self.environments.findIndex(e => e.id === envId);
                     if (oldIdx === -1) return;
 
+                    const originalIdx = Number.isInteger(evt.oldDraggableIndex) ? evt.oldDraggableIndex : evt.oldIndex;
+                    const previewOrderIds = Array.from(evt.from.querySelectorAll('.env-rail-sortable-item[data-env-id]'))
+                      .map(el => el.dataset.envId)
+                      .filter(Boolean);
+                    const targetIdx = previewOrderIds.indexOf(envId);
+
                     // REVERT DOM move — Alpine manages the DOM via x-for
-                    const items = Array.from(evt.from.querySelectorAll('.env-rail-sortable-item'));
-                    const ref = items[evt.oldIndex] || null;
+                    const itemsWithoutMoved = Array.from(evt.from.querySelectorAll('.env-rail-sortable-item[data-env-id]'))
+                      .filter(el => el !== evt.item);
+                    const ref = itemsWithoutMoved[originalIdx] || null;
                     if (ref) {
                       evt.from.insertBefore(evt.item, ref);
                     } else {
-                      const addBtn = evt.from.querySelector('.add-env-btn');
-                      if (addBtn) {
-                        evt.from.insertBefore(evt.item, addBtn);
+                      const envBoundary = evt.from.querySelector('.env-rail-space-dropzone, .env-rail-drop-placeholder, .add-env-btn');
+                      if (envBoundary) {
+                        evt.from.insertBefore(evt.item, envBoundary);
                       } else {
                         evt.from.appendChild(evt.item);
                       }
                     }
 
                     const [moved] = self.environments.splice(oldIdx, 1);
-                    self.environments.splice(evt.newIndex, 0, moved);
+                    const insertIdx = targetIdx === -1
+                      ? self.environments.length
+                      : Math.max(0, Math.min(targetIdx, self.environments.length));
+                    self.environments.splice(insertIdx, 0, moved);
 
                     self.environments.forEach((env, idx) => { env.order = idx; });
                     self.saveEnvOrder();

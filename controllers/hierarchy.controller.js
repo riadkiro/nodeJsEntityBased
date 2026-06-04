@@ -1127,6 +1127,64 @@ module.exports = {
         });
     },
 
+    searchRecords: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            const entityId = String(req.query.entityId || '').trim();
+            const q = String(req.query.q || '').trim();
+            const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+
+            if (!entityId || !mongoose.Types.ObjectId.isValid(entityId)) {
+                return res.status(400).json({ error: "Entité invalide" });
+            }
+
+            const entity = await EntityModel.findById(entityId).select('name slug icon color').lean();
+            if (!entity) return res.status(404).json({ error: "Entité introuvable" });
+
+            const query = { entityId };
+            if (q) {
+                const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escaped, 'i');
+                query.$or = [
+                    { title: regex },
+                    { computedTitle: regex },
+                    { 'customFields.value': regex }
+                ];
+            }
+
+            const records = await RecordModel.find(query)
+                .select('_id title computedTitle image icon color updatedAt createdAt')
+                .sort({ updatedAt: -1, createdAt: -1 })
+                .limit(limit)
+                .lean();
+
+            res.json({
+                success: true,
+                entity: {
+                    id: entity._id.toString(),
+                    name: entity.name,
+                    slug: entity.slug,
+                    icon: entity.icon,
+                    color: entity.color
+                },
+                records: records.map(record => ({
+                    id: record._id.toString(),
+                    title: record.computedTitle || record.title || 'Sans titre',
+                    image: record.image || '',
+                    icon: record.icon || '',
+                    color: record.color || '',
+                    updatedAt: record.updatedAt,
+                    createdAt: record.createdAt
+                }))
+            });
+        } catch (error) {
+            console.error("[Hierarchy] Search records failed:", error);
+            res.status(500).json({ error: error.message || "Erreur lors de la recherche des records" });
+        }
+    },
+
     getEntityFields: async (req, res) => {
         try {
             const { entityId } = req.params;
@@ -1406,8 +1464,30 @@ module.exports = {
             if (!parent) return res.status(400).json({ error: "Dossier, section ou espace introuvable pour créer ce hub" });
 
             let entity = null;
+            let record = null;
             const requestedEntityId = String(req.body.entityId || '').trim();
-            if (requestedEntityId) {
+            const requestedRecordId = String(req.body.recordId || '').trim();
+            if (req.body.entityMode === 'record' && !requestedRecordId) {
+                return res.status(400).json({ error: "Record existant requis" });
+            }
+
+            if (requestedRecordId) {
+                if (!mongoose.Types.ObjectId.isValid(requestedRecordId)) {
+                    return res.status(400).json({ error: "Record existant invalide" });
+                }
+                record = await RecordModel.findById(requestedRecordId);
+                if (!record) {
+                    return res.status(404).json({ error: "Record existant introuvable" });
+                }
+                const recordEntityId = normalizeId(record.entityId);
+                if (requestedEntityId && requestedEntityId !== recordEntityId) {
+                    return res.status(400).json({ error: "Le record ne correspond pas à l'entité sélectionnée" });
+                }
+                entity = await EntityModel.findById(record.entityId);
+                if (!entity) {
+                    return res.status(404).json({ error: "Entité du record introuvable" });
+                }
+            } else if (requestedEntityId) {
                 if (!mongoose.Types.ObjectId.isValid(requestedEntityId)) {
                     return res.status(400).json({ error: "Entité existante invalide" });
                 }
@@ -1457,36 +1537,38 @@ module.exports = {
                 }
             }
 
-            const hubIcon = req.body.icon || entity.icon || 'solar:widget-5-bold-duotone';
-            const hubColor = req.body.color || entity.color || '#8b5cf6';
+            const hubIcon = req.body.icon || record?.icon || entity.icon || 'solar:widget-5-bold-duotone';
+            const hubColor = req.body.color || record?.color || entity.color || '#8b5cf6';
             const visibleModules = Array.isArray(req.body.visibleModules)
                 ? req.body.visibleModules.map(key => String(key)).filter(key => RECORD_MODULE_KEYS.includes(key))
                 : [];
             const hiddenRecordModules = visibleModules.length > 0
                 ? RECORD_MODULE_KEYS.filter(key => key !== 'overview' && !visibleModules.includes(key))
                 : [];
-            const recordData = {
-                entityId: entity._id,
-                title: hubName,
-                computedTitle: hubName,
-                image: req.body.entityImage || entity.image || '',
-                icon: hubIcon,
-                color: hubColor,
-                published: true,
-                status: 'published',
-                createdBy: req.user._id
-            };
+            if (!record) {
+                const recordData = {
+                    entityId: entity._id,
+                    title: hubName,
+                    computedTitle: hubName,
+                    image: req.body.entityImage || entity.image || '',
+                    icon: hubIcon,
+                    color: hubColor,
+                    published: true,
+                    status: 'published',
+                    createdBy: req.user._id
+                };
 
-            try {
-                const denormService = require('../services/record-denorm.service');
-                const denorm = await denormService.computeDenorm(recordData, entity.toObject ? entity.toObject() : entity, RecordModel, EntityModel);
-                Object.assign(recordData, denorm);
-            } catch (denormErr) {
-                recordData.computedTitle = recordData.computedTitle || hubName;
+                try {
+                    const denormService = require('../services/record-denorm.service');
+                    const denorm = await denormService.computeDenorm(recordData, entity.toObject ? entity.toObject() : entity, RecordModel, EntityModel);
+                    Object.assign(recordData, denorm);
+                } catch (denormErr) {
+                    recordData.computedTitle = recordData.computedTitle || hubName;
+                }
+
+                record = new RecordModel(recordData);
+                await record.save();
             }
-
-            const record = new RecordModel(recordData);
-            await record.save();
 
             const view = new ViewModel({
                 name: hubName,

@@ -62,6 +62,7 @@ router.post('/hierarchy/icon', requirePerm('entities.manage'), hierarchyControll
 router.post('/hierarchy/delete', requirePerm('entities.manage'), hierarchyController.deleteItem);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
+router.get('/hierarchy/records', hierarchyController.searchRecords);
 router.get('/hierarchy/entity/:entityId/fields', hierarchyController.getEntityFields);
 router.post('/hierarchy/link-entity', requirePerm('entities.manage'), hierarchyController.linkEntity);
 router.post('/hierarchy/hub', requirePerm('entities.manage'), hierarchyController.createHub);

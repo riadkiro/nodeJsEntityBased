@@ -1401,29 +1401,65 @@
                 </div>
                 <div class="p-5">
                   <form @submit.prevent="submitCreateHub">
-                    <div class="relative mb-4">
-                      <label class="mb-2 block text-sm font-bold">Nom du hub</label>
-                      <input type="text" x-model="hubName" x-ref="hubNameInput" :placeholder="hubNamePlaceholder()"
-                        class="form-input w-full" />
+                    <div x-show="!hubEntityMode" x-transition class="grid gap-3">
+                      <button type="button" x-ref="hubNewEntityModeButton"
+                        class="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 text-left transition hover:border-primary hover:bg-primary/5 dark:border-gray-700 dark:bg-[#0e1726]"
+                        @click="selectHubMode('new')">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <iconify-icon icon="solar:add-folder-bold-duotone" width="20"></iconify-icon>
+                        </span>
+                        <span class="min-w-0">
+                          <span class="block text-sm font-bold text-gray-900 dark:text-white">Nouvelle entité</span>
+                          <span class="block text-xs text-gray-400">Créer une entité et son premier hub</span>
+                        </span>
+                      </button>
+                      <button type="button"
+                        class="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 text-left transition hover:border-primary hover:bg-primary/5 dark:border-gray-700 dark:bg-[#0e1726]"
+                        @click="selectHubMode('existing')">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <iconify-icon icon="solar:database-bold-duotone" width="20"></iconify-icon>
+                        </span>
+                        <span class="min-w-0">
+                          <span class="block text-sm font-bold text-gray-900 dark:text-white">Entité existante</span>
+                          <span class="block text-xs text-gray-400">Créer un nouveau hub dans une entité</span>
+                        </span>
+                      </button>
+                      <button type="button"
+                        class="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 text-left transition hover:border-primary hover:bg-primary/5 dark:border-gray-700 dark:bg-[#0e1726]"
+                        @click="selectHubMode('record')">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <iconify-icon icon="solar:document-text-bold-duotone" width="20"></iconify-icon>
+                        </span>
+                        <span class="min-w-0">
+                          <span class="block text-sm font-bold text-gray-900 dark:text-white">Record existant</span>
+                          <span class="block text-xs text-gray-400">Créer un hub depuis un record déjà créé</span>
+                        </span>
+                      </button>
                     </div>
-                    <div class="relative mb-5">
-                      <label class="mb-2 block text-sm font-bold">Entité</label>
-                      <div class="mb-3 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1 text-xs font-bold dark:bg-gray-800">
-                        <button type="button" class="rounded-md px-3 py-2 transition"
-                          :class="hubEntityMode === 'new' ? 'bg-white text-primary shadow-sm dark:bg-[#0e1726]' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'"
-                          @click="hubEntityMode = 'new'; hubAppsOpen = false; $nextTick(() => mountHubColorPicker())">
-                          Nouvelle
+
+                    <div x-show="hubEntityMode" x-transition>
+                      <div class="mb-4 flex items-center justify-between gap-3">
+                        <button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 transition hover:text-primary"
+                          @click="resetHubMode()">
+                          <iconify-icon icon="solar:arrow-left-linear" width="15"></iconify-icon>
+                          Retour
                         </button>
-                        <button type="button" class="rounded-md px-3 py-2 transition"
-                          :class="hubEntityMode === 'existing' ? 'bg-white text-primary shadow-sm dark:bg-[#0e1726]' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'"
-                          @click="hubEntityMode = 'existing'; destroyHubPickers(); loadAllEntities()">
-                          Existante
-                        </button>
+                        <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary"
+                          x-text="hubModeLabel()"></span>
                       </div>
+
                       <template x-if="showHubModal && hubEntityMode === 'new'">
                         <div class="space-y-3">
-                          <input type="text" x-model="hubEntityName" :placeholder="hubEntityPlaceholder()"
-                            class="form-input w-full" />
+                          <div>
+                            <label class="mb-2 block text-sm font-bold">Nom du hub</label>
+                            <input type="text" x-model="hubName" x-ref="hubNameInput" :placeholder="hubNamePlaceholder()"
+                              class="form-input w-full" />
+                          </div>
+                          <div>
+                            <label class="mb-2 block text-sm font-bold">Nom de l'entité</label>
+                            <input type="text" x-model="hubEntityName" :placeholder="hubEntityPlaceholder()"
+                              class="form-input w-full" />
+                          </div>
 
                           <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-[#0e1726]">
                             <div class="flex items-center justify-between gap-3">
@@ -1507,9 +1543,17 @@
                         </div>
                       </template>
                       <template x-if="hubEntityMode === 'existing'">
-                        <div class="space-y-2">
-                          <input type="text" x-model="hubEntitySearch" placeholder="Rechercher une entité..."
-                            class="form-input w-full" />
+                        <div class="space-y-3">
+                          <div>
+                            <label class="mb-2 block text-sm font-bold">Nom du hub</label>
+                            <input type="text" x-model="hubName" x-ref="hubNameInput" :placeholder="hubNamePlaceholder()"
+                              class="form-input w-full" />
+                          </div>
+                          <div>
+                            <label class="mb-2 block text-sm font-bold">Choisir l'entité</label>
+                            <input type="text" x-model="hubEntitySearch" placeholder="Rechercher une entité..."
+                              class="form-input w-full" />
+                          </div>
                           <div class="max-h-44 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-[#0e1726]">
                             <template x-for="entity in filteredHubEntities()" :key="entity.id">
                               <button type="button"
@@ -1530,8 +1574,68 @@
                           </div>
                         </div>
                       </template>
+
+                      <template x-if="hubEntityMode === 'record'">
+                        <div class="space-y-3">
+                          <div>
+                            <label class="mb-2 block text-sm font-bold">Choisir l'entité</label>
+                            <input type="text" x-model="hubEntitySearch" placeholder="Rechercher une entité..."
+                              class="form-input w-full" />
+                            <div class="mt-2 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-[#0e1726]">
+                              <template x-for="entity in filteredHubEntities()" :key="entity.id">
+                                <button type="button"
+                                  class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  :class="hubEntityId === entity.id ? 'bg-primary/10 text-primary' : 'text-gray-700 dark:text-gray-200'"
+                                  @click="selectHubRecordEntity(entity.id)">
+                                  <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                                    :style="'background:' + (entity.color || '#4361ee') + '16;color:' + (entity.color || '#4361ee')">
+                                    <iconify-icon :icon="entity.icon || 'solar:database-bold-duotone'" width="15"></iconify-icon>
+                                  </span>
+                                  <span class="min-w-0 flex-1 truncate" x-text="entity.namePlural || entity.name"></span>
+                                  <iconify-icon x-show="hubEntityId === entity.id" icon="solar:check-circle-bold" width="16"></iconify-icon>
+                                </button>
+                              </template>
+                              <div x-show="filteredHubEntities().length === 0" class="px-3 py-5 text-center text-xs text-gray-400">
+                                Aucune entité trouvée
+                              </div>
+                            </div>
+                          </div>
+
+                          <div x-show="hubEntityId" x-transition>
+                            <label class="mb-2 block text-sm font-bold">Rechercher un record</label>
+                            <input type="text" x-model="hubRecordSearch" placeholder="Rechercher par titre..."
+                              class="form-input w-full" @input="scheduleHubRecordSearch()" />
+                            <div class="mt-2 max-h-44 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-[#0e1726]">
+                              <template x-for="record in hubRecordResults" :key="record.id">
+                                <button type="button"
+                                  class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  :class="hubRecordId === record.id ? 'bg-primary/10 text-primary' : 'text-gray-700 dark:text-gray-200'"
+                                  @click="selectHubRecord(record)">
+                                  <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300">
+                                    <iconify-icon icon="solar:document-text-bold-duotone" width="15"></iconify-icon>
+                                  </span>
+                                  <span class="min-w-0 flex-1 truncate" x-text="record.title"></span>
+                                  <iconify-icon x-show="hubRecordId === record.id" icon="solar:check-circle-bold" width="16"></iconify-icon>
+                                </button>
+                              </template>
+                              <div x-show="hubRecordLoading" class="px-3 py-5 text-center text-xs text-gray-400">
+                                Recherche en cours...
+                              </div>
+                              <div x-show="!hubRecordLoading && hubRecordResults.length === 0" class="px-3 py-5 text-center text-xs text-gray-400">
+                                Aucun record trouvé
+                              </div>
+                            </div>
+                          </div>
+
+                          <div x-show="hubRecordId" x-transition>
+                            <label class="mb-2 block text-sm font-bold">Nom du hub</label>
+                            <input type="text" x-model="hubName" x-ref="hubNameInput" :placeholder="hubNamePlaceholder()"
+                              class="form-input w-full" />
+                          </div>
+                        </div>
+                      </template>
                     </div>
-                    <button type="submit" class="btn btn-primary w-full" :disabled="!canSubmitHub()">
+                    <button x-show="hubEntityMode" x-transition type="submit" class="mt-5 btn btn-primary w-full" :disabled="!canSubmitHub()">
                       <span x-show="hubSubmitting"
                         class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
                       Créer
@@ -1583,13 +1687,19 @@
               creationColor: '',
               showHubModal: false,
               hubName: '',
-              hubEntityMode: 'new',
+              hubEntityMode: '',
               hubEntityId: '',
               hubEntityName: '',
               hubEntityIcon: 'solar:users-group-rounded-bold-duotone',
               hubEntityColor: '#8b5cf6',
               hubEntityImage: '',
               hubEntitySearch: '',
+              hubRecordId: '',
+              hubRecordSearch: '',
+              hubRecordResults: [],
+              hubRecordLoading: false,
+              hubRecordSearchTimer: null,
+              hubSelectedRecord: null,
               hubVisibleModules: ['overview', 'fiche', 'drive', 'agenda', 'ai', 'tasks', 'notes'],
               hubAppsOpen: false,
               hubColorPicker: null,
@@ -1848,13 +1958,22 @@
               openHubModal() {
                 this.destroyHubPickers();
                 this.hubName = '';
-                this.hubEntityMode = 'new';
+                this.hubEntityMode = '';
                 this.hubEntityId = '';
                 this.hubEntityName = '';
                 this.hubEntityIcon = 'solar:users-group-rounded-bold-duotone';
                 this.hubEntityColor = '#8b5cf6';
                 this.hubEntityImage = '';
                 this.hubEntitySearch = '';
+                this.hubRecordId = '';
+                this.hubRecordSearch = '';
+                this.hubRecordResults = [];
+                this.hubRecordLoading = false;
+                this.hubSelectedRecord = null;
+                if (this.hubRecordSearchTimer) {
+                  clearTimeout(this.hubRecordSearchTimer);
+                  this.hubRecordSearchTimer = null;
+                }
                 this.hubVisibleModules = ['overview', 'fiche', 'drive', 'agenda', 'ai', 'tasks', 'notes'];
                 this.hubAppsOpen = false;
                 this.hubSubmitting = false;
@@ -1863,13 +1982,16 @@
                 Alpine.store('sidebar').showEditMenu = false;
                 this.loadAllEntities();
                 this.$nextTick(() => {
-                  this.mountHubColorPicker();
-                  if (this.$refs.hubNameInput) this.$refs.hubNameInput.focus();
+                  if (this.$refs.hubNewEntityModeButton) this.$refs.hubNewEntityModeButton.focus();
                 });
               },
 
               closeHubModal() {
                 this.destroyHubPickers();
+                if (this.hubRecordSearchTimer) {
+                  clearTimeout(this.hubRecordSearchTimer);
+                  this.hubRecordSearchTimer = null;
+                }
                 this.showHubModal = false;
               },
 
@@ -4043,6 +4165,125 @@
                 });
               },
 
+              hubModeLabel() {
+                if (this.hubEntityMode === 'new') return 'Nouvelle entité';
+                if (this.hubEntityMode === 'existing') return 'Entité existante';
+                if (this.hubEntityMode === 'record') return 'Record existant';
+                return '';
+              },
+
+              selectHubMode(mode) {
+                this.destroyHubPickers();
+                if (this.hubRecordSearchTimer) {
+                  clearTimeout(this.hubRecordSearchTimer);
+                  this.hubRecordSearchTimer = null;
+                }
+                this.hubEntityMode = mode;
+                this.hubName = '';
+                this.hubEntityId = '';
+                this.hubEntityName = '';
+                this.hubEntitySearch = '';
+                this.hubRecordId = '';
+                this.hubRecordSearch = '';
+                this.hubRecordResults = [];
+                this.hubRecordLoading = false;
+                this.hubSelectedRecord = null;
+                this.hubAppsOpen = false;
+                if (mode === 'new') {
+                  this.$nextTick(() => {
+                    this.mountHubColorPicker();
+                    if (this.$refs.hubNameInput) this.$refs.hubNameInput.focus();
+                  });
+                  return;
+                }
+                this.loadAllEntities();
+                this.$nextTick(() => {
+                  if (this.$refs.hubNameInput) this.$refs.hubNameInput.focus();
+                });
+              },
+
+              resetHubMode() {
+                this.destroyHubPickers();
+                if (this.hubRecordSearchTimer) {
+                  clearTimeout(this.hubRecordSearchTimer);
+                  this.hubRecordSearchTimer = null;
+                }
+                this.hubName = '';
+                this.hubEntityMode = '';
+                this.hubEntityId = '';
+                this.hubEntityName = '';
+                this.hubEntityIcon = 'solar:users-group-rounded-bold-duotone';
+                this.hubEntityColor = '#8b5cf6';
+                this.hubEntityImage = '';
+                this.hubEntitySearch = '';
+                this.hubRecordId = '';
+                this.hubRecordSearch = '';
+                this.hubRecordResults = [];
+                this.hubRecordLoading = false;
+                this.hubSelectedRecord = null;
+                this.hubVisibleModules = ['overview', 'fiche', 'drive', 'agenda', 'ai', 'tasks', 'notes'];
+                this.hubAppsOpen = false;
+                this.$nextTick(() => {
+                  if (this.$refs.hubNewEntityModeButton) this.$refs.hubNewEntityModeButton.focus();
+                });
+              },
+
+              selectHubRecordEntity(entityId) {
+                this.hubEntityId = entityId;
+                this.hubRecordId = '';
+                this.hubRecordSearch = '';
+                this.hubRecordResults = [];
+                this.hubSelectedRecord = null;
+                this.hubName = '';
+                this.searchHubRecords();
+              },
+
+              scheduleHubRecordSearch() {
+                if (this.hubRecordSearchTimer) clearTimeout(this.hubRecordSearchTimer);
+                this.hubRecordId = '';
+                this.hubSelectedRecord = null;
+                this.hubName = '';
+                this.hubRecordSearchTimer = setTimeout(() => {
+                  this.searchHubRecords();
+                }, 250);
+              },
+
+              async searchHubRecords() {
+                if (this.hubEntityMode !== 'record' || !this.hubEntityId) {
+                  this.hubRecordResults = [];
+                  return;
+                }
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                const params = new URLSearchParams({
+                  entityId: this.hubEntityId,
+                  q: String(this.hubRecordSearch || '').trim(),
+                  limit: '20'
+                });
+                this.hubRecordLoading = true;
+                try {
+                  const res = await fetch(`/account/${accountNum}/api/hierarchy/records?${params.toString()}`);
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+                  this.hubRecordResults = data.records || [];
+                } catch (err) {
+                  console.error('[HubModal] Records search failed', err);
+                  this.hubRecordResults = [];
+                } finally {
+                  this.hubRecordLoading = false;
+                }
+              },
+
+              selectHubRecord(record) {
+                this.hubSelectedRecord = record || null;
+                this.hubRecordId = record?.id || '';
+                if (!String(this.hubName || '').trim()) {
+                  this.hubName = record?.title || '';
+                }
+                this.$nextTick(() => {
+                  if (this.$refs.hubNameInput) this.$refs.hubNameInput.focus();
+                });
+              },
+
               destroyHubPickers() {
                 try {
                   const iconPicker = this.$refs?.hubIconPicker;
@@ -4112,9 +4353,11 @@
               },
 
               canSubmitHub() {
-                if (this.hubSubmitting || !String(this.hubName || '').trim()) return false;
+                if (this.hubSubmitting || !this.hubEntityMode || !String(this.hubName || '').trim()) return false;
+                if (this.hubEntityMode === 'new') return Boolean(String(this.hubEntityName || '').trim());
                 if (this.hubEntityMode === 'existing') return Boolean(this.hubEntityId);
-                return true;
+                if (this.hubEntityMode === 'record') return Boolean(this.hubEntityId && this.hubRecordId);
+                return false;
               },
 
               isHubModuleEnabled(key) {
@@ -4188,22 +4431,23 @@
               async submitCreateHub() {
                 const parent = Alpine.store('sidebar').contextItem;
                 const name = this.hubName.trim();
-                if (!name || !parent) return;
+                if (!this.hubEntityMode || !name || !parent) return;
 
                 this.hubSubmitting = true;
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 try {
                   const endpoint = `/account/${accountNum}/api/hierarchy/hub`;
-                  const existingEntityId = this.hubEntityMode === 'existing' ? this.hubEntityId : '';
-                  const isNewEntity = this.hubEntityMode !== 'existing';
+                  const isNewEntity = this.hubEntityMode === 'new';
+                  const existingEntityId = isNewEntity ? '' : this.hubEntityId;
                   const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       name,
                       entityId: existingEntityId,
-                      entityName: existingEntityId ? '' : this.hubEntityName.trim(),
-                      entityMode: isNewEntity ? 'new' : 'existing',
+                      recordId: this.hubEntityMode === 'record' ? this.hubRecordId : '',
+                      entityName: isNewEntity ? this.hubEntityName.trim() : '',
+                      entityMode: this.hubEntityMode,
                       createNewEntity: isNewEntity,
                       entityIcon: isNewEntity ? this.hubEntityIcon : '',
                       entityColor: isNewEntity ? this.hubEntityColor : '',

@@ -155,6 +155,7 @@ module.exports = {
         try {
             const Classification = await tenantCollection(req, "Classification");
             const { name, slug, type, options, entities } = req.body;
+            const entityIds = (entities || []).filter(Boolean);
 
             if (!name) return res.status(400).json({ error: 'Name is required' });
 
@@ -168,7 +169,7 @@ module.exports = {
                 // Classification model only supports 'simple' or 'hierarchical'
                 type: 'simple',
                 allowMultiple: (type === 'tag' || type === 'category'),
-                entities: (entities || []).filter(Boolean),
+                entities: entityIds,
                 options: (options || []).map((o, i) => ({
                     label: o.label,
                     color: o.color || '#4361ee',
@@ -180,6 +181,15 @@ module.exports = {
             });
 
             await newClassification.save();
+
+            if (entityIds.length > 0) {
+                const Entity = await tenantCollection(req, "Entity");
+                await Entity.updateMany(
+                    { _id: { $in: entityIds } },
+                    { $addToSet: { classifications: newClassification._id } }
+                );
+            }
+
             res.json({ success: true, classification: newClassification });
         } catch (err) {
             console.error('[ClassificationAPI] Create error:', err);
@@ -189,7 +199,7 @@ module.exports = {
 
     fastAdd: async (req, res) => {
         try {
-            const { classificationId, label, parentId } = req.body;
+            const { classificationId, label, parentId, color } = req.body;
             const Classification = await tenantCollection(req, "Classification");
 
             const classification = await Classification.findById(classificationId);
@@ -197,7 +207,7 @@ module.exports = {
 
             classification.options.push({
                 label,
-                color: '#4361ee', // Default
+                color: color || '#4361ee',
                 icon: 'solar:info-circle-bold',
                 type: 'normal',
                 parentId: parentId || null,

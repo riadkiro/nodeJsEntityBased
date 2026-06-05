@@ -95,7 +95,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             .select('title computedTitle image customFields status classificationValues relations _denorm createdAt updatedAt')
             .populate({
                 path: 'customFields.field_id',
-                select: 'label fieldType'
+                select: 'label name type fieldType render ui type_config'
             })
             .sort(sortObj)
             .skip((pageNum - 1) * limitNum)
@@ -206,10 +206,14 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             preferences = prefs?.preferences || null
 
         }
-        if (viewDoc?.settings?.viewMode) {
+        const viewSettings = viewDoc?.settings && typeof viewDoc.settings === 'object'
+            ? { ...viewDoc.settings }
+            : {}
+
+        if (viewSettings.viewMode) {
             preferences = {
                 ...(preferences || {}),
-                viewMode: preferences?.viewMode || viewDoc.settings.viewMode
+                viewMode: preferences?.viewMode || viewSettings.viewMode
             }
         }
 
@@ -233,7 +237,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         const customFieldColumns = (entity.customFields || []).map(f => ({
             id: f._id.toString(),
             name: f.label || f.name || 'Champ',
-            type: f.fieldType || 'text',
+            type: f.fieldType || f.type || f.render?.input || 'text',
             sortable: f.category !== 'computed',
             computed: f.category === 'computed' || undefined,
             computedDisplay: f.category === 'computed' ? (f.render?.display?.table || 'text') : undefined,
@@ -320,6 +324,11 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             columns,
             preferences,
             entity, // Include entity for Kanban (statusClassification, classifications)
+            viewSettings: {
+                ...viewSettings,
+                kanbanField: viewSettings.kanbanField || 'status',
+                kanbanTagFields: Array.isArray(viewSettings.kanbanTagFields) ? viewSettings.kanbanTagFields : []
+            },
             filters: filterGroups,
             viewTitleDisplay, // View-level default for titleDisplay (icon vs avatar)
             pagination: {
@@ -2175,6 +2184,25 @@ router.patch('/api/records/:recordId/date', async (req, res) => {
 // 📅 RECORD AGENDA / EVENTS API
 // ═══════════════════════════════════════════════════════════════════════
 
+function normalizeEventTagsInput(value) {
+    if (Array.isArray(value)) {
+        return value
+            .map(item => String(item || '').trim())
+            .filter(Boolean)
+            .filter((item, idx, arr) => arr.findIndex(other => other.toLowerCase() === item.toLowerCase()) === idx);
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean)
+            .filter((item, idx, arr) => arr.findIndex(other => other.toLowerCase() === item.toLowerCase()) === idx);
+    }
+
+    return [];
+}
+
 /**
  * GET /account/:account_number/api/records/:recordId/events
  * Fetch all events linked to a specific record via relations
@@ -2221,7 +2249,7 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         const Entity = await tenantCollection(req, "Entity");
         const Record = await tenantCollection(req, "Record");
 
-        const { title, date, endDate, duration, type, lieu, notes, statusOptionId } = req.body;
+        const { title, date, endDate, duration, type, lieu, notes, tags, statusOptionId } = req.body;
         const parentRecordId = req.params.recordId;
 
         const eventsEntity = await ensureEventsEntity(req);
@@ -2251,6 +2279,10 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         }
         if (fieldMap.type_evenement && type) {
             customFields.push({ field_id: fieldMap.type_evenement, value: type });
+        }
+        const normalizedTags = normalizeEventTagsInput(tags);
+        if (fieldMap.tags_evenement && normalizedTags.length > 0) {
+            customFields.push({ field_id: fieldMap.tags_evenement, value: normalizedTags });
         }
         if (fieldMap.notes_evenement && notes) {
             customFields.push({ field_id: fieldMap.notes_evenement, value: notes });
@@ -2333,7 +2365,7 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
         const Record = await tenantCollection(req, "Record");
 
         const { eventId } = req.params;
-        const { title, date, endDate, duration, type, lieu, notes, statusOptionId } = req.body;
+        const { title, date, endDate, duration, type, lieu, notes, tags, statusOptionId } = req.body;
 
         const event = await Record.findById(eventId);
         if (!event) return res.status(404).json({ error: 'Event not found' });
@@ -2367,6 +2399,7 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
         updateCustomField('duree_evenement', duration ? parseInt(duration) : undefined);
         updateCustomField('type_evenement', type);
         updateCustomField('lieu_evenement', lieu);
+        if (tags !== undefined) updateCustomField('tags_evenement', normalizeEventTagsInput(tags));
         updateCustomField('notes_evenement', notes);
 
         if (endDate !== undefined) updateCustomField('heure_fin', endDate);

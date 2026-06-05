@@ -36,11 +36,112 @@ function hexToRgba(hex, alpha = 0.1) {
     return `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${alpha})`
 }
 
+function cleanId(value) {
+    return String(value?._id?.$oid || value?._id || value || '')
+}
+
+function normalizeChoiceOption(option, index = 0) {
+    if (typeof option === 'string') {
+        return { value: option, label: option, color: '#64748b', order: index }
+    }
+    const value = String(option?.value ?? option?.id ?? option?._id ?? option?.label ?? option?.name ?? '')
+    return {
+        value,
+        label: option?.label || option?.name || value,
+        color: option?.color || option?.couleur || option?.bg || '#64748b',
+        order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index,
+    }
+}
+
+function normalizeTagValues(value) {
+    if (value === undefined || value === null || value === '') return []
+    if (Array.isArray(value)) return value.flatMap(item => normalizeTagValues(item))
+    if (typeof value === 'object') {
+        if (value._v) {
+            const values = []
+            Object.entries(value).forEach(([key, nested]) => {
+                if (key === '_v' || key === 'customText') return
+                values.push(...normalizeTagValues(nested))
+            })
+            if (value.customText) values.push(value.customText)
+            return values
+        }
+        return [String(value.label || value.name || value.value || '').trim()].filter(Boolean)
+    }
+    return String(value)
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+}
+
+function getCustomFieldValue(record, fieldId) {
+    const field = (record.customFields || []).find(cf => {
+        const currentId = cleanId(cf.field_id)
+        return currentId === String(fieldId)
+    })
+    return field?.value
+}
+
+function buildKanbanTags(record, entityData, fieldIds = []) {
+    if (!fieldIds.length) return []
+    const fieldById = new Map((entityData?.customFields || []).map(field => [cleanId(field), field]))
+
+    return fieldIds.flatMap(fieldId => {
+        const field = fieldById.get(String(fieldId))
+        if (!field) return []
+        const options = (field.type_config?.options || field.typeConfig?.options || field.options || [])
+            .map(normalizeChoiceOption)
+        const optionByValue = new Map()
+        options.forEach(option => {
+            optionByValue.set(String(option.value), option)
+            optionByValue.set(String(option.label), option)
+        })
+
+        return normalizeTagValues(getCustomFieldValue(record, fieldId)).map(rawValue => {
+            const option = optionByValue.get(String(rawValue))
+            return {
+                fieldId,
+                label: option?.label || rawValue,
+                color: option?.color || field.color || field.ui?.couleur || '#64748b',
+            }
+        })
+    }).filter(tag => tag.label)
+}
+
+function KanbanCardTags({ tags }) {
+    if (!tags.length) return null
+    const visibleTags = tags.slice(0, 4)
+    const extraCount = tags.length - visibleTags.length
+
+    return (
+        <div className="flex flex-wrap gap-1 border-t border-gray-100 bg-gray-50/80 px-3 py-2 dark:border-white/10 dark:bg-[#0b1220]/70">
+            {visibleTags.map((tag, index) => (
+                <span
+                    key={`${tag.fieldId}-${tag.label}-${index}`}
+                    className="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    style={{
+                        backgroundColor: hexToRgba(tag.color, 0.12),
+                        color: tag.color,
+                    }}
+                >
+                    <span className="truncate">{tag.label}</span>
+                </span>
+            ))}
+            {extraCount > 0 && (
+                <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-500 dark:bg-white/10 dark:text-white-dark">
+                    +{extraCount}
+                </span>
+            )}
+        </div>
+    )
+}
+
 // ─── Sortable Kanban Card ────────────────────────────────────────────
-function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp = false, onQuickView, cardTemplate, entityData }) {
+function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp = false, onQuickView, cardTemplate, entityData, kanbanTagFieldIds }) {
     const pointerStart = useRef(null)
     const didDrag = useRef(false)
     const id = String(record._id?.$oid || record._id)
+    const tags = useMemo(() => buildKanbanTags(record, entityData, kanbanTagFieldIds), [record, entityData, kanbanTagFieldIds])
 
     const {
         attributes,
@@ -82,7 +183,7 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
         <div
             ref={setNodeRef}
             style={style}
-            className={`kanban-card cursor-pointer transition-all group ${(isDragProp || dragging) ? 'shadow-lg ring-2 ring-primary/30 cursor-move' : ''}`}
+            className={`kanban-card cursor-pointer overflow-hidden rounded-lg border border-gray-200/80 bg-white transition-all group dark:border-white/10 dark:bg-dark/40 ${(isDragProp || dragging) ? 'shadow-lg ring-2 ring-primary/30 cursor-move' : 'hover:shadow-md dark:hover:bg-dark/60'}`}
             data-dnd="card"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -97,15 +198,16 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
                 entityData={entityData}
                 accountNumber={accountNumber}
                 entitySlug={entitySlug}
-                className="bg-white hover:shadow-md border border-gray-200/80 dark:border-0 dark:bg-dark/40 dark:hover:bg-dark/60"
-                style={{ borderRadius: 8 }}
+                className="bg-transparent"
+                style={{ borderRadius: 0, boxShadow: 'none' }}
             />
+            <KanbanCardTags tags={tags} />
         </div>
     )
 }
 
 // ─── Droppable Kanban Column ─────────────────────────────────────────
-function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlug, onQuickView, cardTemplate, entityData }) {
+function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlug, onQuickView, cardTemplate, entityData, kanbanTagFieldIds }) {
     const { setNodeRef, isOver } = useDroppable({
         id: String(column.id),
     })
@@ -160,6 +262,7 @@ function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlu
                                     onQuickView={onQuickView}
                                     cardTemplate={cardTemplate}
                                     entityData={entityData}
+                                    kanbanTagFieldIds={kanbanTagFieldIds}
                                 />
                             ))
                         )}
@@ -191,6 +294,8 @@ export default function RecordsKanban({
     entitySlug,
     viewId,
     entityData,
+    kanbanFieldId = 'status',
+    kanbanTagFieldIds = [],
 }) {
     const scrollRef = useRef(null)
     const saveTimeoutRef = useRef(null)
@@ -265,35 +370,54 @@ export default function RecordsKanban({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 
-    // ─── Build columns from entity classification options ────────────
+    // ─── Build columns from configured entity classification options ─
     const kanbanColumns = useMemo(() => {
-        // 1) Try to build from entity classification data (shows ALL columns, even empty)
         if (entityData) {
-            // Prefer statusClassification
             const statusCls = entityData.statusClassification
-            if (statusCls && statusCls.options && statusCls.options.length > 0) {
-                const cols = statusCls.options.map(opt => ({
-                    id: String(opt._id),
-                    title: opt.label,
-                    color: opt.color || '#6366f1',
-                    optionId: String(opt._id),
-                }))
-                cols.push({ id: '__none__', title: 'Sans Statut', color: '#9ca3af', optionId: 'none' })
-                return { classId: String(statusCls._id), columns: cols }
+            const classifications = []
+            const seen = new Set()
+            ;[statusCls, ...(entityData.classifications || [])].forEach(cls => {
+                const id = cleanId(cls)
+                if (!id || seen.has(id)) return
+                seen.add(id)
+                classifications.push(cls)
+            })
+
+            let selectedClass = null
+            if (kanbanFieldId === 'status' && statusCls) {
+                selectedClass = statusCls
+            } else {
+                selectedClass = classifications.find(cls => {
+                    const id = cleanId(cls)
+                    return id === String(kanbanFieldId) || `classif:${id}` === String(kanbanFieldId)
+                })
             }
 
-            // Fallback to first classification with options
-            const classifications = entityData.classifications || []
-            for (const cls of classifications) {
-                if (cls.options && cls.options.length > 0) {
-                    const cols = cls.options.map(opt => ({
-                        id: String(opt._id),
+            if (!selectedClass) {
+                selectedClass = (statusCls && statusCls.options?.length > 0)
+                    ? statusCls
+                    : classifications.find(cls => cls.options?.length > 0)
+            }
+
+            if (selectedClass?.options?.length > 0) {
+                const cols = selectedClass.options
+                    .map((opt, index) => ({
+                        id: cleanId(opt),
                         title: opt.label,
                         color: opt.color || '#6366f1',
-                        optionId: String(opt._id),
+                        optionId: cleanId(opt),
+                        order: Number.isFinite(Number(opt.order)) ? Number(opt.order) : index,
                     }))
-                    cols.push({ id: '__none__', title: 'Non classé', color: '#9ca3af', optionId: 'none' })
-                    return { classId: String(cls._id), columns: cols }
+                    .sort((a, b) => a.order - b.order)
+                cols.push({
+                    id: '__none__',
+                    title: selectedClass === statusCls ? 'Sans Statut' : 'Non classé',
+                    color: '#9ca3af',
+                    optionId: 'none'
+                })
+                return {
+                    classId: cleanId(selectedClass),
+                    columns: cols
                 }
             }
         }
@@ -341,7 +465,7 @@ export default function RecordsKanban({
             classId: null,
             columns: [{ id: '__all__', title: 'Tous les enregistrements', color: '#4361ee', optionId: null }]
         }
-    }, [records, entityData])
+    }, [records, entityData, kanbanFieldId])
 
     // ─── Group records by column ─────────────────────────────────────
     const recordsByColumn = useMemo(() => {
@@ -368,7 +492,7 @@ export default function RecordsKanban({
                 const cvs = r.classificationValues || []
                 const matchingCv = cvs.find(cv => {
                     const classId = cv.classificationId?.$oid || cv.classificationId || cv.classification_id
-                    return classId === kanbanColumns.classId
+                    return String(classId) === String(kanbanColumns.classId)
                 })
                 if (matchingCv) {
                     // Try matching by optionId first (entity-data columns use optionId as column.id)
@@ -533,7 +657,7 @@ export default function RecordsKanban({
                 if (String(r._id?.$oid || r._id) !== activeRecordId) return r
                 const newCvs = (r.classificationValues || []).filter(cv => {
                     const cId = cv.classificationId?.$oid || cv.classificationId || cv.classification_id
-                    return cId !== kanbanColumns.classId
+                    return String(cId) !== String(kanbanColumns.classId)
                 })
                 if (toCol !== '__none__' && toColumn) {
                     newCvs.push({
@@ -599,13 +723,14 @@ export default function RecordsKanban({
                                 onQuickView={handleQuickView}
                                 cardTemplate={cardTemplate}
                                 entityData={entityData}
+                                kanbanTagFieldIds={kanbanTagFieldIds}
                             />
                         )
                     })}
                 </div>
 
                 <DragOverlay>
-                    {activeRecord ? <KanbanCard record={activeRecord} accountNumber={accountNumber} entitySlug={entitySlug} isDragging cardTemplate={cardTemplate} entityData={entityData} /> : null}
+                    {activeRecord ? <KanbanCard record={activeRecord} accountNumber={accountNumber} entitySlug={entitySlug} isDragging cardTemplate={cardTemplate} entityData={entityData} kanbanTagFieldIds={kanbanTagFieldIds} /> : null}
                 </DragOverlay>
             </DndContext>
 

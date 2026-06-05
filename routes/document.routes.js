@@ -4,9 +4,29 @@ const { tenantCollection } = require('../middleware/tenant');
 const uploadToDynamic = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 
 // Upload middleware for document files
 const uploadDocFiles = uploadToDynamic((req) => `public/uploads/documents/files/${req.account_number}`);
+
+const sanitizeContentBlockPayload = (body = {}) => {
+    const name = String(body.name || '').trim();
+    const description = String(body.description || '').trim();
+    const icon = String(body.icon || 'tabler:layout-board').trim() || 'tabler:layout-board';
+    const html = String(body.html || '').trim();
+    const sourceType = body.sourceType === 'system' ? 'system' : 'custom';
+    const systemKey = String(body.systemKey || '').trim();
+    const order = Number.isFinite(Number(body.order)) ? Number(body.order) : 0;
+
+    return { name, description, icon, html, sourceType, systemKey, order };
+};
+
+const isValidMongoId = (id) => mongoose.Types.ObjectId.isValid(String(id || ''));
+
+const invalidDocumentId = (res) => res.status(400).json({
+    success: false,
+    error: 'ID document invalide'
+});
 
 // GET - Liste des documents
 router.get('/', async (req, res) => {
@@ -472,9 +492,83 @@ router.post('/api', async (req, res) => {
     }
 });
 
+// GET - Bibliothèque de blocs réutilisables du compte
+const listContentBlocks = async (req, res) => {
+    try {
+        const DocumentContentBlock = await tenantCollection(req, 'DocumentContentBlock');
+        if (!DocumentContentBlock) {
+            return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
+        }
+
+        const blocks = await DocumentContentBlock.find({ active: { $ne: false } })
+            .sort({ sourceType: 1, order: 1, updatedAt: -1 })
+            .lean();
+
+        res.json({ success: true, blocks });
+    } catch (error) {
+        console.error('[Documents] Error loading content blocks:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+router.get(['/content-blocks', '/api/content-blocks'], listContentBlocks);
+
+// POST - Créer un bloc personnalisé ou une surcharge d'un bloc système
+const saveContentBlock = async (req, res) => {
+    try {
+        const DocumentContentBlock = await tenantCollection(req, 'DocumentContentBlock');
+        if (!DocumentContentBlock) {
+            return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
+        }
+
+        const payload = sanitizeContentBlockPayload(req.body);
+        if (!payload.name) {
+            return res.status(400).json({ success: false, error: 'Le nom du bloc est requis' });
+        }
+        if (!payload.html) {
+            return res.status(400).json({ success: false, error: 'Le contenu HTML du bloc est requis' });
+        }
+        if (payload.sourceType === 'system' && !payload.systemKey) {
+            return res.status(400).json({ success: false, error: 'La clé du bloc système est requise' });
+        }
+
+        const update = {
+            ...payload,
+            active: true,
+            updatedBy: req.user?._id
+        };
+
+        let block;
+        if (payload.sourceType === 'system') {
+            block = await DocumentContentBlock.findOneAndUpdate(
+                { sourceType: 'system', systemKey: payload.systemKey },
+                {
+                    $set: update,
+                    $setOnInsert: { createdBy: req.user?._id }
+                },
+                { new: true, upsert: true, runValidators: true }
+            );
+        } else {
+            block = await DocumentContentBlock.create({
+                ...update,
+                createdBy: req.user?._id
+            });
+        }
+
+        res.json({ success: true, block });
+    } catch (error) {
+        console.error('[Documents] Error saving content block:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+router.post(['/content-blocks', '/api/content-blocks'], saveContentBlock);
+
 // GET - Récupérer un document
 router.get('/api/:id', async (req, res) => {
     try {
+        if (!isValidMongoId(req.params.id)) {
+            return invalidDocumentId(res);
+        }
+
         const Document = await tenantCollection(req, 'Document');
         if (!Document) {
             return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
@@ -493,9 +587,54 @@ router.get('/api/:id', async (req, res) => {
     }
 });
 
+// PUT - Modifier un bloc réutilisable
+const updateContentBlock = async (req, res) => {
+    try {
+        const DocumentContentBlock = await tenantCollection(req, 'DocumentContentBlock');
+        if (!DocumentContentBlock) {
+            return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
+        }
+        if (!isValidMongoId(req.params.id)) {
+            return res.status(400).json({ success: false, error: 'ID bloc invalide' });
+        }
+
+        const payload = sanitizeContentBlockPayload(req.body);
+        if (!payload.name) {
+            return res.status(400).json({ success: false, error: 'Le nom du bloc est requis' });
+        }
+        if (!payload.html) {
+            return res.status(400).json({ success: false, error: 'Le contenu HTML du bloc est requis' });
+        }
+
+        const block = await DocumentContentBlock.findByIdAndUpdate(
+            req.params.id,
+            {
+                ...payload,
+                active: true,
+                updatedBy: req.user?._id
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!block) {
+            return res.status(404).json({ success: false, error: 'Bloc non trouvé' });
+        }
+
+        res.json({ success: true, block });
+    } catch (error) {
+        console.error('[Documents] Error updating content block:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+router.put(['/content-blocks/:id', '/api/content-blocks/:id'], updateContentBlock);
+
 // PUT - Mettre à jour un document
 router.put('/api/:id', async (req, res) => {
     try {
+        if (!isValidMongoId(req.params.id)) {
+            return invalidDocumentId(res);
+        }
+
         const Document = await tenantCollection(req, 'Document');
         if (!Document) {
             return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
@@ -622,6 +761,30 @@ router.put('/api/:id', async (req, res) => {
     }
 });
 
+// DELETE - Supprimer un bloc personnalisé ou réinitialiser une surcharge système
+const deleteContentBlock = async (req, res) => {
+    try {
+        const DocumentContentBlock = await tenantCollection(req, 'DocumentContentBlock');
+        if (!DocumentContentBlock) {
+            return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
+        }
+        if (!isValidMongoId(req.params.id)) {
+            return res.status(400).json({ success: false, error: 'ID bloc invalide' });
+        }
+
+        const block = await DocumentContentBlock.findByIdAndDelete(req.params.id);
+        if (!block) {
+            return res.status(404).json({ success: false, error: 'Bloc non trouvé' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Documents] Error deleting content block:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+router.delete(['/content-blocks/:id', '/api/content-blocks/:id'], deleteContentBlock);
+
 // POST - Upload pasted image (base64)
 router.post('/api/:id/upload-image', async (req, res) => {
     try {
@@ -674,6 +837,10 @@ router.post('/api/:id/upload-image', async (req, res) => {
 // DELETE - Supprimer un document
 router.delete('/api/:id', async (req, res) => {
     try {
+        if (!isValidMongoId(req.params.id)) {
+            return invalidDocumentId(res);
+        }
+
         const Document = await tenantCollection(req, 'Document');
         if (!Document) {
             return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
@@ -705,6 +872,10 @@ router.delete('/api/:id', async (req, res) => {
 // POST - Dupliquer un document
 router.post('/api/:id/duplicate', async (req, res) => {
     try {
+        if (!isValidMongoId(req.params.id)) {
+            return invalidDocumentId(res);
+        }
+
         const Document = await tenantCollection(req, 'Document');
         if (!Document) {
             return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });

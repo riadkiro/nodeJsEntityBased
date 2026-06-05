@@ -640,6 +640,7 @@ export default function EditorHeader({
     forceSave,
     onUndo,
     onRedo,
+    onHistoryCheckpoint,
     autoSave,
     setAutoSave,
     handlePdfExport,
@@ -786,12 +787,14 @@ export default function EditorHeader({
     }
 
     const handleTextColor = useCallback((color) => {
+        onHistoryCheckpoint?.('format-text-color')
         setTextColor(color)
         document.execCommand('foreColor', false, color)
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     const handleHighlightColor = useCallback((color) => {
+        onHistoryCheckpoint?.('format-highlight')
         setHighlightColor(color)
         if (color === 'transparent') {
             document.execCommand('removeFormat', false, null)
@@ -799,18 +802,20 @@ export default function EditorHeader({
             document.execCommand('hiliteColor', false, color)
         }
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     const handleHeadingChange = useCallback((value) => {
+        onHistoryCheckpoint?.('format-heading')
         if (!value) {
             document.execCommand('formatBlock', false, 'p')
         } else {
             document.execCommand('formatBlock', false, value)
         }
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     const handleTableInsert = useCallback((rows, cols) => {
+        onHistoryCheckpoint?.('insert-table')
         let tableHtml = '<table style="width:100%; border-collapse:collapse; margin:16px 0;">'
         // Header row
         tableHtml += '<thead><tr>'
@@ -829,24 +834,27 @@ export default function EditorHeader({
         tableHtml += '</tbody></table><p><br></p>'
         document.execCommand('insertHTML', false, tableHtml)
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     const handleInsertHR = useCallback(() => {
+        onHistoryCheckpoint?.('insert-separator')
         const html = `<div class="doc-separator-container" style="width: 100%; display: block; margin: 16px 0;" tabindex="0">
             <div class="doc-separator-line" style="border-top: 2px solid #e5e7eb; display: inline-block; position: relative; min-height: 8px; width: 100%; cursor: pointer;"></div>
         </div><p><br></p>`
         document.execCommand('insertHTML', false, html)
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     const handleInsertBlockquote = useCallback(() => {
+        onHistoryCheckpoint?.('format-blockquote')
         document.execCommand('formatBlock', false, 'blockquote')
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     const handleInsertCheckbox = useCallback(() => {
         const sel = window.getSelection()
         if (!sel || sel.rangeCount === 0) return
+        onHistoryCheckpoint?.('insert-checkbox')
 
         const range = sel.getRangeAt(0)
 
@@ -916,7 +924,7 @@ export default function EditorHeader({
         sel.addRange(newRange)
 
         triggerSave()
-    }, [triggerSave])
+    }, [onHistoryCheckpoint, triggerSave])
 
     // Detect current heading
     const detectCurrentHeading = () => {
@@ -1270,7 +1278,7 @@ export default function EditorHeader({
                 <button
                     onMouseDown={(e) => {
                         e.preventDefault()
-                        if (!onUndo?.()) document.execCommand('undo')
+                        onUndo?.()
                     }}
                     className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Annuler (Ctrl+Z)"
@@ -1280,7 +1288,7 @@ export default function EditorHeader({
                 <button
                     onMouseDown={(e) => {
                         e.preventDefault()
-                        if (!onRedo?.()) document.execCommand('redo')
+                        onRedo?.()
                     }}
                     className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Rétablir (Ctrl+Y)"
@@ -1448,7 +1456,8 @@ export default function EditorHeader({
                         <iconify-icon icon="tabler:line-height" width="18"></iconify-icon>
                         <span className="text-[9px]">{currentLineHeight}</span>
                     </button>
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
+                    <div className="absolute left-0 top-[calc(100%-2px)] hidden min-w-[80px] pt-1 group-hover:block z-50">
+                        <div className="bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1">
                         {[1, 1.15, 1.5, 2, 2.5, 3].map(val => (
                             <button
                                 key={val}
@@ -1458,6 +1467,7 @@ export default function EditorHeader({
                                 {val}
                             </button>
                         ))}
+                        </div>
                     </div>
                 </div>
 
@@ -1467,7 +1477,8 @@ export default function EditorHeader({
                         <iconify-icon icon="tabler:letter-spacing" width="18"></iconify-icon>
                         <span className="text-[9px]">{currentLetterSpacing}px</span>
                     </button>
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
+                    <div className="absolute left-0 top-[calc(100%-2px)] hidden min-w-[80px] pt-1 group-hover:block z-50">
+                        <div className="bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1">
                         {[-2, -1, 0, 1, 2, 3, 4, 5].map(val => (
                             <button
                                 key={val}
@@ -1477,6 +1488,7 @@ export default function EditorHeader({
                                 {val}px
                             </button>
                         ))}
+                        </div>
                     </div>
                 </div>
 

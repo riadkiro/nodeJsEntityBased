@@ -12,6 +12,7 @@ import RecordsNotes from './components/RecordsNotes'
 import RecordsCalendar from './components/RecordsCalendar'
 import RecordsSidebar from './components/RecordsSidebar'
 import SavedViewsTabs from './components/SavedViewsTabs'
+import PipelineConfigModal from './components/PipelineConfigModal'
 
 // ─── Helper: Extract the value of a field from a record ───
 function getRecordFieldValue(record, fieldId) {
@@ -135,6 +136,8 @@ export default function RecordsGrid({
     const [activeView, setActiveView] = useState('table')
     const [entityIcon, setEntityIcon] = useState('')
     const [entityData, setEntityData] = useState(null)
+    const [viewSettings, setViewSettings] = useState({})
+    const [showPipelineConfig, setShowPipelineConfig] = useState(false)
 
     // Bulk select state
     const [selectedIds, setSelectedIds] = useState(new Set())
@@ -216,6 +219,9 @@ export default function RecordsGrid({
                 if (data.entity.icon) {
                     setEntityIcon(data.entity.icon)
                 }
+            }
+            if (data.viewSettings) {
+                setViewSettings(data.viewSettings)
             }
 
             // Store sidebar filters from API
@@ -623,6 +629,13 @@ export default function RecordsGrid({
         })
     }, [savePreferences])
 
+    const handlePipelineSaved = useCallback((nextSettings) => {
+        setViewSettings(nextSettings || {})
+        setShowPipelineConfig(false)
+        showToast('Pipeline mise à jour')
+        fetchRecords()
+    }, [fetchRecords, showToast])
+
     // Handle page change
     const handlePageChange = useCallback((newPage) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -866,6 +879,7 @@ export default function RecordsGrid({
                     onEnabledViewsChange={(views) => handlePreferencesChange('enabledViews', views)}
                     hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0}
                     onOpenSaveView={() => setShowSaveViewModal(true)}
+                    onOpenPipelineConfig={() => setShowPipelineConfig(true)}
                 />
 
                 {/* Saved Views Tabs */}
@@ -896,6 +910,8 @@ export default function RecordsGrid({
                             entitySlug={entitySlug}
                             viewId={viewId}
                             entityData={entityData}
+                            kanbanFieldId={viewSettings.kanbanField || 'status'}
+                            kanbanTagFieldIds={viewSettings.kanbanTagFields || []}
                         />
                     ) : activeView === 'calendar' ? (
                         <RecordsCalendar
@@ -1000,6 +1016,17 @@ export default function RecordsGrid({
                     )}
                 </div>
             </div>
+
+            <PipelineConfigModal
+                open={showPipelineConfig}
+                accountNumber={accountNumber}
+                entityId={entityId}
+                entityData={entityData}
+                viewId={viewId}
+                viewSettings={viewSettings}
+                onClose={() => setShowPipelineConfig(false)}
+                onSaved={handlePipelineSaved}
+            />
 
             {/* ═══════ BULK ACTION BAR ═══════ */}
             {selectedIds.size > 0 && (

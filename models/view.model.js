@@ -41,6 +41,11 @@ const ViewSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Space'
     }],
+    environmentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Environment',
+        default: null
+    },
     folders: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Folder'
@@ -70,6 +75,7 @@ const ViewSchema = new mongoose.Schema({
     settings: {
         viewMode: { type: String, enum: ['table', 'kanban', 'notes', 'calendar', null], default: undefined },
         kanbanField: { type: String }, // For kanban, which field defines columns
+        kanbanTagFields: [String], // Custom select/multiselect fields shown as chips on kanban cards
         hiddenFields: [String],
         sortBy: {
             field: String,

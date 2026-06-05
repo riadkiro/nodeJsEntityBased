@@ -24,6 +24,7 @@ import {
 } from '../utils/headerFooterPresets'
 
 const EDITOR_HISTORY_EVENT = 'dexio:document-editor-before-mutation'
+const EDITOR_SAVE_BLOCK_EVENT = 'document-editor-save-content-block'
 
 function requestEditorUndoCheckpoint(label) {
     window.dispatchEvent(new CustomEvent(EDITOR_HISTORY_EVENT, { detail: { label } }))
@@ -403,6 +404,16 @@ export default function EditorPage({
         const normalizePlaceholder = (placeholder) => {
             if (!placeholder) return
             const hasImage = !!placeholder.querySelector('img')
+            const isInsideContentBlock = !!placeholder.closest('[data-doc-content-block="1"], .doc-content-block')
+            const parentLine = placeholder.parentElement?.tagName === 'P' ? placeholder.parentElement : null
+            const isOnlyLineContent = parentLine
+                ? Array.from(parentLine.childNodes || []).every(node => {
+                    if (node === placeholder) return true
+                    if (node.nodeType === 3) return node.nodeValue.replace(/\u00A0/g, ' ').trim() === ''
+                    if (node.nodeType === 1 && node.matches?.('[data-caret-marker], [data-reflow-caret], [data-atomic-caret]')) return true
+                    return false
+                })
+                : false
             removeLegacyCaretSpacers(placeholder)
             placeholder.setAttribute('contenteditable', 'false')
             placeholder.style.position = 'relative'
@@ -416,7 +427,11 @@ export default function EditorPage({
             placeholder.style.cursor = 'pointer'
             placeholder.style.minWidth = '96px'
             placeholder.style.minHeight = '72px'
-            placeholder.style.margin = '12px 0'
+            placeholder.style.margin = isInsideContentBlock ? '0' : (placeholder.style.margin || '12px 0')
+            if (isInsideContentBlock && isOnlyLineContent) {
+                parentLine.style.margin = '0'
+                parentLine.style.lineHeight = '0'
+            }
             ensureFrameSize(placeholder)
 
             const next = placeholder.nextElementSibling
@@ -793,7 +808,7 @@ export default function EditorPage({
             placeholder.style.backgroundColor = 'transparent'
             placeholder.style.border = 'none'
             placeholder.style.padding = '0'
-            placeholder.style.margin = '12px 0'
+            placeholder.style.margin = placeholder.closest('[data-doc-content-block="1"], .doc-content-block') ? '0' : '12px 0'
             normalizePlaceholder(placeholder)
             showOverlay(placeholder)
             handleContentChange()
@@ -1047,11 +1062,24 @@ export default function EditorPage({
             openImageContextMenu(placeholder, event)
         }
 
+        const clearDropIndicatorOnly = () => {
+            dragCounterRef.current = 0
+            if (dropIndicatorRef.current) {
+                dropIndicatorRef.current.style.display = 'none'
+            }
+        }
+
+        const clearDropVisualState = () => {
+            clearDropIndicatorOnly()
+            clearAtomicCaret()
+        }
+
         const handleFrameDragOver = (event) => {
             const placeholder = getEventPlaceholder(event)
             if (!placeholder) return
             event.preventDefault()
             event.stopPropagation()
+            clearDropIndicatorOnly()
             event.dataTransfer.dropEffect = 'copy'
             showOverlay(placeholder)
         }
@@ -1063,6 +1091,7 @@ export default function EditorPage({
             if (!image?.url) return
             event.preventDefault()
             event.stopPropagation()
+            clearDropVisualState()
             applyImageToFrame(placeholder, image.url, image.alt)
         }
 
@@ -1122,6 +1151,7 @@ export default function EditorPage({
         el.addEventListener('contextmenu', handleContextMenu, true)
         el.addEventListener('dragover', handleFrameDragOver, true)
         el.addEventListener('drop', handleFrameDrop, true)
+        window.addEventListener('dragend', clearDropVisualState, true)
         el.addEventListener('wheel', handleCropWheel, { passive: false, capture: true })
         document.addEventListener('keydown', handleFrameKeyDown, true)
         document.addEventListener('keydown', handleCropKeyDown, true)
@@ -1134,6 +1164,7 @@ export default function EditorPage({
             el.removeEventListener('contextmenu', handleContextMenu, true)
             el.removeEventListener('dragover', handleFrameDragOver, true)
             el.removeEventListener('drop', handleFrameDrop, true)
+            window.removeEventListener('dragend', clearDropVisualState, true)
             el.removeEventListener('wheel', handleCropWheel, true)
             document.removeEventListener('keydown', handleFrameKeyDown, true)
             document.removeEventListener('keydown', handleCropKeyDown, true)
@@ -1155,8 +1186,8 @@ export default function EditorPage({
         const el = contentRef.current
         if (!el || page.mode !== 'edition') return
 
-        const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
-        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay], [data-atomic-caret], .doc-block-delete-btn'
+        const BLOCK_SELECTORS = '[data-doc-content-block="1"], .doc-content-block, blockquote, table, div[style], pre'
+        const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-placeholder-resize-handle], [data-placeholder-delete], [data-image-resize-overlay], [data-atomic-caret], .doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu]'
 
         // Find the top-level block ancestor within the contenteditable
         const findTopBlock = (target) => {
@@ -1180,14 +1211,122 @@ export default function EditorPage({
             return topBlock
         }
 
+        const cloneBlockHtml = (block) => {
+            const clone = block.cloneNode(true)
+            clone.querySelectorAll('.doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu], [data-atomic-caret]').forEach(node => node.remove())
+            return clone.outerHTML
+        }
+
+        const saveBlockElement = (block, ev) => {
+            if (!block || !block.isConnected) return
+            ev?.preventDefault?.()
+            ev?.stopPropagation?.()
+            window.dispatchEvent(new CustomEvent(EDITOR_SAVE_BLOCK_EVENT, {
+                detail: {
+                    html: cloneBlockHtml(block),
+                    name: block.getAttribute('data-doc-block-name') || ''
+                }
+            }))
+        }
+
+        const removeBlockContextMenu = () => {
+            document.querySelectorAll('[data-doc-block-context-menu]').forEach(menu => menu.remove())
+        }
+
+        const deleteBlockElement = (block, ev) => {
+            if (!block || !block.isConnected) return
+            ev?.preventDefault?.()
+            ev?.stopPropagation?.()
+            requestEditorUndoCheckpoint('delete-block')
+            const p = document.createElement('p')
+            p.innerHTML = '<br>'
+            block._docBlockActionbar?.remove?.()
+            block.replaceWith(p)
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(p)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            handlePageInput?.({ target: el }, pageIndex)
+        }
+
+        const openBlockContextMenu = (block, event) => {
+            removeBlockContextMenu()
+            event.preventDefault()
+            event.stopPropagation()
+
+            const menu = document.createElement('div')
+            menu.setAttribute('data-doc-block-context-menu', '1')
+            menu.contentEditable = 'false'
+            menu.style.cssText = `
+                position: fixed;
+                top: ${event.clientY}px;
+                left: ${event.clientX}px;
+                z-index: 100000;
+                min-width: 184px;
+                padding: 6px;
+                border-radius: 8px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 18px 48px rgba(15,23,42,0.18);
+            `
+
+            const addItem = (icon, label, color, onClick) => {
+                const item = document.createElement('button')
+                item.type = 'button'
+                item.innerHTML = `<iconify-icon icon="${icon}" width="15"></iconify-icon><span>${label}</span>`
+                item.style.cssText = `
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    border: 0;
+                    border-radius: 6px;
+                    background: transparent;
+                    color: ${color};
+                    padding: 8px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    font-weight: 700;
+                    text-align: left;
+                `
+                item.addEventListener('click', (ev) => {
+                    removeBlockContextMenu()
+                    onClick(ev)
+                })
+                menu.appendChild(item)
+            }
+
+            addItem('tabler:bookmark-plus', 'Enregistrer comme bloc', '#2563eb', (ev) => saveBlockElement(block, ev))
+            addItem('tabler:trash', 'Supprimer', '#dc2626', (ev) => deleteBlockElement(block, ev))
+            document.body.appendChild(menu)
+
+            const close = (ev) => {
+                if (menu.contains(ev.target)) return
+                removeBlockContextMenu()
+                document.removeEventListener('pointerdown', close, true)
+                document.removeEventListener('keydown', closeKey, true)
+            }
+            const closeKey = (ev) => {
+                if (ev.key === 'Escape') close(ev)
+            }
+            setTimeout(() => {
+                document.addEventListener('pointerdown', close, true)
+                document.addEventListener('keydown', closeKey, true)
+            }, 0)
+        }
+
         const handleMouseOver = (e) => {
             const block = findTopBlock(e.target)
             if (!block) return
 
             // Don't add duplicate buttons
-            if (block._docBlockDeleteButton?.isConnected || block.querySelector('.doc-block-delete-btn')) return
+            if (block._docBlockActionbar?.isConnected || block.querySelector('.doc-block-actionbar')) return
 
-            if (block.tagName === 'TABLE') {
+            const isClippedContentBlock = block.matches?.('[data-doc-content-block="1"], .doc-content-block')
+
+            if (block.tagName === 'TABLE' || isClippedContentBlock) {
                 const editorPos = window.getComputedStyle(el).position
                 if (editorPos === 'static') el.style.position = 'relative'
             } else {
@@ -1198,50 +1337,42 @@ export default function EditorPage({
                 }
             }
 
-            // Create delete button
-            const btn = document.createElement('span')
-            btn.className = 'doc-block-delete-btn'
-            btn.innerHTML = '×'
-            btn.contentEditable = 'false'
-            btn.title = 'Supprimer ce bloc'
-            btn.setAttribute('data-no-drag', 'true')
+            const bar = document.createElement('span')
+            bar.className = 'doc-block-actionbar'
+            bar.contentEditable = 'false'
+            bar.setAttribute('data-no-drag', 'true')
 
-            let blockDeleted = false
-            const deleteBlockElement = (ev) => {
-                if (blockDeleted || !block.isConnected) return
-                blockDeleted = true
-                ev.preventDefault()
-                ev.stopPropagation()
-                requestEditorUndoCheckpoint('delete-block')
-                // Insert a <p><br></p> where the block was, so cursor has somewhere to go
-                const p = document.createElement('p')
-                p.innerHTML = '<br>'
-                btn.remove()
-                block.replaceWith(p)
-                // Place cursor in the new paragraph
-                const sel = window.getSelection()
-                const range = document.createRange()
-                range.selectNodeContents(p)
-                range.collapse(true)
-                sel.removeAllRanges()
-                sel.addRange(range)
-                // Trigger save
-                if (handlePageInput) {
-                    handlePageInput({ target: el }, pageIndex)
-                }
-            }
+            const saveBtn = document.createElement('button')
+            saveBtn.type = 'button'
+            saveBtn.className = 'doc-block-save-btn'
+            saveBtn.innerHTML = '<iconify-icon icon="tabler:bookmark-plus" width="13"></iconify-icon>'
+            saveBtn.title = 'Enregistrer comme bloc'
+            saveBtn.contentEditable = 'false'
+            saveBtn.setAttribute('data-no-drag', 'true')
 
-            btn.addEventListener('pointerdown', deleteBlockElement)
-            btn.addEventListener('mousedown', deleteBlockElement)
-            btn.addEventListener('click', deleteBlockElement)
-            btn.addEventListener('mouseleave', (event) => {
+            const deleteBtn = document.createElement('button')
+            deleteBtn.type = 'button'
+            deleteBtn.className = 'doc-block-delete-btn'
+            deleteBtn.innerHTML = '×'
+            deleteBtn.title = 'Supprimer ce bloc'
+            deleteBtn.contentEditable = 'false'
+            deleteBtn.setAttribute('data-no-drag', 'true')
+
+            saveBtn.addEventListener('pointerdown', (ev) => saveBlockElement(block, ev))
+            saveBtn.addEventListener('mousedown', (ev) => saveBlockElement(block, ev))
+            saveBtn.addEventListener('click', (ev) => saveBlockElement(block, ev))
+            deleteBtn.addEventListener('pointerdown', (ev) => deleteBlockElement(block, ev))
+            deleteBtn.addEventListener('mousedown', (ev) => deleteBlockElement(block, ev))
+            deleteBtn.addEventListener('click', (ev) => deleteBlockElement(block, ev))
+            bar.addEventListener('mouseleave', (event) => {
                 const related = event.relatedTarget
                 if (related && block.contains(related)) return
-                if (block._docBlockDeleteButton === btn) delete block._docBlockDeleteButton
-                btn.remove()
+                if (block._docBlockActionbar === bar) delete block._docBlockActionbar
+                bar.remove()
             })
+            bar.append(saveBtn, deleteBtn)
 
-            if (block.tagName === 'TABLE') {
+            if (block.tagName === 'TABLE' || isClippedContentBlock) {
                 const blockRect = block.getBoundingClientRect()
                 const editorRect = el.getBoundingClientRect()
                 const localTop = Math.max(2, blockRect.top - editorRect.top - 14)
@@ -1249,14 +1380,14 @@ export default function EditorPage({
                     Math.max(2, blockRect.right - editorRect.left - 14),
                     Math.max(2, el.clientWidth - 30)
                 )
-                btn.style.top = `${localTop}px`
-                btn.style.left = `${localLeft}px`
-                btn.style.right = 'auto'
-                el.appendChild(btn)
+                bar.style.top = `${localTop}px`
+                bar.style.left = `${localLeft}px`
+                bar.style.right = 'auto'
+                el.appendChild(bar)
             } else {
-                block.appendChild(btn)
+                block.appendChild(bar)
             }
-            block._docBlockDeleteButton = btn
+            block._docBlockActionbar = bar
         }
 
         const handleMouseOut = (e) => {
@@ -1265,21 +1396,29 @@ export default function EditorPage({
 
             // Check if mouse is still inside the block
             const related = e.relatedTarget
-            const btn = block._docBlockDeleteButton || block.querySelector('.doc-block-delete-btn')
-            if (related && (block.contains(related) || btn?.contains?.(related))) return
+            const bar = block._docBlockActionbar || block.querySelector('.doc-block-actionbar')
+            if (related && (block.contains(related) || bar?.contains?.(related))) return
 
-            // Remove delete button and reset position
-            if (block._docBlockDeleteButton === btn) delete block._docBlockDeleteButton
-            if (btn) btn.remove()
+            if (block._docBlockActionbar === bar) delete block._docBlockActionbar
+            if (bar) bar.remove()
+        }
+
+        const handleContextMenu = (e) => {
+            const block = findTopBlock(e.target)
+            if (!block) return
+            openBlockContextMenu(block, e)
         }
 
         el.addEventListener('mouseover', handleMouseOver)
         el.addEventListener('mouseout', handleMouseOut)
+        el.addEventListener('contextmenu', handleContextMenu, true)
 
         return () => {
             el.removeEventListener('mouseover', handleMouseOver)
             el.removeEventListener('mouseout', handleMouseOut)
-            el.querySelectorAll('.doc-block-delete-btn').forEach(btn => btn.remove())
+            el.removeEventListener('contextmenu', handleContextMenu, true)
+            removeBlockContextMenu()
+            el.querySelectorAll('.doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn').forEach(btn => btn.remove())
         }
     }, [page.mode, pageIndex, handlePageInput])
 
@@ -1288,15 +1427,49 @@ export default function EditorPage({
         const el = contentRef.current
         if (!el || page.mode !== 'edition') return
 
-        const ESCAPE_BLOCKS = 'blockquote, pre, div[style], table'
-        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre, blockquote, div[style], ul, ol, .doc-separator-container'
+        const DOC_CONTENT_BLOCKS = '[data-doc-content-block="1"], .doc-content-block'
+        const PROTECTED_CONTENT_BLOCKS = `${DOC_CONTENT_BLOCKS}, div[style]`
+        const ESCAPE_BLOCKS = `${DOC_CONTENT_BLOCKS}, blockquote, pre, div[style], table`
+        const ATOMIC_BLOCKS = `${DOC_CONTENT_BLOCKS}, table, img, .dynamic-table, .doc-image-placeholder, figure, pre, blockquote, div[style], ul, ol, .doc-separator-container`
         const TABLE_CELL_SELECTOR = 'td, th'
 
         const isAtomicBlock = (node) => node?.nodeType === 1 && node.matches?.(ATOMIC_BLOCKS)
+        const isProtectedContentBlock = (node) => node?.nodeType === 1 && node !== el && node.matches?.(PROTECTED_CONTENT_BLOCKS)
         const isInsideTableCell = (node) => {
             const element = node?.nodeType === 3 ? node.parentElement : node
             const cell = element?.closest?.(TABLE_CELL_SELECTOR)
             return !!(cell && el.contains(cell))
+        }
+        const normalizeBoundaryText = (text) => String(text || '')
+            .replace(/\u200B/g, '')
+            .replace(/\u00A0/g, ' ')
+            .trim()
+        const getTopDocContentBlock = (node) => {
+            const element = node?.nodeType === 3 ? node.parentElement : node
+            const block = element?.closest?.(PROTECTED_CONTENT_BLOCKS)
+            if (!block || block === el || !el.contains(block)) return null
+
+            let topBlock = block
+            let parent = block.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches?.(PROTECTED_CONTENT_BLOCKS)) topBlock = parent
+                parent = parent.parentElement
+            }
+            return topBlock
+        }
+        const isCaretAtBlockBoundary = (block, range, boundary) => {
+            if (!block || !range.collapsed) return false
+            if (!block.contains(range.startContainer)) return false
+
+            const probe = range.cloneRange()
+            probe.selectNodeContents(block)
+            if (boundary === 'start') {
+                probe.setEnd(range.startContainer, range.startOffset)
+            } else {
+                probe.setStart(range.endContainer, range.endOffset)
+            }
+
+            return normalizeBoundaryText(probe.toString()) === ''
         }
         const getContainingTableCell = (node) => {
             const element = node?.nodeType === 3 ? node.parentElement : node
@@ -1336,14 +1509,32 @@ export default function EditorPage({
             if (text) return false
             return block.innerHTML.replace(/<br\s*\/?>/gi, '').replace(/&nbsp;/gi, '').trim() === ''
         }
-        const getAdjacentTableForEmptyBlock = (block) => {
+        const isEmptyInternalSpacingNode = (node) => {
+            if (!node) return false
+            if (node.nodeType === 3) return normalizeBoundaryText(node.nodeValue) === ''
+            if (node.nodeType === 8) return true
+            if (node.nodeType !== 1 || node === el) return false
+            if (node.matches?.('[data-caret-marker], [data-reflow-caret], [data-atomic-caret]')) return true
+            if (node.matches?.(`${DOC_CONTENT_BLOCKS}, table, img, figure, .dynamic-table, .doc-image-placeholder, [contenteditable="false"]`)) return false
+            if (node.querySelector?.('table, img, figure, .dynamic-table, .doc-image-placeholder, input, textarea, select, button, [contenteditable="false"]')) return false
+            if (normalizeBoundaryText(node.textContent)) return false
+
+            const clone = node.cloneNode(true)
+            clone.querySelectorAll('[data-caret-marker], [data-reflow-caret], [data-atomic-caret]').forEach(marker => marker.remove())
+            return clone.innerHTML
+                .replace(/<br\s*\/?>/gi, '')
+                .replace(/&nbsp;/gi, '')
+                .replace(/\u200B/g, '')
+                .trim() === ''
+        }
+        const getAdjacentAtomicForEmptyBlock = (block) => {
             if (!isEmptyEditableBlock(block)) return null
 
             const next = block.nextElementSibling
-            if (next?.tagName === 'TABLE') return { emptyBlock: block, table: next, side: 'before' }
+            if (isAtomicBlock(next)) return { emptyBlock: block, block: next, side: 'before' }
 
             const prev = block.previousElementSibling
-            if (prev?.tagName === 'TABLE') return { emptyBlock: block, table: prev, side: 'after' }
+            if (isAtomicBlock(prev)) return { emptyBlock: block, block: prev, side: 'after' }
 
             return null
         }
@@ -1361,33 +1552,164 @@ export default function EditorPage({
             }
             return null
         }
-        const getEmptyBlockBesideRootTableCaret = (range) => {
+        const getEmptyBlockBesideRootAtomicCaret = (range) => {
             if (!range.collapsed || range.startContainer !== el) return null
 
             const before = getRootElementBeforeOffset(range.startOffset)
             const after = getRootElementAfterOffset(range.startOffset)
 
-            if (after?.tagName === 'TABLE' && isEmptyEditableBlock(before)) {
-                return { emptyBlock: before, table: after, side: 'before' }
+            if (isAtomicBlock(after) && isEmptyEditableBlock(before)) {
+                return { emptyBlock: before, block: after, side: 'before' }
             }
 
-            if (before?.tagName === 'TABLE' && isEmptyEditableBlock(after)) {
-                return { emptyBlock: after, table: before, side: 'after' }
+            if (isAtomicBlock(before) && isEmptyEditableBlock(after)) {
+                return { emptyBlock: after, block: before, side: 'after' }
             }
 
             return null
         }
-        const hasTableTopSpacing = (table) => {
-            if (!table || table.tagName !== 'TABLE') return false
-            const computedTop = Number.parseFloat(window.getComputedStyle(table).marginTop || '0') || 0
-            const inlineTop = Number.parseFloat(table.style.marginTop || '0') || 0
+        const hasBlockTopSpacing = (block) => {
+            if (!block) return false
+            const computedTop = Number.parseFloat(window.getComputedStyle(block).marginTop || '0') || 0
+            const inlineTop = Number.parseFloat(block.style.marginTop || '0') || 0
             return computedTop > 0 || inlineTop > 0
         }
 
-        const removeTableTopSpacing = (table) => {
-            if (!hasTableTopSpacing(table)) return false
+        const removeBlockTopSpacing = (block) => {
+            if (!hasBlockTopSpacing(block)) return false
 
-            table.style.marginTop = '0px'
+            block.style.marginTop = '0px'
+            return true
+        }
+
+        const removeInternalStartSpacing = (block, range) => {
+            if (!block || !range?.collapsed || !block.contains(range.startContainer)) return false
+
+            let changed = false
+            let current = range.startContainer.nodeType === 3
+                ? range.startContainer.parentElement
+                : range.startContainer
+
+            while (current && current !== block) {
+                let sibling = current.previousSibling
+                while (sibling) {
+                    const previous = sibling.previousSibling
+                    if (isEmptyInternalSpacingNode(sibling)) {
+                        sibling.remove()
+                        changed = true
+                        sibling = previous
+                        continue
+                    }
+                    return changed
+                }
+                current = current.parentElement
+            }
+
+            const startElement = range.startContainer.nodeType === 3
+                ? range.startContainer.parentElement
+                : range.startContainer
+            const editableStart = startElement?.closest?.('p,h1,h2,h3,h4,h5,h6,div')
+            if (editableStart && editableStart !== block && block.contains(editableStart)) {
+                changed = removeBlockTopSpacing(editableStart) || changed
+            }
+
+            const firstElement = Array.from(block.children || []).find(child => {
+                if (child.matches?.('.doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu]')) return false
+                return true
+            })
+            if (firstElement && firstElement !== editableStart) {
+                changed = removeBlockTopSpacing(firstElement) || changed
+            }
+
+            return changed
+        }
+
+        const getInternalLineElement = (node, ownerBlock) => {
+            const element = node?.nodeType === 3 ? node.parentElement : node
+            const line = element?.closest?.('p,h1,h2,h3,h4,h5,h6,li')
+            return line && line !== ownerBlock && ownerBlock?.contains(line) ? line : null
+        }
+
+        const isRuntimeSelectionText = (node) => {
+            const parent = node?.parentElement
+            return !!parent?.closest?.('[contenteditable="false"], .doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu], [data-caret-marker], [data-reflow-caret], [data-atomic-caret]')
+        }
+
+        const getEditableTextNodes = (ownerBlock) => {
+            if (!ownerBlock) return []
+            const filter = window.NodeFilter || {}
+            const walker = document.createTreeWalker(ownerBlock, filter.SHOW_TEXT || 4, {
+                acceptNode: (node) => {
+                    if (!normalizeBoundaryText(node.nodeValue)) return filter.FILTER_REJECT || 2
+                    if (isRuntimeSelectionText(node)) return filter.FILTER_REJECT || 2
+                    return filter.FILTER_ACCEPT || 1
+                }
+            })
+
+            const nodes = []
+            let node = walker.nextNode()
+            while (node) {
+                nodes.push(node)
+                node = walker.nextNode()
+            }
+            return nodes
+        }
+
+        const getAdjacentEditableTextNode = (ownerBlock, anchor, direction) => {
+            const nodes = getEditableTextNodes(ownerBlock)
+            const compareFlag = direction === 'next'
+                ? window.Node.DOCUMENT_POSITION_FOLLOWING
+                : window.Node.DOCUMENT_POSITION_PRECEDING
+            const ordered = direction === 'next' ? nodes : [...nodes].reverse()
+
+            return ordered.find(node => anchor.compareDocumentPosition(node) & compareFlag) || null
+        }
+
+        const placeCursorInTextNode = (node, atEnd = false) => {
+            if (!node?.isConnected) return false
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.setStart(node, atEnd ? node.nodeValue.length : 0)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            el.focus()
+            return true
+        }
+
+        const removeEmptyInternalLineAtCaret = (ownerBlock, range, key) => {
+            if (!ownerBlock || !range?.collapsed || !ownerBlock.contains(range.startContainer)) return false
+
+            const line = getInternalLineElement(range.startContainer, ownerBlock)
+            if (!line || !isEmptyInternalSpacingNode(line)) return false
+
+            const previousText = getAdjacentEditableTextNode(ownerBlock, line, 'previous')
+            const nextText = getAdjacentEditableTextNode(ownerBlock, line, 'next')
+            const target = key === 'Backspace'
+                ? (previousText || nextText)
+                : (nextText || previousText)
+
+            requestEditorUndoCheckpoint('remove-empty-block-line')
+            line.remove()
+            if (target) {
+                placeCursorInTextNode(target, target === previousText)
+            } else {
+                placeCursorAtBlockBoundary(ownerBlock, 'start')
+            }
+            return true
+        }
+
+        const hasBlockBottomSpacing = (block) => {
+            if (!block) return false
+            const computedBottom = Number.parseFloat(window.getComputedStyle(block).marginBottom || '0') || 0
+            const inlineBottom = Number.parseFloat(block.style.marginBottom || '0') || 0
+            return computedBottom > 0 || inlineBottom > 0
+        }
+
+        const removeBlockBottomSpacing = (block) => {
+            if (!hasBlockBottomSpacing(block)) return false
+
+            block.style.marginBottom = '0px'
             return true
         }
 
@@ -1399,6 +1721,35 @@ export default function EditorPage({
             sel.removeAllRanges()
             sel.addRange(range)
             element.focus?.()
+        }
+
+        const placeCursorAtBlockBoundary = (block, boundary) => {
+            if (!block || !el.contains(block)) return
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(block)
+            range.collapse(boundary === 'start')
+            sel.removeAllRanges()
+            sel.addRange(range)
+            el.focus()
+        }
+
+        const placeCursorFromRange = (range, ownerBlock) => {
+            const container = range?.startContainer
+            if (!range?.collapsed || !container?.isConnected || !ownerBlock?.contains(container)) return false
+
+            const nextRange = document.createRange()
+            const maxOffset = container.nodeType === 3
+                ? container.nodeValue.length
+                : container.childNodes.length
+            nextRange.setStart(container, Math.min(range.startOffset, maxOffset))
+            nextRange.collapse(true)
+
+            const sel = window.getSelection()
+            sel.removeAllRanges()
+            sel.addRange(nextRange)
+            el.focus()
+            return true
         }
 
         const insertParagraphAround = (block, side) => {
@@ -1489,6 +1840,63 @@ export default function EditorPage({
             if (!sel || sel.rangeCount === 0) return
 
             const range = sel.getRangeAt(0)
+            const docContentBlock = getTopDocContentBlock(range.startContainer)
+            if (
+                docContentBlock &&
+                range.collapsed &&
+                (e.key === 'Backspace' || e.key === 'Delete')
+            ) {
+                if (removeEmptyInternalLineAtCaret(docContentBlock, range, e.key)) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handlePageInput?.({ target: el }, pageIndex)
+                    return
+                }
+
+                const isAtStart = e.key === 'Backspace' && isCaretAtBlockBoundary(docContentBlock, range, 'start')
+                const isAtEnd = e.key === 'Delete' && isCaretAtBlockBoundary(docContentBlock, range, 'end')
+
+                if (isAtStart || isAtEnd) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    requestEditorUndoCheckpoint(isAtStart ? 'protect-block-start' : 'protect-block-end')
+
+                    let changed = false
+                    if (isAtStart) {
+                        const previous = docContentBlock.previousElementSibling
+                        if (isEmptyEditableBlock(previous)) {
+                            previous.remove()
+                            changed = true
+                        }
+                        const removedInternalSpacing = removeInternalStartSpacing(docContentBlock, range)
+                        changed = removedInternalSpacing || changed
+                        changed = removeBlockTopSpacing(docContentBlock) || changed
+                        if (changed) {
+                            if (!removedInternalSpacing || !placeCursorFromRange(range, docContentBlock)) {
+                                placeCursorAtBlockBoundary(docContentBlock, 'start')
+                            }
+                        } else {
+                            setCaretAroundAtomic(docContentBlock, 'before')
+                        }
+                    } else {
+                        const next = docContentBlock.nextElementSibling
+                        if (isEmptyEditableBlock(next)) {
+                            next.remove()
+                            changed = true
+                        }
+                        changed = removeBlockBottomSpacing(docContentBlock) || changed
+                        if (changed) {
+                            placeCursorAtBlockBoundary(docContentBlock, 'end')
+                        } else {
+                            setCaretAroundAtomic(docContentBlock, 'after')
+                        }
+                    }
+
+                    handlePageInput?.({ target: el }, pageIndex)
+                    return
+                }
+            }
+
             const tableCell = getContainingTableCell(range.startContainer)
             if (tableCell) {
                 const table = tableCell.closest('table')
@@ -1510,18 +1918,18 @@ export default function EditorPage({
 
             if ((e.key === 'Backspace' || e.key === 'Delete') && range.collapsed) {
                 const emptyBlock = getContainingEditableBlock(range.startContainer)
-                const adjacentEmptyBlockTable =
-                    getAdjacentTableForEmptyBlock(emptyBlock) ||
-                    getEmptyBlockBesideRootTableCaret(range)
-                if (adjacentEmptyBlockTable?.table) {
+                const adjacentEmptyBlockAtomic =
+                    getAdjacentAtomicForEmptyBlock(emptyBlock) ||
+                    getEmptyBlockBesideRootAtomicCaret(range)
+                if (adjacentEmptyBlockAtomic?.block) {
                     e.preventDefault()
                     e.stopPropagation()
-                    requestEditorUndoCheckpoint('remove-table-spacer')
-                    adjacentEmptyBlockTable.emptyBlock.remove()
-                    if (adjacentEmptyBlockTable.side === 'before') {
-                        removeTableTopSpacing(adjacentEmptyBlockTable.table)
+                    requestEditorUndoCheckpoint('remove-block-spacer')
+                    adjacentEmptyBlockAtomic.emptyBlock.remove()
+                    if (adjacentEmptyBlockAtomic.side === 'before') {
+                        removeBlockTopSpacing(adjacentEmptyBlockAtomic.block)
                     }
-                    setCaretAroundAtomic(adjacentEmptyBlockTable.table, adjacentEmptyBlockTable.side)
+                    setCaretAroundAtomic(adjacentEmptyBlockAtomic.block, adjacentEmptyBlockAtomic.side)
                     handlePageInput?.({ target: el }, pageIndex)
                     return
                 }
@@ -1529,12 +1937,32 @@ export default function EditorPage({
 
             const adjacent = getAdjacentAtomicBlock(range)
 
+            if (adjacent?.block && isProtectedContentBlock(adjacent.block)) {
+                const shouldProtect =
+                    (e.key === 'Backspace' && adjacent.side === 'after') ||
+                    (e.key === 'Delete' && adjacent.side === 'before')
+
+                if (shouldProtect) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    requestEditorUndoCheckpoint('protect-adjacent-block')
+
+                    const removedSpacing = adjacent.side === 'before'
+                        ? removeBlockTopSpacing(adjacent.block)
+                        : removeBlockBottomSpacing(adjacent.block)
+
+                    setCaretAroundAtomic(adjacent.block, adjacent.side)
+                    if (removedSpacing) handlePageInput?.({ target: el }, pageIndex)
+                    return
+                }
+            }
+
             if (adjacent?.block?.tagName === 'TABLE') {
-                if (e.key === 'Delete' && adjacent.side === 'before' && hasTableTopSpacing(adjacent.block)) {
+                if (e.key === 'Delete' && adjacent.side === 'before' && hasBlockTopSpacing(adjacent.block)) {
                     e.preventDefault()
                     e.stopPropagation()
                     requestEditorUndoCheckpoint('remove-table-spacing')
-                    removeTableTopSpacing(adjacent.block)
+                    removeBlockTopSpacing(adjacent.block)
                     setCaretAroundAtomic(adjacent.block, 'before')
                     handlePageInput?.({ target: el }, pageIndex)
                     return
@@ -1648,12 +2076,18 @@ export default function EditorPage({
         const el = contentRef.current
         if (!el || page.mode !== 'edition') return
 
-        const BLOCK_SELECTORS = 'blockquote, table, div[style], pre, ul, ol, .doc-separator-container'
-        const ATOMIC_BLOCKS = 'table, img, .dynamic-table, .doc-image-placeholder, figure, pre, blockquote, div[style], ul, ol, .doc-separator-container'
+        const DOC_CONTENT_BLOCKS = '[data-doc-content-block="1"], .doc-content-block'
+        const BLOCK_SELECTORS = `${DOC_CONTENT_BLOCKS}, blockquote, table, div[style], pre, ul, ol, .doc-separator-container`
+        const ATOMIC_BLOCKS = `${DOC_CONTENT_BLOCKS}, table, img, .dynamic-table, .doc-image-placeholder, figure, pre, blockquote, div[style], ul, ol, .doc-separator-container`
         const RUNTIME_OVERLAYS = '[data-placeholder-resize-overlay], [data-image-resize-overlay], [data-atomic-caret]'
         const TABLE_CELL_SELECTOR = 'td, th'
         const TABLE_EDGE_TOLERANCE = 6
         const BLOCK_EDGE_TOLERANCE = 12
+        const CONTENT_BLOCK_GUTTER_TOLERANCE = 18
+        const normalizePointText = (text) => String(text || '')
+            .replace(/\u200B/g, '')
+            .replace(/\u00A0/g, ' ')
+            .trim()
 
         const getTopEditableBlock = (target, selector = ATOMIC_BLOCKS) => {
             const element = target?.nodeType === 3 ? target.parentElement : target
@@ -1680,6 +2114,14 @@ export default function EditorPage({
 
                 const rect = atomic.getBoundingClientRect()
                 if (y < rect.top || y > rect.bottom) continue
+                if (
+                    atomic.matches?.(DOC_CONTENT_BLOCKS) &&
+                    x >= rect.left - CONTENT_BLOCK_GUTTER_TOLERANCE &&
+                    x <= rect.right + CONTENT_BLOCK_GUTTER_TOLERANCE
+                ) {
+                    if (x < rect.left) return { block: atomic, side: 'start', inside: true }
+                    if (x > rect.right) return { block: atomic, side: 'end', inside: true }
+                }
                 if (x < rect.left || x > rect.right) {
                     return { block: atomic, side: x < rect.left + rect.width / 2 ? 'before' : 'after' }
                 }
@@ -1691,6 +2133,7 @@ export default function EditorPage({
             const block = getTopEditableBlock(event.target)
             if (!block || block.tagName === 'TABLE') return null
             if (event.target.closest?.(TABLE_CELL_SELECTOR)) return null
+            if (block.matches?.(DOC_CONTENT_BLOCKS)) return null
 
             const rect = block.getBoundingClientRect()
             const onSideEdge =
@@ -1726,6 +2169,104 @@ export default function EditorPage({
             sel.removeAllRanges()
             sel.addRange(range)
             el.focus()
+        }
+
+        const getRangeFromPoint = (x, y) => {
+            if (document.caretRangeFromPoint) {
+                return document.caretRangeFromPoint(x, y)
+            }
+            if (document.caretPositionFromPoint) {
+                const pos = document.caretPositionFromPoint(x, y)
+                if (pos) {
+                    const range = document.createRange()
+                    range.setStart(pos.offsetNode, pos.offset)
+                    range.collapse(true)
+                    return range
+                }
+            }
+            return null
+        }
+
+        const setSelectionRange = (range) => {
+            const sel = window.getSelection()
+            sel.removeAllRanges()
+            sel.addRange(range)
+            el.focus()
+        }
+
+        const isEditableRangeInside = (range, block) => {
+            const node = range?.startContainer
+            if (!node || !block?.contains(node)) return false
+            const element = node.nodeType === 3 ? node.parentElement : node
+            return !element?.closest?.('[contenteditable="false"], .doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu]')
+        }
+
+        const placeCursorInsideContentBlock = (block, x, y) => {
+            if (!block || !el.contains(block)) return false
+
+            const rect = block.getBoundingClientRect()
+            const probeX = Math.max(rect.left + 2, Math.min(x, rect.right - 2))
+            const probes = [x, probeX, Math.min(rect.right - 2, probeX + 14)]
+
+            for (const nextX of probes) {
+                const range = getRangeFromPoint(nextX, y)
+                if (isEditableRangeInside(range, block)) {
+                    setSelectionRange(range)
+                    return true
+                }
+            }
+
+            const filter = window.NodeFilter || {}
+            const walker = document.createTreeWalker(block, filter.SHOW_TEXT || 4, {
+                acceptNode: (node) => {
+                    if (!normalizePointText(node.nodeValue)) return filter.FILTER_REJECT || 2
+                    const parent = node.parentElement
+                    if (parent?.closest?.('[contenteditable="false"], .doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu]')) {
+                        return filter.FILTER_REJECT || 2
+                    }
+                    return filter.FILTER_ACCEPT || 1
+                }
+            })
+
+            let best = null
+            let node = walker.nextNode()
+            while (node) {
+                const textRange = document.createRange()
+                textRange.selectNodeContents(node)
+                const rects = Array.from(textRange.getClientRects())
+                    .filter(textRect => textRect.width > 0 || textRect.height > 0)
+                for (const textRect of rects) {
+                    const verticalGap = y < textRect.top
+                        ? textRect.top - y
+                        : y > textRect.bottom
+                            ? y - textRect.bottom
+                            : 0
+                    const horizontalGap = x < textRect.left
+                        ? textRect.left - x
+                        : x > textRect.right
+                            ? x - textRect.right
+                            : 0
+                    const score = verticalGap * 8 + horizontalGap
+                    if (!best || score < best.score) {
+                        best = { node, rect: textRect, score }
+                    }
+                }
+                node = walker.nextNode()
+            }
+
+            if (!best) return false
+
+            const range = document.createRange()
+            const textLength = best.node.nodeValue.length
+            const offset = x <= best.rect.left
+                ? 0
+                : x >= best.rect.right
+                    ? textLength
+                    : Math.round(((x - best.rect.left) / Math.max(best.rect.width, 1)) * textLength)
+            range.setStart(best.node, Math.max(0, Math.min(offset, textLength)))
+            range.collapse(true)
+            setSelectionRange(range)
+            return true
         }
 
         const getTableHit = (event) => {
@@ -1778,7 +2319,7 @@ export default function EditorPage({
             }
 
             const atomicBlock = getTopEditableBlock(e.target)
-            const editableTextBlock = getTopEditableBlock(e.target, 'blockquote, div[style], ul, ol')
+            const editableTextBlock = getTopEditableBlock(e.target, `${DOC_CONTENT_BLOCKS}, blockquote, div[style], ul, ol`)
             if (atomicBlock && atomicBlock !== el && el.contains(atomicBlock) && atomicBlock !== editableTextBlock) {
                 e.preventDefault()
             }
@@ -1836,8 +2377,19 @@ export default function EditorPage({
 
                 const atomicBlock = getTopEditableBlock(target)
                 if (atomicBlock && atomicBlock !== el && el.contains(atomicBlock)) {
-                    const editableTextBlock = getTopEditableBlock(target, 'blockquote, div[style], ul, ol')
+                    const editableTextBlock = getTopEditableBlock(target, `${DOC_CONTENT_BLOCKS}, blockquote, div[style], ul, ol`)
                     if (atomicBlock === editableTextBlock) {
+                        const contentBlock = target.closest?.(DOC_CONTENT_BLOCKS)
+                        const currentRange = sel?.rangeCount ? sel.getRangeAt(0) : null
+                        if (
+                            contentBlock &&
+                            el.contains(contentBlock) &&
+                            (!currentRange || !contentBlock.contains(currentRange.startContainer))
+                        ) {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            placeCursorInsideContentBlock(contentBlock, e.clientX, e.clientY)
+                        }
                         clearAtomicCaret()
                         clearSelectedTable({ clearToolbar: true })
                         return
@@ -1863,6 +2415,14 @@ export default function EditorPage({
             const sideAtomic = findSideAtomicBlock(e.clientX, e.clientY)
             if (sideAtomic?.block) {
                 e.preventDefault()
+                if (sideAtomic.inside) {
+                    const rect = sideAtomic.block.getBoundingClientRect()
+                    const x = sideAtomic.side === 'start' ? rect.left + 2 : rect.right - 2
+                    placeCursorInsideContentBlock(sideAtomic.block, x, e.clientY)
+                    clearAtomicCaret()
+                    clearSelectedTable({ clearToolbar: true })
+                    return
+                }
                 setCaretAroundAtomic(sideAtomic.block, sideAtomic.side)
                 return
             }
@@ -1903,7 +2463,7 @@ export default function EditorPage({
             if (!table || !el.contains(table)) return
 
             const clone = table.cloneNode(true)
-            clone.querySelectorAll('.doc-block-delete-btn, .tt-col-resize-handle, .tt-table-resize-handle, [data-atomic-caret]').forEach(node => node.remove())
+            clone.querySelectorAll('.doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu], .tt-col-resize-handle, .tt-table-resize-handle, [data-atomic-caret]').forEach(node => node.remove())
             clone.removeAttribute('data-table-selected')
 
             event.clipboardData.setData('text/html', clone.outerHTML)
@@ -1922,6 +2482,7 @@ export default function EditorPage({
 
         let repairFrame = null
         let isRepairing = false
+        const DOC_CONTENT_BLOCKS = '[data-doc-content-block="1"], .doc-content-block'
 
         const getOwningCell = (node) => {
             let parent = node?.parentElement
@@ -1955,6 +2516,37 @@ export default function EditorPage({
             const text = (node.textContent || '').replace(/\u00A0/g, ' ').trim()
             if (!text) return true
             return text.length <= 4 && node.children.length <= 1
+        }
+
+        const normalizeDocContentBlocks = () => {
+            let changed = false
+            Array.from(el.querySelectorAll(DOC_CONTENT_BLOCKS)).forEach(block => {
+                if (!block.isConnected) return
+                if (!block.classList.contains('doc-content-block')) {
+                    block.classList.add('doc-content-block')
+                    changed = true
+                }
+                if (block.getAttribute('data-doc-content-block') !== '1') {
+                    block.setAttribute('data-doc-content-block', '1')
+                    changed = true
+                }
+
+                const requiredStyles = {
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }
+                Object.entries(requiredStyles).forEach(([key, value]) => {
+                    if (block.style[key] !== value) {
+                        block.style[key] = value
+                        changed = true
+                    }
+                })
+            })
+            return changed
         }
 
         const mergeSplitCustomCardFragments = () => {
@@ -1992,6 +2584,10 @@ export default function EditorPage({
                 'th .doc-image-placeholder',
                 'td .doc-separator-container',
                 'th .doc-separator-container',
+                'td [data-doc-content-block="1"]',
+                'th [data-doc-content-block="1"]',
+                'td .doc-content-block',
+                'th .doc-content-block',
                 'td blockquote',
                 'th blockquote',
                 'td pre',
@@ -2025,6 +2621,10 @@ export default function EditorPage({
             })
 
             if (mergeSplitCustomCardFragments()) {
+                changed = true
+            }
+
+            if (normalizeDocContentBlocks()) {
                 changed = true
             }
 
@@ -2082,7 +2682,7 @@ export default function EditorPage({
     const dropIndicatorRef = useRef(null)
     const dragCounterRef = useRef(0) // track enter/leave for nested elements
 
-    const showDropIndicator = useCallback((x, y) => {
+    const showDropIndicator = useCallback((x, y, draggedHtml = '') => {
         const el = contentRef.current
         const indicator = dropIndicatorRef.current
         if (!el || !indicator) return
@@ -2114,17 +2714,49 @@ export default function EditorPage({
         // absolutely positioned indicator uses local page coordinates.
         const zoom = getEditorZoom()
 
+        const draggedImageContentBlock = (() => {
+            if (!draggedHtml) return null
+            const template = document.createElement('template')
+            template.innerHTML = draggedHtml
+            const children = Array.from(template.content.children || [])
+            if (!children.length) return null
+            const isImageOnly = children.every(child => {
+                if (child.matches?.('img, .doc-image-placeholder, [data-image-placeholder="1"]')) return true
+                if (child.matches?.('figure')) {
+                    const meaningfulChildren = Array.from(child.children || []).filter(node => !node.matches?.('figcaption'))
+                    return meaningfulChildren.length > 0 && meaningfulChildren.every(node => node.matches?.('img, .doc-image-placeholder, [data-image-placeholder="1"]'))
+                }
+                return false
+            })
+            if (!isImageOnly) return null
+
+            const rangeElement = range.startContainer.nodeType === 3
+                ? range.startContainer.parentElement
+                : range.startContainer
+            const target = document.elementFromPoint(x, y)
+            const element = target && target !== el && el.contains(target) ? target : rangeElement
+            const contentBlock = element?.closest?.('[data-doc-content-block="1"], .doc-content-block')
+                || rangeElement?.closest?.('[data-doc-content-block="1"], .doc-content-block')
+            return contentBlock && contentBlock !== el && el.contains(contentBlock) ? contentBlock : null
+        })()
+
         // Find the node and closest block element
         let node = range.startContainer
         if (node.nodeType === 3) node = node.parentNode
 
-        const PROTECTED_DROP_SELECTOR = 'table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
+        const PROTECTED_DROP_SELECTOR = '[data-doc-content-block="1"], .doc-content-block, table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
         const BLOCK_SELECTOR = `${PROTECTED_DROP_SELECTOR}, hr`
+        const isContentBlock = (candidate) => candidate?.matches?.('[data-doc-content-block="1"], .doc-content-block')
         let blockEl = node?.closest?.(BLOCK_SELECTOR)
+
+        if (draggedImageContentBlock && isContentBlock(blockEl)) {
+            blockEl = null
+        }
 
         if (blockEl && blockEl !== el && el.contains(blockEl)) {
             let parent = blockEl.parentElement
             while (parent && parent !== el) {
+                if (draggedImageContentBlock && isContentBlock(parent)) break
                 if (parent.matches?.(PROTECTED_DROP_SELECTOR)) blockEl = parent
                 parent = parent.parentElement
             }
@@ -2157,8 +2789,9 @@ export default function EditorPage({
             }
         }
 
-        const contentLeft = (elRect.left - pageRect.left) / zoom
-        const contentWidth = elRect.width / zoom
+        const indicatorRect = draggedImageContentBlock?.getBoundingClientRect?.() || elRect
+        const contentLeft = (indicatorRect.left - pageRect.left) / zoom
+        const contentWidth = indicatorRect.width / zoom
         const lineInset = 10
         const lineLeft = contentLeft + lineInset
         const lineWidth = Math.max(48, contentWidth - lineInset * 2)
@@ -2201,7 +2834,7 @@ export default function EditorPage({
         if (!html) return false
         const template = document.createElement('template')
         template.innerHTML = html
-        if (template.content.querySelector('table, blockquote, pre, figure, img, .dynamic-table, .doc-image-placeholder, .doc-separator-container, p, h1, h2, h3, h4, h5, h6, ul, ol, li')) {
+        if (template.content.querySelector('[data-doc-content-block="1"], .doc-content-block, table, blockquote, pre, figure, img, .dynamic-table, .doc-image-placeholder, .doc-separator-container, p, h1, h2, h3, h4, h5, h6, ul, ol, li')) {
             return true
         }
         return Array.from(template.content.querySelectorAll('div[style]')).some(div => {
@@ -2210,42 +2843,211 @@ export default function EditorPage({
         })
     }, [])
 
+    const isImageInsertionHtml = useCallback((html) => {
+        if (!html) return false
+        const template = document.createElement('template')
+        template.innerHTML = html
+        const elementChildren = Array.from(template.content.children || [])
+        if (!elementChildren.length) return false
+
+        return elementChildren.every(node => {
+            if (node.matches?.('img, .doc-image-placeholder, [data-image-placeholder="1"]')) return true
+            if (node.matches?.('figure')) {
+                const meaningfulChildren = Array.from(node.children || []).filter(child => !child.matches?.('figcaption'))
+                return meaningfulChildren.length > 0 && meaningfulChildren.every(child => child.matches?.('img, .doc-image-placeholder, [data-image-placeholder="1"]'))
+            }
+            return false
+        })
+    }, [])
+
+    const getInsertNodes = useCallback((html, text = '') => {
+        const template = document.createElement('template')
+        if (html && html.trim()) {
+            template.innerHTML = html
+        } else if (text) {
+            const p = document.createElement('p')
+            p.textContent = text
+            template.content.appendChild(p)
+        }
+        return Array.from(template.content.childNodes)
+    }, [])
+
+    const cleanEditableHtml = useCallback((html) => String(html || '')
+        .replace(/<span[^>]*(?:data-caret-marker|data-reflow-caret|data-atomic-caret)[^>]*>[\s\S]*?<\/span>/gi, '')
+        .replace(/<br\s*\/?>/gi, '')
+        .replace(/&nbsp;/gi, '')
+        .replace(/\u200B/g, '')
+        .trim(), [])
+
+    const isEmptyRootEditableBlock = useCallback((node) => {
+        const el = contentRef.current
+        if (!el || !node || node.nodeType !== 1 || node.parentElement !== el) return false
+        if (!node.matches?.('p, div')) return false
+        if (node.matches?.('[data-doc-content-block="1"], .doc-content-block, [data-atomic-caret]')) return false
+        if (node.querySelector?.('table, img, figure, .dynamic-table, .doc-image-placeholder, input, textarea, select, button')) return false
+
+        const clone = node.cloneNode(true)
+        clone.querySelectorAll('.doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu], [data-caret-marker], [data-reflow-caret], [data-atomic-caret]').forEach(child => child.remove())
+        const text = (clone.textContent || '').replace(/\u200B/g, '').replace(/\u00A0/g, ' ').trim()
+        return !text && cleanEditableHtml(clone.innerHTML) === ''
+    }, [cleanEditableHtml])
+
+    const findFirstEditableTextNode = useCallback((root) => {
+        if (!root) return null
+        const filter = window.NodeFilter || {}
+        const walker = document.createTreeWalker(root, filter.SHOW_TEXT || 4, {
+            acceptNode: (node) => {
+                const text = (node.nodeValue || '').replace(/\u200B/g, '').replace(/\u00A0/g, ' ').trim()
+                if (!text) return filter.FILTER_REJECT || 2
+                const parent = node.parentElement
+                if (parent?.closest?.('[contenteditable="false"], .doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu], [data-caret-marker], [data-reflow-caret], [data-atomic-caret]')) {
+                    return filter.FILTER_REJECT || 2
+                }
+                return filter.FILTER_ACCEPT || 1
+            }
+        })
+        return walker.nextNode()
+    }, [])
+
+    const setSelectionAtTextNode = useCallback((textNode, offset = 0) => {
+        const el = contentRef.current
+        if (!el || !textNode) return false
+        const range = document.createRange()
+        range.setStart(textNode, Math.max(0, Math.min(offset, textNode.nodeValue.length)))
+        range.collapse(true)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+        el.focus()
+        return true
+    }, [])
+
+    const placeCursorInsideInsertedBlock = useCallback((nodes) => {
+        const contentBlock = nodes.find(node => node.nodeType === 1 && node.matches?.('[data-doc-content-block="1"], .doc-content-block'))
+            || nodes.find(node => node.nodeType === 1)?.querySelector?.('[data-doc-content-block="1"], .doc-content-block')
+        const textNode = findFirstEditableTextNode(contentBlock)
+        return setSelectionAtTextNode(textNode, 0)
+    }, [findFirstEditableTextNode, setSelectionAtTextNode])
+
+    const placeCursorAfterNodes = useCallback((nodes) => {
+        const el = contentRef.current
+        const target = nodes.filter(node => node.isConnected).at(-1)
+        if (!el || !target) return false
+        const range = document.createRange()
+        range.setStartAfter(target)
+        range.collapse(true)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+        el.focus()
+        return true
+    }, [])
+
+    const wrapImageInsertNodes = useCallback((nodes) => nodes
+        .filter(node => !(node.nodeType === 3 && !node.nodeValue.replace(/\u00A0/g, ' ').trim()))
+        .map(node => {
+            if (node.nodeType === 1 && node.tagName === 'P') {
+                node.style.margin = '0'
+                node.style.lineHeight = '0'
+                return node
+            }
+            const p = document.createElement('p')
+            p.style.margin = '0'
+            p.style.lineHeight = '0'
+            p.appendChild(node)
+            return p
+        }), [])
+
+    const makeContentBlockImagesCompact = useCallback((nodes) => {
+        nodes.forEach(node => {
+            const placeholders = []
+            if (node.nodeType === 1 && node.matches?.('.doc-image-placeholder')) placeholders.push(node)
+            if (node.nodeType === 1) placeholders.push(...node.querySelectorAll?.('.doc-image-placeholder') || [])
+
+            placeholders.forEach(placeholder => {
+                const width = Number.parseFloat(placeholder.style.width || '0') || 0
+                const height = Number.parseFloat(placeholder.style.height || '0') || 0
+                if (width > 320) {
+                    const nextWidth = 240
+                    const ratio = height > 0 && width > 0 ? height / width : 0.5625
+                    placeholder.style.width = `${nextWidth}px`
+                    placeholder.style.height = `${Math.round(nextWidth * ratio)}px`
+                    placeholder.style.maxWidth = '100%'
+                }
+                placeholder.style.margin = '0'
+            })
+        })
+    }, [])
+
+    const insertImageHtmlInsideContentBlock = useCallback((range, contentBlock, html, text = '', x = 0, y = 0) => {
+        const el = contentRef.current
+        if (!el || !range || !contentBlock || !el.contains(contentBlock)) return false
+
+        const nodes = wrapImageInsertNodes(getInsertNodes(html, text))
+        if (!nodes.length) return false
+        makeContentBlockImagesCompact(nodes)
+
+        const rangeElement = range.startContainer.nodeType === 3
+            ? range.startContainer.parentElement
+            : range.startContainer
+        const anchor = rangeElement?.closest?.('p,h1,h2,h3,h4,h5,h6,li')
+        const canUseAnchor = anchor && anchor !== contentBlock && contentBlock.contains(anchor)
+        if (canUseAnchor) {
+            const rect = anchor.getBoundingClientRect()
+            const insertBefore = Number.isFinite(y) && y > 0 && y < rect.top + rect.height / 2
+            if (insertBefore) {
+                anchor.before(...nodes)
+            } else {
+                anchor.after(...nodes)
+            }
+        } else {
+            contentBlock.append(...nodes)
+        }
+
+        placeCursorAfterNodes(nodes)
+        clearAtomicCaret()
+        clearSelectedTable({ clearToolbar: true })
+        return true
+    }, [clearAtomicCaret, clearSelectedTable, getInsertNodes, makeContentBlockImagesCompact, placeCursorAfterNodes, wrapImageInsertNodes])
+
+    const getContentBlockForInsertion = useCallback((range, x, y) => {
+        const el = contentRef.current
+        if (!el || !range) return null
+
+        const rangeElement = range.startContainer.nodeType === 3
+            ? range.startContainer.parentElement
+            : range.startContainer
+        const hasPoint = Number.isFinite(x) && Number.isFinite(y) && (x !== 0 || y !== 0)
+        const target = hasPoint ? document.elementFromPoint(x, y) : null
+        const element = target && target !== el && el.contains(target) ? target : rangeElement
+        const block = element?.closest?.('[data-doc-content-block="1"], .doc-content-block') || rangeElement?.closest?.('[data-doc-content-block="1"], .doc-content-block')
+
+        return block && block !== el && el.contains(block) ? block : null
+    }, [])
+
     const insertHtmlAroundProtectedBlock = useCallback((block, side, html, text = '') => {
         const el = contentRef.current
         if (!el || !block || !el.contains(block)) return false
 
-        const template = document.createElement('template')
-        if (html && html.trim()) {
-            template.innerHTML = html
-        } else {
-            const p = document.createElement('p')
-            p.textContent = text || ''
-            template.content.appendChild(p)
-        }
-
-        const nodes = Array.from(template.content.childNodes)
+        const nodes = getInsertNodes(html, text)
         if (!nodes.length) return false
 
-        if (side === 'before') {
+        if (isEmptyRootEditableBlock(block)) {
+            block.replaceWith(...nodes)
+        } else if (side === 'before') {
             block.before(...nodes)
         } else {
             block.after(...nodes)
         }
 
-        const target = nodes[nodes.length - 1]
-        const sel = window.getSelection()
-        const range = document.createRange()
-        if (target) {
-            range.setStartAfter(target)
-            range.collapse(true)
+        if (!placeCursorInsideInsertedBlock(nodes)) {
+            placeCursorAfterNodes(nodes)
         }
-        sel.removeAllRanges()
-        sel.addRange(range)
 
         clearAtomicCaret()
         clearSelectedTable({ clearToolbar: true })
         return true
-    }, [clearAtomicCaret, clearSelectedTable])
+    }, [clearAtomicCaret, clearSelectedTable, getInsertNodes, isEmptyRootEditableBlock, placeCursorAfterNodes, placeCursorInsideInsertedBlock])
 
     const getProtectedDropBlock = useCallback((range, x, y) => {
         const el = contentRef.current
@@ -2267,7 +3069,7 @@ export default function EditorPage({
             }
         }
 
-        const protectedSelector = 'table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
+        const protectedSelector = '[data-doc-content-block="1"], .doc-content-block, table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
         const protectedBlock = element?.closest?.(protectedSelector) || rangeElement?.closest?.(protectedSelector)
         if (protectedBlock && protectedBlock !== el && el.contains(protectedBlock)) {
             let topBlock = protectedBlock
@@ -2300,7 +3102,15 @@ export default function EditorPage({
             // Get drop position
             const range = getRangeFromPoint(e.clientX, e.clientY)
             if (range) {
-                const protectedDrop = isStructuralBlockHtml(html)
+                const imageContentBlock = html && isImageInsertionHtml(html)
+                    ? getContentBlockForInsertion(range, e.clientX, e.clientY)
+                    : null
+                if (imageContentBlock && insertImageHtmlInsideContentBlock(range, imageContentBlock, html, text, e.clientX, e.clientY)) {
+                    handlePageInput?.({ target: contentRef.current }, pageIndex)
+                    return
+                }
+
+                const protectedDrop = !imageContentBlock && isStructuralBlockHtml(html)
                     ? getProtectedDropBlock(range, e.clientX, e.clientY)
                     : null
 
@@ -2315,9 +3125,10 @@ export default function EditorPage({
                 sel.removeAllRanges()
                 sel.addRange(range)
                 document.execCommand('insertHTML', false, html || text)
+                handlePageInput?.({ target: contentRef.current }, pageIndex)
             }
         }
-    }, [clearAtomicCaret, clearSelectedTable, getRangeFromPoint, handlePageInput, hideDropIndicator, insertHtmlAroundProtectedBlock, isStructuralBlockHtml, getProtectedDropBlock, pageIndex])
+    }, [clearAtomicCaret, clearSelectedTable, getRangeFromPoint, getContentBlockForInsertion, handlePageInput, hideDropIndicator, insertHtmlAroundProtectedBlock, insertImageHtmlInsideContentBlock, isImageInsertionHtml, isStructuralBlockHtml, getProtectedDropBlock, pageIndex])
 
     useEffect(() => {
         if (page.mode !== 'edition') return
@@ -2351,7 +3162,15 @@ export default function EditorPage({
                 sel.addRange(range)
             }
 
-            const protectedInsert = isStructuralBlockHtml(html)
+            const imageContentBlock = isImageInsertionHtml(html)
+                ? getContentBlockForInsertion(range, 0, 0)
+                : null
+            if (imageContentBlock && insertImageHtmlInsideContentBlock(range, imageContentBlock, html)) {
+                handlePageInput?.({ target: el }, pageIndex)
+                return
+            }
+
+            const protectedInsert = !imageContentBlock && isStructuralBlockHtml(html)
                 ? getProtectedDropBlock(range, 0, 0)
                 : null
             if (protectedInsert?.block) {
@@ -2366,12 +3185,12 @@ export default function EditorPage({
 
         window.addEventListener('document-editor-insert-html', handleExternalHtmlInsert)
         return () => window.removeEventListener('document-editor-insert-html', handleExternalHtmlInsert)
-    }, [page.mode, isSelected, handlePageInput, pageIndex, getProtectedDropBlock, insertHtmlAroundProtectedBlock, isStructuralBlockHtml])
+    }, [page.mode, isSelected, getContentBlockForInsertion, handlePageInput, pageIndex, getProtectedDropBlock, insertHtmlAroundProtectedBlock, insertImageHtmlInsideContentBlock, isImageInsertionHtml, isStructuralBlockHtml])
 
     const handleDragOver = useCallback((e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
-        showDropIndicator(e.clientX, e.clientY)
+        showDropIndicator(e.clientX, e.clientY, e.dataTransfer.getData('text/html') || '')
     }, [showDropIndicator])
 
     const handleDragEnter = useCallback((e) => {

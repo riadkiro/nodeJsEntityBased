@@ -4,7 +4,7 @@
  * Enhanced with: more draggable blocks, professional content elements,
  * table templates, callout boxes, signature blocks
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import SettingsPanel from './SettingsPanel'
 import useTouchDrag from '../hooks/useTouchDrag'
 import {
@@ -267,9 +267,10 @@ export default function LeftSidebar({
 }
 
 // Draggable block component - supports both mouse drag (HTML5) and touch drag (long press)
-function DraggableBlock({ icon, label, description, html, plainText }) {
+function DraggableBlock({ icon, label, description, html, plainText, actions = [], contextActions = [], onContextMenu }) {
     const isDark = useDarkMode();
     const { elRef, touchHandlers } = useTouchDrag({ html, label, icon, isDark });
+    const availableContextActions = contextActions.length ? contextActions : actions;
 
     return (
         <div
@@ -291,6 +292,12 @@ function DraggableBlock({ icon, label, description, html, plainText }) {
                 e.dataTransfer.setData('text/html', html)
                 e.dataTransfer.setData('text/plain', plainText || label)
                 e.dataTransfer.effectAllowed = 'copy'
+            }}
+            onContextMenu={(e) => {
+                if (!availableContextActions.length) return
+                e.preventDefault()
+                e.stopPropagation()
+                onContextMenu?.(e, availableContextActions)
             }}
             {...touchHandlers}
             onMouseEnter={(e) => {
@@ -323,6 +330,42 @@ function DraggableBlock({ icon, label, description, html, plainText }) {
                         }}>{description}</span>
                     )}
                 </div>
+                {actions.length > 0 && (
+                    <div
+                        style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {actions.map(action => (
+                            <button
+                                key={action.title}
+                                type="button"
+                                draggable={false}
+                                title={action.title}
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    action.onClick?.()
+                                }}
+                                style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    padding: 0,
+                                    border: '0',
+                                    borderRadius: '6px',
+                                    background: isDark ? '#111827' : '#eef2f7',
+                                    color: action.color || (isDark ? '#9ca3af' : '#64748b'),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <iconify-icon icon={action.icon} width="14"></iconify-icon>
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -358,10 +401,205 @@ function TouchableImage({ html, children, className, style, title }) {
 
 const DESIGNER_ADD_EVENT = 'document-designer-add-element'
 const EDITOR_INSERT_HTML_EVENT = 'document-editor-insert-html'
+const EDITOR_SAVE_BLOCK_EVENT = 'document-editor-save-content-block'
 const TOOL_ICON_COLOR = '#64748b'
 const TOOL_CARD_BG = '#f3f4f6'
 const TOOL_CARD_BG_DARK = '#1f2937'
+const escapeInlineStyleAttr = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 const DOC_FRAME_PLACEHOLDER_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dbeafe'/%3E%3Cstop offset='1' stop-color='%23f8fafc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23sky)'/%3E%3Ccircle cx='500' cy='80' r='46' fill='%23ffffff' fill-opacity='.88'/%3E%3Cpath d='M0 260 105 178l83 58 128-108 134 132 83-68 107 86v82H0z' fill='%23cbd5e1'/%3E%3Cpath d='M0 304 160 214l118 64 92-46 100 54 170-90v164H0z' fill='%2394a3b8' fill-opacity='.72'/%3E%3C/svg%3E")`
+const DOC_CONTENT_BLOCK_SELECTOR = '[data-doc-content-block="1"], .doc-content-block'
+
+const BLOCK_ICON_OPTIONS = [
+    'tabler:file-invoice',
+    'tabler:file-description',
+    'tabler:mail',
+    'tabler:writing',
+    'tabler:layout-board',
+    'tabler:table',
+    'tabler:signature',
+    'tabler:info-circle',
+    'tabler:alert-triangle',
+    'tabler:circle-check',
+    'tabler:photo',
+    'tabler:columns-2'
+]
+
+const LAYOUT_BLOCK_PRESETS = [
+    {
+        systemKey: 'invoice-header',
+        icon: 'tabler:file-invoice',
+        name: 'En-tête de facture',
+        description: 'Émetteur + Destinataire + N° facture',
+        plainText: 'En-tête facture',
+        html: `<div style="margin-bottom:32px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
+                <div>
+                    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e40af;">ENTREPRISE</h2>
+                    <p style="margin:0;font-size:13px;color:#374151;">123 Rue Exemple</p>
+                    <p style="margin:0;font-size:13px;color:#374151;">75000 Paris, France</p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#374151;">contact@entreprise.fr</p>
+                </div>
+                <div style="text-align:right;">
+                    <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#374151;">FACTURE</h1>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">N° : FAC-2026-001</p>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">Date : ../../....</p>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">Échéance : ../../....</p>
+                </div>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
+                <p style="margin:0 0 4px;font-weight:600;font-size:13px;color:#64748b;">FACTURER À :</p>
+                <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">Nom du client</p>
+                <p style="margin:2px 0 0;font-size:13px;color:#475569;">Adresse du client</p>
+                <p style="margin:0;font-size:13px;color:#475569;">Code postal, Ville</p>
+            </div>
+        </div>`
+    },
+    {
+        systemKey: 'quote-header',
+        icon: 'tabler:file-description',
+        name: 'En-tête de devis',
+        description: 'Structure devis avec conditions',
+        plainText: 'En-tête devis',
+        html: `<div style="margin-bottom:32px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
+                <div>
+                    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#059669;">ENTREPRISE</h2>
+                    <p style="margin:0;font-size:13px;color:#374151;">123 Rue Exemple</p>
+                    <p style="margin:0;font-size:13px;color:#374151;">75000 Paris, France</p>
+                </div>
+                <div style="text-align:right;">
+                    <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#374151;">DEVIS</h1>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">Réf : DEV-2026-001</p>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">Date : ../../....</p>
+                    <p style="margin:0;font-size:13px;color:#6b7280;">Validité : 30 jours</p>
+                </div>
+            </div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;">
+                <p style="margin:0 0 4px;font-weight:600;font-size:13px;color:#16a34a;">DESTINATAIRE :</p>
+                <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">Nom du client</p>
+                <p style="margin:2px 0 0;font-size:13px;color:#475569;">Adresse du client</p>
+            </div>
+        </div>`
+    },
+    {
+        systemKey: 'contact-card',
+        icon: 'tabler:mail',
+        name: 'Bloc de coordonnées',
+        description: 'Carte de contact avec icônes',
+        plainText: 'Coordonnées',
+        html: `<div style="margin:16px 0;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+            <p style="margin:0 0 12px;font-weight:700;font-size:16px;color:#1e293b;">Coordonnées</p>
+            <p style="margin:0 0 6px;font-size:14px;color:#475569;">📍 123 Rue Exemple, 75000 Paris</p>
+            <p style="margin:0 0 6px;font-size:14px;color:#475569;">📞 01 23 45 67 89</p>
+            <p style="margin:0 0 6px;font-size:14px;color:#475569;">✉️ contact@entreprise.fr</p>
+            <p style="margin:0;font-size:14px;color:#475569;">🌐 www.entreprise.fr</p>
+        </div><p><br></p>`
+    },
+    {
+        systemKey: 'terms',
+        icon: 'tabler:writing',
+        name: 'Conditions générales',
+        description: 'Bloc CGV/CGA compact',
+        plainText: 'CGV',
+        html: `<div style="margin:24px 0 0;padding:16px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;font-size:10px;color:#9ca3af;line-height:1.5;">
+            <p style="margin:0 0 4px;font-weight:600;font-size:11px;color:#6b7280;">CONDITIONS GÉNÉRALES</p>
+            <p style="margin:0;">Paiement à réception de facture. Tout retard de paiement entraînera des pénalités de retard au taux de 3 fois le taux d'intérêt légal, ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce). Pas d'escompte pour paiement anticipé.</p>
+        </div>`
+    }
+]
+
+async function readJsonResponse(response, fallbackMessage = 'Réponse serveur invalide') {
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+        return response.json()
+    }
+
+    const text = await response.text()
+    if (response.redirected || response.url.includes('/auth/login')) {
+        throw new Error('Session expirée, reconnectez-vous')
+    }
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error(fallbackMessage)
+    }
+    throw new Error(text.trim() || fallbackMessage)
+}
+
+function escapeHtmlAttr(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+}
+
+function stripBlockRuntimeArtifacts(html) {
+    if (!html || typeof document === 'undefined') return String(html || '')
+    const template = document.createElement('template')
+    template.innerHTML = html
+    template.content.querySelectorAll([
+        '.doc-block-delete-btn',
+        '.doc-block-save-btn',
+        '.doc-block-actionbar',
+        '[data-doc-block-context-menu]',
+        '[data-atomic-caret]',
+        '[data-image-resize-overlay]',
+        '[data-placeholder-resize-overlay]',
+        '[data-placeholder-crop-overlay]',
+        '[data-placeholder-context-menu]',
+        '[data-table-context-menu]',
+        '.tt-col-resize-handle',
+        '.tt-table-resize-handle'
+    ].join(',')).forEach(node => node.remove())
+    return template.innerHTML.trim()
+}
+
+function buildReusableBlockHtml(block) {
+    const rawHtml = stripBlockRuntimeArtifacts(block?.html || '')
+    const name = block?.name || block?.label || 'Bloc personnalisé'
+    const icon = block?.icon || 'tabler:layout-board'
+    const source = block?.sourceType || (block?.systemKey ? 'system' : 'custom')
+    const key = block?.systemKey || block?._id || `custom-${Date.now()}`
+
+    if (typeof document === 'undefined') {
+        return `<div class="doc-content-block" data-doc-content-block="1" data-doc-block-name="${escapeHtmlAttr(name)}" data-doc-block-icon="${escapeHtmlAttr(icon)}" data-doc-block-source="${escapeHtmlAttr(source)}" data-doc-block-key="${escapeHtmlAttr(key)}" style="display:block;width:100%;box-sizing:border-box;position:relative;margin:0 0 16px 0;overflow:hidden;">${rawHtml}</div><p><br></p>`
+    }
+
+    const template = document.createElement('template')
+    template.innerHTML = rawHtml
+    const firstElement = Array.from(template.content.children).find(node => node.matches?.(DOC_CONTENT_BLOCK_SELECTOR))
+
+    if (firstElement && firstElement.parentElement === null) {
+        firstElement.classList.add('doc-content-block')
+        firstElement.setAttribute('data-doc-content-block', '1')
+        firstElement.setAttribute('data-doc-block-name', name)
+        firstElement.setAttribute('data-doc-block-icon', icon)
+        firstElement.setAttribute('data-doc-block-source', source)
+        firstElement.setAttribute('data-doc-block-key', key)
+        firstElement.style.display = 'block'
+        firstElement.style.width = '100%'
+        firstElement.style.maxWidth = '100%'
+        firstElement.style.boxSizing = 'border-box'
+        firstElement.style.position = 'relative'
+        firstElement.style.overflow = 'hidden'
+        if (!firstElement.style.margin) firstElement.style.margin = '0 0 16px 0'
+        return `${firstElement.outerHTML}<p><br></p>`
+    }
+
+    return `<div class="doc-content-block" data-doc-content-block="1" data-doc-block-name="${escapeHtmlAttr(name)}" data-doc-block-icon="${escapeHtmlAttr(icon)}" data-doc-block-source="${escapeHtmlAttr(source)}" data-doc-block-key="${escapeHtmlAttr(key)}" style="display:block;width:100%;max-width:100%;box-sizing:border-box;position:relative;margin:0 0 16px 0;overflow:hidden;">${rawHtml}</div><p><br></p>`
+}
+
+function extractReusableBlockInnerHtml(html) {
+    const cleanHtml = stripBlockRuntimeArtifacts(html)
+    if (!cleanHtml || typeof document === 'undefined') return cleanHtml
+    const template = document.createElement('template')
+    template.innerHTML = cleanHtml
+    const block = template.content.querySelector(DOC_CONTENT_BLOCK_SELECTOR)
+    return block ? block.innerHTML.trim() : cleanHtml
+}
 
 function emitDesignerAdd(detail) {
     if (typeof window === 'undefined') return
@@ -383,7 +621,7 @@ function buildImageFrameHtml(frameShape = 'rect') {
         wide: { width: 500, height: 180, radius: 8 },
     }[frameShape] || { width: 500, height: 281, radius: 8 }
 
-    return `<span class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" data-frame-shape="${frameShape}" style="width:${dims.width}px;max-width:100%;height:${dims.height}px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;vertical-align:top;border:0;border-radius:${dims.radius}px;background-color:#f8fafc;background-image:${DOC_FRAME_PLACEHOLDER_BG};background-size:cover;background-position:center;margin:12px 0;cursor:pointer;box-sizing:border-box;position:relative;resize:none;"></span>`
+    return `<span class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" data-frame-shape="${frameShape}" style="width:${dims.width}px;max-width:100%;height:${dims.height}px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;vertical-align:top;border:0;border-radius:${dims.radius}px;background-color:#f8fafc;background-image:${escapeInlineStyleAttr(DOC_FRAME_PLACEHOLDER_BG)};background-size:cover;background-position:center;margin:12px 0;cursor:pointer;box-sizing:border-box;position:relative;resize:none;"></span>`
 }
 
 function DesignerToolGrid({ items, isDesignerMode }) {
@@ -849,8 +1087,204 @@ function LayoutsPanel({ doc, setDoc, triggerSave }) {
     const isDark = useDarkMode()
     const [showHeaderChoices, setShowHeaderChoices] = useState(false)
     const [showFooterChoices, setShowFooterChoices] = useState(false)
+    const [contentBlocks, setContentBlocks] = useState([])
+    const [blocksLoading, setBlocksLoading] = useState(false)
+    const [blocksError, setBlocksError] = useState('')
+    const [blockModal, setBlockModal] = useState(null)
+    const [blockMenu, setBlockMenu] = useState(null)
     const hasHeader = !!doc?.headerHtml
     const hasFooter = !!doc?.footerHtml
+    const accountNumber = window.location.pathname.match(/\/account\/([^/]+)/)?.[1] || ''
+
+    const loadContentBlocks = useCallback(async () => {
+        if (!accountNumber) return
+        setBlocksLoading(true)
+        setBlocksError('')
+        try {
+            const res = await fetch(`/account/${accountNumber}/documents/content-blocks`, { credentials: 'include' })
+            const data = await readJsonResponse(res, 'Impossible de charger les blocs')
+            if (!data.success) throw new Error(data.error || 'Erreur de chargement')
+            setContentBlocks(data.blocks || [])
+        } catch (error) {
+            setBlocksError(error.message || 'Erreur de chargement')
+        } finally {
+            setBlocksLoading(false)
+        }
+    }, [accountNumber])
+
+    useEffect(() => {
+        loadContentBlocks()
+    }, [loadContentBlocks])
+
+    useEffect(() => {
+        if (!blockMenu) return
+        const closeMenu = () => setBlockMenu(null)
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') closeMenu()
+        }
+        window.addEventListener('pointerdown', closeMenu)
+        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('scroll', closeMenu, true)
+        return () => {
+            window.removeEventListener('pointerdown', closeMenu)
+            window.removeEventListener('keydown', handleKeyDown)
+            window.removeEventListener('scroll', closeMenu, true)
+        }
+    }, [blockMenu])
+
+    const openBlockContextMenu = useCallback((event, actions = []) => {
+        setBlockMenu({
+            x: event.clientX,
+            y: event.clientY,
+            actions
+        })
+    }, [])
+
+    const systemOverridesByKey = contentBlocks
+        .filter(block => block.sourceType === 'system' && block.systemKey)
+        .reduce((acc, block) => {
+            acc[block.systemKey] = block
+            return acc
+        }, {})
+
+    const customBlocks = contentBlocks.filter(block => block.sourceType !== 'system')
+
+    const getSelectedBlockHtml = useCallback(() => {
+        if (typeof window === 'undefined') return ''
+        const selection = window.getSelection?.()
+        if (!selection || selection.rangeCount === 0) return ''
+
+        const range = selection.getRangeAt(0)
+        const node = range.commonAncestorContainer.nodeType === 1
+            ? range.commonAncestorContainer
+            : range.commonAncestorContainer.parentElement
+        const editor = node?.closest?.('[contenteditable="true"]')
+        if (!editor) return ''
+
+        const blockSelector = `${DOC_CONTENT_BLOCK_SELECTOR}, table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style]`
+        let block = node?.closest?.(blockSelector)
+        if (block === editor) block = null
+        if (block && editor.contains(block)) {
+            let topBlock = block
+            let parent = block.parentElement
+            while (parent && parent !== editor) {
+                if (parent.matches?.(blockSelector)) topBlock = parent
+                parent = parent.parentElement
+            }
+            return stripBlockRuntimeArtifacts(topBlock.outerHTML)
+        }
+
+        if (!range.collapsed) {
+            const container = document.createElement('div')
+            container.appendChild(range.cloneContents())
+            return stripBlockRuntimeArtifacts(container.innerHTML)
+        }
+
+        return ''
+    }, [])
+
+    const openCreateBlockModal = useCallback((fromSelection = false, sourceHtml = '', sourceName = '') => {
+        const selectedHtml = sourceHtml || (fromSelection ? getSelectedBlockHtml() : '')
+        setBlockModal({
+            mode: 'create',
+            title: selectedHtml ? 'Enregistrer ce bloc' : 'Nouveau bloc personnalisé',
+            block: {
+                name: sourceName || (selectedHtml ? 'Bloc personnalisé' : ''),
+                description: '',
+                icon: 'tabler:layout-board',
+                html: extractReusableBlockInnerHtml(selectedHtml || '<div style="padding:16px;border:1px solid #e5e7eb;border-radius:8px;"><p style="margin:0;">Nouveau bloc</p></div>'),
+                sourceType: 'custom'
+            }
+        })
+    }, [getSelectedBlockHtml])
+
+    useEffect(() => {
+        const handleSaveBlockFromEditor = (event) => {
+            const html = event.detail?.html || ''
+            if (!html) return
+            openCreateBlockModal(true, html, event.detail?.name || '')
+        }
+        window.addEventListener(EDITOR_SAVE_BLOCK_EVENT, handleSaveBlockFromEditor)
+        return () => window.removeEventListener(EDITOR_SAVE_BLOCK_EVENT, handleSaveBlockFromEditor)
+    }, [openCreateBlockModal])
+
+    const openEditBlockModal = useCallback((block, options = {}) => {
+        setBlockModal({
+            mode: 'edit',
+            title: options.isSystem ? 'Modifier le bloc système' : 'Modifier le bloc personnalisé',
+            isSystem: !!options.isSystem,
+            block: {
+                ...block,
+                name: block.name || block.label || '',
+                description: block.description || '',
+                icon: block.icon || 'tabler:layout-board',
+                html: extractReusableBlockInnerHtml(block.html || ''),
+                sourceType: options.isSystem ? 'system' : (block.sourceType || 'custom')
+            }
+        })
+    }, [])
+
+    const saveContentBlock = useCallback(async (formBlock) => {
+        if (!accountNumber) return
+        const payload = {
+            name: formBlock.name,
+            description: formBlock.description,
+            icon: formBlock.icon,
+            html: formBlock.html,
+            sourceType: formBlock.sourceType || 'custom',
+            systemKey: formBlock.systemKey || '',
+            order: formBlock.order || 0
+        }
+        const method = formBlock._id ? 'PUT' : 'POST'
+        const url = formBlock._id
+            ? `/account/${accountNumber}/documents/content-blocks/${formBlock._id}`
+            : `/account/${accountNumber}/documents/content-blocks`
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        })
+        const data = await readJsonResponse(res, 'Impossible de sauvegarder le bloc')
+        if (!data.success) throw new Error(data.error || 'Erreur de sauvegarde')
+
+        setContentBlocks(prev => {
+            const withoutCurrent = prev.filter(block => block._id !== data.block._id && !(data.block.sourceType === 'system' && block.sourceType === 'system' && block.systemKey === data.block.systemKey))
+            return [data.block, ...withoutCurrent]
+        })
+        setBlockModal(null)
+    }, [accountNumber])
+
+    const deleteContentBlock = useCallback(async (block) => {
+        if (!accountNumber || !block?._id) return
+        const res = await fetch(`/account/${accountNumber}/documents/content-blocks/${block._id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        })
+        const data = await readJsonResponse(res, 'Impossible de supprimer le bloc')
+        if (!data.success) {
+            setBlocksError(data.error || 'Erreur de suppression')
+            return
+        }
+        setContentBlocks(prev => prev.filter(item => item._id !== block._id))
+    }, [accountNumber])
+
+    const insertContentBlock = useCallback((block) => {
+        dispatchInsertHtml(buildReusableBlockHtml(block))
+    }, [])
+
+    const getCustomBlockActions = useCallback((block) => ([
+        { title: 'Insérer', icon: 'tabler:corner-down-left', onClick: () => insertContentBlock(block) },
+        { title: 'Modifier', icon: 'tabler:pencil', onClick: () => openEditBlockModal(block) },
+        { title: 'Supprimer', icon: 'tabler:trash', color: '#ef4444', onClick: () => deleteContentBlock(block) }
+    ]), [deleteContentBlock, insertContentBlock, openEditBlockModal])
+
+    const getSystemBlockActions = useCallback((block, override) => ([
+        { title: 'Insérer', icon: 'tabler:corner-down-left', onClick: () => insertContentBlock(block) },
+        { title: 'Modifier ce modèle', icon: 'tabler:pencil', onClick: () => openEditBlockModal(block, { isSystem: true }) },
+        ...(override ? [{ title: 'Réinitialiser', icon: 'tabler:rotate-clockwise', color: '#f97316', onClick: () => deleteContentBlock(override) }] : [])
+    ]), [deleteContentBlock, insertContentBlock, openEditBlockModal])
 
     const setHeader = (html) => {
         if (setDoc) {
@@ -1050,90 +1484,525 @@ function LayoutsPanel({ doc, setDoc, triggerSave }) {
             )}
 
             {/* ===== DRAGGABLE BLOCKS (dropped per-page) ===== */}
-            <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Blocs de mise en page
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+                <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Blocs de mise en page
+                </p>
+                {blocksLoading && <iconify-icon icon="tabler:loader-2" width="14" className="animate-spin" style={{ color: '#94a3b8' }}></iconify-icon>}
+            </div>
+
+            <div style={{ display: 'grid', gap: '6px', marginBottom: '12px' }}>
+                <button
+                    type="button"
+                    onClick={() => openCreateBlockModal(false)}
+                    style={{
+                        width: '100%',
+                        minHeight: '34px',
+                        border: `1px solid ${isDark ? '#334155' : '#dbe3ef'}`,
+                        borderRadius: '8px',
+                        background: isDark ? '#111827' : '#f8fafc',
+                        color: isDark ? '#e5e7eb' : '#334155',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 700
+                    }}
+                >
+                    <iconify-icon icon="tabler:plus" width="15"></iconify-icon>
+                    Nouveau bloc
+                </button>
+                <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => openCreateBlockModal(true)}
+                    style={{
+                        width: '100%',
+                        minHeight: '32px',
+                        border: `1px dashed ${isDark ? '#475569' : '#cbd5e1'}`,
+                        borderRadius: '8px',
+                        background: 'transparent',
+                        color: isDark ? '#9ca3af' : '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: 600
+                    }}
+                >
+                    <iconify-icon icon="tabler:selection" width="14"></iconify-icon>
+                    Depuis la sélection
+                </button>
+            </div>
+
+            {blocksError && (
+                <div style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: isDark ? '#2b1717' : '#fef2f2',
+                    color: isDark ? '#fca5a5' : '#b91c1c',
+                    fontSize: '11px',
+                    marginBottom: '10px'
+                }}>
+                    {blocksError}
+                </div>
+            )}
+
+            {customBlocks.length > 0 && (
+                <>
+                    <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Mes blocs
+                    </p>
+                    {customBlocks.map(block => {
+                        const actions = getCustomBlockActions(block)
+                        return (
+                            <DraggableBlock
+                                key={block._id}
+                                icon={block.icon || 'tabler:layout-board'}
+                                label={block.name}
+                                description={block.description || 'Bloc personnalisé'}
+                                html={buildReusableBlockHtml(block)}
+                                plainText={block.name}
+                                actions={actions.filter(action => action.title !== 'Insérer')}
+                                contextActions={actions}
+                                onContextMenu={openBlockContextMenu}
+                            />
+                        )
+                    })}
+                    <div style={{ height: '1px', background: isDark ? '#1f2937' : '#e5e7eb', margin: '10px 0 12px' }} />
+                </>
+            )}
+
+            <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Blocs système
             </p>
 
-            <DraggableBlock
-                icon="tabler:file-invoice"
-                label="En-tête de facture"
-                description="Émetteur + Destinataire + N° facture"
-                html={`<div style="margin-bottom:32px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
+            {LAYOUT_BLOCK_PRESETS.map(preset => {
+                const override = systemOverridesByKey[preset.systemKey]
+                const block = {
+                    ...preset,
+                    ...(override || {}),
+                    systemKey: preset.systemKey,
+                    sourceType: 'system',
+                    name: override?.name || preset.name,
+                    description: override?.description || preset.description,
+                    icon: override?.icon || preset.icon,
+                    html: override?.html || preset.html,
+                    plainText: preset.plainText
+                }
+                const actions = getSystemBlockActions(block, override)
+                return (
+                    <DraggableBlock
+                        key={preset.systemKey}
+                        icon={block.icon}
+                        label={block.name}
+                        description={block.description}
+                        html={buildReusableBlockHtml(block)}
+                        plainText={block.plainText || block.name}
+                        actions={actions.filter(action => action.title !== 'Insérer')}
+                        contextActions={actions}
+                        onContextMenu={openBlockContextMenu}
+                    />
+                )
+            })}
+
+            {blockMenu && (
+                <div
+                    onPointerDown={(e) => e.stopPropagation()}
+                    style={{
+                        position: 'fixed',
+                        top: `${blockMenu.y}px`,
+                        left: `${blockMenu.x}px`,
+                        zIndex: 100001,
+                        minWidth: '178px',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+                        background: isDark ? '#0f172a' : '#ffffff',
+                        boxShadow: '0 18px 48px rgba(15,23,42,0.18)',
+                    }}
+                >
+                    {blockMenu.actions.map(action => (
+                        <button
+                            key={action.title}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setBlockMenu(null)
+                                action.onClick?.()
+                            }}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                border: '0',
+                                borderRadius: '6px',
+                                background: 'transparent',
+                                color: action.color || (isDark ? '#e5e7eb' : '#334155'),
+                                padding: '8px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                textAlign: 'left'
+                            }}
+                        >
+                            <iconify-icon icon={action.icon} width="15"></iconify-icon>
+                            {action.title}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {blockModal && (
+                <ContentBlockModal
+                    isDark={isDark}
+                    modal={blockModal}
+                    onClose={() => setBlockModal(null)}
+                    onSave={saveContentBlock}
+                />
+            )}
+        </div>
+    )
+}
+
+function ContentBlockModal({ modal, isDark, onClose, onSave }) {
+    const [form, setForm] = useState(() => ({
+        ...modal.block,
+        name: modal.block?.name || '',
+        description: modal.block?.description || '',
+        icon: modal.block?.icon || 'tabler:layout-board',
+        html: modal.block?.html || ''
+    }))
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+    const [showAdvanced, setShowAdvanced] = useState(false)
+
+    const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
+    const bg = isDark ? '#0f172a' : '#ffffff'
+    const border = isDark ? '#334155' : '#e2e8f0'
+    const text = isDark ? '#e5e7eb' : '#0f172a'
+    const muted = isDark ? '#94a3b8' : '#64748b'
+    const inputBg = isDark ? '#111827' : '#f8fafc'
+
+    const submit = async (event) => {
+        event.preventDefault()
+        setError('')
+        if (!form.name.trim()) {
+            setError('Nom requis')
+            return
+        }
+        if (!form.html.trim()) {
+            setError('Contenu requis')
+            return
+        }
+        setSaving(true)
+        try {
+            await onSave(form)
+        } catch (saveError) {
+            setError(saveError.message || 'Erreur de sauvegarde')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return (
+        <div
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) onClose()
+            }}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 100000,
+                background: 'rgba(15,23,42,0.44)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '18px'
+            }}
+        >
+            <form
+                onSubmit={submit}
+                onMouseDown={(e) => e.stopPropagation()}
+                style={{
+                    width: 'min(680px, 96vw)',
+                    maxHeight: '88vh',
+                    overflow: 'auto',
+                    background: bg,
+                    color: text,
+                    border: `1px solid ${border}`,
+                    borderRadius: '10px',
+                    boxShadow: '0 24px 70px rgba(15,23,42,0.28)',
+                    padding: 0
+                }}
+            >
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    padding: '16px',
+                    borderBottom: `1px solid ${border}`
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '8px',
+                            background: isDark ? '#1e293b' : '#eef2ff',
+                            color: '#4361ee',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <iconify-icon icon={form.icon || 'tabler:layout-board'} width="18"></iconify-icon>
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: text }}>{modal.title}</h3>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        title="Fermer"
+                        style={{
+                            width: '28px',
+                            height: '28px',
+                            border: '0',
+                            borderRadius: '7px',
+                            background: isDark ? '#111827' : '#f1f5f9',
+                            color: muted,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                    </button>
+                </div>
+
+                <div style={{ padding: '16px', display: 'grid', gap: '14px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 0.85fr)', gap: '14px' }}>
+                        <div style={{ display: 'grid', gap: '12px' }}>
+                            <label style={{ display: 'grid', gap: '5px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: muted }}>Nom</span>
+                                <input
+                                    value={form.name}
+                                    onChange={(e) => update('name', e.target.value)}
+                                    placeholder="Ex: Carte coordonnées"
+                                    style={{
+                                        width: '100%',
+                                        border: `1px solid ${border}`,
+                                        borderRadius: '8px',
+                                        background: inputBg,
+                                        color: text,
+                                        padding: '9px 10px',
+                                        fontSize: '13px',
+                                        outline: 'none'
+                                    }}
+                                />
+                            </label>
+
+                            <label style={{ display: 'grid', gap: '5px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: muted }}>Description</span>
+                                <input
+                                    value={form.description}
+                                    onChange={(e) => update('description', e.target.value)}
+                                    placeholder="Usage court du bloc"
+                                    style={{
+                                        width: '100%',
+                                        border: `1px solid ${border}`,
+                                        borderRadius: '8px',
+                                        background: inputBg,
+                                        color: text,
+                                        padding: '9px 10px',
+                                        fontSize: '13px',
+                                        outline: 'none'
+                                    }}
+                                />
+                            </label>
+
+                            <div>
+                                <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: muted, marginBottom: '6px' }}>Icône</span>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 34px)', gap: '6px', marginBottom: '8px' }}>
+                                    {BLOCK_ICON_OPTIONS.map(icon => (
+                                        <button
+                                            key={icon}
+                                            type="button"
+                                            onClick={() => update('icon', icon)}
+                                            title={icon}
+                                            style={{
+                                                width: '34px',
+                                                height: '34px',
+                                                border: `1px solid ${form.icon === icon ? '#4361ee' : border}`,
+                                                borderRadius: '8px',
+                                                background: form.icon === icon ? 'rgba(67,97,238,0.1)' : inputBg,
+                                                color: form.icon === icon ? '#4361ee' : muted,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <iconify-icon icon={icon} width="17"></iconify-icon>
+                                        </button>
+                                    ))}
+                                </div>
+                                <input
+                                    value={form.icon}
+                                    onChange={(e) => update('icon', e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        border: `1px solid ${border}`,
+                                        borderRadius: '8px',
+                                        background: inputBg,
+                                        color: text,
+                                        padding: '8px 10px',
+                                        fontSize: '12px',
+                                        outline: 'none'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
                         <div>
-                            <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e40af;">ENTREPRISE</h2>
-                            <p style="margin:0;font-size:13px;color:#374151;">123 Rue Exemple</p>
-                            <p style="margin:0;font-size:13px;color:#374151;">75000 Paris, France</p>
-                            <p style="margin:4px 0 0;font-size:13px;color:#374151;">contact@entreprise.fr</p>
-                        </div>
-                        <div style="text-align:right;">
-                            <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#374151;">FACTURE</h1>
-                            <p style="margin:0;font-size:13px;color:#6b7280;">N° : FAC-2026-001</p>
-                            <p style="margin:0;font-size:13px;color:#6b7280;">Date : ../../....</p>
-                            <p style="margin:0;font-size:13px;color:#6b7280;">Échéance : ../../....</p>
+                            <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: muted, marginBottom: '6px' }}>Aperçu</span>
+                            <div
+                                style={{
+                                    minHeight: '190px',
+                                    maxHeight: '260px',
+                                    overflow: 'auto',
+                                    border: `1px solid ${border}`,
+                                    borderRadius: '8px',
+                                    background: isDark ? '#020617' : '#f8fafc',
+                                    padding: '12px'
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: '100%',
+                                        background: '#ffffff',
+                                        color: '#0f172a',
+                                        borderRadius: '6px',
+                                        padding: '10px',
+                                        boxShadow: '0 1px 3px rgba(15,23,42,0.08)'
+                                    }}
+                                    dangerouslySetInnerHTML={{ __html: form.html || '<p>Nouveau bloc</p>' }}
+                                />
+                            </div>
                         </div>
                     </div>
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
-                        <p style="margin:0 0 4px;font-weight:600;font-size:13px;color:#64748b;">FACTURER À :</p>
-                        <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">Nom du client</p>
-                        <p style="margin:2px 0 0;font-size:13px;color:#475569;">Adresse du client</p>
-                        <p style="margin:0;font-size:13px;color:#475569;">Code postal, Ville</p>
-                    </div>
-                </div>`}
-                plainText="En-tête facture"
-            />
 
-            <DraggableBlock
-                icon="tabler:file-description"
-                label="En-tête de devis"
-                description="Structure devis avec conditions"
-                html={`<div style="margin-bottom:32px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
-                        <div>
-                            <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#059669;">ENTREPRISE</h2>
-                            <p style="margin:0;font-size:13px;color:#374151;">123 Rue Exemple</p>
-                            <p style="margin:0;font-size:13px;color:#374151;">75000 Paris, France</p>
-                        </div>
-                        <div style="text-align:right;">
-                            <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#374151;">DEVIS</h1>
-                            <p style="margin:0;font-size:13px;color:#6b7280;">Réf : DEV-2026-001</p>
-                            <p style="margin:0;font-size:13px;color:#6b7280;">Date : ../../....</p>
-                            <p style="margin:0;font-size:13px;color:#6b7280;">Validité : 30 jours</p>
-                        </div>
-                    </div>
-                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;">
-                        <p style="margin:0 0 4px;font-weight:600;font-size:13px;color:#16a34a;">DESTINATAIRE :</p>
-                        <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">Nom du client</p>
-                        <p style="margin:2px 0 0;font-size:13px;color:#475569;">Adresse du client</p>
-                    </div>
-                </div>`}
-                plainText="En-tête devis"
-            />
+                    <button
+                        type="button"
+                        onClick={() => setShowAdvanced(prev => !prev)}
+                        style={{
+                            width: '100%',
+                            border: `1px solid ${border}`,
+                            borderRadius: '8px',
+                            background: isDark ? '#111827' : '#f8fafc',
+                            color: muted,
+                            padding: '9px 10px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            fontSize: '12px',
+                            fontWeight: 800
+                        }}
+                    >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
+                            <iconify-icon icon="tabler:code" width="15"></iconify-icon>
+                            Avancé
+                        </span>
+                        <iconify-icon icon={showAdvanced ? 'tabler:chevron-up' : 'tabler:chevron-down'} width="16"></iconify-icon>
+                    </button>
 
-            <DraggableBlock
-                icon="tabler:mail"
-                label="Bloc de coordonnées"
-                description="Carte de contact avec icônes"
-                html={`<div style="margin:16px 0;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
-                    <p style="margin:0 0 12px;font-weight:700;font-size:16px;color:#1e293b;">Coordonnées</p>
-                    <p style="margin:0 0 6px;font-size:14px;color:#475569;">📍 123 Rue Exemple, 75000 Paris</p>
-                    <p style="margin:0 0 6px;font-size:14px;color:#475569;">📞 01 23 45 67 89</p>
-                    <p style="margin:0 0 6px;font-size:14px;color:#475569;">✉️ contact@entreprise.fr</p>
-                    <p style="margin:0;font-size:14px;color:#475569;">🌐 www.entreprise.fr</p>
-                </div><p><br></p>`}
-                plainText="Coordonnées"
-            />
+                    {showAdvanced && (
+                        <label style={{ display: 'grid', gap: '5px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: muted }}>Contenu source</span>
+                            <textarea
+                                value={form.html}
+                                onChange={(e) => update('html', e.target.value)}
+                                rows={8}
+                                spellCheck={false}
+                                style={{
+                                    width: '100%',
+                                    border: `1px solid ${border}`,
+                                    borderRadius: '8px',
+                                    background: inputBg,
+                                    color: text,
+                                    padding: '10px',
+                                    fontSize: '12px',
+                                    lineHeight: 1.45,
+                                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                    outline: 'none',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </label>
+                    )}
 
-            <DraggableBlock
-                icon="tabler:writing"
-                label="Conditions générales"
-                description="Bloc CGV/CGA compact"
-                html={`<div style="margin:24px 0 0;padding:16px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;font-size:10px;color:#9ca3af;line-height:1.5;">
-                    <p style="margin:0 0 4px;font-weight:600;font-size:11px;color:#6b7280;">CONDITIONS GÉNÉRALES</p>
-                    <p style="margin:0;">Paiement à réception de facture. Tout retard de paiement entraînera des pénalités de retard au taux de 3 fois le taux d'intérêt légal, ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce). Pas d'escompte pour paiement anticipé.</p>
-                </div>`}
-                plainText="CGV"
-            />
+                    {error && (
+                        <div style={{
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            background: isDark ? '#2b1717' : '#fef2f2',
+                            color: isDark ? '#fca5a5' : '#b91c1c',
+                            fontSize: '12px'
+                        }}>
+                            {error}
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', padding: '14px 16px', borderTop: `1px solid ${border}`, background: isDark ? '#111827' : '#f8fafc' }}>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        style={{
+                            padding: '9px 12px',
+                            borderRadius: '8px',
+                            border: `1px solid ${border}`,
+                            background: 'transparent',
+                            color: muted,
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 700
+                        }}
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        style={{
+                            padding: '9px 13px',
+                            borderRadius: '8px',
+                            border: '0',
+                            background: '#4361ee',
+                            color: '#ffffff',
+                            cursor: saving ? 'wait' : 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                    >
+                        {saving && <iconify-icon icon="tabler:loader-2" width="14" className="animate-spin"></iconify-icon>}
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
         </div>
     )
 }
@@ -1569,7 +2438,7 @@ function GalleryPanel({ accountNumber: accountNumberProp, doc }) {
 
     const placeholderBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dbeafe'/%3E%3Cstop offset='1' stop-color='%23f8fafc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23sky)'/%3E%3Ccircle cx='500' cy='80' r='46' fill='%23ffffff' fill-opacity='.88'/%3E%3Cpath d='M0 260 105 178l83 58 128-108 134 132 83-68 107 86v82H0z' fill='%23cbd5e1'/%3E%3Cpath d='M0 304 160 214l118 64 92-46 100 54 170-90v164H0z' fill='%2394a3b8' fill-opacity='.72'/%3E%3C/svg%3E")`
 
-    const placeholderHtml = `<span class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" style="width:500px;max-width:100%;height:281px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;vertical-align:top;border:0;border-radius:8px;background-color:#f8fafc;background-image:${placeholderBg};background-size:cover;background-position:center;margin:12px 0;cursor:pointer;box-sizing:border-box;position:relative;resize:none;"></span>`
+    const placeholderHtml = `<span class="doc-image-placeholder" contenteditable="false" data-image-placeholder="1" style="width:500px;max-width:100%;height:281px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;vertical-align:top;border:0;border-radius:8px;background-color:#f8fafc;background-image:${escapeInlineStyleAttr(placeholderBg)};background-size:cover;background-position:center;margin:12px 0;cursor:pointer;box-sizing:border-box;position:relative;resize:none;"></span>`
 
     const imageHtml = (url, alt = '') => `<img src="${url}" alt="${String(alt || '').replace(/"/g, '&quot;')}" style="max-width: 100%; height: auto; display: inline-block; vertical-align: top;" />`
 

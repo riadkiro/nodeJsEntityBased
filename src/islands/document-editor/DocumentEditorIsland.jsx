@@ -25,6 +25,13 @@ import { getSelectedImage } from './hooks/useImageResize'
 const isMod = (e) => e.ctrlKey || e.metaKey
 const EDITOR_HISTORY_EVENT = 'dexio:document-editor-before-mutation'
 const EDITOR_HISTORY_LIMIT = 80
+const EDITOR_TYPING_HISTORY_INTERVAL = 750
+const CONTINUOUS_HISTORY_INPUTS = new Set([
+    'insertText',
+    'insertCompositionText',
+    'deleteContentBackward',
+    'deleteContentForward'
+])
 
 function sanitizeEditorPageHtml(html) {
     if (!html) return ''
@@ -57,6 +64,9 @@ function stripEditorRuntimeArtifacts(html, options = {}) {
     template.innerHTML = html
     const runtimeSelectors = [
         '.doc-block-delete-btn',
+        '.doc-block-save-btn',
+        '.doc-block-actionbar',
+        '[data-doc-block-context-menu]',
         '[data-reflow-caret]',
         options.preserveCaretMarker ? null : '[data-caret-marker]',
         '[data-image-resize-overlay]',
@@ -362,6 +372,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const undoStackRef = useRef([])
     const redoStackRef = useRef([])
     const restoringHistoryRef = useRef(false)
+    const inputHistoryGroupRef = useRef({ at: 0, scope: null, family: null })
 
     // Keep docRef in sync
     useEffect(() => {
@@ -788,6 +799,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         const current = buildHistoryEntry('redo-base')
         redoStackRef.current.push(current)
+        inputHistoryGroupRef.current = { at: 0, scope: null, family: null }
         restoreHistoryEntry(previous)
         return true
     }, [buildHistoryEntry, restoreHistoryEntry])
@@ -799,6 +811,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         const current = buildHistoryEntry('undo-base')
         undoStackRef.current.push(current)
         if (undoStackRef.current.length > EDITOR_HISTORY_LIMIT) undoStackRef.current.shift()
+        inputHistoryGroupRef.current = { at: 0, scope: null, family: null }
         restoreHistoryEntry(next)
         return true
     }, [buildHistoryEntry, restoreHistoryEntry])
@@ -806,10 +819,58 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     useEffect(() => {
         const handleBeforeMutation = (event) => {
             pushUndoSnapshot(event.detail?.label || 'mutation')
+            inputHistoryGroupRef.current = { at: 0, scope: null, family: null }
         }
 
         window.addEventListener(EDITOR_HISTORY_EVENT, handleBeforeMutation)
         return () => window.removeEventListener(EDITOR_HISTORY_EVENT, handleBeforeMutation)
+    }, [pushUndoSnapshot])
+
+    useEffect(() => {
+        const getEditableScope = (editable) => {
+            const pageEntry = Object.entries(pageRefs.current || {}).find(([, pageEl]) => (
+                pageEl && (pageEl === editable || pageEl.contains(editable))
+            ))
+            if (pageEntry) return `page:${pageEntry[0]}`
+
+            const headerFooter = editable?.dataset?.docHeaderFooterEditable
+            if (headerFooter) return `global:${headerFooter}`
+
+            return 'editor'
+        }
+
+        const handleBeforeInput = (event) => {
+            if (restoringHistoryRef.current) return
+            if (isPastingRef.current) return
+
+            const editable = event.target?.closest?.('[contenteditable="true"]')
+            if (!editable || !editorRootRef.current?.contains(editable)) return
+
+            const inputType = event.inputType || ''
+            if (!inputType || inputType === 'historyUndo' || inputType === 'historyRedo') return
+
+            const scope = getEditableScope(editable)
+            const isContinuous = CONTINUOUS_HISTORY_INPUTS.has(inputType)
+            const family = inputType.startsWith('delete') ? 'delete' : inputType
+            const now = Date.now()
+            const group = inputHistoryGroupRef.current || {}
+            const data = String(event.data || '')
+            const isWordBoundary = inputType === 'insertText' && (/[\s.,;:!?]/.test(data) || data.length > 1)
+            const shouldCheckpoint =
+                !isContinuous ||
+                group.scope !== scope ||
+                group.family !== family ||
+                now - (group.at || 0) > EDITOR_TYPING_HISTORY_INTERVAL ||
+                isWordBoundary
+
+            if (!shouldCheckpoint) return
+
+            pushUndoSnapshot(isContinuous ? 'typing' : `input-${inputType}`)
+            inputHistoryGroupRef.current = { at: now, scope, family }
+        }
+
+        document.addEventListener('beforeinput', handleBeforeInput, true)
+        return () => document.removeEventListener('beforeinput', handleBeforeInput, true)
     }, [pushUndoSnapshot])
 
     // ========== INTERACTIVE CHECKBOXES (☐ ↔ ☑) ==========
@@ -830,6 +891,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 if (checkboxChars.includes(ch)) {
                     e.preventDefault()
                     e.stopPropagation()
+                    pushUndoSnapshot('toggle-checkbox')
                     const newChar = uncheckedChars.includes(ch) ? '☑' : '☐'
                     node.textContent = text.substring(0, i) + newChar + text.substring(i + 1)
                     const range = document.createRange()
@@ -844,7 +906,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
         document.addEventListener('click', handleCheckboxClick, true)
         return () => document.removeEventListener('click', handleCheckboxClick, true)
-    }, [triggerSave])
+    }, [pushUndoSnapshot, triggerSave])
 
     // ========== INTERACTIVE DATE PLACEHOLDERS (____/____/________) ==========
     useEffect(() => {
@@ -904,6 +966,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== FORMATTING ==========
     const handleFormat = useCallback((command, value = null) => {
+        pushUndoSnapshot(`format-${command}`)
         restoreSelection()
         formatDoc(command, value)
         triggerSave()
@@ -915,7 +978,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         } else {
             updateFormattingState()
         }
-    }, [restoreSelection, triggerSave])
+    }, [restoreSelection, pushUndoSnapshot, triggerSave])
 
     const updateFormattingState = useCallback(() => {
         const styles = detectCurrentStyles()
@@ -931,25 +994,28 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [])
 
     const handleFontSizeChange = useCallback((size) => {
+        pushUndoSnapshot('format-font-size')
         restoreSelection()
         applyFontSize(size)
         setCurrentFontSize(size)
         triggerSave()
-    }, [restoreSelection, triggerSave])
+    }, [restoreSelection, pushUndoSnapshot, triggerSave])
 
     const handleLineSpacingChange = useCallback((value) => {
+        pushUndoSnapshot('format-line-spacing')
         restoreSelection()
         applyLineSpacing(value)
         setCurrentLineHeight(value)
         triggerSave()
-    }, [restoreSelection, triggerSave])
+    }, [restoreSelection, pushUndoSnapshot, triggerSave])
 
     const handleLetterSpacingChange = useCallback((value) => {
+        pushUndoSnapshot('format-letter-spacing')
         restoreSelection()
         applyLetterSpacing(value)
         setCurrentLetterSpacing(value)
         triggerSave()
-    }, [restoreSelection, triggerSave])
+    }, [restoreSelection, pushUndoSnapshot, triggerSave])
 
     // ========== REFLOW ORCHESTRATOR (Word-like) ==========
     // After each input, reflow only overflowing content forward.
@@ -1326,6 +1392,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         // Set pasting flag to prevent onInput from triggering a concurrent reflow
         // insertHTML fires an input event, but we handle reflow ourselves below
+        pushUndoSnapshot('paste')
         isPastingRef.current = true
 
         // Insert at cursor using execCommand
@@ -1339,7 +1406,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         reflowDocument()
 
         triggerSave()
-    }, [pasteMode, triggerSave, doc._id, accountNumber, reflowDocument])
+    }, [pasteMode, triggerSave, doc._id, accountNumber, reflowDocument, pushUndoSnapshot])
 
     // ========== KEYBOARD HANDLING ==========
     // Word-like: Ctrl+A selects all pages, Delete clears but keeps page 1
@@ -1584,6 +1651,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     if (isEmpty) {
                         e.preventDefault()
                         e.stopPropagation()
+                        pushUndoSnapshot('escape-block')
 
                         // Replace the empty block with a plain paragraph
                         const p = document.createElement('p')
@@ -1630,6 +1698,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     temp.appendChild(frag)
                     if (temp.textContent.trim().length === 0) {
                         e.preventDefault()
+                        pushUndoSnapshot('escape-block-arrow')
                         const p = document.createElement('p')
                         p.innerHTML = '<br>'
                         block.insertAdjacentElement('afterend', p)
@@ -1652,6 +1721,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // This avoids copying content backward and leaving stale source pages behind.
         if (e.key === 'Backspace' && pageIndex > 0 && isCaretAtStart(el)) {
             e.preventDefault()
+            pushUndoSnapshot('merge-page-backward')
 
             const prevEl = pageRefs.current[pageIndex - 1]
             if (!prevEl) return
@@ -1668,6 +1738,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             isCaretAtEnd(el)
         ) {
             e.preventDefault()
+            pushUndoSnapshot('merge-page-forward')
             if (!repackPagesFrom(pageIndex)) triggerSave()
             return
         }
@@ -1691,6 +1762,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Ctrl+B - Bold
         if (key === 'b' && !e.shiftKey && !e.altKey) {
             e.preventDefault()
+            pushUndoSnapshot('format-bold')
             formatDoc('bold')
             setIsBold(prev => !prev)
             triggerSave()
@@ -1700,6 +1772,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Ctrl+I - Italic
         if (key === 'i' && !e.shiftKey && !e.altKey) {
             e.preventDefault()
+            pushUndoSnapshot('format-italic')
             formatDoc('italic')
             setIsItalic(prev => !prev)
             triggerSave()
@@ -1709,6 +1782,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Ctrl+U - Underline
         if (key === 'u' && !e.shiftKey && !e.altKey) {
             e.preventDefault()
+            pushUndoSnapshot('format-underline')
             formatDoc('underline')
             setIsUnderline(prev => !prev)
             triggerSave()
@@ -1718,6 +1792,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Ctrl+Shift+S - Strikethrough
         if (key === 's' && e.shiftKey && !e.altKey) {
             e.preventDefault()
+            pushUndoSnapshot('format-strikethrough')
             formatDoc('strikeThrough')
             setIsStrikethrough(prev => !prev)
             triggerSave()
@@ -1871,6 +1946,19 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // ========== GLOBAL KEYBOARD HANDLERS ==========
     // Unified window-level handler: Ctrl+A selects all, Delete/Backspace clears (DOM-first)
     useEffect(() => {
+        const isHistoryTargetInEditor = (event) => {
+            const target = event.target
+            if (target?.closest?.('input, textarea, select')) return false
+
+            const editable = target?.closest?.('[contenteditable="true"]')
+            if (editable && editorRootRef.current?.contains(editable)) return true
+
+            const selection = window.getSelection()
+            const anchor = selection?.anchorNode
+            const anchorEl = anchor?.nodeType === Node.ELEMENT_NODE ? anchor : anchor?.parentElement
+            return !!(anchorEl && editorRootRef.current?.contains(anchorEl))
+        }
+
         const handleWindowKeyDown = (e) => {
             const key = e.key?.toLowerCase()
             const isModifierUndo = (e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey && !e.altKey
@@ -1878,20 +1966,18 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 ((e.ctrlKey || e.metaKey) && key === 'y' && !e.altKey) ||
                 ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'z' && !e.altKey)
 
-            if (editorMode === 'edition' && isModifierRedo) {
-                if (handleEditorRedo()) {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    return
-                }
+            if (editorMode === 'edition' && isModifierRedo && isHistoryTargetInEditor(e)) {
+                e.preventDefault()
+                e.stopPropagation()
+                handleEditorRedo()
+                return
             }
 
-            if (editorMode === 'edition' && isModifierUndo) {
-                if (handleEditorUndo()) {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    return
-                }
+            if (editorMode === 'edition' && isModifierUndo && isHistoryTargetInEditor(e)) {
+                e.preventDefault()
+                e.stopPropagation()
+                handleEditorUndo()
+                return
             }
 
             // Ctrl+A for global selection — select all text across pages
@@ -3194,13 +3280,24 @@ ${pagesHtml}
 
                 /* ===== BLOCK INTERACTION SYSTEM ===== */
                 /* Block containers: blockquote, table, div with style, pre */
+                [contenteditable="true"] > .doc-content-block,
+                [contenteditable="true"] > [data-doc-content-block="1"],
                 [contenteditable="true"] > blockquote,
                 [contenteditable="true"] > table,
                 [contenteditable="true"] > div[style],
                 [contenteditable="true"] > pre {
                     position: relative;
                 }
+                [contenteditable="true"] .doc-content-block,
+                [contenteditable="true"] [data-doc-content-block="1"] {
+                    display: block;
+                    max-width: 100%;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                }
                 /* Hover outline for blocks */
+                [contenteditable="true"] > .doc-content-block:hover,
+                [contenteditable="true"] > [data-doc-content-block="1"]:hover,
                 [contenteditable="true"] > blockquote:hover,
                 [contenteditable="true"] > table:hover,
                 [contenteditable="true"] > div[style]:hover,
@@ -3210,35 +3307,58 @@ ${pagesHtml}
                     border-radius: 4px;
                 }
 
-                /* Delete button for blocks (injected by JS on mouseenter) */
-                .doc-block-delete-btn {
+                /* Block action buttons (injected by JS on mouseenter) */
+                .doc-block-actionbar {
                     position: absolute;
                     top: -14px;
                     right: -14px;
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
-                    background: #dc2626;
-                    color: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 20px;
-                    font-weight: 800;
-                    line-height: 1;
-                    cursor: pointer;
                     z-index: 360;
-                    border: 3px solid white;
-                    box-shadow: 0 5px 16px rgba(185,28,28,0.34), 0 1px 4px rgba(15,23,42,0.28);
-                    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+                    gap: 4px;
+                    padding: 3px;
+                    border-radius: 999px;
+                    background: #ffffff;
+                    border: 1px solid rgba(148,163,184,0.35);
+                    box-shadow: 0 8px 22px rgba(15,23,42,0.18), 0 1px 4px rgba(15,23,42,0.14);
                     pointer-events: auto;
                     opacity: 0;
                     animation: doc-block-fadein 0.15s ease forwards;
                 }
+                .doc-block-delete-btn,
+                .doc-block-save-btn {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 999px;
+                    border: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    font-weight: 800;
+                    line-height: 1;
+                    cursor: pointer;
+                    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+                    pointer-events: auto;
+                    padding: 0;
+                }
+                .doc-block-save-btn {
+                    background: #eff6ff;
+                    color: #2563eb;
+                }
+                .doc-block-save-btn:hover {
+                    background: #dbeafe;
+                    transform: scale(1.08);
+                }
+                .doc-block-delete-btn {
+                    background: #dc2626;
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(185,28,28,0.25);
+                }
                 .doc-block-delete-btn:hover {
                     background: #b91c1c;
-                    box-shadow: 0 7px 20px rgba(185,28,28,0.42), 0 1px 5px rgba(15,23,42,0.32);
-                    transform: scale(1.12);
+                    transform: scale(1.08);
                 }
                 @keyframes doc-block-fadein {
                     from { opacity: 0; transform: scale(0.8); }
@@ -3282,6 +3402,7 @@ ${pagesHtml}
                 forceSave={forceSave}
                 onUndo={handleEditorUndo}
                 onRedo={handleEditorRedo}
+                onHistoryCheckpoint={pushUndoSnapshot}
                 autoSave={autoSave}
                 setAutoSave={handleSetAutoSave}
                 handlePdfExport={handlePdfExport}
@@ -3460,6 +3581,7 @@ ${pagesHtml}
 
                             const { textNode, start, end } = datePickerState
                             if (textNode && textNode.parentNode) {
+                                pushUndoSnapshot('insert-date')
                                 const text = textNode.textContent
                                 textNode.textContent = text.substring(0, start) + formatted + text.substring(end)
                                 triggerSave()

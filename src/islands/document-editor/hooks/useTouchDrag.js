@@ -143,6 +143,58 @@ export default function useTouchDrag({ html, label, icon, isDark, delay = 500 })
             if (editable) {
                 const range = document.caretRangeFromPoint(touch.clientX, touch.clientY)
                 if (range) {
+                    const structuralHtml = (() => {
+                        const template = document.createElement('template')
+                        template.innerHTML = html || ''
+                        return !!template.content.querySelector('[data-doc-content-block="1"], .doc-content-block, table, blockquote, pre, figure, img, .dynamic-table, .doc-image-placeholder, .doc-separator-container, p, h1, h2, h3, h4, h5, h6, ul, ol, li, div[style]')
+                    })()
+                    const imageInsertionHtml = (() => {
+                        const template = document.createElement('template')
+                        template.innerHTML = html || ''
+                        const children = Array.from(template.content.children || [])
+                        if (!children.length) return false
+                        return children.every(node => {
+                            if (node.matches?.('img, .doc-image-placeholder, [data-image-placeholder="1"]')) return true
+                            if (node.matches?.('figure')) {
+                                const meaningfulChildren = Array.from(node.children || []).filter(child => !child.matches?.('figcaption'))
+                                return meaningfulChildren.length > 0 && meaningfulChildren.every(child => child.matches?.('img, .doc-image-placeholder, [data-image-placeholder="1"]'))
+                            }
+                            return false
+                        })
+                    })()
+                    const protectedSelector = '[data-doc-content-block="1"], .doc-content-block, table, blockquote, pre, figure, .dynamic-table, .doc-image-placeholder, .doc-separator-container, div[style], p, h1, h2, h3, h4, h5, h6, ul, ol, li'
+                    const rangeElement = range.startContainer.nodeType === 3
+                        ? range.startContainer.parentElement
+                        : range.startContainer
+                    const element = target && target !== editable && editable.contains(target) ? target : rangeElement
+                    const contentBlock = element?.closest?.('[data-doc-content-block="1"], .doc-content-block') || rangeElement?.closest?.('[data-doc-content-block="1"], .doc-content-block')
+                    let protectedBlock = structuralHtml
+                        ? (element?.closest?.(protectedSelector) || rangeElement?.closest?.(protectedSelector))
+                        : null
+
+                    if (imageInsertionHtml && contentBlock && contentBlock !== editable && editable.contains(contentBlock)) {
+                        protectedBlock = null
+                    }
+
+                    if (protectedBlock && protectedBlock !== editable && editable.contains(protectedBlock)) {
+                        let topBlock = protectedBlock
+                        let parent = protectedBlock.parentElement
+                        while (parent && parent !== editable) {
+                            if (parent.matches?.(protectedSelector)) topBlock = parent
+                            parent = parent.parentElement
+                        }
+                        const rect = topBlock.getBoundingClientRect()
+                        const side = touch.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+                        const template = document.createElement('template')
+                        template.innerHTML = html
+                        const nodes = Array.from(template.content.childNodes)
+                        if (side === 'before') topBlock.before(...nodes)
+                        else topBlock.after(...nodes)
+                        editable.dispatchEvent(new Event('input', { bubbles: true }))
+                        cleanup()
+                        return
+                    }
+
                     const sel = window.getSelection()
                     sel.removeAllRanges()
                     sel.addRange(range)

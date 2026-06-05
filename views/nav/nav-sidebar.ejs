@@ -1,7 +1,7 @@
 <div>
   <nav x-data="{ sidebar }"
     class="sidebar fixed top-0 bottom-0 z-50 h-full min-h-screen transition-all duration-300"
-    style="width:248px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);">
+    style="width:256px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);">
     <style>
       /* ═══════════════════════════════════════════
          THEME 1: Galaxy Gray (Samsung S11+ File Manager)
@@ -86,16 +86,20 @@
         --rail-indicator: #fff;
         --rail-label: rgba(255,255,255,0.5);
         --rail-label-active: #fff;
-        --rail-border: transparent;
+        --rail-border: rgba(255,255,255,0.06);
         --rail-shadow: none;
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        border-right: none;
       }
 
       /* ═══════════════════════════════════════════
          SHARED COMPONENT STYLES
          ═══════════════════════════════════════════ */
+      .mini-rail {
+        border-right: 1px solid var(--rail-border);
+        box-sizing: border-box;
+        box-shadow: var(--rail-shadow);
+      }
       .mini-rail-item {
         display: flex;
         flex-direction: column;
@@ -437,7 +441,7 @@
       }"
       :data-theme="railTheme"
       :class="{'dark' : $store.app.semidark}"
-      :style="'width:48px;flex:none;' + (railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);' : 'background:var(--rail-bg);')"
+      :style="'width:56px;flex:none;' + (railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);' : 'background:var(--rail-bg);')"
       class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4"
       @contextmenu.prevent>
       <!-- Toggle button -->
@@ -3714,22 +3718,54 @@
                   .forEach(el => el.remove());
               },
 
+              parseNavUrl(link) {
+                try {
+                  const url = new URL(String(link || ''), window.location.origin);
+                  return {
+                    path: decodeURIComponent(url.pathname),
+                    search: url.search,
+                    viewId: url.searchParams.get('viewId')
+                  };
+                } catch (_) {
+                  const raw = String(link || '');
+                  const [path, query = ''] = raw.split('?');
+                  const params = new URLSearchParams(query);
+                  return {
+                    path: decodeURIComponent(path || ''),
+                    search: query ? `?${query}` : '',
+                    viewId: params.get('viewId')
+                  };
+                }
+              },
+
+              isRecordListPath(path) {
+                return /\/record\/[^/]+\/list\/?$/.test(String(path || ''));
+              },
+
               isItemActive(link) {
                 if (!link || link === '#') return false;
-                const current = decodeURIComponent(window.location.pathname);
-                const target = decodeURIComponent(String(link).split('?')[0]);
-                if (current === target) return true;
+
+                const current = this.parseNavUrl(window.location.href);
+                const target = this.parseNavUrl(link);
+                if (!target.path) return false;
+
+                const currentHasViewId = Boolean(current.viewId);
+                const targetHasViewId = Boolean(target.viewId);
+                const isSameRecordListPath = current.path === target.path && this.isRecordListPath(target.path);
+
+                if (currentHasViewId || targetHasViewId) {
+                  return isSameRecordListPath && current.viewId === target.viewId;
+                }
+
+                if (current.path === target.path) return true;
                 // Match sub-paths: /record/serveur/ID/overview matches /record/serveur/ID
-                if (target.length > 1 && current.startsWith(target + '/')) return true;
+                if (target.path.length > 1 && current.path.startsWith(target.path + '/')) return true;
                 return false;
               },
 
               detectActiveItem() {
-                const currentPath = decodeURIComponent(window.location.pathname);
                 const matchesPath = (link) => {
-                  if (!link) return false;
-                  const target = decodeURIComponent(String(link).split('?')[0]);
-                  return currentPath === target || (target.length > 1 && currentPath.startsWith(target + '/'));
+                  return this.isItemActive(link);
                 };
                 const openAncestors = (ancestors) => {
                   for (const [index, ancestor] of ancestors.entries()) {
@@ -5115,6 +5151,13 @@
               async deleteEnvironment(env) {
                 // Close context menu immediately (already closed by _showPopupMenu click handler)
                 this._destroyPopup();
+                const confirmed = confirm(
+                  `Supprimer "${env.name}" ?\n\n` +
+                  "Toute l'organisation de ce Space sera supprimée définitivement : sections, dossiers, vues, hubs et cockpits de la sidebar.\n\n" +
+                  "Cette action est irréversible."
+                );
+                if (!confirmed) return;
+
                 console.log('[EnvironmentRail] Deleting environment:', env.name, env.id);
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 try {
@@ -5131,10 +5174,11 @@
                     this.activeEnvId = null;
                   }
                   await this.refreshEnvironments({ force: true });
-                  // If we deleted the active env, select the env that inherited the spaces
+                  // If we deleted the active env, select the next available rail Space.
                   if (wasActive && this.environments.length > 0) {
-                    const targetEnv = data.reassignedTo 
-                      ? this.environments.find(e => e.id === data.reassignedTo) 
+                    const nextId = data.nextSpaceId || data.nextEnvironmentId || data.reassignedTo;
+                    const targetEnv = nextId
+                      ? this.environments.find(e => e.id === nextId)
                       : null;
                     this.selectEnvironment(targetEnv || this.environments[0]);
                   }
@@ -5233,7 +5277,7 @@
         <template x-teleport="body">
         <div x-show="$store.sidebar.showMenu" x-transition @mousedown.stop @click.stop @contextmenu.prevent.stop
           @keydown.escape.window="closeSidebarPopovers()"
-          style="min-width: 248px; left: 248px; top: 56px; border-left:0px; z-index:9999;"
+          style="min-width: 256px; left: 256px; top: 56px; border-left:0px; z-index:9999;"
           class="hierarchy-popover bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[9999] rounded-md shadow border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300">
 
           <!-- Mode MAIN -->
@@ -5364,7 +5408,7 @@
         <template x-teleport="body">
         <div x-show="$store.sidebar.showEditMenu" x-transition @mousedown.stop @click.stop @contextmenu.prevent.stop
           @keydown.escape.window="closeSidebarPopovers()"
-          style="min-width: 248px; left: 248px; top: 56px; border-left:0px; z-index:9999;"
+          style="min-width: 256px; left: 256px; top: 56px; border-left:0px; z-index:9999;"
           class="hierarchy-popover bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[9999] rounded-md shadow border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300">
           <h2
             class="text-xs font-medium text-gray-500 dark:text-white-dark mb-3 pb-2 border-b border-gray-200 dark:border-white/10">

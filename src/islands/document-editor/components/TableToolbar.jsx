@@ -456,7 +456,7 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, cont
     }, [activeTable])
 
     const cleanTableRuntimeArtifacts = useCallback((table) => {
-        table.querySelectorAll('.doc-block-delete-btn, .tt-col-resize-handle, .tt-table-resize-handle, [data-atomic-caret]').forEach(node => node.remove())
+        table.querySelectorAll('.doc-block-actionbar, .doc-block-delete-btn, .doc-block-save-btn, [data-doc-block-context-menu], .tt-col-resize-handle, .tt-table-resize-handle, [data-atomic-caret]').forEach(node => node.remove())
         table.removeAttribute('data-table-selected')
         table.removeAttribute('data-paginated-table-key')
         table.removeAttribute('data-paginated-table-fragment')

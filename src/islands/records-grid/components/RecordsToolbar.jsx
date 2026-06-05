@@ -73,6 +73,7 @@ export default function RecordsToolbar({
     onEnabledViewsChange,
     hasActiveFilters = false,
     onOpenSaveView,
+    onOpenPipelineConfig,
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
@@ -248,6 +249,21 @@ export default function RecordsToolbar({
                         {mode.icon}
                     </button>
                 ))}
+
+                {/* Pipeline config button */}
+                {activeView === 'kanban' && (
+                    <button
+                        type="button"
+                        onClick={() => { closeAll(); onOpenPipelineConfig?.() }}
+                        className="block rounded-full p-2 transition-all bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                        title="Configurer la pipeline"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <path d="M8 4V8M15 10V14M11 16V20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                    </button>
+                )}
 
                 {/* View Config button */}
                 <button

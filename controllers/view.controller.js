@@ -111,11 +111,18 @@ module.exports = {
         try {
             const ViewModel = await tenantCollection(req, "View");
             const { viewId, viewType, filters, settings } = req.body;
+            if (!mongoose.Types.ObjectId.isValid(String(viewId || ''))) {
+                return res.status(400).json({ success: false, error: 'Invalid View ID' });
+            }
 
             const update = {};
             if (viewType !== undefined) update.viewType = viewType;
             if (filters !== undefined) update.filters = sanitizeViewFilters(filters);
-            if (settings !== undefined) update.settings = settings;
+            if (settings !== undefined && settings && typeof settings === 'object') {
+                Object.keys(settings).forEach(key => {
+                    update[`settings.${key}`] = settings[key];
+                });
+            }
 
             const updatedView = await ViewModel.findByIdAndUpdate(viewId, update, { new: true });
 

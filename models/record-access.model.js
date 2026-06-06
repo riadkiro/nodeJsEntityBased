@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
-const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'team'];
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'sheet', 'chat', 'emails', 'notes', 'ai', 'team'];
 
 function defaultModulePermissions() {
     return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [
         key,
-        { view: key !== 'team', edit: false },
+        { view: key !== 'team' && key !== 'ai', edit: false },
     ]));
 }
 

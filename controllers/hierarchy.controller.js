@@ -6,7 +6,7 @@ const { sanitizeViewFilters } = require('../services/record-filter-query');
 
 // Cache for loaded icon libraries
 const iconLibrariesCache = {};
-const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'ai', 'team'];
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'agenda', 'sheet', 'chat', 'emails', 'notes', 'ai', 'team'];
 const FOLDER_CONTAINER_TYPES = ['folder', 'environment', 'workstation'];
 const SECTION_TYPES = ['space', 'section'];
 const ROOT_PARENT_TYPES = ['environment-root', 'space-root'];
@@ -170,6 +170,68 @@ async function updateRailSpace(req, res) {
     }
 }
 
+async function collectFolderSubtreeIds(FolderModel, rootFolderIds) {
+    const collected = new Set((rootFolderIds || []).map(normalizeId).filter(Boolean));
+    let frontier = [...collected];
+
+    while (frontier.length > 0) {
+        const children = await FolderModel.find({ parentFolders: { $in: frontier } })
+            .select('_id')
+            .lean();
+        frontier = [];
+
+        for (const child of children) {
+            const childId = normalizeId(child._id);
+            if (childId && !collected.has(childId)) {
+                collected.add(childId);
+                frontier.push(childId);
+            }
+        }
+    }
+
+    return [...collected];
+}
+
+async function deleteRailSpaceHierarchy(SectionModel, FolderModel, ViewModel, railSpaceId) {
+    const sections = await SectionModel.find({ environmentId: railSpaceId }).select('_id').lean();
+    const sectionIds = sections.map(section => normalizeId(section._id)).filter(Boolean);
+
+    const rootFolderConditions = [
+        { environmentId: railSpaceId }
+    ];
+    if (sectionIds.length > 0) {
+        rootFolderConditions.push({ spaces: { $in: sectionIds } });
+    }
+
+    const rootFolders = await FolderModel.find({ $or: rootFolderConditions }).select('_id').lean();
+    const rootFolderIds = rootFolders.map(folder => normalizeId(folder._id)).filter(Boolean);
+    const folderIds = await collectFolderSubtreeIds(FolderModel, rootFolderIds);
+
+    const viewConditions = [
+        { environmentId: railSpaceId }
+    ];
+    if (sectionIds.length > 0) {
+        viewConditions.push({ spaces: { $in: sectionIds } });
+    }
+    if (folderIds.length > 0) {
+        viewConditions.push({ folders: { $in: folderIds } });
+    }
+
+    const viewDelete = await ViewModel.deleteMany({ $or: viewConditions });
+    const folderDelete = folderIds.length > 0
+        ? await FolderModel.deleteMany({ _id: { $in: folderIds } })
+        : { deletedCount: 0 };
+    const sectionDelete = sectionIds.length > 0
+        ? await SectionModel.deleteMany({ _id: { $in: sectionIds } })
+        : { deletedCount: 0 };
+
+    return {
+        sections: sectionDelete.deletedCount || 0,
+        folders: folderDelete.deletedCount || 0,
+        views: viewDelete.deletedCount || 0
+    };
+}
+
 async function deleteRailSpace(req, res) {
     try {
         const RailSpaceModel = await tenantCollection(req, "Environment");
@@ -179,26 +241,25 @@ async function deleteRailSpace(req, res) {
         const { id } = req.body;
         const count = await RailSpaceModel.countDocuments();
         if (count <= 1) {
-            return res.status(400).json({ error: "Cannot delete the last space" });
+            return res.status(400).json({ error: "Impossible de supprimer le dernier space" });
         }
-        const remainingSpace = await RailSpaceModel.findOne({ _id: { $ne: id } }).sort({ order: 1 }).lean();
-        if (remainingSpace) {
-            await SectionModel.updateMany(
-                { environmentId: id },
-                { $set: { environmentId: remainingSpace._id } }
-            );
-            await FolderModel.updateMany(
-                { environmentId: id },
-                { $set: { environmentId: remainingSpace._id } }
-            );
-            await ViewModel.updateMany(
-                { environmentId: id },
-                { $set: { environmentId: remainingSpace._id } }
-            );
-        }
+        const railSpace = await RailSpaceModel.findById(id).lean();
+        if (!railSpace) return res.status(404).json({ error: "Space introuvable" });
+
+        const nextSpace = await RailSpaceModel.findOne({ _id: { $ne: id } }).sort({ order: 1 }).lean();
+        const deleted = await deleteRailSpaceHierarchy(SectionModel, FolderModel, ViewModel, id);
         await RailSpaceModel.findByIdAndDelete(id);
-        const reassignedTo = remainingSpace ? remainingSpace._id.toString() : null;
-        res.json({ success: true, reassignedTo, reassignedSpaceId: reassignedTo });
+        await normalizeRailSpaceOrders(RailSpaceModel);
+
+        const nextSpaceId = nextSpace ? nextSpace._id.toString() : null;
+        res.json({
+            success: true,
+            deletedSpaceId: id,
+            deletedEnvironmentId: id,
+            nextSpaceId,
+            nextEnvironmentId: nextSpaceId,
+            deleted
+        });
     } catch (error) {
         console.error("[Hierarchy] deleteRailSpace Error:", error);
         res.status(500).json({ error: "Failed to delete space" });
@@ -455,6 +516,26 @@ function slugBase(name) {
         .replace(/^-|-$/g, '') || 'item';
 }
 
+function recordListViewLink(req, entitySlug, view) {
+    const safeEntitySlug = String(entitySlug || '').trim();
+    const safeViewSlug = String(view?.slug || '').trim();
+    if (!safeEntitySlug) return '#';
+    if (safeViewSlug && !['undefined', 'null'].includes(safeViewSlug.toLowerCase())) {
+        return `/account/${req.account_number}/record/${safeEntitySlug}/${safeViewSlug}`;
+    }
+    const viewId = view?._id || view?.id;
+    const params = new URLSearchParams();
+    if (viewId) params.set('viewId', String(viewId));
+    if (view?.viewType === 'doc-listing') params.set('viewType', 'doc-listing');
+    const query = params.toString();
+    return `/account/${req.account_number}/record/${safeEntitySlug}/list${query ? `?${query}` : ''}`;
+}
+
+function validObjectIdString(value) {
+    const id = String(value || '').trim();
+    return /^[a-f0-9]{24}$/i.test(id) ? id : '';
+}
+
 // Generate a unique slug for a given model
 async function uniqueSlug(Model, name) {
     const base = slugBase(name);
@@ -650,7 +731,7 @@ module.exports = {
                         if (v.viewType === 'hub') {
                             const entity = v.entity ? entities.find(e => e.id === v.entity.toString()) : null;
                             const entitySlug = entity ? entity.slug : v.slug;
-                            const recordId = v.hubRecord ? v.hubRecord.toString() : '';
+                            const recordId = validObjectIdString(v.hubRecord);
                             results.push({
                                 type: 'hub',
                                 id: v.id,
@@ -682,13 +763,12 @@ module.exports = {
                             // Regular entity view
                             const entity = entities.find(e => e.id === v.entity.toString());
                             const entitySlug = entity ? entity.slug : v.slug;
-                            const viewParams = new URLSearchParams({ viewId: v.id });
-                            if (v.viewType === 'doc-listing') viewParams.set('viewType', 'doc-listing');
-                            const viewLink = `/account/${req.account_number}/record/${entitySlug}/list?${viewParams.toString()}`;
+                            const viewLink = recordListViewLink(req, entitySlug, v);
                             results.push({
                                 type: 'entity',
                                 id: v.id,
                                 name: v.name,
+                                slug: v.slug,
                                 icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
                                 color: v.color,
                                 order: v.order,
@@ -957,14 +1037,27 @@ module.exports = {
         const ViewModel = await tenantCollection(req, "View");
         const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
         
-        const { name, nameSingular, namePlural, fields, parentId, parentType, viewType, icon, color } = req.body;
-        const slug = await uniqueSlug(EntityModel, name);
+        const { name, nameSingular, namePlural, fields, parentId, parentType, viewType, icon, color, viewName, settings } = req.body;
+        const entityName = String(name || '').trim();
+        if (!entityName) {
+            return res.status(400).json({ error: "Le nom de la collection est requis" });
+        }
+
+        const resolvedNameSingular = String(nameSingular || '').trim() || entityName;
+        const resolvedNamePlural = String(namePlural || '').trim() || `${entityName}s`;
+        const resolvedViewName = String(viewName || '').trim() || resolvedNamePlural || entityName;
+        const slug = await uniqueSlug(EntityModel, entityName);
+        const viewSlug = await uniqueSlug(ViewModel, resolvedViewName);
         const normalizedViewType = ['list', 'table', 'kanban', 'calendar'].includes(viewType) ? viewType : 'list';
         const settingsViewMode = normalizedViewType === 'kanban'
             ? 'kanban'
             : normalizedViewType === 'calendar'
                 ? 'calendar'
                 : 'table';
+        const viewSettings = {
+            ...(settings && typeof settings === 'object' ? settings : {}),
+            viewMode: settings?.viewMode || settingsViewMode
+        };
 
         // 1. Create suggested custom fields if provided
         const customFieldIds = [];
@@ -1001,9 +1094,9 @@ module.exports = {
 
         // 2. Create the Entity
         const newEntity = new EntityModel({
-            name,
-            nameSingular: nameSingular || name,
-            namePlural: namePlural || `${name}s`,
+            name: entityName,
+            nameSingular: resolvedNameSingular,
+            namePlural: resolvedNamePlural,
             slug,
             icon,
             color,
@@ -1022,21 +1115,28 @@ module.exports = {
 
         // 3. Create the View
         const newView = new ViewModel({
-            name,
-            slug,
+            name: resolvedViewName,
+            slug: viewSlug,
             entity: newEntity._id,
             icon,
             color,
             viewType: normalizedViewType,
-            settings: { viewMode: settingsViewMode },
+            settings: viewSettings,
             createdBy: req.user._id,
             order: 0,
-            spaces: isSectionType(parentType) ? [parentId] : [],
-            environmentId: isRootParentType(parentType) ? parentId : null,
-            folders: isFolderContainerType(parentType) ? [parentId] : []
+            spaces: isSectionType(parentType) && parentId ? [parentId] : [],
+            environmentId: isRootParentType(parentType) && parentId ? parentId : null,
+            folders: isFolderContainerType(parentType) && parentId ? [parentId] : []
         });
         await newView.save();
-        res.json(newView);
+        res.json({
+            ...newView.toObject(),
+            id: newView._id.toString(),
+            type: 'entity',
+            entityId: newEntity._id.toString(),
+            entitySlug: newEntity.slug,
+            link: recordListViewLink(req, newEntity.slug, newView)
+        });
         } catch (error) {
             console.error("[Hierarchy] Create entity failed:", error);
             res.status(500).json({ error: error.message || "Erreur lors de la creation de la collection" });
@@ -1414,12 +1514,22 @@ module.exports = {
             settings: settings || {},
             createdBy: req.user._id,
             order: 0,
-            spaces: isSectionType(parentType) ? [parentId] : [],
-            environmentId: isRootParentType(parentType) ? parentId : null,
-            folders: isFolderContainerType(parentType) ? [parentId] : []
+            spaces: isSectionType(parentType) && parentId ? [parentId] : [],
+            environmentId: isRootParentType(parentType) && parentId ? parentId : null,
+            folders: isFolderContainerType(parentType) && parentId ? [parentId] : []
         });
         await newView.save();
-        res.json({ success: true, view: newView });
+        res.json({
+            success: true,
+            view: {
+                ...newView.toObject(),
+                id: newView._id.toString(),
+                type: 'entity',
+                entityId: entity._id.toString(),
+                entitySlug: entity.slug,
+                link: recordListViewLink(req, entity.slug, newView)
+            }
+        });
     },
 
     createHub: async (req, res) => {

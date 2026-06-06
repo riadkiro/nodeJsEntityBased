@@ -2,6 +2,56 @@ const tenantCollection = require("../middleware/tenant").tenantCollection;
 const mongoose = require("mongoose");
 const { buildRecordFilterQuery, sanitizeViewFilters } = require('../services/record-filter-query');
 
+function slugBase(name) {
+    return String(name || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'vue';
+}
+
+async function uniqueViewSlug(ViewModel, entityId, name, currentViewId = null) {
+    const base = slugBase(name);
+    const query = { entity: entityId, slug: base };
+    if (currentViewId) query._id = { $ne: currentViewId };
+    const existing = await ViewModel.findOne(query).select('_id').lean();
+    if (!existing) return base;
+
+    let counter = 2;
+    while (await ViewModel.findOne({
+        entity: entityId,
+        slug: `${base}-${counter}`,
+        ...(currentViewId ? { _id: { $ne: currentViewId } } : {})
+    }).select('_id').lean()) {
+        counter++;
+    }
+    return `${base}-${counter}`;
+}
+
+async function resolveViewForConfig(req, ViewModel, candidateId) {
+    const directView = await ViewModel.findById(candidateId);
+    if (directView) return directView;
+
+    const EntityModel = await tenantCollection(req, "Entity");
+    const entity = await EntityModel.findById(candidateId).select('_id name namePlural slug').lean();
+    if (!entity) return null;
+
+    const fallbackView = await ViewModel.findOne({
+        entity: entity._id,
+        viewType: { $in: ['list', 'table'] }
+    }).sort({ order: 1, createdAt: 1 });
+    if (fallbackView) return fallbackView;
+
+    return ViewModel.create({
+        name: entity.namePlural || entity.name || 'Vue',
+        slug: entity.slug || `view-${entity._id}`,
+        entity: entity._id,
+        viewType: 'list',
+        settings: {}
+    });
+}
+
 module.exports = {
     renderView: async (req, res) => {
         try {
@@ -110,12 +160,22 @@ module.exports = {
     saveConfig: async (req, res) => {
         try {
             const ViewModel = await tenantCollection(req, "View");
-            const { viewId, viewType, filters, settings } = req.body;
+            const { viewId, viewType, filters, settings, name } = req.body;
             if (!mongoose.Types.ObjectId.isValid(String(viewId || ''))) {
                 return res.status(400).json({ success: false, error: 'Invalid View ID' });
             }
 
+            const targetView = await resolveViewForConfig(req, ViewModel, viewId);
+            if (!targetView) {
+                return res.status(404).json({ success: false, error: 'View not found' });
+            }
+
             const update = {};
+            const cleanName = typeof name === 'string' ? name.trim() : '';
+            if (cleanName) {
+                update.name = cleanName;
+                update.slug = await uniqueViewSlug(ViewModel, targetView.entity, cleanName, targetView._id);
+            }
             if (viewType !== undefined) update.viewType = viewType;
             if (filters !== undefined) update.filters = sanitizeViewFilters(filters);
             if (settings !== undefined && settings && typeof settings === 'object') {
@@ -124,7 +184,7 @@ module.exports = {
                 });
             }
 
-            const updatedView = await ViewModel.findByIdAndUpdate(viewId, update, { new: true });
+            const updatedView = await ViewModel.findByIdAndUpdate(targetView._id, update, { new: true });
 
             res.json({ success: true, view: updatedView });
         } catch (error) {

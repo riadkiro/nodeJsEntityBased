@@ -87,5 +87,13 @@ function getToolbarStyles() {
     cursor:pointer; transition:all .2s; font-family:'Nunito',sans-serif;
 }
 .ra-new-event-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(20,184,166,.3); }
+@media(max-width:640px){
+    .ra-toolbar { align-items:stretch; flex-direction:column; }
+    .ra-toolbar-left,
+    .ra-toolbar-right { width:100%; min-width:0; }
+    .ra-view-pills { width:100%; overflow-x:auto; }
+    .ra-vpill { padding:6px 10px; }
+    .ra-new-event-btn { width:100%; justify-content:center; padding-left:12px; padding-right:12px; }
+}
 `
 }

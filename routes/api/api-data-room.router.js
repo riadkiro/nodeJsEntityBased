@@ -674,6 +674,7 @@ function recordPermissionsFromShare(share) {
             dataRoom: app(true, canManage),
             tasks: app(false),
             agenda: app(false),
+            sheet: app(false),
             chat: app(false),
             emails: app(false),
             notes: app(false),

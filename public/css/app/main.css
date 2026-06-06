@@ -4,6 +4,7 @@ body {
   color: var(--text-color);
   background-color: var(--white-smoke);
   margin: 0px;
+  overflow-x: hidden;
 }
 
 .main-container {
@@ -46,9 +47,9 @@ body {
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* Mini-rail sidebar: when toggled (closed), show only the 48px icon rail */
+/* Mini-rail sidebar: when toggled (closed), show only the 56px icon rail */
 .toggle-sidebar .sidebar {
-  width: 48px !important;
+  width: 56px !important;
   left: 0 !important;
   right: auto !important;
   overflow: visible !important;
@@ -60,7 +61,7 @@ body {
 }
 
 .toggle-sidebar .main-container .main-content {
-  margin-left: 48px !important;
+  margin-left: 56px !important;
 }
 
 hr {
@@ -74,7 +75,7 @@ ul {
 
 .left-bar {
   background: var(--primary-color);
-  width: 48px;
+  width: 56px;
   height: 100vh;
   border-right: 1px solid var(--border-color);
 }
@@ -87,9 +88,51 @@ ul {
 
 .sidebar {
   border-right: 1px solid var(--border-color);
-  width: 248px;
+  width: 256px;
   height: calc(100vh - 52px);
   background-color: var(--sidebar-bg-color);
+}
+
+@media (max-width: 1023px) {
+  html,
+  body,
+  .main-container,
+  .main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body.vertical:not(.toggle-sidebar) .sidebar,
+  body.horizontal:not(.toggle-sidebar) .sidebar,
+  body.collapsible-vertical:not(.toggle-sidebar) .sidebar {
+    left: 0 !important;
+    right: auto !important;
+    transform: translateX(-100%);
+  }
+
+  body.vertical.toggle-sidebar .sidebar,
+  body.horizontal.toggle-sidebar .sidebar,
+  body.collapsible-vertical.toggle-sidebar .sidebar {
+    left: 0 !important;
+    right: auto !important;
+    transform: translateX(0);
+  }
+
+  body.rtl.vertical:not(.toggle-sidebar) .sidebar,
+  body.rtl.horizontal:not(.toggle-sidebar) .sidebar,
+  body.rtl.collapsible-vertical:not(.toggle-sidebar) .sidebar {
+    right: 0 !important;
+    left: auto !important;
+    transform: translateX(100%);
+  }
+
+  body.rtl.vertical.toggle-sidebar .sidebar,
+  body.rtl.horizontal.toggle-sidebar .sidebar,
+  body.rtl.collapsible-vertical.toggle-sidebar .sidebar {
+    right: 0 !important;
+    left: auto !important;
+    transform: translateX(0);
+  }
 }
 
 .work-zone-top {

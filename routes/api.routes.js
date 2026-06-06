@@ -53,7 +53,15 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         // Build query - use entityId field name as in Record model
         let query = { entityId: entityId }
 
-        const viewDoc = await View.findById(viewId).lean()
+        let viewDoc = await View.findById(viewId).lean()
+        let effectiveViewId = viewDoc?._id || viewId
+        if (!viewDoc && String(viewId) === String(entityId)) {
+            viewDoc = await View.findOne({
+                entity: entity._id,
+                viewType: { $in: ['list', 'table'] }
+            }).sort({ order: 1, createdAt: 1 }).lean()
+            if (viewDoc) effectiveViewId = viewDoc._id
+        }
         const viewFilterQuery = buildRecordFilterQuery(viewDoc?.filters || [])
 
         // Guest/External: restrict to shared records only
@@ -201,7 +209,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         if (req.user?._id) {
             const prefs = await UserPreferences.findOne({
                 userId: req.user._id,
-                viewId
+                viewId: effectiveViewId
             }).lean()
             preferences = prefs?.preferences || null
 
@@ -238,6 +246,19 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             id: f._id.toString(),
             name: f.label || f.name || 'Champ',
             type: f.fieldType || f.type || f.render?.input || 'text',
+            options: (f.type_config?.options || f.typeConfig?.options || f.options || []).map((option, index) => {
+                if (typeof option === 'string') {
+                    return { id: option, value: option, label: option, order: index }
+                }
+                const value = String(option?.value ?? option?.id ?? option?._id ?? option?.label ?? option?.name ?? '')
+                return {
+                    id: String(option?.id ?? option?._id ?? value),
+                    value,
+                    label: option?.label || option?.name || value,
+                    color: option?.color || option?.couleur || '#64748b',
+                    order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
+                }
+            }).sort((a, b) => a.order - b.order),
             sortable: f.category !== 'computed',
             computed: f.category === 'computed' || undefined,
             computedDisplay: f.category === 'computed' ? (f.render?.display?.table || 'text') : undefined,
@@ -324,6 +345,14 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             columns,
             preferences,
             entity, // Include entity for Kanban (statusClassification, classifications)
+            view: viewDoc ? {
+                _id: viewDoc._id,
+                name: viewDoc.name,
+                slug: viewDoc.slug,
+                viewType: viewDoc.viewType,
+                filters: viewDoc.filters || []
+            } : null,
+            viewFilters: viewDoc?.filters || [],
             viewSettings: {
                 ...viewSettings,
                 kanbanField: viewSettings.kanbanField || 'status',

@@ -12,7 +12,7 @@
 
 const { tenantCollection } = require('./tenant');
 
-const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'ai', 'team'];
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'sheet', 'chat', 'emails', 'notes', 'ai', 'team'];
 const MODULE_ROUTE_KEYS = {
     dataRoom: 'data-room',
 };

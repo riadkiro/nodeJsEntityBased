@@ -13,6 +13,7 @@ import RecordsCalendar from './components/RecordsCalendar'
 import RecordsSidebar from './components/RecordsSidebar'
 import SavedViewsTabs from './components/SavedViewsTabs'
 import PipelineConfigModal from './components/PipelineConfigModal'
+import ViewFiltersModal from './components/ViewFiltersModal'
 
 // ─── Helper: Extract the value of a field from a record ───
 function getRecordFieldValue(record, fieldId) {
@@ -65,6 +66,24 @@ function matchFieldFilter(rawValue, filter) {
     const strValue = String(rawValue ?? '').trim()
     const lowerValue = strValue.toLowerCase()
     const lowerFilter = String(value ?? '').trim().toLowerCase()
+    const boolTokens = {
+        true: true,
+        '1': true,
+        oui: true,
+        yes: true,
+        false: false,
+        '0': false,
+        non: false,
+        no: false,
+    }
+    const normalizedFieldType = String(fieldType || '').toLowerCase()
+
+    if (['boolean', 'checkbox', 'switch', 'toggle'].includes(normalizedFieldType)) {
+        const rawBool = typeof rawValue === 'boolean' ? rawValue : boolTokens[lowerValue]
+        const filterBool = typeof value === 'boolean' ? value : boolTokens[lowerFilter]
+        if (operator === 'equals') return rawBool === filterBool
+        if (operator === 'not_equals') return rawBool !== filterBool
+    }
 
     switch (operator) {
         case 'contains':
@@ -137,7 +156,10 @@ export default function RecordsGrid({
     const [entityIcon, setEntityIcon] = useState('')
     const [entityData, setEntityData] = useState(null)
     const [viewSettings, setViewSettings] = useState({})
+    const [viewFilters, setViewFilters] = useState([])
+    const [viewMeta, setViewMeta] = useState(null)
     const [showPipelineConfig, setShowPipelineConfig] = useState(false)
+    const [showViewFiltersConfig, setShowViewFiltersConfig] = useState(false)
 
     // Bulk select state
     const [selectedIds, setSelectedIds] = useState(new Set())
@@ -223,6 +245,8 @@ export default function RecordsGrid({
             if (data.viewSettings) {
                 setViewSettings(data.viewSettings)
             }
+            setViewFilters(Array.isArray(data.viewFilters) ? data.viewFilters : [])
+            setViewMeta(data.view || null)
 
             // Store sidebar filters from API
             if (data.filters) {
@@ -636,6 +660,28 @@ export default function RecordsGrid({
         fetchRecords()
     }, [fetchRecords, showToast])
 
+    const handleViewFiltersSaved = useCallback((updatedView) => {
+        const nextFilters = Array.isArray(updatedView?.filters) ? updatedView.filters : []
+        setViewFilters(nextFilters)
+        if (updatedView?._id) {
+            setViewMeta(prev => ({ ...(prev || {}), ...updatedView }))
+        }
+        if (updatedView?.slug && typeof window !== 'undefined') {
+            window.history.replaceState(
+                {},
+                '',
+                `/account/${accountNumber}/record/${entitySlug}/${updatedView.slug}`
+            )
+        }
+        setShowViewFiltersConfig(false)
+        setActiveSavedViewId(null)
+        setActiveFilters({})
+        setFieldFilters([])
+        setPagination(prev => ({ ...prev, page: 1 }))
+        showToast('Vue mise à jour')
+        fetchRecords()
+    }, [accountNumber, entitySlug, fetchRecords, showToast])
+
     // Handle page change
     const handlePageChange = useCallback((newPage) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -856,6 +902,7 @@ export default function RecordsGrid({
                 allRecords={allRecords}
                 sidebarWidth={preferences.sidebarWidth}
                 onSidebarWidthChange={(w) => handlePreferencesChange('sidebarWidth', w)}
+                viewId={viewId}
             />
 
             {/* Main content panel */}
@@ -877,8 +924,8 @@ export default function RecordsGrid({
                     onViewChange={handleViewChange}
                     enabledViews={preferences.enabledViews || ['table', 'kanban', 'notes']}
                     onEnabledViewsChange={(views) => handlePreferencesChange('enabledViews', views)}
-                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0}
-                    onOpenSaveView={() => setShowSaveViewModal(true)}
+                    hasActiveFilters={viewFilters.length > 0 || Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0}
+                    onOpenViewFilters={() => setShowViewFiltersConfig(true)}
                     onOpenPipelineConfig={() => setShowPipelineConfig(true)}
                 />
 
@@ -1026,6 +1073,18 @@ export default function RecordsGrid({
                 viewSettings={viewSettings}
                 onClose={() => setShowPipelineConfig(false)}
                 onSaved={handlePipelineSaved}
+            />
+
+            <ViewFiltersModal
+                open={showViewFiltersConfig}
+                accountNumber={accountNumber}
+                viewId={viewMeta?._id || viewId}
+                viewName={viewMeta?.name || entityName}
+                columns={columns}
+                sidebarFilters={sidebarFilters}
+                initialFilters={viewFilters}
+                onClose={() => setShowViewFiltersConfig(false)}
+                onSaved={handleViewFiltersSaved}
             />
 
             {/* ═══════ BULK ACTION BAR ═══════ */}

@@ -1,0 +1,1599 @@
+<%
+const _sheetRootId = 'record-sheet-' + record._id;
+const _sheetData = record && record.sheet ? record.sheet : {};
+const _sheetInitialJson = JSON.stringify(_sheetData || {}).replace(/</g, '\\u003C');
+const _sheetCanEdit = (typeof _canEditCurrentModule !== 'undefined') ? _canEditCurrentModule : true;
+%>
+
+<style>
+.sheet-shell{display:flex;flex-direction:column;gap:8px;flex:1;height:calc(100vh - 104px);min-height:820px;background:#fff;border:1px solid #e0e6ed;border-radius:12px;box-shadow:0 8px 28px rgba(15,23,42,.05);overflow:hidden}
+.sheet-shell.is-fullscreen{position:fixed;inset:12px;z-index:9998;height:calc(100vh - 24px);min-height:0;border-radius:12px;box-shadow:0 22px 70px rgba(15,23,42,.22)}
+body.sheet-fullscreen-lock{overflow:hidden}
+.sheet-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px 10px;border-bottom:1px solid #edf2f7;background:linear-gradient(180deg,#fff,#fbfdff)}
+.sheet-title{display:flex;align-items:center;gap:10px;min-width:0}
+.sheet-title-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#05966914;color:#059669;flex:none}
+.sheet-title-main{min-width:0}
+.sheet-title-main strong{display:block;font-size:13px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-title-main span{display:block;font-size:11px;font-weight:700;color:#94a3b8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-top-actions{display:flex;align-items:center;gap:8px;flex:none}
+.sheet-save-state{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid #dbe4f0;border-radius:8px;background:#fff;color:#64748b;font-size:11px;font-weight:800;white-space:nowrap}
+.sheet-fullscreen-btn{border:1px solid #dbe4f0;background:#fff}
+.sheet-save-dot{width:7px;height:7px;border-radius:50%;background:#10b981}
+.sheet-save-state.is-saving .sheet-save-dot{background:#f59e0b;animation:sheetPulse .8s infinite}
+.sheet-save-state.is-error .sheet-save-dot{background:#ef4444}
+.sheet-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #edf2f7;background:#fbfdff}
+.sheet-tool-group{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid #e0e6ed;border-radius:9px;background:#fff}
+.sheet-tool-btn{width:30px;height:28px;border:0;background:transparent;border-radius:7px;color:#475569;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,color .15s;font-family:inherit;font-weight:800;font-size:12px}
+.sheet-tool-btn:hover{background:#f1f5f9;color:#0f172a}
+.sheet-tool-btn.active{background:#05966912;color:#059669}
+.sheet-tool-btn:disabled{opacity:.45;cursor:not-allowed}
+.sheet-tool-select{height:28px;border:0;background:transparent;color:#334155;font-size:12px;font-weight:700;outline:none;padding:0 6px;min-width:90px;font-family:inherit}
+.sheet-color-tool{position:relative;width:32px;height:28px;border:0;background:transparent;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#475569}
+.sheet-color-tool:hover{background:#f1f5f9;color:#0f172a}
+.sheet-color-tool input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.sheet-color-strip{position:absolute;left:8px;right:8px;bottom:4px;height:3px;border-radius:99px;background:var(--sheet-color,#111827)}
+.sheet-formula{display:grid;grid-template-columns:74px 38px minmax(0,1fr);align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid #edf2f7;background:#fff}
+.sheet-namebox,.sheet-fx,.sheet-formula-input{height:30px;border:1px solid #dbe4f0;border-radius:8px;background:#fff;color:#0f172a;font-size:12px;font-weight:700}
+.sheet-namebox{display:flex;align-items:center;justify-content:center}
+.sheet-fx{display:flex;align-items:center;justify-content:center;color:#059669;font-style:italic}
+.sheet-formula-input{width:100%;outline:none;padding:0 11px;font-family:inherit;font-weight:600}
+.sheet-formula-input:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.08)}
+.sheet-body{display:grid;grid-template-columns:minmax(0,1fr);gap:0;flex:1;min-height:0}
+.sheet-grid-panel{display:flex;flex-direction:column;min-width:0;min-height:0;background:#f8fafc}
+.sheet-grid-wrap{flex:1;min-height:0;overflow:auto;background:#fff;position:relative}
+.sheet-grid-wrap:focus{outline:none}
+.sheet-grid{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;min-width:100%;font-size:12px;color:#0f172a}
+.sheet-grid col.sheet-row-head-col{width:44px}
+.sheet-grid th,.sheet-grid td{border-right:1px solid #e8eef5;border-bottom:1px solid #e8eef5}
+.sheet-corner,.sheet-col-head,.sheet-row-head{background:#f8fafc;color:#64748b;font-size:10.5px;font-weight:800;text-align:center;user-select:none}
+.sheet-corner{position:sticky;top:0;left:0;z-index:5;height:26px;border-top:0}
+.sheet-col-head{position:sticky;top:0;z-index:4;height:26px;min-width:72px}
+.sheet-row-head{position:sticky;left:0;z-index:3;width:44px;height:26px}
+.sheet-col-head.active,.sheet-row-head.active,.sheet-col-head.selected,.sheet-row-head.selected{background:#ecfdf5;color:#047857}
+.sheet-col-label,.sheet-row-label{position:relative;display:flex;align-items:center;justify-content:center;height:100%}
+.sheet-col-resize{position:absolute;right:-4px;top:0;width:8px;height:100%;cursor:col-resize;z-index:6}
+.sheet-row-resize{position:absolute;left:0;right:0;bottom:-4px;height:8px;cursor:row-resize;z-index:6}
+.sheet-cell{height:26px;min-width:72px;background:#fff;padding:0 6px;outline:none;vertical-align:middle;white-space:pre-wrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25;font-weight:500;position:relative}
+.sheet-grid.is-selecting,.sheet-grid.is-selecting *{user-select:none}
+.sheet-cell.selected::before{content:'';position:absolute;inset:-1px;border:0 solid #059669;pointer-events:none;z-index:3;border-top-width:var(--sel-top,0);border-right-width:var(--sel-right,0);border-bottom-width:var(--sel-bottom,0);border-left-width:var(--sel-left,0)}
+.sheet-cell.selection-top{--sel-top:2px}.sheet-cell.selection-right{--sel-right:2px}.sheet-cell.selection-bottom{--sel-bottom:2px}.sheet-cell.selection-left{--sel-left:2px}
+.sheet-cell:focus{box-shadow:inset 0 0 0 2px #059669;z-index:2}
+.sheet-cell.active{box-shadow:inset 0 0 0 2px #059669;z-index:2}
+.sheet-cell.has-border{box-shadow:inset 0 0 0 1.5px var(--cell-border,#0f172a)}
+.sheet-cell.has-border.active,.sheet-cell.has-border:focus{box-shadow:inset 0 0 0 2px #059669,inset 0 0 0 3.5px var(--cell-border,#0f172a)}
+.sheet-cell.selected{box-shadow:inset 0 0 0 9999px rgba(5,150,105,.075)}
+.sheet-cell.selected.active,.sheet-cell.selected:focus{box-shadow:inset 0 0 0 2px #059669,inset 0 0 0 9999px rgba(5,150,105,.075)}
+.sheet-cell.has-border.selected{box-shadow:inset 0 0 0 1.5px var(--cell-border,#0f172a),inset 0 0 0 9999px rgba(5,150,105,.075)}
+.sheet-cell.has-border.selected.active,.sheet-cell.has-border.selected:focus{box-shadow:inset 0 0 0 2px #059669,inset 0 0 0 3.5px var(--cell-border,#0f172a),inset 0 0 0 9999px rgba(5,150,105,.075)}
+.sheet-cell[contenteditable="false"]{cursor:default;background:#fbfdff}
+.sheet-statusbar{height:34px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;border-top:1px solid #e0e6ed;background:#fbfdff;color:#64748b;font-size:11px;font-weight:800}
+.sheet-tabs{display:flex;align-items:center;gap:5px;min-width:0;overflow:auto}
+.sheet-tab{height:24px;display:inline-flex;align-items:center;gap:5px;padding:0 11px;border:1px solid #e0e6ed;border-radius:7px;background:#fff;color:#64748b;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+.sheet-tab.active{border-color:#059669;background:#ecfdf5;color:#047857}
+.sheet-side{display:none;border-left:1px solid #e0e6ed;background:#fff;min-width:0;overflow:auto}
+.sheet-side-section{padding:14px;border-bottom:1px solid #edf2f7}
+.sheet-side-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:900;color:#0f172a;margin-bottom:10px}
+.sheet-side-title span{font-size:11px;color:#059669;background:#ecfdf5;border-radius:7px;padding:3px 7px}
+.sheet-style-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sheet-style-chip{height:30px;border:1px solid #e0e6ed;border-radius:8px;background:#fff;color:#475569;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sheet-style-chip.active{border-color:#059669;background:#ecfdf5;color:#047857}
+.sheet-swatch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.sheet-swatch{width:100%;aspect-ratio:1;border:1px solid #dbe4f0;border-radius:7px;cursor:pointer;background:var(--swatch);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65)}
+.sheet-side-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sheet-mini-label{font-size:10px;font-weight:900;text-transform:uppercase;color:#94a3b8;margin-bottom:5px}
+.sheet-mini-input{width:100%;height:30px;border:1px solid #dbe4f0;border-radius:8px;padding:0 8px;font-size:12px;font-weight:700;color:#334155;outline:none}
+.sheet-mini-input:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.08)}
+.sheet-context{position:fixed;z-index:9999;min-width:170px;background:#fff;border:1px solid #dbe4f0;border-radius:10px;box-shadow:0 18px 45px rgba(15,23,42,.16);padding:5px;display:none}
+.sheet-context.open{display:block}
+.sheet-context button{width:100%;display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:8px 9px;border-radius:8px;color:#334155;font-size:12px;font-weight:800;text-align:left;cursor:pointer}
+.sheet-context button:hover{background:#f8fafc;color:#059669}
+@keyframes sheetPulse{0%,100%{opacity:.45}50%{opacity:1}}
+@media(max-width:1100px){.sheet-body{grid-template-columns:1fr}.sheet-shell{height:calc(100vh - 94px);min-height:640px}.sheet-side{display:none}}
+@media(max-width:640px){.sheet-shell{height:calc(100vh - 80px);min-height:560px;border-radius:10px}.sheet-shell.is-fullscreen{inset:0;height:100vh;border-radius:0}.sheet-topbar{align-items:flex-start;gap:10px;flex-wrap:wrap}.sheet-top-actions{width:100%;justify-content:space-between}.sheet-save-state{min-width:0}.sheet-toolbar{max-height:118px;overflow:auto}.sheet-formula{grid-template-columns:62px 32px minmax(0,1fr);padding:7px 8px}.sheet-grid col.sheet-row-head-col{width:40px}.sheet-row-head{width:40px}}
+.dark .sheet-shell,.dark .sheet-topbar,.dark .sheet-toolbar,.dark .sheet-formula,.dark .sheet-side,.dark .sheet-context{background:#0e1726;border-color:#253b5c}
+.dark .sheet-topbar,.dark .sheet-toolbar,.dark .sheet-statusbar,.dark .sheet-formula{border-color:#253b5c}
+.dark .sheet-title-main strong,.dark .sheet-side-title,.dark .sheet-grid,.dark .sheet-formula-input,.dark .sheet-namebox{color:#e0e6ed}
+.dark .sheet-title-main span,.dark .sheet-statusbar{color:#94a3b8}
+.dark .sheet-tool-group,.dark .sheet-save-state,.dark .sheet-namebox,.dark .sheet-fx,.dark .sheet-formula-input,.dark .sheet-tab,.dark .sheet-style-chip,.dark .sheet-mini-input{background:#1b2e4b;border-color:#253b5c;color:#e0e6ed}
+.dark .sheet-grid-panel,.dark .sheet-grid-wrap,.dark .sheet-cell{background:#0e1726;color:#e0e6ed}
+.dark .sheet-cell[contenteditable="false"]{background:#111d31}
+.dark .sheet-corner,.dark .sheet-col-head,.dark .sheet-row-head{background:#1b2e4b;border-color:#253b5c;color:#94a3b8}
+.dark .sheet-grid th,.dark .sheet-grid td{border-color:#253b5c}
+.dark .sheet-tool-btn,.dark .sheet-color-tool{color:#cbd5e1}
+.dark .sheet-tool-btn:hover,.dark .sheet-color-tool:hover,.dark .sheet-context button:hover{background:#253b5c;color:#fff}
+.dark .sheet-side{border-color:#253b5c}
+.dark .sheet-side-section{border-color:#253b5c}
+</style>
+
+<div id="<%= _sheetRootId %>" class="sheet-shell" data-can-edit="<%= _sheetCanEdit ? '1' : '0' %>">
+    <div class="sheet-topbar">
+        <div class="sheet-title">
+            <div class="sheet-title-icon"><iconify-icon icon="tabler:table" width="19"></iconify-icon></div>
+            <div class="sheet-title-main">
+                <strong>Sheet - <%= record.title || 'Sans titre' %></strong>
+                <span><%= entity.nameSingular || entity.name %></span>
+            </div>
+        </div>
+        <div class="sheet-top-actions">
+            <button type="button" class="sheet-tool-btn sheet-fullscreen-btn" data-action="fullscreen" data-fullscreen-btn title="Plein écran">
+                <iconify-icon data-fullscreen-icon icon="tabler:maximize" width="16"></iconify-icon>
+            </button>
+            <div class="sheet-save-state" data-save-state>
+                <span class="sheet-save-dot"></span>
+                <span data-save-label><%= _sheetCanEdit ? 'Enregistre' : 'Lecture seule' %></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sheet-toolbar">
+        <div class="sheet-tool-group">
+            <button type="button" class="sheet-tool-btn" data-action="undo" title="Annuler"><iconify-icon icon="tabler:arrow-back-up" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="redo" title="Retablir"><iconify-icon icon="tabler:arrow-forward-up" width="16"></iconify-icon></button>
+        </div>
+        <div class="sheet-tool-group">
+            <select class="sheet-tool-select" data-font-family title="Police">
+                <option value="Nunito">Nunito</option>
+                <option value="Inter">Inter</option>
+                <option value="Arial">Arial</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Courier New">Mono</option>
+            </select>
+            <select class="sheet-tool-select" data-font-size title="Taille" style="min-width:58px">
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+                <option value="18">18</option>
+                <option value="22">22</option>
+            </select>
+        </div>
+        <div class="sheet-tool-group">
+            <button type="button" class="sheet-tool-btn" data-toggle-style="bold" title="Gras">B</button>
+            <button type="button" class="sheet-tool-btn" data-toggle-style="italic" title="Italique"><em>I</em></button>
+            <button type="button" class="sheet-tool-btn" data-toggle-style="underline" title="Souligne"><u>U</u></button>
+            <button type="button" class="sheet-tool-btn" data-toggle-style="strike" title="Barre"><s>S</s></button>
+        </div>
+        <div class="sheet-tool-group">
+            <button type="button" class="sheet-tool-btn" data-align="left" title="Aligner gauche"><iconify-icon icon="tabler:align-left" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-align="center" title="Centrer"><iconify-icon icon="tabler:align-center" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-align="right" title="Aligner droite"><iconify-icon icon="tabler:align-right" width="16"></iconify-icon></button>
+        </div>
+        <div class="sheet-tool-group">
+            <label class="sheet-color-tool" title="Couleur texte" style="--sheet-color:#111827">
+                <iconify-icon icon="tabler:letter-a" width="16"></iconify-icon>
+                <span class="sheet-color-strip"></span>
+                <input type="color" data-color-style="textColor" value="#111827">
+            </label>
+            <label class="sheet-color-tool" title="Couleur cellule" style="--sheet-color:#fff7ed">
+                <iconify-icon icon="tabler:bucket" width="16"></iconify-icon>
+                <span class="sheet-color-strip"></span>
+                <input type="color" data-color-style="fillColor" value="#fff7ed">
+            </label>
+            <button type="button" class="sheet-tool-btn" data-action="border" title="Bordure"><iconify-icon icon="tabler:border-all" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="clear-format" title="Effacer style"><iconify-icon icon="tabler:eraser" width="16"></iconify-icon></button>
+        </div>
+        <div class="sheet-tool-group">
+            <button type="button" class="sheet-tool-btn" data-action="formula-sum" title="SOMME"><iconify-icon icon="tabler:sum" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="formula-avg" title="MOYENNE"><iconify-icon icon="tabler:math-avg" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="formula-min" title="MIN"><iconify-icon icon="tabler:chevron-down" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="formula-max" title="MAX"><iconify-icon icon="tabler:chevron-up" width="16"></iconify-icon></button>
+        </div>
+        <div class="sheet-tool-group">
+            <button type="button" class="sheet-tool-btn" data-action="insert-row" title="Ajouter ligne"><iconify-icon icon="tabler:row-insert-bottom" width="17"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="insert-col" title="Ajouter colonne"><iconify-icon icon="tabler:column-insert-right" width="17"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="delete-row" title="Supprimer ligne"><iconify-icon icon="tabler:row-remove" width="16"></iconify-icon></button>
+            <button type="button" class="sheet-tool-btn" data-action="delete-col" title="Supprimer colonne"><iconify-icon icon="tabler:column-remove" width="16"></iconify-icon></button>
+        </div>
+    </div>
+
+    <div class="sheet-formula">
+        <div class="sheet-namebox" data-namebox>A1</div>
+        <div class="sheet-fx">fx</div>
+        <input class="sheet-formula-input" data-formula-input type="text" <%= _sheetCanEdit ? '' : 'readonly' %>>
+    </div>
+
+    <div class="sheet-body">
+        <section class="sheet-grid-panel">
+            <div class="sheet-grid-wrap" data-grid-wrap tabindex="0">
+                <table class="sheet-grid" data-sheet-grid></table>
+            </div>
+            <div class="sheet-statusbar">
+                <div class="sheet-tabs" data-sheet-tabs></div>
+                <div data-sheet-meta>60 lignes · 26 colonnes</div>
+            </div>
+        </section>
+        <aside class="sheet-side">
+            <div class="sheet-side-section">
+                <div class="sheet-side-title">Format <span data-side-cell>A1</span></div>
+                <div class="sheet-style-grid">
+                    <button type="button" class="sheet-style-chip" data-toggle-style="bold">B</button>
+                    <button type="button" class="sheet-style-chip" data-toggle-style="italic"><em>I</em></button>
+                    <button type="button" class="sheet-style-chip" data-toggle-style="underline"><u>U</u></button>
+                    <button type="button" class="sheet-style-chip" data-toggle-style="strike"><s>S</s></button>
+                </div>
+            </div>
+            <div class="sheet-side-section">
+                <div class="sheet-side-title">Fond</div>
+                <div class="sheet-swatch-grid" data-swatch-group="fillColor">
+                    <button type="button" class="sheet-swatch" style="--swatch:#ffffff" data-swatch="#ffffff"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#ecfdf5" data-swatch="#ecfdf5"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#eff6ff" data-swatch="#eff6ff"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#fff7ed" data-swatch="#fff7ed"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#fdf2f8" data-swatch="#fdf2f8"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#f8fafc" data-swatch="#f8fafc"></button>
+                </div>
+            </div>
+            <div class="sheet-side-section">
+                <div class="sheet-side-title">Texte</div>
+                <div class="sheet-swatch-grid" data-swatch-group="textColor">
+                    <button type="button" class="sheet-swatch" style="--swatch:#0f172a" data-swatch="#0f172a"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#059669" data-swatch="#059669"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#2563eb" data-swatch="#2563eb"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#f97316" data-swatch="#f97316"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#db2777" data-swatch="#db2777"></button>
+                    <button type="button" class="sheet-swatch" style="--swatch:#64748b" data-swatch="#64748b"></button>
+                </div>
+            </div>
+            <div class="sheet-side-section">
+                <div class="sheet-side-title">Dimensions</div>
+                <div class="sheet-side-row">
+                    <label>
+                        <div class="sheet-mini-label">Colonne</div>
+                        <input class="sheet-mini-input" data-col-width-input type="number" min="60" max="360">
+                    </label>
+                    <label>
+                        <div class="sheet-mini-label">Ligne</div>
+                        <input class="sheet-mini-input" data-row-height-input type="number" min="24" max="140">
+                    </label>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="sheet-context" data-sheet-context>
+        <button type="button" data-action="insert-row"><iconify-icon icon="tabler:row-insert-bottom" width="15"></iconify-icon>Ajouter ligne</button>
+        <button type="button" data-action="insert-col"><iconify-icon icon="tabler:column-insert-right" width="15"></iconify-icon>Ajouter colonne</button>
+        <button type="button" data-action="clear-cell"><iconify-icon icon="tabler:eraser" width="15"></iconify-icon>Vider cellule</button>
+        <button type="button" data-action="clear-format"><iconify-icon icon="tabler:paint" width="15"></iconify-icon>Effacer style</button>
+    </div>
+</div>
+
+<script>
+(function(){
+    const root = document.getElementById('<%= _sheetRootId %>');
+    if (!root || root.__recordSheetMounted) return;
+    root.__recordSheetMounted = true;
+
+    const canEdit = root.dataset.canEdit === '1';
+    const apiUrl = '/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>/sheet-data';
+    const initialSheet = <%- _sheetInitialJson %>;
+    const defaultRows = 60;
+    const defaultCols = 26;
+    const defaultColWidth = 96;
+    const defaultRowHeight = 26;
+    const defaults = {
+        activeSheetId: 'sheet_1',
+        sheets: [{ id: 'sheet_1', name: 'Feuille 1', rows: defaultRows, cols: defaultCols, cells: {}, colWidths: {}, rowHeights: {} }]
+    };
+    const maxRows = 200;
+    const maxCols = 60;
+
+    const els = {
+        grid: root.querySelector('[data-sheet-grid]'),
+        gridWrap: root.querySelector('[data-grid-wrap]'),
+        tabs: root.querySelector('[data-sheet-tabs]'),
+        meta: root.querySelector('[data-sheet-meta]'),
+        namebox: root.querySelector('[data-namebox]'),
+        formula: root.querySelector('[data-formula-input]'),
+        saveState: root.querySelector('[data-save-state]'),
+        saveLabel: root.querySelector('[data-save-label]'),
+        sideCell: root.querySelector('[data-side-cell]'),
+        context: root.querySelector('[data-sheet-context]'),
+        colWidthInput: root.querySelector('[data-col-width-input]'),
+        rowHeightInput: root.querySelector('[data-row-height-input]'),
+        fontFamily: root.querySelector('[data-font-family]'),
+        fontSize: root.querySelector('[data-font-size]'),
+        fullscreenBtn: root.querySelector('[data-fullscreen-btn]'),
+        fullscreenIcon: root.querySelector('[data-fullscreen-icon]')
+    };
+
+    const state = {
+        data: normalizeState(initialSheet),
+        active: { row: 0, col: 0 },
+        selection: { anchor: { row: 0, col: 0 }, start: { row: 0, col: 0 }, end: { row: 0, col: 0 }, mode: 'cell' },
+        dragSelection: null,
+        saveTimer: null,
+        historyTimer: null,
+        history: [],
+        historyIndex: -1,
+        resizing: null,
+        fullscreen: false
+    };
+
+    function normalizeState(value) {
+        const data = value && Array.isArray(value.sheets) && value.sheets.length ? value : defaults;
+        const sheets = data.sheets.map((sheet, idx) => ({
+            id: String(sheet.id || ('sheet_' + (idx + 1))),
+            name: String(sheet.name || ('Feuille ' + (idx + 1))),
+            rows: Math.max(8, Math.min(Number(sheet.rows) || defaultRows, 200)),
+            cols: Math.max(4, Math.min(Number(sheet.cols) || defaultCols, 60)),
+            cells: sheet.cells && typeof sheet.cells === 'object' ? sheet.cells : {},
+            colWidths: sheet.colWidths && typeof sheet.colWidths === 'object' ? sheet.colWidths : {},
+            rowHeights: sheet.rowHeights && typeof sheet.rowHeights === 'object' ? sheet.rowHeights : {}
+        }));
+        return {
+            activeSheetId: sheets.some(sheet => sheet.id === data.activeSheetId) ? data.activeSheetId : sheets[0].id,
+            sheets
+        };
+    }
+
+    function activeSheet() {
+        return state.data.sheets.find(sheet => sheet.id === state.data.activeSheetId) || state.data.sheets[0];
+    }
+
+    function key(row, col) {
+        return row + ':' + col;
+    }
+
+    function cell(row, col, create) {
+        const sheet = activeSheet();
+        const id = key(row, col);
+        if (!sheet.cells[id] && create) sheet.cells[id] = { value: '', style: {} };
+        return sheet.cells[id] || { value: '', style: {} };
+    }
+
+    function columnLabel(index) {
+        let label = '';
+        let n = index + 1;
+        while (n > 0) {
+            const mod = (n - 1) % 26;
+            label = String.fromCharCode(65 + mod) + label;
+            n = Math.floor((n - mod) / 26);
+        }
+        return label;
+    }
+
+    function address(row, col) {
+        return columnLabel(col) + (row + 1);
+    }
+
+    function colLabelToIndex(label) {
+        return String(label || '').toUpperCase().split('').reduce((sum, char) => {
+            const code = char.charCodeAt(0);
+            if (code < 65 || code > 90) return sum;
+            return sum * 26 + (code - 64);
+        }, 0) - 1;
+    }
+
+    function refToCoords(ref) {
+        const match = String(ref || '').trim().match(/^([A-Z]+)(\d+)$/i);
+        if (!match) return null;
+        const col = colLabelToIndex(match[1]);
+        const row = Number(match[2]) - 1;
+        if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || col < 0) return null;
+        return { row, col };
+    }
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    function styleToCss(style) {
+        const css = [];
+        if (style.fillColor) css.push('background:' + style.fillColor);
+        if (style.textColor) css.push('color:' + style.textColor);
+        if (style.bold) css.push('font-weight:800');
+        if (style.italic) css.push('font-style:italic');
+        const decos = [];
+        if (style.underline) decos.push('underline');
+        if (style.strike) decos.push('line-through');
+        if (decos.length) css.push('text-decoration:' + decos.join(' '));
+        if (style.align) css.push('text-align:' + style.align);
+        if (style.fontSize) css.push('font-size:' + style.fontSize + 'px');
+        if (style.fontFamily) css.push('font-family:' + JSON.stringify(style.fontFamily) + ', sans-serif');
+        if (style.borderColor) css.push('--cell-border:' + style.borderColor);
+        return css.join(';');
+    }
+
+    function parseNumber(value) {
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        const raw = String(value || '').trim();
+        if (!raw) return 0;
+        const normalized = raw
+            .replace(/\u00a0/g, ' ')
+            .replace(/[€$£]/g, '')
+            .replace(/\s/g, '')
+            .replace(',', '.');
+        const cleaned = normalized.match(/^-?\d+(\.\d+)?%?$/) ? normalized : '';
+        if (!cleaned) return 0;
+        const percent = cleaned.endsWith('%');
+        const number = Number(cleaned.replace('%', ''));
+        if (!Number.isFinite(number)) return 0;
+        return percent ? number / 100 : number;
+    }
+
+    function formatFormulaResult(value) {
+        if (value === '' || value === null || value === undefined) return '';
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '#ERREUR';
+        return Number.isInteger(number) ? String(number) : String(Math.round(number * 1000000) / 1000000);
+    }
+
+    function getCellNumber(row, col, stack) {
+        const sheet = activeSheet();
+        if (row < 0 || col < 0 || row >= sheet.rows || col >= sheet.cols) return 0;
+        const id = key(row, col);
+        if (stack.has(id)) return 0;
+        const raw = (sheet.cells[id] && sheet.cells[id].value) || '';
+        if (String(raw).trim().startsWith('=')) {
+            const nextStack = new Set(stack);
+            nextStack.add(id);
+            return parseNumber(evaluateFormula(raw, row, col, nextStack));
+        }
+        return parseNumber(raw);
+    }
+
+    function valuesFromArg(arg, stack) {
+        const clean = String(arg || '').trim();
+        const rangeMatch = clean.match(/^([A-Z]+\d+)\s*:\s*([A-Z]+\d+)$/i);
+        if (rangeMatch) {
+            const start = refToCoords(rangeMatch[1]);
+            const end = refToCoords(rangeMatch[2]);
+            if (!start || !end) return [];
+            const rowMin = Math.min(start.row, end.row);
+            const rowMax = Math.max(start.row, end.row);
+            const colMin = Math.min(start.col, end.col);
+            const colMax = Math.max(start.col, end.col);
+            const values = [];
+            for (let row = rowMin; row <= rowMax; row++) {
+                for (let col = colMin; col <= colMax; col++) {
+                    values.push(getCellNumber(row, col, stack));
+                }
+            }
+            return values;
+        }
+        const ref = refToCoords(clean);
+        if (ref) return [getCellNumber(ref.row, ref.col, stack)];
+        return [parseNumber(clean)];
+    }
+
+    function splitFormulaArgs(args) {
+        const parts = [];
+        let current = '';
+        let depth = 0;
+        for (const char of String(args || '')) {
+            if (char === '(') depth += 1;
+            if (char === ')') depth -= 1;
+            if ((char === ',' || char === ';') && depth === 0) {
+                parts.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        if (current.trim()) parts.push(current);
+        return parts;
+    }
+
+    function evaluateFormula(rawFormula, row, col, stack = new Set()) {
+        let expr = String(rawFormula || '').trim();
+        if (!expr.startsWith('=')) return expr;
+        expr = expr.slice(1).trim();
+        if (!expr) return '';
+
+        try {
+            const fnMap = {
+                SOMME: 'SUM', SUM: 'SUM',
+                MOYENNE: 'AVG', AVERAGE: 'AVG', AVG: 'AVG',
+                MIN: 'MIN',
+                MAX: 'MAX',
+                NB: 'COUNT', COUNT: 'COUNT'
+            };
+            let guard = 0;
+            const fnPattern = /([A-ZÀ-ÿ]+)\s*\(([^()]+)\)/gi;
+            while (fnPattern.test(expr) && guard < 20) {
+                guard += 1;
+                expr = expr.replace(fnPattern, (match, name, args) => {
+                    const fn = fnMap[String(name).toUpperCase()];
+                    if (!fn) return match;
+                    const values = splitFormulaArgs(args).flatMap(arg => valuesFromArg(arg, stack));
+                    if (fn === 'SUM') return String(values.reduce((sum, value) => sum + value, 0));
+                    if (fn === 'AVG') return String(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
+                    if (fn === 'MIN') return String(values.length ? Math.min(...values) : 0);
+                    if (fn === 'MAX') return String(values.length ? Math.max(...values) : 0);
+                    if (fn === 'COUNT') return String(values.filter(value => Number.isFinite(value)).length);
+                    return match;
+                });
+                fnPattern.lastIndex = 0;
+            }
+
+            expr = expr.replace(/\b([A-Z]+\d+)\s*:\s*([A-Z]+\d+)\b/gi, '0');
+            expr = expr.replace(/\b([A-Z]+\d+)\b/gi, ref => {
+                const coords = refToCoords(ref);
+                return coords ? String(getCellNumber(coords.row, coords.col, stack)) : '0';
+            });
+            expr = expr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+            expr = expr.replace(/,/g, '.');
+            if (!/^[0-9+\-*/().\s]+$/.test(expr)) return '#ERREUR';
+            const result = Function('"use strict"; return (' + expr + ');')();
+            return formatFormulaResult(result);
+        } catch (error) {
+            return '#ERREUR';
+        }
+    }
+
+    function displayCellValue(row, col) {
+        const current = cell(row, col, false);
+        const raw = current.value || '';
+        if (String(raw).trim().startsWith('=')) return evaluateFormula(raw, row, col, new Set([key(row, col)]));
+        return raw;
+    }
+
+    function renderTabs() {
+        els.tabs.innerHTML = activeSheet().name ? '' : '';
+        state.data.sheets.forEach(sheet => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sheet-tab' + (sheet.id === state.data.activeSheetId ? ' active' : '');
+            btn.textContent = sheet.name;
+            btn.addEventListener('click', () => {
+                state.data.activeSheetId = sheet.id;
+                state.active = { row: 0, col: 0 };
+                resetSelectionToActive();
+                renderAll();
+                queueSave();
+                remember();
+            });
+            els.tabs.appendChild(btn);
+        });
+        if (canEdit && state.data.sheets.length < 8) {
+            const add = document.createElement('button');
+            add.type = 'button';
+            add.className = 'sheet-tab';
+            add.innerHTML = '+';
+            add.title = 'Nouvelle feuille';
+            add.addEventListener('click', addSheet);
+            els.tabs.appendChild(add);
+        }
+    }
+
+    function renderGrid() {
+        const sheet = activeSheet();
+        const colgroup = ['<col class="sheet-row-head-col">'];
+        for (let col = 0; col < sheet.cols; col++) {
+            const width = Number(sheet.colWidths[col]) || defaultColWidth;
+            colgroup.push('<col style="width:' + width + 'px">');
+        }
+        let html = '<colgroup>' + colgroup.join('') + '</colgroup><thead><tr><th class="sheet-corner"></th>';
+        for (let col = 0; col < sheet.cols; col++) {
+            html += '<th class="sheet-col-head" data-col-head="' + col + '"><div class="sheet-col-label">' + columnLabel(col) + '<span class="sheet-col-resize" data-col-resize="' + col + '"></span></div></th>';
+        }
+        html += '</tr></thead><tbody>';
+        for (let row = 0; row < sheet.rows; row++) {
+            const height = Number(sheet.rowHeights[row]) || defaultRowHeight;
+            html += '<tr style="height:' + height + 'px"><th class="sheet-row-head" data-row-head="' + row + '"><div class="sheet-row-label">' + (row + 1) + '<span class="sheet-row-resize" data-row-resize="' + row + '"></span></div></th>';
+            for (let col = 0; col < sheet.cols; col++) {
+                const current = cell(row, col, false);
+                const style = current.style || {};
+                const classes = 'sheet-cell' + (style.border ? ' has-border' : '');
+                html += '<td class="' + classes + '" data-row="' + row + '" data-col="' + col + '" contenteditable="' + (canEdit ? 'true' : 'false') + '" spellcheck="false" style="' + styleToCss(style) + '">' + escapeHtml(displayCellValue(row, col)) + '</td>';
+            }
+            html += '</tr>';
+        }
+        html += '</tbody>';
+        els.grid.innerHTML = html;
+        els.meta.textContent = sheet.rows + ' lignes · ' + sheet.cols + ' colonnes';
+        paintSelection();
+    }
+
+    function renderAll() {
+        renderTabs();
+        renderGrid();
+        updateInspector();
+    }
+
+    function selectedCellEl() {
+        return els.grid.querySelector('.sheet-cell[data-row="' + state.active.row + '"][data-col="' + state.active.col + '"]');
+    }
+
+    function cellEl(row, col) {
+        return els.grid.querySelector('.sheet-cell[data-row="' + row + '"][data-col="' + col + '"]');
+    }
+
+    function clampCell(row, col) {
+        const sheet = activeSheet();
+        return {
+            row: Math.max(0, Math.min(Number(row) || 0, sheet.rows - 1)),
+            col: Math.max(0, Math.min(Number(col) || 0, sheet.cols - 1))
+        };
+    }
+
+    function resetSelectionToActive() {
+        const active = clampCell(state.active.row, state.active.col);
+        state.active = active;
+        state.selection = {
+            anchor: { ...active },
+            start: { ...active },
+            end: { ...active },
+            mode: 'cell'
+        };
+    }
+
+    function getSelectionRange() {
+        const sheet = activeSheet();
+        const selection = state.selection || {};
+        const start = clampCell(selection.start?.row ?? state.active.row, selection.start?.col ?? state.active.col);
+        const end = clampCell(selection.end?.row ?? state.active.row, selection.end?.col ?? state.active.col);
+        let rowMin = Math.min(start.row, end.row);
+        let rowMax = Math.max(start.row, end.row);
+        let colMin = Math.min(start.col, end.col);
+        let colMax = Math.max(start.col, end.col);
+        const mode = selection.mode || 'cell';
+        if (mode === 'row') {
+            colMin = 0;
+            colMax = sheet.cols - 1;
+        } else if (mode === 'col') {
+            rowMin = 0;
+            rowMax = sheet.rows - 1;
+        } else if (mode === 'all') {
+            rowMin = 0;
+            rowMax = sheet.rows - 1;
+            colMin = 0;
+            colMax = sheet.cols - 1;
+        }
+        return { rowMin, rowMax, colMin, colMax, mode };
+    }
+
+    function selectionCellCount() {
+        const range = getSelectionRange();
+        return (range.rowMax - range.rowMin + 1) * (range.colMax - range.colMin + 1);
+    }
+
+    function selectionLabel() {
+        const range = getSelectionRange();
+        if (range.mode === 'all') return 'Tout';
+        if (range.mode === 'col') {
+            return columnLabel(range.colMin) + (range.colMin === range.colMax ? '' : ':' + columnLabel(range.colMax));
+        }
+        if (range.mode === 'row') {
+            return String(range.rowMin + 1) + (range.rowMin === range.rowMax ? '' : ':' + String(range.rowMax + 1));
+        }
+        const start = address(range.rowMin, range.colMin);
+        const end = address(range.rowMax, range.colMax);
+        return start === end ? start : start + ':' + end;
+    }
+
+    function setSelectionRange(startRow, startCol, endRow, endCol, mode = 'cell', activeOverride) {
+        const start = clampCell(startRow, startCol);
+        const end = clampCell(endRow, endCol);
+        const active = activeOverride ? clampCell(activeOverride.row, activeOverride.col) : end;
+        state.active = active;
+        state.selection = {
+            anchor: { ...start },
+            start,
+            end,
+            mode
+        };
+        paintSelection();
+        updateInspector();
+    }
+
+    function extendSelectionTo(row, col, mode = state.selection?.mode || 'cell') {
+        const sheet = activeSheet();
+        const anchor = state.selection?.anchor || state.selection?.start || state.active;
+        if (mode === 'row') {
+            setSelectionRange(anchor.row, 0, row, sheet.cols - 1, 'row', { row, col: state.active.col });
+        } else if (mode === 'col') {
+            setSelectionRange(0, anchor.col, sheet.rows - 1, col, 'col', { row: state.active.row, col });
+        } else {
+            setSelectionRange(anchor.row, anchor.col, row, col, 'cell', { row, col });
+        }
+    }
+
+    function forSelectedCells(callback) {
+        const range = getSelectionRange();
+        for (let row = range.rowMin; row <= range.rowMax; row++) {
+            for (let col = range.colMin; col <= range.colMax; col++) {
+                callback(row, col);
+            }
+        }
+    }
+
+    function isCellInSelection(row, col) {
+        const range = getSelectionRange();
+        return row >= range.rowMin && row <= range.rowMax && col >= range.colMin && col <= range.colMax;
+    }
+
+    function paintSelection() {
+        els.grid.querySelectorAll('.active,.selected,.selection-top,.selection-right,.selection-bottom,.selection-left').forEach(el => {
+            el.classList.remove('active', 'selected', 'selection-top', 'selection-right', 'selection-bottom', 'selection-left');
+        });
+        const range = getSelectionRange();
+        for (let row = range.rowMin; row <= range.rowMax; row++) {
+            for (let col = range.colMin; col <= range.colMax; col++) {
+                const selected = cellEl(row, col);
+                if (!selected) continue;
+                selected.classList.add('selected');
+                if (row === range.rowMin) selected.classList.add('selection-top');
+                if (row === range.rowMax) selected.classList.add('selection-bottom');
+                if (col === range.colMin) selected.classList.add('selection-left');
+                if (col === range.colMax) selected.classList.add('selection-right');
+            }
+        }
+        const td = selectedCellEl();
+        if (td) td.classList.add('active');
+        for (let col = range.colMin; col <= range.colMax; col++) {
+            const colHead = els.grid.querySelector('[data-col-head="' + col + '"]');
+            if (colHead) colHead.classList.add('selected');
+        }
+        for (let row = range.rowMin; row <= range.rowMax; row++) {
+            const rowHead = els.grid.querySelector('[data-row-head="' + row + '"]');
+            if (rowHead) rowHead.classList.add('selected');
+        }
+        const activeColHead = els.grid.querySelector('[data-col-head="' + state.active.col + '"]');
+        const activeRowHead = els.grid.querySelector('[data-row-head="' + state.active.row + '"]');
+        if (activeColHead) activeColHead.classList.add('active');
+        if (activeRowHead) activeRowHead.classList.add('active');
+    }
+
+    function updateInspector() {
+        const current = cell(state.active.row, state.active.col, false);
+        const style = current.style || {};
+        const label = selectionLabel();
+        els.namebox.textContent = label;
+        els.sideCell.textContent = label;
+        els.formula.value = current.value || '';
+        els.fontFamily.value = style.fontFamily || 'Nunito';
+        els.fontSize.value = String(style.fontSize || 13);
+        els.colWidthInput.value = Number(activeSheet().colWidths[state.active.col]) || defaultColWidth;
+        els.rowHeightInput.value = Number(activeSheet().rowHeights[state.active.row]) || defaultRowHeight;
+        root.querySelectorAll('[data-toggle-style]').forEach(btn => {
+            const keyName = btn.getAttribute('data-toggle-style');
+            btn.classList.toggle('active', style[keyName] === true);
+        });
+        root.querySelectorAll('[data-align]').forEach(btn => {
+            btn.classList.toggle('active', (style.align || 'left') === btn.getAttribute('data-align'));
+        });
+        root.querySelectorAll('[data-color-style]').forEach(input => {
+            const prop = input.getAttribute('data-color-style');
+            if (style[prop]) input.value = style[prop];
+            input.closest('.sheet-color-tool').style.setProperty('--sheet-color', input.value);
+        });
+    }
+
+    function setActive(row, col, shouldFocus) {
+        const sheet = activeSheet();
+        state.active.row = Math.max(0, Math.min(row, sheet.rows - 1));
+        state.active.col = Math.max(0, Math.min(col, sheet.cols - 1));
+        resetSelectionToActive();
+        paintSelection();
+        updateInspector();
+        if (shouldFocus) {
+            const td = selectedCellEl();
+            if (td) td.focus();
+        }
+    }
+
+    function setCellValue(row, col, value, options = {}) {
+        const target = cell(row, col, true);
+        target.value = String(value || '');
+        if (!target.value && Object.keys(target.style || {}).length === 0) {
+            delete activeSheet().cells[key(row, col)];
+        }
+        if (!options.silent) {
+            queueSave();
+            remember();
+        }
+    }
+
+    function refreshFormulaCells(skipFocused = true) {
+        const focused = document.activeElement;
+        els.grid.querySelectorAll('.sheet-cell').forEach(td => {
+            if (skipFocused && td === focused) return;
+            const row = Number(td.dataset.row);
+            const col = Number(td.dataset.col);
+            const raw = cell(row, col, false).value || '';
+            if (String(raw).trim().startsWith('=')) {
+                td.textContent = displayCellValue(row, col);
+            }
+        });
+    }
+
+    function applyStyle(patch) {
+        if (!canEdit) return;
+        forSelectedCells((row, col) => {
+            const target = cell(row, col, true);
+            target.style = { ...(target.style || {}), ...patch };
+            Object.keys(target.style).forEach(prop => {
+                if (target.style[prop] === false || target.style[prop] === '' || target.style[prop] == null) delete target.style[prop];
+            });
+            const td = cellEl(row, col);
+            if (td) {
+                td.style.cssText = styleToCss(target.style);
+                td.classList.toggle('has-border', target.style.border === true);
+            }
+        });
+        paintSelection();
+        updateInspector();
+        queueSave();
+        remember();
+    }
+
+    function toggleStyle(prop) {
+        const current = cell(state.active.row, state.active.col, false).style || {};
+        applyStyle({ [prop]: !current[prop] });
+    }
+
+    function clearFormat() {
+        if (!canEdit) return;
+        forSelectedCells((row, col) => {
+            const target = cell(row, col, true);
+            target.style = {};
+        });
+        renderGrid();
+        updateInspector();
+        queueSave();
+        remember();
+    }
+
+    function clearCell() {
+        if (!canEdit) return;
+        forSelectedCells((row, col) => {
+            const target = cell(row, col, true);
+            target.value = '';
+            const td = cellEl(row, col);
+            if (td) td.textContent = '';
+        });
+        els.formula.value = '';
+        refreshFormulaCells(true);
+        queueSave();
+        remember();
+    }
+
+    function shiftCellsForRow(startRow, delta) {
+        const sheet = activeSheet();
+        const next = {};
+        Object.entries(sheet.cells).forEach(([id, value]) => {
+            const parts = id.split(':').map(Number);
+            let row = parts[0];
+            const col = parts[1];
+            if (delta > 0 && row > startRow) row += 1;
+            if (delta < 0) {
+                if (row === startRow) return;
+                if (row > startRow) row -= 1;
+            }
+            next[key(row, col)] = value;
+        });
+        sheet.cells = next;
+    }
+
+    function shiftCellsForCol(startCol, delta) {
+        const sheet = activeSheet();
+        const next = {};
+        Object.entries(sheet.cells).forEach(([id, value]) => {
+            const parts = id.split(':').map(Number);
+            const row = parts[0];
+            let col = parts[1];
+            if (delta > 0 && col > startCol) col += 1;
+            if (delta < 0) {
+                if (col === startCol) return;
+                if (col > startCol) col -= 1;
+            }
+            next[key(row, col)] = value;
+        });
+        sheet.cells = next;
+    }
+
+    function insertRow() {
+        if (!canEdit) return;
+        const sheet = activeSheet();
+        if (sheet.rows >= 200) return;
+        shiftCellsForRow(state.active.row, 1);
+        sheet.rows += 1;
+        renderAll();
+        setActive(state.active.row + 1, state.active.col, true);
+        queueSave();
+        remember();
+    }
+
+    function insertCol() {
+        if (!canEdit) return;
+        const sheet = activeSheet();
+        if (sheet.cols >= 60) return;
+        shiftCellsForCol(state.active.col, 1);
+        sheet.cols += 1;
+        renderAll();
+        setActive(state.active.row, state.active.col + 1, true);
+        queueSave();
+        remember();
+    }
+
+    function deleteRow() {
+        if (!canEdit) return;
+        const sheet = activeSheet();
+        if (sheet.rows <= 8) return;
+        shiftCellsForRow(state.active.row, -1);
+        delete sheet.rowHeights[state.active.row];
+        sheet.rows -= 1;
+        renderAll();
+        setActive(Math.min(state.active.row, sheet.rows - 1), state.active.col, true);
+        queueSave();
+        remember();
+    }
+
+    function deleteCol() {
+        if (!canEdit) return;
+        const sheet = activeSheet();
+        if (sheet.cols <= 4) return;
+        shiftCellsForCol(state.active.col, -1);
+        delete sheet.colWidths[state.active.col];
+        sheet.cols -= 1;
+        renderAll();
+        setActive(state.active.row, Math.min(state.active.col, sheet.cols - 1), true);
+        queueSave();
+        remember();
+    }
+
+    function addSheet() {
+        if (!canEdit || state.data.sheets.length >= 8) return;
+        const id = 'sheet_' + Date.now().toString(36);
+        state.data.sheets.push({ id, name: 'Feuille ' + (state.data.sheets.length + 1), rows: defaultRows, cols: defaultCols, cells: {}, colWidths: {}, rowHeights: {} });
+        state.data.activeSheetId = id;
+        state.active = { row: 0, col: 0 };
+        resetSelectionToActive();
+        renderAll();
+        queueSave();
+        remember();
+    }
+
+    function suggestedFormulaRange() {
+        const sheet = activeSheet();
+        if (state.active.row > 0) {
+            let start = state.active.row - 1;
+            while (start > 0 && String(cell(start - 1, state.active.col, false).value || '').trim()) start -= 1;
+            if (String(cell(start, state.active.col, false).value || '').trim()) {
+                return address(start, state.active.col) + ':' + address(state.active.row - 1, state.active.col);
+            }
+        }
+        if (state.active.col > 0) {
+            let start = state.active.col - 1;
+            while (start > 0 && String(cell(state.active.row, start - 1, false).value || '').trim()) start -= 1;
+            if (String(cell(state.active.row, start, false).value || '').trim()) {
+                return address(state.active.row, start) + ':' + address(state.active.row, state.active.col - 1);
+            }
+        }
+        return address(Math.max(0, state.active.row - 1), state.active.col) + ':' + address(Math.max(0, state.active.row - 1), state.active.col);
+    }
+
+    function insertFormula(fnName) {
+        if (!canEdit) return;
+        const formula = '=' + fnName + '(' + suggestedFormulaRange() + ')';
+        setCellValue(state.active.row, state.active.col, formula);
+        renderGrid();
+        setActive(state.active.row, state.active.col, false);
+    }
+
+    function snapshot() {
+        return JSON.stringify(state.data);
+    }
+
+    function pushHistory() {
+        const snap = snapshot();
+        if (state.history[state.historyIndex] === snap) return;
+        state.history = state.history.slice(0, state.historyIndex + 1);
+        state.history.push(snap);
+        if (state.history.length > 50) state.history.shift();
+        state.historyIndex = state.history.length - 1;
+    }
+
+    function remember() {
+        clearTimeout(state.historyTimer);
+        state.historyTimer = setTimeout(pushHistory, 250);
+    }
+
+    function restoreHistory(index) {
+        const snap = state.history[index];
+        if (!snap) return;
+        state.historyIndex = index;
+        state.data = normalizeState(JSON.parse(snap));
+        state.active = { row: 0, col: 0 };
+        resetSelectionToActive();
+        renderAll();
+        queueSave();
+    }
+
+    function setSaveStatus(type, label) {
+        els.saveState.classList.toggle('is-saving', type === 'saving');
+        els.saveState.classList.toggle('is-error', type === 'error');
+        els.saveLabel.textContent = label;
+    }
+
+    function queueSave() {
+        if (!canEdit) return;
+        clearTimeout(state.saveTimer);
+        setSaveStatus('saving', 'A sauvegarder');
+        state.saveTimer = setTimeout(saveNow, 650);
+    }
+
+    async function saveNow() {
+        if (!canEdit) return;
+        setSaveStatus('saving', 'Enregistre...');
+        try {
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ sheet: state.data })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) throw new Error(data.error || 'Erreur');
+            setSaveStatus('saved', 'Enregistre');
+        } catch (error) {
+            console.error('[RecordSheet] Save failed:', error);
+            setSaveStatus('error', 'Erreur');
+        }
+    }
+
+    function setFullscreen(value) {
+        state.fullscreen = Boolean(value);
+        root.classList.toggle('is-fullscreen', state.fullscreen);
+        document.body.classList.toggle('sheet-fullscreen-lock', state.fullscreen);
+        if (els.fullscreenBtn) {
+            els.fullscreenBtn.title = state.fullscreen ? 'Quitter le plein écran' : 'Plein écran';
+        }
+        if (els.fullscreenIcon) {
+            els.fullscreenIcon.setAttribute('icon', state.fullscreen ? 'tabler:minimize' : 'tabler:maximize');
+        }
+    }
+
+    function toggleFullscreen() {
+        setFullscreen(!state.fullscreen);
+    }
+
+    function handleAction(action) {
+        const actions = {
+            undo: () => state.historyIndex > 0 && restoreHistory(state.historyIndex - 1),
+            redo: () => state.historyIndex < state.history.length - 1 && restoreHistory(state.historyIndex + 1),
+            fullscreen: toggleFullscreen,
+            border: () => {
+                const current = cell(state.active.row, state.active.col, false).style || {};
+                applyStyle({ border: !current.border, borderColor: current.borderColor || '#0f172a' });
+            },
+            'clear-format': clearFormat,
+            'clear-cell': clearCell,
+            'formula-sum': () => insertFormula('SOMME'),
+            'formula-avg': () => insertFormula('MOYENNE'),
+            'formula-min': () => insertFormula('MIN'),
+            'formula-max': () => insertFormula('MAX'),
+            'insert-row': insertRow,
+            'insert-col': insertCol,
+            'delete-row': deleteRow,
+            'delete-col': deleteCol
+        };
+        if (actions[action]) actions[action]();
+    }
+
+    function placeCaretAtEnd(element) {
+        if (!element || !window.getSelection || !document.createRange) return;
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    function ensureGridSize(rowCount, colCount) {
+        const sheet = activeSheet();
+        const neededRows = Math.min(maxRows, state.active.row + rowCount);
+        const neededCols = Math.min(maxCols, state.active.col + colCount);
+        let changed = false;
+        if (neededRows > sheet.rows) {
+            sheet.rows = neededRows;
+            changed = true;
+        }
+        if (neededCols > sheet.cols) {
+            sheet.cols = neededCols;
+            changed = true;
+        }
+        return changed;
+    }
+
+    function parseHtmlClipboard(html) {
+        if (!html || !/<table[\s>]/i.test(html)) return null;
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const table = doc.querySelector('table');
+        if (!table) return null;
+        const matrix = [];
+        Array.from(table.querySelectorAll('tr')).forEach((tr, rowIndex) => {
+            if (!matrix[rowIndex]) matrix[rowIndex] = [];
+            let colIndex = 0;
+            Array.from(tr.children).filter(node => /^(td|th)$/i.test(node.tagName)).forEach(cellNode => {
+                while (matrix[rowIndex][colIndex] !== undefined) colIndex += 1;
+                const text = (cellNode.innerText || cellNode.textContent || '').replace(/\u00a0/g, ' ').trim();
+                const rowspan = Math.max(1, Number(cellNode.getAttribute('rowspan')) || 1);
+                const colspan = Math.max(1, Number(cellNode.getAttribute('colspan')) || 1);
+                for (let r = 0; r < rowspan; r++) {
+                    if (!matrix[rowIndex + r]) matrix[rowIndex + r] = [];
+                    for (let c = 0; c < colspan; c++) {
+                        matrix[rowIndex + r][colIndex + c] = r === 0 && c === 0 ? text : '';
+                    }
+                }
+                colIndex += colspan;
+            });
+        });
+        return normalizePasteMatrix(matrix);
+    }
+
+    function parseDelimitedText(text) {
+        if (!text) return [];
+        const rows = [[]];
+        let value = '';
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const next = text[i + 1];
+            if (char === '"') {
+                if (inQuotes && next === '"') {
+                    value += '"';
+                    i += 1;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+                continue;
+            }
+            if (char === '\t' && !inQuotes) {
+                rows[rows.length - 1].push(value);
+                value = '';
+                continue;
+            }
+            if ((char === '\n' || char === '\r') && !inQuotes) {
+                rows[rows.length - 1].push(value);
+                value = '';
+                if (char === '\r' && next === '\n') i += 1;
+                rows.push([]);
+                continue;
+            }
+            value += char;
+        }
+        rows[rows.length - 1].push(value);
+        return normalizePasteMatrix(rows);
+    }
+
+    function normalizePasteMatrix(matrix) {
+        const rows = (matrix || []).map(row => (row || []).map(value => String(value ?? '')));
+        while (rows.length && rows[rows.length - 1].every(value => value === '')) rows.pop();
+        return rows;
+    }
+
+    function matrixWidth(matrix) {
+        return matrix.reduce((max, row) => Math.max(max, row.length), 0);
+    }
+
+    function matrixFromClipboard(event) {
+        const clipboard = event.clipboardData || window.clipboardData;
+        const htmlMatrix = parseHtmlClipboard(clipboard.getData('text/html'));
+        if (htmlMatrix && htmlMatrix.length && matrixWidth(htmlMatrix) > 0) return htmlMatrix;
+        return parseDelimitedText(clipboard.getData('text/plain') || '');
+    }
+
+    function pasteMatrix(matrix) {
+        if (!matrix.length || matrixWidth(matrix) === 0) return;
+        const width = matrixWidth(matrix);
+        ensureGridSize(matrix.length, width);
+        const sheet = activeSheet();
+        matrix.forEach((rowValues, rOffset) => {
+            rowValues.forEach((value, cOffset) => {
+                const row = state.active.row + rOffset;
+                const col = state.active.col + cOffset;
+                if (row < sheet.rows && col < sheet.cols) setCellValue(row, col, value, { silent: true });
+            });
+        });
+        renderGrid();
+        setSelectionRange(
+            state.active.row,
+            state.active.col,
+            Math.min(sheet.rows - 1, state.active.row + matrix.length - 1),
+            Math.min(sheet.cols - 1, state.active.col + width - 1),
+            'cell',
+            { row: state.active.row, col: state.active.col }
+        );
+        updateInspector();
+        queueSave();
+        remember();
+    }
+
+    function fillSelectedCells(value) {
+        forSelectedCells((row, col) => setCellValue(row, col, value, { silent: true }));
+        renderGrid();
+        updateInspector();
+        queueSave();
+        remember();
+    }
+
+    function selectedPlainText() {
+        const range = getSelectionRange();
+        const rows = [];
+        for (let row = range.rowMin; row <= range.rowMax; row++) {
+            const values = [];
+            for (let col = range.colMin; col <= range.colMax; col++) {
+                values.push(displayCellValue(row, col));
+            }
+            rows.push(values.join('\t'));
+        }
+        return rows.join('\n');
+    }
+
+    function selectCellRange(row, col, extend) {
+        const anchor = extend ? (state.selection?.anchor || state.active) : { row, col };
+        setSelectionRange(anchor.row, anchor.col, row, col, 'cell', { row, col });
+    }
+
+    function selectRowRange(row, extend) {
+        const sheet = activeSheet();
+        const anchor = extend ? (state.selection?.anchor || state.active) : { row, col: 0 };
+        setSelectionRange(anchor.row, 0, row, sheet.cols - 1, 'row', { row, col: 0 });
+    }
+
+    function selectColRange(col, extend) {
+        const sheet = activeSheet();
+        const anchor = extend ? (state.selection?.anchor || state.active) : { row: 0, col };
+        setSelectionRange(0, anchor.col, sheet.rows - 1, col, 'col', { row: 0, col });
+    }
+
+    function selectAllCells() {
+        const sheet = activeSheet();
+        setSelectionRange(0, 0, sheet.rows - 1, sheet.cols - 1, 'all', { row: 0, col: 0 });
+    }
+
+    function closestGridElementFromPoint(event) {
+        const pointed = document.elementFromPoint(event.clientX, event.clientY);
+        return pointed && els.grid.contains(pointed) ? pointed : null;
+    }
+
+    function cellFromPoint(event) {
+        const pointed = closestGridElementFromPoint(event);
+        const td = pointed ? pointed.closest('.sheet-cell') : null;
+        return td && els.grid.contains(td) ? td : null;
+    }
+
+    function rowFromPoint(event) {
+        const pointed = closestGridElementFromPoint(event);
+        const rowHead = pointed ? pointed.closest('[data-row-head]') : null;
+        if (rowHead && els.grid.contains(rowHead)) return Number(rowHead.dataset.rowHead);
+        const td = pointed ? pointed.closest('.sheet-cell') : null;
+        return td && els.grid.contains(td) ? Number(td.dataset.row) : null;
+    }
+
+    function colFromPoint(event) {
+        const pointed = closestGridElementFromPoint(event);
+        const colHead = pointed ? pointed.closest('[data-col-head]') : null;
+        if (colHead && els.grid.contains(colHead)) return Number(colHead.dataset.colHead);
+        const td = pointed ? pointed.closest('.sheet-cell') : null;
+        return td && els.grid.contains(td) ? Number(td.dataset.col) : null;
+    }
+
+    function autoScrollGridDuringSelection(event) {
+        const rect = els.gridWrap.getBoundingClientRect();
+        const edge = 28;
+        if (event.clientX > rect.right - edge) els.gridWrap.scrollLeft += 18;
+        if (event.clientX < rect.left + edge) els.gridWrap.scrollLeft -= 18;
+        if (event.clientY > rect.bottom - edge) els.gridWrap.scrollTop += 18;
+        if (event.clientY < rect.top + edge) els.gridWrap.scrollTop -= 18;
+    }
+
+    function beginMouseSelection(event, type, row, col) {
+        if (event.button !== 0) return;
+        if (type === 'cell' && event.detail > 1) {
+            setActive(row, col, true);
+            return;
+        }
+        event.preventDefault();
+        els.context.classList.remove('open');
+        if (type === 'all') {
+            selectAllCells();
+            return;
+        }
+        const extend = event.shiftKey;
+        if (type === 'row') selectRowRange(row, extend);
+        if (type === 'col') selectColRange(col, extend);
+        if (type === 'cell') selectCellRange(row, col, extend);
+        state.dragSelection = { type, hasMoved: false };
+        els.grid.classList.add('is-selecting');
+    }
+
+    function updateMouseSelection(event) {
+        if (!state.dragSelection) return;
+        event.preventDefault();
+        autoScrollGridDuringSelection(event);
+        if (state.dragSelection.type === 'cell') {
+            const td = cellFromPoint(event);
+            if (!td) return;
+            const row = Number(td.dataset.row);
+            const col = Number(td.dataset.col);
+            state.dragSelection.hasMoved = state.dragSelection.hasMoved || row !== state.active.row || col !== state.active.col;
+            selectCellRange(row, col, true);
+        } else if (state.dragSelection.type === 'row') {
+            const row = rowFromPoint(event);
+            if (row == null || Number.isNaN(row)) return;
+            state.dragSelection.hasMoved = state.dragSelection.hasMoved || row !== state.active.row;
+            selectRowRange(row, true);
+        } else if (state.dragSelection.type === 'col') {
+            const col = colFromPoint(event);
+            if (col == null || Number.isNaN(col)) return;
+            state.dragSelection.hasMoved = state.dragSelection.hasMoved || col !== state.active.col;
+            selectColRange(col, true);
+        }
+    }
+
+    root.addEventListener('click', event => {
+        const toggle = event.target.closest('[data-toggle-style]');
+        if (toggle) toggleStyle(toggle.getAttribute('data-toggle-style'));
+        const align = event.target.closest('[data-align]');
+        if (align) applyStyle({ align: align.getAttribute('data-align') });
+        const action = event.target.closest('[data-action]');
+        if (action) {
+            handleAction(action.getAttribute('data-action'));
+            els.context.classList.remove('open');
+        }
+        const swatch = event.target.closest('[data-swatch]');
+        if (swatch) {
+            const group = swatch.closest('[data-swatch-group]');
+            applyStyle({ [group.getAttribute('data-swatch-group')]: swatch.getAttribute('data-swatch') });
+        }
+    });
+
+    root.addEventListener('change', event => {
+        const colorInput = event.target.closest('[data-color-style]');
+        if (colorInput) {
+            colorInput.closest('.sheet-color-tool').style.setProperty('--sheet-color', colorInput.value);
+            applyStyle({ [colorInput.getAttribute('data-color-style')]: colorInput.value });
+        }
+        if (event.target === els.fontFamily) applyStyle({ fontFamily: els.fontFamily.value });
+        if (event.target === els.fontSize) applyStyle({ fontSize: Number(els.fontSize.value) || 13 });
+    });
+
+    els.grid.addEventListener('mousedown', event => {
+        const colResize = event.target.closest('[data-col-resize]');
+        const rowResize = event.target.closest('[data-row-resize]');
+        if (colResize || rowResize) {
+            event.preventDefault();
+            const sheet = activeSheet();
+            if (colResize) {
+                const col = Number(colResize.dataset.colResize);
+                state.resizing = { type: 'col', index: col, start: event.clientX, size: Number(sheet.colWidths[col]) || defaultColWidth };
+            } else {
+                const row = Number(rowResize.dataset.rowResize);
+                state.resizing = { type: 'row', index: row, start: event.clientY, size: Number(sheet.rowHeights[row]) || defaultRowHeight };
+            }
+            return;
+        }
+        const corner = event.target.closest('.sheet-corner');
+        if (corner && els.grid.contains(corner)) {
+            beginMouseSelection(event, 'all', 0, 0);
+            return;
+        }
+        const colHead = event.target.closest('[data-col-head]');
+        if (colHead && els.grid.contains(colHead)) {
+            beginMouseSelection(event, 'col', 0, Number(colHead.dataset.colHead));
+            return;
+        }
+        const rowHead = event.target.closest('[data-row-head]');
+        if (rowHead && els.grid.contains(rowHead)) {
+            beginMouseSelection(event, 'row', Number(rowHead.dataset.rowHead), 0);
+            return;
+        }
+        const td = event.target.closest('.sheet-cell');
+        if (td && els.grid.contains(td)) beginMouseSelection(event, 'cell', Number(td.dataset.row), Number(td.dataset.col));
+    });
+
+    document.addEventListener('mousemove', event => {
+        if (state.dragSelection) {
+            updateMouseSelection(event);
+            return;
+        }
+        if (!state.resizing || !canEdit) return;
+        const sheet = activeSheet();
+        if (state.resizing.type === 'col') {
+            sheet.colWidths[state.resizing.index] = Math.max(60, Math.min(360, state.resizing.size + event.clientX - state.resizing.start));
+        } else {
+            sheet.rowHeights[state.resizing.index] = Math.max(22, Math.min(140, state.resizing.size + event.clientY - state.resizing.start));
+        }
+        renderGrid();
+        updateInspector();
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (state.dragSelection) {
+            const drag = state.dragSelection;
+            state.dragSelection = null;
+            els.grid.classList.remove('is-selecting');
+            if (drag.type === 'cell' && !drag.hasMoved && selectionCellCount() === 1) {
+                const td = selectedCellEl();
+                if (td) td.focus();
+            } else {
+                els.gridWrap.focus({ preventScroll: true });
+            }
+        }
+        if (state.resizing) {
+            state.resizing = null;
+            queueSave();
+            remember();
+        }
+    });
+
+    els.grid.addEventListener('focusin', event => {
+        const td = event.target.closest('.sheet-cell');
+        if (state.dragSelection) return;
+        if (td) {
+            const row = Number(td.dataset.row);
+            const col = Number(td.dataset.col);
+            setActive(row, col, false);
+            const raw = cell(row, col, false).value || '';
+            if (String(raw).trim().startsWith('=') && td.textContent !== raw) {
+                td.textContent = raw;
+                placeCaretAtEnd(td);
+            }
+        }
+    });
+
+    els.grid.addEventListener('focusout', event => {
+        const td = event.target.closest('.sheet-cell');
+        if (!td) return;
+        const row = Number(td.dataset.row);
+        const col = Number(td.dataset.col);
+        const raw = cell(row, col, false).value || '';
+        if (String(raw).trim().startsWith('=')) td.textContent = displayCellValue(row, col);
+    });
+
+    els.grid.addEventListener('input', event => {
+        const td = event.target.closest('.sheet-cell');
+        if (!td || !canEdit) return;
+        const row = Number(td.dataset.row);
+        const col = Number(td.dataset.col);
+        setCellValue(row, col, td.innerText.replace(/\n$/, ''));
+        if (row === state.active.row && col === state.active.col) els.formula.value = cell(row, col, false).value || '';
+        refreshFormulaCells(true);
+    });
+
+    els.grid.addEventListener('keydown', event => {
+        const td = event.target.closest('.sheet-cell');
+        if (!td) return;
+        const row = Number(td.dataset.row);
+        const col = Number(td.dataset.col);
+        const arrowMove = {
+            ArrowUp: [-1, 0],
+            ArrowDown: [1, 0],
+            ArrowLeft: [0, -1],
+            ArrowRight: [0, 1]
+        }[event.key];
+        if ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === 'a') {
+            event.preventDefault();
+            selectAllCells();
+        } else if (event.shiftKey && arrowMove) {
+            event.preventDefault();
+            extendSelectionTo(state.active.row + arrowMove[0], state.active.col + arrowMove[1], 'cell');
+        } else if ((event.key === 'Delete' || event.key === 'Backspace') && selectionCellCount() > 1) {
+            event.preventDefault();
+            clearCell();
+        } else if (event.key === 'Tab') {
+            event.preventDefault();
+            setActive(row, col + (event.shiftKey ? -1 : 1), true);
+        } else if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            setActive(row + 1, col, true);
+        } else if (event.key === 'ArrowUp' && !event.shiftKey && td.innerText === '') {
+            setActive(row - 1, col, true);
+        } else if (event.key === 'ArrowDown' && !event.shiftKey && td.innerText === '') {
+            setActive(row + 1, col, true);
+        }
+    });
+
+    els.gridWrap.addEventListener('keydown', event => {
+        if (event.target !== els.gridWrap) return;
+        const arrowMove = {
+            ArrowUp: [-1, 0],
+            ArrowDown: [1, 0],
+            ArrowLeft: [0, -1],
+            ArrowRight: [0, 1]
+        }[event.key];
+        if ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === 'a') {
+            event.preventDefault();
+            selectAllCells();
+        } else if (event.shiftKey && arrowMove) {
+            event.preventDefault();
+            extendSelectionTo(state.active.row + arrowMove[0], state.active.col + arrowMove[1], 'cell');
+        } else if (arrowMove) {
+            event.preventDefault();
+            setActive(state.active.row + arrowMove[0], state.active.col + arrowMove[1], false);
+            els.gridWrap.focus({ preventScroll: true });
+        } else if (event.key === 'Delete' || event.key === 'Backspace') {
+            event.preventDefault();
+            clearCell();
+        }
+    });
+
+    root.addEventListener('paste', event => {
+        if (event.target.closest('.sheet-toolbar,.sheet-formula,.sheet-side')) return;
+        if (!canEdit) return;
+        const matrix = matrixFromClipboard(event);
+        if (!matrix.length || matrixWidth(matrix) === 0) return;
+        event.preventDefault();
+        if (matrix.length === 1 && matrix[0].length === 1) {
+            if (selectionCellCount() > 1 || !event.target.closest('.sheet-cell')) {
+                fillSelectedCells(matrix[0][0]);
+                return;
+            }
+            document.execCommand('insertText', false, matrix[0][0]);
+            return;
+        }
+        pasteMatrix(matrix);
+    });
+
+    root.addEventListener('copy', event => {
+        if (event.target.closest('.sheet-toolbar,.sheet-formula,.sheet-side')) return;
+        if (selectionCellCount() <= 1) return;
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', selectedPlainText());
+    });
+
+    root.addEventListener('cut', event => {
+        if (event.target.closest('.sheet-toolbar,.sheet-formula,.sheet-side')) return;
+        if (!canEdit || selectionCellCount() <= 1) return;
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', selectedPlainText());
+        clearCell();
+    });
+
+    els.formula.addEventListener('input', () => {
+        if (!canEdit) return;
+        setCellValue(state.active.row, state.active.col, els.formula.value);
+        const td = selectedCellEl();
+        if (td) td.textContent = String(els.formula.value).trim().startsWith('=') ? displayCellValue(state.active.row, state.active.col) : els.formula.value;
+        refreshFormulaCells(true);
+    });
+
+    els.colWidthInput.addEventListener('change', () => {
+        if (!canEdit) return;
+        activeSheet().colWidths[state.active.col] = Math.max(60, Math.min(360, Number(els.colWidthInput.value) || defaultColWidth));
+        renderGrid();
+        queueSave();
+        remember();
+    });
+
+    els.rowHeightInput.addEventListener('change', () => {
+        if (!canEdit) return;
+        activeSheet().rowHeights[state.active.row] = Math.max(22, Math.min(140, Number(els.rowHeightInput.value) || defaultRowHeight));
+        renderGrid();
+        queueSave();
+        remember();
+    });
+
+    els.grid.addEventListener('contextmenu', event => {
+        const td = event.target.closest('.sheet-cell');
+        if (!td) return;
+        event.preventDefault();
+        const row = Number(td.dataset.row);
+        const col = Number(td.dataset.col);
+        if (!isCellInSelection(row, col)) setActive(row, col, false);
+        els.context.style.left = Math.min(event.clientX, window.innerWidth - 190) + 'px';
+        els.context.style.top = Math.min(event.clientY, window.innerHeight - 190) + 'px';
+        els.context.classList.add('open');
+    });
+
+    document.addEventListener('click', event => {
+        if (!els.context.contains(event.target)) els.context.classList.remove('open');
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && state.fullscreen) setFullscreen(false);
+    });
+
+    renderAll();
+    pushHistory();
+    setSaveStatus(canEdit ? 'saved' : 'readonly', canEdit ? 'Enregistre' : 'Lecture seule');
+})();
+</script>

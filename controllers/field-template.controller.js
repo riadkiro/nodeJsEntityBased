@@ -686,6 +686,7 @@ module.exports = {
         label: newField.label,
         type: newField.type,
         subtype: newField.subtype,
+        type_config: newField.type_config || {},
         icon: newField.ui?.icon || 'solar:widget-bold-duotone',
         category: newField.category,
         isSystem: false
@@ -698,6 +699,67 @@ module.exports = {
       res.json({ success: true, field: responseField });
     } catch (err) {
       console.error('[FieldTemplateAPI] Create error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // JSON API: Update editable field template metadata from inline configuration.
+  updateApi: async (req, res) => {
+    try {
+      const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+      const fieldId = req.params.id;
+
+      if (!fieldId) return res.status(400).json({ error: 'field id is required' });
+
+      const field = await FieldTemplateModel.findById(fieldId);
+      if (!field) return res.status(404).json({ error: 'Field not found' });
+
+      const patch = {};
+      if (typeof req.body.label === 'string' && req.body.label.trim()) {
+        patch.label = req.body.label.trim();
+      }
+      if (typeof req.body.description === 'string') {
+        patch.description = req.body.description;
+      }
+      if (typeof req.body.required === 'boolean') {
+        patch.required = req.body.required;
+      }
+      if (req.body.typeConfig && typeof req.body.typeConfig === 'object') {
+        patch.type_config = {
+          ...(field.type_config || {}),
+          ...req.body.typeConfig
+        };
+      }
+      if (req.body.ui && typeof req.body.ui === 'object') {
+        patch.ui = {
+          ...(field.ui || {}),
+          ...req.body.ui
+        };
+      }
+
+      const updated = await FieldTemplateModel.findByIdAndUpdate(
+        fieldId,
+        { $set: patch },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        field: {
+          _id: updated._id,
+          name: updated.name,
+          label: updated.label,
+          type: updated.type,
+          subtype: updated.subtype,
+          type_config: updated.type_config || {},
+          ui: updated.ui || {},
+          icon: updated.ui?.icon || 'solar:widget-bold-duotone',
+          category: updated.category,
+          isSystem: !!updated.isSystem
+        }
+      });
+    } catch (err) {
+      console.error('[FieldTemplateAPI] Update error:', err);
       res.status(500).json({ error: err.message });
     }
   },

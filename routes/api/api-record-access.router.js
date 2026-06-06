@@ -7,7 +7,7 @@ const { requirePerm } = require('../../middleware/permissions');
 const { tenantCollection } = require('../../middleware/tenant');
 const mailer = require('../../services/mailer');
 
-const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'chat', 'emails', 'notes', 'ai', 'team'];
+const RECORD_MODULE_KEYS = ['overview', 'fiche', 'docs', 'drive', 'dataRoom', 'tasks', 'agenda', 'sheet', 'chat', 'emails', 'notes', 'ai', 'team'];
 
 function defaultModules(permissions = {}) {
     return Object.fromEntries(RECORD_MODULE_KEYS.map(key => [

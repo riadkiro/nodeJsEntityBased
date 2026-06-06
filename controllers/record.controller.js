@@ -6,9 +6,13 @@ const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
 const denormService = require("../services/record-denorm.service");
-const { buildRecordFilterQuery } = require("../services/record-filter-query");
+const { buildRecordFilterQuery, normalizeOperator } = require("../services/record-filter-query");
 const Account = require("../models/account.model");
 const User = require("../models/user.model");
+
+function isStrictObjectId(value) {
+    return /^[a-f0-9]{24}$/i.test(String(value || '').trim());
+}
 
 /**
  * Get inverse relations for an entity.
@@ -70,6 +74,67 @@ function extractEmailsFromValue(value) {
 
 function normalizeEmailContactName(record, fallbackEmail) {
     return record?.title || record?.computedTitle || fallbackEmail?.split('@')[0] || 'Contact';
+}
+
+function normalizeInternalReturnTo(req, rawValue) {
+    const raw = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+    if (typeof raw !== 'string') return null;
+
+    const value = raw.trim();
+    if (!value || value.startsWith('//')) return null;
+
+    try {
+        const host = req.get?.('host') || 'localhost';
+        const baseUrl = `${req.protocol || 'http'}://${host}`;
+        const url = new URL(value, baseUrl);
+
+        if (/^https?:\/\//i.test(value) && url.host !== host) return null;
+
+        const accountPrefix = `/account/${String(req.account_number)}/`;
+        if (!url.pathname.startsWith(accountPrefix)) return null;
+
+        return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+        return null;
+    }
+}
+
+function isEntityListReturnPath(req, entitySlug, returnPath) {
+    const pathOnly = String(returnPath || '').split(/[?#]/)[0];
+    const basePath = `/account/${String(req.account_number)}/record/${entitySlug}`;
+    if (pathOnly === `${basePath}/list`) return true;
+
+    if (!pathOnly.startsWith(`${basePath}/`)) return false;
+    const suffix = pathOnly.slice(basePath.length + 1);
+    if (!suffix || suffix.includes('/')) return false;
+
+    const reserved = new Set(['list', 'list-view', 'list-api', 'tasks', 'add', 'edit', 'delete']);
+    if (reserved.has(suffix)) return false;
+    if (isStrictObjectId(suffix)) return false;
+
+    return true;
+}
+
+function resolveRecordBackUrl(req, entity, record) {
+    const fallback = `/account/${String(req.account_number)}/record/${entity.slug}/list`;
+    const sessionKey = `${entity._id}:${record._id}`;
+    const queryReturnTo = normalizeInternalReturnTo(req, req.query?.returnTo);
+
+    const refererReturnTo = !queryReturnTo
+        ? normalizeInternalReturnTo(req, req.get?.('referer') || req.get?.('referrer'))
+        : null;
+
+    const nextReturnTo = queryReturnTo
+        || (isEntityListReturnPath(req, entity.slug, refererReturnTo) ? refererReturnTo : null);
+
+    if (nextReturnTo && req.session) {
+        req.session.recordReturnTo = req.session.recordReturnTo || {};
+        req.session.recordReturnTo[sessionKey] = nextReturnTo;
+        return nextReturnTo;
+    }
+
+    const savedReturnTo = normalizeInternalReturnTo(req, req.session?.recordReturnTo?.[sessionKey]);
+    return savedReturnTo || fallback;
 }
 
 async function buildRecordMailContext(req, entity, record) {
@@ -199,6 +264,262 @@ async function buildRecordMailContext(req, entity, record) {
     };
 }
 
+const SHEET_LIMITS = {
+    maxSheets: 8,
+    maxRows: 200,
+    maxCols: 60,
+    maxCells: 12000,
+    maxValueLength: 5000
+};
+
+function clampNumber(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(Math.max(Math.round(number), min), max);
+}
+
+function normalizeSheetStyle(style = {}) {
+    const allowedAlign = ['left', 'center', 'right'];
+    const normalized = {};
+    if (style.bold === true) normalized.bold = true;
+    if (style.italic === true) normalized.italic = true;
+    if (style.underline === true) normalized.underline = true;
+    if (style.strike === true) normalized.strike = true;
+    if (allowedAlign.includes(style.align)) normalized.align = style.align;
+    if (/^#[0-9a-f]{6}$/i.test(style.textColor || '')) normalized.textColor = style.textColor;
+    if (/^#[0-9a-f]{6}$/i.test(style.fillColor || '')) normalized.fillColor = style.fillColor;
+    if (/^#[0-9a-f]{6}$/i.test(style.borderColor || '')) normalized.borderColor = style.borderColor;
+    if (style.border === true) normalized.border = true;
+    if (style.fontFamily) normalized.fontFamily = String(style.fontFamily).slice(0, 80);
+    if (style.fontSize) normalized.fontSize = clampNumber(style.fontSize, 9, 32, 13);
+    return normalized;
+}
+
+function normalizeSheetCells(cells = {}, rows, cols) {
+    const normalized = {};
+    let count = 0;
+    Object.entries(cells || {}).forEach(([key, cell]) => {
+        if (count >= SHEET_LIMITS.maxCells || !cell || typeof cell !== 'object') return;
+        const match = String(key).match(/^(\d+):(\d+)$/);
+        if (!match) return;
+        const row = Number(match[1]);
+        const col = Number(match[2]);
+        if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || col < 0 || row >= rows || col >= cols) return;
+        const value = cell.value === undefined || cell.value === null ? '' : String(cell.value).slice(0, SHEET_LIMITS.maxValueLength);
+        const style = normalizeSheetStyle(cell.style || {});
+        if (!value && Object.keys(style).length === 0) return;
+        normalized[`${row}:${col}`] = { value, style };
+        count += 1;
+    });
+    return normalized;
+}
+
+function normalizeSheetSizes(sizes = {}, maxIndex, minValue, maxValue) {
+    const normalized = {};
+    Object.entries(sizes || {}).forEach(([key, value]) => {
+        const idx = Number(key);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= maxIndex) return;
+        const size = clampNumber(value, minValue, maxValue, null);
+        if (size) normalized[idx] = size;
+    });
+    return normalized;
+}
+
+function defaultRecordSheet() {
+    return {
+        activeSheetId: 'sheet_1',
+        sheets: [{
+            id: 'sheet_1',
+            name: 'Feuille 1',
+            rows: 40,
+            cols: 14,
+            cells: {},
+            colWidths: {},
+            rowHeights: {}
+        }],
+        updatedAt: null
+    };
+}
+
+function normalizeRecordSheet(sheet = {}) {
+    const sourceSheets = Array.isArray(sheet.sheets) && sheet.sheets.length ? sheet.sheets : defaultRecordSheet().sheets;
+    const sheets = sourceSheets.slice(0, SHEET_LIMITS.maxSheets).map((tab, index) => {
+        const rows = clampNumber(tab.rows, 8, SHEET_LIMITS.maxRows, 40);
+        const cols = clampNumber(tab.cols, 4, SHEET_LIMITS.maxCols, 14);
+        const id = String(tab.id || `sheet_${index + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `sheet_${index + 1}`;
+        return {
+            id,
+            name: String(tab.name || `Feuille ${index + 1}`).slice(0, 60),
+            rows,
+            cols,
+            cells: normalizeSheetCells(tab.cells || {}, rows, cols),
+            colWidths: normalizeSheetSizes(tab.colWidths || {}, cols, 60, 360),
+            rowHeights: normalizeSheetSizes(tab.rowHeights || {}, rows, 24, 140)
+        };
+    });
+
+    const activeSheetId = sheets.some(tab => tab.id === sheet.activeSheetId)
+        ? sheet.activeSheetId
+        : sheets[0].id;
+
+    return {
+        activeSheetId,
+        sheets,
+        updatedAt: sheet.updatedAt || null
+    };
+}
+
+function normalizeRecordFieldInputType(field = {}, uiRowsOverride = null) {
+    const typeConfig = field.type_config || field.typeConfig || {};
+    const rawType = String(field.type || '').toLowerCase();
+    const rawInput = String(field.inputType || field.render?.input || '').toLowerCase();
+    const subtype = String(field.subtype || '').toLowerCase();
+    const renderInput = String(field.render?.input || '').toLowerCase();
+    const uiRows = uiRowsOverride !== null && uiRowsOverride !== undefined
+        ? parseInt(uiRowsOverride, 10)
+        : parseInt(field.ui?.rows || 1, 10);
+
+    if (['switch', 'toggle'].includes(rawType)
+        || ['switch', 'toggle'].includes(rawInput)
+        || ['switch', 'toggle'].includes(subtype)
+        || ['switch', 'toggle'].includes(renderInput)) {
+        return 'switch';
+    }
+
+    if (['boolean', 'checkbox'].includes(rawType)
+        || ['boolean', 'checkbox'].includes(rawInput)
+        || ['boolean', 'checkbox'].includes(subtype)) {
+        return 'checkbox';
+    }
+
+    if (['textarea', 'richtext'].includes(rawType)
+        || ['textarea', 'richtext'].includes(rawInput)
+        || ['textarea', 'richtext'].includes(subtype)
+        || (['text', 'string'].includes(rawType) && uiRows > 1)) {
+        return rawInput === 'richtext' || rawType === 'richtext' || subtype === 'richtext' ? 'richtext' : 'textarea';
+    }
+
+    if (rawType === 'select' && (typeConfig.multiple || subtype === 'multi' || rawInput === 'multiselect' || renderInput === 'multiselect')) {
+        return 'multiselect';
+    }
+    if (rawType === 'multiselect' || rawInput === 'multiselect') return 'multiselect';
+    if (rawType === 'select' || rawInput === 'select') return 'select';
+    if (rawType === 'number' || rawInput === 'number') return 'number';
+    if (rawType === 'date' || rawInput === 'date') return 'date';
+    if (rawInput === 'datetime-local' || subtype === 'datetime') return 'datetime-local';
+    if (['file', 'image', 'gallery'].includes(rawType)) return rawType;
+    if (['email', 'url', 'tel', 'phone'].includes(subtype)) return subtype === 'phone' ? 'tel' : subtype;
+    if (rawType === 'string') return rawInput || 'text';
+
+    return rawInput || rawType || 'text';
+}
+
+function cleanObjectId(value) {
+    if (!value) return '';
+    if (value._id) return value._id.toString();
+    if (value.$oid) return value.$oid.toString();
+    if (typeof value === 'object' && typeof value.toString === 'function') return value.toString();
+    return (value.id || value || '').toString();
+}
+
+function isTruthyToken(value) {
+    return ['true', '1', 'oui', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase());
+}
+
+function isFalsyToken(value) {
+    return ['false', '0', 'non', 'no', 'off'].includes(String(value ?? '').trim().toLowerCase());
+}
+
+function normalizeDraftDefaultValue(value, field = {}) {
+    const inputType = normalizeRecordFieldInputType(field);
+    if (inputType === 'checkbox' || inputType === 'switch' || inputType === 'boolean') {
+        if (value === true || value === false) return value;
+        if (isTruthyToken(value)) return true;
+        if (isFalsyToken(value)) return false;
+    }
+    return value;
+}
+
+function resolveClassificationOptionId(classification, value) {
+    if (!classification) return '';
+    const raw = cleanObjectId(value);
+    const option = (classification.options || []).find(opt =>
+        cleanObjectId(opt) === raw ||
+        String(opt.label || '').trim().toLowerCase() === String(value || '').trim().toLowerCase()
+    );
+    return option ? cleanObjectId(option) : '';
+}
+
+function buildDraftDefaultsFromViewFilters(filters = [], entity = {}) {
+    const defaults = {
+        standard: {},
+        customFields: [],
+        relations: [],
+        classificationValues: []
+    };
+
+    const cleanFilters = Array.isArray(filters) ? filters.filter(filter => filter && (filter.field || filter.fieldId)) : [];
+    if (!cleanFilters.length) return defaults;
+
+    // OR filters describe alternatives, so there is no single safe value to stamp on the draft.
+    if (cleanFilters.some((filter, index) => index > 0 && String(filter.logic || 'AND').toUpperCase() === 'OR')) {
+        return defaults;
+    }
+
+    const customFieldById = new Map((entity.customFields || []).map(field => [cleanObjectId(field), field]));
+    const classifications = [entity.statusClassification, ...(entity.classifications || [])].filter(Boolean);
+    const classById = new Map(classifications.map(classification => [cleanObjectId(classification), classification]));
+    const standardFields = new Set(['title', 'description', 'date', 'end_date', 'status']);
+
+    for (const filter of cleanFilters) {
+        const operator = normalizeOperator(filter.operator);
+        if (!['equals', 'in'].includes(operator)) continue;
+
+        const field = String(filter.field || filter.fieldId || '');
+        if (!field || filter.value === undefined || filter.value === null || filter.value === '') continue;
+
+        const rawValues = operator === 'in'
+            ? (Array.isArray(filter.value) ? filter.value : String(filter.value).split(',').map(item => item.trim()).filter(Boolean))
+            : [filter.value];
+        if (rawValues.length !== 1) continue;
+
+        const value = rawValues[0];
+
+        if (field.startsWith('classif:')) {
+            const classId = field.replace(/^classif:/, '');
+            const classification = classById.get(classId);
+            const optionId = resolveClassificationOptionId(classification, value);
+            if (optionId) {
+                defaults.classificationValues.push({ classificationId: classId, optionId });
+            }
+            continue;
+        }
+
+        if (field.startsWith('rel:')) {
+            const relationKey = field.replace(/^rel:/, '');
+            if (relationKey && value) {
+                defaults.relations.push({ relationKey, value });
+            }
+            continue;
+        }
+
+        if (standardFields.has(field)) {
+            defaults.standard[field] = value;
+            continue;
+        }
+
+        const customField = customFieldById.get(field);
+        if (customField) {
+            defaults.customFields.push({
+                field_id: field,
+                value: normalizeDraftDefaultValue(value, customField)
+            });
+        }
+    }
+
+    return defaults;
+}
+
 
 /**
  * Auto-generate a default form layout from entity.customFields
@@ -247,12 +568,49 @@ function generateDefaultLayout(customFields, relations) {
 }
 
 module.exports = {
+    listByViewSlug: async (req, res) => {
+        try {
+            const viewSlug = String(req.params.viewSlug || '').trim();
+            if (!viewSlug || isStrictObjectId(viewSlug)) {
+                return module.exports.detailPage(req, res);
+            }
+
+            const EntityModel = await tenantCollection(req, "Entity");
+            const ViewModel = await tenantCollection(req, "View");
+            const entity = await EntityModel.findOne({ slug: req.params.entityName }).select('_id slug').lean();
+            if (!entity) {
+                return res.status(404).render("errors/404", {
+                    message: "Entity not found",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const view = await ViewModel.findOne({ entity: entity._id, slug: viewSlug }).lean();
+            if (!view) {
+                return res.status(404).render("errors/404", {
+                    message: "Vue introuvable",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            req.query.viewId = view._id.toString();
+            req._skipViewSlugRedirect = true;
+            return module.exports.list(req, res);
+        } catch (error) {
+            console.error("[Record listByViewSlug] Error:", error);
+            res.status(500).send("Server Error");
+        }
+    },
+
     list: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");
             await tenantCollection(req, "Classification");
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
+            const ViewModel = await tenantCollection(req, "View");
 
             const entity = await EntityModel.findOne({ slug: req.params.entityName })
                 .populate('customFields')
@@ -272,22 +630,55 @@ module.exports = {
                 countQuery._id = sharedFilter._id;
             }
             let viewDoc = null;
-            if (req.query.viewId && mongoose.Types.ObjectId.isValid(req.query.viewId)) {
-                try {
-                    const ViewModel = await tenantCollection(req, "View");
-                    viewDoc = await ViewModel.findById(req.query.viewId).lean();
+            let effectiveViewId = entity._id;
+            const requestedViewId = req.query.viewId && isStrictObjectId(req.query.viewId)
+                ? req.query.viewId
+                : null;
+            try {
+                if (requestedViewId) {
+                    viewDoc = await ViewModel.findById(requestedViewId).lean();
+                }
+
+                if (viewDoc) {
+                    effectiveViewId = viewDoc._id;
                     const viewFilterQuery = buildRecordFilterQuery(viewDoc?.filters || []);
                     if (Object.keys(viewFilterQuery).length > 0) {
                         countQuery = { $and: [countQuery, viewFilterQuery] };
                     }
-                } catch (e) {
-                    console.warn('[Record list] view filter count error:', e.message);
                 }
+                if (!viewDoc) {
+                    const fallbackView = await ViewModel.findOne({
+                        entity: entity._id,
+                        viewType: { $in: ['list', 'table'] }
+                    }).sort({ order: 1, createdAt: 1 }).lean();
+                    if (fallbackView) {
+                        viewDoc = fallbackView;
+                        effectiveViewId = fallbackView._id;
+                    }
+                }
+            } catch (e) {
+                console.warn('[Record list] view resolution error:', e.message);
+            }
+            if (requestedViewId && viewDoc?.slug && !req._skipViewSlugRedirect) {
+                const params = new URLSearchParams();
+                Object.entries(req.query || {}).forEach(([key, value]) => {
+                    if (key === 'viewId' || value === undefined || value === null || value === '') return;
+                    if (Array.isArray(value)) {
+                        value.forEach(item => params.append(key, item));
+                    } else {
+                        params.set(key, value);
+                    }
+                });
+                const queryString = params.toString();
+                return res.redirect(
+                    302,
+                    `/account/${req.account_number}/record/${encodeURIComponent(req.params.entityName)}/${encodeURIComponent(viewDoc.slug)}${queryString ? `?${queryString}` : ''}`
+                );
             }
             const totalRecords = await RecordModel.countDocuments(countQuery);
 
             // viewType from query param (table by default — RecordsGrid handles switching internally)
-            const viewType = req.query.viewType || 'table';
+            const viewType = req.query.viewType || viewDoc?.viewType || 'table';
 
             // === Doc-listing special handling ===
             let smartDocTemplate = null;
@@ -304,9 +695,12 @@ module.exports = {
 
             // Create view object for progressive template compatibility
             const view = {
-                _id: req.query.viewId || entity._id,
+                _id: effectiveViewId,
+                name: viewDoc?.name,
+                slug: viewDoc?.slug,
                 viewType: viewType,
                 entity: entity._id,
+                settings: viewDoc?.settings || {},
                 virtualize: totalRecords > 5000
             };
 
@@ -491,7 +885,7 @@ module.exports = {
                             name: cf.name,
                             label: cf.label,
                             type: cf.type,
-                            inputType: cf.inputType || cf.type || 'text',
+                            inputType: normalizeRecordFieldInputType(cf),
                             htmlTemplate: cf.htmlTemplate || '',
                             options: typeConfig.options || cf.options || [],
                             multiple: typeConfig.multiple || false,
@@ -894,7 +1288,12 @@ module.exports = {
                 layout: "layout-app"
             });
 
-            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            const requestedRecordId = String(req.params.id || '').trim();
+            if (!requestedRecordId || requestedRecordId.toLowerCase() === 'undefined' || requestedRecordId.toLowerCase() === 'null') {
+                return res.redirect(`/account/${req.account_number}/record/${req.params.entityName}/list`);
+            }
+
+            if (!isStrictObjectId(requestedRecordId)) {
                 return res.status(400).send("Invalid Record ID");
             }
             const record = await RecordModel.findById(req.params.id);
@@ -923,7 +1322,7 @@ module.exports = {
                 const relValue = recordValues[rel.key];
                 if (relValue) {
                     const targetIds = Array.isArray(relValue) ? relValue : [relValue];
-                    const validIds = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+                    const validIds = targetIds.filter(id => isStrictObjectId(id));
                     if (validIds.length > 0) {
                         const relRecords = await RecordModel.find({ _id: { $in: validIds } })
                             .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
@@ -990,7 +1389,7 @@ module.exports = {
                 let count = 0;
                 if (relValue) {
                     const targetIds = Array.isArray(relValue) ? relValue : [relValue];
-                    count = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id)).length;
+                    count = targetIds.filter(id => isStrictObjectId(id)).length;
                 }
                 relationTabsMeta.push({
                     key: rel.key,
@@ -1067,7 +1466,7 @@ module.exports = {
                             name: cf.name,
                             label: cf.label,
                             type: cf.type,
-                            inputType: cf.inputType || cf.type || 'text',
+                            inputType: normalizeRecordFieldInputType(cf),
                             htmlTemplate: cf.htmlTemplate || '',
                             options: typeConfig.options || cf.options || [],
                             multiple: typeConfig.multiple || false,
@@ -1340,7 +1739,7 @@ module.exports = {
                     // Find the related record value from record.relations
                     const relVal = recordValues[headerRelationKey];
                     const relId = Array.isArray(relVal) ? relVal[0] : relVal;
-                    if (relId && mongoose.Types.ObjectId.isValid(relId)) {
+                    if (relId && isStrictObjectId(relId)) {
                         headerRelatedRecord = await RecordModel.findById(relId)
                             .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
                             .lean();
@@ -1374,7 +1773,7 @@ module.exports = {
                                     let records = [];
                                     if (rv) {
                                         const ids = Array.isArray(rv) ? rv : [rv];
-                                        const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+                                        const validIds = ids.filter(id => isStrictObjectId(id));
                                         count = validIds.length;
                                         if (count > 0) {
                                             records = await RecordModel.find({ _id: { $in: validIds } })
@@ -1813,7 +2212,7 @@ module.exports = {
                 }
             }
 
-            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            if (!isStrictObjectId(req.params.id)) {
                 return res.status(400).send("Invalid Record ID");
             }
 
@@ -1885,7 +2284,7 @@ module.exports = {
 
     delete: async (req, res) => {
         try {
-            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            if (!isStrictObjectId(req.params.id)) {
                 return res.status(400).send("Invalid Record ID");
             }
             const RecordModel = await tenantCollection(req, "Record");
@@ -1906,7 +2305,7 @@ module.exports = {
             }
 
             // Validate all IDs
-            const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+            const validIds = ids.filter(id => isStrictObjectId(id));
             if (validIds.length === 0) {
                 return res.status(400).json({ success: false, error: "No valid record IDs" });
             }
@@ -1940,7 +2339,7 @@ module.exports = {
             let updatedCount = 0;
 
             for (const id of ids) {
-                if (!mongoose.Types.ObjectId.isValid(id)) continue;
+                if (!isStrictObjectId(id)) continue;
 
                 const record = await RecordModel.findById(id);
                 if (!record) continue;
@@ -2210,7 +2609,10 @@ module.exports = {
             // Redirect to the default overview module
             const { entityName, id } = req.params;
             const account_number = req.account_number;
-            return res.redirect(`/account/${account_number}/record/${entityName}/${id}/overview`);
+            const queryString = req.originalUrl.includes('?')
+                ? req.originalUrl.slice(req.originalUrl.indexOf('?'))
+                : '';
+            return res.redirect(`/account/${account_number}/record/${entityName}/${id}/overview${queryString}`);
         } catch (err) {
             console.error("❌ Error in record detailPage redirect:", err);
             res.status(500).render("errors/500", {
@@ -2312,13 +2714,17 @@ module.exports = {
         try {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
-            const { entitySlug } = req.body;
+            const ViewModel = await tenantCollection(req, "View");
+            const { entitySlug, viewId } = req.body;
 
             if (!entitySlug) {
                 return res.status(400).json({ success: false, error: 'Missing entitySlug' });
             }
 
-            const entity = await EntityModel.findOne({ slug: entitySlug });
+            const entity = await EntityModel.findOne({ slug: entitySlug })
+                .populate('customFields')
+                .populate('statusClassification')
+                .populate('classifications');
             if (!entity) return res.status(404).json({ success: false, error: 'Entity not found' });
 
             // Cleanup stale drafts (older than 5 minutes, still blank)
@@ -2329,14 +2735,23 @@ module.exports = {
                 createdAt: { $lt: fiveMinAgo }
             });
 
+            let viewDefaults = { standard: {}, customFields: [], relations: [], classificationValues: [] };
+            if (viewId && isStrictObjectId(String(viewId))) {
+                const view = await ViewModel.findOne({ _id: viewId, entity: entity._id }).lean();
+                if (view?.filters?.length) {
+                    viewDefaults = buildDraftDefaultsFromViewFilters(view.filters, entity);
+                }
+            }
+
             const newRecord = new RecordModel({
                 entityId: entity._id,
-                title: '',
+                ...viewDefaults.standard,
+                title: viewDefaults.standard.title || '',
                 published: false,
                 isDraft: true,
-                customFields: [],
-                relations: [],
-                classificationValues: [],
+                customFields: viewDefaults.customFields,
+                relations: viewDefaults.relations,
+                classificationValues: viewDefaults.classificationValues,
                 createdBy: req.user?._id
             });
             await newRecord.save();
@@ -2413,7 +2828,7 @@ module.exports = {
             await record.save();
 
             // Return updated titles
-            const validIds = relEntry.value.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+            const validIds = relEntry.value.filter(id => id && isStrictObjectId(id));
             let relRecords = [];
             if (validIds.length > 0) {
                 const recs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
@@ -2426,13 +2841,85 @@ module.exports = {
         }
     },
 
-    // ═══ Contextual Module Pages (overview, fiche, docs, drive, tasks, notes, ai, chat, emails, agenda) ═══
+    // ═══ Record Sheet Data ═══
+    getSheet: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            const entity = await EntityModel.findOne({ slug: req.params.entityName }).select('_id slug').lean();
+            if (!entity) return res.status(404).json({ success: false, error: 'Entity not found' });
+            if (!isStrictObjectId(req.params.id)) {
+                return res.status(400).json({ success: false, error: 'Invalid Record ID' });
+            }
+
+            const record = await RecordModel.findById(req.params.id).select('entityId sheet').lean();
+            if (!record || record.entityId?.toString() !== entity._id.toString()) {
+                return res.status(404).json({ success: false, error: 'Record not found' });
+            }
+
+            const { canAccessRecord } = require('../middleware/shared-records-helper');
+            const hasAccess = await canAccessRecord(req, record._id, entity._id.toString(), 'sheet');
+            if (!hasAccess) {
+                return res.status(403).json({ success: false, error: 'Accès refusé' });
+            }
+
+            res.json({ success: true, sheet: normalizeRecordSheet(record.sheet || {}) });
+        } catch (err) {
+            console.error('[RecordSheet] Get error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
+    saveSheet: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            const entity = await EntityModel.findOne({ slug: req.params.entityName }).select('_id slug').lean();
+            if (!entity) return res.status(404).json({ success: false, error: 'Entity not found' });
+            if (!isStrictObjectId(req.params.id)) {
+                return res.status(400).json({ success: false, error: 'Invalid Record ID' });
+            }
+
+            const record = await RecordModel.findById(req.params.id).select('entityId sheet updatedBy isDraft');
+            if (!record || record.entityId?.toString() !== entity._id.toString()) {
+                return res.status(404).json({ success: false, error: 'Record not found' });
+            }
+
+            const { canEditRecordModule } = require('../middleware/shared-records-helper');
+            const canEditSheet = await canEditRecordModule(req, record._id, 'sheet');
+            if (!canEditSheet) {
+                return res.status(403).json({ success: false, error: 'Accès en lecture seule' });
+            }
+
+            const sheetPayload = req.body.sheet && typeof req.body.sheet === 'object' ? req.body.sheet : req.body;
+            const sheet = normalizeRecordSheet({
+                ...sheetPayload,
+                updatedAt: new Date()
+            });
+            sheet.updatedBy = req.user?._id || null;
+
+            record.sheet = sheet;
+            record.updatedBy = req.user?._id;
+            if (record.isDraft) record.isDraft = false;
+            record.markModified('sheet');
+            await record.save();
+
+            res.json({ success: true, sheet: normalizeRecordSheet(record.sheet || {}) });
+        } catch (err) {
+            console.error('[RecordSheet] Save error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    },
+
+    // ═══ Contextual Module Pages (overview, fiche, docs, drive, tasks, notes, ai, chat, emails, agenda, sheet) ═══
     modulePage: async (req, res) => {
         try {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
             const moduleName = req.params.moduleName;
-            const validModules = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'notes', 'ai', 'chat', 'emails', 'agenda', 'team'];
+            const validModules = ['overview', 'fiche', 'docs', 'drive', 'data-room', 'tasks', 'notes', 'ai', 'chat', 'emails', 'agenda', 'sheet', 'team'];
             if (!validModules.includes(moduleName)) {
                 return res.status(404).render("errors/404", {
                     message: "Module not found",
@@ -2461,8 +2948,16 @@ module.exports = {
                 layout: "layout-app"
             });
 
-            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-                return res.status(400).send("Invalid Record ID");
+            if (!isStrictObjectId(req.params.id)) {
+                const ViewModel = await tenantCollection(req, "View");
+                const fallbackView = await ViewModel.findOne({
+                    entity: entity._id,
+                    viewType: { $nin: ['hub', 'cockpit'] }
+                }).sort({ updatedAt: -1, createdAt: -1, order: 1 }).lean();
+                if (fallbackView?.slug) {
+                    return res.redirect(`/account/${req.account_number}/record/${entity.slug}/${fallbackView.slug}`);
+                }
+                return res.redirect(`/account/${req.account_number}/record/${entity.slug}/list`);
             }
 
             if (moduleName === 'fiche' || moduleName === 'overview' || moduleName === 'emails') {
@@ -2472,13 +2967,15 @@ module.exports = {
                 }
             } else {
                 record = await RecordModel.findById(req.params.id)
-                    .select('title image _id entityId attachments');
+                    .select('title image _id entityId attachments sheet');
             }
             if (!record) return res.status(404).render("errors/404", {
                 message: "Record not found",
                 account_number: req.account_number,
                 layout: "layout-app"
             });
+
+            const recordBackUrl = resolveRecordBackUrl(req, entity, record);
 
             let defaultHiddenRecordModules = [];
             try {
@@ -2580,7 +3077,7 @@ module.exports = {
 
                         if (relVal) {
                             const ids = Array.isArray(relVal) ? relVal : [relVal];
-                            const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+                            const validIds = ids.filter(id => id && isStrictObjectId(id));
                             if (validIds.length > 0) {
                                 const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
                                 relRecords = relRecs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
@@ -2590,6 +3087,7 @@ module.exports = {
 
                         ficheFields.push({
                             key: cf._id.toString(),
+                            name: cf.name || '',
                             label: cf.label || cf.name || '',
                             icon: targetEntityIcon || (cf.ui && cf.ui.icon) || 'solar:link-round-bold-duotone',
                             value: displayVal,
@@ -2604,7 +3102,9 @@ module.exports = {
                             targetEntityId: targetEntityId.toString(),
                             targetEntitySlug,
                             isMulti,
-                            options: []
+                            options: [],
+                            subtype: cf.subtype || '',
+                            typeConfig
                         });
                         continue;
                     }
@@ -2635,18 +3135,11 @@ module.exports = {
                     }
                     const uiRows = (cf.ui && cf.ui.rows) ? parseInt(cf.ui.rows) : 1;
                     const uiWidth = (cf.ui && cf.ui.width) || 'full';
-                    let inputType = 'text';
-                    if (cf.type === 'text' && uiRows > 1) inputType = 'textarea';
-                    else if (cf.type === 'number') inputType = 'number';
-                    else if (cf.type === 'date') inputType = 'date';
-                    else if (cf.type === 'select' && (typeConfig.multiple || cf.subtype === 'multi')) inputType = 'multiselect';
-                    else if (cf.type === 'select') inputType = 'select';
-                    else if (cf.type === 'multiselect') inputType = 'multiselect';
-                    else if (cf.type === 'boolean' || cf.type === 'checkbox') inputType = 'checkbox';
-                    else if (cf.type === 'file' || cf.type === 'image' || cf.type === 'gallery') inputType = cf.type;
+                    const inputType = normalizeRecordFieldInputType(cf, uiRows);
 
                     ficheFields.push({
                         key: cf._id.toString(),
+                        name: cf.name || '',
                         label: cf.label || cf.name || '',
                         icon: (cf.ui && cf.ui.icon) || 'solar:document-text-linear',
                         value: displayVal,
@@ -2659,7 +3152,9 @@ module.exports = {
                         fieldType: 'custom',
                         removable: true,
                         required: cf.required || false,
-                        options: (cf.type_config && cf.type_config.options) || []
+                        options: (cf.type_config && cf.type_config.options) || [],
+                        subtype: cf.subtype || '',
+                        typeConfig
                     });
                 }
 
@@ -2673,7 +3168,7 @@ module.exports = {
                     let relRecords = [];
                     if (relVal && relVal.value) {
                         const ids = Array.isArray(relVal.value) ? relVal.value : [relVal.value];
-                        const validIds = ids.filter(id => id && mongoose.Types.ObjectId.isValid(id));
+                        const validIds = ids.filter(id => id && isStrictObjectId(id));
                         if (validIds.length > 0) {
                             const relRecs = await RecordModel.find({ _id: { $in: validIds } }).select('title _id').lean();
                             relRecords = relRecs.map(r => ({ _id: r._id.toString(), title: r.title || 'Sans titre' }));
@@ -2884,6 +3379,7 @@ module.exports = {
                 accessibleRecordModules,
                 accessibleRecordModulePermissions,
                 defaultHiddenRecordModules,
+                recordBackUrl,
                 layout: "layout-app"
             });
         } catch (error) {

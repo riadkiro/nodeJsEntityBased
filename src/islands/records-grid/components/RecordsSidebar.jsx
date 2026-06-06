@@ -5,6 +5,7 @@
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import AdvancedFilters from './AdvancedFilters'
+import { recordModuleHref } from '../../shared/recordLinks'
 
 const SIDEBAR_MIN = 229
 const SIDEBAR_MAX = 500
@@ -27,6 +28,7 @@ export default function RecordsSidebar({
     allRecords = [],
     sidebarWidth: externalWidth,
     onSidebarWidthChange,
+    viewId,
 }) {
     const [localWidth, setLocalWidth] = useState(externalWidth || SIDEBAR_DEFAULT)
     const isDraggingRef = useRef(false)
@@ -239,11 +241,11 @@ export default function RecordsSidebar({
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             credentials: 'include',
-                                            body: JSON.stringify({ entitySlug })
+                                            body: JSON.stringify({ entitySlug, viewId })
                                         });
                                         const data = await res.json();
                                         if (data.success && data._id) {
-                                            window.location.href = `/account/${accountNumber}/record/${entitySlug}/${data._id}/fiche`;
+                                            window.location.href = recordModuleHref(accountNumber, entitySlug, data._id, 'fiche');
                                         }
                                     } catch (e) { console.error('[CreateDraft]', e); }
                                 }}>

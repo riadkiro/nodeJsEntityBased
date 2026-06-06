@@ -77,6 +77,7 @@ export default function TimelineView({ events, entityData, onEventClick, getStat
                             const lieu = getCustomFieldValue(ev, 'lieu_evenement')
                             const duration = getCustomFieldValue(ev, 'duree_evenement')
                             const type = getCustomFieldValue(ev, 'type_evenement')
+                            const tags = normalizeTimelineTags(getCustomFieldValue(ev, 'tags_evenement'))
                             const evPast = isPast(ev.date)
 
                             return (
@@ -123,6 +124,13 @@ export default function TimelineView({ events, entityData, onEventClick, getStat
                                                     </span>
                                                 )}
                                             </div>
+                                            {tags.length > 0 && (
+                                                <div className="ra-tl-tags">
+                                                    {tags.map(tag => (
+                                                        <span key={tag} className="ra-tl-tag">{tag}</span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -133,6 +141,16 @@ export default function TimelineView({ events, entityData, onEventClick, getStat
             ))}
         </div>
     )
+}
+
+function normalizeTimelineTags(value) {
+    const raw = Array.isArray(value)
+        ? value
+        : (typeof value === 'string' ? value.split(',') : [])
+
+    return raw
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
 }
 
 function getTimelineStyles() {
@@ -220,5 +238,16 @@ function getTimelineStyles() {
     font-size:11px; color:#9ca3af; font-weight:500;
 }
 .dark .ra-tl-meta-item { color:#506690; }
+
+.ra-tl-tags {
+    display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;
+}
+.ra-tl-tag {
+    display:inline-flex; align-items:center; min-height:20px;
+    padding:2px 7px; border-radius:6px;
+    background:#f8fafc; border:1px solid #e2e8f0;
+    color:#64748b; font-size:10.5px; font-weight:800;
+}
+.dark .ra-tl-tag { background:#0e1726; border-color:#253b5c; color:#94a3b8; }
 `
 }

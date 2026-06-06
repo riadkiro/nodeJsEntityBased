@@ -125,8 +125,8 @@ export default function DataGridToolbar({
         <>
             {/* Bulk action bar */}
             {selectedCount > 0 && (
-                <div className="flex items-center justify-between px-4 py-2.5 mb-2 rounded-xl bg-primary/10 border border-primary/20 transition-all" style={{ animation: 'popoverSlide 0.15s ease-out' }}>
-                    <div className="flex items-center gap-3">
+                <div className="flex flex-col items-stretch justify-between gap-2 px-4 py-2.5 mb-2 rounded-xl bg-primary/10 border border-primary/20 transition-all sm:flex-row sm:items-center" style={{ animation: 'popoverSlide 0.15s ease-out' }}>
+                    <div className="flex min-w-0 items-center gap-3">
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold">
                                 {selectedCount}
@@ -136,7 +136,7 @@ export default function DataGridToolbar({
                             </span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {confirmDelete ? (
                             <>
                                 <button
@@ -203,9 +203,9 @@ export default function DataGridToolbar({
                     </div>
                 </div>
             )}
-            <div className="dataTable-top flex items-center mb-0 justify-between gap-2">
+            <div className="dataTable-top flex flex-col items-stretch mb-0 justify-between gap-2 sm:flex-row sm:items-center">
                 {/* Left: Add + Search */}
-                <div className="flex items-center gap-2">
+                <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
                     {/* Add button(s) */}
                     {hasDualButtons ? (
                         <>
@@ -277,7 +277,7 @@ export default function DataGridToolbar({
                     )}
 
                     {/* Search input */}
-                    <div className="dataTable-search relative w-64" style={{ marginLeft: 0 }}>
+                    <div className="dataTable-search relative min-w-[180px] flex-1 sm:w-64 sm:flex-none" style={{ marginLeft: 0 }}>
                         <svg className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none">
                             <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
                             <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -299,7 +299,7 @@ export default function DataGridToolbar({
                 </div>
 
                 {/* Right: Icon buttons */}
-                <div className="flex items-center gap-2">
+                <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                     {/* Sidebar toggle button - expandable pill */}
                     {onToggleSidebar && (
                         <button

@@ -26,15 +26,20 @@ function slugify(value) {
 }
 
 function normalizeOption(option, index) {
+    const optionId = cleanId(option?._id || option?.id || option?.value || option?.label || option?.name || option)
     return {
-        id: cleanId(option),
-        label: option.label || option.name || String(option.value || `Étape ${index + 1}`),
-        color: option.color || option.couleur || '#6366f1',
-        order: Number.isFinite(Number(option.order)) ? Number(option.order) : index,
+        id: optionId,
+        value: String(option?.value ?? optionId),
+        label: option?.label || option?.name || String(option?.value || optionId || `Étape ${index + 1}`),
+        color: option?.color || option?.couleur || '#6366f1',
+        order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index,
     }
 }
 
 function normalizeChoiceOption(option, index) {
+    if (!option) {
+        return { value: '', label: `Option ${index + 1}`, color: '#64748b', order: index }
+    }
     if (typeof option === 'string') {
         return { value: option, label: option, color: '#64748b', order: index }
     }
@@ -66,6 +71,30 @@ function buildPipelineFields(entityData, createdFields = []) {
             options,
         })
     }
+    const pushCustomField = (field) => {
+        const id = cleanId(field)
+        if (!id || seen.has(`field:${id}`)) return
+        const typeConfig = field.type_config || field.typeConfig || {}
+        const type = String(field.fieldType || field.type || field.render?.input || '').toLowerCase()
+        const input = String(field.render?.input || '').toLowerCase()
+        const isSelect = type === 'select' || input === 'select'
+        if (!isSelect || typeConfig.multiple || !typeConfig.useAsPipeline) return
+
+        const options = (typeConfig.options || field.options || [])
+            .map(normalizeOption)
+            .filter(option => option.id || option.label)
+            .sort((a, b) => a.order - b.order)
+
+        seen.add(`field:${id}`)
+        fields.push({
+            id,
+            value: `field:${id}`,
+            label: field.label || field.name || 'Pipeline',
+            source: 'field',
+            typeConfig,
+            options,
+        })
+    }
 
     if (entityData?.statusClassification) {
         pushField(entityData.statusClassification, 'status')
@@ -76,6 +105,7 @@ function buildPipelineFields(entityData, createdFields = []) {
     createdFields.forEach(classification => {
         pushField(classification, 'classification')
     })
+    ;(entityData?.customFields || []).forEach(pushCustomField)
 
     return fields
 }
@@ -282,40 +312,66 @@ export default function PipelineConfigModal({
             const originalById = new Map(selectedField.options.map(option => [option.id, option]))
             const finalOptions = []
 
-            for (const stage of validStages) {
-                if (stage.isNew || stage.id.startsWith('tmp_')) {
-                    const data = await apiJson(`/account/${accountNumber}/classification/api/fast-add`, {
-                        classificationId: selectedField.id,
+            if (selectedField.source === 'field') {
+                const options = validStages.map((stage, index) => {
+                    const value = String(stage.value || (!String(stage.id).startsWith('tmp_') ? stage.id : stage.label))
+                    return {
                         label: stage.label,
+                        value,
                         color: stage.color,
-                    })
-                    finalOptions.push({ ...stage, id: cleanId(data.option), isNew: false })
-                    continue
+                        order: index,
+                    }
+                })
+
+                await apiJson(`/account/${accountNumber}/field-template/api/${selectedField.id}/update`, {
+                    typeConfig: {
+                        ...(selectedField.typeConfig || {}),
+                        useAsPipeline: true,
+                        options,
+                    },
+                })
+                finalOptions.push(...validStages.map((stage, index) => ({
+                    ...stage,
+                    id: String(stage.value || (!String(stage.id).startsWith('tmp_') ? stage.id : stage.label)),
+                    order: index,
+                    isNew: false,
+                })))
+            } else {
+                for (const stage of validStages) {
+                    if (stage.isNew || stage.id.startsWith('tmp_')) {
+                        const data = await apiJson(`/account/${accountNumber}/classification/api/fast-add`, {
+                            classificationId: selectedField.id,
+                            label: stage.label,
+                            color: stage.color,
+                        })
+                        finalOptions.push({ ...stage, id: cleanId(data.option), isNew: false })
+                        continue
+                    }
+
+                    const original = originalById.get(stage.id)
+                    if (original && (original.label !== stage.label || original.color !== stage.color)) {
+                        await apiJson(`/account/${accountNumber}/classification/api/update-option`, {
+                            classificationId: selectedField.id,
+                            optionId: stage.id,
+                            label: stage.label,
+                            color: stage.color,
+                        })
+                    }
+                    finalOptions.push(stage)
                 }
 
-                const original = originalById.get(stage.id)
-                if (original && (original.label !== stage.label || original.color !== stage.color)) {
-                    await apiJson(`/account/${accountNumber}/classification/api/update-option`, {
+                for (const optionId of deletedIds) {
+                    await apiJson(`/account/${accountNumber}/classification/api/delete-option`, {
                         classificationId: selectedField.id,
-                        optionId: stage.id,
-                        label: stage.label,
-                        color: stage.color,
+                        optionId,
                     })
                 }
-                finalOptions.push(stage)
-            }
 
-            for (const optionId of deletedIds) {
-                await apiJson(`/account/${accountNumber}/classification/api/delete-option`, {
+                await apiJson(`/account/${accountNumber}/classification/api/reorder`, {
                     classificationId: selectedField.id,
-                    optionId,
+                    options: finalOptions.map((stage, index) => ({ id: stage.id, order: index })),
                 })
             }
-
-            await apiJson(`/account/${accountNumber}/classification/api/reorder`, {
-                classificationId: selectedField.id,
-                options: finalOptions.map((stage, index) => ({ id: stage.id, order: index })),
-            })
 
             const nextSettings = {
                 ...(viewSettings || {}),

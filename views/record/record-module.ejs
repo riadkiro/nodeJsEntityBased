@@ -8,6 +8,7 @@ const _modulesDef = {
   'data-room': { icon: 'solar:shield-keyhole-bold-duotone', color: '#0f766e', label: 'Data Room', desc: 'Partage sécurisé, accès et journal' },
   tasks:  { icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', label: 'Tâches', desc: 'Suivi des actions et rappels' },
   agenda: { icon: 'solar:calendar-bold-duotone', color: '#14b8a6', label: 'Agenda', desc: 'Rendez-vous et événements' },
+  sheet:  { icon: 'tabler:table', color: '#059669', label: 'Sheet', desc: 'Grille tableur et mise en forme' },
   chat:   { icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316', label: 'Chat', desc: 'Conversations et échanges' },
   emails: { icon: 'solar:letter-bold-duotone', color: '#0ea5e9', label: 'Emails', desc: 'Correspondance liée' },
   notes:  { icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', label: 'Notes', desc: 'Notes et observations' },
@@ -19,6 +20,7 @@ const _modColor = _mod.color;
 const _ficheFields = (typeof ficheFields !== 'undefined') ? ficheFields : [];
 const _recBase = "/account/" + account_number + "/record/" + entity.slug + "/" + record._id;
 const _sharedDataRoomOnly = !!(locals.sharedDataRoomMode || (typeof sharedDataRoomMode !== 'undefined' && sharedDataRoomMode));
+const _recordBackUrl = (typeof recordBackUrl !== 'undefined' && recordBackUrl) ? recordBackUrl : ('/account/' + account_number + '/record/' + entity.slug + '/list');
 const _allowedRecordModules = Array.isArray(locals.accessibleRecordModules) ? locals.accessibleRecordModules : null;
 const _recordModulePermissions = (locals.accessibleRecordModulePermissions && typeof locals.accessibleRecordModulePermissions === 'object') ? locals.accessibleRecordModulePermissions : null;
 const _currentModulePermissions = _recordModulePermissions ? (_recordModulePermissions[moduleName] || { view: false, edit: false }) : { view: true, edit: true };
@@ -32,6 +34,7 @@ const _recordModuleNavItems = [
     { key:'data-room', icon:'solar:shield-keyhole-bold-duotone', color:'#0f766e', label:'Data Room' },
     { key:'tasks', icon:'solar:checklist-minimalistic-bold-duotone', color:'#10b981', label:'Tasks' },
     { key:'agenda', icon:'solar:calendar-bold-duotone', color:'#14b8a6', label:'Agenda' },
+    { key:'sheet', icon:'tabler:table', color:'#059669', label:'Sheet' },
     { key:'chat', icon:'solar:chat-round-dots-bold-duotone', color:'#f97316', label:'Chat' },
     { key:'emails', icon:'solar:letter-bold-duotone', color:'#0ea5e9', label:'Emails' },
     { key:'notes', icon:'solar:notebook-bold-duotone', color:'#8b5cf6', label:'Notes' },
@@ -49,8 +52,9 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     display:flex; align-items:center; gap:20px; padding:28px 32px;
     background:linear-gradient(135deg, <%= _modColor %>08, <%= _modColor %>04);
     border:1px solid <%= _modColor %>20; border-radius:16px; margin-bottom:28px;
-    position:relative; overflow:visible; z-index:40;
+    position:relative; overflow:visible; z-index:1;
 }
+.rm-page--config-open .rm-hero { z-index:40; }
 .rm-hero::before {
     content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px;
     background:radial-gradient(circle, <%= _modColor %>12, transparent 70%);
@@ -87,13 +91,13 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 }
 .rm-btn-secondary:hover { color:#4361ee; border-color:#c7d2fe; background:#f8fbff; }
 .rm-actions-compact { display:flex; align-items:center; gap:8px; margin-left:auto; }
-.rm-hero-actions { display:flex; align-items:center; gap:8px; z-index:50; position:relative; }
+.rm-hero-actions { display:flex; align-items:center; gap:8px; z-index:2; position:relative; }
 .rm-header-btn { font-size:12px; padding:8px 14px; min-height:34px; font-weight:700; }
 .rm-header-btn--widgets { color:#6366f1; border-color:#c7d2fe; background:#fff; }
 .rm-header-btn--widgets:hover { color:#4f46e5; background:#f5f7ff; border-color:#a5b4fc; }
-.rm-tab-config { position:relative; z-index:60; }
+.rm-tab-config { position:relative; z-index:20; }
 .rm-tab-config-menu {
-    position:absolute; top:calc(100% + 10px); right:0; width:286px; z-index:70;
+    position:absolute; top:calc(100% + 10px); right:0; width:286px; z-index:30;
     background:#fff; border:1px solid #e0e6ed; border-radius:14px;
     box-shadow:0 18px 45px rgba(15,23,42,.12); overflow:hidden;
 }
@@ -115,8 +119,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .rm-switch.on { background:#6366f1; }
 .rm-switch.on span { transform:translateX(14px); }
 .rm-tab-config-note { padding:9px 14px 12px; border-top:1px solid #f1f3f5; color:#94a3b8; font-size:11px; line-height:1.35; }
-.rm-nav { display:flex; gap:4px; margin-bottom:24px; padding:4px; background:#f8fafc; border-radius:12px; border:1px solid #e0e6ed; overflow-x:auto; position:relative; z-index:1; }
-.rm-nav a { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:500; color:#888da8; text-decoration:none; transition:all .2s; white-space:nowrap; }
+.rm-nav { display:flex; flex:0 0 auto; gap:4px; min-height:43px; margin-bottom:24px; padding:4px; background:#f8fafc; border-radius:12px; border:1px solid #e0e6ed; overflow-x:auto; overflow-y:hidden; position:relative; z-index:1; }
+.rm-nav a { display:flex; flex:0 0 auto; align-items:center; gap:6px; min-height:33px; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:500; color:#888da8; text-decoration:none; transition:all .2s; white-space:nowrap; }
 .rm-nav a:hover { background:#fff; color:#0e1726; }
 .rm-nav a.active { background:#fff; color:#0e1726; box-shadow:0 1px 3px rgba(0,0,0,.08); font-weight:600; }
 .rm-items-list { display:flex; flex-direction:column; gap:2px; }
@@ -141,24 +145,40 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .ov-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px;font-weight:700;color:#0e1726;}
 .ov-card-link{margin-left:auto;font-size:12px;font-weight:500;color:#888da8;text-decoration:none;transition:color .2s;}
 .ov-card-link:hover{color:#4361ee;}
+@media(max-width:640px){
+    .ov-card-header{flex-wrap:wrap;}
+    .ov-card-link{margin-left:0;max-width:100%;white-space:nowrap;}
+}
 .ov-fields-list{display:flex;flex-direction:column;gap:0;}
 .ov-ef{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent;position:relative;}
 .ov-ef:hover{background:#f8fafc;border-color:#e8ecf1;}
 .ov-ef + .ov-ef{border-top:1px solid #f1f3f5;}
 .ov-ef:hover + .ov-ef{border-top-color:transparent;}
 .ov-ef:focus-within + .ov-ef{border-top-color:transparent;}
-.ov-ef-head{display:flex;align-items:center;gap:7px;width:180px;min-width:180px;flex-shrink:0;padding-top:2px;}
+.ov-ef-head{display:flex;align-items:flex-start;gap:7px;width:180px;min-width:180px;flex-shrink:0;padding-top:2px;}
 .ov-ef-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ov-ef-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888da8;white-space:nowrap;}
+.ov-ef-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888da8;line-height:1.25;white-space:normal;overflow-wrap:anywhere;max-width:calc(100% - 31px);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .ov-ef-body{flex:1;min-width:0;}
 .ov-ef-view{min-height:24px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
-.ov-ef-val{font-size:13px;font-weight:500;color:#0e1726;}
+.ov-ef-val{font-size:13px;font-weight:500;color:#0e1726;line-height:1.4;max-width:100%;overflow-wrap:anywhere;}
 .ov-ef-text{font-size:13px;font-weight:500;color:#0e1726;white-space:pre-wrap;line-height:1.45;}
 .ov-placeholder{font-size:12.5px;color:#bfc9d4;font-weight:400;font-style:italic;}
 .ov-tags{display:flex;flex-wrap:wrap;gap:4px;}
 .ov-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid;line-height:1.4;}
 .ov-tag-x{background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px;color:inherit;opacity:.6;transition:opacity .15s;}
 .ov-tag-x:hover{opacity:1;}
+.ov-bool-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid;line-height:1.35;}
+.ov-bool-pill--on{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.22);color:#059669;}
+.ov-bool-pill--off{background:#f8fafc;border-color:#e2e8f0;color:#64748b;}
+.ov-bool-dot{width:7px;height:7px;border-radius:999px;display:inline-block;flex:none;}
+.ov-bool-editor{display:flex;align-items:center;min-height:30px;}
+.ov-checkbox-line{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#334155;cursor:pointer;}
+.ov-switch{display:inline-flex;align-items:center;cursor:pointer;position:relative;}
+.ov-switch-input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;}
+.ov-switch-track{width:42px;height:24px;border-radius:999px;background:#cbd5e1;position:relative;display:inline-block;transition:background .18s ease;}
+.ov-switch-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.22);transition:left .18s ease;}
+.ov-switch-input:checked + .ov-switch-track{background:#4361ee;}
+.ov-switch-input:checked + .ov-switch-track .ov-switch-thumb{left:21px;}
 .ov-ms-pills{display:flex;flex-wrap:wrap;gap:5px;}
 .ov-ms-pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid #e2e8f0;background:#fff;color:#888da8;transition:all .2s;user-select:none;}
 .ov-ms-pill.active{background:rgba(67,97,238,.1);border-color:#4361ee;color:#4361ee;}
@@ -200,6 +220,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .dark .ov-ef-label{color:#506690;}
 .dark .ov-ef-val,.dark .ov-ef-text{color:#e0e6ed;}
 .dark .ov-placeholder{color:#506690;}
+.dark .ov-bool-pill--off{background:#0e1726;border-color:#253b5c;color:#94a3b8;}
+.dark .ov-checkbox-line{color:#e0e6ed;}
 .dark .ov-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
 .dark .ov-input:focus{border-color:#4361ee;}
 .dark .ov-textarea{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
@@ -225,7 +247,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .fiche-configuring{user-select:none;-webkit-user-select:none;}
 .fiche-configuring .ov-ef{cursor:default;}
 .fiche-configuring .ov-ef .ov-ef-body{pointer-events:none;opacity:.7;}
-.fiche-configuring .ov-ef .fiche-drag-handle,.fiche-configuring .ov-ef .fiche-vis-toggle,.fiche-configuring .ov-ef .fiche-delete-field,.fiche-configuring .ov-ef .fiche-req-badge{pointer-events:auto;}
+.fiche-configuring .ov-ef .fiche-drag-handle,.fiche-configuring .ov-ef .fiche-vis-toggle,.fiche-configuring .ov-ef .fiche-edit-field,.fiche-configuring .ov-ef .fiche-delete-field,.fiche-configuring .ov-ef .fiche-req-badge{pointer-events:auto;}
 .ov-ef .fiche-drag-handle{display:none;width:18px;height:18px;align-items:center;justify-content:center;cursor:grab;color:#bfc9d4;font-size:13px;flex-shrink:0;border-radius:4px;transition:color .15s,background .15s;margin-right:2px;}
 .fiche-configuring .ov-ef .fiche-drag-handle{display:flex;}
 .ov-ef .fiche-drag-handle:hover{color:#4361ee;background:rgba(67,97,238,.06);}
@@ -233,6 +255,9 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .ov-ef .fiche-vis-toggle{display:none;margin-left:auto;padding:3px;border:none;background:none;cursor:pointer;color:#bfc9d4;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;line-height:0;}
 .fiche-configuring .ov-ef .fiche-vis-toggle{display:block;}
 .ov-ef .fiche-vis-toggle:hover{color:#4361ee;background:rgba(67,97,238,.06);}
+.ov-ef .fiche-edit-field{display:none;padding:3px;border:none;background:none;cursor:pointer;color:#cbd5e1;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;line-height:0;}
+.fiche-configuring .ov-ef .fiche-edit-field{display:block;}
+.ov-ef .fiche-edit-field:hover{color:#4361ee;background:rgba(67,97,238,.06);}
 .ov-ef .fiche-delete-field{display:none;padding:3px;border:none;background:none;cursor:pointer;color:#cbd5e1;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;line-height:0;}
 .fiche-configuring .ov-ef .fiche-delete-field{display:block;}
 .ov-ef .fiche-delete-field:hover{color:#ef4444;background:rgba(239,68,68,.08);}
@@ -397,6 +422,11 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     transition:border-color .2s;box-sizing:border-box;min-height:60px;
 }
 .fp-create-textarea:focus{outline:none;border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.08);}
+.fp-check-line{display:flex;align-items:center;gap:9px;min-height:30px;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer;user-select:none;}
+.fp-check-line input{position:absolute;opacity:0;pointer-events:none;}
+.fp-check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid #dbe3ee;background:#fff;color:transparent;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.fp-check-line input:checked + .fp-check-box{border-color:#4361ee;background:#4361ee;color:#fff;}
+.fp-check-line:hover .fp-check-box{border-color:#4361ee;}
 .fp-create-btn{
     width:100%;padding:10px;border-radius:10px;border:none;
     background:linear-gradient(135deg,#4361ee,#6366f1);color:#fff;font-size:13px;
@@ -436,6 +466,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .dark .fp-create-input:focus{border-color:#4361ee;}
 .dark .fp-create-textarea{background:#0e1726;border-color:#253b5c;color:#e0e6ed;}
 .dark .fp-create-textarea:focus{border-color:#4361ee;}
+.dark .fp-check-line{color:#e0e6ed;}
+.dark .fp-check-box{background:#0e1726;border-color:#253b5c;}
 .dark .fp-empty-hint{color:#506690;}
 
 @media (max-width:600px) {
@@ -444,8 +476,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 }
 </style>
 
-<div class="rm-page" x-data="recordModuleShell()" @keydown.escape.window="configOpen = false" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } %>>
-    <a href="<%= _sharedDataRoomOnly ? ('/account/' + account_number + '/shared-with-you') : ('/account/' + account_number + '/record/' + entity.slug + '/list') %>" class="rm-back">
+<div class="rm-page" x-data="recordModuleShell()" :class="{ 'rm-page--config-open': configOpen }" @keydown.escape.window="configOpen = false" <% if (moduleName === 'agenda') { %>style="height:calc(100vh - 70px);display:flex;flex-direction:column;padding-top:16px;padding-bottom:0;"<% } else if (moduleName === 'sheet') { %>style="max-width:none;padding:16px 20px 24px;"<% } %>>
+    <a href="<%= _sharedDataRoomOnly ? ('/account/' + account_number + '/shared-with-you') : _recordBackUrl %>" class="rm-back">
         <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
         Retour à <strong><%= _sharedDataRoomOnly ? 'Shared with you' : entity.name %></strong>
         <% if (moduleName === 'agenda') { %>
@@ -1055,7 +1087,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                         return;
                     }
                 }
-                this.saveField(key, ref.value);
+                this.saveField(key, ref.type === 'checkbox' ? ref.checked : ref.value);
             },
             async saveField(key, value) {
                 if (!_overviewRecordModuleCanEdit) return;
@@ -1075,9 +1107,12 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                         if (fieldEl) {
                             const viewEl = fieldEl.querySelector('.ov-ef-view');
                             if (viewEl) {
-                                const displayVal = Array.isArray(value) ? value.join(', ') : (value || '');
-                                if (displayVal) {
-                                    viewEl.innerHTML = '<span class="ov-ef-val">' + displayVal.replace(/</g,'&lt;') + '</span>';
+                                const isBool = typeof value === 'boolean';
+                                const displayVal = Array.isArray(value) ? value.join(', ') : (isBool ? (value ? 'Oui' : 'Non') : (value || ''));
+                                if (isBool) {
+                                    viewEl.innerHTML = '<span class="ov-bool-pill ' + (value ? 'ov-bool-pill--on' : 'ov-bool-pill--off') + '"><span class="ov-bool-dot" style="background:' + (value ? '#10b981' : '#cbd5e1') + '"></span>' + displayVal + '</span>';
+                                } else if (displayVal) {
+                                    viewEl.innerHTML = '<span class="ov-ef-val">' + String(displayVal).replace(/</g,'&lt;') + '</span>';
                                 } else {
                                     viewEl.innerHTML = '<span class="ov-placeholder">' + (fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur') + '</span>';
                                 }
@@ -3017,21 +3052,21 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     </div>
 
     <!-- ═══ FIELD PICKER MODAL ═══ -->
-    <div x-data="ficheFieldPicker()" @open-field-picker.window="openModal()">
+    <div x-data="ficheFieldPicker()" @open-field-picker.window="openModal()" @edit-field-template.window="openEdit($event.detail)">
         <!-- Overlay -->
         <div class="fp-overlay" :class="{'fp-open': isOpen}" @click="closeModal()"></div>
         <!-- Modal -->
         <div class="fp-modal" :class="{'fp-open': isOpen}">
             <!-- Header -->
             <div class="fp-header">
-                <template x-if="step === 2">
+                <template x-if="step === 2 && mode !== 'edit'">
                     <button type="button" class="fp-back" @click="step = 1; searchQ = ''">
                         <iconify-icon icon="solar:alt-arrow-left-linear" width="16"></iconify-icon>
                     </button>
                 </template>
                 <div class="fp-header-title">
                     <iconify-icon :icon="step === 1 ? 'solar:widget-add-bold-duotone' : selectedType.icon" width="20" :style="'color:' + (step === 2 ? selectedType.color : '#4361ee')"></iconify-icon>
-                    <span x-text="step === 1 ? 'Ajouter un champ' : selectedType.label"></span>
+                    <span x-text="mode === 'edit' ? 'Modifier le champ' : (step === 1 ? 'Ajouter un champ' : selectedType.label)"></span>
                 </div>
                 <button type="button" class="fp-close" @click="closeModal()">
                     <iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon>
@@ -3056,7 +3091,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             <!-- Step 2: Field Selector / Creator -->
             <div class="fp-body" x-show="step === 2" x-cloak>
                 <!-- Search -->
-                <div class="fp-search-wrap">
+                <div class="fp-search-wrap" x-show="mode !== 'edit'">
                     <iconify-icon icon="solar:magnifer-linear" width="15" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
                     <input type="text" class="fp-search" placeholder="Rechercher un champ existant..." x-model="searchQ">
                 </div>
@@ -3067,7 +3102,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 </div>
 
                 <!-- Existing fields -->
-                <div x-show="!loadingFields && filteredExisting.length > 0" class="fp-section">
+                <div x-show="mode !== 'edit' && !loadingFields && filteredExisting.length > 0" class="fp-section">
                     <div class="fp-section-title">
                         <iconify-icon icon="solar:layers-bold-duotone" width="14" style="color:#94a3b8"></iconify-icon>
                         Champs existants
@@ -3097,7 +3132,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 </div>
 
                 <!-- No existing fields -->
-                <div x-show="!loadingFields && filteredExisting.length === 0 && searchQ.trim()" class="fp-empty-hint">
+                <div x-show="mode !== 'edit' && !loadingFields && filteredExisting.length === 0 && searchQ.trim()" class="fp-empty-hint">
                     <iconify-icon icon="solar:magnifer-zoom-in-linear" width="20" style="color:#bfc9d4"></iconify-icon>
                     <span>Aucun champ existant trouvé</span>
                 </div>
@@ -3106,7 +3141,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 <div class="fp-section" x-show="!loadingFields" style="margin-top:8px;">
                     <div class="fp-section-title">
                         <iconify-icon icon="solar:add-square-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
-                        Créer un nouveau champ
+                        <span x-text="mode === 'edit' ? 'Modifier le champ' : 'Créer un nouveau champ'"></span>
                     </div>
                     <div class="fp-create-form">
                         <div class="fp-create-row">
@@ -3116,6 +3151,15 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                         <div class="fp-create-row" x-show="selectedType.key === 'select' || selectedType.key === 'multiselect'">
                             <label class="fp-create-label">Options (une par ligne)</label>
                             <textarea class="fp-create-textarea" placeholder="Option 1&#10;Option 2&#10;Option 3" x-model="newFieldOptions" rows="3"></textarea>
+                        </div>
+                        <div class="fp-create-row" x-show="selectedType.key === 'select'">
+                            <label class="fp-check-line">
+                                <input type="checkbox" x-model="newFieldUseAsPipeline">
+                                <span class="fp-check-box">
+                                    <iconify-icon icon="solar:check-read-bold" width="12"></iconify-icon>
+                                </span>
+                                <span>Utiliser en tant que pipeline</span>
+                            </label>
                         </div>
                         <div class="fp-create-row" x-show="selectedType.key === 'relation'">
                             <label class="fp-create-label">Entité cible</label>
@@ -3128,10 +3172,10 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                         </div>
                         <button type="button" class="fp-create-btn" :disabled="!newFieldLabel.trim() || creating" @click="createAndAdd()">
                             <template x-if="!creating">
-                                <span><iconify-icon icon="solar:add-circle-bold" width="15" style="vertical-align:-2px"></iconify-icon> Créer et ajouter</span>
+                                <span><iconify-icon :icon="mode === 'edit' ? 'solar:diskette-bold' : 'solar:add-circle-bold'" width="15" style="vertical-align:-2px"></iconify-icon> <span x-text="mode === 'edit' ? 'Enregistrer' : 'Créer et ajouter'"></span></span>
                             </template>
                             <template x-if="creating">
-                                <span><iconify-icon icon="line-md:loading-twotone-loop" width="15"></iconify-icon> Création...</span>
+                                <span><iconify-icon icon="line-md:loading-twotone-loop" width="15"></iconify-icon> <span x-text="mode === 'edit' ? 'Enregistrement...' : 'Création...'"></span></span>
                             </template>
                         </button>
                     </div>
@@ -3142,7 +3186,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     <% } %>
 
     <!-- ═══ OTHER MODULES (non-docs) ═══ -->
-    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'data-room' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda' && moduleName !== 'team') { %>
+    <% if (moduleName !== 'fiche' && moduleName !== 'overview' && moduleName !== 'docs' && moduleName !== 'drive' && moduleName !== 'data-room' && moduleName !== 'tasks' && moduleName !== 'chat' && moduleName !== 'notes' && moduleName !== 'agenda' && moduleName !== 'sheet' && moduleName !== 'team') { %>
     <div class="rm-toolbar">
         <div class="rm-search">
             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#bfc9d4"></iconify-icon>
@@ -3484,6 +3528,10 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
         <%- include('../record/partials/record-data-room-module') %>
         <% } %>
 
+        <% if (moduleName === 'sheet') { %>
+        <%- include('../record/partials/record-sheet-module') %>
+        <% } %>
+
 
 
         <!-- Tasks module is handled by the dynamic Alpine.js section below -->
@@ -3528,7 +3576,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             .record-mail-empty iconify-icon{display:block;margin:0 auto 8px;color:#0ea5e9}
             .record-mail-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px;font-size:11px;color:#94a3b8}
             .record-mail-meta span{display:inline-flex;align-items:center;gap:4px}
-            @media(max-width:1100px){.record-mail-shell{grid-template-columns:1fr}.record-mail-context{order:-1}.record-mail-toolbar{align-items:stretch;flex-direction:column}.record-mail-search{width:100%}}
+            @media(max-width:1100px){.record-mail-shell{grid-template-columns:minmax(0,1fr)}.record-mail-context{order:-1}.record-mail-toolbar{align-items:stretch;flex-direction:column}.record-mail-search-wrap{width:100%;min-width:0}.record-mail-search{width:100%;min-width:0}.record-mail-empty{padding:22px 16px}}
         </style>
         <%
             const _mailCtx = recordMailContext || { contacts: [], filters: [], mails: [] };
@@ -3669,6 +3717,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 { key: 'dataRoom', routeKey: 'data-room', label: 'Data Room', icon: 'solar:shield-keyhole-bold-duotone', color: '#0f766e' },
                 { key: 'tasks', routeKey: 'tasks', label: 'Tasks', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981' },
                 { key: 'agenda', routeKey: 'agenda', label: 'Agenda', icon: 'solar:calendar-bold-duotone', color: '#14b8a6' },
+                { key: 'sheet', routeKey: 'sheet', label: 'Sheet', icon: 'tabler:table', color: '#059669' },
                 { key: 'chat', routeKey: 'chat', label: 'Chat', icon: 'solar:chat-round-dots-bold-duotone', color: '#f97316' },
                 { key: 'emails', routeKey: 'emails', label: 'Emails', icon: 'solar:letter-bold-duotone', color: '#0ea5e9' },
                 { key: 'notes', routeKey: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' },
@@ -5357,7 +5406,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             _doSave(key) {
                 const ref = this.$refs['input_' + key];
                 if (!ref) { this.editingKey = ''; return; }
-                this.saveField(key, ref.value);
+                this.saveField(key, ref.type === 'checkbox' ? ref.checked : ref.value);
             },
             async saveField(key, value) {
                 if (!_ficheRecordModuleCanEdit) return;
@@ -5374,15 +5423,16 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     if (res.ok) {
                         const fieldEl = document.querySelector('.ov-ef[data-key="' + editingK + '"]');
                         if (fieldEl) {
-                            const viewEl = fieldEl.querySelector('.ov-ef-val') || fieldEl.querySelector('.ov-placeholder');
+                            const viewEl = fieldEl.querySelector('.ov-ef-view');
                             if (viewEl) {
-                                const displayVal = Array.isArray(value) ? value.join(', ') : (value || '');
-                                if (displayVal) {
-                                    viewEl.textContent = displayVal;
-                                    viewEl.className = 'ov-ef-val';
+                                const isBool = typeof value === 'boolean';
+                                const displayVal = Array.isArray(value) ? value.join(', ') : (isBool ? (value ? 'Oui' : 'Non') : (value || ''));
+                                if (isBool) {
+                                    viewEl.innerHTML = '<span class="ov-bool-pill ' + (value ? 'ov-bool-pill--on' : 'ov-bool-pill--off') + '"><span class="ov-bool-dot" style="background:' + (value ? '#10b981' : '#cbd5e1') + '"></span>' + displayVal + '</span>';
+                                } else if (displayVal) {
+                                    viewEl.innerHTML = '<span class="ov-ef-val">' + String(displayVal).replace(/</g,'&lt;') + '</span>';
                                 } else {
-                                    viewEl.textContent = fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur';
-                                    viewEl.className = 'ov-placeholder';
+                                    viewEl.innerHTML = '<span class="ov-placeholder">' + (fieldEl.querySelector('.ov-ef-label')?.textContent || 'Valeur') + '</span>';
                                 }
                                 if (editingK === 'title') {
                                     const heroTitle = document.getElementById('record-hero-title');
@@ -5404,8 +5454,11 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 
         Alpine.data('ficheFieldPicker', () => ({
             isOpen: false,
+            mode: 'create',
             step: 1,
             selectedType: {},
+            editingFieldId: '',
+            editingTypeConfig: {},
             allSystemFields: [],
             existingFields: [],
             allEntities: [],
@@ -5415,6 +5468,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             creating: false,
             newFieldLabel: '',
             newFieldOptions: '',
+            newFieldUseAsPipeline: false,
             newFieldTargetEntity: '',
 
             fieldTypes: [
@@ -5448,14 +5502,38 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             openModal() {
                 if (!_ficheRecordModuleCanEdit) return;
                 this.isOpen = true;
+                this.mode = 'create';
                 this.step = 1;
                 this.selectedType = {};
+                this.editingFieldId = '';
+                this.editingTypeConfig = {};
                 this.searchQ = '';
                 this.newFieldLabel = '';
                 this.newFieldOptions = '';
+                this.newFieldUseAsPipeline = false;
                 this.newFieldTargetEntity = '';
                 document.body.style.overflow = 'hidden';
                 // Fetch all entities for relation picker
+                this._fetchEntities();
+            },
+
+            openEdit(field) {
+                if (!_ficheRecordModuleCanEdit || !field?.id) return;
+                const typeConfig = field.typeConfig || {};
+                this.isOpen = true;
+                this.mode = 'edit';
+                this.step = 2;
+                this.editingFieldId = field.id;
+                this.editingTypeConfig = typeConfig;
+                this.selectedType = this._typeForField(field);
+                this.searchQ = '';
+                this.existingFields = [];
+                this.loadingFields = false;
+                this.newFieldLabel = field.label || '';
+                this.newFieldOptions = this._optionsToLines(field.options || typeConfig.options || []);
+                this.newFieldUseAsPipeline = !!typeConfig.useAsPipeline;
+                this.newFieldTargetEntity = field.targetEntityId || typeConfig.refEntity || '';
+                document.body.style.overflow = 'hidden';
                 this._fetchEntities();
             },
 
@@ -5470,8 +5548,70 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 this.searchQ = '';
                 this.newFieldLabel = '';
                 this.newFieldOptions = '';
+                this.newFieldUseAsPipeline = false;
                 this.newFieldTargetEntity = '';
                 await this._fetchFieldsForType(t);
+            },
+
+            _typeForField(field) {
+                const type = String(field.type || '').toLowerCase();
+                const inputType = String(field.inputType || '').toLowerCase();
+                const subtype = String(field.subtype || '').toLowerCase();
+                const typeConfig = field.typeConfig || {};
+                const key = (type === 'select' && (inputType === 'multiselect' || typeConfig.multiple || subtype === 'multi'))
+                    ? 'multiselect'
+                    : (inputType === 'multiselect'
+                        ? 'multiselect'
+                        : (type === 'relation' || inputType === 'relation'
+                            ? 'relation'
+                            : (type === 'select' || inputType === 'select' ? 'select' : type || inputType || 'string')));
+                return this.fieldTypes.find(t => t.key === key)
+                    || this.fieldTypes.find(t => t.type === type && (!t.subtype || t.subtype === subtype))
+                    || this.fieldTypes[0];
+            },
+
+            _optionsToLines(options) {
+                return (options || [])
+                    .map(option => {
+                        if (option && typeof option === 'object') return option.label || option.value || '';
+                        return option || '';
+                    })
+                    .filter(Boolean)
+                    .join('\n');
+            },
+
+            _buildTypeConfig() {
+                const typeConfig = {};
+                if (this.selectedType.key === 'select' || this.selectedType.key === 'multiselect') {
+                    const previousOptions = Array.isArray(this.editingTypeConfig.options) ? this.editingTypeConfig.options : [];
+                    const options = this.newFieldOptions.trim().split('\n')
+                        .map(o => o.trim()).filter(Boolean)
+                        .map((label, index) => {
+                            const previous = previousOptions.find(option => {
+                                if (!option || typeof option !== 'object') return option === label;
+                                return option.label === label || option.value === label;
+                            }) || previousOptions[index];
+                            if (previous && typeof previous === 'object') {
+                                return {
+                                    label,
+                                    value: previous.value || label,
+                                    color: previous.color,
+                                    order: index
+                                };
+                            }
+                            return { label, value: label, order: index };
+                        });
+                    typeConfig.options = options;
+                    if (this.selectedType.key === 'multiselect') {
+                        typeConfig.multiple = true;
+                    } else {
+                        typeConfig.useAsPipeline = !!this.newFieldUseAsPipeline;
+                    }
+                }
+                if (this.selectedType.key === 'relation' && this.newFieldTargetEntity) {
+                    typeConfig.refEntity = this.newFieldTargetEntity;
+                }
+                return typeConfig;
             },
 
             async _fetchFieldsForType(t) {
@@ -5541,6 +5681,29 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 this.creating = true;
 
                 try {
+                    if (this.mode === 'edit') {
+                        const typeConfig = this._buildTypeConfig();
+                        const updateRes = await fetch(`/account/${_acn}/field-template/api/${this.editingFieldId}/update`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                label: this.newFieldLabel.trim(),
+                                typeConfig: {
+                                    ...this.editingTypeConfig,
+                                    ...typeConfig
+                                }
+                            })
+                        });
+                        const updateData = await updateRes.json();
+                        if (!updateData.success) {
+                            throw new Error(updateData.error || 'Modification échouée');
+                        }
+                        this.closeModal();
+                        window.location.reload();
+                        return;
+                    }
+
                     // Build field data
                     const slug = this.newFieldLabel.trim()
                         .toLowerCase()
@@ -5560,14 +5723,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     };
 
                     // Handle select/multiselect options
-                    if ((this.selectedType.key === 'select' || this.selectedType.key === 'multiselect') && this.newFieldOptions.trim()) {
-                        const options = this.newFieldOptions.trim().split('\n')
-                            .map(o => o.trim()).filter(Boolean)
-                            .map(o => ({ label: o, value: o }));
-                        fieldData.typeConfig = { options };
-                        if (this.selectedType.key === 'multiselect') {
-                            fieldData.typeConfig.multiple = true;
-                        }
+                    if (this.selectedType.key === 'select' || this.selectedType.key === 'multiselect') {
+                        fieldData.typeConfig = this._buildTypeConfig();
                     }
 
                     // Handle relation target entity

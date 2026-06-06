@@ -61,6 +61,24 @@ const EVENT_FIELD_DEFS = [
         render: { input: 'select' },
     },
     {
+        name: 'tags_evenement',
+        label: '\u00c9tiquettes',
+        type: 'select',
+        subtype: 'multi',
+        category: 'workflow',
+        isSystem: true,
+        ui: { icon: 'solar:tag-bold-duotone', rows: 1, width: 'full' },
+        type_config: {
+            multiple: true,
+            options: [
+                { label: 'Important', value: 'Important', color: '#ef4444' },
+                { label: 'Date limite', value: 'Date limite', color: '#f59e0b' },
+                { label: 'Risque amende', value: 'Risque amende', color: '#dc2626' },
+            ],
+        },
+        render: { input: 'multiselect' },
+    },
+    {
         name: 'notes_evenement',
         label: 'Notes',
         type: 'text',
@@ -99,6 +117,37 @@ function mergeIds(existing = [], additions = []) {
     })
 }
 
+function mergeFieldTypeConfig(current = {}, defConfig = {}) {
+    const next = { ...(current || {}) }
+
+    Object.entries(defConfig || {}).forEach(([key, value]) => {
+        if (key === 'options' && Array.isArray(value)) {
+            const existingOptions = Array.isArray(next.options) ? [...next.options] : []
+            const seen = new Set(existingOptions.map(opt => {
+                const raw = typeof opt === 'object' ? (opt.value || opt.label) : opt
+                return String(raw || '').trim().toLowerCase()
+            }))
+
+            value.forEach(opt => {
+                const raw = typeof opt === 'object' ? (opt.value || opt.label) : opt
+                const token = String(raw || '').trim().toLowerCase()
+                if (!token || seen.has(token)) return
+                existingOptions.push(opt)
+                seen.add(token)
+            })
+
+            next.options = existingOptions
+            return
+        }
+
+        if (next[key] === undefined || next[key] === null || next[key] === '') {
+            next[key] = value
+        }
+    })
+
+    return next
+}
+
 async function ensureFieldTemplates(FieldTemplate) {
     const fieldIds = []
 
@@ -117,7 +166,9 @@ async function ensureFieldTemplates(FieldTemplate) {
                 ui: { ...(def.ui || {}), ...(field.ui?.toObject?.() || field.ui || {}) },
                 render: { ...(def.render || {}), ...(field.render?.toObject?.() || field.render || {}) },
             }
-            if (def.type_config && !field.type_config) patch.type_config = def.type_config
+            if (def.type_config) {
+                patch.type_config = mergeFieldTypeConfig(field.type_config?.toObject?.() || field.type_config || {}, def.type_config)
+            }
             await FieldTemplate.updateOne({ _id: field._id }, { $set: patch })
         }
 

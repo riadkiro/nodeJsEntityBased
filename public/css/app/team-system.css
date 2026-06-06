@@ -258,6 +258,61 @@
 /* ── Team Badge (on member rows) ── */
 .ts-team-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600; white-space:nowrap; transition:all .15s; }
 
+@media (max-width: 640px) {
+    .ts-page-header {
+        align-items:flex-start;
+        flex-wrap:wrap;
+        gap:14px;
+        padding:22px 18px;
+        border-radius:14px;
+    }
+    .ts-page-header-icon { width:48px; height:48px; border-radius:12px; }
+    .ts-page-header-info { min-width:0; flex:1 1 calc(100% - 62px); }
+    .ts-page-header-info h1 { font-size:19px; line-height:1.2; }
+    .ts-page-header-info p { line-height:1.35; }
+    .ts-page-header > div:last-child {
+        width:100%;
+        margin-left:0 !important;
+        display:flex !important;
+        align-items:stretch;
+        flex-wrap:wrap;
+        gap:8px !important;
+        min-width:0;
+    }
+    .ts-page-header > div:last-child > a,
+    .ts-page-header > div:last-child > button,
+    .ts-page-header > div:last-child .ts-btn-primary {
+        flex:1 1 118px;
+        min-width:0;
+        justify-content:center;
+        padding-left:12px !important;
+        padding-right:12px !important;
+        white-space:nowrap;
+    }
+    .ts-toolbar-right { flex-wrap:wrap; justify-content:flex-start; }
+    .ts-search,
+    .ts-search input { width:100%; max-width:100%; }
+    .ts-chat-layout {
+        grid-template-columns:1fr;
+        height:auto;
+        max-height:none;
+        min-height:0;
+    }
+    .ts-chat-sidebar {
+        border-right:none;
+        border-bottom:1px solid #e0e6ed;
+        max-height:300px;
+    }
+    .ts-chat-main {
+        min-width:0;
+        min-height:520px;
+    }
+    .ts-chat-main-header,
+    .ts-chat-input-area { padding-left:14px; padding-right:14px; }
+    .ts-chat-messages { padding:16px 14px; }
+    .ts-chat-msg { max-width:92%; }
+}
+
 /* ── Members Section Container ── */
 .ts-members-section { background:#fff; border:1px solid #e0e6ed; border-radius:16px; padding:0; overflow:visible; }
 .dark .ts-members-section { background:#0e1726; border-color:#253b5c; }
@@ -298,4 +353,3 @@
 .dark .ts-role-select-card { border-color:#253b5c; background:#0e1726; }
 .dark .ts-role-select-card:hover { background:#1b2e4b; border-color:#3b5998; }
 .dark .ts-role-select-card.ts-role-select-active { background:rgba(67,97,238,.06); }
-

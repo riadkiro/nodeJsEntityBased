@@ -12,6 +12,7 @@
  * - Dropdown menu with Edit/View actions
  */
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react'
+import { recordModuleHref } from '../../shared/recordLinks'
 
 // ─── Color palette for card backgrounds ──────────────────────────────
 const CARD_COLORS = [
@@ -112,14 +113,14 @@ function CardDropdown({ record, accountNumber, entitySlug }) {
                 <ul className="absolute z-50 min-w-[140px] rounded-md bg-white dark:bg-[#1b2e4b] shadow-lg border dark:border-gray-700 py-1 text-sm font-medium ltr:right-0 rtl:left-0 top-full mt-1"
                     style={{ animation: 'fadeIn 0.15s ease-out' }}>
                     <li>
-                        <a href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
+                        <a href={recordModuleHref(accountNumber, entitySlug, record)}
                             className="flex items-center px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 w-full"
                             onClick={(e) => e.stopPropagation()}>
                             <EditIcon /> Edit
                         </a>
                     </li>
                     <li>
-                        <a href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
+                        <a href={recordModuleHref(accountNumber, entitySlug, record)}
                             className="flex items-center px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 w-full"
                             onClick={(e) => e.stopPropagation()}>
                             <ViewIcon /> View
@@ -182,7 +183,7 @@ function NoteCard({ record, accountNumber, entitySlug, style, favorites, onToggl
                 {/* Title + description */}
                 <div>
                     <h4 className="mt-4 font-semibold">
-                        <a href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
+                        <a href={recordModuleHref(accountNumber, entitySlug, record)}
                             className="hover:text-primary transition-colors">
                             {title}
                         </a>

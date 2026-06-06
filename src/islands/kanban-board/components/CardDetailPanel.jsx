@@ -4,6 +4,7 @@
  * relations, custom fields, attachments, dates
  */
 import React, { useEffect, useRef } from 'react'
+import { cleanRecordId, recordModuleHref } from '../../shared/recordLinks'
 
 function hexToRgba(hex, alpha = 0.1) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -40,8 +41,9 @@ export default function CardDetailPanel({
     const attachments = record.attachments || []
     const customFields = record.customFields || []
 
+    const recordId = cleanRecordId(record)
     const editUrl = entitySlug && accountNumber
-        ? `/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`
+        ? recordModuleHref(accountNumber, entitySlug, record)
         : null
 
     // Find current column/status
@@ -91,7 +93,7 @@ export default function CardDetailPanel({
                         )}
                     </div>
                     <div className="flex items-center gap-1">
-                        {editUrl && (
+                        {editUrl && editUrl !== '#' && (
                             <a
                                 href={editUrl}
                                 className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-primary transition-colors"
@@ -319,9 +321,9 @@ export default function CardDetailPanel({
                 {/* Footer Actions */}
                 <div className="sticky bottom-0 bg-white dark:bg-[#0e1726] border-t border-gray-100 dark:border-gray-700 px-5 py-3 flex items-center justify-between">
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                        ID: {record._id}
+                        ID: {recordId || record._id}
                     </div>
-                    {editUrl && (
+                    {editUrl && editUrl !== '#' && (
                         <a
                             href={editUrl}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-primary hover:bg-primary/90 transition-colors shadow-sm"

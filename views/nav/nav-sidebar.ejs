@@ -880,8 +880,8 @@
 
                     <div class="flex-1 min-w-0">
                       <template x-if="editingId !== child.id">
-                        <a :href="child.link || '#'" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors"
-                          :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
+                        <a :href="normalizeHierarchyLink(child)" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors"
+                          :class="isItemActive(normalizeHierarchyLink(child)) ? '!text-primary font-bold' : ''"
                           @click="if(isContainerItem(child)) { $event.preventDefault(); toggleSub(child.id); }">
                           <span x-text="child.name"></span>
                         </a>
@@ -925,8 +925,8 @@
                             @click.stop="if(isContainerItem(subChild)) { toggleExpand(subChild.id); }"></iconify-icon>
                           <div class="flex-1 truncate min-w-0">
                             <template x-if="editingId !== subChild.id">
-                              <a :href="subChild.link || '#'" class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
-                                :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
+                              <a :href="normalizeHierarchyLink(subChild)" class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
+                                :class="isItemActive(normalizeHierarchyLink(subChild)) ? '!text-primary font-bold' : ''"
                                 @click="if(isContainerItem(subChild)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                 x-text="subChild.name"></a>
                             </template>
@@ -961,7 +961,7 @@
                 <div class="sidebar-space-row nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                   <div x-data="{ hovered: false }" class="sidebar-space-inner flex items-center mx-2 cursor-pointer flex-1"
                     @mouseenter="hovered = true" @mouseleave="hovered = false"
-                    @click="if (isContainerItem(item)) { toggle(item.id); } else if (item.link && item.link !== '#') { window.location.href = item.link; }"
+                    @click="if (isContainerItem(item)) { toggle(item.id); } else { const link = normalizeHierarchyLink(item); if (link && link !== '#') window.location.href = link; }"
                     @contextmenu.prevent="openEditMenu($event, item.type, item)">
                     <iconify-icon
                       :icon="getIcon(item, item.children && item.children.length > 0, activeDropdown.includes(item.id), hovered)"
@@ -971,7 +971,7 @@
                     <template x-if="editingId !== item.id">
                       <span
                         class="sidebar-space-label text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2"
-                        :class="isItemActive(item.link) ? '!text-primary font-bold' : ''"
+                        :class="isItemActive(normalizeHierarchyLink(item)) ? '!text-primary font-bold' : ''"
                         x-text="item.name"></span>
                     </template>
                     <template x-if="editingId === item.id">
@@ -1014,8 +1014,8 @@
 
                         <div class="flex-1 min-w-0">
                           <template x-if="editingId !== child.id">
-                            <a :href="child.link || '#'" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors"
-                              :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
+                            <a :href="normalizeHierarchyLink(child)" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors"
+                              :class="isItemActive(normalizeHierarchyLink(child)) ? '!text-primary font-bold' : ''"
                               @click="if(isContainerItem(child)) { $event.preventDefault(); toggleSub(child.id); }">
                               <span x-text="child.name"></span>
                             </a>
@@ -1048,7 +1048,7 @@
                         x-collapse.duration.120ms class="sidebar-nested-list sub-menu hierarchy-sub-menu hierarchy-empty-drop text-gray-500 dark:text-gray-400 ltr:ml-3 rtl:mr-3 border-l dark:border-gray-800 ml-3 pl-2">
                         <template x-for="subChild in child.children" :key="getHierarchyRenderKey(subChild)">
                           <li x-data="{ hovered: false }"
-                            x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
+                            x-init="if (subChild.children && subChild.children.some(c => isItemActive(normalizeHierarchyLink(c)))) toggleExpand(subChild.id, true)"
                             class="relative block" :data-id="subChild.id" :data-type="subChild.type">
                             <div class="sidebar-child-row flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors group/sub2"
                               @mouseenter="hovered = true"
@@ -1063,8 +1063,8 @@
                                 @click.stop="if(isContainerItem(subChild)) { toggleExpand(subChild.id); }"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
                                 <template x-if="editingId !== subChild.id">
-                                  <a :href="subChild.link || '#'" class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
-                                    :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
+                                  <a :href="normalizeHierarchyLink(subChild)" class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
+                                    :class="isItemActive(normalizeHierarchyLink(subChild)) ? '!text-primary font-bold' : ''"
                                     @click="if(isContainerItem(subChild)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                     x-text="subChild.name"></a>
                                 </template>
@@ -1107,9 +1107,9 @@
                                     :style="subSubChild.color ? 'color: ' + subSubChild.color : ''"></iconify-icon>
                                   <div class="flex-1 truncate">
                                     <template x-if="editingId !== subSubChild.id">
-                                      <a :href="subSubChild.link || '#'"
+                                      <a :href="normalizeHierarchyLink(subSubChild)"
                                         class="ml-1 text-sm text-gray-700 dark:text-gray-400 transition-colors block py-1"
-                                        :class="isItemActive(subSubChild.link) ? '!text-primary font-bold' : ''"
+                                        :class="isItemActive(normalizeHierarchyLink(subSubChild)) ? '!text-primary font-bold' : ''"
                                         x-text="subSubChild.name"></a>
                                     </template>
                                     <template x-if="editingId === subSubChild.id">
@@ -1300,10 +1300,17 @@
                 <div class="p-5">
                   <form @submit.prevent="submitCreateItem">
                     <div class="relative mb-4">
-                      <label class="mb-2 block text-sm font-bold">Nom</label>
+                      <label class="mb-2 block text-sm font-bold" x-text="creationType === 'entity' ? 'Nom de la collection' : 'Nom'"></label>
                       <input type="text" x-model="creationName" x-ref="createInput" placeholder="Entrez le nom..."
                         class="form-input w-full" />
                     </div>
+                    <template x-if="creationType === 'entity'">
+                      <div class="relative mb-4">
+                        <label class="mb-2 block text-sm font-bold">Nom de la vue</label>
+                        <input type="text" x-model="creationViewName" placeholder="ex: Clients"
+                          class="form-input w-full" />
+                      </div>
+                    </template>
                     <div class="relative mb-4">
                       <label class="mb-2 block text-sm font-bold">Icône</label>
 
@@ -1686,6 +1693,7 @@
               activeEnvironmentColor: '',
               showCreateModal: false,
               creationName: '',
+              creationViewName: '',
               creationType: 'folder',
               creationIcon: '',
               creationColor: '',
@@ -2362,10 +2370,12 @@
                                  name: this.wizardNewName,
                                  nameSingular: this.wizardNewName,
                                  namePlural: this.wizardNewPlural || (this.wizardNewName + 's'),
+                                 viewName: this.wizardNewPlural || this.wizardNewName,
                                  fields,
                                  parentId: parentId,
                                  parentType: parentType,
                                  viewType: 'list',
+                                 settings: { viewMode: 'table' },
                                  icon: this.wizardNewIcon || 'solar:database-bold-duotone',
                                  color: this.wizardNewColor || '#4361ee'
                              })
@@ -2531,7 +2541,7 @@
                   this.hierarchy = [];
                   await new Promise(r => setTimeout(r, 0));
 
-                  this.hierarchy = data.hierarchy || [];
+                  this.hierarchy = this.cloneHierarchyList(data.hierarchy || []);
                   this.hierarchyRenderKey += 1;
                   this.realSpacesCount = data.realSpacesCount || 0;
                   if (data.dbName) console.log(`[Sidebar] Connected to Tenant DB: ${data.dbName}`);
@@ -3452,6 +3462,53 @@
                 return String(item?.id || item?._id || '');
               },
 
+              isUsablePathSegment(value) {
+                const segment = String(value || '').trim();
+                return Boolean(segment && !['undefined', 'null'].includes(segment.toLowerCase()));
+              },
+
+              isUsableRecordId(value) {
+                return /^[a-f0-9]{24}$/i.test(String(value || '').trim());
+              },
+
+              normalizeHierarchyLink(item) {
+                const rawLink = typeof item?.link === 'string' ? item.link.trim() : '';
+                const hasBrokenSegment = /\/(?:undefined|null)(?:\/|$)/i.test(rawLink);
+                if (rawLink && rawLink !== '#' && !hasBrokenSegment) return rawLink;
+
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                const entitySlug = String(item?.entitySlug || item?.entity?.slug || '').trim();
+                const viewSlug = String(item?.slug || item?.viewSlug || '').trim();
+                const recordId = String(item?.recordId || item?.hubRecord || '').trim();
+
+                if (item?.type === 'hub' && this.isUsablePathSegment(entitySlug) && this.isUsableRecordId(recordId)) {
+                  return `/account/${accountNum}/record/${entitySlug}/${recordId}/overview`;
+                }
+
+                if (item?.type === 'entity' && this.isUsablePathSegment(entitySlug)) {
+                  if (this.isUsablePathSegment(viewSlug)) {
+                    return `/account/${accountNum}/record/${entitySlug}/${viewSlug}`;
+                  }
+                  const viewId = this.getHierarchyItemId(item);
+                  return `/account/${accountNum}/record/${entitySlug}/list${viewId ? `?viewId=${encodeURIComponent(viewId)}` : ''}`;
+                }
+
+                return rawLink && rawLink !== '#' && !hasBrokenSegment ? rawLink : '#';
+              },
+
+              recordAddLinkForView(item) {
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                const entitySlug = String(item?.entitySlug || '').trim();
+                if (!this.isUsablePathSegment(entitySlug)) return '#';
+
+                const params = new URLSearchParams();
+                const viewId = this.getHierarchyItemId(item);
+                if (viewId) params.set('viewId', viewId);
+
+                const query = params.toString();
+                return `/account/${accountNum}/record/${entitySlug}/add${query ? `?${query}` : ''}`;
+              },
+
               getHierarchyRenderKey(item) {
                 const id = this.getHierarchyItemId(item);
                 return `${this.hierarchyRenderKey}:${id || item?.slug || item?.name || 'item'}`;
@@ -3461,6 +3518,7 @@
                 return (list || []).map(item => ({
                   ...item,
                   id: this.getHierarchyItemId(item),
+                  link: this.normalizeHierarchyLink(item),
                   children: this.cloneHierarchyList(item.children || [])
                 }));
               },
@@ -4428,7 +4486,7 @@
                   });
                   if (res.ok) {
                     Alpine.store('sidebar').showMenu = false;
-                    await this.fetchHierarchy();
+                    await this.fetchHierarchy(true);
                   }
                 } catch (e) { alert("Erreur: " + e.message); }
               },
@@ -4527,6 +4585,7 @@
                 this.creationType = type;
                 this.pendingViewType = viewType;
                 this.creationName = '';
+                this.creationViewName = '';
                 
                 // Set default icon based on type and viewType
                 let icon = this.getIcon(type);
@@ -4561,6 +4620,9 @@
                 this.isSubmitting = true;
                 const type = this.creationType;
                 const name = this.creationName;
+                const viewName = type === 'entity'
+                  ? String(this.creationViewName || '').trim() || name
+                  : '';
                 const icon = this.creationIcon;
                 const color = this.creationColor;
                 const viewType = this.pendingViewType;
@@ -4575,18 +4637,28 @@
 
                 const url = ['folder', 'environment'].includes(type) ? 'folder' : 'entity';
                 try {
+                  const payload = {
+                    name,
+                    type,
+                    icon,
+                    color,
+                    parentId: parent.id,
+                    parentType: parent.type,
+                    viewType: viewType
+                  };
+                  if (type === 'entity') {
+                    payload.viewName = viewName;
+                    payload.nameSingular = name;
+                    payload.namePlural = name;
+                    payload.settings = {
+                      viewMode: ['table', 'kanban', 'calendar'].includes(viewType) ? viewType : 'table'
+                    };
+                  }
+
                   const res = await fetch(`/account/${accountNum}/api/hierarchy/${url}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      name,
-                      type,
-                      icon,
-                      color,
-                      parentId: parent.id,
-                      parentType: parent.type,
-                      viewType: viewType
-                    })
+                    body: JSON.stringify(payload)
                   });
                   if (!res.ok) {
                     const err = await res.json();
@@ -5422,7 +5494,7 @@
             <template x-if="$store.sidebar.contextItem?.type === 'entity'">
               <div>
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="window.location.href = $store.sidebar.contextItem.link + '/new'">
+                  @click="window.location.href = recordAddLinkForView($store.sidebar.contextItem)">
                   <div class="flex items-center gap-2">
                     <iconify-icon :icon="$store.sidebar.contextItem.icon || 'solar:add-circle-line-duotone'" width="18" height="18"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary" x-text="'Ajouter ' + ($store.sidebar.contextItem.name || 'élément')"></span>

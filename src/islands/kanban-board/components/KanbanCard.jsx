@@ -6,6 +6,7 @@
 import React, { useState, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { cleanRecordId, recordModuleHref } from '../../shared/recordLinks'
 
 // Priority config
 const PRIORITY_CONFIG = {
@@ -16,7 +17,7 @@ const PRIORITY_CONFIG = {
 }
 
 export default function KanbanCard({ record, isDragging = false, onCardClick, entitySlug, accountNumber }) {
-    const id = String(record._id)
+    const id = cleanRecordId(record) || String(record?.tempId || record?._id || record?.id || '')
     const [showActions, setShowActions] = useState(false)
 
     // Track pointer to distinguish taps from drags
@@ -112,7 +113,7 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
 
     // Open in edit page
     const editUrl = entitySlug && accountNumber
-        ? `/account/${accountNumber}/record/${entitySlug}/${record._id}/overview`
+        ? recordModuleHref(accountNumber, entitySlug, record)
         : null
 
     return (
@@ -174,7 +175,7 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
 
                     {/* Hover actions */}
                     <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity -mt-0.5 -mr-1 flex-shrink-0">
-                        {editUrl && (
+                        {editUrl && editUrl !== '#' && (
                             <a
                                 href={editUrl}
                                 onClick={e => e.stopPropagation()}

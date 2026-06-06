@@ -32,8 +32,15 @@ router.post("/:entityName/:id/update-relation", requirePerm('records.update'), r
 // Inline field update from overview
 router.post("/:entityName/:id/update-field", requirePerm('records.update'), recordController.updateField);
 
-// Contextual module pages (overview, fiche, docs, drive, data-room, tasks, notes, ai, chat, emails, agenda)
-router.get("/:entityName/:id/:moduleName(overview|fiche|docs|drive|data-room|tasks|notes|ai|chat|emails|agenda|team)", recordController.modulePage);
+// Record sheet data
+router.get("/:entityName/:id/sheet-data", requirePerm('records.read'), recordController.getSheet);
+router.post("/:entityName/:id/sheet-data", requirePerm('records.update'), recordController.saveSheet);
+
+// Contextual module pages (overview, fiche, docs, drive, data-room, tasks, notes, ai, chat, emails, agenda, sheet)
+router.get("/:entityName/:id/:moduleName(overview|fiche|docs|drive|data-room|tasks|notes|ai|chat|emails|agenda|sheet|team)", recordController.modulePage);
+
+// Named list view, e.g. /record/entreprises/clients
+router.get("/:entityName/:viewSlug", recordController.listByViewSlug);
 
 // Record detail page (fiche) — must be AFTER all specific routes
 router.get("/:entityName/:id", recordController.detailPage);

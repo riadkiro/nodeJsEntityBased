@@ -1,4 +1,14 @@
 <!-- ========== MAIL DETAIL VIEW ========== -->
+<style>
+    .mail-html-frame {
+        display: block;
+        width: 100%;
+        min-height: 260px;
+        border: 0;
+        background: #ffffff;
+    }
+</style>
+
 <template x-if="selectedMail && !isEdit">
     <div class="flex flex-col h-full">
         <!-- Top toolbar (Back, Star, Important) -->
@@ -60,7 +70,14 @@
                     </span>
                 </template>
                 <!-- Mail body -->
-                <div class="prose mt-8 max-w-full dark:prose-invert" x-html="selectedMail.description"></div>
+                <iframe
+                    class="mail-html-frame mt-8 max-w-full"
+                    title="Email content"
+                    :srcdoc="mailIframeDoc(selectedMail.description)"
+                    sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                    referrerpolicy="no-referrer"
+                    @load="resizeMailFrame($event)"
+                ></iframe>
                 <!-- Attachments -->
                 <template x-if="selectedMail.attachments && selectedMail.attachments.length">
                     <div class="mt-8">

@@ -261,11 +261,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="mb-1 block text-sm font-semibold">Account Name *</label>
-                        <input type="text" class="form-input" placeholder="e.g. Work Gmail" x-model="editingAccount.name" />
+                        <input type="text" class="form-input" placeholder="e.g. Work Gmail" x-model="editingAccount.name" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-semibold">Email Address *</label>
-                        <input type="email" class="form-input" placeholder="you@example.com" x-model="editingAccount.email" />
+                        <input type="email" class="form-input" placeholder="you@example.com" x-model="editingAccount.email" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                     </div>
                 </div>
 
@@ -288,19 +288,19 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="mb-1 block text-xs text-white-dark">IMAP Host *</label>
-                            <input type="text" class="form-input form-input-sm" placeholder="imap.gmail.com" x-model="editingAccount.imap.host" />
+                            <input type="text" class="form-input form-input-sm" placeholder="imap.gmail.com" x-model="editingAccount.imap.host" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                         <div>
                             <label class="mb-1 block text-xs text-white-dark">Port</label>
-                            <input type="number" class="form-input form-input-sm" placeholder="993" x-model="editingAccount.imap.port" />
+                            <input type="number" class="form-input form-input-sm" placeholder="993" x-model="editingAccount.imap.port" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                         <div>
                             <label class="mb-1 block text-xs text-white-dark">Username *</label>
-                            <input type="text" class="form-input form-input-sm" placeholder="you@example.com" x-model="editingAccount.imap.user" />
+                            <input type="text" class="form-input form-input-sm" placeholder="you@example.com" x-model="editingAccount.imap.user" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                         <div>
                             <label class="mb-1 block text-xs text-white-dark">Password *</label>
-                            <input type="password" class="form-input form-input-sm" placeholder="App password" x-model="editingAccount.imap.password" />
+                            <input type="password" class="form-input form-input-sm" placeholder="App password" x-model="editingAccount.imap.password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                     </div>
                     <label class="mt-2 flex items-center gap-2 text-xs">
@@ -323,19 +323,19 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="mb-1 block text-xs text-white-dark">SMTP Host</label>
-                                <input type="text" class="form-input form-input-sm" placeholder="smtp.gmail.com" x-model="editingAccount.smtp.host" />
+                                <input type="text" class="form-input form-input-sm" placeholder="smtp.gmail.com" x-model="editingAccount.smtp.host" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs text-white-dark">Port</label>
-                                <input type="number" class="form-input form-input-sm" placeholder="587" x-model="editingAccount.smtp.port" />
+                                <input type="number" class="form-input form-input-sm" placeholder="587" x-model="editingAccount.smtp.port" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs text-white-dark">Username</label>
-                                <input type="text" class="form-input form-input-sm" placeholder="Same as IMAP" x-model="editingAccount.smtp.user" />
+                                <input type="text" class="form-input form-input-sm" placeholder="Same as IMAP" x-model="editingAccount.smtp.user" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs text-white-dark">Password</label>
-                                <input type="password" class="form-input form-input-sm" placeholder="Same as IMAP" x-model="editingAccount.smtp.password" />
+                                <input type="password" class="form-input form-input-sm" placeholder="Same as IMAP" x-model="editingAccount.smtp.password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                         </div>
                     </div>

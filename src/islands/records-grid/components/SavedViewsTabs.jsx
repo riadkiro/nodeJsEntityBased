@@ -15,8 +15,8 @@ const VIEW_COLORS = [
 const MODAL_OPERATORS = {
     contains: { label: 'Contient', icon: '⊃', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'relation'] },
     not_contains: { label: 'Ne contient pas', icon: '⊅', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'relation'] },
-    equals: { label: 'Est égal à', icon: '=', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'title', 'select', 'relation', 'classification'] },
-    not_equals: { label: "N'est pas égal à", icon: '≠', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'title', 'select', 'relation', 'classification'] },
+    equals: { label: 'Est égal à', icon: '=', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
+    not_equals: { label: "N'est pas égal à", icon: '≠', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
     starts_with: { label: 'Commence par', icon: 'A…', types: ['text', 'email', 'phone', 'url', 'title'] },
     ends_with: { label: 'Se termine par', icon: '…Z', types: ['text', 'email', 'phone', 'url', 'title'] },
     gt: { label: 'Supérieur à', icon: '>', types: ['number', 'date'] },
@@ -24,12 +24,12 @@ const MODAL_OPERATORS = {
     lt: { label: 'Inférieur à', icon: '<', types: ['number', 'date'] },
     lte: { label: 'Inférieur ou égal', icon: '≤', types: ['number', 'date'] },
     between: { label: 'Entre', icon: '↔', types: ['number', 'date'] },
-    is_empty: { label: 'Est vide', icon: '∅', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'relation', 'classification'] },
-    is_not_empty: { label: "N'est pas vide", icon: '∃', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'relation', 'classification'] },
+    is_empty: { label: 'Est vide', icon: '∅', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
+    is_not_empty: { label: "N'est pas vide", icon: '∃', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
 }
 
 function getModalOperatorsForType(fieldType) {
-    const type = fieldType || 'text'
+    const type = String(fieldType || 'text').toLowerCase()
     return Object.entries(MODAL_OPERATORS)
         .filter(([_, op]) => op.types.includes(type))
         .map(([key, op]) => ({ key, ...op }))
@@ -521,6 +521,7 @@ export default function SavedViewsTabs({
                                         const availableOps = getModalOperatorsForType(filter.fieldType)
                                         const isNoValueOp = ['is_empty', 'is_not_empty'].includes(filter.operator)
                                         const isBetweenOp = filter.operator === 'between'
+                                        const isBoolean = ['boolean', 'checkbox', 'switch', 'toggle'].includes(String(filter.fieldType || '').toLowerCase())
                                         const currentLogic = filter.logic || 'AND'
 
                                         return (
@@ -594,6 +595,16 @@ export default function SavedViewsTabs({
                                                                 {classifOptions.map(opt => (
                                                                     <option key={opt.id} value={opt.label}>{opt.label}</option>
                                                                 ))}
+                                                            </select>
+                                                        ) : isBoolean ? (
+                                                            <select
+                                                                value={String(filter.value ?? '')}
+                                                                onChange={(e) => updateModalFilter(index, { value: e.target.value })}
+                                                                className="svm-filter-select svm-filter-select--val"
+                                                            >
+                                                                <option value="">Sélectionnez...</option>
+                                                                <option value="true">Oui</option>
+                                                                <option value="false">Non</option>
                                                             </select>
                                                         ) : (
                                                             <input

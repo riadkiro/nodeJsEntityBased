@@ -1,7 +1,7 @@
 /**
  * EventModal — Create/Edit event modal
  */
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 
 const EVENT_TYPES = [
     { value: 'consultation', label: 'Consultation', color: '#4361ee' },
@@ -12,10 +12,18 @@ const EVENT_TYPES = [
     { value: 'autre', label: 'Autre', color: '#6b7280' },
 ]
 
+const EVENT_TAG_FALLBACK_OPTIONS = [
+    { label: 'Important', value: 'Important', color: '#ef4444' },
+    { label: 'Date limite', value: 'Date limite', color: '#f59e0b' },
+    { label: 'Risque amende', value: 'Risque amende', color: '#dc2626' },
+]
+
+const DEFAULT_CREATED_TAG_COLOR = '#64748b'
+
 export default function EventModal({
     isOpen, onClose, event, entityData, prefillDate,
     onCreate, onUpdate, onDelete,
-    getCustomFieldValue, getStatusInfo
+    getCustomFieldValue, getStatusInfo, accountNumber
 }) {
     const [form, setForm] = useState({
         title: '',
@@ -23,12 +31,14 @@ export default function EventModal({
         endDate: '',
         duration: 30,
         type: 'consultation',
+        tags: [],
         lieu: '',
         notes: '',
         statusOptionId: '',
     })
     const [saving, setSaving] = useState(false)
     const [formError, setFormError] = useState('')
+    const [createdTagOptions, setCreatedTagOptions] = useState([])
 
     const isEditing = !!event
 
@@ -36,6 +46,7 @@ export default function EventModal({
     useEffect(() => {
         if (!isOpen) return
         setFormError('')
+        setCreatedTagOptions([])
 
         if (event) {
             const status = getStatusInfo(event)
@@ -49,6 +60,7 @@ export default function EventModal({
                 endDate: event.end_date ? toLocalDateTime(new Date(event.end_date)) : '',
                 duration: getCustomFieldValue(event, 'duree_evenement') || 30,
                 type: getCustomFieldValue(event, 'type_evenement') || 'consultation',
+                tags: normalizeTagValues(getCustomFieldValue(event, 'tags_evenement')),
                 lieu: getCustomFieldValue(event, 'lieu_evenement') || '',
                 notes: getCustomFieldValue(event, 'notes_evenement') || '',
                 statusOptionId: statusCv?.optionId?.toString() || '',
@@ -81,12 +93,13 @@ export default function EventModal({
                 endDate: '',
                 duration: 30,
                 type: 'consultation',
+                tags: [],
                 lieu: '',
                 notes: '',
                 statusOptionId: defaultStatusId,
             })
         }
-    }, [isOpen, event, prefillDate, entityData])
+    }, [isOpen, event, prefillDate, entityData, getCustomFieldValue, getStatusInfo])
 
     const handleChange = useCallback((field, value) => {
         setFormError('')
@@ -114,6 +127,7 @@ export default function EventModal({
                 endDate,
                 duration: parseInt(form.duration) || 30,
                 type: form.type,
+                tags: normalizeTagValues(form.tags),
                 lieu: form.lieu,
                 notes: form.notes,
                 statusOptionId: form.statusOptionId || undefined,
@@ -135,6 +149,36 @@ export default function EventModal({
     if (!isOpen) return null
 
     const statusOptions = entityData?.statusClassification?.options || []
+    const tagField = getEventTagsField(entityData)
+    const tagOptions = mergeTagOptions([
+        EVENT_TAG_FALLBACK_OPTIONS,
+        tagField?.type_config?.options || [],
+        createdTagOptions,
+        normalizeTagValues(form.tags).map(tag => ({ label: tag, value: tag })),
+    ])
+
+    const handleCreateTagOption = async (label) => {
+        const option = { label, value: label, color: DEFAULT_CREATED_TAG_COLOR }
+        const fieldId = tagField?._id?.toString?.() || tagField?._id
+
+        if (!accountNumber || !fieldId) {
+            setCreatedTagOptions(prev => mergeTagOptions([prev, [option]]))
+            return option
+        }
+
+        const res = await fetch(`/account/${accountNumber}/field-template/api/${fieldId}/add-option`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(option)
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data.success) throw new Error(data.error || 'Création impossible')
+
+        const created = normalizeTagOption(data.option || option)
+        setCreatedTagOptions(prev => mergeTagOptions([prev, [created]]))
+        return created
+    }
 
     return (
         <div className="ra-modal-overlay" onClick={onClose}>
@@ -248,6 +292,17 @@ export default function EventModal({
                         </div>
                     )}
 
+                    {/* Tags */}
+                    <div className="ra-field">
+                        <label className="ra-label">Étiquettes</label>
+                        <EventTagsMultiselect
+                            value={form.tags}
+                            options={tagOptions}
+                            onChange={next => handleChange('tags', next)}
+                            onCreateOption={handleCreateTagOption}
+                        />
+                    </div>
+
                     {/* Location */}
                     <div className="ra-field">
                         <label className="ra-label">Lieu</label>
@@ -310,6 +365,197 @@ export default function EventModal({
             <style>{getModalStyles()}</style>
         </div>
     )
+}
+
+function EventTagsMultiselect({ value, options, onChange, onCreateOption }) {
+    const [search, setSearch] = useState('')
+    const [open, setOpen] = useState(false)
+    const [creating, setCreating] = useState(false)
+    const rootRef = useRef(null)
+    const inputRef = useRef(null)
+
+    const selectedValues = useMemo(() => normalizeTagValues(value), [value])
+    const allOptions = useMemo(() => mergeTagOptions([
+        options,
+        selectedValues.map(tag => ({ label: tag, value: tag })),
+    ]), [options, selectedValues])
+
+    const selectedOptions = useMemo(() => {
+        return selectedValues.map(tag => {
+            return allOptions.find(opt => tagMatchesValue(opt, tag)) || { label: tag, value: tag, color: DEFAULT_CREATED_TAG_COLOR }
+        })
+    }, [allOptions, selectedValues])
+
+    const query = search.trim().toLowerCase()
+    const filteredOptions = useMemo(() => {
+        return allOptions
+            .filter(opt => !selectedValues.some(tag => tagMatchesValue(opt, tag)))
+            .filter(opt => {
+                if (!query) return true
+                return String(opt.label || '').toLowerCase().includes(query) || String(opt.value || '').toLowerCase().includes(query)
+            })
+            .slice(0, 8)
+    }, [allOptions, selectedValues, query])
+
+    const hasExactMatch = useMemo(() => {
+        if (!query) return false
+        return allOptions.some(opt =>
+            String(opt.label || '').trim().toLowerCase() === query ||
+            String(opt.value || '').trim().toLowerCase() === query
+        )
+    }, [allOptions, query])
+
+    useEffect(() => {
+        const onDown = (event) => {
+            if (!rootRef.current || rootRef.current.contains(event.target)) return
+            setOpen(false)
+            setSearch('')
+        }
+        document.addEventListener('mousedown', onDown)
+        return () => document.removeEventListener('mousedown', onDown)
+    }, [])
+
+    const addTag = useCallback((option) => {
+        const opt = normalizeTagOption(option)
+        if (!opt.value) return
+        const exists = selectedValues.some(tag => tag.toLowerCase() === String(opt.value).toLowerCase())
+        if (!exists) onChange([...selectedValues, opt.value])
+        setSearch('')
+        setOpen(true)
+        requestAnimationFrame(() => inputRef.current?.focus())
+    }, [onChange, selectedValues])
+
+    const removeTag = useCallback((tag) => {
+        onChange(selectedValues.filter(item => item.toLowerCase() !== String(tag).toLowerCase()))
+        requestAnimationFrame(() => inputRef.current?.focus())
+    }, [onChange, selectedValues])
+
+    const createTag = useCallback(async () => {
+        const label = search.trim()
+        if (!label || hasExactMatch || creating) return
+        setCreating(true)
+        try {
+            const created = await onCreateOption(label)
+            addTag(created || { label, value: label })
+        } catch (err) {
+            console.error('[EventTags] Create option error:', err)
+            window.showMessage ? window.showMessage(err.message || 'Création impossible', 'danger') : alert(err.message || 'Création impossible')
+        } finally {
+            setCreating(false)
+        }
+    }, [addTag, creating, hasExactMatch, onCreateOption, search])
+
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault()
+            if (filteredOptions.length > 0) addTag(filteredOptions[0])
+            else createTag()
+        } else if (event.key === 'Backspace' && !search && selectedValues.length > 0) {
+            removeTag(selectedValues[selectedValues.length - 1])
+        } else if (event.key === 'Escape') {
+            setOpen(false)
+            setSearch('')
+        }
+    }
+
+    return (
+        <div className="ra-tag-ms" ref={rootRef}>
+            <div className={`ra-tag-ms-control ${open ? 'open' : ''}`} onClick={() => { setOpen(true); inputRef.current?.focus() }}>
+                {selectedOptions.map(tag => (
+                    <span
+                        key={tag.value}
+                        className="ra-tag-ms-pill"
+                        style={{
+                            '--tag-c': tag.color || DEFAULT_CREATED_TAG_COLOR,
+                            background: `${tag.color || DEFAULT_CREATED_TAG_COLOR}12`,
+                            borderColor: `${tag.color || DEFAULT_CREATED_TAG_COLOR}35`,
+                            color: tag.color || DEFAULT_CREATED_TAG_COLOR,
+                        }}
+                    >
+                        {tag.label}
+                        <button type="button" onClick={(event) => { event.stopPropagation(); removeTag(tag.value) }} aria-label={`Retirer ${tag.label}`}>
+                            ×
+                        </button>
+                    </span>
+                ))}
+                <input
+                    ref={inputRef}
+                    className="ra-tag-ms-input"
+                    value={search}
+                    onChange={event => { setSearch(event.target.value); setOpen(true) }}
+                    onFocus={() => setOpen(true)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={selectedOptions.length ? 'Ajouter...' : 'Important, Date limite...'}
+                />
+            </div>
+
+            {open && (filteredOptions.length > 0 || (search.trim() && !hasExactMatch)) && (
+                <div className="ra-tag-ms-menu">
+                    {filteredOptions.map(option => (
+                        <button key={option.value} type="button" className="ra-tag-ms-option" onClick={() => addTag(option)}>
+                            <span className="ra-tag-ms-dot" style={{ background: option.color || DEFAULT_CREATED_TAG_COLOR }} />
+                            <span>{option.label}</span>
+                        </button>
+                    ))}
+                    {search.trim() && !hasExactMatch && (
+                        <button type="button" className="ra-tag-ms-create" onClick={createTag} disabled={creating}>
+                            <span>+</span>
+                            {creating ? 'Création...' : `Créer "${search.trim()}"`}
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+function getEventTagsField(entityData) {
+    return (entityData?.customFields || []).find(field => field?.name === 'tags_evenement') || null
+}
+
+function normalizeTagValues(value) {
+    const raw = Array.isArray(value)
+        ? value
+        : (typeof value === 'string' ? value.split(',') : [])
+
+    return raw
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
+        .filter((item, idx, arr) => arr.findIndex(other => other.toLowerCase() === item.toLowerCase()) === idx)
+}
+
+function normalizeTagOption(option) {
+    if (typeof option === 'object' && option) {
+        const label = String(option.label || option.value || '').trim()
+        const value = String(option.value || option.label || '').trim()
+        return { label, value, color: option.color || DEFAULT_CREATED_TAG_COLOR }
+    }
+
+    const value = String(option || '').trim()
+    return { label: value, value, color: DEFAULT_CREATED_TAG_COLOR }
+}
+
+function tagMatchesValue(option, value) {
+    const token = String(value || '').trim().toLowerCase()
+    return [option.value, option.label]
+        .filter(item => item !== undefined && item !== null)
+        .some(item => String(item).trim().toLowerCase() === token)
+}
+
+function mergeTagOptions(groups) {
+    const merged = []
+    const seen = new Set()
+
+    groups.flat().forEach(option => {
+        const normalized = normalizeTagOption(option)
+        if (!normalized.value) return
+        const token = normalized.value.toLowerCase()
+        if (seen.has(token)) return
+        seen.add(token)
+        merged.push(normalized)
+    })
+
+    return merged
 }
 
 function toLocalDateTime(date) {
@@ -395,6 +641,66 @@ function getModalStyles() {
 .dark .ra-input { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
 .dark .ra-input:focus { border-color:#14b8a6; }
 .ra-textarea { resize:vertical; min-height:60px; line-height:1.45; }
+
+.ra-tag-ms { position:relative; }
+.ra-tag-ms-control {
+    min-height:42px; width:100%; padding:6px 8px;
+    border:1.5px solid #e2e8f0; border-radius:8px;
+    background:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:6px;
+    cursor:text; transition:border-color .2s, box-shadow .2s; box-sizing:border-box;
+}
+.ra-tag-ms-control.open {
+    border-color:#14b8a6;
+    box-shadow:0 0 0 3px rgba(20,184,166,.08);
+}
+.dark .ra-tag-ms-control { background:#1b2e4b; border-color:#253b5c; }
+.dark .ra-tag-ms-control.open { border-color:#14b8a6; }
+.ra-tag-ms-pill {
+    display:inline-flex; align-items:center; gap:5px;
+    min-height:25px; padding:3px 8px; border:1px solid;
+    border-radius:7px; font-size:12px; font-weight:700; line-height:1.2;
+}
+.ra-tag-ms-pill button {
+    width:16px; height:16px; border:0; border-radius:50%;
+    background:transparent; color:inherit; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1; opacity:.65; padding:0;
+}
+.ra-tag-ms-pill button:hover { opacity:1; background:rgba(15,23,42,.08); }
+.ra-tag-ms-input {
+    flex:1; min-width:130px; border:0; outline:0; background:transparent;
+    color:#0e1726; font-size:13px; font-family:inherit; padding:4px 3px;
+}
+.ra-tag-ms-input::placeholder { color:#9ca3af; }
+.dark .ra-tag-ms-input { color:#e0e6ed; }
+.ra-tag-ms-menu {
+    position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:20;
+    background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+    box-shadow:0 16px 42px rgba(15,23,42,.14);
+    padding:5px; max-height:210px; overflow-y:auto;
+}
+.dark .ra-tag-ms-menu { background:#0e1726; border-color:#253b5c; box-shadow:0 16px 42px rgba(0,0,0,.32); }
+.ra-tag-ms-option,
+.ra-tag-ms-create {
+    width:100%; border:0; background:transparent; border-radius:8px;
+    display:flex; align-items:center; gap:8px; padding:8px 9px;
+    color:#334155; font-size:12.5px; font-weight:700;
+    cursor:pointer; text-align:left; font-family:inherit;
+}
+.ra-tag-ms-option:hover,
+.ra-tag-ms-create:hover { background:#f8fafc; }
+.dark .ra-tag-ms-option,
+.dark .ra-tag-ms-create { color:#e0e6ed; }
+.dark .ra-tag-ms-option:hover,
+.dark .ra-tag-ms-create:hover { background:#1b2e4b; }
+.ra-tag-ms-dot { width:8px; height:8px; border-radius:50%; flex:none; }
+.ra-tag-ms-create { color:#14b8a6; border-top:1px solid #f1f5f9; margin-top:3px; }
+.dark .ra-tag-ms-create { border-top-color:#253b5c; }
+.ra-tag-ms-create span {
+    width:18px; height:18px; border-radius:6px; background:rgba(20,184,166,.12);
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800;
+}
+.ra-tag-ms-create:disabled { opacity:.6; cursor:wait; }
 
 .ra-modal-error {
     padding:10px 12px; border-radius:9px;

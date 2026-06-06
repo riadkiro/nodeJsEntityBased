@@ -199,6 +199,23 @@ const RecordSchema = new mongoose.Schema({
     excludedColumns: { type: [String], default: [] }
   }],
 
+  // 📋 Spreadsheet module
+  // Stores the visual sheet data for the record-level Sheet tab.
+  sheet: {
+    activeSheetId: { type: String, default: 'sheet_1' },
+    sheets: [{
+      id: String,
+      name: String,
+      rows: { type: Number, default: 40 },
+      cols: { type: Number, default: 14 },
+      cells: { type: mongoose.Schema.Types.Mixed, default: {} },
+      colWidths: { type: mongoose.Schema.Types.Mixed, default: {} },
+      rowHeights: { type: mongoose.Schema.Types.Mixed, default: {} }
+    }],
+    updatedAt: Date,
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
+
   // 👤 Suivi
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

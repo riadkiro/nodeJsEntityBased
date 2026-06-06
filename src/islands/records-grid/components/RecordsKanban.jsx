@@ -9,6 +9,7 @@
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react'
 import QuickViewModal from './QuickViewModal'
 import CardRenderer, { DEFAULT_KANBAN_LAYOUT } from '../../shared/CardRenderer'
+import { cleanRecordId } from '../../shared/recordLinks'
 import {
     DndContext,
     DragOverlay,
@@ -51,6 +52,16 @@ function normalizeChoiceOption(option, index = 0) {
         color: option?.color || option?.couleur || option?.bg || '#64748b',
         order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index,
     }
+}
+
+function isCustomPipelineField(field, configuredFieldId) {
+    if (!field || typeof field !== 'object') return false
+    const fieldId = cleanId(field)
+    const typeConfig = field.type_config || field.typeConfig || {}
+    const type = String(field.fieldType || field.type || field.render?.input || '').toLowerCase()
+    const input = String(field.render?.input || '').toLowerCase()
+    const isSelect = type === 'select' || input === 'select'
+    return fieldId === String(configuredFieldId) && isSelect && !typeConfig.multiple
 }
 
 function normalizeTagValues(value) {
@@ -140,7 +151,7 @@ function KanbanCardTags({ tags }) {
 function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp = false, onQuickView, cardTemplate, entityData, kanbanTagFieldIds }) {
     const pointerStart = useRef(null)
     const didDrag = useRef(false)
-    const id = String(record._id?.$oid || record._id)
+    const id = cleanRecordId(record)
     const tags = useMemo(() => buildKanbanTags(record, entityData, kanbanTagFieldIds), [record, entityData, kanbanTagFieldIds])
 
     const {
@@ -255,7 +266,7 @@ function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlu
                         ) : (
                             records.map(r => (
                                 <KanbanCard
-                                    key={r._id?.$oid || r._id}
+                                    key={cleanRecordId(r)}
                                     record={r}
                                     accountNumber={accountNumber}
                                     entitySlug={entitySlug}
@@ -373,6 +384,47 @@ export default function RecordsKanban({
     // ─── Build columns from configured entity classification options ─
     const kanbanColumns = useMemo(() => {
         if (entityData) {
+            const configuredCustomFieldId = String(kanbanFieldId || '').startsWith('field:')
+                ? String(kanbanFieldId).slice(6)
+                : ''
+            const selectedCustomField = configuredCustomFieldId
+                ? (entityData.customFields || []).find(field => isCustomPipelineField(field, configuredCustomFieldId))
+                : null
+
+            if (selectedCustomField) {
+                const typeConfig = selectedCustomField.type_config || selectedCustomField.typeConfig || {}
+                const cols = (typeConfig.options || selectedCustomField.options || [])
+                    .map(normalizeChoiceOption)
+                    .filter(opt => opt.value || opt.label)
+                    .map((opt, index) => {
+                        const value = String(opt.value || opt.label)
+                        return {
+                            id: value,
+                            title: opt.label || value,
+                            color: opt.color || '#6366f1',
+                            optionId: value,
+                            optionValue: value,
+                            order: Number.isFinite(Number(opt.order)) ? Number(opt.order) : index,
+                        }
+                    })
+                    .sort((a, b) => a.order - b.order)
+
+                if (cols.length > 0) {
+                    cols.push({
+                        id: '__none__',
+                        title: 'Non renseigné',
+                        color: '#9ca3af',
+                        optionId: 'none',
+                        optionValue: '',
+                    })
+                    return {
+                        type: 'customField',
+                        fieldId: cleanId(selectedCustomField),
+                        columns: cols
+                    }
+                }
+            }
+
             const statusCls = entityData.statusClassification
             const classifications = []
             const seen = new Set()
@@ -416,6 +468,7 @@ export default function RecordsKanban({
                     optionId: 'none'
                 })
                 return {
+                    type: 'classification',
                     classId: cleanId(selectedClass),
                     columns: cols
                 }
@@ -458,10 +511,11 @@ export default function RecordsKanban({
                 optionId: opt.optionId,
             }))
             cols.push({ id: '__none__', title: 'Sans classification', color: '#9ca3af', optionId: 'none' })
-            return { classId: bestClassId, columns: cols }
+            return { type: 'classification', classId: bestClassId, columns: cols }
         }
 
         return {
+            type: 'all',
             classId: null,
             columns: [{ id: '__all__', title: 'Tous les enregistrements', color: '#4361ee', optionId: null }]
         }
@@ -472,7 +526,28 @@ export default function RecordsKanban({
         const grouped = {}
         kanbanColumns.columns.forEach(col => (grouped[col.id] = []))
 
-        if (!kanbanColumns.classId) {
+        if (kanbanColumns.type === 'customField' && kanbanColumns.fieldId) {
+            const valueToColId = {}
+            const labelToColId = {}
+            kanbanColumns.columns.forEach(col => {
+                if (col.optionId && col.optionId !== 'none') {
+                    valueToColId[String(col.optionValue || col.optionId)] = col.id
+                    labelToColId[String(col.title)] = col.id
+                }
+            })
+
+            records.forEach(r => {
+                const rawValue = getCustomFieldValue(r, kanbanColumns.fieldId)
+                const firstValue = Array.isArray(rawValue) ? rawValue[0] : rawValue
+                const key = firstValue === undefined || firstValue === null ? '' : String(firstValue)
+                const colId = valueToColId[key] || labelToColId[key]
+                if (colId && grouped[colId]) {
+                    grouped[colId].push(r)
+                } else if (grouped['__none__']) {
+                    grouped['__none__'].push(r)
+                }
+            })
+        } else if (!kanbanColumns.classId) {
             grouped['__all__'] = records
         } else {
             // Build a lookup: optionId → column.id (for entity-based columns)
@@ -520,8 +595,8 @@ export default function RecordsKanban({
             const order = orderByColumn[colId] || []
             if (!order.length) continue
             grouped[colId].sort((a, b) => {
-                const ia = order.indexOf(String(a._id?.$oid || a._id))
-                const ib = order.indexOf(String(b._id?.$oid || b._id))
+                const ia = order.indexOf(cleanRecordId(a))
+                const ib = order.indexOf(cleanRecordId(b))
                 if (ia === -1 && ib === -1) return 0
                 if (ia === -1) return 1
                 if (ib === -1) return -1
@@ -536,7 +611,7 @@ export default function RecordsKanban({
     const idsByColumn = useMemo(() => {
         const out = {}
         for (const col of kanbanColumns.columns) {
-            out[col.id] = (recordsByColumn[col.id] || []).map(r => String(r._id?.$oid || r._id))
+            out[col.id] = (recordsByColumn[col.id] || []).map(r => cleanRecordId(r)).filter(Boolean)
         }
         return out
     }, [kanbanColumns.columns, recordsByColumn])
@@ -553,7 +628,7 @@ export default function RecordsKanban({
     // Active record for DragOverlay
     const activeRecord = useMemo(() => {
         if (!activeId) return null
-        return records.find(r => String(r._id?.$oid || r._id) === String(activeId)) || null
+        return records.find(r => cleanRecordId(r) === String(activeId)) || null
     }, [activeId, records])
 
     // ─── Save preferences (debounced) ────────────────────────────────
@@ -573,26 +648,37 @@ export default function RecordsKanban({
     }, [accountNumber, viewId])
 
     // ─── Update record classification via API ────────────────────────
-    const updateRecordClassification = useCallback(async (recordId, toColumnId) => {
-        if (!kanbanColumns.classId) return
+    const updateRecordPipeline = useCallback(async (recordId, toColumnId) => {
         const toCol = kanbanColumns.columns.find(c => c.id === toColumnId)
         if (!toCol) return
 
         try {
-            await fetch(`/account/${accountNumber}/api/record/update-classification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    recordId,
-                    classificationId: kanbanColumns.classId,
-                    optionId: toCol.optionId === 'none' ? null : toCol.optionId
+            if (kanbanColumns.type === 'customField' && kanbanColumns.fieldId) {
+                await fetch(`/account/${accountNumber}/record/${entitySlug}/${recordId}/update-field`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        fieldKey: kanbanColumns.fieldId,
+                        value: toCol.optionId === 'none' ? '' : (toCol.optionValue || toCol.optionId || '')
+                    })
                 })
-            })
+            } else if (kanbanColumns.classId) {
+                await fetch(`/account/${accountNumber}/api/record/update-classification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        recordId,
+                        classificationId: kanbanColumns.classId,
+                        optionId: toCol.optionId === 'none' ? null : toCol.optionId
+                    })
+                })
+            }
         } catch (err) {
             console.error('[RecordsKanban] Update error:', err)
         }
-    }, [accountNumber, kanbanColumns])
+    }, [accountNumber, entitySlug, kanbanColumns])
 
     // ─── DnD Handlers ────────────────────────────────────────────────
     const handleDragStart = (event) => {
@@ -650,11 +736,26 @@ export default function RecordsKanban({
         setOrderByColumn(newOrderByColumn)
         savePreferences(newOrderByColumn)
 
-        // Optimistic update: move record's classificationValues to new column
-        if (kanbanColumns.classId) {
-            const toColumn = kanbanColumns.columns.find(c => c.id === toCol)
+        // Optimistic update: move record's pipeline value to new column
+        const toColumn = kanbanColumns.columns.find(c => c.id === toCol)
+        if (kanbanColumns.type === 'customField' && kanbanColumns.fieldId) {
             setRecords(prev => prev.map(r => {
-                if (String(r._id?.$oid || r._id) !== activeRecordId) return r
+                if (cleanRecordId(r) !== activeRecordId) return r
+                const nextCustomFields = [...(r.customFields || [])]
+                const fieldIndex = nextCustomFields.findIndex(cf => cleanId(cf.field_id) === String(kanbanColumns.fieldId))
+                const nextValue = toCol === '__none__' ? '' : (toColumn?.optionValue || toColumn?.optionId || '')
+                if (fieldIndex >= 0) {
+                    nextCustomFields[fieldIndex] = { ...nextCustomFields[fieldIndex], value: nextValue }
+                } else if (nextValue) {
+                    nextCustomFields.push({ field_id: kanbanColumns.fieldId, value: nextValue })
+                }
+                return { ...r, customFields: nextCustomFields }
+            }))
+
+            updateRecordPipeline(activeRecordId, toCol)
+        } else if (kanbanColumns.classId) {
+            setRecords(prev => prev.map(r => {
+                if (cleanRecordId(r) !== activeRecordId) return r
                 const newCvs = (r.classificationValues || []).filter(cv => {
                     const cId = cv.classificationId?.$oid || cv.classificationId || cv.classification_id
                     return String(cId) !== String(kanbanColumns.classId)
@@ -671,7 +772,7 @@ export default function RecordsKanban({
             }))
 
             // Persist via API
-            updateRecordClassification(activeRecordId, toCol)
+            updateRecordPipeline(activeRecordId, toCol)
         }
     }
 

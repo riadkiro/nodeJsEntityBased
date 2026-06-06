@@ -79,6 +79,7 @@ export default function ListView({ events, entityData, onEventClick, onDeleteEve
                         <th className="ra-th ra-th-sortable" onClick={() => toggleSort('type')}>
                             Type <SortIcon field="type" />
                         </th>
+                        <th className="ra-th">Étiquettes</th>
                         <th className="ra-th">Lieu</th>
                         <th className="ra-th ra-th-sortable" onClick={() => toggleSort('status')}>
                             Statut <SortIcon field="status" />
@@ -90,6 +91,7 @@ export default function ListView({ events, entityData, onEventClick, onDeleteEve
                     {sorted.map((ev, i) => {
                         const status = getStatusInfo(ev)
                         const type = getCustomFieldValue(ev, 'type_evenement')
+                        const tags = normalizeListTags(getCustomFieldValue(ev, 'tags_evenement'))
                         const lieu = getCustomFieldValue(ev, 'lieu_evenement')
                         const duration = getCustomFieldValue(ev, 'duree_evenement')
                         const past = isPast(ev.date)
@@ -114,6 +116,11 @@ export default function ListView({ events, entityData, onEventClick, onDeleteEve
                                             {type.charAt(0).toUpperCase() + type.slice(1)}
                                         </span>
                                     ) : '—'}
+                                </td>
+                                <td className="ra-td ra-td-tags">
+                                    {tags.length > 0 ? tags.map(tag => (
+                                        <span key={tag} className="ra-list-tag">{tag}</span>
+                                    )) : '—'}
                                 </td>
                                 <td className="ra-td">{lieu || '—'}</td>
                                 <td className="ra-td">
@@ -140,6 +147,16 @@ export default function ListView({ events, entityData, onEventClick, onDeleteEve
             </table>
         </div>
     )
+}
+
+function normalizeListTags(value) {
+    const raw = Array.isArray(value)
+        ? value
+        : (typeof value === 'string' ? value.split(',') : [])
+
+    return raw
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
 }
 
 function getListStyles() {
@@ -190,6 +207,18 @@ function getListStyles() {
     background:#f1f5f9; color:#6b7280;
 }
 .dark .ra-td-type-badge { background:#253b5c; color:#888da8; }
+
+.ra-td-tags {
+    display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+    max-width:180px; white-space:normal;
+}
+.ra-list-tag {
+    display:inline-flex; align-items:center; min-height:20px;
+    padding:2px 7px; border-radius:6px;
+    background:#f8fafc; border:1px solid #e2e8f0;
+    color:#64748b; font-size:10.5px; font-weight:800;
+}
+.dark .ra-list-tag { background:#1b2e4b; border-color:#253b5c; color:#94a3b8; }
 
 .ra-td-status {
     font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px;

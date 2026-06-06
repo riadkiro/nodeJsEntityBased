@@ -12,6 +12,11 @@ router.use(enforceSharedDataRoomMode);
 
 router.use("/dashboard", require("./account.router.js"));
 
+// Redirect /dashboard root to /home
+router.get("/dashboard", (req, res) => {
+    res.redirect(`/account/${req.account_number}/home`);
+});
+
 // Admin Panel
 router.use("/admin", require("./admin.router.js"));
 
@@ -142,14 +147,20 @@ router.get("/api/tasks-hub", async (req, res) => {
         const Entity = await _tc(req, "Entity");
         const Record = await _tc(req, "Record");
 
-        const allLists = await TaskListModel.find({}).lean();
+        // Scope to tenant: get all record IDs belonging to this tenant first
+        const tenantRecords = await Record.find({}).select('_id title referenceTitle entityId').lean();
+        const tenantRecordIds = tenantRecords.map(r => r._id);
+        if (tenantRecordIds.length === 0) {
+            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
+        }
+
+        const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).lean();
         if (allLists.length === 0) {
             return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
         }
 
-        const allTasks = await RecordTaskModel.find({}).lean();
-        const recordIds = [...new Set(allLists.map(l => l.recordId.toString()))];
-        const records = await Record.find({ _id: { $in: recordIds } }).select('title referenceTitle entityId').lean();
+        const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).lean();
+        const records = tenantRecords;
         const recordMap = {};
         records.forEach(r => { recordMap[r._id.toString()] = r; });
 
@@ -216,9 +227,12 @@ router.get("/api/home-overview", async (req, res) => {
         const end = new Date(start);
         end.setDate(end.getDate() + 1);
 
+        // Scope to tenant: get all record IDs belonging to this tenant first
+        const tenantRecordIds = await Record.find({}).distinct('_id');
+
         const [allLists, allTasks] = await Promise.all([
-            TaskListModel.find({}).lean(),
-            RecordTaskModel.find({}).lean()
+            tenantRecordIds.length ? TaskListModel.find({ recordId: { $in: tenantRecordIds } }).lean() : Promise.resolve([]),
+            tenantRecordIds.length ? RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).lean() : Promise.resolve([])
         ]);
 
         const recordIds = new Set();
@@ -260,9 +274,15 @@ router.get("/api/home-overview", async (req, res) => {
         const cleanLabel = label => String(label || '').trim().toLowerCase() === 'général' ? 'Tâches du jour' : (String(label || '').trim() || 'Tâches du jour');
         const recordTitle = record => record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
 
-        const taskRows = allTasks.map(task => {
+        // Filter tasks to only those whose record exists in this tenant
+        const taskRows = allTasks
+            .filter(task => {
+                const rId = task.recordId?.toString?.() || '';
+                return rId && recordMap[rId];
+            })
+            .map(task => {
             const list = listMap[task.taskListId?.toString?.() || ''];
-            const record = recordMap[task.recordId?.toString?.() || list?.recordId?.toString?.() || ''];
+            const record = recordMap[task.recordId?.toString?.() || ''];
             const entity = record?.entityId ? entityMap[record.entityId.toString()] : null;
             const entitySlug = entity?.slug || '';
             const taskId = task._id.toString();
@@ -490,7 +510,7 @@ router.get("/settings", async (req, res) => {
 
         // Only owner/admin can access settings
         if (!req.can || !req.can('settings.view')) {
-            return res.redirect(`/account/${req.account_number}/dashboard`);
+            return res.redirect(`/account/${req.account_number}/home`);
         }
 
         const Account = require("../models/account.model");
@@ -723,7 +743,7 @@ const { requirePerm: requirePermRoute } = require('../middleware/permissions');
 router.get("/permissions", (req, res) => {
     // Guard: only admin/owner can access (actual API is already guarded, but page should be too)
     if (!req.can || !req.can('members.changeRole')) {
-        return res.redirect(`/account/${req.account_number}/dashboard`);
+        return res.redirect(`/account/${req.account_number}/home`);
     }
     res.render("account/account-permissions", {
         layout: "layout-app",
@@ -735,7 +755,7 @@ router.get("/permissions", (req, res) => {
 // Roles Configuration Page
 router.get("/roles", (req, res) => {
     if (!req.can || !req.can('settings.view')) {
-        return res.redirect(`/account/${req.account_number}/dashboard`);
+        return res.redirect(`/account/${req.account_number}/home`);
     }
     res.render("account/account-roles", {
         layout: "layout-app",

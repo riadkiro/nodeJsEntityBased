@@ -1,5 +1,5 @@
 <div
-  class="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-[#0e1726]"
+  class="relative z-[70] flex w-full items-center bg-white px-5 py-2.5 dark:bg-[#0e1726]"
 >
   <div
     class="horizontal-logo flex items-center justify-between ltr:mr-2 rtl:ml-2 lg:hidden"
@@ -169,15 +169,16 @@
 
   <!-- ═══ LEFT ZONE: Breadcrumb (record context only) ═══ -->
   <% if (typeof entity !== 'undefined' && entity && typeof record !== 'undefined' && record) { %>
+  <% const _topbarRecordBackUrl = (typeof recordBackUrl !== 'undefined' && recordBackUrl) ? recordBackUrl : ('/account/' + account_number + '/record/' + entity.slug + '/list'); %>
   <div class="hidden ltr:mr-2 rtl:ml-2 sm:block">
     <div class="topbar-breadcrumb">
-      <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+      <a href="<%= _topbarRecordBackUrl %>"
          class="back-btn" title="Retour à la liste">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </a>
-      <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+      <a href="<%= _topbarRecordBackUrl %>"
          class="breadcrumb-entity-link" title="<%= entity.name %>">
         <span class="breadcrumb-entity-badge"
               style="background: linear-gradient(135deg, <%= entity.color || '#4361ee' %>18, <%= entity.color || '#4361ee' %>08); color: <%= entity.color || '#4361ee' %>;">
@@ -194,7 +195,7 @@
   <!-- ═══ RIGHT ZONE: Search + App Icons + Utilities (ALWAYS right) ═══ -->
   <div
     x-data="header"
-    class="flex items-center space-x-1.5 ltr:ml-auto rtl:space-x-reverse dark:text-[#d0d2d6] lg:space-x-2"
+    class="flex min-w-0 max-w-full shrink items-center space-x-1.5 overflow-x-auto overflow-y-hidden ltr:ml-auto rtl:space-x-reverse dark:text-[#d0d2d6] lg:space-x-2"
   >
     <div
       class="relative"
@@ -302,7 +303,7 @@
       </button>
     </div>
     <!-- App Icons — ALWAYS on the right -->
-    <div class="hidden sm:block">
+    <div class="hidden xl:block">
       <% const currentPath = typeof path !== 'undefined' ? path : ''; %>
       <%- include('topbar-app-icons', { account_number, currentPath }) %>
     </div>
@@ -1029,7 +1030,7 @@
           <% if (String(acc.account_number) !== String(account_number)) { %>
           <li>
             <a
-              href="/account/<%= acc.account_number %>/dashboard"
+              href="/account/<%= acc.account_number %>/home"
               class="dark:hover:text-white flex items-center"
               @click="toggle"
             >

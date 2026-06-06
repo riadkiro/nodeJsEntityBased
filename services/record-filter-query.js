@@ -46,7 +46,7 @@ function coerceValue(value, fieldType) {
         const d = new Date(value)
         return Number.isNaN(d.getTime()) ? value : d
     }
-    if (type === 'boolean') {
+    if (['boolean', 'checkbox', 'switch', 'toggle'].includes(type)) {
         if (value === true || value === false) return value
         const s = String(value).toLowerCase()
         if (['true', '1', 'oui', 'yes'].includes(s)) return true

@@ -48,9 +48,54 @@ function buildPayloadSelection(selection = {}) {
                     name: upload.name,
                     text: upload.text || '',
                     charCount: upload.charCount || String(upload.text || '').length || 0,
+                    ocrMeta: upload.ocrMeta || upload.meta || {},
                 }))
             : [],
     }
+}
+
+function imageFilesFromClipboard(event) {
+    const data = event?.clipboardData
+    if (!data) return []
+
+    const files = []
+    const seen = new Set()
+    const addFile = (file) => {
+        if (!file || !String(file.type || '').startsWith('image/')) return
+        const key = `${file.name || 'clipboard'}:${file.size}:${file.type}`
+        if (seen.has(key)) return
+        seen.add(key)
+        files.push(file)
+    }
+
+    Array.from(data.items || []).forEach(item => {
+        if (item.kind !== 'file') return
+        addFile(item.getAsFile())
+    })
+    Array.from(data.files || []).forEach(addFile)
+
+    return files
+}
+
+function extensionFromMimeType(mimeType = '') {
+    const value = String(mimeType || '').toLowerCase()
+    if (value === 'image/jpeg') return '.jpg'
+    if (value === 'image/png') return '.png'
+    if (value === 'image/webp') return '.webp'
+    if (value === 'image/gif') return '.gif'
+    if (value === 'image/bmp') return '.bmp'
+    if (value === 'image/tiff') return '.tiff'
+    return ''
+}
+
+function ocrUploadFileName(file, options = {}) {
+    const explicitName = String(options.name || file?.name || '').trim()
+    if (explicitName) return explicitName
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const prefix = options.source === 'clipboard' ? 'capture-presse-papiers' : 'document-ocr'
+    const indexSuffix = Number.isFinite(options.index) && options.index > 0 ? `-${options.index + 1}` : ''
+    return `${prefix}-${stamp}${indexSuffix}${extensionFromMimeType(file?.type)}`
 }
 
 function formatDate(value) {
@@ -789,6 +834,34 @@ function agentStatusLabel(status) {
     return status || 'Agent'
 }
 
+function pipelineStatusIcon(status) {
+    if (status === 'done') return 'solar:check-circle-bold-duotone'
+    if (status === 'failed') return 'solar:danger-circle-bold-duotone'
+    if (status === 'skipped') return 'solar:minus-circle-bold-duotone'
+    return 'solar:clock-circle-bold-duotone'
+}
+
+function AgentRunPipeline({ pipeline = [] }) {
+    const items = Array.isArray(pipeline) ? pipeline.filter(item => item?.label).slice(0, 6) : []
+    if (!items.length) return null
+
+    return (
+        <div className="rai-agent-pipeline" aria-label="Pipeline du run">
+            {items.map(item => (
+                <span
+                    key={item.key || item.label}
+                    className={`rai-agent-pipeline-step ${item.status || 'ready'}`}
+                    title={[item.label, item.detail].filter(Boolean).join(' - ')}
+                >
+                    <Icon icon={pipelineStatusIcon(item.status)} width={12} />
+                    <strong>{item.label}</strong>
+                    {item.detail && <small>{item.detail}</small>}
+                </span>
+            ))}
+        </div>
+    )
+}
+
 function agentToolIcon(tool) {
     if (tool === 'create_note') return 'solar:notebook-bold-duotone'
     if (tool === 'update_note') return 'solar:pen-new-square-bold-duotone'
@@ -989,6 +1062,7 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
                     ) : (
                         <>
                             {run.summary && <p className="rai-agent-summary">{safeAgentSummary(run.summary)}</p>}
+                            <AgentRunPipeline pipeline={run.contextStats?.pipeline || []} />
 
                             {sourceCount > 0 && (
                                 <details className="rai-agent-sources">
@@ -1779,38 +1853,73 @@ export default function RecordAI({ accountNumber, recordId, entitySlug = '', rec
         }
     }, [agentBusyRunId, apiFetch, updateAgentConversationList, upsertAgentRun])
 
-    const handleUpload = useCallback(async (event) => {
-        const file = event.target.files?.[0]
-        event.target.value = ''
-        if (!file) return
+    const addOcrUploadFromFile = useCallback(async (file, options = {}) => {
+        const uploadName = ocrUploadFileName(file, options)
+        const body = new FormData()
+        body.append('file', file, uploadName)
+        body.append('mode', options.mode || 'auto')
+        body.append('maxPages', String(limits.ragMaxPages || limits.ocrMaxPages || 20))
+        body.append('visionFallback', 'auto')
+        const currentQuery = input.trim()
+        if (currentQuery) body.append('query', currentQuery)
+
+        const res = await fetch(`/account/${accountNumber}/api/ocr/extract`, {
+            method: 'POST',
+            credentials: 'include',
+            body,
+        })
+        const data = await res.json()
+        if (!res.ok || !data.success) throw new Error(data.error || 'OCR impossible')
+
+        const text = data.text || ''
+        if (!text.trim()) throw new Error(`Aucun texte OCR lisible dans ${uploadName}.`)
+
+        const upload = {
+            id: `upload:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+            name: uploadName,
+            text,
+            charCount: data.meta?.charCount || text.length,
+            ocrMeta: data.meta || {},
+        }
+        setSelection(prev => ({ ...prev, uploads: [...prev.uploads, upload] }))
+        return upload
+    }, [accountNumber, input, limits.ocrMaxPages, limits.ragMaxPages])
+
+    const runOcrUploads = useCallback(async (filesToRead = [], options = {}) => {
+        const filesList = Array.from(filesToRead || []).filter(Boolean)
+        if (!filesList.length) return
+        if (uploading) {
+            setError('OCR déjà en cours. Attendez la fin avant de relancer.')
+            return
+        }
 
         setUploading(true)
         setError('')
         try {
-            const body = new FormData()
-            body.append('file', file)
-            body.append('mode', 'auto')
-            body.append('maxPages', String(limits.ragMaxPages || limits.ocrMaxPages || 20))
-            const res = await fetch(`/account/${accountNumber}/api/ocr/extract`, {
-                method: 'POST',
-                credentials: 'include',
-                body,
-            })
-            const data = await res.json()
-            if (!res.ok || !data.success) throw new Error(data.error || 'OCR impossible')
-            const upload = {
-                id: `upload:${Date.now()}`,
-                name: file.name,
-                text: data.text || '',
-                charCount: data.meta?.charCount || (data.text || '').length,
+            for (let index = 0; index < filesList.length; index += 1) {
+                await addOcrUploadFromFile(filesList[index], { ...options, index })
             }
-            setSelection(prev => ({ ...prev, uploads: [...prev.uploads, upload] }))
         } catch (err) {
             setError(err.message || 'OCR impossible')
         } finally {
             setUploading(false)
         }
-    }, [accountNumber, limits.ocrMaxPages, limits.ragMaxPages])
+    }, [addOcrUploadFromFile, uploading])
+
+    const handleUpload = useCallback(async (event) => {
+        const file = event.target.files?.[0]
+        event.target.value = ''
+        if (!file) return
+        await runOcrUploads([file], { mode: 'auto' })
+    }, [runOcrUploads])
+
+    const handleComposerPaste = useCallback(async (event) => {
+        const pastedImages = imageFilesFromClipboard(event)
+        if (!pastedImages.length) return
+
+        event.preventDefault()
+        await runOcrUploads(pastedImages, { mode: 'ocr', source: 'clipboard' })
+    }, [runOcrUploads])
 
     const removeUpload = useCallback((id) => {
         setSelection(prev => ({ ...prev, uploads: prev.uploads.filter(upload => upload.id !== id) }))
@@ -2595,7 +2704,7 @@ export default function RecordAI({ accountNumber, recordId, entitySlug = '', rec
                         <ContextBadgeList items={selectedContextItems} onOpen={openContextItem} onRemove={removeContextItem} />
                         {uploading && (
                             <div className="rai-inline-status">
-                                <AgentStatus phrase="Lecture du document" />
+                                <AgentStatus phrase="Lecture OCR du document" />
                             </div>
                         )}
                         <div className="rai-composer">
@@ -2606,6 +2715,7 @@ export default function RecordAI({ accountNumber, recordId, entitySlug = '', rec
                             <textarea
                                 value={input}
                                 onChange={event => setInput(event.target.value)}
+                                onPaste={handleComposerPaste}
                                 onKeyDown={event => {
                                     if (event.key === 'Enter' && !event.shiftKey) {
                                         event.preventDefault()
@@ -3096,6 +3206,15 @@ const styles = `
 .rai-agent-run-status.error{color:#e11d48;background:#fff1f2;border-color:#fecaca;}
 .rai-agent-run-status.undone{color:#64748b;background:#f8fafc;border-color:#e2e8f0;}
 .rai-agent-summary{margin:0;font-size:12px;line-height:1.5;color:#475569;background:#f8fafc;border:1px solid #edf2f7;border-radius:10px;padding:8px 9px;}
+.rai-agent-pipeline{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.rai-agent-pipeline-step{min-height:23px;display:inline-flex;align-items:center;gap:4px;border:1px solid #e5e7eb;background:#fff;color:#64748b;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:800;max-width:100%;}
+.rai-agent-pipeline-step strong{font-size:10px;color:#334155;white-space:nowrap;}
+.rai-agent-pipeline-step small{font-size:9.5px;color:#94a3b8;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.rai-agent-pipeline-step.done{border-color:rgba(16,185,129,.18);background:#fbfefc;color:#047857;}
+.rai-agent-pipeline-step.done strong{color:#047857;}
+.rai-agent-pipeline-step.failed{border-color:#fecaca;background:#fff1f2;color:#e11d48;}
+.rai-agent-pipeline-step.failed strong{color:#e11d48;}
+.rai-agent-pipeline-step.skipped{background:#f8fafc;color:#94a3b8;}
 .rai-agent-sources{border:1px solid #edf2f7;background:#f8fafc;border-radius:10px;overflow:hidden;}
 .rai-agent-sources summary{cursor:pointer;list-style:none;padding:7px 9px;font-size:11px;font-weight:800;color:#64748b;}
 .rai-agent-sources summary::-webkit-details-marker{display:none;}
@@ -3163,6 +3282,6 @@ const styles = `
 @keyframes raiFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes raiDot{0%,80%,100%{opacity:.35;transform:translateY(0) scale(.88)}40%{opacity:1;transform:translateY(-2px) scale(1)}}
 @keyframes raiSheen{0%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}
-@media(max-width:1050px){.rai-shell{grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 190px);min-height:640px}.rai-message{max-width:88%;}.rai-context-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}.rai-create-btn span{display:none;}.rai-create-btn{padding:7px 10px;}}
-@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-message.context{max-width:100%;}.rai-agent-status{min-width:0;max-width:100%;}.rai-agent-label{overflow:hidden;text-overflow:ellipsis;}.rai-clear-btn span,.rai-debug-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop,.rai-debug-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal,.rai-debug-modal{width:100%;height:92vh;}.rai-engine-modal{width:100%;max-height:92vh}.rai-engine-grid{grid-template-columns:1fr}.rai-engine-footer{align-items:stretch;flex-direction:column}.rai-context-card-grid{grid-template-columns:1fr;}}
+@media(max-width:1050px){.rai-shell{grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 190px);min-height:640px}.rai-chat-header{align-items:center;flex-wrap:wrap;padding:12px 14px;gap:8px}.rai-chat-title-wrap{flex:1 1 calc(100% - 42px);min-width:0}.rai-mode-switch,.rai-debug-btn,.rai-clear-btn{flex:0 0 auto}.rai-message{max-width:88%;}.rai-context-tabs{grid-template-columns:repeat(2,minmax(0,1fr));}.rai-create-btn span{display:none;}.rai-create-btn{padding:7px 10px;}}
+@media(max-width:760px){.rai-shell{grid-template-columns:1fr;height:auto;min-height:0}.rai-sidebar{border-right:none;border-bottom:1px solid var(--rai-border);max-height:290px}.rai-chat{min-height:560px}.rai-message{max-width:94%;}.rai-message.context{max-width:100%;}.rai-agent-status{min-width:0;max-width:100%;}.rai-agent-label{overflow:hidden;text-overflow:ellipsis;}.rai-clear-btn{width:32px;height:32px;justify-content:center;padding:0}.rai-clear-btn span,.rai-debug-btn span{display:none;}.rai-context-tabs{grid-template-columns:1fr 1fr}.rai-context-badge{max-width:170px}.rai-modal-backdrop,.rai-preview-backdrop,.rai-debug-backdrop{padding:10px}.rai-modal{max-height:94vh}.rai-modal-footer{align-items:stretch;flex-direction:column}.rai-modal-submit{width:100%;}.rai-preview-modal,.rai-debug-modal{width:100%;height:92vh;}.rai-engine-modal{width:100%;max-height:92vh}.rai-engine-grid{grid-template-columns:1fr}.rai-engine-footer{align-items:stretch;flex-direction:column}.rai-context-card-grid{grid-template-columns:1fr;}}
 `

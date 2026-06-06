@@ -16,17 +16,17 @@
                 <!-- To -->
                 <div>
                     <label for="to" class="mb-1 block text-sm font-semibold dark:text-gray-300">To:</label>
-                    <input id="to" type="email" class="form-input" placeholder="Enter recipient email" x-model="params.to" required />
+                    <input id="to" type="email" class="form-input" placeholder="Enter recipient email" x-model="params.to" required autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                 </div>
                 <!-- CC -->
                 <div>
                     <label for="cc" class="mb-1 block text-sm font-semibold dark:text-gray-300">Cc:</label>
-                    <input id="cc" type="text" class="form-input" placeholder="Enter Cc" x-model="params.cc" />
+                    <input id="cc" type="text" class="form-input" placeholder="Enter Cc" x-model="params.cc" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                 </div>
                 <!-- Subject -->
                 <div>
                     <label for="title" class="mb-1 block text-sm font-semibold dark:text-gray-300">Subject:</label>
-                    <input id="title" type="text" class="form-input" placeholder="Enter subject" x-model="params.title" required />
+                    <input id="title" type="text" class="form-input" placeholder="Enter subject" x-model="params.title" required autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                 </div>
                 <!-- Template selector -->
                 <template x-if="templates.length > 0">

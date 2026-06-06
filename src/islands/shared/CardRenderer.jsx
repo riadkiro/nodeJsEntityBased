@@ -5,6 +5,7 @@
  * Falls back to a default layout if no template is provided.
  */
 import React, { useMemo } from 'react'
+import { cleanRecordId, recordModuleHref } from './recordLinks'
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function hexToRgba(hex, alpha = 0.1) {
@@ -233,13 +234,13 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
         }
 
         case 'actions': {
-            const recordId = record._id?.$oid || record._id
+            const recordId = cleanRecordId(record)
             const items = el.items || ['edit', 'view']
             return (
                 <div key={key} style={{ display: 'flex', alignItems: 'center' }}>
                     {items.includes('open') && (
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
+                            href={recordModuleHref(accountNumber, entitySlug, recordId)}
                             style={{
                                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                 padding: '10px', fontSize: 12, fontWeight: 600, color: '#4361ee',
@@ -272,7 +273,7 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
                     )}
                     {items.includes('edit') && (
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}/overview`}
+                            href={recordModuleHref(accountNumber, entitySlug, recordId)}
                             className="p-1 hover:text-info rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                             onClick={(e) => e.stopPropagation()}
                             onPointerDown={(e) => e.stopPropagation()}
@@ -283,7 +284,7 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
                     )}
                     {items.includes('view') && (
                         <a
-                            href={`/account/${accountNumber}/record/${entitySlug}/${recordId}`}
+                            href={recordModuleHref(accountNumber, entitySlug, recordId)}
                             className="p-1 hover:text-primary rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                             onClick={(e) => e.stopPropagation()}
                             onPointerDown={(e) => e.stopPropagation()}

@@ -32,12 +32,16 @@ const savedViewSchema = new mongoose.Schema({
     // Field-based filters [{ fieldId, operator, value }]
     fieldFilters: [{
         fieldId: String,
+        fieldName: String,
+        fieldType: String,
         operator: {
             type: String,
-            enum: ['equals', 'not_equals', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty', 'gt', 'lt', 'gte', 'lte'],
+            enum: ['equals', 'not_equals', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty', 'gt', 'lt', 'gte', 'lte', 'between', 'in'],
             default: 'contains'
         },
-        value: mongoose.Schema.Types.Mixed
+        value: mongoose.Schema.Types.Mixed,
+        value2: mongoose.Schema.Types.Mixed,
+        logic: { type: String, enum: ['AND', 'OR'], default: 'AND' }
     }],
     // Sort override for this view
     sort: {

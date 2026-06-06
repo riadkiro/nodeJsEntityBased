@@ -106,6 +106,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
             const lieu = getCustomFieldValue(ev, 'lieu_evenement')
             const type = getCustomFieldValue(ev, 'type_evenement')
             const notes = getCustomFieldValue(ev, 'notes_evenement')
+            const tags = normalizeAgendaTags(getCustomFieldValue(ev, 'tags_evenement'))
 
             let start = ev.date ? new Date(ev.date) : new Date()
             let end = ev.end_date ? new Date(ev.end_date) : null
@@ -128,7 +129,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                     _raw: ev,
                     status: status.label,
                     statusColor: status.color,
-                    duration, lieu, type, notes,
+                    duration, lieu, type, notes, tags,
                 }
             }
         })
@@ -289,6 +290,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 let tip = info.event.title
                 if (props.lieu) tip += `\n📍 ${props.lieu}`
                 if (props.status) tip += `\n● ${props.status}`
+                if (props.tags?.length) tip += `\n🏷 ${props.tags.join(', ')}`
                 info.el.title = tip
             }
         })
@@ -492,9 +494,20 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 onDelete={handleDeleteEvent}
                 getCustomFieldValue={getCustomFieldValue}
                 getStatusInfo={getStatusInfo}
+                accountNumber={accountNumber}
             />
         </div>
     )
+}
+
+function normalizeAgendaTags(value) {
+    const raw = Array.isArray(value)
+        ? value
+        : (typeof value === 'string' ? value.split(',') : [])
+
+    return raw
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
 }
 
 // ── Styles ──

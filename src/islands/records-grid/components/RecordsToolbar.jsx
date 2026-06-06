@@ -3,6 +3,7 @@
  * Search + Icon buttons for settings + View switcher (table/kanban/notes)
  */
 import React, { useState, useRef, useEffect } from 'react'
+import { recordModuleHref } from '../../shared/recordLinks'
 import { createPortal } from 'react-dom'
 
 // ─── View definitions with icons ────────────────────────────────────
@@ -72,7 +73,7 @@ export default function RecordsToolbar({
     enabledViews = ['table', 'kanban', 'notes'],
     onEnabledViewsChange,
     hasActiveFilters = false,
-    onOpenSaveView,
+    onOpenViewFilters,
     onOpenPipelineConfig,
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
@@ -178,9 +179,9 @@ export default function RecordsToolbar({
         : columns
 
     return (
-        <div className="dataTable-top flex items-center mb-0 justify-between gap-2">
+        <div className="dataTable-top flex flex-col items-stretch mb-0 justify-between gap-2 sm:flex-row sm:items-center">
             {/* Add button + Search input - LEFT */}
-            <div className="flex items-center gap-2">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
                 <button
                     type="button"
                     onClick={async () => {
@@ -189,11 +190,11 @@ export default function RecordsToolbar({
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 credentials: 'include',
-                                body: JSON.stringify({ entitySlug })
+                                body: JSON.stringify({ entitySlug, viewId })
                             });
                             const data = await res.json();
                             if (data.success && data._id) {
-                                window.location.href = `/account/${accountNumber}/record/${entitySlug}/${data._id}/fiche`;
+                                window.location.href = recordModuleHref(accountNumber, entitySlug, data._id, 'fiche');
                             }
                         } catch (e) { console.error('[CreateDraft]', e); }
                     }}
@@ -206,7 +207,7 @@ export default function RecordsToolbar({
                     <span className="btn-add-label">Ajouter</span>
                 </button>
 
-                <div className="dataTable-search relative w-64" style={{ marginLeft: 0 }}>
+                <div className="dataTable-search relative min-w-[180px] flex-1 sm:w-64 sm:flex-none" style={{ marginLeft: 0 }}>
                     <svg
                         className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400"
                         viewBox="0 0 24 24"
@@ -233,7 +234,7 @@ export default function RecordsToolbar({
 
 
             {/* Icons group - RIGHT (view switcher + settings) */}
-            <div className="flex items-center gap-2">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                 {/* View switcher buttons - round buttons matching theme */}
                 {visibleViewModes.map(mode => (
                     <button
@@ -282,16 +283,16 @@ export default function RecordsToolbar({
                 </button>
 
                 {/* Separator */}
-                <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
+                <div className="hidden w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5 sm:block" />
 
                 {/* Filter button */}
                 <button
                     type="button"
-                    onClick={onOpenSaveView}
+                    onClick={onOpenViewFilters}
                     className={`block rounded-full p-2 transition-all ${hasActiveFilters
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
-                    title="Filtrer & enregistrer la vue"
+                    title="Configurer les filtres de la vue"
                 >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
                         <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

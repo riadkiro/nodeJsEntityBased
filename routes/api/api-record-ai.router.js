@@ -9,6 +9,7 @@ const { tenantCollection } = require('../../middleware/tenant');
 const { canAccessRecord, canEditRecordModule } = require('../../middleware/shared-records-helper');
 const { ensureEventsEntity } = require('../../services/events-entity.service');
 const OcrService = require('../../services/ocr.service');
+const { createOpenAIVisionOcrPageCallback } = require('../../services/openai-vision-ocr.service');
 const IntegrationService = require('../../src/integrations/services/IntegrationService');
 const IntegrationProvider = require('../../src/integrations/models/IntegrationProvider.model');
 const IntegrationAction = require('../../src/integrations/models/IntegrationAction.model');
@@ -82,6 +83,15 @@ const RECORD_AI_LOCAL_EMBEDDING_MODEL = process.env.RECORD_AI_LOCAL_EMBEDDING_MO
 const RECORD_AI_DEBUG_ENABLED = process.env.RECORD_AI_DEBUG_ENABLED !== 'false';
 const RECORD_AI_DEBUG_TEXT_CHARS = boundedInt(process.env.RECORD_AI_DEBUG_TEXT_CHARS, 120000, 10000, 500000);
 const OCR_CACHE_DIR = path.join(__dirname, '../../private_uploads/ocr-cache/record-ai');
+const OCR_CONTEXT_VERSION = 'ocr-spatial-lines-openai-fallback-v3';
+const RECORD_AI_OCR_OPENAI_FALLBACK_ENABLED = process.env.OCR_OPENAI_FALLBACK_ENABLED !== 'false' &&
+    process.env.RECORD_AI_OCR_OPENAI_FALLBACK_ENABLED !== 'false';
+const RECORD_AI_OCR_OPENAI_FALLBACK_MAX_PAGES = boundedInt(
+    process.env.RECORD_AI_OCR_OPENAI_FALLBACK_MAX_PAGES || process.env.OCR_OPENAI_FALLBACK_MAX_PAGES,
+    2,
+    0,
+    20
+);
 
 const OCR_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.gif']);
 const OCR_MIME_PREFIXES = ['image/'];
@@ -517,6 +527,34 @@ function extractResponsesText(data) {
     return parts.join('\n').trim();
 }
 
+function sanitizeOcrMeta(meta = {}) {
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return {};
+    const vision = meta.visionFallback && typeof meta.visionFallback === 'object'
+        ? meta.visionFallback
+        : null;
+    return {
+        originalName: String(meta.originalName || '').slice(0, 240),
+        mimeType: String(meta.mimeType || '').slice(0, 120),
+        pageCount: Number(meta.pageCount || 0) || 0,
+        processedPages: Number(meta.processedPages || 0) || 0,
+        charCount: Number(meta.charCount || 0) || 0,
+        wordCount: Number(meta.wordCount || 0) || 0,
+        elapsedMs: Number(meta.elapsedMs || 0) || 0,
+        visionFallback: vision ? {
+            enabled: Boolean(vision.enabled),
+            mode: String(vision.mode || '').slice(0, 40),
+            maxPages: Number(vision.maxPages || 0) || 0,
+            attempted: Number(vision.attempted || 0) || 0,
+            succeeded: Number(vision.succeeded || 0) || 0,
+            failed: Number(vision.failed || 0) || 0,
+            skipped: Number(vision.skipped || 0) || 0,
+            requestedPages: Array.isArray(vision.requestedPages)
+                ? vision.requestedPages.map(Number).filter(Number.isFinite).slice(0, 30)
+                : []
+        } : null
+    };
+}
+
 function normalizeSelection(input = {}) {
     const fields = Array.isArray(input.fields) ? input.fields.map(cleanId).filter(Boolean) : [];
     const notes = Array.isArray(input.notes) ? input.notes.map(cleanId).filter(isObjectId) : [];
@@ -539,7 +577,8 @@ function normalizeSelection(input = {}) {
                 id: cleanId(upload?.id) || `upload:${hashText(upload?.name || upload?.text).slice(0, 12)}`,
                 name: String(upload?.name || 'Document uploadé').slice(0, 240),
                 text: String(upload?.text || ''),
-                charCount: Number(upload?.charCount || String(upload?.text || '').length || 0)
+                charCount: Number(upload?.charCount || String(upload?.text || '').length || 0),
+                ocrMeta: sanitizeOcrMeta(upload?.ocrMeta || upload?.meta || {})
             }))
             .filter(upload => upload.id && (upload.text.trim() || upload.charCount > 0))
         : [];
@@ -581,7 +620,8 @@ function persistableSelection(selection = {}) {
         uploads: (selection.uploads || []).map(upload => ({
             id: upload.id,
             name: upload.name,
-            charCount: upload.charCount || 0
+            charCount: upload.charCount || 0,
+            ocrMeta: sanitizeOcrMeta(upload.ocrMeta || upload.meta || {})
         }))
     };
 }
@@ -1594,7 +1634,7 @@ async function resolveSelectedFileInfo(req, record, selectedFile) {
     };
 }
 
-function buildRagFingerprint(req, file, stat) {
+function buildRagFingerprint(req, file, stat, options = {}) {
     return hashText([
         req.account_number,
         file.source,
@@ -1602,16 +1642,27 @@ function buildRagFingerprint(req, file, stat) {
         file.filename || file.name,
         stat?.size || 0,
         stat?.mtimeMs || 0,
+        OCR_CONTEXT_VERSION,
         `ragMaxPages:${RECORD_AI_RAG_MAX_PAGES}`,
+        buildRagVisionFallbackKey(options.query),
         `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
     ].join('|'));
 }
 
-function ragConfigHash() {
+function ragConfigHash(options = {}) {
     return hashText([
+        OCR_CONTEXT_VERSION,
         `ragMaxPages:${RECORD_AI_RAG_MAX_PAGES}`,
+        buildRagVisionFallbackKey(options.query),
         `chunk:${RECORD_AI_RAG_CHUNK_CHARS}:${RECORD_AI_RAG_CHUNK_OVERLAP}`
     ].join('|'));
+}
+
+function buildRagVisionFallbackKey(query = '') {
+    if (!RECORD_AI_OCR_OPENAI_FALLBACK_ENABLED) return 'vision:off';
+    const requestedPages = extractRequestedPages(query);
+    if (!requestedPages.length) return `vision:auto:max:${RECORD_AI_OCR_OPENAI_FALLBACK_MAX_PAGES}`;
+    return `vision:requested:${requestedPages.join(',')}:max:${Math.max(RECORD_AI_OCR_OPENAI_FALLBACK_MAX_PAGES, requestedPages.length)}`;
 }
 
 function hashFileContent(filePath) {
@@ -1722,12 +1773,19 @@ function pagesFromText(text) {
 function pagesFromExtracted(extracted = {}) {
     if (Array.isArray(extracted.pages) && extracted.pages.length) {
         return extracted.pages
-            .map((page, index) => ({
-                page: Number(page.page || index + 1),
-                text: String(page.text || '').trim(),
-                source: page.source || '',
-                confidence: page.confidence ?? null
-            }))
+            .map((page, index) => {
+                const text = String(page.text || '').trim();
+                const structuredText = String(page.structuredText || '').trim();
+                const fullText = structuredText && !agentNormalizeLabel(text).includes(agentNormalizeLabel(structuredText))
+                    ? [text, '', '--- Lignes OCR structurées ---', structuredText].filter(Boolean).join('\n')
+                    : text;
+                return {
+                    page: Number(page.page || index + 1),
+                    text: fullText.trim(),
+                    source: page.source || '',
+                    confidence: page.confidence ?? null
+                };
+            })
             .filter(page => page.text);
     }
     return pagesFromText(extracted.text || '');
@@ -1798,15 +1856,15 @@ function buildRagChunkPayloads({ documentId, record, entity, source, sourceId, s
     return chunks;
 }
 
-async function ensureFileRagDocument(req, record, entity, selectedFile) {
+async function ensureFileRagDocument(req, record, entity, selectedFile, options = {}) {
     const { RecordAiDocument, RecordAiDocumentChunk } = await getRagModels(req);
     const file = await resolveSelectedFileInfo(req, record, selectedFile);
     const filePath = resolveAttachmentPath(req.account_number, file.filename);
     const stat = await fsp.stat(filePath);
     const sourceId = cleanId(file.id);
-    const fileFingerprint = buildRagFingerprint(req, file, stat);
+    const fileFingerprint = buildRagFingerprint(req, file, stat, options);
     const contentHash = await hashFileContent(filePath);
-    const configHash = ragConfigHash();
+    const configHash = ragConfigHash(options);
     const existing = await RecordAiDocument.findOne({
         source: file.source,
         sourceId,
@@ -1892,7 +1950,8 @@ async function ensureFileRagDocument(req, record, entity, selectedFile) {
     try {
         const extracted = await extractFileWithCache(req, file, {
             maxPages: RECORD_AI_RAG_MAX_PAGES,
-            cacheLabel: 'rag'
+            cacheLabel: 'rag',
+            query: options.query || ''
         });
         const pages = pagesFromExtracted(extracted);
         const chunks = buildRagChunkPayloads({
@@ -1994,6 +2053,7 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
 
     const contentHash = hashText(text);
     const configHash = ragConfigHash();
+    const ocrMeta = sanitizeOcrMeta(upload.ocrMeta || upload.meta || {});
     const fileFingerprint = hashText([
         req.account_number,
         'upload',
@@ -2084,7 +2144,7 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
         sourceId,
         sourceName: upload.name || 'Document OCR',
         pages,
-        meta: { upload: true, contentHash, ragConfigHash: configHash }
+        meta: { upload: true, contentHash, ragConfigHash: configHash, ocrMeta, visionFallback: ocrMeta.visionFallback || null }
     });
 
     await RecordAiDocumentChunk.deleteMany({ documentId: document._id });
@@ -2110,7 +2170,7 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
                 indexedAt: new Date(),
                 lastUsedAt: new Date(),
                 error: '',
-                meta: { upload: true, charCount: text.length, contentHash, ragConfigHash: configHash }
+                meta: { upload: true, charCount: text.length, contentHash, ragConfigHash: configHash, ocrMeta, visionFallback: ocrMeta.visionFallback || null }
             }
         },
         { new: true }
@@ -2130,7 +2190,7 @@ async function ensureUploadRagDocument(req, record, entity, upload) {
     };
 }
 
-async function prepareRagForSelection(req, record, entity, selection, settings = {}) {
+async function prepareRagForSelection(req, record, entity, selection, settings = {}, query = '') {
     const embeddingRuntime = resolveEmbeddingRuntime(settings);
     const result = {
         enabled: RECORD_AI_RAG_ENABLED,
@@ -2149,7 +2209,7 @@ async function prepareRagForSelection(req, record, entity, selection, settings =
 
     for (const file of (selection.files || []).slice(0, RECORD_AI_RAG_MAX_DOCUMENTS)) {
         try {
-            const indexed = await ensureFileRagDocument(req, record, entity, file);
+            const indexed = await ensureFileRagDocument(req, record, entity, file, { query });
             if (indexed?.document) {
                 const embedded = await ensureDocumentEmbeddings(req, indexed.document, settings);
                 const document = embedded.document || indexed.document;
@@ -2174,6 +2234,7 @@ async function prepareRagForSelection(req, record, entity, selection, settings =
                     ragConfigHash: document.ragConfigHash || indexed.ragConfigHash || '',
                     indexedAt: document.indexedAt,
                     status: document.status,
+                    visionFallback: document.meta?.visionFallback || indexed.extractedMeta?.visionFallback || null,
                     embedding: embedded.embedding
                 });
                 if (embedded.embedding?.error) result.errors.push(`${displayName}: ${embedded.embedding.error}`);
@@ -2210,6 +2271,7 @@ async function prepareRagForSelection(req, record, entity, selection, settings =
                     ragConfigHash: document.ragConfigHash || indexed.ragConfigHash || '',
                     indexedAt: document.indexedAt,
                     status: document.status,
+                    visionFallback: document.meta?.visionFallback || upload.ocrMeta?.visionFallback || indexed.extractedMeta?.visionFallback || null,
                     embedding: embedded.embedding
                 });
                 if (embedded.embedding?.error) result.errors.push(`${displayName}: ${embedded.embedding.error}`);
@@ -2340,7 +2402,7 @@ function selectRagChunks(scoredChunks, allChunks) {
 }
 
 async function buildRagContext(req, record, entity, selection, query, settings = {}) {
-    const prepared = await prepareRagForSelection(req, record, entity, selection, settings);
+    const prepared = await prepareRagForSelection(req, record, entity, selection, settings, query);
     const requestedPages = extractRequestedPages(query);
     const embeddingRuntime = resolveEmbeddingRuntime(settings);
     const debug = {
@@ -2438,6 +2500,7 @@ async function buildRagContext(req, record, entity, selection, query, settings =
         reason: entry.reason,
         matchedTerms: entry.matchedTerms || [],
         charCount: entry.chunk.charCount,
+        pageSource: entry.chunk.meta?.pageSource || '',
         text: clipDebugText(entry.chunk.text, Math.min(RECORD_AI_DEBUG_TEXT_CHARS, 20000)).text
     }));
 
@@ -2584,6 +2647,7 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
             debug.uploads.push({
                 id: upload.id,
                 name: upload.name,
+                ocrMeta: sanitizeOcrMeta(upload.ocrMeta || upload.meta || {}),
                 rawText: clipped.text,
                 rawTextTruncated: clipped.truncated,
                 rawTextChars: clipped.originalChars,
@@ -2594,7 +2658,9 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
         const fileBlocks = [];
         for (const file of selection.files.slice(0, 5)) {
             try {
-                const extracted = await extractSelectedFile(req, record, file);
+                const extracted = await extractSelectedFile(req, record, file, {
+                    query: options.query || ''
+                });
                 const limited = limitText(extracted.text, MAX_FILE_CHARS);
                 fileBlocks.push(`### ${extracted.name}\n${limited.text}`);
                 stats.truncated = stats.truncated || limited.truncated;
@@ -2625,6 +2691,7 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
                 debug.uploads.push({
                     id: upload.id,
                     name: upload.name,
+                    ocrMeta: sanitizeOcrMeta(upload.ocrMeta || upload.meta || {}),
                     rawText: clipped.text,
                     rawTextTruncated: clipped.truncated,
                     rawTextChars: clipped.originalChars,
@@ -2654,14 +2721,155 @@ async function buildSelectedContext(req, record, entity, selection, options = {}
     };
 }
 
-async function extractSelectedFile(req, record, selectedFile) {
+function agentBuildRunnerPipeline({ contextDecision = {}, selectedContext = {}, selection = {}, engineRuntime = {}, usedFastPath = false, actions = [] }) {
+    const stats = selectedContext.stats || {};
+    const debug = selectedContext.debug || {};
+    const sourceCount = selectionItemCount(selection);
+    const documentCount = documentSelectionItemCount(selection);
+    const pipeline = [{
+        key: 'context',
+        label: 'Contexte',
+        status: stats.chars > 0 || sourceCount > 0 ? 'done' : 'skipped',
+        detail: stats.chars > 0
+            ? `${formatCompactNumber(stats.chars)} car.`
+            : (contextDecision.mode === 'inventory' ? 'inventaire' : 'fiche seule')
+    }];
+
+    const ocr = summarizeAgentOcrUsage(selectedContext, selection);
+    if (documentCount > 0 || ocr.localSources > 0) {
+        pipeline.push({
+            key: 'ocr-local',
+            label: 'OCR local',
+            status: ocr.localSources > 0 ? 'done' : 'skipped',
+            detail: ocr.localSources > 0
+                ? `${ocr.localSources} source${ocr.localSources > 1 ? 's' : ''}`
+                : 'non utilisé'
+        });
+
+        const vision = ocr.vision;
+        const openAiUsed = vision.succeeded > 0 || vision.detected > 0;
+        const openAiAttempted = vision.attempted > 0 || openAiUsed;
+        pipeline.push({
+            key: 'ocr-openai',
+            label: 'OCR OpenAI',
+            status: openAiUsed ? 'done' : (openAiAttempted ? 'failed' : 'skipped'),
+            detail: openAiUsed
+                ? `${Math.max(vision.succeeded, vision.detected)} page${Math.max(vision.succeeded, vision.detected) > 1 ? 's' : ''}`
+                : (openAiAttempted ? `${vision.failed || vision.attempted} échec${(vision.failed || vision.attempted) > 1 ? 's' : ''}` : 'non utilisé')
+        });
+    }
+
+    if (debug.rag) {
+        const chunks = Array.isArray(debug.rag.chunks) ? debug.rag.chunks.length : 0;
+        const documents = Array.isArray(debug.rag.documents) ? debug.rag.documents.length : 0;
+        pipeline.push({
+            key: 'rag',
+            label: 'RAG',
+            status: chunks > 0 ? 'done' : (documents > 0 ? 'skipped' : 'skipped'),
+            detail: chunks > 0 ? `${chunks} extrait${chunks > 1 ? 's' : ''}` : (documents > 0 ? `${documents} doc indexé${documents > 1 ? 's' : ''}` : 'non utilisé')
+        });
+    }
+
+    const responseRuntime = engineRuntime.response || engineRuntime || {};
+    const engineLabel = usedFastPath
+        ? 'rapide'
+        : [responseRuntime.engine || responseRuntime.provider, responseRuntime.model].filter(Boolean).join(':');
+    pipeline.push({
+        key: 'agent',
+        label: 'Agent IA',
+        status: actions.length ? 'done' : 'skipped',
+        detail: engineLabel || 'préparé'
+    });
+
+    return pipeline.slice(0, 6);
+}
+
+function summarizeAgentOcrUsage(selectedContext = {}, selection = {}) {
+    const debug = selectedContext.debug || {};
+    const summary = {
+        localSources: 0,
+        localChars: 0,
+        vision: {
+            attempted: 0,
+            succeeded: 0,
+            failed: 0,
+            skipped: 0,
+            detected: 0
+        }
+    };
+
+    const seenSources = new Set();
+    const addLocalSource = (key, chars = 0) => {
+        if (!key || seenSources.has(key)) return;
+        seenSources.add(key);
+        summary.localSources += 1;
+        summary.localChars += Number(chars || 0) || 0;
+    };
+
+    (selection.uploads || []).forEach(upload => {
+        addLocalSource(`upload:${upload.id || upload.name}`, upload.charCount || String(upload.text || '').length);
+        addVisionFallbackSummary(summary.vision, upload.ocrMeta?.visionFallback);
+        if (textMentionsOpenAIVision(upload.text)) summary.vision.detected += 1;
+    });
+
+    (debug.uploads || []).forEach(upload => {
+        addLocalSource(`upload:${upload.id || upload.name}`, upload.rawTextChars || upload.charCount);
+        addVisionFallbackSummary(summary.vision, upload.ocrMeta?.visionFallback || upload.meta?.visionFallback);
+        if (textMentionsOpenAIVision(upload.rawText || upload.text)) summary.vision.detected += 1;
+    });
+
+    (debug.ocr || []).forEach(item => {
+        addLocalSource(`${item.source || 'file'}:${item.id || item.name}`, item.rawTextChars);
+        addVisionFallbackSummary(summary.vision, item.meta?.visionFallback);
+        if (textMentionsOpenAIVision(item.rawText)) summary.vision.detected += 1;
+    });
+
+    const ragDocuments = Array.isArray(debug.rag?.documents) ? debug.rag.documents : [];
+    ragDocuments.forEach(document => {
+        addLocalSource(`${document.source || 'rag'}:${document.sourceId || document.documentId}`, document.charCount);
+        addVisionFallbackSummary(summary.vision, document.visionFallback);
+    });
+
+    const ragChunks = Array.isArray(debug.rag?.chunks) ? debug.rag.chunks : [];
+    ragChunks.forEach(chunk => {
+        if (/openai-vision/i.test(chunk.pageSource || '') || textMentionsOpenAIVision(chunk.text)) {
+            summary.vision.detected += 1;
+        }
+    });
+
+    return summary;
+}
+
+function addVisionFallbackSummary(target, vision = null) {
+    if (!target || !vision || typeof vision !== 'object') return;
+    target.attempted += Number(vision.attempted || 0) || 0;
+    target.succeeded += Number(vision.succeeded || 0) || 0;
+    target.failed += Number(vision.failed || 0) || 0;
+    target.skipped += Number(vision.skipped || 0) || 0;
+}
+
+function textMentionsOpenAIVision(value = '') {
+    return /OCR OpenAI Vision|Lignes OCR OpenAI Vision|Champs OCR OpenAI Vision|openai-vision/i.test(String(value || ''));
+}
+
+function formatCompactNumber(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number)) return '0';
+    if (number >= 1000000) return `${Math.round(number / 100000) / 10}M`;
+    if (number >= 1000) return `${Math.round(number / 100) / 10}k`;
+    return String(Math.round(number));
+}
+
+async function extractSelectedFile(req, record, selectedFile, options = {}) {
     const file = await resolveSelectedFileInfo(req, record, selectedFile);
-    return extractFileWithCache(req, file);
+    return extractFileWithCache(req, file, options);
 }
 
 async function extractFileWithCache(req, file, options = {}) {
     const maxPages = boundedInt(options.maxPages || RECORD_AI_OCR_MAX_PAGES, RECORD_AI_OCR_MAX_PAGES, 1, 250);
     const cacheLabel = String(options.cacheLabel || 'context').replace(/[^a-z0-9_-]/gi, '').slice(0, 32) || 'context';
+    const visionFallback = buildRecordOcrVisionFallbackOptions(options, cacheLabel);
+    const fallbackCacheKey = buildRecordOcrVisionFallbackCacheKey(visionFallback, cacheLabel);
     const filePath = resolveAttachmentPath(req.account_number, file.filename);
     const stat = await fsp.stat(filePath);
     const cacheKey = hashText([
@@ -2672,7 +2880,9 @@ async function extractFileWithCache(req, file, options = {}) {
         stat.size,
         stat.mtimeMs,
         cacheLabel,
-        `maxPages:${maxPages}`
+        OCR_CONTEXT_VERSION,
+        `maxPages:${maxPages}`,
+        fallbackCacheKey
     ].join('|'));
     const cachePath = path.join(OCR_CACHE_DIR, String(req.account_number), `${cacheKey}.json`);
 
@@ -2683,12 +2893,20 @@ async function extractFileWithCache(req, file, options = {}) {
         // Cache miss.
     }
 
-    const result = await OcrService.extractTextFromFile(filePath, {
+    const extractOptions = {
         originalName: file.name,
         mimeType: file.mimeType,
         mode: 'auto',
         maxPages
-    });
+    };
+
+    if (visionFallback.enabled && req?.tenantDbConnection) {
+        extractOptions.visionFallback = visionFallback;
+        extractOptions.query = visionFallback.query;
+        extractOptions.visionOcrPage = createOpenAIVisionOcrPageCallback(req);
+    }
+
+    const result = await OcrService.extractTextFromFile(filePath, extractOptions);
 
     const payload = {
         name: file.name,
@@ -2700,6 +2918,39 @@ async function extractFileWithCache(req, file, options = {}) {
     await fsp.mkdir(path.dirname(cachePath), { recursive: true });
     await fsp.writeFile(cachePath, JSON.stringify(payload), 'utf8');
     return payload;
+}
+
+function buildRecordOcrVisionFallbackOptions(options = {}, cacheLabel = 'context') {
+    const rawQuery = String(options.query || '').trim();
+    const requestedPages = extractRequestedPages(rawQuery);
+    const query = cacheLabel === 'rag' && !requestedPages.length ? '' : rawQuery;
+    return {
+        enabled: RECORD_AI_OCR_OPENAI_FALLBACK_ENABLED && options.visionFallback !== false,
+        mode: options.visionFallbackMode || 'auto',
+        maxPages: boundedInt(options.visionMaxPages || RECORD_AI_OCR_OPENAI_FALLBACK_MAX_PAGES, RECORD_AI_OCR_OPENAI_FALLBACK_MAX_PAGES, 0, 20),
+        query,
+        requestedPages: query ? requestedPages : [],
+        forceRequestedPages: true,
+        fallbackImages: options.fallbackImages,
+        fallbackTables: options.fallbackTables,
+        minChars: options.fallbackMinChars,
+        minConfidence: options.fallbackMinConfidence
+    };
+}
+
+function buildRecordOcrVisionFallbackCacheKey(visionFallback = {}, cacheLabel = 'context') {
+    if (!visionFallback.enabled) return 'vision:off';
+    const queryHash = visionFallback.query && cacheLabel !== 'rag'
+        ? hashText(visionFallback.query).slice(0, 16)
+        : 'noquery';
+    const requested = (visionFallback.requestedPages || []).join(',');
+    return [
+        'vision:on',
+        `mode:${visionFallback.mode || 'auto'}`,
+        `max:${visionFallback.maxPages || 0}`,
+        `query:${queryHash}`,
+        `pages:${requested}`
+    ].join('|');
 }
 
 function resolveAttachmentPath(accountNumber, filename) {
@@ -2722,6 +2973,7 @@ function buildInstructions(record, entity) {
         "Réponds en français, clairement et directement.",
         "Utilise le contexte fourni quand il est pertinent. Si l'information n'est pas dans le contexte, dis-le au lieu d'inventer.",
         "Les documents volumineux peuvent être fournis sous forme d'extraits OCR pertinents issus d'un index RAG: réponds à partir de ces extraits et cite les pages quand elles sont disponibles.",
+        "Si un extrait OCR contient 'Lignes OCR structurées', utilise ces lignes pour associer les libellés et valeurs des captures de tableau.",
         "Ne propose pas de correctifs ou d'actions à appliquer sauf si l'utilisateur le demande explicitement.",
         "Quand tu t'appuies sur un document, une note ou un chat précis, cite brièvement la source dans la réponse."
     ].join('\n');
@@ -3642,7 +3894,157 @@ function agentNormalizeFieldOptions(field = {}) {
         .slice(0, 120);
 }
 
-function agentBuildFieldCatalog(entity = {}) {
+function agentSlugFieldName(value, fallback = 'champ_ia') {
+    const normalized = String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 72);
+    return normalized || fallback;
+}
+
+function agentNormalizeRequestedFieldType(value) {
+    const normalized = agentNormalizeLabel(value);
+    if (!normalized) return null;
+    if (/multi|multiple|tags?|etiquettes?/.test(normalized)) return { type: 'multiselect' };
+    if (/select|liste|choix|option|dropdown/.test(normalized)) return { type: 'select' };
+    if (/switch|toggle|interrupteur/.test(normalized)) return { type: 'boolean', renderInput: 'switch' };
+    if (/bool|boolean|checkbox|case|oui non|vrai faux/.test(normalized)) return { type: 'boolean', renderInput: 'switch' };
+    if (/date|jour|echeance|deadline|expiration|naissance/.test(normalized)) return { type: 'date' };
+    if (/nombre|number|numeric|decimal|montant|prix|tarif|total|quantite|score|age|surface|poids|taux|percent|pourcentage/.test(normalized)) return { type: 'number' };
+    if (/mail|email|e mail/.test(normalized)) return { type: 'text', subtype: 'email' };
+    if (/url|site|web|lien|link/.test(normalized)) return { type: 'text', subtype: 'url' };
+    if (/telephone|phone|mobile|tel/.test(normalized)) return { type: 'text', subtype: 'tel' };
+    if (/\bip\b|adresse ip|ip address/.test(normalized)) return { type: 'text', subtype: 'ip' };
+    if (/texte long|description|commentaire|notes?/.test(normalized)) return { type: 'text', uiRows: 3 };
+    if (/texte|text|string|chaine/.test(normalized)) return { type: 'text' };
+    return null;
+}
+
+function agentLooksLikeDate(value) {
+    if (value instanceof Date) return true;
+    const raw = String(value || '').trim();
+    if (!raw) return false;
+    return /^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2})?/.test(raw)
+        || /^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(raw);
+}
+
+function agentInferFieldType(rawPatch = {}, value) {
+    const explicit = agentNormalizeRequestedFieldType(
+        rawPatch.type || rawPatch.fieldType || rawPatch.inputType || rawPatch.renderInput || rawPatch.kind || rawPatch.newField?.type
+    );
+    if (explicit) return explicit;
+
+    const label = rawPatch.label || rawPatch.name || rawPatch.field || rawPatch.fieldLabel || rawPatch.newField?.label || '';
+    const fromLabel = agentNormalizeRequestedFieldType(label);
+    if (fromLabel && (
+        fromLabel.type !== 'date'
+        || agentLooksLikeDate(value)
+        || /date|echeance|deadline|expiration|naissance/.test(agentNormalizeLabel(label))
+    )) {
+        return fromLabel;
+    }
+
+    if (Array.isArray(value)) return { type: 'multiselect' };
+    if (typeof value === 'boolean') return { type: 'boolean', renderInput: 'switch' };
+    if (typeof value === 'number' && Number.isFinite(value)) return { type: 'number' };
+    if (typeof value === 'string') {
+        const normalized = value.trim();
+        if (/^\d+(?:[.,]\d+)?$/.test(normalized) && /montant|prix|tarif|total|quantite|score|age|surface|poids|taux|percent|pourcentage/.test(agentNormalizeLabel(label))) {
+            return { type: 'number' };
+        }
+        if (agentLooksLikeDate(value) && /date|echeance|deadline|expiration|naissance/.test(agentNormalizeLabel(label))) {
+            return { type: 'date' };
+        }
+        if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized)) return { type: 'text', subtype: 'ip' };
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return { type: 'text', subtype: 'email' };
+        if (/^https?:\/\//i.test(normalized)) return { type: 'text', subtype: 'url' };
+    }
+
+    const hasOptions = Array.isArray(rawPatch.options || rawPatch.choices || rawPatch.values || rawPatch.newField?.options)
+        && (rawPatch.options || rawPatch.choices || rawPatch.values || rawPatch.newField?.options).length > 0;
+    if (hasOptions) return { type: Array.isArray(value) ? 'multiselect' : 'select' };
+    return { type: 'text' };
+}
+
+function agentOptionsFromValue(rawPatch = {}, value, type = '') {
+    const rawOptions = rawPatch.options || rawPatch.choices || rawPatch.values || rawPatch.newField?.options || [];
+    const collected = [];
+    if (Array.isArray(rawOptions)) collected.push(...rawOptions);
+    if (['select', 'multiselect'].includes(String(type || '').toLowerCase())) {
+        if (Array.isArray(value)) collected.push(...value);
+        else if (value !== undefined && value !== null && value !== '') collected.push(value);
+    }
+
+    const seen = new Set();
+    return collected
+        .map(option => {
+            const raw = option && typeof option === 'object'
+                ? (option.value || option.label || option.name || option.id || option._id || '')
+                : option;
+            const label = agentSafeString(
+                option && typeof option === 'object'
+                    ? (option.label || option.name || option.value || option.id || option._id || '')
+                    : option,
+                160
+            );
+            const valueString = agentSafeString(raw, 160) || label;
+            const key = agentNormalizeLabel(valueString || label);
+            if (!key || seen.has(key)) return null;
+            seen.add(key);
+            return { label: label || valueString, value: valueString || label };
+        })
+        .filter(Boolean)
+        .slice(0, 80);
+}
+
+function agentCatalogFieldFromTemplate(field = {}, source = 'field', extra = {}) {
+    const typeConfig = field.type_config || field.typeConfig || {};
+    const rawType = field.type || field.inputType || field.render?.input || 'text';
+    const normalizedType = String(rawType || '').toLowerCase();
+    const id = cleanId(field._id || field.id);
+    const options = agentNormalizeFieldOptions(field);
+    const isMulti = normalizedType === 'multiselect' || Boolean(typeConfig.multiple || typeConfig.isMulti);
+
+    if (normalizedType === 'relation') {
+        const targetEntityId = cleanId(typeConfig.refEntity || typeConfig.targetEntityId || typeConfig.entityId || typeConfig.ref || '');
+        return {
+            id,
+            key: id,
+            customFieldId: id,
+            label: field.label || field.name || 'Relation',
+            name: field.name || '',
+            source: 'relation',
+            templateSource: source,
+            type: 'relation',
+            subtype: field.subtype || '',
+            targetEntityId,
+            targetEntityName: '',
+            targetEntitySlug: '',
+            isMulti,
+            needsEntityLink: Boolean(extra.needsEntityLink)
+        };
+    }
+
+    return {
+        id,
+        key: id,
+        customFieldId: id,
+        label: field.label || field.name || 'Champ',
+        name: field.name || '',
+        source,
+        type: normalizedType || 'text',
+        subtype: field.subtype || '',
+        renderInput: field.render?.input || '',
+        options,
+        isMulti,
+        needsEntityLink: Boolean(extra.needsEntityLink)
+    };
+}
+
+async function agentBuildFieldCatalog(req, entity = {}) {
     const standardFields = [
         { id: 'title', label: 'Titre', source: 'standard', type: 'string' },
         { id: 'description', label: 'Description', source: 'standard', type: 'text' },
@@ -3655,36 +4057,30 @@ function agentBuildFieldCatalog(entity = {}) {
     const customFields = (entity.customFields || [])
         .filter(field => field && field._id)
         .slice(0, 120)
-        .map(field => {
-            const type = field.type || field.inputType || field.render?.input || 'text';
-            if (String(type || '').toLowerCase() === 'relation') {
-                const typeConfig = field.type_config || field.typeConfig || {};
-                const targetEntityId = cleanId(typeConfig.refEntity || typeConfig.targetEntityId || typeConfig.entityId || typeConfig.ref || '');
-                return {
-                    id: cleanId(field._id),
-                    key: cleanId(field._id),
-                    customFieldId: cleanId(field._id),
-                    label: field.label || field.name || 'Relation',
-                    name: field.name || '',
-                    source: 'relation',
-                    type: 'relation',
-                    targetEntityId,
-                    targetEntityName: '',
-                    targetEntitySlug: '',
-                    isMulti: !!(typeConfig.multiple || typeConfig.isMulti || field.isMulti)
-                };
-            }
-            const options = agentNormalizeFieldOptions(field);
-            return {
-                id: cleanId(field._id),
-                label: field.label || field.name || 'Champ',
-                name: field.name || '',
-                source: 'field',
-                type,
-                options,
-                isMulti: String(type || '').toLowerCase() === 'multiselect'
-            };
-        });
+        .map(field => agentCatalogFieldFromTemplate(field, 'field'));
+
+    let availableFields = [];
+    if (req && entity?._id) {
+        try {
+            const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+            const linkedIds = new Set((entity.customFields || []).map(field => cleanId(field?._id || field)).filter(Boolean));
+            const linkedObjectIds = [...linkedIds]
+                .filter(isObjectId)
+                .map(id => new mongoose.Types.ObjectId(id));
+            const availableQuery = linkedObjectIds.length ? { _id: { $nin: linkedObjectIds } } : {};
+            const templates = await FieldTemplate.find(availableQuery)
+                .select('_id name label type subtype type_config typeConfig ui render category isSystem formula updatedAt')
+                .sort({ updatedAt: -1, label: 1 })
+                .limit(180)
+                .lean();
+            availableFields = templates
+                .filter(field => field && field._id && !field.isSystem && field.category !== 'computed' && !field.formula?.expression)
+                .map(field => agentCatalogFieldFromTemplate(field, 'available_field', { needsEntityLink: true }))
+                .filter(field => field.id && !linkedIds.has(field.id));
+        } catch (error) {
+            console.warn('[RecordAI Agent] Could not load available field templates:', error.message);
+        }
+    }
 
     const relationFields = (entity.relations || [])
         .filter(relation => relation && relation.key && relation.direction !== 'inverse' && relation.inputMode !== 'readonly')
@@ -3706,7 +4102,7 @@ function agentBuildFieldCatalog(entity = {}) {
             };
         });
 
-    return [...standardFields, ...customFields, ...relationFields];
+    return [...standardFields, ...customFields, ...availableFields, ...relationFields];
 }
 
 function agentFieldLookup(fieldCatalog = []) {
@@ -3742,6 +4138,7 @@ function agentResolveField(raw = {}, lookup = {}) {
 
 function agentCoerceFieldValue(value, field = {}) {
     const type = String(field.type || '').toLowerCase();
+    const subtype = String(field.subtype || field.renderInput || '').toLowerCase();
     if (value === undefined) return '';
     if (value === null || value === '') return '';
 
@@ -3756,9 +4153,9 @@ function agentCoerceFieldValue(value, field = {}) {
         return Number.isFinite(number) ? number : value;
     }
 
-    if (type === 'boolean') {
+    if (['boolean', 'checkbox', 'switch'].includes(type) || ['boolean', 'checkbox', 'switch', 'toggle'].includes(subtype)) {
         if (typeof value === 'boolean') return value;
-        return ['true', '1', 'oui', 'yes', 'vrai'].includes(agentNormalizeLabel(value));
+        return ['true', '1', 'oui', 'yes', 'vrai', 'on', 'active', 'actif'].includes(agentNormalizeLabel(value));
     }
 
     if (type === 'select') {
@@ -3769,7 +4166,7 @@ function agentCoerceFieldValue(value, field = {}) {
         return option ? (option.value || option.label || raw) : agentSafeString(raw, 300);
     }
 
-    if (type === 'multiselect') {
+    if (type === 'multiselect' || field.isMulti) {
         const rawValues = Array.isArray(value) ? value : String(value).split(/[;,]/);
         return rawValues
             .map(item => {
@@ -4019,6 +4416,108 @@ function agentBalancedJsonCandidate(raw) {
     return '';
 }
 
+function agentCountBraces(text) {
+    let openBraces = 0;
+    let closeBraces = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (char === '\\') {
+            escaped = true;
+            continue;
+        }
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+        if (inString) continue;
+        if (char === '{') openBraces++;
+        if (char === '}') closeBraces++;
+    }
+    return { openBraces, closeBraces, inString };
+}
+
+function agentRepairActionsJson(text) {
+    try {
+        const raw = String(text || '').trim();
+        const actionsMatch = raw.match(/"actions"\s*:\s*\[([\s\S]*?)(?:\]\s*\}|\s*$)/);
+        if (!actionsMatch) return '';
+        let actionsContent = actionsMatch[1].trim();
+        actionsContent = actionsContent.replace(/\]\s*\}\s*$/, '').trim();
+        if (!actionsContent) return '';
+        const actionBlocks = [];
+        let currentBlock = "";
+        let inString = false;
+        let escaped = false;
+        let depth = 0;
+        for (let i = 0; i < actionsContent.length; i++) {
+            const char = actionsContent[i];
+            if (escaped) {
+                escaped = false;
+                currentBlock += char;
+                continue;
+            }
+            if (char === '\\') {
+                escaped = true;
+                currentBlock += char;
+                continue;
+            }
+            if (char === '"') {
+                inString = !inString;
+                currentBlock += char;
+                continue;
+            }
+            if (inString) {
+                currentBlock += char;
+                continue;
+            }
+            if (char === '{') depth++;
+            if (char === '}') depth--;
+            if (char === ',' && depth === 0) {
+                actionBlocks.push(currentBlock.trim());
+                currentBlock = "";
+            } else {
+                currentBlock += char;
+            }
+        }
+        if (currentBlock.trim()) {
+            actionBlocks.push(currentBlock.trim());
+        }
+        const repairedBlocks = actionBlocks.map(block => {
+            let cleanBlock = block.trim();
+            if (cleanBlock.endsWith(',')) {
+                cleanBlock = cleanBlock.slice(0, -1).trim();
+            }
+            if (!cleanBlock.startsWith('{')) {
+                cleanBlock = '{' + cleanBlock;
+            }
+            let { openBraces, closeBraces, inString: blockInString } = agentCountBraces(cleanBlock);
+            if (blockInString) {
+                cleanBlock += '"';
+                const reval = agentCountBraces(cleanBlock);
+                openBraces = reval.openBraces;
+                closeBraces = reval.closeBraces;
+            }
+            if (openBraces > closeBraces) {
+                cleanBlock += '}'.repeat(openBraces - closeBraces);
+            } else if (closeBraces > openBraces) {
+                cleanBlock = cleanBlock.slice(0, -(closeBraces - openBraces));
+            }
+            return cleanBlock;
+        });
+        const repairedActionsContent = repairedBlocks.join(',');
+        const prefix = raw.slice(0, actionsMatch.index);
+        return prefix + `"actions":[${repairedActionsContent}]}`;
+    } catch (_) {
+        return '';
+    }
+}
+
 function agentExtractJson(text) {
     const raw = String(text || '').trim();
     const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -4026,7 +4525,9 @@ function agentExtractJson(text) {
         raw,
         fenced?.[1],
         agentBalancedJsonCandidate(raw),
-        raw.includes('{') && raw.includes('}') ? raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1) : ''
+        raw.includes('{') && raw.includes('}') ? raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1) : '',
+        agentRepairActionsJson(raw),
+        fenced?.[1] ? agentRepairActionsJson(fenced[1]) : ''
     ].filter(Boolean);
 
     for (const candidate of candidates) {
@@ -4078,8 +4579,8 @@ function agentNormalizeDocReplacements(replacements = []) {
     if (!Array.isArray(replacements)) return [];
     return replacements
         .map(item => {
-            const search = agentSafeString(item?.search || item?.from || item?.find || item?.oldValue || '', 500);
-            const replace = agentSafeString(item?.replace || item?.to || item?.value || item?.newValue || '', 5000);
+            const search = agentSafeString(item?.search || item?.from || item?.find || item?.oldValue || '', 4000);
+            const replace = agentSafeString(item?.replace || item?.to || item?.value || item?.newValue || '', 30000);
             if (!search) return null;
             return {
                 search,
@@ -4395,7 +4896,7 @@ function agentExtractCommercialLineItemsFromParsed(parsed = {}) {
     if (normalizedExplicit.length) return normalizedExplicit;
 
     const noteMarkdown = actions
-        .filter(action => ['create_note', 'update_note'].includes(agentNormalizeToolName(action?.tool || action?.type || action?.name)))
+        .filter(action => ['create_note', 'update_note'].includes(agentCanonicalTool(action?.tool || action?.type || action?.name)))
         .map(action => action?.input?.contentMarkdown || action?.input?.markdown || action?.input?.content || '')
         .join('\n\n');
     return agentExtractCommercialLineItemsFromMarkdown(noteMarkdown);
@@ -4578,6 +5079,50 @@ function agentResolveCatalogOption(value, options = []) {
     }) || null;
 }
 
+function agentVirtualFieldFromPatch(fieldPatch = {}, value) {
+    const rawId = cleanId(fieldPatch.fieldId || fieldPatch.id || fieldPatch.key);
+    const label = agentSafeString(
+        fieldPatch.label
+            || fieldPatch.name
+            || fieldPatch.field
+            || fieldPatch.fieldLabel
+            || fieldPatch.newField?.label
+            || (rawId.startsWith('new:') ? rawId.slice(4).replace(/_/g, ' ') : ''),
+        140
+    );
+    if (!label) return null;
+
+    const inferred = agentInferFieldType(fieldPatch, value);
+    const type = inferred.type || 'text';
+    const options = agentOptionsFromValue(fieldPatch, value, type);
+    const name = agentSlugFieldName(fieldPatch.newField?.name || fieldPatch.name || label);
+    const renderInput = inferred.renderInput || fieldPatch.renderInput || fieldPatch.inputType || fieldPatch.newField?.renderInput || '';
+    const uiRows = inferred.uiRows || (type === 'text' && String(value || '').length > 180 ? 3 : 1);
+
+    return {
+        id: rawId.startsWith('new:') ? rawId : `new:${name}`,
+        key: rawId.startsWith('new:') ? rawId : `new:${name}`,
+        label,
+        name,
+        source: 'new_field',
+        type,
+        subtype: inferred.subtype || fieldPatch.subtype || fieldPatch.newField?.subtype || '',
+        renderInput,
+        options,
+        isMulti: type === 'multiselect',
+        needsEntityLink: true,
+        newField: {
+            label,
+            name,
+            type,
+            subtype: inferred.subtype || fieldPatch.subtype || fieldPatch.newField?.subtype || '',
+            renderInput,
+            options,
+            uiRows
+        }
+    };
+}
+
 function agentNormalizeEventType(value, toolCatalog = {}) {
     const option = agentResolveCatalogOption(value, toolCatalog.eventTypes || []);
     if (option) return option.value || option.label || 'autre';
@@ -4640,7 +5185,7 @@ function agentNormalizeEventInput(input = {}, toolCatalog = {}, { requireTitle =
     return fields;
 }
 
-function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], toolCatalog = {}) {
+function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], toolCatalog = {}, options = {}) {
     const lookup = agentFieldLookup(fieldCatalog);
     const toolLookup = agentToolLookup(toolCatalog);
     const rawActions = Array.isArray(parsed.actions) ? parsed.actions : [];
@@ -4724,16 +5269,21 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
         if (tool === 'create_doc') {
             const input = agentObjectInput(raw.input || raw);
             const name = agentSafeString(input.name || input.title || raw.title || 'Document IA', 160) || 'Document IA';
+            const contentFromContext = Boolean(input.contentFromContext || input.fromContext || input.sourceFromContext);
             const contentPages = Array.isArray(input.contentPages)
                 ? input.contentPages.slice(0, 20)
                 : (Array.isArray(input.pages) ? input.pages.slice(0, 20) : []);
-            const contentMarkdown = agentSafeString(input.contentMarkdown || input.markdown || input.content || '', 40000);
-            const contentHtml = agentSafeString(input.contentHtml || input.html || '', 60000);
+            const contentMarkdown = agentSafeString(input.contentMarkdown || input.markdown || input.content || '', contentFromContext ? 8000 : 40000);
+            const generatedContextHtml = contentFromContext
+                ? agentBuildContextDocumentHtml(options.goal || '', options.selectedContext || {}, { ...input, name })
+                : '';
+            const contentHtml = agentSafeString(input.contentHtml || input.html || generatedContextHtml || '', 60000);
             if (!contentMarkdown && !contentHtml && !contentPages.length) return;
             const pageCount = agentRequestedPageCount(input.pageCount || input.pagesCount || input.numberOfPages || input.nbPages || '', contentPages.length || 1);
             const format = ['A4', 'A5', 'A3', 'Letter', 'Legal'].includes(input.format) ? input.format : 'A4';
             const orientation = ['portrait', 'landscape'].includes(input.orientation) ? input.orientation : 'portrait';
             const folder = agentSafeString(input.folder || input.folderName || 'Documents IA', 120) || 'Documents IA';
+            const isTemplate = Boolean(input.isTemplate || input.template || input.asTemplate || agentGoalWantsTemplateDocument(options.goal || ''));
             actions.push({
                 id,
                 tool,
@@ -4748,12 +5298,18 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     pageCount,
                     format,
                     orientation,
-                    folder
+                    folder,
+                    isTemplate,
+                    contentFromContext
                 },
                 preview: {
                     title: name,
                     excerpt: shortPlainText(contentHtml || contentMarkdown || contentPages.map(page => typeof page === 'string' ? page : (page?.contentHtml || page?.contentMarkdown || page?.content || '')).join('\n'), 520),
-                    meta: `${format} ${orientation} · ${Math.max(pageCount, contentPages.length || 1)} page${Math.max(pageCount, contentPages.length || 1) > 1 ? 's' : ''}`
+                    meta: [
+                        isTemplate ? 'Template' : '',
+                        contentFromContext ? 'Depuis OCR/RAG' : '',
+                        `${format} ${orientation} · ${Math.max(pageCount, contentPages.length || 1)} page${Math.max(pageCount, contentPages.length || 1) > 1 ? 's' : ''}`
+                    ].filter(Boolean).join(' · ')
                 },
                 diff: null
             });
@@ -4869,14 +5425,21 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             const diff = [];
 
             rawFields.slice(0, 12).forEach(fieldPatch => {
-                const field = agentResolveField(fieldPatch, lookup);
+                const rawValue = fieldPatch.value ?? fieldPatch.newValue;
+                const field = agentResolveField(fieldPatch, lookup) || agentVirtualFieldFromPatch(fieldPatch, rawValue);
                 if (!field) return;
-                const value = agentCoerceFieldValue(fieldPatch.value ?? fieldPatch.newValue, field);
+                const value = agentCoerceFieldValue(rawValue, field);
                 if (value === undefined) return;
                 const beforeValue = agentGetRecordFieldValue(record, field);
                 fields.push({
                     fieldId: field.id,
                     label: field.label || field.name || field.id,
+                    type: field.type || 'text',
+                    subtype: field.subtype || '',
+                    renderInput: field.renderInput || '',
+                    options: field.options || [],
+                    needsEntityLink: Boolean(field.needsEntityLink),
+                    newField: field.newField || null,
                     value,
                     reason: agentSafeString(fieldPatch.reason || fieldPatch.source || '', 600),
                     confidence: Math.max(0, Math.min(1, Number(fieldPatch.confidence || 0.7)))
@@ -4934,11 +5497,12 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             const task = agentResolveTaskRef(input, toolLookup);
             if (!task?.id) return;
             const fields = {};
-            if (input.title !== undefined) fields.title = agentSafeString(input.title, 180);
-            if (input.description !== undefined) fields.description = agentSafeString(input.description, 4000);
-            if (input.status !== undefined) fields.status = agentSafeString(input.status, 80);
-            if (input.priority !== undefined && ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority)) fields.priority = input.priority;
-            if (input.dueDate !== undefined || input.date !== undefined) fields.dueDate = agentSafeString(input.dueDate || input.date || '', 80);
+            const sourceFields = agentObjectInput(input.fields || input);
+            if (sourceFields.title !== undefined) fields.title = agentSafeString(sourceFields.title, 180);
+            if (sourceFields.description !== undefined) fields.description = agentSafeString(sourceFields.description, 4000);
+            if (sourceFields.status !== undefined) fields.status = agentSafeString(sourceFields.status, 80);
+            if (sourceFields.priority !== undefined && ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(sourceFields.priority)) fields.priority = sourceFields.priority;
+            if (sourceFields.dueDate !== undefined || sourceFields.date !== undefined) fields.dueDate = agentSafeString(sourceFields.dueDate || sourceFields.date || '', 80);
             if (!Object.keys(fields).length) return;
             actions.push({
                 id,
@@ -5204,8 +5768,22 @@ function agentGoalHasContextKeyword(goal) {
         /\b(cahier des charges|csc|dce|appel d offre|marche|soumission|soumettre|eligible|eligibilite)\b/,
         /\b(facture|devis|contrat|cin|registre|annexe|chapitre|page|pages|lot|lots)\b/,
         /\b(condition|conditions|critere|criteres|delai|deadline|echeance|date limite|adresse|montant|budget)\b/,
-        /\b(enrichis|enrichir|complete|completer|remplis|mettre a jour|mets a jour)\b/,
+        /\b(enrichis|enrichi|enrichie|enrichir|enrichissement|complete|completer|complet[eé]e?|remplis|remplir|renseigne|renseigner|mettre a jour|mets a jour|met a jour)\b/,
+        /\b(ajoute|ajouter|ajoutes|cree|creer)\b.*\b(champ|champs|fiche|record)\b/,
+        /\b(champ|champs|fiche|record)\b.*\b(ajoute|ajouter|complete|completer|renseigne|renseigner|mettre a jour|mets a jour|met a jour)\b/,
         /\b(a partir|depuis|selon|dans le contexte|avec le contexte|source|sources)\b/
+    ].some(pattern => pattern.test(text));
+}
+
+function agentGoalWantsFicheUpdate(goal) {
+    const text = normalizeSearchText(goal);
+    if (!text) return false;
+    return [
+        /\b(enrichis|enrichi|enrichie|enrichir|enrichissement)\b/,
+        /\b(complete|completer|complet[eé]e?|remplis|remplir|renseigne|renseigner)\b.*\b(fiche|record|champ|champs)\b/,
+        /\b(fiche|record|champ|champs)\b.*\b(complete|completer|remplis|remplir|renseigne|renseigner)\b/,
+        /\b(mets|met|mettre)\s+a\s+jour\b.*\b(fiche|record|champ|champs)\b/,
+        /\b(ajoute|ajouter|ajoutes|cree|creer)\b.*\b(champ|champs|fiche|record)\b/
     ].some(pattern => pattern.test(text));
 }
 
@@ -5347,6 +5925,25 @@ function agentContextDecision(goal, requestedSelection = {}) {
     const requestedCount = selectionItemCount(requestedSelection);
     const standalone = agentGoalLooksStandalone(goal);
     const needsFullContext = agentGoalNeedsFullContext(goal);
+    const selectedDocuments = documentSelectionItemCount(requestedSelection);
+    const selectedUploads = requestedSelection.uploads?.length || 0;
+    const wantsFicheUpdate = agentGoalWantsFicheUpdate(goal);
+
+    if (!standalone && selectedUploads > 0) {
+        return {
+            mode: 'full',
+            reason: wantsFicheUpdate ? 'selected_upload_fiche_update' : 'selected_upload_context',
+            requestedCount
+        };
+    }
+
+    if (!standalone && selectedDocuments > 0 && (needsFullContext || wantsFicheUpdate)) {
+        return {
+            mode: 'full',
+            reason: wantsFicheUpdate ? 'selected_document_fiche_update' : 'selected_document_context_needed',
+            requestedCount
+        };
+    }
 
     if (needsFullContext) {
         return {
@@ -5557,10 +6154,13 @@ async function agentBuildToolCatalog(req, record, entity) {
             .lean()
         : [];
     const tasks = await GlobalRecordTask.find({ recordId: record._id })
-        .select('title description status priority dueDate updatedAt')
+        .select('title description status priority dueDate taskListId updatedAt')
         .sort({ updatedAt: -1 })
         .limit(60)
         .lean();
+    const TaskList = await tenantCollection(req, 'TaskList');
+    const taskLists = await TaskList.find({ recordId: record._id }).select('label').lean();
+    const taskListMap = new Map(taskLists.map(tl => [cleanId(tl._id), tl.label || '']));
     const documents = await Document.find(agentDocumentRecordQuery(record))
         .select('name status isDraft draftOutputFormat draftSourceTemplateId generatedFrom generatedFile pages updatedAt createdAt')
         .sort({ updatedAt: -1 })
@@ -5609,6 +6209,7 @@ async function agentBuildToolCatalog(req, record, entity) {
             status: task.status || '',
             priority: task.priority || '',
             dueDate: task.dueDate || '',
+            listTitle: taskListMap.get(cleanId(task.taskListId)) || '',
             updatedAt: task.updatedAt
         })),
         documents: documents.map(document => ({
@@ -5662,6 +6263,8 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         label: field.label,
         type: field.type,
         source: field.source,
+        subtype: field.subtype || undefined,
+        needsEntityLink: field.needsEntityLink || undefined,
         options: field.options && field.options.length
             ? field.options.map(option => ({ label: option.label, value: option.value })).slice(0, 80)
             : undefined,
@@ -5683,16 +6286,18 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- create_note: { title, contentMarkdown }. La note doit commencer par une décision/synthèse courte quand la demande parle d'éligibilité ou de soumission.",
         "Pour create_note et update_note, produis un Markdown propre et lisible: titres courts, synthèse en 2-3 phrases, puis tableau Markdown quand il y a des fournisseurs, médecins, contacts, prix ou coordonnées. N'utilise jamais des lignes brutes séparées par | sans en-tête. Colonnes recommandées pour contacts/fournisseurs: Nom, Activité, Adresse, Téléphone, Email, Site/source, Remarque. Garde les URLs en liens Markdown [libellé](https://...). Évite les longues URL Google Maps brutes: mets [Itinéraire](url) ou [Google Maps](url).",
         "- update_note: { noteId, title?, contentMarkdown?, mode }. Utilise noteId depuis le catalogue. mode vaut replace ou append. N'utilise pas les notes protégées.",
-        "- create_doc: { name, contentMarkdown? ou contentHtml?, contentPages?, pageCount?, format?, orientation?, folder? }. Crée un document simple brouillon lié à la fiche. Par défaut: A4 portrait. Si l'utilisateur demande plusieurs pages, utilise contentPages avec un élément par page; ne mets jamais Page 2/Page 3 dans la même page HTML.",
+        "- create_doc: { name, contentMarkdown? ou contentHtml?, contentPages?, pageCount?, format?, orientation?, folder?, isTemplate?, contentFromContext? }. Crée un document simple brouillon ou template lié à la fiche. Par défaut: A4 portrait. Si l'utilisateur demande plusieurs pages, utilise contentPages avec un élément par page; ne mets jamais Page 2/Page 3 dans la même page HTML.",
         "Pour create_doc, produis un vrai document structuré et exploitable comme une bonne note: titre, introduction courte, sections hiérarchisées, listes/tableaux si utiles, conclusion/sources quand le contexte est documentaire. Utilise du HTML sémantique simple (h1/h2/h3/p/ul/ol/table) sans wrappers html/body, sans position fixed/absolute, sans height/min-height en vh/% et sans CSS global.",
+        "Pour une copie longue d'un document source, un modèle/template ou une demande de même texte/même disposition, n'écris pas tout le document dans le JSON: utilise create_doc avec contentFromContext:true, isTemplate:true si l'utilisateur dit template/modèle, et indique les colonnes à ajouter dans sourceInstructions/addColumns.",
         "Si l'utilisateur demande de transformer une note en document, utilise le contenu de la note sélectionnée ou auto-sélectionnée comme source principale et propose create_doc; ne crée pas une nouvelle note sauf demande explicite.",
         "- update_doc: { documentId, name?, contentMarkdown? ou contentHtml?, replacements?, mode }. Utilise documentId depuis le catalogue. mode vaut replace ou append. replacements = [{search, replace, label?}] pour modifier sans casser le design.",
         "- generate_doc: { templateId, variables, outputName?, lineItems? }. Génère un brouillon depuis un SmartDoc template. Utilise les clés inputFields du catalogue seulement si l'utilisateur donne une valeur explicite. Tu peux aussi utiliser des variables à chemin pointé comme \"company.name\", \"company.address\", \"company.representative\" quand l'utilisateur veut remplacer une valeur de template standard.",
-        "- update_fiche: { fields: [{ fieldId, label, value, reason, confidence }] }. Utilise uniquement les fieldId fournis. Pour select/multiselect, choisis une valeur dans options. Pour relation, value peut être un id exact ou un nom de fiche à rechercher.",
+        "- update_fiche: { fields: [{ fieldId?, label, value, type?, subtype?, options?, reason, confidence }] }. Si un champ pertinent existe dans le catalogue, utilise son fieldId, même si needsEntityLink=true. Si aucun champ ne correspond, propose un nouveau champ avec label et type. Types autorisés pour les nouveaux champs: text, number, date, boolean, select, multiselect. Pour une adresse IP, utilise type text et subtype ip. Pour boolean, tu peux demander un affichage switch avec type boolean. Pour select/multiselect, fournis options quand elles sont connues. Pour relation, value peut être un id exact ou un nom de fiche à rechercher.",
         "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
         "- create_event: { title, date, endDate?, duration?, type?, lieu?, notes?, status? }. Crée un événement Agenda lié à la fiche.",
         "- update_event: { eventId, fields }. fields peut contenir title, date, endDate, duration, type, lieu, notes, status. Utilise eventId depuis le catalogue.",
+        "Pour enrichir la fiche, préfère réutiliser un champ existant du catalogue par label proche avant de créer un nouveau champ. Ne crée un champ que si aucun fieldId pertinent n'existe.",
         "Si une information est incertaine, ne propose pas de mise à jour fiche; mentionne-la dans la note.",
         "Pour modifier une note, un document, un événement ou générer depuis un template, choisis l'identifiant exact fourni dans le catalogue. Si aucun identifiant fiable n'existe, crée plutôt une note explicative.",
         "Pour update_doc sur un document avec templateBacked=true ou generatedFrom renseigné, n'envoie jamais un contenu complet en mode replace: utilise replacements ciblés, ou régénère via generate_doc si l'utilisateur demande de repartir du template.",
@@ -5702,11 +6307,12 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "N'utilise create_doc que pour un document libre sans template pertinent.",
         "Si le contexte détaillé n'est pas fourni et que la demande exige une preuve documentaire, n'invente pas: propose une action prudente ou demande le contexte détaillé.",
         "N'utilise les documents, OCR et sources que lorsqu'ils sont présents dans le bloc de contexte détaillé. Un inventaire léger n'est pas une source de contenu.",
+        "Quand un extrait OCR contient 'Lignes OCR structurées', utilise ces lignes comme source prioritaire pour associer les libellés et les valeurs d'une capture de tableau ou fiche technique. Une ligne du type 'Mémoire | 8 GB' ou 'Espace disque | 100 GB' est fiable, sauf contradiction explicite ailleurs.",
         "Réponse compacte obligatoire: summary <= 400 caractères, plan <= 4 étapes, actions <= 10.",
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","type":"text","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -6222,44 +6828,219 @@ function agentDocPages(action = {}) {
         .map((content, index) => agentPagePayload(agentNormalizeDocHtmlForEditor(content), index));
 }
 
-function agentReplaceLiteralEverywhere(source = '', search = '', replacement = '') {
+function agentReplaceLiteralEverywhereWithStats(source = '', search = '', replacement = '') {
     let output = String(source || '');
     const rawSearch = String(search || '');
-    if (!rawSearch) return output;
+    if (!rawSearch) return { output, count: 0 };
     const rawReplacement = String(replacement || '');
     const escapedSearch = agentEscapeHtml(rawSearch);
     const escapedReplacement = agentEscapeHtml(rawReplacement);
+    let count = 0;
 
-    output = output.split(rawSearch).join(escapedReplacement);
+    const rawParts = output.split(rawSearch);
+    count += Math.max(0, rawParts.length - 1);
+    output = rawParts.join(escapedReplacement);
     if (escapedSearch !== rawSearch) {
-        output = output.split(escapedSearch).join(escapedReplacement);
+        const escapedParts = output.split(escapedSearch);
+        count += Math.max(0, escapedParts.length - 1);
+        output = escapedParts.join(escapedReplacement);
     }
-    return output;
+    return { output, count };
+}
+
+function agentReplaceLiteralEverywhere(source = '', search = '', replacement = '') {
+    return agentReplaceLiteralEverywhereWithStats(source, search, replacement).output;
+}
+
+function agentNormalizeDocText(value = '') {
+    return agentPlainTextFromHtmlish(value)
+        .normalize('NFKC')
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function agentDocTextTokens(value = '') {
+    const tokens = agentNormalizeDocText(value).split(/\s+/).filter(token => token.length > 1 || /\d/.test(token));
+    return [...new Set(tokens)];
+}
+
+function agentDocTextCoverage(haystack = '', needle = '') {
+    const haystackText = agentNormalizeDocText(haystack);
+    const tokens = agentDocTextTokens(needle);
+    if (!haystackText || !tokens.length) return 0;
+    const matched = tokens.filter(token => haystackText.includes(token)).length;
+    return matched / tokens.length;
+}
+
+function agentExtractHtmlCells(rowHtml = '', tag = 'td') {
+    const cells = [];
+    const pattern = new RegExp(`<${tag}\\b([^>]*)>([\\s\\S]*?)<\\/${tag}>`, 'gi');
+    let match;
+    while ((match = pattern.exec(String(rowHtml || ''))) !== null) {
+        cells.push({ attrs: match[1] || '', html: match[2] || '', text: agentPlainTextFromHtmlish(match[2] || '') });
+    }
+    return cells;
+}
+
+function agentExtractHtmlRows(html = '') {
+    const rows = [];
+    const pattern = /<tr\b([^>]*)>([\s\S]*?)<\/tr>/gi;
+    let match;
+    while ((match = pattern.exec(String(html || ''))) !== null) {
+        rows.push({ attrs: match[1] || '', html: match[2] || '', fullHtml: match[0] || '' });
+    }
+    return rows;
+}
+
+function agentParseMarkdownTable(value = '') {
+    const lines = String(value || '').replace(/\r\n/g, '\n').split('\n');
+    const rows = [];
+    lines.forEach(line => {
+        const cells = agentMarkdownTableCells(line);
+        if (cells) rows.push(cells);
+    });
+    if (rows.length < 2) return null;
+
+    const header = rows[0];
+    const bodyRows = rows.slice(1).filter(row => !agentLooksMarkdownSeparator(row));
+    if (!header.length || !bodyRows.length) return null;
+
+    return {
+        header,
+        rows: bodyRows.map(row => Array.from({ length: header.length }, (_, index) => row[index] || ''))
+    };
+}
+
+function agentTableColumnKind(label = '') {
+    const text = agentNormalizeDocText(label);
+    if (!text) return '';
+    if (/(التوقيع|signature|sign)/i.test(text)) return 'signature';
+    if (/(قطعة|lot|parcel|plot)/i.test(text)) return 'lot';
+    if (/(موكل|mandat|proxy|represent)/i.test(text)) return 'proxy';
+    if (/(بطاقة|الوطنية|cin|cnie|identity|identite|identité|nationale)/i.test(text)) return 'identity';
+    if (/(الاسم|النسب|nom|prenom|prénom|name)/i.test(text)) return 'name';
+    if (/^(ال)?رقم$|^(n|no|num|numero|numéro|number)$/i.test(text)) return 'index';
+    return '';
+}
+
+function agentMarkdownTableSourceMap(table = {}) {
+    const map = new Map();
+    (table.header || []).forEach((header, index) => {
+        const kind = agentTableColumnKind(header);
+        if (kind && !map.has(kind)) map.set(kind, index);
+    });
+    return map;
+}
+
+function agentBuildTableBodyRowsFromMarkdown(table = {}, targetHeaders = [], sampleRowHtml = '') {
+    const sampleCells = agentExtractHtmlCells(sampleRowHtml, 'td');
+    const sourceMap = agentMarkdownTableSourceMap(table);
+    const rowAttrs = (sampleRowHtml.match(/^<tr\b([^>]*)>/i)?.[1] || '').trim();
+    const defaultCellAttrs = ' style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;"';
+
+    return (table.rows || []).map(sourceRow => {
+        const cells = targetHeaders.map((targetHeader, targetIndex) => {
+            const kind = agentTableColumnKind(targetHeader.text || targetHeader.html || '');
+            const sourceIndex = kind && sourceMap.has(kind)
+                ? sourceMap.get(kind)
+                : targetIndex;
+            const rawValue = sourceRow[sourceIndex] || '';
+            const attrs = sampleCells[targetIndex]?.attrs || sampleCells[0]?.attrs || defaultCellAttrs;
+            const content = rawValue ? agentEscapeHtml(rawValue) : '&nbsp;';
+            return `<td${attrs}>${content}</td>`;
+        }).join('');
+        return `<tr${rowAttrs ? ` ${rowAttrs}` : ''}>${cells}</tr>`;
+    }).join('\n');
+}
+
+function agentPatchHtmlTableWithMarkdown(tableHtml = '', replacement = {}) {
+    const parsedTable = agentParseMarkdownTable(replacement.replace);
+    if (!parsedTable) return { html: tableHtml, changed: false };
+
+    const headerRows = agentExtractHtmlRows(tableHtml).filter(row => agentExtractHtmlCells(row.html, 'th').length);
+    const headerCells = headerRows.flatMap(row => agentExtractHtmlCells(row.html, 'th'));
+    if (!headerCells.length) return { html: tableHtml, changed: false };
+
+    const headerText = headerCells.map(cell => cell.text).join(' ');
+    const expectedText = replacement.search || parsedTable.header.join(' ');
+    const expectedHeaderText = parsedTable.header.join(' ');
+    const coverage = Math.max(
+        agentDocTextCoverage(headerText, expectedText),
+        agentDocTextCoverage(headerText, expectedHeaderText)
+    );
+    if (coverage < 0.45) return { html: tableHtml, changed: false };
+
+    const bodyMatch = tableHtml.match(/<tbody\b([^>]*)>([\s\S]*?)<\/tbody>/i);
+    const sampleBodyRows = agentExtractHtmlRows(bodyMatch?.[2] || '');
+    const sampleRowHtml = sampleBodyRows[0]?.fullHtml || '';
+    const newBodyRows = agentBuildTableBodyRowsFromMarkdown(parsedTable, headerCells, sampleRowHtml);
+    if (!newBodyRows) return { html: tableHtml, changed: false };
+
+    if (bodyMatch) {
+        const nextHtml = tableHtml.replace(/<tbody\b([^>]*)>[\s\S]*?<\/tbody>/i, `<tbody${bodyMatch[1] || ''}>\n${newBodyRows}\n</tbody>`);
+        return { html: nextHtml, changed: nextHtml !== tableHtml };
+    }
+
+    const nextHtml = tableHtml.replace(/<\/table>/i, `<tbody>\n${newBodyRows}\n</tbody></table>`);
+    return { html: nextHtml, changed: nextHtml !== tableHtml };
+}
+
+function agentApplyMarkdownTableReplacement(content = '', replacement = {}) {
+    let changed = false;
+    const output = String(content || '').replace(/<table\b[\s\S]*?<\/table>/i, tableHtml => {
+        const patched = agentPatchHtmlTableWithMarkdown(tableHtml, replacement);
+        if (patched.changed) changed = true;
+        return patched.html;
+    });
+    return { output, changed };
 }
 
 function agentApplyDocumentReplacements(document = {}, replacements = []) {
     const normalized = agentNormalizeDocReplacements(replacements);
-    if (!normalized.length) return false;
+    const stats = { changed: false, literalCount: 0, tableCount: 0, replacementCount: normalized.length };
+    if (!normalized.length) return stats;
 
     document.pages = Array.isArray(document.pages) ? document.pages : [];
+    const tablePatchedIndexes = new Set();
     document.pages = document.pages.map(page => {
         let content = page?.content || '';
-        normalized.forEach(replacement => {
-            content = agentReplaceLiteralEverywhere(content, replacement.search, replacement.replace);
+        normalized.forEach((replacement, replacementIndex) => {
+            const literal = agentReplaceLiteralEverywhereWithStats(content, replacement.search, replacement.replace);
+            content = literal.output;
+            stats.literalCount += literal.count;
+            if (!literal.count && !tablePatchedIndexes.has(replacementIndex)) {
+                const tablePatch = agentApplyMarkdownTableReplacement(content, replacement);
+                content = tablePatch.output;
+                if (tablePatch.changed) {
+                    stats.tableCount += 1;
+                    tablePatchedIndexes.add(replacementIndex);
+                }
+            }
         });
+        if (content !== (page?.content || '')) stats.changed = true;
         return { ...page, content };
     });
     if (document.headerHtml) {
         normalized.forEach(replacement => {
-            document.headerHtml = agentReplaceLiteralEverywhere(document.headerHtml, replacement.search, replacement.replace);
+            const literal = agentReplaceLiteralEverywhereWithStats(document.headerHtml, replacement.search, replacement.replace);
+            document.headerHtml = literal.output;
+            stats.literalCount += literal.count;
+            if (literal.count) stats.changed = true;
         });
     }
     if (document.footerHtml) {
         normalized.forEach(replacement => {
-            document.footerHtml = agentReplaceLiteralEverywhere(document.footerHtml, replacement.search, replacement.replace);
+            const literal = agentReplaceLiteralEverywhereWithStats(document.footerHtml, replacement.search, replacement.replace);
+            document.footerHtml = literal.output;
+            stats.literalCount += literal.count;
+            if (literal.count) stats.changed = true;
         });
     }
-    return true;
+    stats.changed = stats.changed || stats.literalCount > 0 || stats.tableCount > 0;
+    return stats;
 }
 
 function agentExtractPrestataireOverrides(value = '') {
@@ -6497,6 +7278,160 @@ function agentApplyCommercialLinesToPages(pages = [], lineItems = []) {
             content: agentApplyCommercialLinesToHtml(page.content || '', normalized)
         };
     });
+}
+
+function agentGoalWantsDocumentOutput(goal = '') {
+    const text = normalizeSearchText(goal);
+    if (!text) return false;
+    return /\b(cree|creer|genere|generer|fabrique|prepare|preparer|copie|copier|reproduis|reproduire)\b/.test(text) &&
+        /\b(doc|docs|document|documents|template|modele|mod[eè]le|pdf|brouillon)\b/.test(text);
+}
+
+function agentGoalWantsTemplateDocument(goal = '') {
+    return /\b(template|modele|mod[eè]le)\b/.test(normalizeSearchText(goal));
+}
+
+function agentNameFromDocumentGoal(goal = '', fallback = 'Document IA') {
+    const raw = String(goal || '').replace(/\s+/g, ' ').trim();
+    const source = raw.match(/\b(?:document|doc|template|modele|mod[eè]le)\s+(?:de|du|d['’])\s+([^,.;]+)/i);
+    const name = source?.[1]
+        ? `Template - ${source[1].trim()}`
+        : (agentGoalWantsTemplateDocument(goal) ? 'Template IA' : fallback);
+    return agentSafeString(name, 160) || fallback;
+}
+
+function agentContextTextForDocument(selectedContext = {}) {
+    const text = String(selectedContext?.text || '').replace(/\r/g, '').trim();
+    if (!text) return '';
+
+    return text
+        .split('\n')
+        .map(line => line.trimEnd())
+        .filter(line => !/^Source:\s/i.test(line))
+        .join('\n')
+        .replace(/\n{4,}/g, '\n\n\n')
+        .trim();
+}
+
+function agentAddedColumnsFromGoal(goal = '', input = {}) {
+    const columns = [];
+    const rawColumns = Array.isArray(input.addColumns)
+        ? input.addColumns
+        : (Array.isArray(input.columnsToAdd) ? input.columnsToAdd : []);
+    rawColumns.forEach(column => {
+        const label = agentSafeString(typeof column === 'string' ? column : (column?.label || column?.name || ''), 120);
+        if (label) columns.push(label);
+    });
+
+    const text = normalizeSearchText(goal);
+    if (/\bnumero\b.*\blot\b/.test(text) && /\b(arabe|arabic)\b/.test(text)) {
+        columns.push('Numéro de lot (بالعربية)');
+    } else if (/\bnumero\b.*\blot\b/.test(text)) {
+        columns.push('Numéro de lot');
+    }
+
+    const seen = new Set();
+    return columns.filter(column => {
+        const key = agentNormalizeLabel(column);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).slice(0, 6);
+}
+
+function agentExtractContextTableRows(text = '') {
+    const rows = [];
+    String(text || '').split('\n').forEach(line => {
+        const clean = line.trim();
+        if (!clean || /^---|^###|^Source:/i.test(clean)) return;
+        if (!clean.includes('|')) return;
+        const cells = clean
+            .split('|')
+            .map(cell => cell.replace(/\s+/g, ' ').trim())
+            .filter(Boolean);
+        if (cells.length >= 2) rows.push(cells.slice(0, 12));
+    });
+    return rows.slice(0, 80);
+}
+
+function agentBuildContextTableHtml(rows = [], addedColumns = []) {
+    if (!rows.length) return '';
+    const maxCells = Math.max(...rows.map(row => row.length), 1);
+    const header = rows[0].length >= 2 && rows[0].some(cell => /nom|prenom|présence|presence|signature|lot|numero|n°/i.test(cell))
+        ? rows[0]
+        : Array.from({ length: maxCells }, (_, index) => `Colonne ${index + 1}`);
+    addedColumns.forEach(column => {
+        if (!header.some(cell => agentNormalizeLabel(cell) === agentNormalizeLabel(column))) header.push(column);
+    });
+    const bodyRows = (header === rows[0] ? rows.slice(1) : rows).slice(0, 70);
+    const normalizedRows = bodyRows.map(row => {
+        const next = row.slice(0, header.length);
+        while (next.length < header.length) next.push('');
+        return next;
+    });
+
+    if (!normalizedRows.length) normalizedRows.push(Array.from({ length: header.length }, () => ''));
+
+    return [
+        '<table>',
+        '<thead><tr>',
+        header.map(cell => `<th>${agentEscapeHtml(cell)}</th>`).join(''),
+        '</tr></thead>',
+        '<tbody>',
+        normalizedRows.map(row => `<tr>${row.map(cell => `<td>${agentEscapeHtml(cell)}</td>`).join('')}</tr>`).join('\n'),
+        '</tbody>',
+        '</table>'
+    ].join('\n');
+}
+
+function agentBuildContextDocumentHtml(goal = '', selectedContext = {}, input = {}) {
+    const sourceText = agentContextTextForDocument(selectedContext);
+    const clippedSource = sourceText.slice(0, 52000);
+    const title = agentSafeString(input.name || input.title || agentNameFromDocumentGoal(goal), 160);
+    const addedColumns = agentAddedColumnsFromGoal(goal, input);
+    const tableRows = agentExtractContextTableRows(clippedSource);
+    const tableHtml = agentBuildContextTableHtml(tableRows, addedColumns);
+    const sourcePre = agentEscapeHtml(clippedSource || 'Contexte OCR indisponible.');
+
+    return [
+        `<h1>${agentEscapeHtml(title)}</h1>`,
+        tableHtml ? '<h2>Tableau reconstitué</h2>' : '',
+        tableHtml,
+        addedColumns.length && !tableHtml
+            ? `<p><strong>Colonne à ajouter:</strong> ${agentEscapeHtml(addedColumns.join(', '))}</p>`
+            : '',
+        '<h2>Texte source OCR</h2>',
+        `<pre style="white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.45;color:#111827;">${sourcePre}</pre>`
+    ].filter(Boolean).join('\n');
+}
+
+function agentFallbackDocumentParsed(goal = '', selectedContext = {}) {
+    const name = agentNameFromDocumentGoal(goal, 'Document IA');
+    return {
+        summary: 'La sortie agent a été interrompue; un brouillon document a été préparé côté serveur à partir du contexte OCR/RAG disponible.',
+        plan: {
+            title: 'Création document depuis contexte',
+            steps: [
+                { type: 'context', title: 'Réutiliser le contexte OCR/RAG', detail: 'Le contenu source est repris depuis les extraits déjà fournis au run.' },
+                { type: 'tools', title: 'Créer un brouillon éditable', detail: 'Le document est proposé en review pour correction avant application.' }
+            ]
+        },
+        actions: [{
+            tool: 'create_doc',
+            title: agentGoalWantsTemplateDocument(goal) ? 'Créer le template' : 'Créer le document',
+            description: 'Créer un brouillon à partir du contexte OCR/RAG car la génération JSON a été coupée.',
+            input: {
+                name,
+                contentFromContext: true,
+                isTemplate: agentGoalWantsTemplateDocument(goal),
+                sourceInstructions: agentSafeString(goal, 1000),
+                addColumns: agentAddedColumnsFromGoal(goal),
+                format: 'A4',
+                orientation: 'portrait',
+                folder: 'Documents IA'
+            }
+        }]
+    };
 }
 
 function agentTemplateCustomFields(record = {}, entity = {}) {
@@ -6778,6 +7713,201 @@ async function agentComputeRecordDenorm(recordData, eventsEntity, Record, Entity
     }
 }
 
+function agentFieldCategoryForType(type = '') {
+    const normalized = String(type || '').toLowerCase();
+    if (['select', 'multiselect', 'boolean', 'checkbox', 'switch'].includes(normalized)) return 'choice';
+    if (['number', 'decimal', 'currency', 'float'].includes(normalized)) return 'number';
+    if (['date', 'datetime', 'datetime-local'].includes(normalized)) return 'date';
+    return 'text';
+}
+
+function agentFieldIconForType(type = '', subtype = '') {
+    const normalized = String(type || '').toLowerCase();
+    const normalizedSubtype = String(subtype || '').toLowerCase();
+    if (normalizedSubtype === 'email') return 'solar:letter-bold-duotone';
+    if (normalizedSubtype === 'tel' || normalizedSubtype === 'phone') return 'solar:phone-bold-duotone';
+    if (normalizedSubtype === 'url') return 'solar:link-bold-duotone';
+    if (normalizedSubtype === 'ip') return 'solar:server-bold-duotone';
+    if (normalized === 'number') return 'solar:calculator-bold-duotone';
+    if (normalized === 'date') return 'solar:calendar-bold-duotone';
+    if (['select', 'multiselect'].includes(normalized)) return 'solar:list-check-bold-duotone';
+    if (['boolean', 'checkbox', 'switch'].includes(normalized)) return 'solar:check-circle-bold-duotone';
+    return 'solar:text-field-bold-duotone';
+}
+
+async function agentUniqueFieldName(FieldTemplate, baseName) {
+    const base = agentSlugFieldName(baseName);
+    let candidate = base;
+    for (let index = 2; index < 80; index += 1) {
+        const exists = await FieldTemplate.exists({ name: candidate });
+        if (!exists) return candidate;
+        candidate = `${base}_${index}`;
+    }
+    return `${base}_${Date.now().toString(36)}`;
+}
+
+async function agentFindReusableFieldTemplate(req, patch = {}, virtualField = {}) {
+    const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+    const directId = cleanId(patch.fieldId || patch.id || patch.key);
+    if (directId && isObjectId(directId)) {
+        const direct = await FieldTemplate.findById(directId).lean();
+        if (direct && !direct.isSystem && direct.category !== 'computed' && !direct.formula?.expression) return direct;
+    }
+
+    const label = agentSafeString(virtualField.label || patch.label || patch.name || patch.field || patch.fieldLabel || '', 140);
+    const name = agentSlugFieldName(virtualField.name || patch.name || label, '');
+    const conditions = [];
+    if (name) conditions.push({ name });
+    if (label) conditions.push({ label: new RegExp(`^${escapeRegExp(label)}$`, 'i') });
+    if (!conditions.length) return null;
+
+    const candidates = await FieldTemplate.find({ $or: conditions })
+        .select('_id name label type subtype type_config typeConfig ui render category isSystem formula')
+        .limit(20)
+        .lean();
+    const normalizedLabel = agentNormalizeLabel(label);
+    const normalizedName = agentNormalizeLabel(name);
+    return candidates.find(field => {
+        if (!field || field.isSystem || field.category === 'computed' || field.formula?.expression) return false;
+        return agentNormalizeLabel(field.label || field.name) === normalizedLabel
+            || agentNormalizeLabel(field.name) === normalizedName;
+    }) || null;
+}
+
+async function agentLinkFieldTemplateToEntity(req, entity = {}, fieldId) {
+    const entityId = cleanId(entity?._id);
+    const fieldIdString = cleanId(fieldId);
+    if (!isObjectId(entityId) || !isObjectId(fieldIdString)) return false;
+
+    const linkedBefore = (entity.customFields || []).some(field => cleanId(field?._id || field) === fieldIdString);
+    const Entity = await tenantCollection(req, 'Entity');
+    const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+    const entityObjectId = new mongoose.Types.ObjectId(entityId);
+    const fieldObjectId = new mongoose.Types.ObjectId(fieldIdString);
+
+    const result = await Entity.updateOne(
+        { _id: entityObjectId },
+        { $addToSet: { customFields: fieldObjectId } }
+    );
+    await FieldTemplate.updateOne(
+        { _id: fieldObjectId },
+        { $addToSet: { entities: entityObjectId } }
+    );
+
+    if (!linkedBefore && Array.isArray(entity.customFields)) entity.customFields.push(fieldObjectId);
+    return !linkedBefore || Boolean(result.modifiedCount);
+}
+
+async function agentCreateFieldTemplateForPatch(req, entity = {}, patch = {}, virtualField = {}) {
+    const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+    const fieldDef = virtualField.newField || virtualField;
+    const type = String(fieldDef.type || 'text').toLowerCase();
+    const subtype = fieldDef.subtype || '';
+    const options = agentOptionsFromValue(patch, patch.value, type);
+    const name = await agentUniqueFieldName(FieldTemplate, fieldDef.name || fieldDef.label || patch.label || 'champ_ia');
+    const renderInput = fieldDef.renderInput || (type === 'boolean' ? 'switch' : '');
+    const uiRows = parseInt(fieldDef.uiRows || 1, 10) || 1;
+    const typeConfig = {};
+    if (['select', 'multiselect'].includes(type)) typeConfig.options = options;
+    if (type === 'multiselect') typeConfig.multiple = true;
+
+    const field = await FieldTemplate.create({
+        name,
+        label: fieldDef.label || patch.label || name,
+        type,
+        subtype,
+        type_config: typeConfig,
+        required: false,
+        isCustom: true,
+        isSystem: false,
+        showOnQuickForm: true,
+        category: agentFieldCategoryForType(type),
+        entities: isObjectId(entity?._id) ? [entity._id] : [],
+        ui: {
+            placeholder: `Saisir ${String(fieldDef.label || patch.label || name).toLowerCase()}...`,
+            visible: true,
+            width: uiRows > 1 || type === 'multiselect' ? 'full' : 'half',
+            rows: uiRows,
+            icon: agentFieldIconForType(type, subtype)
+        },
+        render: renderInput ? { input: renderInput } : undefined
+    });
+
+    return typeof field.toObject === 'function' ? field.toObject() : field;
+}
+
+async function agentLoadEntityForDenorm(req, entity = {}) {
+    const Entity = await tenantCollection(req, 'Entity');
+    if (!isObjectId(entity?._id)) return entity;
+    return await Entity.findById(entity._id)
+        .populate('customFields')
+        .populate('classifications')
+        .populate('statusClassification')
+        .populate('relations.targetEntity')
+        .lean() || entity;
+}
+
+async function agentEnsureFicheField(req, entity = {}, patch = {}, lookup = {}) {
+    const fieldId = cleanId(patch.fieldId || patch.id || patch.key);
+    let field = fieldId && lookup.byId?.get(fieldId)
+        ? lookup.byId.get(fieldId)
+        : agentResolveField(patch, lookup);
+
+    if (field) {
+        let linkCreated = false;
+        const templateId = cleanId(field.customFieldId || field.id);
+        if (field.needsEntityLink && isObjectId(templateId)) {
+            linkCreated = await agentLinkFieldTemplateToEntity(req, entity, templateId);
+        }
+        return {
+            field: {
+                ...field,
+                source: field.source === 'available_field' ? 'field' : field.source,
+                needsEntityLink: false
+            },
+            linkCreated,
+            createdField: false
+        };
+    }
+
+    const virtualField = agentVirtualFieldFromPatch(patch, patch.value);
+    if (!virtualField) return null;
+
+    const reusable = await agentFindReusableFieldTemplate(req, patch, virtualField);
+    if (reusable) {
+        const catalogField = agentCatalogFieldFromTemplate(reusable, 'field');
+        const linkCreated = await agentLinkFieldTemplateToEntity(req, entity, catalogField.customFieldId || catalogField.id);
+        return { field: catalogField, linkCreated, createdField: false };
+    }
+
+    const created = await agentCreateFieldTemplateForPatch(req, entity, patch, virtualField);
+    const createdField = agentCatalogFieldFromTemplate(created, 'field');
+    const linkCreated = await agentLinkFieldTemplateToEntity(req, entity, createdField.id);
+    return { field: createdField, linkCreated, createdField: true };
+}
+
+async function agentUndoFicheFieldProvision(req, entity = {}, patch = {}) {
+    const fieldId = cleanId(patch.fieldId);
+    const entityId = cleanId(entity?._id);
+    if (!isObjectId(fieldId) || !isObjectId(entityId)) return;
+
+    const Entity = await tenantCollection(req, 'Entity');
+    const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+    if (patch.linkCreated || patch.createdField) {
+        await Entity.updateOne(
+            { _id: entityId },
+            { $pull: { customFields: new mongoose.Types.ObjectId(fieldId) } }
+        );
+        await FieldTemplate.updateOne(
+            { _id: fieldId },
+            { $pull: { entities: new mongoose.Types.ObjectId(entityId) } }
+        );
+    }
+    if (patch.createdField) {
+        await FieldTemplate.deleteOne({ _id: fieldId });
+    }
+}
+
 async function applyAgentAction(req, record, entity, action) {
     if (action.tool === 'create_note') {
         const canEdit = await canEditRecordModule(req, record._id, 'notes');
@@ -6852,6 +7982,7 @@ async function applyAgentAction(req, record, entity, action) {
         const simpleFolder = String(action.input?.folder || '').trim() || 'Documents IA';
         const docName = action.input?.name || 'Document IA';
         const pages = agentDocPages(action);
+        const isTemplate = Boolean(action.input?.isTemplate || action.input?.template || action.input?.asTemplate);
         const document = await Document.create({
             name: docName,
             format,
@@ -6859,20 +7990,22 @@ async function applyAgentAction(req, record, entity, action) {
             dimensions,
             pages,
             entityId: record.entityId || entity?._id || null,
+            entityIds: isTemplate && record.entityId ? [record.entityId] : [],
             createdBy: req.user._id,
-            isTemplate: false,
-            isDraft: true,
-            draftRecordId: record._id,
-            draftOutputName: docName,
+            isTemplate,
+            isDraft: !isTemplate,
+            draftRecordId: isTemplate ? null : record._id,
+            draftOutputName: isTemplate ? '' : docName,
             draftOutputFormat: 'pdf',
             status: 'draft',
-            linkedRecords: [agentLinkedRecordPayload(record, entity)],
+            linkedRecords: isTemplate ? [] : [agentLinkedRecordPayload(record, entity)],
             metadata: {
-                docKind: 'simple',
+                docKind: isTemplate ? 'template' : 'simple',
                 simpleFolder,
                 pageCount: pages.length,
                 format,
                 orientation,
+                contentFromContext: Boolean(action.input?.contentFromContext),
                 createdByAgent: true,
                 agentTool: action.tool,
                 agentActionId: action.id
@@ -6922,8 +8055,12 @@ async function applyAgentAction(req, record, entity, action) {
 
         const replacements = agentNormalizeDocReplacements(action.input?.replacements || []);
         const hasContentPatch = Boolean(action.input?.contentMarkdown || action.input?.contentHtml);
+        let replacementStats = null;
         if (replacements.length) {
-            agentApplyDocumentReplacements(document, replacements);
+            replacementStats = agentApplyDocumentReplacements(document, replacements);
+            if (!replacementStats.changed) {
+                throw new Error("Aucune modification appliquée: le texte/table cible n'a pas été trouvé dans le document.");
+            }
             document.markModified('pages');
             document.markModified('headerHtml');
             document.markModified('footerHtml');
@@ -6952,11 +8089,16 @@ async function applyAgentAction(req, record, entity, action) {
 
         return {
             before,
-            after: { documentId: cleanId(document._id), name: document.name },
+            after: {
+                documentId: cleanId(document._id),
+                name: document.name,
+                replacementStats
+            },
             result: {
                 documentId: cleanId(document._id),
                 name: document.name,
-                url: agentDocumentUrl(req, document._id)
+                url: agentDocumentUrl(req, document._id),
+                replacementStats
             },
             inverse: { tool: 'restore_document', document: before }
         };
@@ -7065,14 +8207,15 @@ async function applyAgentAction(req, record, entity, action) {
         const editableRecord = await Record.findById(record._id);
         if (!editableRecord) throw new Error('Fiche introuvable');
 
-        const fieldCatalog = agentBuildFieldCatalog(entity);
+        const fieldCatalog = await agentBuildFieldCatalog(req, entity);
         const lookup = agentFieldLookup(fieldCatalog);
         const before = [];
         const after = [];
         const inverseFields = [];
 
         for (const patch of (action.input?.fields || []).slice(0, 12)) {
-            const field = lookup.byId.get(cleanId(patch.fieldId));
+            const ensured = await agentEnsureFicheField(req, entity, patch, lookup);
+            const field = ensured?.field;
             if (!field) continue;
             const beforeValue = agentGetRecordFieldValue(editableRecord, field);
             const value = field.source === 'relation'
@@ -7080,19 +8223,42 @@ async function applyAgentAction(req, record, entity, action) {
                 : agentCoerceFieldValue(patch.value, field);
             const meta = agentSetRecordFieldValue(editableRecord, field, value);
             before.push({ fieldId: field.id, label: field.label, value: beforeValue });
-            after.push({ fieldId: field.id, label: field.label, value });
-            inverseFields.push({ fieldId: field.id, beforeValue, existed: meta.existed, customExisted: meta.customExisted });
+            after.push({
+                fieldId: field.id,
+                label: field.label,
+                value,
+                createdField: Boolean(ensured.createdField),
+                linkedField: Boolean(ensured.linkCreated)
+            });
+            inverseFields.push({
+                fieldId: field.id,
+                beforeValue,
+                existed: meta.existed,
+                customExisted: meta.customExisted,
+                linkCreated: Boolean(ensured.linkCreated),
+                createdField: Boolean(ensured.createdField)
+            });
         }
 
         if (!after.length) throw new Error('Aucun champ valide à mettre à jour');
 
         editableRecord.updatedBy = req.user._id;
+        const Entity = await tenantCollection(req, 'Entity');
+        const denormEntity = await agentLoadEntityForDenorm(req, entity);
+        await agentComputeRecordDenorm(editableRecord, denormEntity, Record, Entity);
         await editableRecord.save();
 
         return {
             before: { fields: before },
             after: { fields: after },
-            result: { updatedFields: after.map(item => ({ fieldId: item.fieldId, label: item.label })) },
+            result: {
+                updatedFields: after.map(item => ({
+                    fieldId: item.fieldId,
+                    label: item.label,
+                    createdField: item.createdField,
+                    linkedField: item.linkedField
+                }))
+            },
             inverse: { tool: 'restore_fiche', fields: inverseFields }
         };
     }
@@ -7306,12 +8472,19 @@ async function undoAgentLog(req, record, entity, log) {
         const Record = await tenantCollection(req, 'Record');
         const editableRecord = await Record.findById(record._id);
         if (!editableRecord) throw new Error('Fiche introuvable');
-        const lookup = agentFieldLookup(agentBuildFieldCatalog(entity));
+        const lookup = agentFieldLookup(await agentBuildFieldCatalog(req, entity));
         for (const patch of (inverse.fields || [])) {
             const field = lookup.byId.get(cleanId(patch.fieldId));
             if (field) agentRestoreRecordFieldValue(editableRecord, field, patch);
         }
         editableRecord.updatedBy = req.user._id;
+        await editableRecord.save();
+        for (const patch of (inverse.fields || [])) {
+            await agentUndoFicheFieldProvision(req, entity, patch);
+        }
+        const Entity = await tenantCollection(req, 'Entity');
+        const denormEntity = await agentLoadEntityForDenorm(req, entity);
+        await agentComputeRecordDenorm(editableRecord, denormEntity, Record, Entity);
         await editableRecord.save();
         return;
     }
@@ -7579,9 +8752,16 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             reason: contextDecision.reason,
             requestedContextItems: requestedCount,
             usedContextItems: contextItems.length,
-            inventoryContextItems: availableContextItems.length
+            inventoryContextItems: availableContextItems.length,
+            pipeline: agentBuildRunnerPipeline({
+                contextDecision,
+                selectedContext,
+                selection,
+                engineRuntime,
+                actions: []
+            })
         };
-        const fieldCatalog = agentBuildFieldCatalog(entity);
+        const fieldCatalog = await agentBuildFieldCatalog(req, entity);
         const toolCatalog = await agentBuildToolCatalog(req, record, entity);
 
         run = await RecordAgentRun.create({
@@ -7624,31 +8804,48 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             try {
                 parsed = agentExtractJson(aiResult.content);
             } catch (parseError) {
-                const fallbackContent = agentFallbackTextFromAiContent(aiResult.content);
-                parsed = {
-                    summary: shortPlainText(fallbackContent, 1200),
-                    plan: { title: 'Plan agent', steps: [{ type: 'review', title: 'Créer une note de synthèse', detail: 'La réponse IA n’était pas structurée en tools.' }] },
-                    actions: [{
-                        tool: 'create_note',
-                        title: 'Créer une note',
-                        description: 'Créer une note avec la réponse de l’agent',
-                        input: {
-                            title: 'Analyse IA',
-                            contentMarkdown: fallbackContent
-                        }
-                    }]
-                };
+                if (agentGoalWantsDocumentOutput(goal) && selectedContext.text?.trim()) {
+                    parsed = agentFallbackDocumentParsed(goal, selectedContext);
+                } else {
+                    const fallbackContent = agentFallbackTextFromAiContent(aiResult.content);
+                    parsed = {
+                        summary: shortPlainText(fallbackContent, 1200),
+                        plan: { title: 'Plan agent', steps: [{ type: 'review', title: 'Créer une note de synthèse', detail: 'La réponse IA n’était pas structurée en tools.' }] },
+                        actions: [{
+                            tool: 'create_note',
+                            title: 'Créer une note',
+                            description: 'Créer une note avec la réponse de l’agent',
+                            input: {
+                                title: 'Analyse IA',
+                                contentMarkdown: fallbackContent
+                            }
+                        }]
+                    };
+                }
             }
         }
 
-        let actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog);
+        let actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog, { goal, selectedContext });
         actions = agentEnsureTemplateGenerationActions(actions, goal, parsed, toolCatalog);
+        if (!actions.length && agentGoalWantsDocumentOutput(goal) && selectedContext.text?.trim()) {
+            parsed = agentFallbackDocumentParsed(goal, selectedContext);
+            actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog, { goal, selectedContext });
+        }
         run.summary = agentSafeString(parsed.summary || 'Plan prêt à valider.', 3000);
         run.plan = agentNormalizePlan(parsed);
         run.proposedActions = actions;
         run.aiRaw = aiResult?.content || (usedFastPath ? JSON.stringify(parsed) : '');
         run.status = actions.length ? 'review' : 'error';
         run.error = actions.length ? '' : "L'agent n'a proposé aucune action exploitable.";
+        contextStats.pipeline = agentBuildRunnerPipeline({
+            contextDecision,
+            selectedContext,
+            selection,
+            engineRuntime,
+            usedFastPath,
+            actions
+        });
+        run.contextStats = contextStats;
         run.debugPayload = RECORD_AI_DEBUG_ENABLED ? {
             phase: 'agent',
             usedFastPath,

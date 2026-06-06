@@ -63,7 +63,7 @@ module.exports = {
 
             const newSpace = new Space(spaceData);
             await newSpace.save();
-            res.redirect(`/account/${req.account_number}/dashboard/`);
+            res.redirect(`/account/${req.account_number}/home`);
         } catch (err) {
             console.error(err);
             res.status(500).send("Server Error");

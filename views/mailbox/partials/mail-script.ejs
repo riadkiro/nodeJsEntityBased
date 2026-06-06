@@ -18,6 +18,13 @@ document.addEventListener('alpine:init', () => {
         filteredMailList: [],
         ids: [],
         searchText: '',
+        searchTouched: false,
+        searchInputLocked: true,
+        autofillGuardValues: <%- JSON.stringify([
+            ...(mailAccounts || []).map((a) => a && a.email),
+            user && user.email,
+            user && user.username,
+        ].filter(Boolean)).replace(/<\//g, '<\\/') %>,
         selectedMail: null,
         params: null,
         mailList: [],
@@ -96,6 +103,8 @@ document.addEventListener('alpine:init', () => {
 
             // Init Quill (delay to ensure DOM ready)
             this.$nextTick(() => {
+                this.armSearchAutofillGuard();
+
                 const editorEl = document.getElementById('editor');
                 if (editorEl && typeof Quill !== 'undefined') {
                     this.quillEditor = new Quill('#editor', {
@@ -163,6 +172,117 @@ document.addEventListener('alpine:init', () => {
             this.searchMails();
         },
 
+        // ===== SEARCH INPUT / BROWSER AUTOFILL GUARD =====
+        unlockSearchInput() {
+            this.searchInputLocked = false;
+        },
+
+        getSearchInputValue(input = null) {
+            const el = input || this.$refs.mailSearchInput;
+            if (!el) return this.searchText || '';
+            if ('value' in el) return el.value || '';
+            return el.textContent || '';
+        },
+
+        setSearchInputValue(value = '') {
+            const text = String(value || '');
+            this.searchText = text;
+
+            const el = this.$refs.mailSearchInput;
+            if (!el) return;
+
+            if ('value' in el) {
+                el.value = text;
+            } else if (el.textContent !== text) {
+                el.textContent = text;
+            }
+        },
+
+        moveCaretToEnd(el) {
+            if (!el || document.activeElement !== el) return;
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const selection = window.getSelection();
+            if (!selection) return;
+            selection.removeAllRanges();
+            selection.addRange(range);
+        },
+
+        handleSearchInput(event) {
+            const input = event?.target || this.$refs.mailSearchInput;
+            const value = this.getSearchInputValue(input).replace(/\s+/g, ' ').trimStart();
+
+            if (!this.searchTouched && document.activeElement !== input && this.isLikelyAutofilledSearch(value)) {
+                this.discardAutofilledSearch();
+                this.searchMails(false);
+                return;
+            }
+
+            this.searchInputLocked = false;
+            this.searchTouched = true;
+            this.setSearchInputValue(value || '');
+            if (input && !('value' in input)) {
+                this.moveCaretToEnd(input);
+            }
+            this.searchMails();
+        },
+
+        handleSearchPaste(event) {
+            const text = event.clipboardData?.getData('text/plain') || '';
+            if (!text) return;
+
+            event.preventDefault();
+            document.execCommand('insertText', false, text);
+            this.searchTouched = true;
+            this.$nextTick(() => this.handleSearchInput({ target: this.$refs.mailSearchInput }));
+        },
+
+        clearSearchInput() {
+            this.searchTouched = true;
+            this.setSearchInputValue('');
+            this.searchMails();
+        },
+
+        armSearchAutofillGuard() {
+            [0, 100, 350, 1000].forEach((delay) => {
+                setTimeout(() => {
+                    if (this.discardAutofilledSearch()) {
+                        this.searchMails(false);
+                    }
+                }, delay);
+            });
+        },
+
+        discardAutofilledSearch() {
+            const input = this.$refs.mailSearchInput;
+            const value = (this.getSearchInputValue(input) || this.searchText || '').trim();
+
+            if (!value || this.searchTouched || !this.isLikelyAutofilledSearch(value)) {
+                return false;
+            }
+
+            this.setSearchInputValue('');
+            this.searchInputLocked = true;
+            return true;
+        },
+
+        isLikelyAutofilledSearch(value) {
+            const normalized = String(value || '').trim().toLowerCase();
+            if (!normalized) return false;
+
+            const guardedValues = [
+                ...this.autofillGuardValues,
+                ...this.mailAccounts.map((account) => account.email),
+            ]
+                .filter(Boolean)
+                .map((item) => String(item).trim().toLowerCase());
+
+            if (guardedValues.includes(normalized)) return true;
+
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+        },
+
         // ===== MAIL ACTIONS =====
         refreshMails() {
             this.searchMails();
@@ -170,6 +290,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         searchMails(resetPage = true) {
+            this.discardAutofilledSearch();
+
             if (resetPage) {
                 this.pager.currentPage = 1;
             }
@@ -220,7 +342,9 @@ document.addEventListener('alpine:init', () => {
             this.isEdit = false;
             this.showTemplates = false;
             this.showSignature = false;
-            this.searchText = '';
+            this.searchTouched = false;
+            this.searchInputLocked = true;
+            this.setSearchInputValue('');
             this.activeGroupFilter = '';
             this.searchMails();
             this.isShowMailMenu = false;
@@ -270,6 +394,117 @@ document.addEventListener('alpine:init', () => {
             window.dispatchEvent(new CustomEvent('ai-assistant:email-context-changed', {
                 detail: { emailContext: null }
             }));
+        },
+
+        // ===== EMAIL HTML RENDERING =====
+        extractMailHtml(rawHtml = '') {
+            const fallback = String(rawHtml || '');
+            if (!fallback.trim()) return { styles: '', body: '' };
+
+            try {
+                const doc = new DOMParser().parseFromString(fallback, 'text/html');
+                const body = doc.body?.innerHTML?.trim();
+                const styles = Array.from(doc.head?.querySelectorAll('style') || [])
+                    .map((style) => style.textContent || '')
+                    .join('\n')
+                    .replace(/<\/style/gi, '<\\/style');
+
+                if (body) return { styles, body };
+            } catch (e) {
+                console.warn('[Mailbox] Could not parse email HTML:', e);
+            }
+
+            return { styles: '', body: fallback };
+        },
+
+        mailIframeDoc(rawHtml = '') {
+            const { styles, body } = this.extractMailHtml(rawHtml);
+            return `<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base target="_blank">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #0f172a;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        body {
+            overflow-x: auto;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        table {
+            max-width: 100%;
+        }
+        pre {
+            white-space: pre-wrap;
+        }
+        a {
+            color: #4361ee;
+        }
+        ${styles}
+    </style>
+</head>
+<body>
+    <div class="mail-frame-root">${body}</div>
+</body>
+</html>`;
+        },
+
+        resizeMailFrame(event) {
+            const frame = event?.target;
+            if (!frame) return;
+
+            const applyHeight = () => {
+                try {
+                    const doc = frame.contentDocument || frame.contentWindow?.document;
+                    if (!doc) return;
+
+                    const body = doc.body;
+                    const html = doc.documentElement;
+                    const height = Math.max(
+                        260,
+                        Math.min(
+                            16000,
+                            Math.ceil(Math.max(
+                                body?.scrollHeight || 0,
+                                body?.offsetHeight || 0,
+                                html?.clientHeight || 0,
+                                html?.scrollHeight || 0,
+                                html?.offsetHeight || 0
+                            ))
+                        )
+                    );
+                    frame.style.height = height + 'px';
+                } catch (e) {
+                    frame.style.height = '520px';
+                }
+            };
+
+            requestAnimationFrame(() => {
+                applyHeight();
+
+                try {
+                    const doc = frame.contentDocument || frame.contentWindow?.document;
+                    doc?.querySelectorAll('img').forEach((img) => {
+                        img.addEventListener('load', applyHeight, { once: true });
+                        img.addEventListener('error', applyHeight, { once: true });
+                    });
+                } catch (_) {}
+
+                [100, 500, 1500].forEach((delay) => setTimeout(applyHeight, delay));
+            });
         },
 
         // ===== STAR (persisted) =====

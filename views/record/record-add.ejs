@@ -4,14 +4,14 @@
         enctype="multipart/form-data" id="main-record-form">
         <!-- Big Title Panel -->
         <div class="panel mb-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-2">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <h2 class="flex min-w-0 flex-wrap items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200 sm:text-2xl">
                         <span class="text-gray-400 dark:text-gray-500 font-normal">
                             <%= entity.name %>
                         </span>
                         <span class="text-gray-300 dark:text-gray-600">/</span>
-                        <div class="flex items-center gap-2 group" x-data="{ editing: true, title: '', titleAutoSet: false }" @title-preview.window="if(!title || titleAutoSet) { title = $event.detail.title; titleAutoSet = true; }">
+                        <div class="group flex min-w-0 flex-1 items-center gap-2" x-data="{ editing: true, title: '', titleAutoSet: false }" @title-preview.window="if(!title || titleAutoSet) { title = $event.detail.title; titleAutoSet = true; }">
                             <template x-if="!editing">
                                 <span
                                     class="cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
@@ -24,7 +24,7 @@
                             <template x-if="editing">
                                 <input name="standard[title]" type="text" x-model="title" @keyup.enter="editing = false"
                                     @blur="if(title) editing = false"
-                                    class="form-input !h-9 !text-lg !font-bold !py-0 !border-primary border-2 focus:ring-0 w-auto min-w-[300px]"
+                                    class="form-input !h-9 w-full min-w-0 max-w-full border-2 !border-primary !py-0 !text-lg !font-bold focus:ring-0 sm:w-auto sm:min-w-[300px]"
                                     placeholder="Entrez le titre..." x-init="$nextTick(() => $el.focus())">
                             </template>
                             <!-- Hidden input for form submission if not editing -->
@@ -34,7 +34,7 @@
                         </div>
                     </h2>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                     <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
                         title="Annuler">
@@ -170,7 +170,14 @@
                                                                     <% } %>
                                                                 <% } else if (cf.inputType === 'checkbox') { %>
                                                                     <div class="flex items-center gap-2 py-2">
-                                                                        <input name="custom[<%= cf._id %>]" type="checkbox" class="form-checkbox" />
+                                                                        <input name="custom[<%= cf._id %>]" type="checkbox" class="form-checkbox" value="true" />
+                                                                    </div>
+                                                                <% } else if (cf.inputType === 'switch') { %>
+                                                                    <div class="flex items-center gap-3 py-2">
+                                                                        <label class="w-12 h-6 relative mb-0 cursor-pointer">
+                                                                            <input name="custom[<%= cf._id %>]" type="checkbox" class="custom_switch absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer peer" value="true" />
+                                                                            <span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                                                                        </label>
                                                                     </div>
                                                                 <% } else if (cf.type === 'recurrence') { %>
                                                                     <script type="application/json" id="rec-config-<%= cf._id %>"><%- JSON.stringify({ options: cf.type_config.options || [], slots: cf.type_config.slots || {}, allowCustomText: cf.type_config.allowCustomText || false }) %></script>
@@ -625,7 +632,7 @@
                 </div>
             </div>
 
-            <% const _showRightSidebar = !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
+            <% const _showRightSidebar = !!locals.record && !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
             <% if (_showRightSidebar) { %>
             <!-- Sidebar Content -->
             <div class="flex-none space-y-3 overflow-hidden" style="width: 260px; min-width: 260px; max-width: 260px;">
@@ -1731,6 +1738,14 @@
         min-width: 16px !important;
         cursor: pointer !important;
         margin-right: 8px !important;
+    }
+
+    input.custom_switch {
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
     }
 
     /* Force button height and center label - Fixed Shift */

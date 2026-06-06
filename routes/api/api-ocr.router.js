@@ -17,9 +17,12 @@ const fileType = require('file-type');
 const { tenantCollection } = require('../../middleware/tenant');
 const { sanitizeUploadedFilename } = require('../../utils/filename-encoding');
 const OcrService = require('../../services/ocr.service');
+const { createOpenAIVisionOcrPageCallback } = require('../../services/openai-vision-ocr.service');
 
 const OCR_UPLOAD_ROOT = path.join(__dirname, '../../private_uploads/ocr-temp');
 const MAX_UPLOAD_SIZE = Number(process.env.OCR_MAX_UPLOAD_MB || 50) * 1024 * 1024;
+const OCR_OPENAI_FALLBACK_ENABLED = process.env.OCR_OPENAI_FALLBACK_ENABLED !== 'false';
+const OCR_OPENAI_FALLBACK_MAX_PAGES = boundedInt(process.env.OCR_OPENAI_FALLBACK_MAX_PAGES, 2, 0, 20);
 
 const allowedMimeTypes = new Set([
     'application/pdf',
@@ -92,7 +95,8 @@ router.post('/ocr/extract', (req, res, next) => {
         const result = await extractFromPath(req.file.path, {
             originalName: req.file.originalname,
             mimeType: req.file.detectedMimeType || req.file.mimetype,
-            body: req.body
+            body: req.body,
+            req
         });
 
         res.json(result);
@@ -118,7 +122,8 @@ router.post('/ocr/drive/:fileId', async (req, res) => {
         const result = await extractFromPath(filePath, {
             originalName: file.originalName || file.filename,
             mimeType: file.mimeType,
-            body: req.body
+            body: req.body,
+            req
         });
 
         res.json(result);
@@ -148,7 +153,8 @@ router.post('/ocr/records/:recordId/attachments/:attachmentId', async (req, res)
         const result = await extractFromPath(filePath, {
             originalName: attachment.originalName || attachment.filename,
             mimeType: attachment.mimeType,
-            body: req.body
+            body: req.body,
+            req
         });
 
         res.json(result);
@@ -158,15 +164,43 @@ router.post('/ocr/records/:recordId/attachments/:attachmentId', async (req, res)
     }
 });
 
-async function extractFromPath(filePath, { originalName, mimeType, body }) {
-    return OcrService.extractTextFromFile(filePath, {
+async function extractFromPath(filePath, { originalName, mimeType, body, req }) {
+    const visionFallback = buildVisionFallbackOptions(body);
+    const options = {
         originalName,
         mimeType,
         language: body?.language,
         mode: body?.mode,
         maxPages: body?.maxPages,
         renderScale: body?.renderScale
-    });
+    };
+
+    if (visionFallback.enabled && req?.tenantDbConnection) {
+        options.visionFallback = visionFallback;
+        options.visionOcrPage = createOpenAIVisionOcrPageCallback(req);
+    }
+
+    return OcrService.extractTextFromFile(filePath, options);
+}
+
+function buildVisionFallbackOptions(body = {}) {
+    const rawMode = body?.visionFallback ?? body?.openAiFallback ?? body?.openaiFallback ?? 'auto';
+    const normalized = String(rawMode || 'auto').trim().toLowerCase();
+    const disabled = ['false', '0', 'off', 'none', 'local'].includes(normalized);
+    const mode = ['force', 'always'].includes(normalized) ? 'force' : (disabled ? 'off' : 'auto');
+
+    return {
+        enabled: OCR_OPENAI_FALLBACK_ENABLED && !disabled,
+        mode,
+        maxPages: boundedInt(body?.visionMaxPages || body?.fallbackMaxPages, OCR_OPENAI_FALLBACK_MAX_PAGES, 0, 20),
+        query: body?.query || body?.prompt || body?.goal || body?.message || '',
+        requestedPages: body?.requestedPages,
+        fallbackImages: body?.fallbackImages,
+        fallbackTables: body?.fallbackTables,
+        minChars: body?.fallbackMinChars,
+        minConfidence: body?.fallbackMinConfidence,
+        forceRequestedPages: body?.forceRequestedPages
+    };
 }
 
 async function validateUploadedFile(file) {
@@ -215,6 +249,12 @@ async function cleanupUpload(file) {
     } catch (error) {
         console.warn('[OCR] cleanup failed:', error.message);
     }
+}
+
+function boundedInt(value, fallback, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(max, Math.max(min, Math.round(number)));
 }
 
 module.exports = router;

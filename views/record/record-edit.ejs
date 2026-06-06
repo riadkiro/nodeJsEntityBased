@@ -5315,7 +5315,17 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                 <% } else if (cf.inputType === 'checkbox') { %>
                                                                     <div class="flex items-center gap-2 py-2">
                                                                         <input name="custom[<%= cf._id %>]" type="checkbox" class="form-checkbox"
-                                                                            <%= (cfVal === true || cfVal === 'on' || cfVal === 'true') ? 'checked' : '' %> />
+                                                                            value="true"
+                                                                            <%= (cfVal === true || cfVal === 'on' || cfVal === 'true' || cfVal === '1' || cfVal === 1) ? 'checked' : '' %> />
+                                                                    </div>
+                                                                <% } else if (cf.inputType === 'switch') { %>
+                                                                    <div class="flex items-center gap-3 py-2">
+                                                                        <label class="w-12 h-6 relative mb-0 cursor-pointer">
+                                                                            <input name="custom[<%= cf._id %>]" type="checkbox" class="custom_switch absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer peer"
+                                                                                value="true"
+                                                                                <%= (cfVal === true || cfVal === 'on' || cfVal === 'true' || cfVal === '1' || cfVal === 1) ? 'checked' : '' %> />
+                                                                            <span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                                                                        </label>
                                                                     </div>
                                                                 <% } else if (cf.type === 'recurrence') { %>
                                                                     <% var recVal = (cfVal && typeof cfVal === 'object') ? cfVal : {}; %>
@@ -9273,6 +9283,14 @@ window.__syncClsInputs = function(clsId, ids) {
         margin-right: 8px !important;
     }
 
+    input.custom_switch {
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+    }
+
     /* Force button height and center label - Fixed Shift */
     .builder-preview button:not(.tp-tag-remove) {
         height: 38px !important;
@@ -9396,8 +9414,6 @@ window.__syncClsInputs = function(clsId, ids) {
         }
     });
 </script>
-
-
 
 
 

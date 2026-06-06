@@ -6,6 +6,9 @@ var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
 function _jsonAttr(value) {
     return JSON.stringify(value).replace(/'/g, '&#39;').replace(/</g, '\\u003c');
 }
+function _boolOn(value) {
+    return value === true || value === 1 || value === '1' || value === 'true' || value === 'on' || value === 'oui' || value === 'yes';
+}
 %>
 <% if (_showHeader) { %>
 <div class="ov-card-header">
@@ -75,6 +78,12 @@ function _jsonAttr(value) {
                     <% } else { %>
                         <span class="ov-placeholder">Sélectionner...</span>
                     <% } %>
+                <% } else if (f.inputType === 'checkbox' || f.inputType === 'switch') { %>
+                    <% var _checked = _boolOn(f.rawValue); %>
+                    <span class="ov-bool-pill <%= _checked ? 'ov-bool-pill--on' : 'ov-bool-pill--off' %>">
+                        <span class="ov-bool-dot" style="background:<%= _checked ? (f.color || '#10b981') : '#cbd5e1' %>"></span>
+                        <%= _checked ? 'Oui' : 'Non' %>
+                    </span>
                 <% } else if (f.inputType === 'textarea') { %>
                     <% if (f.value) { %><div class="ov-ef-text"><%= f.value %></div><% } else { %><span class="ov-placeholder"><%= f.label %></span><% } %>
                 <% } else { %>
@@ -120,6 +129,29 @@ function _jsonAttr(value) {
                             <span>Cr&eacute;er "<span x-text="searchQ.trim()"></span>"</span>
                         </div>
                     </div>
+                </div>
+                <% } else if (f.inputType === 'checkbox' || f.inputType === 'switch') { %>
+                <% var editChecked = _boolOn(f.rawValue); %>
+                <div class="ov-bool-editor">
+                    <% if (f.inputType === 'switch') { %>
+                        <label class="ov-switch" @click.stop>
+                            <input type="checkbox" class="ov-switch-input" name="<%= f.key %>" value="true"
+                                   <%= editChecked ? 'checked' : '' %>
+                                   @keydown.escape="cancelEdit()"
+                                   @change="saveField('<%= f.key %>',$event.target.checked)"
+                                   x-ref="input_<%= f.key %>">
+                            <span class="ov-switch-track"><span class="ov-switch-thumb"></span></span>
+                        </label>
+                    <% } else { %>
+                        <label class="ov-checkbox-line" @click.stop>
+                            <input type="checkbox" class="form-checkbox" name="<%= f.key %>" value="true"
+                                   <%= editChecked ? 'checked' : '' %>
+                                   @keydown.escape="cancelEdit()"
+                                   @change="saveField('<%= f.key %>',$event.target.checked)"
+                                   x-ref="input_<%= f.key %>">
+                            <span><%= f.label %></span>
+                        </label>
+                    <% } %>
                 </div>
                 <% } else if (f.type === 'relation') { %>
                 <!-- Relation inline editor with search dropdown -->
@@ -476,7 +508,7 @@ function _jsonAttr(value) {
                 <% } else { %>
                 <input type="<%= f.inputType==='date'?'date':f.inputType==='number'?'number':'text' %>" class="ov-input" name="<%= f.key %>" value="<%= f.rawValue||'' %>" placeholder="<%= f.label %>" @keydown.escape="cancelEdit()" @keydown.enter="saveField('<%= f.key %>',$event.target.value)" x-ref="input_<%= f.key %>">
                 <% } %>
-                <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery' && f.inputType !== 'select' && f.inputType !== 'multiselect') { %>
+                <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery' && f.inputType !== 'select' && f.inputType !== 'multiselect' && f.inputType !== 'checkbox' && f.inputType !== 'switch') { %>
                 <div class="ov-ef-btns">
                     <button type="button" class="ov-ef-ok" @click="saveCurrentField()"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
                     <button type="button" class="ov-ef-cancel" @click="cancelEdit()"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
@@ -491,6 +523,24 @@ function _jsonAttr(value) {
             <% } else { %>
                 <button type="button" class="fiche-vis-toggle" @click.stop="toggleFieldVisibility('<%= f.key %>')" :title="isFieldHidden('<%= f.key %>') ? 'Afficher' : 'Masquer'">
                     <iconify-icon :icon="isFieldHidden('<%= f.key %>') ? 'solar:eye-closed-bold' : 'solar:eye-bold'" width="16"></iconify-icon>
+                </button>
+            <% } %>
+            <% if (f.removable && f.fieldType === 'custom') { %>
+                <button type="button"
+                        class="fiche-edit-field"
+                        @click.stop='$dispatch("edit-field-template", {
+                            id: <%- _jsonAttr(f.key) %>,
+                            name: <%- _jsonAttr(f.name || '') %>,
+                            label: <%- _jsonAttr(f.label || '') %>,
+                            type: <%- _jsonAttr(f.type || 'string') %>,
+                            inputType: <%- _jsonAttr(f.inputType || '') %>,
+                            subtype: <%- _jsonAttr(f.subtype || '') %>,
+                            options: <%- _jsonAttr(f.options || []) %>,
+                            typeConfig: <%- _jsonAttr(f.typeConfig || {}) %>,
+                            targetEntityId: <%- _jsonAttr(f.targetEntityId || '') %>
+                        })'
+                        title="Modifier le champ">
+                    <iconify-icon icon="solar:pen-bold" width="16"></iconify-icon>
                 </button>
             <% } %>
             <% if (f.removable) { %>

@@ -1488,6 +1488,46 @@ document.addEventListener('alpine:init', () => {
             );
         },
 
+        canCreatePdfTemplate(file) {
+            return !!(file && file._id && file.category === 'pdf' && !file.isGenerated && this._recordId);
+        },
+
+        async createPdfTemplateFromPdf(file) {
+            if (!this.canCreatePdfTemplate(file)) return;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/documents/api/pdf-template/from-record-attachment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        recordId: this._recordId,
+                        attachmentId: file._id
+                    })
+                });
+                const rawResponse = await res.text();
+                let data = null;
+                try {
+                    data = rawResponse ? JSON.parse(rawResponse) : null;
+                } catch (_) {
+                    data = null;
+                }
+
+                if (!res.ok || !data?.success) {
+                    const redirectedToLogin = res.redirected && String(res.url || '').includes('/auth/login');
+                    const message = data?.error
+                        || (redirectedToLogin || res.status === 401 || res.status === 403 ? 'Session expirée ou accès refusé'
+                            : `Impossible de créer le modèle PDF (${res.status})`);
+                    window.showMessage ? window.showMessage(message, 'danger') : alert(message);
+                    return;
+                }
+                if (window.showMessage) window.showMessage('Modèle PDF créé', 'success');
+                window.location.href = data.editUrl;
+            } catch (e) {
+                console.error('[Drive] Create PDF template error:', e);
+                window.showMessage ? window.showMessage('Erreur réseau', 'danger') : alert('Erreur réseau');
+            }
+        },
+
         async renderPdfThumb(url, canvas, size) {
             try {
                 if (!window.pdfjsLib) return;
@@ -2115,6 +2155,7 @@ document.addEventListener('alpine:init', () => {
                         <template x-if="confirmDeleteFileId !== file._id">
                             <div style="display:flex;gap:2px;">
                                 <button @click.stop="openDriveFileViewer(file, displayFiles, idx)" class="rm-item-action" title="Aperçu" style="color:#10b981;"><iconify-icon icon="solar:eye-bold" width="15"></iconify-icon></button>
+                                <button @click.stop="createPdfTemplateFromPdf(file)" class="rm-item-action" title="Créer modèle PDF" style="color:#8b5cf6;" x-show="canCreatePdfTemplate(file)"><iconify-icon icon="solar:pen-new-square-bold" width="15"></iconify-icon></button>
                                 <button @click.stop="startRename(file)" class="rm-item-action" title="Renommer" style="color:#f59e0b;" x-show="renamingFileId !== file._id"><iconify-icon icon="solar:pen-bold" width="15"></iconify-icon></button>
                                 <a :href="file.url + '?dl=' + encodeURIComponent(file.originalName)" :download="file.originalName" class="rm-item-action" title="Télécharger" style="color:#4361ee;" @click.stop><iconify-icon icon="solar:download-bold" width="15"></iconify-icon></a>
                                 <button @click.stop="deleteFile(file)" class="rm-item-action" title="Supprimer" style="color:#ef4444;"><iconify-icon icon="solar:trash-bin-2-bold" width="15"></iconify-icon></button>
@@ -2260,6 +2301,14 @@ document.addEventListener('alpine:init', () => {
                             onmouseout="this.style.background='none';this.style.color='#1e293b';">
                         <iconify-icon icon="solar:eye-bold-duotone" style="color:#10b981" width="18"></iconify-icon>
                         Aperçu
+                    </button>
+                    <button x-show="canCreatePdfTemplate(contextMenu.item)"
+                            @click="createPdfTemplateFromPdf(contextMenu.item); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#8b5cf6';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:pen-new-square-bold-duotone" style="color:#8b5cf6" width="18"></iconify-icon>
+                        Créer modèle PDF
                     </button>
                     <a :href="contextMenu.item ? contextMenu.item.url + '?dl=' + encodeURIComponent(contextMenu.item.originalName) : '#'" :download="contextMenu.item ? contextMenu.item.originalName : ''"
                        @click="contextMenu.show = false"

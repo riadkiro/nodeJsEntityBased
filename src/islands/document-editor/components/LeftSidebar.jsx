@@ -74,6 +74,8 @@ export default function LeftSidebar({
     currentPageMode
 }) {
     const isDesignerMode = currentPageMode === 'designer'
+    const isPdfTemplate = Boolean(doc?.metadata?.pdfTemplate?.sourceUrl || doc?.metadata?.pdfTemplate?.sourceAttachmentFilename)
+    const nonPdfToolDisabled = isPdfTemplate
 
     const toggleTab = (tab) => {
         setActiveTab(activeTab === tab ? null : tab)
@@ -87,14 +89,17 @@ export default function LeftSidebar({
 
     useEffect(() => {
         if (!activeTab) return
-        const validTabs = ['text', 'tools', 'gallery', 'blocks', 'layouts', 'dynamic-nav', 'page-settings']
+        const validTabs = isPdfTemplate
+            ? ['pdf-elements', 'dynamic-nav']
+            : ['text', 'tools', 'gallery', 'blocks', 'layouts', 'dynamic-nav', 'page-settings']
 
         if (!validTabs.includes(activeTab)) {
             setActiveTab(null)
         }
-    }, [activeTab, setActiveTab])
+    }, [activeTab, isPdfTemplate, setActiveTab])
 
     const panelTitle = {
+        'pdf-elements': 'PDF',
         text: isDesignerMode ? 'Texte' : 'Texte et Contenu',
         tools: 'Tools',
         gallery: 'Médiathèque',
@@ -110,36 +115,55 @@ export default function LeftSidebar({
             <div className="w-12 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-2 gap-1.5">
                 {/* Text Tool */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'text'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${nonPdfToolDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50 bg-white-light/30 dark:bg-dark/20'
+                        : activeTab === 'text'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
-                    title={isDesignerMode ? 'Texte' : 'Texte et Contenu'}
-                    onClick={() => toggleTab('text')}
+                    title={nonPdfToolDisabled ? 'Indisponible sur un modèle PDF' : (isDesignerMode ? 'Texte' : 'Texte et Contenu')}
+                    onClick={() => !nonPdfToolDisabled && toggleTab('text')}
                 >
                     <iconify-icon icon="solar:text-bold-duotone" width="18"></iconify-icon>
                 </button>
 
                 {/* Tools */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'tools'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${nonPdfToolDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50 bg-white-light/30 dark:bg-dark/20'
+                        : activeTab === 'tools'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
-                    title="Tools"
-                    onClick={() => toggleTab('tools')}
+                    title={nonPdfToolDisabled ? 'Indisponible sur un modèle PDF' : 'Tools'}
+                    onClick={() => !nonPdfToolDisabled && toggleTab('tools')}
                 >
                     <iconify-icon icon="tabler:tools" width="18"></iconify-icon>
                 </button>
 
+                {isPdfTemplate && (
+                    <button
+                        className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'pdf-elements'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                            }`}
+                        title="Éléments PDF"
+                        onClick={() => toggleTab('pdf-elements')}
+                    >
+                        <iconify-icon icon="tabler:file-type-pdf" width="18"></iconify-icon>
+                    </button>
+                )}
+
                 {/* Gallery Tool */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'gallery'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${nonPdfToolDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50 bg-white-light/30 dark:bg-dark/20'
+                        : activeTab === 'gallery'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
-                    title="Médiathèque"
-                    onClick={() => toggleTab('gallery')}
+                    title={nonPdfToolDisabled ? 'Indisponible sur un modèle PDF' : 'Médiathèque'}
+                    onClick={() => !nonPdfToolDisabled && toggleTab('gallery')}
                 >
                     <iconify-icon icon="solar:gallery-bold-duotone" width="18"></iconify-icon>
                 </button>
@@ -148,24 +172,28 @@ export default function LeftSidebar({
 
                 {/* Blocks Tool */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'blocks'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${nonPdfToolDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50 bg-white-light/30 dark:bg-dark/20'
+                        : activeTab === 'blocks'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
-                    title="Blocs de contenu"
-                    onClick={() => toggleTab('blocks')}
+                    title={nonPdfToolDisabled ? 'Indisponible sur un modèle PDF' : 'Blocs de contenu'}
+                    onClick={() => !nonPdfToolDisabled && toggleTab('blocks')}
                 >
                     <iconify-icon icon="solar:widget-4-bold-duotone" width="18"></iconify-icon>
                 </button>
 
                 {/* Layout Tools */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'layouts'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${nonPdfToolDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50 bg-white-light/30 dark:bg-dark/20'
+                        : activeTab === 'layouts'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
-                    title="Mises en page"
-                    onClick={() => toggleTab('layouts')}
+                    title={nonPdfToolDisabled ? 'Indisponible sur un modèle PDF' : 'Mises en page'}
+                    onClick={() => !nonPdfToolDisabled && toggleTab('layouts')}
                 >
                     <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18"></iconify-icon>
                 </button>
@@ -192,12 +220,14 @@ export default function LeftSidebar({
 
                 {/* Page Settings */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'page-settings'
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${nonPdfToolDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50 bg-white-light/30 dark:bg-dark/20'
+                        : activeTab === 'page-settings'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
-                    title="Paramètres de page"
-                    onClick={() => toggleTab('page-settings')}
+                    title={nonPdfToolDisabled ? 'Indisponible sur un modèle PDF' : 'Paramètres de page'}
+                    onClick={() => !nonPdfToolDisabled && toggleTab('page-settings')}
                 >
                     <iconify-icon icon="solar:settings-minimalistic-bold-duotone" width="18"></iconify-icon>
                 </button>
@@ -236,6 +266,9 @@ export default function LeftSidebar({
 
                     {/* Panel Body */}
                     <div className="flex-1 overflow-auto" style={{ padding: '16px', scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin', background: panelBg }}>
+                        {activeTab === 'pdf-elements' && (
+                            <PdfElementsPanel />
+                        )}
                         {activeTab === 'tools' && (
                             <DesignerToolsPanel isDesignerMode={isDesignerMode} />
                         )}
@@ -371,6 +404,72 @@ function DraggableBlock({ icon, label, description, html, plainText, actions = [
     )
 }
 
+function PdfElementsPanel() {
+    const isDark = useDarkMode()
+    const elements = [
+        { type: 'text', icon: 'tabler:text-plus', label: 'Zone texte', description: 'Texte, variables, styles' },
+        { type: 'checkbox', icon: 'tabler:checkbox', label: 'Case à cocher', description: 'Clique pour cocher/décocher' },
+        { type: 'check', icon: 'tabler:check', label: 'Coche', description: 'Marque validée' },
+        { type: 'cross', icon: 'tabler:x', label: 'Croix', description: 'Marque de sélection' },
+        { type: 'line', icon: 'tabler:minus', label: 'Ligne', description: 'Trait horizontal' },
+        { type: 'rectangle', icon: 'tabler:rectangle', label: 'Rectangle', description: 'Cadre ou zone' }
+    ]
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {elements.map(item => (
+                <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => emitPdfElementAdd(item.type)}
+                    style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: `1px solid ${isDark ? '#374151' : '#e2e8f0'}`,
+                        borderRadius: '8px',
+                        background: isDark ? '#111827' : '#ffffff',
+                        color: isDark ? '#e5e7eb' : '#334155',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'border-color 0.15s, background 0.15s, transform 0.15s'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#4361ee'
+                        e.currentTarget.style.background = isDark ? '#172033' : '#f8fafc'
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = isDark ? '#374151' : '#e2e8f0'
+                        e.currentTarget.style.background = isDark ? '#111827' : '#ffffff'
+                    }}
+                >
+                    <span
+                        style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '7px',
+                            background: isDark ? '#1f2937' : '#eef2ff',
+                            color: '#4361ee',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}
+                    >
+                        <iconify-icon icon={item.icon} width="17"></iconify-icon>
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: '12px', fontWeight: 700 }}>{item.label}</span>
+                        <span style={{ display: 'block', marginTop: '1px', fontSize: '10px', color: isDark ? '#9ca3af' : '#94a3b8' }}>{item.description}</span>
+                    </span>
+                </button>
+            ))}
+        </div>
+    )
+}
+
 // Touchable image wrapper for gallery items — adds touch drag support
 function TouchableImage({ html, children, className, style, title }) {
     const isDark = useDarkMode();
@@ -402,6 +501,7 @@ function TouchableImage({ html, children, className, style, title }) {
 const DESIGNER_ADD_EVENT = 'document-designer-add-element'
 const EDITOR_INSERT_HTML_EVENT = 'document-editor-insert-html'
 const EDITOR_SAVE_BLOCK_EVENT = 'document-editor-save-content-block'
+const PDF_ELEMENT_ADD_EVENT = 'dexio:pdf-template-add-element'
 const TOOL_ICON_COLOR = '#64748b'
 const TOOL_CARD_BG = '#f3f4f6'
 const TOOL_CARD_BG_DARK = '#1f2937'
@@ -604,6 +704,11 @@ function extractReusableBlockInnerHtml(html) {
 function emitDesignerAdd(detail) {
     if (typeof window === 'undefined') return
     window.dispatchEvent(new CustomEvent(DESIGNER_ADD_EVENT, { detail }))
+}
+
+function emitPdfElementAdd(type) {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent(PDF_ELEMENT_ADD_EVENT, { detail: { type } }))
 }
 
 function emitEditorInsertHtml(html) {

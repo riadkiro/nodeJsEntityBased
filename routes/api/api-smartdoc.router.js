@@ -19,6 +19,7 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
+const { isPdfTemplateDocument, renderPdfTemplateDocumentHtml } = require('../../services/pdf-template-renderer');
 
 // ============================================================================
 // SHARED HELPER: Resolve custom fields of type 'relation' asynchronously on-the-fly
@@ -1330,6 +1331,7 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             orientation: docTemplate.orientation || 'portrait',
             margins: docTemplate.margins || { top: 40, right: 40, bottom: 40, left: 40 },
             dimensions: docTemplate.dimensions || { width: 794, height: 1123 },
+            metadata: resolvePdfTemplateMetadata(docTemplate.metadata, context),
             isTemplate: false,
             isDraft: true,               // Legacy flag
             draftSourceTemplateId: smartDocTemplate._id,
@@ -1515,7 +1517,13 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
         const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
 
-        const fullHtml = `<!DOCTYPE html>
+        const fullHtml = isPdfTemplateDocument(draftDoc)
+            ? await renderPdfTemplateDocumentHtml(
+                typeof draftDoc.toObject === 'function' ? draftDoc.toObject() : draftDoc,
+                req.account_number,
+                { baseUrl }
+            )
+            : `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -2460,6 +2468,28 @@ function buildTokenContext(record, entity, inputs, relatedRecordsMap, user, comp
     return context;
 }
 
+function resolvePdfTemplateMetadata(metadata, context) {
+    const source = metadata || {};
+    const nextMetadata = JSON.parse(JSON.stringify(source));
+    if (!nextMetadata.pdfTemplate) return nextMetadata;
+
+    const pdfTemplate = nextMetadata.pdfTemplate;
+    pdfTemplate.fields = Array.isArray(pdfTemplate.fields)
+        ? pdfTemplate.fields.map(field => {
+            const templateValue = field.templateValue !== undefined
+                ? field.templateValue
+                : (field.value ?? field.text ?? '');
+            return {
+                ...field,
+                templateValue,
+                value: resolveTokensInString(String(templateValue || ''), context)
+            };
+        })
+        : [];
+
+    return nextMetadata;
+}
+
 /**
  * Resolve document tokens by replacing {{token}} patterns with record data
  * Supports: flat keys, entity-scoped keys (entity.field), related entity keys,
@@ -3100,6 +3130,36 @@ function inlineAttachmentImagesForPdf(html = '', accountNumber) {
     );
 }
 
+function boundedPdfDimension(value, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number <= 0) return fallback;
+    return Math.min(3000, Math.max(100, Math.round(number)));
+}
+
+function buildPuppeteerPdfOptions(docTemplate = {}, outputPath) {
+    const knownFormats = new Set(['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6']);
+    const format = String(docTemplate.format || 'A4');
+    const dims = docTemplate.dimensions || {};
+    const width = boundedPdfDimension(dims.width, 794);
+    const height = boundedPdfDimension(dims.height, 1123);
+    const options = {
+        path: outputPath,
+        printBackground: true,
+        margin: { top: 0, bottom: 0, left: 0, right: 0 },
+        preferCSSPageSize: true
+    };
+
+    if (knownFormats.has(format)) {
+        options.format = format;
+        options.landscape = docTemplate.orientation === 'landscape';
+    } else {
+        options.width = `${width}px`;
+        options.height = `${height}px`;
+    }
+
+    return options;
+}
+
 function stripEditorArtifacts(html = '') {
     return String(html)
         .replace(/<span\b[^>]*class=["'][^"']*\bdoc-block-delete-btn\b[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '')
@@ -3269,17 +3329,7 @@ async function generatePDF(html, outputPath, docTemplate, accountNumber = null) 
         await page.setContent(wrappedHtml, { waitUntil: ['networkidle0', 'load'], timeout: 30000 });
         await page.evaluate(() => document.fonts ? document.fonts.ready : Promise.resolve()).catch(() => {});
 
-        const format = docTemplate.format || 'A4';
-        const landscape = docTemplate.orientation === 'landscape';
-
-        await page.pdf({
-            path: outputPath,
-            format: format,
-            landscape: landscape,
-            printBackground: true,
-            margin: { top: 0, bottom: 0, left: 0, right: 0 },
-            preferCSSPageSize: true
-        });
+        await page.pdf(buildPuppeteerPdfOptions(docTemplate, outputPath));
     } finally {
         if (browser) await browser.close();
     }

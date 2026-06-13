@@ -28,6 +28,104 @@ const HEADING_OPTIONS = [
     { label: 'Titre 4', tag: 'h4', value: 'h4' },
 ]
 
+const PDF_ELEMENT_ADD_EVENT = 'dexio:pdf-template-add-element'
+const PDF_ACTIVE_FIELD_EVENT = 'dexio:pdf-template-active-field'
+const PDF_FIELD_SELECT_EVENT = 'dexio:pdf-template-select-field'
+const PDF_FIELD_CLEAR_EVENT = 'dexio:pdf-template-clear-selection'
+const PDF_MIN_TEXT_FIELD_WIDTH = 70
+const PDF_CURSOR_TEXT_HEIGHT = 20
+
+const PDF_DEFAULT_TEXT_FIELD = {
+    type: 'text',
+    value: '',
+    width: PDF_MIN_TEXT_FIELD_WIDTH,
+    height: PDF_CURSOR_TEXT_HEIGHT,
+    fontSize: 14,
+    fontFamily: 'Arial, sans-serif',
+    color: '#111827',
+    align: 'left',
+    lineHeight: 1.15,
+    letterSpacing: 0,
+    bold: false,
+    italic: false,
+    underline: false,
+    autoSize: true
+}
+
+const PDF_FONT_FAMILIES = ['Arial, sans-serif', 'Inter, sans-serif', 'Times New Roman, serif', 'Courier New, monospace']
+
+function pdfClamp(value, min, max) {
+    const number = Number(value)
+    if (!Number.isFinite(number)) return min
+    return Math.min(max, Math.max(min, number))
+}
+
+function getPdfFieldType(field) {
+    return field?.type || 'text'
+}
+
+function isPdfCheckboxChecked(field) {
+    return field?.checked === true
+        || field?.value === true
+        || ['true', 'checked', '1', 'yes', 'on', '✓'].includes(String(field?.value || '').toLowerCase())
+}
+
+function measurePdfTextFieldSize(field, pageDims) {
+    const value = String(field?.value ?? field?.text ?? '')
+    const fontSize = Number(field?.fontSize || PDF_DEFAULT_TEXT_FIELD.fontSize)
+    const lineHeight = Number(field?.lineHeight || PDF_DEFAULT_TEXT_FIELD.lineHeight)
+    const lineHeightPx = Math.ceil(fontSize * lineHeight)
+    const letterSpacing = Number(field?.letterSpacing || 0)
+    const lines = value.split(/\r?\n/)
+    let maxLineWidth = PDF_MIN_TEXT_FIELD_WIDTH
+
+    if (typeof document !== 'undefined') {
+        const canvas = measurePdfTextFieldSize.canvas || document.createElement('canvas')
+        measurePdfTextFieldSize.canvas = canvas
+        const context = canvas.getContext('2d')
+        if (context) {
+            const fontStyle = field?.italic ? 'italic ' : ''
+            const fontWeight = field?.bold ? '700 ' : '400 '
+            context.font = `${fontStyle}${fontWeight}${fontSize}px ${field?.fontFamily || PDF_DEFAULT_TEXT_FIELD.fontFamily}`
+            lines.forEach(line => {
+                const measured = context.measureText(line || ' ').width
+                const spacing = Math.max(0, (line.length - 1) * letterSpacing)
+                maxLineWidth = Math.max(maxLineWidth, Math.ceil(measured + spacing + 3))
+            })
+        }
+    } else {
+        lines.forEach(line => {
+            maxLineWidth = Math.max(maxLineWidth, Math.ceil((line.length || 1) * fontSize * 0.6))
+        })
+    }
+
+    const contentHeight = Math.max(PDF_CURSOR_TEXT_HEIGHT, lines.length * lineHeightPx)
+    return {
+        width: Math.round(pdfClamp(maxLineWidth, PDF_MIN_TEXT_FIELD_WIDTH, Math.max(PDF_MIN_TEXT_FIELD_WIDTH, pageDims.width - Number(field?.x || 0)))),
+        height: Math.round(pdfClamp(contentHeight, contentHeight, Math.max(contentHeight, pageDims.height - Number(field?.y || 0))))
+    }
+}
+
+function updatePdfTemplate(setDoc, updater) {
+    setDoc(prev => {
+        const metadata = { ...(prev.metadata || {}) }
+        const pdfTemplate = { ...(metadata.pdfTemplate || {}) }
+        const nextTemplate = updater(pdfTemplate, prev) || pdfTemplate
+        if (nextTemplate === pdfTemplate) return prev
+        return {
+            ...prev,
+            metadata: {
+                ...metadata,
+                pdfTemplate: nextTemplate
+            }
+        }
+    })
+}
+
+function emitPdfElementAdd(type) {
+    window.dispatchEvent(new CustomEvent(PDF_ELEMENT_ADD_EVENT, { detail: { type } }))
+}
+
 function ColorPicker({ colors, currentColor, onSelect, icon, title, cols = 10 }) {
     const [open, setOpen] = useState(false)
     const ref = useRef(null)
@@ -631,6 +729,323 @@ function LinkedToDropdown({ doc, setDoc, availableEntities, linkedEntities, trig
     )
 }
 
+function PdfTemplateToolbar({ doc, setDoc, triggerSave, onOpenVariablesPanel }) {
+    const [activeField, setActiveField] = useState(null)
+    const template = doc?.metadata?.pdfTemplate || {}
+    const fields = Array.isArray(template.fields) ? template.fields : []
+    const selectedField = fields.find(field => field.id === activeField?.fieldId) || null
+    const selectedType = getPdfFieldType(selectedField)
+
+    useEffect(() => {
+        const handler = (event) => setActiveField(event.detail?.fieldId ? event.detail : null)
+        window.addEventListener(PDF_ACTIVE_FIELD_EVENT, handler)
+        return () => window.removeEventListener(PDF_ACTIVE_FIELD_EVENT, handler)
+    }, [])
+
+    const patchField = useCallback((fieldId, patch) => {
+        updatePdfTemplate(setDoc, pdfTemplate => {
+            const allFields = Array.isArray(pdfTemplate.fields) ? [...pdfTemplate.fields] : []
+            const idx = allFields.findIndex(field => field.id === fieldId)
+            if (idx < 0) return pdfTemplate
+            allFields[idx] = { ...allFields[idx], ...patch, updatedAt: new Date().toISOString() }
+            return { ...pdfTemplate, fields: allFields }
+        })
+        triggerSave()
+    }, [setDoc, triggerSave])
+
+    const duplicateSelected = useCallback(() => {
+        if (!selectedField) return
+        const pageIndex = Number(selectedField.pageIndex || activeField?.pageIndex || 0)
+        const pageDims = template.pageDimensions?.[pageIndex] || template.pageDimensions?.[String(pageIndex)] || doc.dimensions || { width: 794, height: 1123 }
+        const width = Number(selectedField.width || PDF_DEFAULT_TEXT_FIELD.width)
+        const height = Number(selectedField.height || PDF_DEFAULT_TEXT_FIELD.height)
+        const id = `pdf_field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        const clone = {
+            ...selectedField,
+            id,
+            x: pdfClamp(Number(selectedField.x || 0) + 16, 0, Math.max(0, pageDims.width - width)),
+            y: pdfClamp(Number(selectedField.y || 0) + 16, 0, Math.max(0, pageDims.height - height)),
+            zIndex: fields.length + 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        }
+        updatePdfTemplate(setDoc, pdfTemplate => ({
+            ...pdfTemplate,
+            fields: [...(Array.isArray(pdfTemplate.fields) ? pdfTemplate.fields : []), clone]
+        }))
+        const detail = { fieldId: id, pageIndex, fieldType: getPdfFieldType(clone) }
+        setActiveField(detail)
+        window.dispatchEvent(new CustomEvent(PDF_FIELD_SELECT_EVENT, { detail }))
+        window.dispatchEvent(new CustomEvent(PDF_ACTIVE_FIELD_EVENT, { detail }))
+        triggerSave()
+    }, [activeField?.pageIndex, doc.dimensions, fields.length, selectedField, setDoc, template.pageDimensions, triggerSave])
+
+    const deleteSelected = useCallback(() => {
+        if (!selectedField) return
+        const pageIndex = Number(selectedField.pageIndex || activeField?.pageIndex || 0)
+        updatePdfTemplate(setDoc, pdfTemplate => ({
+            ...pdfTemplate,
+            fields: (Array.isArray(pdfTemplate.fields) ? pdfTemplate.fields : []).filter(field => field.id !== selectedField.id)
+        }))
+        setActiveField(null)
+        window.dispatchEvent(new CustomEvent(PDF_FIELD_CLEAR_EVENT, { detail: {} }))
+        window.dispatchEvent(new CustomEvent(PDF_ACTIVE_FIELD_EVENT, { detail: { fieldId: null, fieldType: null } }))
+        triggerSave()
+    }, [activeField?.pageIndex, selectedField, setDoc, triggerSave])
+
+    const openVariables = useCallback(() => {
+        if (!selectedField || selectedType !== 'text') {
+            window.showMessage?.('Sélectionnez une zone texte PDF avant d’insérer une variable', 'warning')
+        }
+        onOpenVariablesPanel?.()
+    }, [onOpenVariablesPanel, selectedField, selectedType])
+
+    const toolButton = 'inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-gray-800'
+    const iconButton = 'inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-gray-800'
+    const inputClass = 'h-7 rounded-md border border-slate-200 bg-white px-1 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200'
+
+    const getPageDimsForField = useCallback((field) => {
+        const pageIndex = Number(field?.pageIndex || activeField?.pageIndex || 0)
+        return template.pageDimensions?.[pageIndex]
+            || template.pageDimensions?.[String(pageIndex)]
+            || doc.dimensions
+            || { width: 794, height: 1123 }
+    }, [activeField?.pageIndex, doc.dimensions, template.pageDimensions])
+
+    const patchTextField = useCallback((patch) => {
+        if (!selectedField) return
+        const nextField = { ...selectedField, ...patch }
+        const measured = measurePdfTextFieldSize(nextField, getPageDimsForField(selectedField))
+        const sizePatch = selectedField.autoSize !== false
+            ? measured
+            : (Number(selectedField.height || 0) < measured.height ? { height: measured.height } : {})
+        patchField(selectedField.id, { ...patch, ...sizePatch })
+    }, [getPageDimsForField, patchField, selectedField])
+
+    return (
+        <div
+            data-pdf-template-toolbar="1"
+            className="flex items-center gap-1 overflow-x-auto border-t border-gray-100 px-3 py-1 dark:border-gray-800"
+        >
+            <button type="button" onClick={() => emitPdfElementAdd('text')} className={toolButton} title="Zone texte PDF">
+                <iconify-icon icon="tabler:text-plus" width="15"></iconify-icon>
+                Texte
+            </button>
+            <button type="button" onClick={() => emitPdfElementAdd('checkbox')} className={iconButton} title="Case à cocher">
+                <iconify-icon icon="tabler:checkbox" width="15"></iconify-icon>
+            </button>
+            <button type="button" onClick={() => emitPdfElementAdd('check')} className={iconButton} title="Coche">
+                <iconify-icon icon="tabler:check" width="15"></iconify-icon>
+            </button>
+            <button type="button" onClick={() => emitPdfElementAdd('cross')} className={iconButton} title="Croix">
+                <iconify-icon icon="tabler:x" width="15"></iconify-icon>
+            </button>
+            <button type="button" onClick={() => emitPdfElementAdd('line')} className={iconButton} title="Ligne">
+                <iconify-icon icon="tabler:minus" width="15"></iconify-icon>
+            </button>
+            <button type="button" onClick={() => emitPdfElementAdd('rectangle')} className={iconButton} title="Rectangle">
+                <iconify-icon icon="tabler:rectangle" width="15"></iconify-icon>
+            </button>
+
+            <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+
+            <button type="button" onClick={openVariables} className={toolButton} title="Variables">
+                <iconify-icon icon="solar:database-bold-duotone" width="15"></iconify-icon>
+                Variables
+            </button>
+
+            {selectedField ? (
+                <>
+                    <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                    <button type="button" onClick={duplicateSelected} className={iconButton} title="Dupliquer">
+                        <iconify-icon icon="tabler:copy" width="15"></iconify-icon>
+                    </button>
+                    <button type="button" onClick={deleteSelected} className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-500 hover:bg-red-50" title="Supprimer">
+                        <iconify-icon icon="tabler:trash" width="15"></iconify-icon>
+                    </button>
+                </>
+            ) : (
+                <span className="ml-1 whitespace-nowrap text-[11px] font-medium text-slate-400">
+                    Sélectionnez un élément PDF
+                </span>
+            )}
+
+            {selectedField && selectedType === 'text' && (
+                <>
+                    <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                    <select
+                        value={selectedField.fontFamily || PDF_DEFAULT_TEXT_FIELD.fontFamily}
+                        onChange={(event) => patchTextField({ fontFamily: event.target.value })}
+                        className={inputClass}
+                        style={{ width: '132px', flex: '0 0 auto' }}
+                        title="Police"
+                    >
+                        {PDF_FONT_FAMILIES.map(font => <option key={font} value={font}>{font.split(',')[0]}</option>)}
+                    </select>
+                    <input
+                        type="number"
+                        min="6"
+                        max="96"
+                        value={selectedField.fontSize || PDF_DEFAULT_TEXT_FIELD.fontSize}
+                        onChange={(event) => patchTextField({ fontSize: pdfClamp(event.target.value, 6, 96) })}
+                        className={inputClass}
+                        style={{ width: '56px', flex: '0 0 auto' }}
+                        title="Taille"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => patchTextField({ bold: !selectedField.bold })}
+                        className={`${iconButton} ${selectedField.bold ? 'bg-slate-900 text-white hover:bg-slate-800' : ''}`}
+                        title="Gras"
+                    >
+                        <iconify-icon icon="tabler:bold" width="15"></iconify-icon>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => patchTextField({ italic: !selectedField.italic })}
+                        className={`${iconButton} ${selectedField.italic ? 'bg-slate-900 text-white hover:bg-slate-800' : ''}`}
+                        title="Italique"
+                    >
+                        <iconify-icon icon="tabler:italic" width="15"></iconify-icon>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => patchTextField({ underline: !selectedField.underline })}
+                        className={`${iconButton} ${selectedField.underline ? 'bg-slate-900 text-white hover:bg-slate-800' : ''}`}
+                        title="Souligné"
+                    >
+                        <iconify-icon icon="tabler:underline" width="15"></iconify-icon>
+                    </button>
+                    <input
+                        type="color"
+                        value={selectedField.color || PDF_DEFAULT_TEXT_FIELD.color}
+                        onChange={(event) => patchField(selectedField.id, { color: event.target.value })}
+                        className="h-7 w-8 rounded-md border border-slate-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900"
+                        title="Couleur"
+                    />
+                    <select
+                        value={selectedField.align || 'left'}
+                        onChange={(event) => patchField(selectedField.id, { align: event.target.value })}
+                        className={inputClass}
+                        style={{ width: '84px', flex: '0 0 auto' }}
+                        title="Alignement"
+                    >
+                        <option value="left">Gauche</option>
+                        <option value="center">Centre</option>
+                        <option value="right">Droite</option>
+                    </select>
+                    <input
+                        type="number"
+                        step="0.05"
+                        min="0.7"
+                        max="3"
+                        value={selectedField.lineHeight || PDF_DEFAULT_TEXT_FIELD.lineHeight}
+                        onChange={(event) => patchTextField({ lineHeight: pdfClamp(event.target.value, 0.7, 3) })}
+                        className={inputClass}
+                        style={{ width: '58px', flex: '0 0 auto' }}
+                        title="Interligne"
+                    />
+                    <input
+                        type="number"
+                        step="0.5"
+                        min="-2"
+                        max="20"
+                        value={selectedField.letterSpacing || 0}
+                        onChange={(event) => patchTextField({ letterSpacing: pdfClamp(event.target.value, -2, 20) })}
+                        className={inputClass}
+                        style={{ width: '58px', flex: '0 0 auto' }}
+                        title="Espacement des lettres"
+                    />
+                </>
+            )}
+
+            {selectedField && ['checkbox', 'rectangle', 'line'].includes(selectedType) && (
+                <>
+                    <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                    {selectedType === 'checkbox' && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const checked = isPdfCheckboxChecked(selectedField)
+                                patchField(selectedField.id, {
+                                    checked: !checked,
+                                    value: !checked ? 'checked' : ''
+                                })
+                            }}
+                            className={toolButton}
+                            title="Cocher ou décocher"
+                        >
+                            <iconify-icon icon={isPdfCheckboxChecked(selectedField) ? 'tabler:checkbox' : 'tabler:square'} width="15"></iconify-icon>
+                            {isPdfCheckboxChecked(selectedField) ? 'Cochée' : 'Décochée'}
+                        </button>
+                    )}
+                    <input
+                        type="color"
+                        value={selectedField.strokeColor || selectedField.borderColor || '#111827'}
+                        onChange={(event) => {
+                            const key = selectedType === 'checkbox' ? 'borderColor' : 'strokeColor'
+                            patchField(selectedField.id, { [key]: event.target.value })
+                        }}
+                        className="h-7 w-8 rounded-md border border-slate-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900"
+                        title="Couleur du trait"
+                    />
+                    <input
+                        type="number"
+                        step="0.5"
+                        min="0.5"
+                        max="12"
+                        value={selectedField.strokeWidth || selectedField.borderWidth || 1.5}
+                        onChange={(event) => {
+                            const key = selectedType === 'checkbox' ? 'borderWidth' : 'strokeWidth'
+                            patchField(selectedField.id, { [key]: pdfClamp(event.target.value, 0.5, 12) })
+                        }}
+                        className={inputClass}
+                        style={{ width: '58px', flex: '0 0 auto' }}
+                        title="Épaisseur"
+                    />
+                    {selectedType !== 'line' && (
+                        <>
+                            <input
+                                type="color"
+                                value={selectedField.fillColor && selectedField.fillColor !== 'transparent' ? selectedField.fillColor : '#ffffff'}
+                                onChange={(event) => patchField(selectedField.id, { fillColor: event.target.value })}
+                                className="h-7 w-8 rounded-md border border-slate-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900"
+                                title="Fond"
+                            />
+                            <button type="button" onClick={() => patchField(selectedField.id, { fillColor: 'transparent' })} className={toolButton} title="Fond transparent">
+                                Transparent
+                            </button>
+                        </>
+                    )}
+                </>
+            )}
+
+            {selectedField && ['check', 'cross'].includes(selectedType) && (
+                <>
+                    <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                    <input
+                        type="number"
+                        min="8"
+                        max="96"
+                        value={selectedField.fontSize || (selectedType === 'check' ? 20 : 22)}
+                        onChange={(event) => patchField(selectedField.id, { fontSize: pdfClamp(event.target.value, 8, 96) })}
+                        className={inputClass}
+                        style={{ width: '58px', flex: '0 0 auto' }}
+                        title="Taille"
+                    />
+                    <input
+                        type="color"
+                        value={selectedField.color || '#111827'}
+                        onChange={(event) => patchField(selectedField.id, { color: event.target.value })}
+                        className="h-7 w-8 rounded-md border border-slate-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900"
+                        title="Couleur"
+                    />
+                </>
+            )}
+        </div>
+    )
+}
+
 export default function EditorHeader({
     doc,
     setDoc,
@@ -646,6 +1061,8 @@ export default function EditorHeader({
     handlePdfExport,
     isContextFree = false,
     isGeneratingPdf = false,
+    isPdfTemplateMode = false,
+    onOpenVariablesPanel,
     // Template props
     availableEntities,
     isTemplateMode,
@@ -948,6 +1365,34 @@ export default function EditorHeader({
     })
 
     const isInIframe = window.self !== window.top
+    const isPdfBackgroundHidden = Boolean(doc?.metadata?.pdfTemplate?.hideBackground)
+    const handleTogglePdfBackground = useCallback(() => {
+        const metadata = { ...(doc?.metadata || {}) }
+        const pdfTemplate = { ...(metadata.pdfTemplate || {}) }
+        const nextDoc = {
+            ...doc,
+            metadata: {
+                ...metadata,
+                pdfTemplate: {
+                    ...pdfTemplate,
+                    hideBackground: !isPdfBackgroundHidden
+                }
+            }
+        }
+        setDoc(nextDoc)
+        triggerSave(nextDoc)
+    }, [doc, isPdfBackgroundHidden, setDoc, triggerSave])
+    const pdfBackgroundToggle = isPdfTemplateMode ? (
+        <button
+            type="button"
+            onClick={handleTogglePdfBackground}
+            className="flex items-center gap-1.5 px-3 py-2 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 transition-all text-sm font-medium whitespace-nowrap"
+            title={isPdfBackgroundHidden ? "Afficher l’arrière-plan PDF" : "Masquer l’arrière-plan PDF"}
+        >
+            <iconify-icon icon={isPdfBackgroundHidden ? 'tabler:eye' : 'tabler:eye-off'} width="18"></iconify-icon>
+            <span>{isPdfBackgroundHidden ? "Afficher l’arrière-plan" : "Masquer l’arrière-plan"}</span>
+        </button>
+    ) : null
 
     return (
         <header className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 flex flex-col">
@@ -1094,6 +1539,7 @@ export default function EditorHeader({
                         )}
 
                         {/* Générer button */}
+                        {pdfBackgroundToggle}
                         <button
                             onClick={() => {
                                 if (doc._id) {
@@ -1143,6 +1589,8 @@ export default function EditorHeader({
                                     <iconify-icon icon="tabler:circle-x" width="18"></iconify-icon>
                                     <span>Annuler</span>
                                 </button>
+
+                                {pdfBackgroundToggle}
 
                                 {isSimpleEditableDoc ? (
                                     <button
@@ -1200,6 +1648,8 @@ export default function EditorHeader({
                                         Lié à {linkedEntities[0]?.name || doc.linkedRecords?.[0]?.entityName || 'Entreprise'}
                                     </span>
                                 </div>
+
+                                {pdfBackgroundToggle}
 
                                 {canSaveDraft && (
                                     <button
@@ -1273,7 +1723,18 @@ export default function EditorHeader({
             )}
 
             {/* Toolbar Row */}
-            <div className="flex items-center px-3 py-1 gap-0.5 flex-nowrap" style={{ overflow: 'visible' }}>
+            {isPdfTemplateMode ? (
+                <PdfTemplateToolbar
+                    doc={doc}
+                    setDoc={setDoc}
+                    triggerSave={triggerSave}
+                    onOpenVariablesPanel={onOpenVariablesPanel}
+                />
+            ) : (
+            <div
+                className="flex items-center px-3 py-1 gap-0.5 flex-nowrap"
+                style={{ overflow: 'visible' }}
+            >
                 {/* Undo / Redo */}
                 <button
                     onMouseDown={(e) => {
@@ -1585,6 +2046,7 @@ export default function EditorHeader({
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Visual Modal for Confirmations */}
             {modalConfig && (

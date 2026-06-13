@@ -5,6 +5,7 @@
  */
 import React, { forwardRef, useState, useEffect, useRef, useCallback } from 'react'
 import EditorPage from './EditorPage'
+import PdfTemplatePage from './PdfTemplatePage'
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 3
@@ -203,6 +204,11 @@ const CanvasContainer = forwardRef(function CanvasContainer({
     }, [showZoomPresets])
 
     const zoomPercent = Math.round(zoomLevel * 100)
+    const isPdfTemplate = Boolean(doc?.metadata?.pdfTemplate?.sourceUrl || doc?.metadata?.pdfTemplate?.sourceAttachmentFilename)
+    const pdfPageCount = Math.max(1, Number(doc?.metadata?.pdfTemplate?.pageCount || doc?.pages?.length || 1))
+    const renderedPages = isPdfTemplate
+        ? Array.from({ length: pdfPageCount }, (_, index) => doc.pages?.[index] || { order: index, mode: 'edition' })
+        : doc.pages
 
     return (
         <div className="flex-1 flex flex-col min-w-0 bg-[#e2e8f0] dark:bg-[#0f172a] overflow-hidden" style={{ position: 'relative' }}>
@@ -244,7 +250,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                         marginBottom: zoomLevel > 1 ? `${(zoomLevel - 1) * 100}%` : 0,
                     }}
                 >
-                    {doc.pages.map((page, pageIndex) => (
+                    {renderedPages.map((page, pageIndex) => (
                         <div key={`${doc.pages.length}-${pageIndex}-${page.mode || 'edition'}`} className="relative">
                             <div
                                 className="relative mb-3 flex items-center justify-center"
@@ -257,6 +263,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                     Page {pageIndex + 1}
                                 </span>
 
+                                {!isPdfTemplate && (
                                 <div
                                     className="mode-switcher absolute right-0 top-0 z-50 flex items-center gap-1 rounded-xl p-1 shadow-sm"
                                     style={{
@@ -357,11 +364,23 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                         </div>
                                     )}
                                 </div>
+                                )}
                             </div>
 
                             <div className="relative">
                                 {/* Page */}
-                                <EditorPage
+                                {isPdfTemplate ? (
+                                    <PdfTemplatePage
+                                        page={page}
+                                        pageIndex={pageIndex}
+                                        doc={doc}
+                                        setDoc={setDoc}
+                                        isSelected={selectedPageIndex === pageIndex}
+                                        onSelect={() => setSelectedPageIndex(pageIndex)}
+                                        triggerSave={triggerSave}
+                                    />
+                                ) : (
+                                    <EditorPage
                                 page={page}
                                 pageIndex={pageIndex}
                                 doc={doc}
@@ -379,9 +398,10 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                 sourceRecordId={doc.draftRecordId}
                                 triggerSave={triggerSave}
                             />
+                                )}
 
                             {/* Lock Overlay — visible on edition pages when layout/designer is active on ANY page */}
-                            {page.mode === 'edition' && doc.pages.some((p, i) => i !== pageIndex && (p.mode === 'layout' || p.mode === 'designer')) && (
+                            {!isPdfTemplate && page.mode === 'edition' && doc.pages.some((p, i) => i !== pageIndex && (p.mode === 'layout' || p.mode === 'designer')) && (
                                 <div
                                     style={{
                                         position: 'absolute',
@@ -447,6 +467,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                     ))}
 
                     {/* Add Page Button */}
+                    {!isPdfTemplate && (
                     <button
                         onClick={addPage}
                         className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-primary border-2 border-dashed border-gray-300 dark:border-gray-800 rounded-lg hover:border-primary transition-colors"
@@ -455,6 +476,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                         <iconify-icon icon="tabler:plus" width="18"></iconify-icon>
                         <span className="text-sm">Ajouter une page</span>
                     </button>
+                    )}
                 </div>
             </div>
 

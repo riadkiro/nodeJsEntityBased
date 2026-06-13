@@ -271,6 +271,8 @@ const createDefaultDoc = () => ({
     contentBlocks: []
 })
 
+const isPdfTemplateDoc = (doc) => Boolean(doc?.metadata?.pdfTemplate?.sourceUrl || doc?.metadata?.pdfTemplate?.sourceAttachmentFilename)
+
 // Merge initial document with defaults to ensure all properties exist
 const mergeWithDefaults = (initialDoc) => {
     if (!initialDoc) return createDefaultDoc()
@@ -373,6 +375,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const redoStackRef = useRef([])
     const restoringHistoryRef = useRef(false)
     const inputHistoryGroupRef = useRef({ at: 0, scope: null, family: null })
+    const activePdfFieldRef = useRef(null)
 
     // Keep docRef in sync
     useEffect(() => {
@@ -487,6 +490,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         return () => window.removeEventListener('document-image-placeholder-click', handler)
     }, [])
 
+    useEffect(() => {
+        const handler = (event) => {
+            activePdfFieldRef.current = event.detail || null
+        }
+        window.addEventListener('dexio:pdf-template-active-field', handler)
+        return () => window.removeEventListener('dexio:pdf-template-active-field', handler)
+    }, [])
+
     // ========== POSTMESSAGE BRIDGE (iframe mode) ==========
     // When the editor is embedded in an iframe (minimal=true mode, e.g. record docs module),
     // the parent Alpine page can request the current page HTML via postMessage BEFORE calling
@@ -543,6 +554,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Read current content from page refs
         const currentDoc = { ...(docOverride || docRef.current) }
         currentDoc.pages = Array.isArray(currentDoc.pages) ? [...currentDoc.pages] : []
+        const currentDocIsPdfTemplate = isPdfTemplateDoc(currentDoc)
 
         // If React state temporarily lags behind mounted page refs, never save a
         // shorter pages array. This protects against pagination/index races during
@@ -583,6 +595,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         currentDoc.pages = currentDoc.pages.map((page, i) => {
             const pageRef = pageRefs.current[i]
             if (page.mode === 'edition') {
+                if (currentDocIsPdfTemplate) {
+                    return { ...page, content: page.content || '' }
+                }
                 if (pageRef) {
                     const content = stripEditorRuntimeArtifacts(pageRef.innerHTML)
                     return { ...page, content }
@@ -1802,6 +1817,50 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
+        const activePdfField = activePdfFieldRef.current
+        if (isPdfTemplateDoc(docRef.current) && activePdfField?.fieldId) {
+            if (activePdfField.fieldType && activePdfField.fieldType !== 'text') {
+                if (window.showMessage) {
+                    window.showMessage('Sélectionnez une zone texte PDF pour insérer une variable', 'warning')
+                }
+                return
+            }
+            const tokenText = `{{${variablePath}}}`
+            setDoc(prev => {
+                const metadata = { ...(prev.metadata || {}) }
+                const pdfTemplate = { ...(metadata.pdfTemplate || {}) }
+                const fields = Array.isArray(pdfTemplate.fields) ? [...pdfTemplate.fields] : []
+                const idx = fields.findIndex(field => field.id === activePdfField.fieldId)
+                if (idx < 0) return prev
+                const fieldType = fields[idx]?.type || 'text'
+                if (fieldType !== 'text') {
+                    if (window.showMessage) {
+                        window.showMessage('Sélectionnez une zone texte PDF pour insérer une variable', 'warning')
+                    }
+                    return prev
+                }
+                const currentValue = String(fields[idx].value ?? fields[idx].text ?? '')
+                const spacer = currentValue && !/\s$/.test(currentValue) ? ' ' : ''
+                fields[idx] = {
+                    ...fields[idx],
+                    value: `${currentValue}${spacer}${tokenText}`,
+                    updatedAt: new Date().toISOString()
+                }
+                return {
+                    ...prev,
+                    metadata: {
+                        ...metadata,
+                        pdfTemplate: {
+                            ...pdfTemplate,
+                            fields
+                        }
+                    }
+                }
+            })
+            triggerSave()
+            return
+        }
+
         const range = savedRangeRef.current
         if (!range) {
             console.warn('No saved range for token insertion')
@@ -2366,6 +2425,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         if (liveDoc.isDraft || isRegenerableSnapshot || isSimpleEditableDoc) {
             setIsGeneratingPdf(true)
             try {
+                if (isPdfTemplateDoc(liveDoc)) {
+                    await forceSave(liveDoc)
+                }
                 // CRITICAL: Extract CURRENT DOM content from pageRefs (contenteditable is uncontrolled)
                 // The DB version (draftDoc.pages) is stale — user edits live only in the DOM until saved.
                 // We must pass pagesContent so the server uses the live editor content, not the DB snapshot.
@@ -2436,6 +2498,17 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     attachment: result.attachment || { sizeFormatted: 'PDF' },
                     linkedRecords: liveDoc.linkedRecords || []
                 })
+            } finally {
+                setIsGeneratingPdf(false)
+            }
+            return
+        }
+
+        if (isPdfTemplateDoc(liveDoc)) {
+            setIsGeneratingPdf(true)
+            try {
+                await forceSave(liveDoc)
+                await exportPdf(liveDoc._id, liveDoc.name, '<pdf-template />', accountNumber)
             } finally {
                 setIsGeneratingPdf(false)
             }
@@ -2610,7 +2683,7 @@ ${pagesHtml}
         } finally {
             setIsGeneratingPdf(false)
         }
-	    }, [doc._id, doc.name, doc.pages, doc.margins, doc.dimensions, doc.headerHtml, doc.footerHtml, doc.isDraft, doc.isGenerationSnapshot, doc.sourceGeneratedAttachmentId, doc.generatedFile, doc.draftRecordId, doc.linkedRecords, accountNumber, isSimpleEditableDoc])
+	    }, [doc._id, doc.name, doc.pages, doc.margins, doc.dimensions, doc.headerHtml, doc.footerHtml, doc.isDraft, doc.isGenerationSnapshot, doc.sourceGeneratedAttachmentId, doc.generatedFile, doc.draftRecordId, doc.linkedRecords, accountNumber, isSimpleEditableDoc, forceSave])
 
     // ========== DIMENSION UPDATES ==========
     const updateDimensions = useCallback(() => {
@@ -3408,6 +3481,8 @@ ${pagesHtml}
                 handlePdfExport={handlePdfExport}
                 isContextFree={isContextFree}
                 isGeneratingPdf={isGeneratingPdf}
+                isPdfTemplateMode={isPdfTemplateDoc(doc)}
+                onOpenVariablesPanel={() => setActiveTab('dynamic-nav')}
                 hasUnsavedChanges={() => hasUnsavedChangesRef.current}
                 // Template props
                 availableEntities={availableEntities}
@@ -3501,6 +3576,7 @@ ${pagesHtml}
                     zoomLevel={zoomLevel}
                     setZoomLevel={setZoomLevel}
                     accountNumber={accountNumber}
+                    triggerSave={triggerSave}
                 />
 
                 {/* AI Chat Sidebar - now floating, not in layout flow */}

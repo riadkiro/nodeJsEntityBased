@@ -5,6 +5,12 @@ const uploadToDynamic = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
+const {
+    buildAttachmentSourceUrl,
+    inspectPdfTemplateSource,
+    isPdfTemplateDocument,
+    renderPdfTemplateDocumentHtml
+} = require('../services/pdf-template-renderer');
 
 // Upload middleware for document files
 const uploadDocFiles = uploadToDynamic((req) => `public/uploads/documents/files/${req.account_number}`);
@@ -492,6 +498,125 @@ router.post('/api', async (req, res) => {
     }
 });
 
+// POST - Créer un template document à partir d'un PDF attaché au Drive d'une fiche
+router.post('/api/pdf-template/from-record-attachment', async (req, res) => {
+    try {
+        const { recordId, attachmentId } = req.body || {};
+        if (!isValidMongoId(recordId) || !isValidMongoId(attachmentId)) {
+            return res.status(400).json({ success: false, error: 'Fiche ou fichier invalide' });
+        }
+
+        const Document = await tenantCollection(req, 'Document');
+        const Record = await tenantCollection(req, 'Record');
+        const Entity = await tenantCollection(req, 'Entity');
+        if (!Document || !Record) {
+            return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
+        }
+
+        const record = await Record.findById(recordId).lean();
+        if (!record) {
+            return res.status(404).json({ success: false, error: 'Fiche introuvable' });
+        }
+
+        const attachment = (record.attachments || []).find(att => String(att._id) === String(attachmentId));
+        if (!attachment) {
+            return res.status(404).json({ success: false, error: 'PDF introuvable dans le Drive' });
+        }
+
+        const originalName = attachment.originalName || attachment.filename || 'Document.pdf';
+        const mimeType = String(attachment.mimeType || '').toLowerCase();
+        const isPdf = attachment.category === 'pdf' || mimeType === 'application/pdf' || /\.pdf$/i.test(originalName);
+        if (!isPdf) {
+            return res.status(400).json({ success: false, error: 'Le fichier sélectionné doit être un PDF' });
+        }
+
+        let entity = null;
+        if (Entity && record.entityId) {
+            entity = await Entity.findById(record.entityId).select('name icon slug color').lean();
+        }
+
+        const cleanBaseName = originalName.replace(/\.pdf$/i, '').trim() || 'PDF';
+        const sourceUrl = buildAttachmentSourceUrl(req.account_number, attachment.filename);
+        const pdfInfo = await inspectPdfTemplateSource({
+            sourceAttachmentFilename: attachment.filename,
+            sourceUrl
+        }, req.account_number);
+        const pageCount = pdfInfo.pageCount || 1;
+        const firstPageDimensions = {
+            width: pdfInfo.firstPage?.width || 794,
+            height: pdfInfo.firstPage?.height || 1123
+        };
+        const pages = Array.from({ length: pageCount }, (_, index) => ({
+            content: '',
+            elements: [],
+            rows: [],
+            mode: 'edition',
+            background: { color: '#ffffff' },
+            order: index
+        }));
+        const entityIds = record.entityId ? [record.entityId] : [];
+        const doc = await Document.create({
+            name: `Modèle PDF - ${cleanBaseName}`,
+            format: 'Custom',
+            orientation: pdfInfo.orientation || 'portrait',
+            dimensions: firstPageDimensions,
+            margins: { top: 0, right: 0, bottom: 0, left: 0 },
+            headerHtml: '',
+            footerHtml: '',
+            pages,
+            metadata: {
+                pdfTemplate: {
+                    version: 1,
+                    source: 'record-attachment',
+                    sourceRecordId: record._id,
+                    sourceAttachmentId: attachment._id,
+                    sourceAttachmentFilename: attachment.filename,
+                    sourceUrl,
+                    originalName,
+                    mimeType: attachment.mimeType || 'application/pdf',
+                    pageCount,
+                    pageDimensions: pdfInfo.pageDimensions || { 0: firstPageDimensions },
+                    fields: []
+                }
+            },
+            entityId: record.entityId || undefined,
+            entityIds,
+            isTemplate: true,
+            status: 'draft',
+            createdBy: req.user._id
+        });
+
+        try {
+            if (record.entityId) {
+                const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+                if (SmartDocTemplate) {
+                    await SmartDocTemplate.create({
+                        name: doc.name,
+                        documentId: doc._id,
+                        entityId: record.entityId,
+                        scopeType: 'entity',
+                        outputFormat: 'pdf',
+                        active: true,
+                        createdBy: req.user?._id
+                    });
+                }
+            }
+        } catch (syncErr) {
+            console.warn('[PDF Template] SmartDoc auto-link skipped:', syncErr.message);
+        }
+
+        res.json({
+            success: true,
+            document: doc,
+            entity,
+            editUrl: `/account/${req.account_number}/documents/${doc._id}/edit-react`
+        });
+    } catch (error) {
+        console.error('[PDF Template] Create from attachment error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // GET - Bibliothèque de blocs réutilisables du compte
 const listContentBlocks = async (req, res) => {
     try {
@@ -903,7 +1028,18 @@ router.post('/api/:id/pdf', async (req, res) => {
     let browser = null;
     try {
         const puppeteer = require('puppeteer');
-        const htmlContent = req.body.html;
+        let htmlContent = req.body.html;
+
+        const Document = await tenantCollection(req, 'Document');
+        const document = Document && isValidMongoId(req.params.id)
+            ? await Document.findById(req.params.id).lean()
+            : null;
+
+        if (isPdfTemplateDocument(document)) {
+            const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+            const baseUrl = appUrl.endsWith('/') ? appUrl : appUrl + '/';
+            htmlContent = await renderPdfTemplateDocumentHtml(document, req.account_number, { baseUrl });
+        }
 
         if (!htmlContent) {
             console.error('[PDF] HTML content missing in request');

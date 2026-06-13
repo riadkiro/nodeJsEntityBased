@@ -735,6 +735,7 @@ function PdfTemplateToolbar({ doc, setDoc, triggerSave, onOpenVariablesPanel }) 
     const fields = Array.isArray(template.fields) ? template.fields : []
     const selectedField = fields.find(field => field.id === activeField?.fieldId) || null
     const selectedType = getPdfFieldType(selectedField)
+    const isBackgroundHidden = Boolean(template.hideBackground)
 
     useEffect(() => {
         const handler = (event) => setActiveField(event.detail?.fieldId ? event.detail : null)
@@ -800,6 +801,23 @@ function PdfTemplateToolbar({ doc, setDoc, triggerSave, onOpenVariablesPanel }) 
         onOpenVariablesPanel?.()
     }, [onOpenVariablesPanel, selectedField, selectedType])
 
+    const toggleBackground = useCallback(() => {
+        const metadata = { ...(doc?.metadata || {}) }
+        const pdfTemplate = { ...(metadata.pdfTemplate || {}) }
+        const nextDoc = {
+            ...doc,
+            metadata: {
+                ...metadata,
+                pdfTemplate: {
+                    ...pdfTemplate,
+                    hideBackground: !Boolean(pdfTemplate.hideBackground)
+                }
+            }
+        }
+        setDoc(nextDoc)
+        triggerSave(nextDoc)
+    }, [doc, setDoc, triggerSave])
+
     const toolButton = 'inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-gray-800'
     const iconButton = 'inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-gray-800'
     const inputClass = 'h-7 rounded-md border border-slate-200 bg-white px-1 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200'
@@ -852,6 +870,15 @@ function PdfTemplateToolbar({ doc, setDoc, triggerSave, onOpenVariablesPanel }) 
             <button type="button" onClick={openVariables} className={toolButton} title="Variables">
                 <iconify-icon icon="solar:database-bold-duotone" width="15"></iconify-icon>
                 Variables
+            </button>
+            <button
+                type="button"
+                onClick={toggleBackground}
+                className={`${toolButton} ${isBackgroundHidden ? 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white' : ''}`}
+                title={isBackgroundHidden ? "Afficher l’arrière-plan PDF" : "Masquer l’arrière-plan PDF"}
+            >
+                <iconify-icon icon={isBackgroundHidden ? 'tabler:eye' : 'tabler:eye-off'} width="15"></iconify-icon>
+                {isBackgroundHidden ? 'Afficher fond' : 'Masquer fond'}
             </button>
 
             {selectedField ? (

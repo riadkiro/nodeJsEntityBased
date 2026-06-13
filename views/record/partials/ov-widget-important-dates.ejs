@@ -1,11 +1,11 @@
-<div class="ov-agenda-widget" x-data="ovAgendaWidget('upcoming')">
+<div class="ov-agenda-widget" x-data="ovAgendaWidget('important')">
     <div class="ov-card-header">
         <span class="ov-card-header-main">
-            <iconify-icon icon="solar:calendar-bold-duotone" width="18" style="color:#14b8a6"></iconify-icon>
-            <span>Prochains événements</span>
+            <iconify-icon icon="solar:calendar-mark-bold-duotone" width="18" style="color:#f59e0b"></iconify-icon>
+            <span>Dates importantes</span>
         </span>
         <span class="ov-card-header-actions">
-            <button type="button" class="ov-card-add-btn" title="Ajouter un événement" x-show="canEdit" @click="openForm">
+            <button type="button" class="ov-card-add-btn" title="Ajouter une date importante" x-show="canEdit" @click="openForm">
                 <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
             </button>
             <a href="<%= _recBase %>/agenda" class="ov-card-link">Voir tout →</a>
@@ -14,7 +14,7 @@
 
     <div class="ov-agenda-form" x-show="showForm" x-transition>
         <div class="ov-agenda-form-grid">
-            <input x-ref="eventTitle" type="text" class="ov-agenda-input" placeholder="Titre de l'événement" x-model="form.title" @keydown.enter.prevent="createEvent">
+            <input x-ref="eventTitle" type="text" class="ov-agenda-input" placeholder="Titre de la date importante" x-model="form.title" @keydown.enter.prevent="createEvent">
             <input type="datetime-local" class="ov-agenda-input" x-model="form.date" @keydown.enter.prevent="createEvent">
         </div>
         <div class="ov-agenda-form-actions">
@@ -34,7 +34,7 @@
     <div class="ov-agenda-row" x-show="!loading && events.length > 0">
         <template x-for="(ev, idx) in events" :key="idx">
             <div class="ov-agenda-item">
-                <div class="ov-agenda-date-box" :style="`background:linear-gradient(135deg,${ev.color}12,${ev.color}06)`">
+                <div class="ov-agenda-date-box" :style="`background:linear-gradient(135deg,${ev.color}14,${ev.color}07)`">
                     <div class="ov-agenda-day" :style="`color:${ev.color}`" x-text="ev.day"></div>
                     <div class="ov-agenda-month" x-text="ev.month"></div>
                 </div>
@@ -48,8 +48,8 @@
 
     <template x-if="!loading && events.length === 0">
         <div class="ov-agenda-empty">
-            <iconify-icon icon="solar:calendar-minimalistic-linear" width="24" style="display:block;margin:0 auto 6px;opacity:.5"></iconify-icon>
-            Aucun événement à venir
+            <iconify-icon icon="solar:calendar-mark-linear" width="24" style="display:block;margin:0 auto 6px;opacity:.5"></iconify-icon>
+            Aucune date importante à venir
         </div>
     </template>
 </div>

@@ -19,6 +19,8 @@ const EVENT_TAG_FALLBACK_OPTIONS = [
 ]
 
 const DEFAULT_CREATED_TAG_COLOR = '#64748b'
+const UPCOMING_WIDGET_FIELD = 'widget_prochains_evenements'
+const IMPORTANT_DATE_WIDGET_FIELD = 'widget_date_importante'
 
 export default function EventModal({
     isOpen, onClose, event, entityData, prefillDate,
@@ -35,6 +37,8 @@ export default function EventModal({
         lieu: '',
         notes: '',
         statusOptionId: '',
+        showInUpcomingWidget: true,
+        isImportantDate: false,
     })
     const [saving, setSaving] = useState(false)
     const [formError, setFormError] = useState('')
@@ -54,16 +58,23 @@ export default function EventModal({
                 cv => cv.classificationId?.toString() === entityData?.statusClassification?._id?.toString()
             )
 
+            const eventTags = normalizeTagValues(getCustomFieldValue(event, 'tags_evenement'))
+
             setForm({
                 title: event.title || '',
                 date: event.date ? toLocalDateTime(new Date(event.date)) : '',
                 endDate: event.end_date ? toLocalDateTime(new Date(event.end_date)) : '',
                 duration: getCustomFieldValue(event, 'duree_evenement') || 30,
                 type: getCustomFieldValue(event, 'type_evenement') || 'consultation',
-                tags: normalizeTagValues(getCustomFieldValue(event, 'tags_evenement')),
+                tags: eventTags,
                 lieu: getCustomFieldValue(event, 'lieu_evenement') || '',
                 notes: getCustomFieldValue(event, 'notes_evenement') || '',
                 statusOptionId: statusCv?.optionId?.toString() || '',
+                showInUpcomingWidget: normalizeBooleanValue(getCustomFieldValue(event, UPCOMING_WIDGET_FIELD), true),
+                isImportantDate: normalizeBooleanValue(
+                    getCustomFieldValue(event, IMPORTANT_DATE_WIDGET_FIELD),
+                    eventTags.some(tag => tag.toLowerCase() === 'date importante')
+                ),
             })
         } else {
             // New event
@@ -97,6 +108,8 @@ export default function EventModal({
                 lieu: '',
                 notes: '',
                 statusOptionId: defaultStatusId,
+                showInUpcomingWidget: true,
+                isImportantDate: false,
             })
         }
     }, [isOpen, event, prefillDate, entityData, getCustomFieldValue, getStatusInfo])
@@ -131,6 +144,8 @@ export default function EventModal({
                 lieu: form.lieu,
                 notes: form.notes,
                 statusOptionId: form.statusOptionId || undefined,
+                showInUpcomingWidget: !!form.showInUpcomingWidget,
+                isImportantDate: !!form.isImportantDate,
             }
 
             if (isEditing) {
@@ -301,6 +316,41 @@ export default function EventModal({
                             onChange={next => handleChange('tags', next)}
                             onCreateOption={handleCreateTagOption}
                         />
+                    </div>
+
+                    {/* Widget visibility */}
+                    <div className="ra-field">
+                        <label className="ra-label">Widget</label>
+                        <div className="ra-widget-switches">
+                            <label className={`ra-widget-switch ${form.showInUpcomingWidget ? 'active' : ''}`}>
+                                <span className="ra-widget-switch-copy">
+                                    <strong>Prochains événements</strong>
+                                    <small>Afficher dans le widget agenda</small>
+                                </span>
+                                <span className="ra-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!form.showInUpcomingWidget}
+                                        onChange={event => handleChange('showInUpcomingWidget', event.target.checked)}
+                                    />
+                                    <span />
+                                </span>
+                            </label>
+                            <label className={`ra-widget-switch ${form.isImportantDate ? 'active' : ''}`}>
+                                <span className="ra-widget-switch-copy">
+                                    <strong>Date importante</strong>
+                                    <small>Afficher dans le widget dates importantes</small>
+                                </span>
+                                <span className="ra-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!form.isImportantDate}
+                                        onChange={event => handleChange('isImportantDate', event.target.checked)}
+                                    />
+                                    <span />
+                                </span>
+                            </label>
+                        </div>
                     </div>
 
                     {/* Location */}
@@ -513,6 +563,18 @@ function getEventTagsField(entityData) {
     return (entityData?.customFields || []).find(field => field?.name === 'tags_evenement') || null
 }
 
+function normalizeBooleanValue(value, fallback = false) {
+    if (value === undefined || value === null || value === '') return fallback
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'number') return value !== 0
+
+    const token = String(value).trim().toLowerCase()
+    if (['true', '1', 'yes', 'oui', 'on'].includes(token)) return true
+    if (['false', '0', 'no', 'non', 'off'].includes(token)) return false
+
+    return fallback
+}
+
 function normalizeTagValues(value) {
     const raw = Array.isArray(value)
         ? value
@@ -702,6 +764,43 @@ function getModalStyles() {
 }
 .ra-tag-ms-create:disabled { opacity:.6; cursor:wait; }
 
+.ra-widget-switches { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ra-widget-switch {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    min-width:0; padding:11px 12px; border:1.5px solid #e2e8f0;
+    border-radius:10px; background:#fff; cursor:pointer; transition:all .18s;
+}
+.ra-widget-switch:hover { border-color:#cbd5e1; background:#fbfdff; }
+.ra-widget-switch.active { border-color:#14b8a655; background:rgba(20,184,166,.05); }
+.dark .ra-widget-switch { background:#1b2e4b; border-color:#253b5c; }
+.dark .ra-widget-switch:hover { border-color:#3b4f6f; }
+.dark .ra-widget-switch.active { border-color:#14b8a6; background:rgba(20,184,166,.12); }
+.ra-widget-switch-copy { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.ra-widget-switch-copy strong {
+    font-size:12.5px; line-height:1.2; color:#0f172a; font-weight:800;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ra-widget-switch-copy small {
+    font-size:10.5px; line-height:1.25; color:#94a3b8; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dark .ra-widget-switch-copy strong { color:#e0e6ed; }
+.dark .ra-widget-switch-copy small { color:#64748b; }
+.ra-switch { position:relative; width:38px; height:22px; flex:none; }
+.ra-switch input { position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; }
+.ra-switch span {
+    position:absolute; inset:0; border-radius:999px; background:#cbd5e1;
+    transition:background .18s;
+}
+.ra-switch span::before {
+    content:''; position:absolute; width:16px; height:16px; left:3px; top:3px;
+    border-radius:999px; background:#fff; box-shadow:0 1px 4px rgba(15,23,42,.2);
+    transition:transform .18s;
+}
+.ra-switch input:checked + span { background:#14b8a6; }
+.ra-switch input:checked + span::before { transform:translateX(16px); }
+.dark .ra-switch span { background:#506690; }
+
 .ra-modal-error {
     padding:10px 12px; border-radius:9px;
     border:1px solid #fecaca; background:#fff7f7; color:#b91c1c;
@@ -756,5 +855,9 @@ function getModalStyles() {
 }
 .ra-delete-btn:hover { background:#fef2f2; border-color:#ef4444; }
 .dark .ra-delete-btn { background:#1b2e4b; border-color:#7f1d1d; }
+
+@media(max-width:560px) {
+    .ra-widget-switches { grid-template-columns:1fr; }
+}
 `
 }

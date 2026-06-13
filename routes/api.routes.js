@@ -2232,6 +2232,22 @@ function normalizeEventTagsInput(value) {
     return [];
 }
 
+function firstDefinedValue(...values) {
+    return values.find(value => value !== undefined);
+}
+
+function normalizeEventBoolean(value, fallback = false) {
+    if (value === undefined || value === null || value === '') return fallback;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+
+    const token = String(value).trim().toLowerCase();
+    if (['true', '1', 'yes', 'oui', 'on'].includes(token)) return true;
+    if (['false', '0', 'no', 'non', 'off'].includes(token)) return false;
+
+    return fallback;
+}
+
 /**
  * GET /account/:account_number/api/records/:recordId/events
  * Fetch all events linked to a specific record via relations
@@ -2278,7 +2294,23 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         const Entity = await tenantCollection(req, "Entity");
         const Record = await tenantCollection(req, "Record");
 
-        const { title, date, endDate, duration, type, lieu, notes, tags, statusOptionId } = req.body;
+        const {
+            title,
+            date,
+            endDate,
+            duration,
+            type,
+            lieu,
+            notes,
+            tags,
+            statusOptionId,
+            showInUpcomingWidget,
+            widgetProchainsEvenements,
+            upcomingWidget,
+            isImportantDate,
+            widgetDateImportante,
+            importantDate,
+        } = req.body;
         const parentRecordId = req.params.recordId;
 
         const eventsEntity = await ensureEventsEntity(req);
@@ -2318,6 +2350,14 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         }
         if (fieldMap.heure_fin && endDate) {
             customFields.push({ field_id: fieldMap.heure_fin, value: endDate });
+        }
+        if (fieldMap.widget_prochains_evenements) {
+            const raw = firstDefinedValue(showInUpcomingWidget, widgetProchainsEvenements, upcomingWidget);
+            customFields.push({ field_id: fieldMap.widget_prochains_evenements, value: normalizeEventBoolean(raw, true) });
+        }
+        if (fieldMap.widget_date_importante) {
+            const raw = firstDefinedValue(isImportantDate, widgetDateImportante, importantDate);
+            customFields.push({ field_id: fieldMap.widget_date_importante, value: normalizeEventBoolean(raw, false) });
         }
 
         // Build classification values
@@ -2394,7 +2434,23 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
         const Record = await tenantCollection(req, "Record");
 
         const { eventId } = req.params;
-        const { title, date, endDate, duration, type, lieu, notes, tags, statusOptionId } = req.body;
+        const {
+            title,
+            date,
+            endDate,
+            duration,
+            type,
+            lieu,
+            notes,
+            tags,
+            statusOptionId,
+            showInUpcomingWidget,
+            widgetProchainsEvenements,
+            upcomingWidget,
+            isImportantDate,
+            widgetDateImportante,
+            importantDate,
+        } = req.body;
 
         const event = await Record.findById(eventId);
         if (!event) return res.status(404).json({ error: 'Event not found' });
@@ -2430,6 +2486,15 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
         updateCustomField('lieu_evenement', lieu);
         if (tags !== undefined) updateCustomField('tags_evenement', normalizeEventTagsInput(tags));
         updateCustomField('notes_evenement', notes);
+
+        const upcomingWidgetValue = firstDefinedValue(showInUpcomingWidget, widgetProchainsEvenements, upcomingWidget);
+        if (upcomingWidgetValue !== undefined) {
+            updateCustomField('widget_prochains_evenements', normalizeEventBoolean(upcomingWidgetValue, true));
+        }
+        const importantDateValue = firstDefinedValue(isImportantDate, widgetDateImportante, importantDate);
+        if (importantDateValue !== undefined) {
+            updateCustomField('widget_date_importante', normalizeEventBoolean(importantDateValue, false));
+        }
 
         if (endDate !== undefined) updateCustomField('heure_fin', endDate);
 

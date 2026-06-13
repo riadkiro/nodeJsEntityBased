@@ -656,6 +656,12 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                                             <%- include('partials/ov-widget-agenda', { _recBase: _recBase }) %>
                                         </div>
                                         </template>
+                                        <!-- Widget: important dates -->
+                                        <template x-if="wid === 'important-dates'">
+                                        <div class="ov-card ov-card-important-dates">
+                                            <%- include('partials/ov-widget-important-dates', { _recBase: _recBase }) %>
+                                        </div>
+                                        </template>
                                         <!-- Widget: notes -->
                                         <template x-if="wid === 'notes'">
                                         <div class="ov-card ov-card-notes" x-data="ovNotesWidget()">
@@ -827,14 +833,29 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .dark .ov-lines-add:hover{color:#818cf8;}
     .dark .ov-lines-meta{color:#3b4f6f;}
     /* Agenda */
-    .ov-agenda-row{display:flex;gap:12px;}
-    .ov-agenda-item{flex:1;display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e8ecf1;transition:all .2s;}
+    .ov-agenda-widget{display:flex;flex-direction:column;gap:10px;}
+    .ov-card-header-main{display:inline-flex;align-items:center;gap:8px;min-width:0;}
+    .ov-card-header-actions{margin-left:auto;display:inline-flex;align-items:center;gap:8px;}
+    .ov-card-add-btn{width:28px;height:28px;border:1px solid #dbeafe;border-radius:8px;background:#eff6ff;color:#2563eb;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+    .ov-card-add-btn:hover{background:#dbeafe;border-color:#bfdbfe;}
+    .ov-agenda-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
+    .ov-agenda-item{min-width:0;display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e8ecf1;transition:all .2s;}
     .ov-agenda-item:hover{border-color:#14b8a640;box-shadow:0 2px 8px rgba(0,0,0,.03);}
     .ov-agenda-date-box{width:48px;height:48px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
     .ov-agenda-day{font-size:18px;font-weight:800;line-height:1;}
     .ov-agenda-month{font-size:10px;font-weight:700;text-transform:uppercase;color:#888da8;letter-spacing:.5px;}
-    .ov-agenda-title{font-size:13px;font-weight:600;color:#0e1726;}
+    .ov-agenda-body{min-width:0;}
+    .ov-agenda-title{font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ov-agenda-time{font-size:11.5px;color:#888da8;margin-top:2px;}
+    .ov-agenda-empty{min-height:84px;text-align:center;padding:16px 0;color:#9ca3af;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .ov-agenda-form{border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;}
+    .ov-agenda-form-grid{display:grid;grid-template-columns:1fr 180px;gap:8px;}
+    .ov-agenda-input{height:36px;border:1px solid #dbe3ee;border-radius:9px;background:#fff;color:#172033;font-size:12px;font-weight:650;padding:0 10px;outline:none;min-width:0;}
+    .ov-agenda-input:focus{border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.08);}
+    .ov-agenda-form-actions{display:flex;justify-content:flex-end;gap:8px;}
+    .ov-agenda-form-btn{height:32px;border-radius:8px;border:1px solid #dbe3ee;background:#fff;color:#64748b;font-size:11.5px;font-weight:800;padding:0 11px;cursor:pointer;}
+    .ov-agenda-form-btn.primary{border-color:#14b8a6;background:#14b8a6;color:#fff;}
+    .ov-agenda-form-btn:disabled{opacity:.6;cursor:wait;}
     /* Notes */
     .ov-note-widget{position:relative;}
     .ov-note-empty{min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed #e3e8f0;border-radius:12px;background:#fbfcff;color:#94a3b8;font-size:12px;font-weight:600;text-align:center;}
@@ -870,7 +891,11 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .dark .ov-ms-pill{background:#0e1726;border-color:#253b5c;color:#888da8;}
     .dark .ov-ms-pill.active{background:rgba(67,97,238,.15);border-color:#4361ee;color:#4361ee;}
     .dark .ov-doc-item:hover{background:#1b2e4b;}
+    .dark .ov-card-add-btn{background:#111c2d;border-color:#253b5c;color:#93c5fd;}
+    .dark .ov-card-add-btn:hover{background:#1b2e4b;}
     .dark .ov-agenda-item{border-color:#253b5c;}
+    .dark .ov-agenda-form{background:#0b1320;border-color:#253b5c;}
+    .dark .ov-agenda-input,.dark .ov-agenda-form-btn{background:#111c2d;border-color:#253b5c;color:#e0e6ed;}
     .dark .ov-note-empty,.dark .ov-note-select-btn{background:#0b1320;border-color:#253b5c;}
     .dark .ov-note-menu{background:#0e1726;border-color:#253b5c;box-shadow:0 18px 44px rgba(0,0,0,.34);}
     .dark .ov-note-option:hover,.dark .ov-note-option.active{background:#1b2e4b;}
@@ -883,7 +908,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .dark .ov-rel-dropdown{background:#0e1726;border-color:#253b5c;}
     .dark .ov-rel-option{color:#e0e6ed;}
     .dark .ov-rel-option:hover{background:#1b2e4b;}
-    @media(max-width:768px){.ov-grid{grid-template-columns:1fr;}.ov-drive-grid{grid-template-columns:repeat(2,1fr);}.ov-agenda-row{flex-direction:column;}}
+    @media(max-width:768px){.ov-grid{grid-template-columns:1fr;}.ov-drive-grid{grid-template-columns:repeat(2,1fr);}.ov-agenda-row,.ov-agenda-form-grid{grid-template-columns:1fr;}}
     /* ── Layout Builder Design Mode ── */
     .ov-layout-row{display:flex;gap:16px;margin-bottom:16px;position:relative;}
     .ov-layout-col{position:relative;display:flex;flex-direction:column;gap:16px;min-height:40px;}
@@ -1410,6 +1435,173 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             }
         }));
 
+        Alpine.data('ovAgendaWidget', (mode = 'upcoming') => ({
+            mode,
+            events: [],
+            entityData: null,
+            loading: true,
+            saving: false,
+            showForm: false,
+            canEdit: _overviewRecordModuleCanEdit,
+            form: { title: '', date: '' },
+
+            init() {
+                this.resetForm();
+                this.load();
+            },
+
+            get isImportantMode() {
+                return this.mode === 'important';
+            },
+
+            resetForm() {
+                const d = new Date();
+                d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+                this.form = { title: '', date: this.toLocalDateTime(d) };
+            },
+
+            openForm() {
+                if (!this.canEdit) return;
+                this.resetForm();
+                this.showForm = true;
+                this.$nextTick(() => this.$refs.eventTitle?.focus());
+            },
+
+            closeForm() {
+                this.showForm = false;
+                this.resetForm();
+            },
+
+            async load() {
+                this.loading = true;
+                try {
+                    const res = await fetch('/account/<%= account_number %>/api/records/<%= record._id %>/events', { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success && data.events) {
+                        this.entityData = data.entityData || null;
+                        const now = new Date();
+                        this.events = data.events
+                            .filter(e => e.date && new Date(e.date) >= now)
+                            .filter(e => this.isImportantMode ? this.isImportantDateEvent(e) : this.isUpcomingEvent(e))
+                            .sort((a, b) => new Date(a.date) - new Date(b.date))
+                            .slice(0, 4)
+                            .map(e => this.formatEvent(e));
+                    } else {
+                        this.events = [];
+                    }
+                } catch(e) {
+                    console.warn('[OV-Agenda]', e);
+                    this.events = [];
+                }
+                this.loading = false;
+            },
+
+            async createEvent() {
+                if (!this.canEdit || this.saving) return;
+                const title = String(this.form.title || '').trim();
+                const dateValue = this.form.date ? new Date(this.form.date) : null;
+                if (!title || !dateValue || Number.isNaN(dateValue.getTime())) {
+                    window.showMessage ? window.showMessage('Titre et date requis', 'warning') : alert('Titre et date requis');
+                    return;
+                }
+
+                this.saving = true;
+                try {
+                    const important = this.isImportantMode;
+                    const res = await fetch('/account/<%= account_number %>/api/records/<%= record._id %>/events', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            title,
+                            date: dateValue.toISOString(),
+                            duration: 30,
+                            type: important ? 'rappel' : 'consultation',
+                            tags: important ? ['Date importante'] : [],
+                            showInUpcomingWidget: true,
+                            isImportantDate: important,
+                        })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Création impossible');
+                    this.closeForm();
+                    await this.load();
+                    window.dispatchEvent(new CustomEvent('record-events-updated'));
+                    if (window.showMessage) window.showMessage(important ? 'Date importante ajoutée' : 'Événement ajouté', 'success');
+                } catch (e) {
+                    console.error('[OV-Agenda] Create error:', e);
+                    window.showMessage ? window.showMessage(e.message || 'Création impossible', 'danger') : alert(e.message || 'Création impossible');
+                }
+                this.saving = false;
+            },
+
+            isUpcomingEvent(event) {
+                return this.booleanValue(this.customValue(event, 'widget_prochains_evenements'), true);
+            },
+
+            isImportantDateEvent(event) {
+                const explicit = this.customValue(event, 'widget_date_importante');
+                if (explicit !== undefined && explicit !== null && explicit !== '') {
+                    return this.booleanValue(explicit, false);
+                }
+                return this.tagsValue(event).some(tag => tag.toLowerCase() === 'date importante');
+            },
+
+            customValue(event, fieldName) {
+                const field = (this.entityData?.customFields || []).find(f => f.name === fieldName);
+                if (!field) return undefined;
+                const cf = (event.customFields || []).find(item => {
+                    const fid = item.field_id?._id || item.field_id;
+                    return String(fid || '') === String(field._id || '');
+                });
+                return cf ? cf.value : undefined;
+            },
+
+            tagsValue(event) {
+                const value = this.customValue(event, 'tags_evenement');
+                if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+                if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean);
+                return [];
+            },
+
+            booleanValue(value, fallback = false) {
+                if (value === undefined || value === null || value === '') return fallback;
+                if (typeof value === 'boolean') return value;
+                if (typeof value === 'number') return value !== 0;
+                const token = String(value).trim().toLowerCase();
+                if (['true', '1', 'yes', 'oui', 'on'].includes(token)) return true;
+                if (['false', '0', 'no', 'non', 'off'].includes(token)) return false;
+                return fallback;
+            },
+
+            formatEvent(event) {
+                const d = new Date(event.date);
+                const statusCls = this.entityData?.statusClassification;
+                const cv = (event.classificationValues || []).find(c => {
+                    const cid = c.classificationId?._id || c.classificationId;
+                    return String(cid || '') === String(statusCls?._id || '');
+                });
+                const opt = cv ? (statusCls?.options || []).find(o => String(o._id || '') === String(cv.optionId || '')) : null;
+                return {
+                    title: event.title || 'Sans titre',
+                    day: d.getDate().toString().padStart(2, '0'),
+                    month: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase(),
+                    time: d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                    status: opt?.label || 'Planifié',
+                    color: opt?.color || (this.isImportantMode ? '#f59e0b' : '#14b8a6')
+                };
+            },
+
+            toLocalDateTime(date) {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                const h = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${y}-${m}-${d}T${h}:${min}`;
+            }
+        }));
+
         // ═══ Overview Layout Builder ═══
         Alpine.data('ovLayoutBuilder', () => ({
             layoutMode: false,
@@ -1417,12 +1609,12 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             _defaultRows: [
                 { id: 'r1', columns: [{ id: 'c1', width: 8, widgetIds: ['fields'] }, { id: 'c2', width: 4, widgetIds: ['tasks','docs'] }] },
                 { id: 'r2', columns: [{ id: 'c3', width: 12, widgetIds: ['drive'] }] },
-                { id: 'r3', columns: [{ id: 'c4', width: 12, widgetIds: ['agenda'] }] }
+                { id: 'r3', columns: [{ id: 'c4', width: 12, widgetIds: ['agenda', 'important-dates'] }] }
             ],
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
             _viewId: 'overview_<%= entity._id %>',
-            _layoutVersion: 2,
+            _layoutVersion: 3,
             gridSchemas: [],
             customWidgets: {},
             _overviewWidgetListener: null,
@@ -1506,11 +1698,27 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 }));
 
                 if (storedVersion < this._layoutVersion) {
-                    const standardIds = ['fields', 'tasks', 'docs', 'drive', 'agenda', 'notes'];
+                    const standardIds = ['fields', 'tasks', 'docs', 'drive', 'agenda', 'important-dates', 'notes'];
                     const placedStandardIds = this._collectWidgetIds(rows).filter(id => standardIds.includes(id));
                     if (placedStandardIds.length === 1 && placedStandardIds[0] === 'fields') {
                         rows = JSON.parse(JSON.stringify(this._defaultRows));
                         changed = true;
+                    }
+                }
+
+                if (storedVersion < 3) {
+                    const placed = this._collectWidgetIds(rows);
+                    if (placed.includes('agenda') && !placed.includes('important-dates')) {
+                        let inserted = false;
+                        rows.forEach(row => (row.columns || []).forEach(col => {
+                            if (inserted) return;
+                            const idx = (col.widgetIds || []).indexOf('agenda');
+                            if (idx >= 0) {
+                                col.widgetIds.splice(idx + 1, 0, 'important-dates');
+                                inserted = true;
+                                changed = true;
+                            }
+                        }));
                     }
                 }
 
@@ -1760,6 +1968,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                         color: '#00ab55'
                     })),
                     { id: 'agenda', label: 'Rendez-vous', icon: 'solar:calendar-bold-duotone', color: '#14b8a6' },
+                    { id: 'important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b' },
                     { id: 'notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6' }
                 ];
                 const placed = this._placedWidgets();
@@ -1843,6 +2052,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     'overview-docs': 'docs',
                     'overview-drive': 'drive',
                     'overview-agenda': 'agenda',
+                    'overview-important-dates': 'important-dates',
                     'overview-notes': 'notes'
                 };
                 if (overviewWidgetMap[type]) return [overviewWidgetMap[type]];

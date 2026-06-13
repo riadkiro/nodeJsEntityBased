@@ -84,7 +84,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
             const fid = c.field_id?._id || c.field_id
             return fid?.toString() === field._id?.toString()
         })
-        return cf?.value || null
+        return cf ? cf.value : null
     }, [entityData])
 
     const getStatusInfo = useCallback((record) => {

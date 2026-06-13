@@ -230,6 +230,7 @@ async function renderPdfTemplateDocumentHtml(doc, accountNumber, options = {}) {
     const docDims = doc?.dimensions || { width: 794, height: 1123 };
     const pageCount = Math.max(1, pdfDoc.numPages || Number(template.pageCount || 1));
     const fields = Array.isArray(template.fields) ? template.fields : [];
+    const hideBackground = Boolean(template.hideBackground);
     const baseUrl = options.baseUrl || '';
 
     let pagesHtml = '';
@@ -247,7 +248,9 @@ async function renderPdfTemplateDocumentHtml(doc, accountNumber, options = {}) {
         const isLast = i === pageCount - 1;
 
         pagesHtml += `<div class="doc-page pdf-template-page" style="width:${pageWidth}px;height:${pageHeight}px;min-height:${pageHeight}px;max-height:${pageHeight}px;${!isLast ? 'page-break-after:always;' : ''}">`;
-        pagesHtml += `<img class="pdf-template-bg" src="${rendered.dataUrl}" alt="">`;
+        if (!hideBackground) {
+            pagesHtml += `<img class="pdf-template-bg" src="${rendered.dataUrl}" alt="">`;
+        }
         pagesHtml += pageFields;
         pagesHtml += `</div>`;
     }

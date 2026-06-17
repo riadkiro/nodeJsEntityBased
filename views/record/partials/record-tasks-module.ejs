@@ -1023,10 +1023,345 @@
     .dark .tl-color-grid { background: #1b2e4b; border-color: #253b5c; }
     .dark .tl-card-count { color: #506690; }
     .dark .tl-card-progress { background: #253b5c; }
+    /* ─── Pro tasks surface refresh ─── */
+    .tl-wrap { max-width: none; }
+    .tl-pro-header {
+        display:flex;align-items:center;justify-content:space-between;gap:14px;
+        margin-bottom:14px;padding:14px 16px;border:1px solid #e8ecf1;border-radius:14px;
+        background:linear-gradient(135deg,#fff 0%,#fbfcff 70%,#f7f8ff 100%);
+        box-shadow:0 10px 30px rgba(15,23,42,.035);
+    }
+    .tl-pro-title { display:flex;align-items:center;gap:12px;min-width:0; }
+    .tl-pro-title-icon {
+        width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(135deg,#6366f118,#6366f108);color:#6366f1;flex:0 0 auto;
+    }
+    .tl-pro-title h2 { margin:0;font-size:18px;font-weight:850;color:#111827;letter-spacing:0; }
+    .tl-pro-title p { margin:3px 0 0;color:#7c89a6;font-size:12px;font-weight:500;line-height:1.35; }
+    .tl-pro-actions { display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end; }
+    .tl-mode-segment {
+        display:inline-flex;align-items:center;border:1px solid #dfe6f2;background:#fff;border-radius:10px;padding:3px;
+    }
+    .tl-mode-segment button {
+        height:34px;border:0;background:transparent;border-radius:8px;padding:0 13px;color:#64748b;
+        font-family:inherit;font-size:12px;font-weight:800;display:inline-flex;align-items:center;gap:6px;
+        cursor:pointer;transition:all .16s;
+    }
+    .tl-mode-segment button.active { background:#eef2ff;color:#4f46e5;box-shadow:0 1px 3px rgba(15,23,42,.06); }
+    .tl-mode-segment button:disabled { opacity:.45;cursor:not-allowed; }
+    .tl-pro-btn,.tl-pro-primary,.tl-pro-icon-btn {
+        height:38px;border-radius:10px;border:1px solid #dfe6f2;background:#fff;color:#475569;
+        font-family:inherit;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;
+        gap:7px;padding:0 13px;cursor:pointer;transition:all .17s;white-space:nowrap;
+    }
+    .tl-pro-btn:hover,.tl-pro-icon-btn:hover { border-color:#c7d2fe;color:#4f46e5;background:#fbfcff; }
+    .tl-pro-primary {
+        border-color:#4f46e5;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;
+        box-shadow:0 10px 22px rgba(79,70,229,.18);
+    }
+    .tl-pro-primary:hover { transform:translateY(-1px);box-shadow:0 12px 24px rgba(79,70,229,.24); }
+    .tl-pro-icon-btn { width:38px;padding:0; }
+    .tl-kpi-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px; }
+    .tl-kpi-card {
+        border:1px solid #e8ecf1;border-radius:12px;background:#fff;padding:14px 16px;
+        display:flex;align-items:center;gap:12px;transition:all .18s;
+    }
+    .tl-kpi-card:hover { transform:translateY(-1px);box-shadow:0 12px 24px rgba(15,23,42,.055);border-color:#d7deea; }
+    .tl-kpi-icon { width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:0 0 auto; }
+    .tl-kpi-card strong { display:block;color:#111827;font-size:17px;font-weight:850;line-height:1; }
+    .tl-kpi-card span { display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:600; }
+    .tl-list-toolbar-legacy { display:none!important; }
+    .tl-overview-layout { grid-template-columns:minmax(0,1fr) 292px;gap:18px; }
+    .tl-card {
+        border-color:#e8ecf1;border-radius:13px;padding:14px 16px;box-shadow:0 10px 28px rgba(15,23,42,.026);
+    }
+    .tl-card:hover { transform:none;box-shadow:0 12px 24px rgba(15,23,42,.055);border-color:#d7deea; }
+    .tl-card-icon { border-radius:10px; }
+    .tl-card-name { font-size:14px;font-weight:850;color:#111827; }
+    .tl-card-count { font-size:12px;font-weight:600;color:#7c89a6;display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+    .tl-kanban-link { text-decoration:none;font-weight:800; }
+    .tl-card-progress { height:4px;width:76px;background:#eef2f7;border-radius:999px; }
+    .tl-card-preview { padding:10px 0 0 44px;border-color:#eef2f7;margin-top:12px; }
+    .tl-preview-item {
+        min-height:42px;padding:0 8px;border-bottom:1px solid #f1f4f8;border-radius:0;color:#475569;
+    }
+    .tl-preview-item:hover { margin:0;padding:0 8px;background:#fbfcff;border-radius:8px; }
+    .tl-preview-title { font-size:12.8px;font-weight:750;color:#172033; }
+    .tl-preview-status { border-radius:999px;padding:3px 9px;font-size:10px; }
+    .tl-preview-add { min-height:38px;padding:0;color:#9aa6bf; }
+    .tl-preview-add input { font-size:12.5px;font-weight:650; }
+    .tl-progress-panel { border-radius:13px;box-shadow:0 10px 28px rgba(15,23,42,.03); }
+    .dark .tl-pro-header {
+        background:linear-gradient(135deg,#0e1726 0%,#0b1320 100%);border-color:#253b5c;box-shadow:none;
+    }
+    .dark .tl-pro-title h2,.dark .tl-kpi-card strong { color:#e0e6ed; }
+    .dark .tl-pro-title p,.dark .tl-kpi-card span { color:#8ea0bd; }
+    .dark .tl-mode-segment,.dark .tl-pro-btn,.dark .tl-pro-icon-btn,.dark .tl-kpi-card {
+        background:#0e1726;border-color:#253b5c;color:#e0e6ed;box-shadow:none;
+    }
+    .dark .tl-mode-segment button.active { background:#17233a;color:#a5b4fc; }
+    .dark .tl-card { background:#0e1726;border-color:#253b5c;box-shadow:none; }
+    .dark .tl-card:hover { border-color:#355276;box-shadow:none; }
+    .dark .tl-card-name,.dark .tl-preview-title { color:#e0e6ed; }
+    .dark .tl-preview-item { border-color:#253b5c; }
+    .dark .tl-preview-item:hover { background:#111f35; }
+    /* Unified compact table surface, shared visually with Tasks Hub */
+    .tl-pro-header { padding:12px 14px;margin-bottom:12px;border-radius:13px; }
+    .tl-pro-title-icon { width:38px;height:38px;border-radius:11px; }
+    .tl-pro-title h2 { font-size:17px;line-height:1.1;font-weight:780; }
+    .tl-pro-title p { font-size:11.5px; }
+    .tl-mode-segment button { height:32px;font-size:11.5px;padding:0 12px; }
+    .tl-pro-btn,.tl-pro-primary,.tl-pro-icon-btn { height:36px;font-size:11.5px;border-radius:9px; }
+    .tl-pro-icon-btn { width:36px; }
+    .tl-kpi-grid { gap:10px;margin-bottom:14px; }
+    .tl-kpi-card { padding:12px 14px;border-radius:11px; }
+    .tl-kpi-icon { width:36px;height:36px;border-radius:10px; }
+    .tl-kpi-card strong { font-size:16px; }
+    .tl-kpi-card span { font-size:11.5px; }
+    .tl-overview-layout { grid-template-columns:minmax(0,1fr) 300px;gap:18px;overflow:visible; }
+    .tl-overview-main { overflow:visible;position:relative; }
+    .tl-record-list-stack { display:flex;flex-direction:column;gap:10px;overflow:visible;position:relative; }
+    .tl-record-section {
+        display:block;padding:0;overflow:visible;border:1px solid #e8ecf1;border-radius:13px;
+        background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.026);cursor:default;margin-bottom:10px;
+        position:relative;z-index:1;
+    }
+    .tl-record-section-menu-open { z-index:80; }
+    .tl-record-section.tl-card { margin-bottom:0; }
+    .tl-record-section:hover {
+        transform:none;border-color:#d7deea;box-shadow:0 12px 24px rgba(15,23,42,.055);
+    }
+    .tl-record-section-head {
+        min-height:56px;display:grid;grid-template-columns:22px 34px minmax(0,1fr) 84px 24px;
+        gap:10px;align-items:center;padding:0 14px;background:#fff;cursor:pointer;border-radius:12px;
+    }
+    .tl-record-section.tl-card-expanded .tl-record-section-head { border-radius:12px 12px 0 0; }
+    .tl-record-section-head .tl-list-drag { opacity:.35;margin:0;width:18px;height:24px; }
+    .tl-record-section:hover .tl-list-drag { opacity:1; }
+    .tl-record-icon {
+        width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    }
+    .tl-record-list-name { font-size:13.5px;font-weight:720;color:#111827;line-height:1.2; }
+    .tl-record-meta { display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px;color:#7c89a6;font-size:11.5px;font-weight:650; }
+    .tl-record-progress {
+        height:4px;border-radius:999px;background:#eef2f7;overflow:hidden;
+    }
+    .tl-record-progress > span { display:block;height:100%;border-radius:999px;transition:width .2s; }
+    .tl-record-chevron { color:#a7b3c8;transition:transform .18s,color .18s; }
+    .tl-record-chevron.expanded { transform:rotate(180deg);color:#4f46e5; }
+    .tl-table-body { border-top:1px solid #eef2f7;background:#fff;overflow:visible;border-radius:0 0 12px 12px; }
+    .sortable-tasks-container { overflow:visible;position:relative; }
+    .tl-record-row {
+        min-height:46px;display:grid;grid-template-columns:42px minmax(180px,1.45fr) minmax(92px,.45fr) minmax(88px,.38fr) minmax(76px,.34fr) minmax(74px,.32fr) 26px;
+        gap:10px;align-items:center;padding:0 14px;border-bottom:1px solid #f1f4f8;transition:background .15s,box-shadow .15s;cursor:pointer;
+        position:relative;z-index:1;
+    }
+    .tl-record-row:last-child { border-bottom:0; }
+    .tl-record-row:hover,
+    .tl-record-row:focus-within {
+        background:#fbfcff;box-shadow:inset 3px 0 0 var(--row-accent,#6366f1);border-radius:0;
+    }
+    .tl-record-row:first-child:hover,
+    .tl-record-row:first-child:focus-within,
+    .tl-record-row:last-child:hover,
+    .tl-record-row:last-child:focus-within { border-radius:0; }
+    .tl-record-row.tl-row-menu-open { z-index:90; }
+    .tl-record-row.sortable-ghost { opacity:.35;background:#eef2ff;transform:scale(.98); }
+    .tl-record-row.sortable-chosen { background:#fbfcff; }
+    .tl-priority-section .tl-record-row {
+        grid-template-columns:42px minmax(160px,1.22fr) minmax(92px,.42fr) minmax(82px,.34fr) minmax(88px,.38fr) minmax(76px,.34fr) minmax(74px,.32fr) 26px;
+    }
+    .tl-priority-section {
+        background:linear-gradient(180deg,#fffefb 0%,#ffffff 100%);
+        border-color:#efe8d8;
+        box-shadow:0 10px 28px rgba(15,23,42,.026);
+    }
+    .tl-priority-section:hover {
+        border-color:#e8deca;
+        box-shadow:0 12px 24px rgba(15,23,42,.045);
+    }
+    .tl-priority-section .tl-record-section-head {
+        background:linear-gradient(180deg,#fffefb 0%,#fffdf8 100%);
+    }
+    .tl-priority-section .tl-table-body {
+        background:#fffefc;
+        border-top-color:#f0e8d8;
+    }
+    .tl-priority-section .tl-record-row {
+        background:rgba(255,255,255,.72);
+        border-bottom-color:#f2eadb;
+    }
+    .tl-priority-section .tl-record-row:hover,
+    .tl-priority-section .tl-record-row:focus-within {
+        background:#fffdf5;
+    }
+    .tl-record-row.done .tl-row-title { color:#94a3b8;text-decoration:line-through; }
+    .tl-row-check {
+        width:17px;height:17px;border:1.7px solid #cbd5e1;border-radius:5px;background:#fff;
+        display:flex;align-items:center;justify-content:center;color:#fff;transition:all .16s;
+    }
+    .tl-row-check.checked { background:#10b981;border-color:#10b981; }
+    .tl-row-check svg { width:10px;height:10px;opacity:0; }
+    .tl-row-check.checked svg { opacity:1; }
+    .tl-row-title { font-size:12.8px;font-weight:620;color:#172033;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .tl-task-title,.tl-preview-title,.tl-kb-card-title { font-weight:620; }
+    .tl-detail-title-input { font-size:20px;font-weight:650; }
+    .tl-row-sub { display:flex;align-items:center;gap:6px;margin-top:4px;color:#7c89a6;font-size:10.8px;font-weight:650; }
+    .tl-mini-chip {
+        height:21px;padding:0 8px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;
+        font-size:10.5px;font-weight:800;white-space:nowrap;background:#f8fafc;border:1px solid #e8ecf1;color:#64748b;
+    }
+    .tl-row-assignee,.tl-row-date {
+        display:flex;align-items:center;gap:7px;color:#64748b;font-size:11.5px;font-weight:620;min-width:0;
+    }
+    .tl-row-assignee span:last-child,.tl-row-date span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .tl-row-avatar {
+        width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#ddd6fe,#f5d0fe);
+        color:#5b21b6;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:850;flex:0 0 auto;border:2px solid #fff;
+    }
+    .tl-row-pill {
+        justify-self:start;height:22px;padding:0 8px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;
+        font-size:10.5px;font-weight:680;white-space:nowrap;
+    }
+    .tl-row-menu { color:#7c89a6;display:flex;align-items:center;justify-content:center; }
+    .tl-record-add {
+        min-height:38px;display:flex;align-items:center;gap:7px;padding:0 16px;color:#9aa6bf;
+        border-top:1px solid #f6f8fb;font-size:12px;font-weight:650;border-radius:0 0 12px 12px;
+    }
+    .tl-priority-section .tl-record-add {
+        background:rgba(255,254,250,.82);
+        border-top-color:#f0e8d8;
+    }
+    .tl-record-add input { flex:1;min-width:0;border:0;outline:0;background:transparent;color:#0f172a;font:inherit;font-weight:650; }
+    .tl-record-add input::placeholder { color:#b8c3d5; }
+    .tl-record-empty { padding:18px 16px;color:#9aa6bf;font-size:12px;font-weight:650;font-style:italic;border-bottom:1px solid #f1f4f8; }
+    .tl-row-status-wrap { position:relative;justify-self:start;z-index:25; }
+    .tl-row-status-wrap .tl-preview-smenu { right:0;top:calc(100% + 4px);z-index:220; }
+    .tl-row-status-wrap.flip-up .tl-preview-smenu { top:auto;bottom:calc(100% + 4px); }
+    .tl-task-side { display:flex;flex-direction:column;gap:14px; }
+    .tl-side-panel {
+        border:1px solid #e8ecf1;border-radius:13px;background:#fff;padding:16px;box-shadow:0 10px 28px rgba(15,23,42,.03);
+    }
+    .tl-side-kpi-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+    .tl-side-kpi {
+        border:1px solid #e8ecf1;border-radius:11px;background:#fff;padding:11px 10px;
+        display:flex;align-items:center;gap:10px;min-width:0;
+    }
+    .tl-side-kpi-icon {
+        width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    }
+    .tl-side-kpi strong { display:block;color:#111827;font-size:15px;font-weight:900;line-height:1; }
+    .tl-side-kpi span { display:block;margin-top:5px;color:#64748b;font-size:10.5px;font-weight:750;line-height:1.2; }
+    .tl-side-head { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px; }
+    .tl-side-title { display:flex;align-items:center;gap:8px;margin:0;color:#111827;font-size:13.5px;font-weight:760;line-height:1.2; }
+    .tl-side-link { color:#4f46e5;font-size:11.5px;font-weight:800;text-decoration:none; }
+    .tl-side-chip {
+        height:24px;min-width:38px;padding:0 9px;border-radius:999px;background:#eef2ff;color:#4f46e5;
+        display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;
+    }
+    .tl-side-donut-row { display:flex;align-items:center;gap:16px; }
+    .tl-side-donut {
+        width:104px;height:104px;border-radius:50%;position:relative;flex:0 0 auto;
+    }
+    .tl-side-donut::after { content:'';position:absolute;inset:17px;border-radius:50%;background:#fff; }
+    .tl-side-donut-center { position:absolute;inset:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1; }
+    .tl-side-donut-center b { color:#111827;font-size:22px;font-weight:900;line-height:1; }
+    .tl-side-donut-center span { margin-top:3px;color:#7c89a6;font-size:9px;font-weight:850;text-transform:uppercase; }
+    .tl-side-legend { flex:1;display:flex;flex-direction:column;gap:9px;min-width:0; }
+    .tl-side-legend-row { display:flex;align-items:center;gap:8px;color:#475569;font-size:12px;font-weight:650; }
+    .tl-side-dot { width:8px;height:8px;border-radius:999px;flex:0 0 auto; }
+    .tl-side-legend-row b { margin-left:auto;color:#111827;font-weight:850; }
+    .tl-side-metrics { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #eef2f7; }
+    .tl-side-metric { border-radius:10px;background:#f8fafc;padding:11px 8px;text-align:center; }
+    .tl-side-metric b { display:block;color:#111827;font-size:15px;font-weight:900;line-height:1; }
+    .tl-side-metric span { display:block;margin-top:6px;color:#7c89a6;font-size:9.5px;font-weight:850;text-transform:uppercase; }
+    .tl-side-bars { height:106px;display:grid;grid-template-columns:repeat(7,1fr);gap:7px;align-items:end;border-bottom:1px solid #eef2f7;padding-bottom:10px; }
+    .tl-side-bar-wrap { height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px; }
+    .tl-side-bar-bg { width:16px;height:84px;border-radius:8px;background:#f1f5f9;display:flex;align-items:end;justify-content:center;overflow:hidden; }
+    .tl-side-bar { width:16px;min-height:8px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#a5b4fc,#6366f1);box-shadow:0 8px 20px rgba(99,102,241,.18); }
+    .tl-side-bar-label { font-size:10px;font-weight:750;color:#7c89a6; }
+    .tl-side-action { display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f4f8; }
+    .tl-side-action:last-child { border-bottom:0; }
+    .tl-side-action-icon { width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 auto; }
+    .tl-side-action-title { color:#172033;font-size:12.5px;font-weight:680;line-height:1.25; }
+    .tl-detail-select {
+        width:100%;padding:5px 8px;border:1.5px solid transparent;border-radius:6px;
+        background:#f8fafc;color:#0e1726;font-size:12px;font-family:inherit;outline:none;
+    }
+    .tl-detail-select:focus { border-color:#4361ee;background:#fff; }
+    .tl-side-action-sub { margin-top:3px;color:#7c89a6;font-size:11px;font-weight:650; }
+    .tl-side-empty { color:#94a3b8;font-size:12px;font-weight:650;padding:4px 0 2px; }
+    .dark .tl-record-section,.dark .tl-record-section-head,.dark .tl-table-body,.dark .tl-side-panel {
+        background:#0e1726;border-color:#253b5c;box-shadow:none;
+    }
+    .dark .tl-record-section:hover,.dark .tl-record-row:hover { border-color:#355276;box-shadow:none; }
+    .dark .tl-record-row:hover { background:#111f35; }
+    .dark .tl-record-list-name,.dark .tl-row-title,.dark .tl-side-title,.dark .tl-side-donut-center b,.dark .tl-side-legend-row b,.dark .tl-side-metric b,.dark .tl-side-action-title { color:#e0e6ed; }
+    .dark .tl-record-meta,.dark .tl-row-sub,.dark .tl-row-assignee,.dark .tl-row-date,.dark .tl-side-donut-center span,.dark .tl-side-legend-row,.dark .tl-side-action-sub { color:#8ea0bd; }
+    .dark .tl-table-body,.dark .tl-record-row,.dark .tl-record-add,.dark .tl-side-metrics,.dark .tl-side-action,.dark .tl-side-bars { border-color:#253b5c; }
+    .dark .tl-record-progress,.dark .tl-side-bar-bg { background:#17233a; }
+    .dark .tl-side-donut::after { background:#0e1726; }
+    .dark .tl-side-kpi,.dark .tl-side-metric,.dark .tl-mini-chip { background:#111f35;border-color:#253b5c;color:#9fb0cb; }
+    .dark .tl-side-kpi strong { color:#e0e6ed; }
+    .dark .tl-side-kpi span { color:#8ea0bd; }
+    .dark .tl-record-add input { color:#e0e6ed; }
+    .dark .tl-detail-select { background:#1b2e4b;color:#e0e6ed; }
+    .dark .tl-priority-section {
+        background:#0e1726;
+        border-color:#3a3153;
+        box-shadow:none;
+    }
+    .dark .tl-priority-section:hover { border-color:#4a4263;box-shadow:none; }
+    .dark .tl-priority-section .tl-record-section-head,
+    .dark .tl-priority-section .tl-table-body,
+    .dark .tl-priority-section .tl-record-add {
+        background:#0e1726;
+        border-color:#253b5c;
+    }
+    .dark .tl-priority-section .tl-record-row {
+        background:transparent;
+        border-color:#253b5c;
+    }
+    .dark .tl-priority-section .tl-record-row:hover,
+    .dark .tl-priority-section .tl-record-row:focus-within {
+        background:#111f35;
+    }
+    /* Align task typography with the record Overview surface */
+    .tl-pro-title h2 { font-size:14px;font-weight:700;color:#0e1726;line-height:1.25; }
+    .tl-pro-title p { font-size:12px;font-weight:500;color:#888da8;line-height:1.35; }
+    .tl-mode-segment button,.tl-pro-btn,.tl-pro-primary,.tl-pro-icon-btn { font-weight:600; }
+    .tl-record-list-name { font-size:13.5px;font-weight:600;color:#0e1726; }
+    .tl-record-meta { color:#888da8;font-size:11.5px;font-weight:500; }
+    .tl-kanban-link { font-weight:600; }
+    .tl-row-title { font-size:12.5px;font-weight:600;color:#1e293b;line-height:1.3; }
+    .tl-task-title,.tl-preview-title,.tl-kb-card-title { font-weight:600; }
+    .tl-row-sub,.tl-row-assignee,.tl-row-date { color:#888da8;font-weight:500; }
+    .tl-mini-chip { font-weight:600;color:#64748b; }
+    .tl-row-pill { font-weight:600; }
+    .tl-record-add,.tl-record-add input,.tl-record-empty { font-weight:500; }
+    .tl-side-title { font-size:14px;font-weight:700;color:#0e1726; }
+    .tl-side-link { font-weight:500;color:#888da8; }
+    .tl-side-action-title { color:#1e293b;font-weight:600; }
+    .tl-side-action-sub,.tl-side-empty { color:#888da8;font-weight:500; }
+    .tl-side-kpi strong,.tl-side-metric b,.tl-side-legend-row b { font-weight:700; }
+    .tl-side-kpi span,.tl-side-metric span,.tl-side-bar-label { font-weight:600; }
+    .tl-detail-title-input { font-size:20px;font-weight:600;color:#0e1726; }
+    .tl-detail-header-title,.tl-detail-prop-label { color:#94a3b8;font-weight:600; }
+    .tl-detail-textarea,.tl-detail-text-input,.tl-detail-date-input,.tl-detail-select { font-size:13px;font-weight:500;color:#0e1726; }
+    .tl-pill { font-size:12px;font-weight:600; }
+    .tl-pill-menu button,.tl-preview-smenu button { font-weight:500; }
     @media (max-width: 1040px) {
         .tl-overview-layout { grid-template-columns: 1fr; }
-        .tl-progress-panel { position: static; order: -1; }
+        .tl-progress-panel,.tl-task-side { position: static; order: -1; }
         .tl-list-toolbar { justify-content: flex-start; }
+        .tl-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .tl-pro-header { align-items:flex-start;flex-direction:column; }
+        .tl-pro-actions { justify-content:flex-start; }
+        .tl-record-row { grid-template-columns:42px minmax(0,1fr) 30px; }
+        .tl-record-row > .tl-row-assignee,
+        .tl-record-row > .tl-row-date,
+        .tl-record-row > .tl-row-pill,
+        .tl-record-row > .tl-row-status-wrap { display:none; }
     }
     @media (max-width: 560px) {
         .tl-progress-body { align-items: flex-start; flex-direction: column; }
@@ -1043,7 +1378,42 @@
     <template x-if="!activeList && !kanbanList">
         <div class="tl-overview-layout">
             <div class="tl-overview-main">
-                <div class="tl-list-toolbar" x-show="!addingList">
+                <div class="tl-pro-header">
+                    <div class="tl-pro-title">
+                        <div class="tl-pro-title-icon">
+                            <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="22"></iconify-icon>
+                        </div>
+                        <div>
+                            <h2>Tâches</h2>
+                            <p>Listes et kanban de ce record</p>
+                        </div>
+                    </div>
+                    <div class="tl-pro-actions">
+                        <div class="tl-mode-segment">
+                            <button type="button" class="active">
+                                <iconify-icon icon="solar:list-bold-duotone" width="15"></iconify-icon>
+                                Liste
+                            </button>
+                            <button type="button" :disabled="lists.length === 0" @click="openDefaultKanban()">
+                                <iconify-icon icon="solar:widget-5-bold-duotone" width="15"></iconify-icon>
+                                Kanban
+                            </button>
+                        </div>
+                        <button type="button" class="tl-pro-btn" @click="addingList = true; $nextTick(() => { if ($refs.newListInput) $refs.newListInput.focus(); })">
+                            <iconify-icon icon="solar:add-circle-linear" width="15"></iconify-icon>
+                            Nouvelle liste
+                        </button>
+                        <button type="button" class="tl-pro-primary" @click="focusQuickAdd()">
+                            <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+                            Nouvelle tâche
+                        </button>
+                        <button type="button" class="tl-pro-icon-btn">
+                            <iconify-icon icon="solar:menu-dots-bold" width="17"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tl-list-toolbar tl-list-toolbar-legacy" x-show="!addingList">
                     <button type="button" class="tl-add-list-btn" @click="addingList = true; $nextTick(() => { if ($refs.newListInput) $refs.newListInput.focus(); })">
                         <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
                         Ajouter une liste de tâches
@@ -1071,29 +1441,112 @@
                     <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
                 </div>
 
-                <!-- List cards -->
-                <div class="tl-grid tl-list-grid" x-show="!loading"
+                <!-- Day priority view (independent from the real task list) -->
+                <section class="tl-record-section tl-priority-section" x-show="!loading" :class="{'tl-record-section-menu-open': isSectionMenuOpen(null, 'priority'), 'tl-card-expanded': priorityExpanded}">
+                    <div class="tl-record-section-head" @click="priorityExpanded = !priorityExpanded" style="grid-template-columns:22px 34px minmax(0,1fr) 84px 24px">
+                        <span></span>
+                        <div class="tl-record-icon" style="background:#f5f3ff;color:#6366f1">
+                            <iconify-icon icon="solar:star-bold-duotone" width="17"></iconify-icon>
+                        </div>
+                        <div style="min-width:0">
+                            <div class="tl-record-list-name">Priorité du jour</div>
+                            <div class="tl-record-meta">
+                                <span><span x-text="priorityTasks.length"></span> tâche<span x-show="priorityTasks.length !== 1">s</span></span>
+                                <template x-if="priorityDoneCount > 0">
+                                    <span style="color:#10b981">· <span x-text="priorityDoneCount"></span> terminée<span x-show="priorityDoneCount !== 1">s</span></span>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="tl-record-progress" x-show="priorityTasks.length > 0">
+                            <span :style="'width:' + priorityCompletionPct + '%;background:#6366f1'"></span>
+                        </div>
+                        <iconify-icon icon="solar:alt-arrow-down-linear" width="15" class="tl-record-chevron" :class="{'expanded': priorityExpanded}" @click.stop="priorityExpanded = !priorityExpanded"></iconify-icon>
+                    </div>
+
+                    <div class="tl-table-body" x-show="priorityExpanded" x-collapse @click.stop>
+                        <template x-for="pt in priorityTasks" :key="'priority-' + pt._id">
+                            <div class="tl-record-row" :class="{'done': pt.status === 'Terminé', 'tl-row-menu-open': isStatusMenuOpen(pt, pt._list, 'priority')}"
+                                 :style="'--row-accent:' + taskAccent(pt, pt._list)"
+                                 @click.stop="openDetail(pt._list, pt)"
+                                 @contextmenu.prevent.stop="openTaskCtx($event, pt._list, pt)">
+                                <div style="display:flex;align-items:center;gap:7px">
+                                    <span style="width:12px"></span>
+                                    <div class="tl-row-check" :class="{'checked': pt.status === 'Terminé'}" @click.stop="previewToggle(pt._list, pt)">
+                                        <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </div>
+                                </div>
+                                <div style="min-width:0">
+                                    <div class="tl-row-title" x-text="pt.title"></div>
+                                </div>
+                                <div>
+                                    <span class="tl-mini-chip">
+                                        <iconify-icon icon="solar:list-linear" width="12"></iconify-icon>
+                                        <span x-text="pt._list?.label || 'À faire'"></span>
+                                    </span>
+                                </div>
+                                <div class="tl-row-assignee">
+                                    <span class="tl-row-avatar" x-text="taskAssigneeInitials(pt)"></span>
+                                    <span x-text="taskAssigneeLabel(pt)"></span>
+                                </div>
+                                <div class="tl-row-date">
+                                    <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
+                                    <span x-text="formatTaskDate(pt.dueDate || pt.createdAt)"></span>
+                                </div>
+                                <span class="tl-row-pill" :style="priorityStyle(pt.priority)" x-text="pt.priority || 'Aucune'"></span>
+                                <div class="tl-row-status-wrap" :class="{'flip-up': isStatusMenuOpen(pt, pt._list, 'priority') && previewStatusFlip}">
+                                    <span class="tl-row-pill"
+                                          :style="statusPillStyle(pt.status, pt.statusColor)"
+                                          x-text="pt.status || 'À faire'"
+                                          @click.stop="toggleStatusMenu($event, pt, pt._list, 'priority')"></span>
+                                    <div class="tl-preview-smenu" x-show="isStatusMenuOpen(pt, pt._list, 'priority')" x-cloak @click.stop>
+                                        <template x-for="s in getStatuses(pt._list)" :key="s.label">
+                                            <button @click="previewSetStatus(pt._list, pt, s.label); previewStatusMenu = null">
+                                                <span class="tl-preview-sdot" :style="'background:' + s.color"></span>
+                                                <span x-text="s.label"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                                <iconify-icon class="tl-row-menu" icon="solar:menu-dots-bold" width="16" @click.stop="openTaskCtx($event, pt._list, pt)"></iconify-icon>
+                            </div>
+                        </template>
+                        <template x-if="priorityTasks.length === 0">
+                            <div class="tl-record-empty">Aucune priorité pour aujourd'hui</div>
+                        </template>
+                        <div class="tl-record-add">
+                            <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                            <input type="text" placeholder="Ajouter une priorité..." x-model="priorityNewTaskTitle"
+                                   x-init="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
+                                   @input="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
+                                   @keydown.enter="addPriorityTask()"
+                                   @keydown.escape="priorityNewTaskTitle = ''">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Compact table sections -->
+                <div class="tl-record-list-stack tl-list-grid" x-show="!loading"
                      x-init="$nextTick(() => initListSortable($el))"
                      x-effect="lists.length; $nextTick(() => initListSortable($el))">
                     <template x-for="(list, idx) in lists" :key="list._id">
-                        <div class="tl-card" :data-list-id="list._id" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === list._id}" :style="'animation-delay:' + idx * 50 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
-                            <div style="display:flex;align-items:center;gap:14px;width:100%" @click="if(editingListId !== list._id) toggleExpand(list._id)">
+                        <section class="tl-record-section tl-card" :data-list-id="list._id" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === 'list:' + list._id, 'tl-record-section-menu-open': isSectionMenuOpen(list, 'list')}" :style="'animation-delay:' + idx * 40 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
+                            <div class="tl-record-section-head" @click="if(editingListId !== list._id) toggleExpand(list._id)">
                                 <iconify-icon icon="solar:hamburger-menu-linear" width="14" class="tl-list-drag" @click.stop title="Réorganiser"></iconify-icon>
-                                <div class="tl-card-icon" :style="'background:' + list.color + '12'">
-                                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" :style="'color:' + list.color"></iconify-icon>
+                                <div class="tl-record-icon" :style="'background:' + list.color + '12'">
+                                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="17" :style="'color:' + list.color"></iconify-icon>
                                 </div>
-                                <div class="tl-card-body">
-                                    <div class="tl-card-name" x-show="editingListId !== list._id" x-text="list.label"></div>
-                                    <input x-show="editingListId === list._id" class="tl-inline-edit" style="font-size:14px;font-weight:600"
+                                <div style="min-width:0">
+                                    <div class="tl-record-list-name" x-show="editingListId !== list._id" x-text="list.label"></div>
+                                    <input x-show="editingListId === list._id" class="tl-inline-edit" style="font-size:13.5px;font-weight:800"
                                            x-model="editListLabel"
                                            @click.stop
                                            @keydown.enter="saveListName(list)"
                                            @keydown.escape="editingListId = null"
                                            @blur="saveListName(list)">
-                                    <div class="tl-card-count">
-                                        <span x-text="list.count"></span> tâche<span x-show="list.count !== 1">s</span>
+                                    <div class="tl-record-meta">
+                                        <span><span x-text="listTaskCount(list)"></span> tâche<span x-show="listTaskCount(list) !== 1">s</span></span>
                                         <template x-if="list.doneCount > 0">
-                                            <span style="margin-left:4px;color:#10b981">· <span x-text="list.doneCount"></span> terminée<span x-show="list.doneCount !== 1">s</span></span>
+                                            <span style="color:#10b981">· <span x-text="listDoneCount(list)"></span> terminée<span x-show="listDoneCount(list) !== 1">s</span></span>
                                         </template>
                                         <span class="tl-kanban-link" @click.stop="openKanban(list)">
                                             <iconify-icon icon="solar:widget-5-bold-duotone" width="12"></iconify-icon>
@@ -1101,86 +1554,87 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="tl-card-progress" x-show="list.count > 0">
-                                    <div class="tl-card-progress-bar" :style="'width:' + (list.count ? Math.round(list.doneCount/list.count*100) : 0) + '%;background:' + list.color"></div>
+                                <div class="tl-record-progress" x-show="listTaskCount(list) > 0">
+                                    <span :style="'width:' + listCompletionPct(list) + '%;background:' + list.color"></span>
                                 </div>
-                                <iconify-icon icon="solar:alt-arrow-right-linear" width="16" class="tl-card-toggle" :class="{'expanded': expandedListIds.includes(list._id)}" @click.stop="toggleExpand(list._id)"></iconify-icon>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="15" class="tl-record-chevron" :class="{'expanded': expandedListIds.includes(list._id)}" @click.stop="toggleExpand(list._id)"></iconify-icon>
                             </div>
 
-                            <!-- Expandable task preview -->
-                            <div class="tl-card-preview" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
+                            <div class="tl-table-body" x-show="expandedListIds.includes(list._id)" x-collapse @click.stop>
                                 <div class="sortable-tasks-container" :data-list-id="list._id"
                                      x-init="$nextTick(() => initPreviewSortable($el, list))"
                                      x-effect="if(expandedListIds.includes(list._id)) $nextTick(() => initPreviewSortable($el, list))">
-                                <template x-for="(pt, ptIdx) in (list.tasks || [])" :key="pt._id">
-                                    <div class="tl-preview-item" :class="{'done': pt.status === 'Terminé'}"
-                                     :data-task-id="pt._id"
-                                     @click.stop="openDetail(list, pt)"
-                                     @contextmenu.prevent.stop="openTaskCtx($event, list, pt)">
-                                    <iconify-icon icon="solar:hamburger-menu-linear" width="12" class="tl-preview-drag"></iconify-icon>
-                                    <div class="tl-preview-check" :class="{'checked': pt.status === 'Terminé'}" @click.stop="previewToggle(list, pt)">
-                                        <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    </div>
-                                    <div style="flex:1;min-width:0">
-                                        <div class="tl-preview-title" x-show="previewEditId !== pt._id" x-text="pt.title" @dblclick.stop="previewStartEdit(pt)"></div>
-                                        <input x-show="previewEditId === pt._id" class="tl-preview-edit"
-                                               x-model="previewEditTitle"
-                                               @click.stop
-                                               @keydown.enter="previewSaveTitle(pt)"
-                                               @keydown.escape="previewEditId = null"
-                                               @blur="previewSaveTitle(pt)">
-                                        <div class="tl-meta" x-show="pt.dueDate || pt.assignedTo || (pt.priority && pt.priority !== 'Aucune')">
-                                            <template x-if="pt.priority && pt.priority !== 'Aucune'">
-                                                <span class="tl-meta-chip" :style="'background:' + (pt.priorityColor||'#9ca3af') + '15;color:' + (pt.priorityColor||'#9ca3af')" x-text="pt.priority"></span>
-                                            </template>
-                                            <template x-if="pt.dueDate">
-                                                <span class="tl-meta-chip" :class="{'tl-meta-overdue': new Date(pt.dueDate) < new Date()}" :style="(!pt.dueDate || new Date(pt.dueDate) >= new Date()) ? 'background:#f1f5f9;color:#64748b' : ''">
-                                                    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 9H21" stroke="currentColor" stroke-width="2"/></svg>
-                                                    <span x-text="new Date(pt.dueDate).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})"></span>
-                                                </span>
-                                            </template>
-                                            <template x-if="pt.assignedTo">
-                                                <span class="tl-meta-avatar" x-text="pt.assignedTo.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()" :title="pt.assignedTo"></span>
-                                            </template>
+                                    <template x-for="(pt, ptIdx) in (list.tasks || [])" :key="pt._id">
+                                        <div class="tl-record-row" :class="{'done': pt.status === 'Terminé', 'tl-row-menu-open': isStatusMenuOpen(pt, list, 'list')}"
+                                             :style="'--row-accent:' + taskAccent(pt, list)"
+                                             :data-task-id="pt._id"
+                                             @click.stop="openDetail(list, pt)"
+                                             @contextmenu.prevent.stop="openTaskCtx($event, list, pt)">
+                                            <div style="display:flex;align-items:center;gap:7px">
+                                                <iconify-icon icon="solar:hamburger-menu-linear" width="12" class="tl-preview-drag" @click.stop></iconify-icon>
+                                                <div class="tl-row-check" :class="{'checked': pt.status === 'Terminé'}" @click.stop="previewToggle(list, pt)">
+                                                    <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </div>
+                                            </div>
+                                            <div style="min-width:0">
+                                                <div class="tl-row-title" x-show="previewEditId !== pt._id" x-text="pt.title" @dblclick.stop="previewStartEdit(pt)"></div>
+                                                <input x-show="previewEditId === pt._id" class="tl-preview-edit"
+                                                       x-model="previewEditTitle"
+                                                       @click.stop
+                                                       @keydown.enter="previewSaveTitle(pt)"
+                                                       @keydown.escape="previewEditId = null"
+                                                       @blur="previewSaveTitle(pt)">
+                                                <div class="tl-row-sub">
+                                                    <template x-if="pt.description">
+                                                        <span class="tl-mini-chip"><iconify-icon icon="solar:document-text-linear" width="12"></iconify-icon> Note</span>
+                                                    </template>
+                                                    <template x-if="isTaskOverdue(pt)">
+                                                        <span style="color:#ef4444;font-weight:850">En retard</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <div class="tl-row-assignee">
+                                                <span class="tl-row-avatar" x-text="taskAssigneeInitials(pt)"></span>
+                                                <span x-text="taskAssigneeLabel(pt)"></span>
+                                            </div>
+                                            <div class="tl-row-date">
+                                                <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
+                                                <span x-text="formatTaskDate(pt.dueDate || pt.createdAt)"></span>
+                                            </div>
+                                            <span class="tl-row-pill" :style="priorityStyle(pt.priority)" x-text="pt.priority || 'Aucune'"></span>
+                                            <div class="tl-row-status-wrap" :class="{'flip-up': isStatusMenuOpen(pt, list, 'list') && previewStatusFlip}">
+                                                <span class="tl-row-pill"
+                                                      :style="statusPillStyle(pt.status, pt.statusColor)"
+                                                      x-text="pt.status || 'À faire'"
+                                                      @click.stop="toggleStatusMenu($event, pt, list, 'list')"></span>
+                                                <div class="tl-preview-smenu" x-show="isStatusMenuOpen(pt, list, 'list')" x-cloak @click.stop>
+                                                    <template x-for="s in getStatuses(list)" :key="s.label">
+                                                        <button @click="previewSetStatus(list, pt, s.label); previewStatusMenu = null">
+                                                            <span class="tl-preview-sdot" :style="'background:' + s.color"></span>
+                                                            <span x-text="s.label"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <iconify-icon class="tl-row-menu" icon="solar:menu-dots-bold" width="16" @click.stop="openTaskCtx($event, list, pt)"></iconify-icon>
                                         </div>
-                                    </div>
-                                    <div class="tl-preview-status-wrap" :class="{'flip-up': previewStatusMenu === pt._id && previewStatusFlip}">
-                                        <span class="tl-preview-status"
-                                              :style="'background:' + (pt.statusColor||'#9ca3af') + '12;color:' + (pt.statusColor||'#9ca3af')"
-                                              x-text="pt.status || 'À faire'"
-                                              @click.stop="previewStatusMenu = previewStatusMenu === pt._id ? null : pt._id; previewStatusListId = previewStatusMenu ? list._id : null; previewStatusFlip = $event.clientY + 160 > window.innerHeight"></span>
-                                        <div class="tl-preview-smenu" x-show="previewStatusMenu === pt._id" x-cloak @click.stop>
-                                            <template x-for="s in statuses" :key="s.label">
-                                                <button @click="previewSetStatus(list, pt, s.label); previewStatusMenu = null">
-                                                    <span class="tl-preview-sdot" :style="'background:' + s.color"></span>
-                                                    <span x-text="s.label"></span>
-                                                </button>
-                                            </template>
-                                        </div>
-                                    </div>
+                                    </template>
                                 </div>
-                            </template>
+                                <template x-if="!list.tasks || list.tasks.length === 0">
+                                    <div class="tl-record-empty">Aucune tâche pour l'instant</div>
+                                </template>
+                                <div class="tl-record-add">
+                                    <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                                    <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask[list._id]"
+                                           x-init="previewNewTask[list._id] = normalizeDraftValue(previewNewTask[list._id])"
+                                           @input="previewNewTask[list._id] = normalizeDraftValue(previewNewTask[list._id])"
+                                           @keydown.enter="previewAddTask(list)"
+                                           @keydown.escape="previewNewTask[list._id] = ''">
+                                </div>
                             </div>
-                            <template x-if="list.count > 10">
-                                <div style="font-size:10.5px;color:#94a3b8;padding:4px 0 0;font-weight:500">+ <span x-text="list.count - 10"></span> autres tâches</div>
-                            </template>
-                            <template x-if="!list.tasks || list.tasks.length === 0">
-                                <div class="tl-preview-empty">Aucune tâche pour l'instant</div>
-                            </template>
-                            <!-- Quick add -->
-                            <div class="tl-preview-add">
-                                <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
-                                <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask[list._id]"
-                                       x-init="previewNewTask[list._id] = normalizeDraftValue(previewNewTask[list._id])"
-                                       @input="previewNewTask[list._id] = normalizeDraftValue(previewNewTask[list._id])"
-                                       @keydown.enter="previewAddTask(list)"
-                                       @keydown.escape="previewNewTask[list._id] = ''">
-                            </div>
-                        </div>
-
-                    </div>
-                </template>
-            </div>
+                        </section>
+                    </template>
+                </div>
 
             <!-- Empty -->
             <div class="tl-empty" x-show="!loading && lists.length === 0">
@@ -1190,51 +1644,123 @@
             </div>
             </div>
 
-            <aside class="tl-progress-panel" x-show="!loading" x-transition>
-                <div class="tl-progress-head">
-                    <div class="tl-progress-title">
-                        <iconify-icon icon="solar:chart-2-bold-duotone" width="17" style="color:#10b981"></iconify-icon>
-                        Avancement
-                    </div>
-                    <span class="tl-progress-pct" x-text="completionPct + '%'"></span>
-                </div>
-
-                <div class="tl-progress-body">
-                    <div class="tl-progress-donut" :style="'background:conic-gradient(' + taskProgressConic + ')'">
-                        <div class="tl-progress-donut-center">
-                            <span class="tl-progress-donut-main" x-text="totalTasks"></span>
-                            <span class="tl-progress-donut-label">tâches</span>
+            <aside class="tl-task-side" x-show="!loading" x-transition>
+                <section class="tl-side-panel">
+                    <div class="tl-side-kpi-grid">
+                        <div class="tl-side-kpi">
+                            <div class="tl-side-kpi-icon" style="background:#fff7ed;color:#f97316">
+                                <iconify-icon icon="solar:clock-circle-bold-duotone" width="18"></iconify-icon>
+                            </div>
+                            <div><strong x-text="overdueTaskCount"></strong><span>En retard</span></div>
+                        </div>
+                        <div class="tl-side-kpi">
+                            <div class="tl-side-kpi-icon" style="background:#eff6ff;color:#3b82f6">
+                                <iconify-icon icon="solar:calendar-date-bold-duotone" width="18"></iconify-icon>
+                            </div>
+                            <div><strong x-text="todayTaskCount"></strong><span>Aujourd'hui</span></div>
+                        </div>
+                        <div class="tl-side-kpi">
+                            <div class="tl-side-kpi-icon" style="background:#ecfdf5;color:#10b981">
+                                <iconify-icon icon="solar:check-circle-bold-duotone" width="18"></iconify-icon>
+                            </div>
+                            <div><strong x-text="completedTasks"></strong><span>Terminées</span></div>
+                        </div>
+                        <div class="tl-side-kpi">
+                            <div class="tl-side-kpi-icon" style="background:#f5f3ff;color:#7c3aed">
+                                <iconify-icon icon="solar:folder-with-files-bold-duotone" width="18"></iconify-icon>
+                            </div>
+                            <div><strong x-text="activeListsCount"></strong><span>Listes actives</span></div>
                         </div>
                     </div>
-                    <div class="tl-progress-legend">
-                        <template x-for="item in progressLegend" :key="item.label">
-                            <div class="tl-progress-legend-row">
-                                <span class="tl-progress-dot" :style="'background:' + item.color"></span>
-                                <span class="tl-progress-legend-label" x-text="item.label"></span>
-                                <span class="tl-progress-legend-count" x-text="item.count"></span>
+                </section>
+
+                <section class="tl-side-panel">
+                    <div class="tl-side-head">
+                        <h3 class="tl-side-title">
+                            <iconify-icon icon="solar:chart-2-bold-duotone" width="17" style="color:#10b981"></iconify-icon>
+                            Avancement
+                        </h3>
+                        <span class="tl-side-chip" x-text="completionPct + '%'"></span>
+                    </div>
+                    <div class="tl-side-donut-row">
+                        <div class="tl-side-donut" :style="'background:conic-gradient(' + taskProgressConic + ')'">
+                            <div class="tl-side-donut-center">
+                                <b x-text="totalTasks"></b>
+                                <span>Tâches</span>
+                            </div>
+                        </div>
+                        <div class="tl-side-legend">
+                            <template x-for="item in progressLegend" :key="item.label">
+                                <div class="tl-side-legend-row">
+                                    <span class="tl-side-dot" :style="'background:' + item.color"></span>
+                                    <span x-text="item.label"></span>
+                                    <b x-text="item.count"></b>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="tl-side-metrics">
+                        <div class="tl-side-metric"><b x-text="lists.length"></b><span>Listes</span></div>
+                        <div class="tl-side-metric"><b x-text="totalTasks"></b><span>Total</span></div>
+                        <div class="tl-side-metric"><b x-text="completedTasks"></b><span>Terminées</span></div>
+                    </div>
+                </section>
+
+                <section class="tl-side-panel">
+                    <div class="tl-side-head">
+                        <h3 class="tl-side-title">Charge de travail</h3>
+                        <button type="button" class="tl-pro-btn" style="height:30px;padding:0 9px">Cette semaine</button>
+                    </div>
+                    <div class="tl-side-bars">
+                        <template x-for="bar in workloadBars" :key="bar.label">
+                            <div class="tl-side-bar-wrap">
+                                <div class="tl-side-bar-bg"><div class="tl-side-bar" :style="'height:' + bar.height + '%'"></div></div>
+                                <span class="tl-side-bar-label" x-text="bar.label"></span>
                             </div>
                         </template>
                     </div>
-                </div>
+                </section>
 
-                <div class="tl-progress-metrics">
-                    <div class="tl-progress-metric">
-                        <div class="tl-progress-metric-value" x-text="lists.length"></div>
-                        <div class="tl-progress-metric-label">Listes</div>
+                <section class="tl-side-panel">
+                    <div class="tl-side-head"><h3 class="tl-side-title">À traiter</h3></div>
+                    <div class="tl-side-action">
+                        <span class="tl-side-action-icon" style="background:#fff7ed;color:#f97316"><iconify-icon icon="solar:clock-circle-bold-duotone" width="15"></iconify-icon></span>
+                        <div style="min-width:0;flex:1">
+                            <div class="tl-side-action-title"><span x-text="overdueTaskCount"></span> en retard</div>
+                            <div class="tl-side-action-sub">À reprendre en priorité</div>
+                        </div>
+                        <iconify-icon icon="solar:alt-arrow-right-linear" width="13" style="color:#a7b3c8"></iconify-icon>
                     </div>
-                    <div class="tl-progress-metric">
-                        <div class="tl-progress-metric-value" x-text="totalTasks"></div>
-                        <div class="tl-progress-metric-label">Total</div>
+                    <div class="tl-side-action">
+                        <span class="tl-side-action-icon" style="background:#eff6ff;color:#3b82f6"><iconify-icon icon="solar:calendar-date-bold-duotone" width="15"></iconify-icon></span>
+                        <div style="min-width:0;flex:1">
+                            <div class="tl-side-action-title"><span x-text="todayTaskCount"></span> aujourd'hui</div>
+                            <div class="tl-side-action-sub">Échéances du jour</div>
+                        </div>
+                        <iconify-icon icon="solar:alt-arrow-right-linear" width="13" style="color:#a7b3c8"></iconify-icon>
                     </div>
-                    <div class="tl-progress-metric">
-                        <div class="tl-progress-metric-value" x-text="completedTasks"></div>
-                        <div class="tl-progress-metric-label">Terminées</div>
-                    </div>
-                </div>
+                </section>
 
-                <div class="tl-progress-empty" x-show="totalTasks === 0">
-                    Les tâches ajoutées dans vos listes alimenteront ce graphique.
-                </div>
+                <section class="tl-side-panel">
+                    <div class="tl-side-head">
+                        <h3 class="tl-side-title">Échéances à venir</h3>
+                        <a class="tl-side-link">Voir tout</a>
+                    </div>
+                    <template x-for="task in upcomingTasks" :key="task._id">
+                        <div class="tl-side-action" @click="openDetail(task._list, task)" style="cursor:pointer">
+                            <span class="tl-side-action-icon" :style="'background:' + colorSoft(taskAccent(task, task._list)) + ';color:' + taskAccent(task, task._list)">
+                                <iconify-icon icon="solar:calendar-bold-duotone" width="15"></iconify-icon>
+                            </span>
+                            <div style="min-width:0">
+                                <div class="tl-side-action-title" x-text="task.title"></div>
+                                <div class="tl-side-action-sub"><span x-text="formatTaskDate(task.dueDate || task.createdAt)"></span> · <span x-text="task._list?.label || 'Tâches'"></span></div>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="upcomingTasks.length === 0">
+                        <div class="tl-side-empty">Aucune échéance pour l'instant.</div>
+                    </template>
+                </section>
             </aside>
         </div>
     </template>
@@ -1570,7 +2096,7 @@
                     <div class="tl-detail-sidebar">
                         <!-- Status -->
                         <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:flag-linear" width="14"></iconify-icon></div>
+	                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:check-circle-linear" width="14"></iconify-icon></div>
                             <div class="tl-detail-prop-label">Statut</div>
                             <div class="tl-detail-prop-value" style="position:relative">
                                 <div class="tl-pill" :style="'background:' + getStatusColor(detailTask.status) + '15;color:' + getStatusColor(detailTask.status)"
@@ -1591,7 +2117,7 @@
 
                         <!-- Priority -->
                         <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:sort-from-top-to-bottom-linear" width="14"></iconify-icon></div>
+	                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:flag-linear" width="14"></iconify-icon></div>
                             <div class="tl-detail-prop-label">Priorité</div>
                             <div class="tl-detail-prop-value" style="position:relative">
                                 <div class="tl-pill" :style="'background:' + getPriorityColor(detailTask.priority) + '15;color:' + (getPriorityColor(detailTask.priority) || '#94a3b8')"
@@ -1607,6 +2133,20 @@
                                         </button>
                                     </template>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Day priority -->
+                        <div class="tl-detail-prop">
+                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:star-linear" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Priorité jour</div>
+                            <div class="tl-detail-prop-value">
+                                <button type="button" class="tl-pill"
+                                        :style="detailTask.isDayPriority ? 'background:#eef2ff;color:#4f46e5' : 'background:#f8fafc;color:#94a3b8'"
+                                        @click.stop="detailTask.isDayPriority = !detailTask.isDayPriority; saveDetail('isDayPriority', detailTask.isDayPriority)">
+                                    <span class="tl-pill-dot" :style="'background:' + (detailTask.isDayPriority ? '#6366f1' : '#d1d5db')"></span>
+                                    <span x-text="detailTask.isDayPriority ? 'Oui' : 'Non'"></span>
+                                </button>
                             </div>
                         </div>
 
@@ -1648,7 +2188,14 @@
                             <div class="tl-detail-prop-icon"><iconify-icon icon="solar:list-linear" width="14"></iconify-icon></div>
                             <div class="tl-detail-prop-label">Liste</div>
                             <div class="tl-detail-prop-value">
-                                <span style="font-size:12px;color:#0e1726;font-weight:500" x-text="detailList ? detailList.label : '—'"></span>
+	                                <select class="tl-detail-select"
+	                                        x-model="detailTask.taskListId"
+                                            x-effect="$el.value = detailTask.taskListId || ''"
+	                                        @change="detailTask.taskListId = $event.target.value; changeTaskList($event.target.value)">
+	                                    <template x-for="list in lists" :key="list._id">
+	                                        <option :value="list._id" :selected="list._id === detailTask.taskListId" x-text="list.label"></option>
+	                                    </template>
+	                                </select>
                             </div>
                         </div>
 
@@ -1770,6 +2317,8 @@ document.addEventListener('alpine:init', () => {
         previewStatusFlip: false,
         previewEditId: null,
         previewEditTitle: '',
+        priorityExpanded: true,
+        priorityNewTaskTitle: '',
         taskCtx: null,
         kanbanListIds: [],
         kanbanList: null,
@@ -1847,6 +2396,51 @@ document.addEventListener('alpine:init', () => {
         get taskProgressConic() {
             return this.buildProgressConic(this.progressLegend, this.totalTasks);
         },
+        get allTasksFlat() {
+            return this.lists.flatMap(list => (list.tasks || []).map(task => {
+                task._list = list;
+                task._listId = list._id;
+                task.taskListId = list._id;
+                return task;
+            }));
+        },
+        get priorityTasks() {
+            return this.allTasksFlat
+                .filter(task => !!task.isDayPriority)
+                .sort((a, b) => this.sortTaskDate(a) - this.sortTaskDate(b));
+        },
+        get priorityDoneCount() {
+            return this.priorityTasks.filter(task => task.status === 'Terminé').length;
+        },
+        get priorityCompletionPct() {
+            return this.priorityTasks.length ? Math.round((this.priorityDoneCount / this.priorityTasks.length) * 100) : 0;
+        },
+        get overdueTaskCount() {
+            return this.allTasksFlat.filter(task => this.isTaskOverdue(task)).length;
+        },
+        get todayTaskCount() {
+            return this.allTasksFlat.filter(task => this.isTaskToday(task)).length;
+        },
+        get activeListsCount() {
+            return this.lists.filter(list => this.listTaskCount(list) > 0).length;
+        },
+        get workloadBars() {
+            const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+            const counts = [0,0,0,0,0,0,0];
+            this.allTasksFlat.forEach(task => {
+                const date = task.dueDate ? new Date(task.dueDate) : null;
+                if (!date || Number.isNaN(date.getTime())) return;
+                counts[(date.getDay() + 6) % 7]++;
+            });
+            const max = Math.max(1, ...counts);
+            return labels.map((label, index) => ({ label, height: Math.max(10, Math.round((counts[index] / max) * 92)) }));
+        },
+        get upcomingTasks() {
+            return this.allTasksFlat
+                .filter(task => task.status !== 'Terminé')
+                .sort((a, b) => this.sortTaskDate(a) - this.sortTaskDate(b))
+                .slice(0, 4);
+        },
 
         normalizeDraftValue(value) {
             if (value === false || value === null || value === undefined) return '';
@@ -1864,8 +2458,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         displayTaskListLabel(value) {
-            const label = this.displayTaskText(value, 'Tâches du jour');
-            return label.toLowerCase() === 'général' ? 'Tâches du jour' : label;
+            const label = this.displayTaskText(value, 'À faire');
+            const lower = label.toLowerCase();
+            if (lower === 'général' || lower === 'tâches du jour' || lower === 'taches du jour') return 'À faire';
+            return label;
+        },
+
+        isLegacyDayPriorityLabel(value) {
+            const lower = this.displayTaskText(value, '').toLowerCase();
+            return lower === 'tâches du jour' || lower === 'taches du jour' || lower === 'priorité du jour' || lower === 'priorite du jour';
         },
 
         listTaskCount(list = {}) {
@@ -1894,6 +2495,69 @@ document.addEventListener('alpine:init', () => {
             return parts.join(', ');
         },
 
+        isTaskOverdue(task = {}) {
+            if (task.status === 'Terminé' || !task.dueDate) return false;
+            const due = new Date(task.dueDate);
+            if (Number.isNaN(due.getTime())) return false;
+            due.setHours(23, 59, 59, 999);
+            return due < new Date();
+        },
+
+        isTaskToday(task = {}) {
+            if (!task.dueDate) return false;
+            const due = new Date(task.dueDate);
+            if (Number.isNaN(due.getTime())) return false;
+            const now = new Date();
+            return due.getFullYear() === now.getFullYear()
+                && due.getMonth() === now.getMonth()
+                && due.getDate() === now.getDate();
+        },
+
+        async focusQuickAdd() {
+            if (!this.lists.length) {
+                await this.ensureTaskList('À faire');
+            }
+            const target = this.getDefaultTaskList() || this.lists[0];
+            if (!target) return;
+            if (!this.expandedListIds.includes(target._id)) this.expandedListIds.push(target._id);
+            this.$nextTick(() => {
+                const card = this.$el.querySelector(`.tl-card[data-list-id="${target._id}"]`);
+                const input = card?.querySelector('.tl-record-add input, .tl-preview-add input');
+                if (input) input.focus();
+            });
+        },
+
+        openDefaultKanban() {
+            const target = this.lists.find(list => this.listTaskCount(list) > 0) || this.lists[0];
+            if (target) this.openKanban(target);
+        },
+
+        getDefaultTaskList() {
+            return this.lists.find(list => String(list.label || '').toLowerCase() === 'à faire')
+                || this.lists.find(list => String(list.rawLabel || '').toLowerCase() === 'à faire')
+                || null;
+        },
+
+        async ensureTaskList(label = 'Liste sans nom') {
+            const existing = this.lists.find(list => String(list.label || '').toLowerCase() === String(label).toLowerCase());
+            if (existing) return existing;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ label })
+                });
+                const data = await res.json();
+                if (data.success && data.list) {
+                    const newList = this.normalizeList(data.list);
+                    this.lists.push(newList);
+                    return newList;
+                }
+            } catch (e) { console.error('[TaskLists] Ensure list error:', e); }
+            return null;
+        },
+
         normalizeTask(task = {}) {
             return {
                 ...task,
@@ -1903,6 +2567,8 @@ document.addEventListener('alpine:init', () => {
                 statusColor: typeof task.statusColor === 'string' && task.statusColor ? task.statusColor : this.getStatusColor(task.status),
                 priority: typeof task.priority === 'string' && task.priority ? task.priority : 'Aucune',
                 priorityColor: typeof task.priorityColor === 'string' ? task.priorityColor : '',
+                isDayPriority: !!task.isDayPriority,
+                taskListId: task.taskListId ? String(task.taskListId) : '',
                 assignedTo: typeof task.assignedTo === 'string' ? task.assignedTo : ''
             };
         },
@@ -1910,19 +2576,89 @@ document.addEventListener('alpine:init', () => {
         normalizeList(list = {}) {
             const id = String(list._id || '');
             if (id && this.previewNewTask[id] === undefined) this.previewNewTask[id] = '';
+            const legacyDayPriority = this.isLegacyDayPriorityLabel(list.rawLabel || list.label);
+            const label = this.displayTaskListLabel(list.rawLabel || list.label);
             return {
                 ...list,
                 _id: id,
-                label: this.displayTaskListLabel(list.label),
+                label,
+                rawLabel: list.rawLabel || list.label || label,
+                isLegacyDayPriorityList: legacyDayPriority,
                 color: typeof list.color === 'string' && list.color ? list.color : '#6366f1',
-                tasks: (list.tasks || []).map(task => this.normalizeTask(task))
+                tasks: (list.tasks || []).map(task => {
+                    const normalized = this.normalizeTask({ ...task, taskListId: id });
+                    if (legacyDayPriority) normalized.isDayPriority = true;
+                    return normalized;
+                })
             };
+        },
+
+        listCompletionPct(list = {}) {
+            const total = this.listTaskCount(list);
+            return total ? Math.round((this.listDoneCount(list) / total) * 100) : 0;
+        },
+
+        sortTaskDate(task = {}) {
+            const d = task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt || Date.now());
+            return Number.isNaN(d.getTime()) ? Date.now() : d.getTime();
+        },
+
+        formatTaskDate(value) {
+            if (!value) return '—';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '—';
+            return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+        },
+
+        taskAssigneeLabel(task = {}) {
+            return this.cleanTaskTitle(task.assignedTo) || 'Moi';
+        },
+
+        taskAssigneeInitials(task = {}) {
+            return this.taskAssigneeLabel(task)
+                .split(' ')
+                .filter(Boolean)
+                .map(part => part[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+        },
+
+        priorityStyle(priority) {
+            const map = {
+                Urgente: ['#fee2e2', '#dc2626'],
+                Haute: ['#fef2f2', '#ef4444'],
+                Moyenne: ['#fff7ed', '#f97316'],
+                Basse: ['#ecfdf5', '#10b981'],
+                Aucune: ['#f1f5f9', '#64748b']
+            };
+            const [bg, color] = map[priority || 'Aucune'] || map.Aucune;
+            return `background:${bg};color:${color}`;
+        },
+
+        statusPillStyle(status, color) {
+            const base = color || this.getStatusColor(status || 'À faire');
+            return `background:${base}15;color:${base}`;
+        },
+
+        taskAccent(task = {}, list = {}) {
+            if (this.isTaskOverdue(task)) return '#ef4444';
+            if (task.priority === 'Haute' || task.priority === 'Urgente') return '#ef4444';
+            if (task.priority === 'Moyenne') return '#f97316';
+            if (task.status === 'Terminé') return '#10b981';
+            return list.color || task.statusColor || '#6366f1';
+        },
+
+        colorSoft(color) {
+            const hex = color || '#6366f1';
+            return String(hex).startsWith('#') ? hex + '16' : 'rgba(99,102,241,.09)';
         },
 
         resetDraftInputs() {
             this.newListName = '';
             this.newTaskTitle = '';
             this.kanbanNewTitle = '';
+            this.priorityNewTaskTitle = '';
             this.addingList = false;
             Object.keys(this.previewNewTask || {}).forEach(key => { this.previewNewTask[key] = ''; });
         },
@@ -1969,7 +2705,7 @@ document.addEventListener('alpine:init', () => {
                         // Find or create a synthetic list reference
                         let list = this.lists.find(l => l._id === data.task.taskListId);
                         if (!list) {
-                            list = this.normalizeList({ _id: data.task.taskListId, label: 'Tâches du jour', tasks: [data.task], statuses: this.defaultStatuses });
+                            list = this.normalizeList({ _id: data.task.taskListId, label: 'À faire', tasks: [data.task], statuses: this.defaultStatuses });
                         }
                         this.openDetail(list, this.normalizeTask(data.task));
                     }
@@ -2082,13 +2818,13 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success) {
                     this.lists = (data.lists || []).map(list => this.normalizeList(list));
-                    // Auto-create "Tâches du jour" if no lists exist
+                    // Auto-create the real default list if no lists exist.
                     if (this.lists.length === 0) {
                         const cr = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ label: 'Tâches du jour', color: '#6366f1' })
+                            body: JSON.stringify({ label: 'À faire', color: '#6366f1' })
                         });
                         const crData = await cr.json();
                         if (crData.success && crData.list) {
@@ -2097,7 +2833,8 @@ document.addEventListener('alpine:init', () => {
                         }
                     }
                     if (this.lists.length > 0) {
-                        this.expandedListIds = [this.lists[0]._id];
+                        this.priorityExpanded = true;
+                        this.expandedListIds = [];
                     }
                 }
             } catch (e) { console.error('[TaskLists] Load error:', e); }
@@ -2131,6 +2868,30 @@ document.addEventListener('alpine:init', () => {
             if (idx >= 0) { this.expandedListIds.splice(idx, 1); }
             else { this.expandedListIds.push(listId); }
             this.previewStatusMenu = null;
+        },
+
+        statusMenuKey(task, list, scope = 'list') {
+            return [scope, list?._id || 'none', task?._id || 'none'].join(':');
+        },
+
+        isStatusMenuOpen(task, list, scope = 'list') {
+            return this.previewStatusMenu === this.statusMenuKey(task, list, scope);
+        },
+
+        isSectionMenuOpen(list, scope = 'list') {
+            if (!this.previewStatusMenu) return false;
+            if (scope === 'priority') return this.previewStatusMenu.startsWith('priority:');
+            return this.previewStatusMenu.startsWith(`list:${list?._id || 'none'}:`);
+        },
+
+        toggleStatusMenu(event, task, list, scope = 'list') {
+            const key = this.statusMenuKey(task, list, scope);
+            const open = this.previewStatusMenu !== key;
+            this.previewStatusMenu = open ? key : null;
+            this.previewStatusListId = open ? `${scope}:${list?._id || 'none'}` : null;
+            this.previewStatusFlip = open ? event.clientY + 180 > window.innerHeight : false;
+            this.taskCtx = null;
+            this.ctxMenu = null;
         },
 
         initListSortable(el) {
@@ -2193,6 +2954,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         async previewSetStatus(list, pt, statusLabel) {
+            this.previewStatusMenu = null;
+            this.previewStatusListId = null;
             const statusColors = {
                 'À faire': '#9ca3af', 'En cours': '#3b82f6',
                 'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
@@ -2210,14 +2973,14 @@ document.addEventListener('alpine:init', () => {
                     pt.status = data.status;
                     pt.statusColor = data.statusColor;
                     const isDone = pt.status === 'Terminé';
-                    if (wasDone !== isDone) {
+                    if (list && wasDone !== isDone) {
                         list.doneCount = Math.max(0, (Number(list.doneCount) || 0) + (isDone ? 1 : -1));
                     }
                 }
             } catch (e) { console.error('[TaskLists] Preview status error:', e); }
         },
 
-        async previewAddTask(list) {
+        async previewAddTask(list, options = {}) {
             const title = this.cleanTaskTitle(this.previewNewTask[list._id]);
             this.previewNewTask[list._id] = title;
             if (!title) return;
@@ -2226,16 +2989,30 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ title })
+                    body: JSON.stringify({ title, isDayPriority: !!options.isDayPriority })
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
                     if (!list.tasks) list.tasks = [];
-                    list.tasks.unshift(this.normalizeTask(data.task));
+                    list.tasks.unshift(this.normalizeTask({ ...data.task, taskListId: list._id }));
                     list.count = (list.count || 0) + 1;
                     this.previewNewTask[list._id] = '';
                 }
             } catch (e) { console.error('[TaskLists] Preview add error:', e); }
+        },
+
+        async addPriorityTask() {
+            const title = this.cleanTaskTitle(this.priorityNewTaskTitle);
+            this.priorityNewTaskTitle = title;
+            if (!title) return;
+            let list = this.getDefaultTaskList();
+            if (!list) list = await this.ensureTaskList('Liste sans nom');
+            if (!list) return;
+            if (this.previewNewTask[list._id] === undefined) this.previewNewTask[list._id] = '';
+            this.previewNewTask[list._id] = title;
+            await this.previewAddTask(list, { isDayPriority: true });
+            this.priorityNewTaskTitle = '';
+            this.priorityExpanded = true;
         },
 
         previewStartEdit(pt) {
@@ -2271,6 +3048,8 @@ document.addEventListener('alpine:init', () => {
             const y = (e.clientY + menuH > window.innerHeight) ? e.clientY - menuH : e.clientY;
             this.taskCtx = { x: e.clientX, y, list, task: pt };
             this.ctxMenu = null;
+            this.previewStatusMenu = null;
+            this.previewStatusListId = null;
         },
 
         taskCtxRename() {
@@ -2314,7 +3093,7 @@ document.addEventListener('alpine:init', () => {
             const instance = Sortable.create(el, {
                 animation: 180,
                 handle: '.tl-preview-drag',
-                draggable: '.tl-preview-item',
+                draggable: '.tl-record-row',
                 ghostClass: 'sortable-ghost',
                 chosenClass: 'sortable-chosen',
                 // DO NOT use fallbackOnBody or forceFallback with Alpine x-for
@@ -2510,6 +3289,8 @@ document.addEventListener('alpine:init', () => {
             const menuH = type === 'list' ? 220 : 80;
             const y = (e.clientY + menuH > window.innerHeight) ? e.clientY - menuH : e.clientY;
             this.ctxMenu = { x: e.clientX, y, type, target };
+            this.previewStatusMenu = null;
+            this.previewStatusListId = null;
         },
 
         ctxRename() {
@@ -2718,12 +3499,75 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ─── Detail panel ───
+        resolveTaskList(task, fallbackList = null) {
+            const taskId = task?._id;
+            if (fallbackList && (!taskId || (fallbackList.tasks || []).some(t => t._id === taskId))) return fallbackList;
+            return this.lists.find(list => (list.tasks || []).some(t => t._id === taskId))
+                || fallbackList
+                || this.lists.find(list => list._id === task?.taskListId)
+                || null;
+        },
+
         openDetail(list, task) {
-            this.detailList = list;
-            this.detailTask = this.normalizeTask(task);
+            this.previewStatusMenu = null;
+            this.previewStatusListId = null;
+            this.taskCtx = null;
+            this.ctxMenu = null;
+            const sourceList = this.resolveTaskList(task, list);
+            const sourceTask = sourceList?.tasks?.find(t => t._id === task?._id) || task;
+            this.detailList = sourceList;
+            this.detailTask = this.normalizeTask({ ...sourceTask, taskListId: sourceList?._id || sourceTask?.taskListId || '' });
             this.detailComments = [];
             this.detailNewComment = '';
             this.loadComments(task._id);
+        },
+
+        async changeTaskList(targetListId) {
+            if (!this.detailTask || !targetListId) return;
+            const taskId = this.detailTask._id;
+            const oldList = this.detailList;
+            const targetList = this.lists.find(list => list._id === targetListId);
+            if (!targetList) return;
+            if (oldList && oldList._id === targetList._id) return;
+
+            const previousListId = oldList?._id || this.detailTask.taskListId || '';
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ taskListId: targetList._id })
+                });
+                const data = await res.json();
+                if (!data.success || !data.task) throw new Error(data.error || 'Move failed');
+
+                const normalizedTask = this.normalizeTask(data.task);
+                let movingTask = this.detailTask;
+                if (oldList) {
+                    const oldTasks = oldList.tasks || [];
+                    const idx = oldTasks.findIndex(task => task._id === taskId);
+                    if (idx >= 0) {
+                        movingTask = { ...oldTasks[idx], ...normalizedTask };
+                        oldTasks.splice(idx, 1);
+                        oldList.count = Math.max(0, (oldList.count || 1) - 1);
+                        oldList.doneCount = oldTasks.filter(task => task.status === 'Terminé').length;
+                    }
+                }
+
+                if (!targetList.tasks) targetList.tasks = [];
+                const existingIdx = targetList.tasks.findIndex(task => task._id === taskId);
+                const nextTask = this.normalizeTask({ ...movingTask, ...normalizedTask, taskListId: targetList._id });
+                if (existingIdx >= 0) targetList.tasks.splice(existingIdx, 1, nextTask);
+                else targetList.tasks.unshift(nextTask);
+                targetList.count = targetList.tasks.length;
+                targetList.doneCount = targetList.tasks.filter(task => task.status === 'Terminé').length;
+
+                this.detailList = targetList;
+                Object.assign(this.detailTask, nextTask);
+            } catch (e) {
+                this.detailTask.taskListId = previousListId;
+                console.error('[TaskLists] Change task list error:', e);
+            }
         },
 
 
@@ -2744,7 +3588,10 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
-                    const normalizedTask = this.normalizeTask(data.task);
+                    const normalizedTask = this.normalizeTask({
+                        ...data.task,
+                        taskListId: this.detailList?._id || data.task.taskListId
+                    });
                     // Sync back into the list.tasks array
                     if (this.detailList) {
                         const arr = this.detailList.tasks || [];

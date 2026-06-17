@@ -100,6 +100,22 @@ const userPreferencesSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.Mixed,
             default: undefined
         },
+        widgetSettings: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        homeData: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        homeLayoutVersion: {
+            type: Number,
+            default: undefined
+        },
+        overviewLayoutVersion: {
+            type: Number,
+            default: undefined
+        },
         // Record Agenda preferences
         agendaPrefs: {
             type: mongoose.Schema.Types.Mixed,

@@ -18,20 +18,20 @@
 
             <!-- Modal Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #f3f4f6;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
-                         :style="'background: ' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color + '12' : 'rgba(67,97,238,0.08)')">
-                        <iconify-icon :icon="$store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.icon : 'solar:widget-add-bold-duotone'"
-                                      width="20"
-                                      :style="'color:' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color : '#4361ee')"></iconify-icon>
-                    </div>
-                    <div>
-                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3;"
-                            x-text="$store.widgetPicker.step === 'form' ? 'Configurer ' + $store.widgetPicker.newWidget.label : 'Ajouter un widget'"></h3>
-                        <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;"
-                           x-text="$store.widgetPicker.step === 'form' ? ($store.widgetPicker.catalogItem($store.widgetPicker.newWidget._catalogType || $store.widgetPicker.newWidget.type)?.desc || 'Personnalisez les paramètres') : 'Choisissez un composant à insérer'"></p>
-                    </div>
-                </div>
+	                <div style="display: flex; align-items: center; gap: 12px;">
+	                    <div style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
+	                         :style="'background: ' + $store.widgetPicker.headerColor() + '12'">
+	                        <iconify-icon :icon="$store.widgetPicker.headerIcon()"
+	                                      width="20"
+	                                      :style="'color:' + $store.widgetPicker.headerColor()"></iconify-icon>
+	                    </div>
+	                    <div>
+	                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3;"
+	                            x-text="$store.widgetPicker.headerTitle()"></h3>
+	                        <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;"
+	                           x-text="$store.widgetPicker.headerSubtitle()"></p>
+	                    </div>
+	                </div>
                 <button type="button" @click="$store.widgetPicker.close()"
                         style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; cursor: pointer; background: white; color: #9ca3af; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
                         onmouseover="this.style.background='#f9fafb';this.style.color='#6b7280'" onmouseout="this.style.background='white';this.style.color='#9ca3af'">
@@ -40,9 +40,23 @@
             </div>
 
             <!-- Modal Content (Catalog) -->
-            <div x-show="$store.widgetPicker.step === 'catalog'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                    <template x-for="w in $store.widgetPicker.visibleCatalog()" :key="w.type">
+	            <div x-show="$store.widgetPicker.step === 'catalog'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
+	                <template x-if="$store.widgetPicker.target?.type === 'home-overview'">
+	                    <div style="display:flex;gap:8px;margin-bottom:14px;">
+	                        <button type="button"
+	                                @click="$store.widgetPicker.homeCatalogTab = 'all'"
+	                                :style="'flex:1;height:36px;border-radius:10px;border:' + ($store.widgetPicker.homeCatalogTab === 'all' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.homeCatalogTab === 'all' ? 'rgba(67,97,238,.08)' : '#fff') + ';color:' + ($store.widgetPicker.homeCatalogTab === 'all' ? '#4361ee' : '#64748b') + ';font-size:12px;font-weight:800;cursor:pointer;'">
+	                            Tous les widgets
+	                        </button>
+	                        <button type="button"
+	                                @click="$store.widgetPicker.homeCatalogTab = 'custom'"
+	                                :style="'flex:1;height:36px;border-radius:10px;border:' + ($store.widgetPicker.homeCatalogTab === 'custom' ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.homeCatalogTab === 'custom' ? 'rgba(67,97,238,.08)' : '#fff') + ';color:' + ($store.widgetPicker.homeCatalogTab === 'custom' ? '#4361ee' : '#64748b') + ';font-size:12px;font-weight:800;cursor:pointer;'">
+	                            Mes widgets personnalisés
+	                        </button>
+	                    </div>
+	                </template>
+	                <div x-show="$store.widgetPicker.homeCatalogTab === 'all'" class="wp-catalog-grid">
+	                    <template x-for="w in $store.widgetPicker.visibleCatalog()" :key="w.type">
                         <button type="button"
                                 @click="$store.widgetPicker.selectType(w.type)"
                                 style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 14px; border: 1px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s;"
@@ -55,35 +69,157 @@
                             <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="w.label"></span>
                             <span style="font-size: 10px; color: #9ca3af; line-height: 1.3; text-align: center;" x-text="w.desc"></span>
                         </button>
-                    </template>
-                </div>
-            </div>
+	                    </template>
+	                </div>
+	                <div x-show="$store.widgetPicker.homeCatalogTab === 'custom'" style="display:flex;flex-direction:column;gap:9px;">
+	                    <template x-for="widget in $store.widgetPicker.homeWidgets" :key="widget.id">
+	                        <div style="display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid #eef2f7;border-radius:13px;background:#fff;">
+	                            <span style="width:38px;height:38px;border-radius:11px;display:grid;place-items:center;"
+	                                  :style="'background:' + (widget.color || '#4361ee') + '12;color:' + (widget.color || '#4361ee')">
+	                                <iconify-icon :icon="widget.icon || $store.widgetPicker.defaultIconForType(widget.type)" width="18"></iconify-icon>
+	                            </span>
+	                            <span style="min-width:0;">
+	                                <strong style="display:block;font-size:12.5px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="widget.label || 'Widget'"></strong>
+	                                <small style="display:block;margin-top:2px;font-size:10.5px;color:#9ca3af;" x-text="$store.widgetPicker.defaultLabelForType(widget.type) + ' · ' + (widget.usageCount || 0) + ' placé' + ((widget.usageCount || 0) > 1 ? 's' : '')"></small>
+	                            </span>
+	                            <span style="display:flex;align-items:center;gap:5px;">
+	                                <button type="button" title="Insérer"
+	                                        @click="$store.widgetPicker.insertSavedHomeWidget(widget.id)"
+	                                        style="width:30px;height:30px;border:1px solid #dbe4ff;border-radius:9px;background:#f8fbff;color:#4361ee;display:grid;place-items:center;cursor:pointer;">
+	                                    <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+	                                </button>
+	                                <button type="button" title="Modifier"
+	                                        @click="$store.widgetPicker.editSavedHomeWidget(widget.id)"
+	                                        style="width:30px;height:30px;border:1px solid #e5e7eb;border-radius:9px;background:#fff;color:#64748b;display:grid;place-items:center;cursor:pointer;">
+	                                    <iconify-icon icon="solar:pen-new-square-linear" width="15"></iconify-icon>
+	                                </button>
+	                                <button type="button"
+	                                        :title="$store.widgetPicker.pendingHomeWidgetDeleteId === widget.id ? 'Confirmer la suppression' : 'Supprimer'"
+	                                        @click="$store.widgetPicker.deleteSavedHomeWidget(widget.id)"
+	                                        :style="'width:30px;height:30px;border:1px solid ' + ($store.widgetPicker.pendingHomeWidgetDeleteId === widget.id ? '#ef4444' : '#fee2e2') + ';border-radius:9px;background:' + ($store.widgetPicker.pendingHomeWidgetDeleteId === widget.id ? '#ef4444' : '#fff') + ';color:' + ($store.widgetPicker.pendingHomeWidgetDeleteId === widget.id ? '#fff' : '#ef4444') + ';display:grid;place-items:center;cursor:pointer;'">
+	                                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="15"></iconify-icon>
+	                                </button>
+	                            </span>
+	                        </div>
+	                    </template>
+	                    <template x-if="$store.widgetPicker.homeWidgets.length === 0">
+	                        <div style="text-align:center;padding:24px;border:1px dashed #e5e7eb;border-radius:13px;color:#9ca3af;font-size:12px;">Aucun widget personnalisé enregistré</div>
+	                    </template>
+	                </div>
+	            </div>
+
+	            <!-- Modal Content (Home Custom Types) -->
+	            <div x-show="$store.widgetPicker.step === 'create-type'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
+	                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+	                    <template x-for="w in $store.widgetPicker.homeCreateCatalog()" :key="w.type">
+	                        <button type="button"
+	                                @click="$store.widgetPicker.selectType(w.type)"
+	                                style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 10px; border-radius: 14px; border: 1px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s;"
+	                                onmouseover="this.style.borderColor='rgba(67,97,238,0.3)';this.style.background='rgba(67,97,238,0.02)';this.style.transform='translateY(-1px)'"
+	                                onmouseout="this.style.borderColor='#f3f4f6';this.style.background='white';this.style.transform='translateY(0)'">
+	                            <div style="width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
+	                                 :style="'background: ' + w.color + '10'">
+	                                <iconify-icon :icon="w.icon" width="21" :style="'color: ' + w.color"></iconify-icon>
+	                            </div>
+	                            <span style="font-size: 12px; font-weight: 700; color: #374151;" x-text="w.label"></span>
+	                            <span style="font-size: 10px; color: #9ca3af; line-height: 1.3; text-align: center;" x-text="w.desc"></span>
+	                        </button>
+	                    </template>
+	                </div>
+	            </div>
 
             <!-- Modal Content (Form) -->
             <div x-show="$store.widgetPicker.step === 'form'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
                 <div style="display: flex; flex-direction: column; gap: 20px;">
 
                     <!-- Common: Title -->
-                    <div>
-                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
-                        <input type="text" x-model="$store.widgetPicker.newWidget.label"
+	                    <div>
+	                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
+	                        <input type="text" x-model="$store.widgetPicker.newWidget.label"
                                style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none; transition: border-color 0.15s; box-sizing: border-box; color: #111827;"
                                onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
-                               placeholder="Ex: Ma Note, Stats...">
-                    </div>
+	                               placeholder="Ex: Ma Note, Stats...">
+	                    </div>
+
+	                    <template x-if="$store.widgetPicker.showHomeWidgetMeta()">
+	                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+	                            <div>
+	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Icône</label>
+	                                <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+	                                    <template x-for="icon in $store.widgetPicker.homeIconChoices()" :key="icon">
+	                                        <button type="button"
+	                                                @click="$store.widgetPicker.newWidget.icon = icon"
+	                                                :title="icon"
+	                                                :style="'width:34px;height:34px;border-radius:9px;border:' + ($store.widgetPicker.newWidget.icon === icon ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.icon === icon ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + ($store.widgetPicker.newWidget.color || '#4361ee') + ';display:grid;place-items:center;cursor:pointer;'">
+	                                            <iconify-icon :icon="icon" width="17"></iconify-icon>
+	                                        </button>
+	                                    </template>
+	                                </div>
+	                            </div>
+	                            <div>
+	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Couleur</label>
+	                                <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+	                                    <template x-for="color in $store.widgetPicker.homeColorChoices()" :key="color">
+	                                        <button type="button"
+	                                                @click="$store.widgetPicker.newWidget.color = color"
+	                                                :title="color"
+	                                                :style="'width:28px;height:28px;border-radius:8px;border:' + ($store.widgetPicker.newWidget.color === color ? '2px solid #111827' : '1px solid #e5e7eb') + ';background:' + color + ';box-shadow: inset 0 0 0 3px rgba(255,255,255,.75);cursor:pointer;'">
+	                                        </button>
+	                                    </template>
+	                                </div>
+	                            </div>
+	                        </div>
+	                    </template>
 
                     <!-- Dynamic Fields based on type -->
 
                     <!-- 1. HTML / Rich Text -->
-                    <template x-if="$store.widgetPicker.newWidget.type === 'html'">
-                        <div>
+	                    <template x-if="$store.widgetPicker.newWidget.type === 'html'">
+	                        <div>
                             <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Contenu HTML</label>
                             <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="6"
                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; font-family: monospace; outline: none; box-sizing: border-box; resize: vertical;"
                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                       placeholder="<p>Bonjour...</p>"></textarea>
                         </div>
-                    </template>
+	                    </template>
+
+	                    <!-- Home Task List -->
+	                    <template x-if="$store.widgetPicker.isTaskListWidgetType()">
+	                        <div style="display: flex; flex-direction: column; gap: 10px;">
+	                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block;">Liste de tâches</label>
+	                                <span style="font-size:10px;font-weight:700;color:#9ca3af;" x-text="$store.widgetPicker.filteredTaskLists().length + ' liste' + ($store.widgetPicker.filteredTaskLists().length > 1 ? 's' : '')"></span>
+	                            </div>
+	                            <div style="position:relative;">
+	                                <iconify-icon icon="solar:magnifer-linear" width="15" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af;"></iconify-icon>
+	                                <input type="search"
+	                                       x-model="$store.widgetPicker.taskListQuery"
+	                                       placeholder="Rechercher une liste, un record..."
+	                                       style="width:100%;height:38px;border:1px solid #e5e7eb;border-radius:10px;padding:0 12px 0 34px;font-size:12px;outline:none;color:#111827;">
+	                            </div>
+	                            <div style="display: flex; flex-direction: column; gap: 8px;">
+	                                <template x-for="list in $store.widgetPicker.filteredTaskLists()" :key="list.id">
+	                                    <button type="button"
+	                                            @click="$store.widgetPicker.selectTaskList(list.id)"
+	                                            :style="'display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:10px 12px;border-radius:12px;border:' + ($store.widgetPicker.newWidget.config.taskListId === list.id ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.config.taskListId === list.id ? 'rgba(67,97,238,.05)' : '#fff') + ';text-align:left;cursor:pointer;'">
+	                                        <span style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;"
+	                                              :style="'background:' + (list.color || '#4361ee') + '12;color:' + (list.color || '#4361ee')">
+	                                            <iconify-icon :icon="list.icon || 'solar:checklist-bold-duotone'" width="16"></iconify-icon>
+	                                        </span>
+	                                        <span style="min-width:0;">
+	                                            <strong style="display:block;font-size:12px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="list.label"></strong>
+	                                            <small style="display:block;font-size:10px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="list.recordTitle || list.entityName || 'Compte'"></small>
+	                                        </span>
+	                                        <span style="font-size:10px;font-weight:700;color:#9ca3af;" x-text="(list.count || 0) + ' tâche' + ((list.count || 0) > 1 ? 's' : '')"></span>
+	                                    </button>
+	                                </template>
+	                            </div>
+	                            <template x-if="$store.widgetPicker.filteredTaskLists().length === 0">
+	                                <div style="text-align:center;padding:18px;border:1px dashed #e5e7eb;border-radius:12px;color:#9ca3af;font-size:12px;">Aucune liste trouvée</div>
+	                            </template>
+	                        </div>
+	                    </template>
 
                     <!-- 2. Note -->
                     <template x-if="$store.widgetPicker.newWidget.type === 'note' || $store.widgetPicker.newWidget.type === 'notes'">
@@ -176,6 +312,93 @@
                             </div>
                         </div>
                     </template>
+
+	                    <!-- Panel options -->
+	                    <template x-if="['home-overview','overview'].includes($store.widgetPicker.target?.type)">
+	                        <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px;border:1px solid #eef2f7;border-radius:12px;background:#fbfcff;">
+	                            <div style="display:flex;align-items:center;gap:7px;color:#374151;font-size:12px;font-weight:800;">
+	                                <iconify-icon icon="solar:tuning-2-bold-duotone" width="15" style="color:#4361ee;"></iconify-icon>
+	                                Options du panel
+	                            </div>
+	                            <template x-if="$store.widgetPicker.supportsLimit()">
+	                                <div>
+	                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Nombre d'éléments</label>
+	                                    <input type="number" min="1" max="40" x-model.number="$store.widgetPicker.newWidget.config.limit"
+	                                           style="width:120px;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;outline:none;">
+	                                </div>
+	                            </template>
+	                            <template x-if="$store.widgetPicker.newWidget.type === 'finance'">
+	                                <div>
+	                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Libellé période</label>
+	                                    <input type="text" x-model="$store.widgetPicker.newWidget.config.period"
+	                                           style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;outline:none;"
+	                                           placeholder="Ce mois-ci">
+	                                </div>
+	                            </template>
+	                            <template x-if="$store.widgetPicker.newWidget.type === 'image'">
+	                                <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;">
+	                                    <div>
+	                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Hauteur</label>
+	                                        <input type="number" min="120" max="900" x-model.number="$store.widgetPicker.newWidget.config.height"
+	                                               style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;outline:none;">
+	                                    </div>
+	                                    <div>
+	                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Ajustement</label>
+	                                        <select x-model="$store.widgetPicker.newWidget.config.fit"
+	                                                style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;outline:none;background:#fff;">
+	                                            <option value="contain">Contenir</option>
+	                                            <option value="cover">Couvrir</option>
+	                                        </select>
+	                                    </div>
+	                                </div>
+	                            </template>
+	                            <template x-if="$store.widgetPicker.newWidget.type === 'separator'">
+	                                <div>
+	                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Épaisseur</label>
+	                                    <input type="number" min="1" max="16" x-model.number="$store.widgetPicker.newWidget.config.height"
+	                                           style="width:120px;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;outline:none;">
+	                                </div>
+	                            </template>
+	                            <div style="display:flex;flex-wrap:wrap;gap:12px 16px;">
+	                                <label x-show="$store.widgetPicker.supportsShowLink()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showLink" class="form-checkbox" style="accent-color:#4361ee;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher “Voir tout”</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.supportsShowCompleted()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showCompleted" class="form-checkbox" style="accent-color:#4361ee;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher terminées</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.supportsInlineAdd()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.allowAdd" class="form-checkbox" style="accent-color:#4361ee;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Ajout rapide</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.supportsShowPriority()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showPriority" class="form-checkbox" style="accent-color:#f59e0b;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher la priorité</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.supportsSharing()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.shared" class="form-checkbox" style="accent-color:#10b981;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Activer le partage</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'priority-day'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showProductivity" class="form-checkbox" style="accent-color:#805dca;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Bloc productivité</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showTasks" class="form-checkbox" style="accent-color:#4361ee;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Lien tâches</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showNotes" class="form-checkbox" style="accent-color:#4361ee;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Lien notes</span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showDocuments" class="form-checkbox" style="accent-color:#4361ee;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Lien documents</span>
+	                                </label>
+	                            </div>
+	                        </div>
+	                    </template>
 
                     <!-- 6. Relational / Dynamic Table -->
                     <template x-if="$store.widgetPicker.newWidget.type === 'dynamic-table'">
@@ -289,7 +512,7 @@
                     </template>
 
                     <!-- Generic info for simple types -->
-                    <template x-if="['tasks','timeline','kpi','chart','fields','cards','separator'].includes($store.widgetPicker.newWidget.type)">
+	                    <template x-if="['tasks','timeline','kpi','chart','fields','cards','separator'].includes($store.widgetPicker.newWidget.type)">
                         <div style="padding: 14px 16px; background: #f0fdf4; border-radius: 12px; border: 1px solid #dcfce7;">
                             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                                 <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
@@ -305,11 +528,11 @@
 
             <!-- Modal Footer -->
             <div style="display: flex; justify-content: center; gap: 10px; padding: 16px 24px; border-top: 1px solid #f3f4f6;">
-                <button type="button" @click="$store.widgetPicker.step === 'form' ? $store.widgetPicker.step = 'catalog' : $store.widgetPicker.close()"
-                        style="padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid #e5e7eb; background: white; color: #374151; cursor: pointer; transition: all 0.15s;"
-                        onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'"
-                        x-text="$store.widgetPicker.step === 'form' ? 'Annuler' : 'Fermer'">
-                </button>
+	                <button type="button" @click="$store.widgetPicker.backOrClose()"
+	                        style="padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid #e5e7eb; background: white; color: #374151; cursor: pointer; transition: all 0.15s;"
+	                        onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'"
+	                        x-text="$store.widgetPicker.footerCancelLabel()">
+	                </button>
                 <template x-if="$store.widgetPicker.step === 'form'">
                     <button type="button" @click="$store.widgetPicker.save()"
                             :disabled="$store.widgetPicker.saving"
@@ -343,9 +566,15 @@
                 icon: '',
                 color: '#4361ee',
                 config: {}
-            },
+	            },
             gridSchemas: [], // Passed on init
-            accountNumber: '',
+            taskLists: [],
+	            taskListQuery: '',
+            homeWidgets: [],
+	            homeCatalogTab: 'all',
+	            pendingHomeWidgetDeleteId: '',
+	            _pendingHomeWidgetDeleteTimer: null,
+	            accountNumber: '',
             entityId: '',
             entityName: '',
             schemaCreatorRequestId: '',
@@ -362,9 +591,20 @@
                 { type: 'overview-agenda', label: 'Agenda', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', desc: '4 prochains événements', targets: ['overview'], instant: true },
                 { type: 'overview-important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', desc: 'Échéances et dates clés', targets: ['overview'], instant: true },
                 { type: 'overview-notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', desc: 'Notes liées au record', targets: ['overview'], instant: true },
+                { type: 'home-priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', desc: 'Priorités, tags et productivité', targets: ['home-overview'], instant: true },
                 { type: 'home-today-tasks', label: 'Tâches du jour', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', desc: 'Toutes les tâches à faire aujourd’hui', targets: ['home-overview'], instant: true },
+                { type: 'home-objectives', label: 'Objectifs', icon: 'solar:target-bold-duotone', color: '#4361ee', desc: 'Objectifs avec progression', targets: ['home-overview'], instant: true },
+                { type: 'home-tasks', label: 'Tâches', icon: 'solar:clipboard-list-bold-duotone', color: '#8b5cf6', desc: 'Liste des tâches en cours', targets: ['home-overview'], instant: true },
+                { type: 'home-finance', label: 'Finance', icon: 'solar:wallet-money-bold-duotone', color: '#6366f1', desc: 'Synthèse finance statique', targets: ['home-overview'], instant: true },
+                { type: 'home-shopping-list', label: 'Liste de courses', icon: 'solar:cart-large-bold-duotone', color: '#10b981', desc: 'Courses partagées', targets: ['home-overview'], instant: true },
+                { type: 'home-tasks-by-record', label: 'Tâches par record', icon: 'solar:folder-with-files-bold-duotone', color: '#3b82f6', desc: 'Regroupement des tâches par record', targets: ['home-overview'], instant: true },
+                { type: 'home-activity-timeline', label: 'Activité timeline', icon: 'solar:history-bold-duotone', color: '#10b981', desc: 'Activité récente verticale', targets: ['home-overview'], instant: true },
+                { type: 'home-ai-feed', label: 'Feed IA', icon: 'solar:magic-stick-3-bold-duotone', color: '#7c3aed', desc: 'Notes intelligentes statiques', targets: ['home-overview'], instant: true },
+                { type: 'home-weekly-timeline', label: 'Timeline semaine', icon: 'solar:calendar-date-bold-duotone', color: '#805dca', desc: 'Planning horizontal de la semaine', targets: ['home-overview'], instant: true },
                 { type: 'home-stats', label: 'Résumé', icon: 'solar:chart-square-bold-duotone', color: '#6366f1', desc: 'Synthèse globale du compte', targets: ['home-overview'], instant: true },
                 { type: 'home-recent-records', label: 'Activité récente', icon: 'solar:history-bold-duotone', color: '#f59e0b', desc: 'Records récemment modifiés', targets: ['home-overview'], instant: true },
+                { type: 'home-upcoming-events', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', desc: 'Événements à venir par record', targets: ['home-overview'], instant: true },
+                { type: 'home-important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', desc: 'Échéances clés par record', targets: ['home-overview'], instant: true },
                 { type: 'home-quick-links', label: 'Raccourcis', icon: 'solar:bolt-circle-bold-duotone', color: '#8b5cf6', desc: 'Accès rapides aux hubs', targets: ['home-overview'], instant: true },
                 { type: 'note',    label: 'Note',       icon: 'solar:notes-bold-duotone',         color: '#f59e0b', desc: 'Bloc de texte simple' },
                 { type: 'tasks',   label: 'Checklist',  icon: 'solar:checklist-bold-duotone',      color: '#ec4899', desc: 'Gestion de tâches', targets: ['sidebar', 'tab'] },
@@ -382,18 +622,310 @@
                 { type: 'cards',    label: 'Cartes',    icon: 'solar:card-bold-duotone',           color: '#e2a03f', desc: 'Relation records' }
             ],
 
-            visibleCatalog() {
-                const targetType = this.target?.type || '';
-                return (this.catalog || []).filter(item => {
-                    if (targetType === 'home-overview' && item.type === 'dynamic-table') return false;
-                    if (!Array.isArray(item.targets) || item.targets.length === 0) return true;
-                    return item.targets.includes(targetType);
-                });
-            },
+		            visibleCatalog() {
+		                const targetType = this.target?.type || '';
+		                if (targetType === 'home-overview') {
+		                    const systemWidgets = (this.catalog || []).filter(item => {
+		                        if (item.type === 'dynamic-table') return false;
+		                        if (!Array.isArray(item.targets) || item.targets.length === 0) return true;
+		                        return item.targets.includes(targetType);
+		                    });
+		                    return [
+		                        { type: 'home-create-widget', label: 'Créer votre widget', icon: 'solar:add-square-bold-duotone', color: '#4361ee', desc: 'HTML ou tâche personnalisée' },
+		                        ...systemWidgets
+		                    ];
+		                }
+	                return (this.catalog || []).filter(item => {
+	                    if (targetType === 'home-overview' && item.type === 'dynamic-table') return false;
+	                    if (!Array.isArray(item.targets) || item.targets.length === 0) return true;
+	                    return item.targets.includes(targetType);
+	                });
+	            },
 
-            catalogItem(type) {
-                return (this.catalog || []).find(c => c.type === type) || null;
-            },
+	            homeCreateCatalog() {
+	                return [
+	                    { type: 'html', label: 'HTML', icon: 'solar:code-bold-duotone', color: '#f97316', desc: 'Bloc HTML personnalisé' },
+	                    { type: 'task-list', label: 'Tâche', icon: 'solar:checklist-bold-duotone', color: '#10b981', desc: 'Liste de tâches liée à un record' }
+	                ];
+	            },
+
+	            homeWidgetCatalog() {
+	                return (this.homeWidgets || []).map(widget => ({
+	                    type: 'home-saved-widget:' + widget.id,
+	                    label: widget.label || 'Widget',
+	                    icon: widget.icon || this.defaultIconForType(widget.type),
+	                    color: widget.color || '#4361ee',
+	                    desc: this.defaultLabelForType(widget.type),
+	                    savedWidgetId: widget.id
+	                }));
+	            },
+
+	            catalogItem(type) {
+	                return (this.catalog || []).find(c => c.type === type) || null;
+	            },
+
+	            headerTitle() {
+	                if (this.step === 'form') return 'Configurer ' + (this.newWidget.label || 'le widget');
+	                if (this.step === 'create-type') return 'Créer votre widget';
+	                return 'Ajouter un widget';
+	            },
+
+	            headerSubtitle() {
+	                if (this.step === 'form') {
+	                    if (this.isTaskListWidgetType(this.newWidget.type)) return 'Choisissez la liste, le partage et les options';
+	                    return this.catalogItem(this.newWidget._catalogType || this.newWidget.type)?.desc || 'Personnalisez les paramètres';
+	                }
+	                if (this.step === 'create-type') return 'Choisissez un élément à personnaliser';
+	                return this.target?.type === 'home-overview' ? 'Vos widgets enregistrés ou un nouveau composant' : 'Choisissez un composant à insérer';
+	            },
+
+	            headerIcon() {
+	                if (this.step === 'form') return this.newWidget.icon || this.defaultIconForType(this.newWidget.type);
+	                if (this.step === 'create-type') return 'solar:widget-add-bold-duotone';
+	                return 'solar:widget-add-bold-duotone';
+	            },
+
+	            headerColor() {
+	                if (this.step === 'form') return this.newWidget.color || '#4361ee';
+	                return '#4361ee';
+	            },
+
+	            footerCancelLabel() {
+	                if (this.step === 'form') return 'Annuler';
+	                if (this.step === 'create-type') return 'Retour';
+	                return 'Fermer';
+	            },
+
+	            backOrClose() {
+	                if (this.step === 'form') {
+	                    if (this.newWidget._id) {
+	                        this.close();
+	                        return;
+	                    }
+	                    this.step = this.target?.type === 'home-overview' ? 'create-type' : 'catalog';
+	                    return;
+	                }
+	                if (this.step === 'create-type') {
+	                    this.step = 'catalog';
+	                    return;
+	                }
+	                this.close();
+	            },
+
+	            homeIconChoices() {
+	                return [
+	                    'solar:code-bold-duotone',
+	                    'solar:checklist-bold-duotone',
+	                    'solar:cart-large-bold-duotone',
+	                    'solar:star-bold-duotone',
+	                    'solar:notes-bold-duotone',
+	                    'solar:folder-with-files-bold-duotone',
+	                    'solar:calendar-bold-duotone',
+	                    'solar:calendar-mark-bold-duotone',
+	                    'solar:target-bold-duotone',
+	                    'solar:wallet-money-bold-duotone',
+	                    'solar:history-bold-duotone',
+	                    'solar:chart-square-bold-duotone',
+	                    'solar:magic-stick-3-bold-duotone',
+	                    'solar:bolt-circle-bold-duotone',
+	                    'solar:monitor-bold-duotone',
+	                    'solar:video-library-bold-duotone',
+	                    'solar:gallery-bold-duotone',
+	                    'solar:link-round-bold-duotone'
+	                ];
+	            },
+
+	            homeColorChoices() {
+	                return ['#4361ee', '#10b981', '#f97316', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444', '#64748b'];
+	            },
+
+	            showHomeWidgetMeta() {
+	                return ['home-overview', 'overview'].includes(this.target?.type);
+	            },
+
+	            defaultIconForType(type) {
+	                const icons = {
+	                    html: 'solar:code-bold-duotone',
+	                    'overview-fields': 'solar:card-bold-duotone',
+	                    'overview-tasks': 'solar:checklist-minimalistic-bold-duotone',
+	                    'overview-docs': 'solar:document-text-bold-duotone',
+	                    'overview-drive': 'solar:cloud-storage-bold-duotone',
+	                    'overview-agenda': 'solar:calendar-bold-duotone',
+	                    'overview-important-dates': 'solar:calendar-mark-bold-duotone',
+	                    'overview-notes': 'solar:notebook-bold-duotone',
+	                    'task-list': 'solar:checklist-bold-duotone',
+	                    'shopping-list': 'solar:cart-large-bold-duotone',
+	                    'priority-day': 'solar:star-bold-duotone',
+	                    'today-tasks': 'solar:checklist-minimalistic-bold-duotone',
+	                    'upcoming-events': 'solar:calendar-bold-duotone',
+	                    'important-dates': 'solar:calendar-mark-bold-duotone',
+	                    objectives: 'solar:target-bold-duotone',
+	                    finance: 'solar:wallet-money-bold-duotone',
+	                    'tasks-by-record': 'solar:folder-with-files-bold-duotone',
+	                    'activity-timeline': 'solar:history-bold-duotone',
+	                    'recent-records': 'solar:history-bold-duotone',
+	                    stats: 'solar:chart-square-bold-duotone',
+	                    'ai-feed': 'solar:magic-stick-3-bold-duotone',
+	                    'weekly-timeline': 'solar:calendar-date-bold-duotone',
+	                    'quick-links': 'solar:bolt-circle-bold-duotone',
+	                    tasks: 'solar:checklist-bold-duotone',
+	                    note: 'solar:notes-bold-duotone',
+	                    notes: 'solar:notes-bold-duotone'
+	                };
+	                return icons[type] || 'solar:widget-bold-duotone';
+	            },
+
+	            defaultLabelForType(type) {
+	                const labels = {
+	                    html: 'HTML',
+	                    'overview-fields': 'Informations',
+	                    'overview-tasks': 'Tâches',
+	                    'overview-docs': 'Documents modèles',
+	                    'overview-drive': 'Fichiers récents',
+	                    'overview-agenda': 'Prochains événements',
+	                    'overview-important-dates': 'Dates importantes',
+	                    'overview-notes': 'Notes',
+	                    'task-list': 'Liste de tâches',
+	                    'shopping-list': 'Liste de courses',
+	                    'priority-day': 'Priorités du jour',
+	                    'today-tasks': 'Tâches du jour',
+	                    'upcoming-events': 'Prochains événements',
+	                    'important-dates': 'Dates importantes',
+	                    objectives: 'Objectifs',
+	                    finance: 'Finance',
+	                    'tasks-by-record': 'Tâches par record',
+	                    'activity-timeline': 'Activité récente',
+	                    'recent-records': 'Activité récente',
+	                    stats: 'Résumé',
+	                    'ai-feed': 'Feed intelligent IA',
+	                    'weekly-timeline': 'Timeline',
+	                    'quick-links': 'Raccourcis',
+	                    tasks: 'Checklist',
+	                    note: 'Note',
+	                    notes: 'Notes'
+	                };
+	                return labels[type] || 'Widget';
+	            },
+
+	            isTaskListWidgetType(type = this.newWidget.type) {
+	                return ['task-list', 'shopping-list'].includes(String(type || ''));
+	            },
+
+	            filteredTaskLists() {
+	                const q = String(this.taskListQuery || '').trim().toLowerCase();
+	                const lists = this.taskLists || [];
+	                if (!q) return lists;
+	                return lists.filter(list => [
+	                    list.label,
+	                    list.rawLabel,
+	                    list.recordTitle,
+	                    list.entityName
+	                ].filter(Boolean).join(' ').toLowerCase().includes(q));
+	            },
+
+	            defaultConfigForType(type, catalogType = type) {
+	                const defaults = {
+	                    'overview-fields': { limit: 12, showLink: true },
+	                    'overview-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true },
+	                    'overview-docs': { limit: 3, showLink: true },
+	                    'overview-drive': { limit: 4, showLink: true },
+	                    'overview-agenda': { limit: 4, showLink: true, allowAdd: true },
+	                    'overview-important-dates': { limit: 4, showLink: true, allowAdd: true },
+	                    'overview-notes': { showLink: true },
+	                    'home-priority-day': { limit: 4, showProductivity: true },
+	                    'home-today-tasks': { limit: 5, showCompleted: false, showLink: true },
+	                    'home-objectives': { limit: 6, showLink: true },
+	                    'home-tasks': { limit: 5, showCompleted: false, showLink: true },
+	                    'home-finance': { limit: 4, period: 'Ce mois-ci' },
+	                    'home-shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true },
+	                    'home-tasks-by-record': { limit: 4, showLink: true },
+	                    'home-activity-timeline': { limit: 5, showLink: true },
+	                    'home-ai-feed': { limit: 3 },
+	                    'home-weekly-timeline': { limit: 7 },
+	                    'home-stats': {},
+	                    'home-recent-records': { limit: 5, showLink: true },
+	                    'home-upcoming-events': { limit: 4, showLink: true },
+	                    'home-important-dates': { limit: 4, showLink: true },
+	                    'home-quick-links': { showTasks: true, showNotes: true, showDocuments: true },
+	                    'priority-day': { limit: 4, showProductivity: true },
+	                    'today-tasks': { limit: 5, showCompleted: false, showLink: true },
+	                    objectives: { limit: 6, showLink: true },
+	                    tasks: { tasks: [], limit: 5, showCompleted: false, showLink: true },
+	                    finance: { limit: 4, period: 'Ce mois-ci' },
+	                    'shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true },
+	                    'tasks-by-record': { limit: 4, showLink: true },
+	                    'activity-timeline': { limit: 5, showLink: true },
+	                    'recent-records': { limit: 5, showLink: true },
+	                    'upcoming-events': { limit: 4, showLink: true },
+	                    'important-dates': { limit: 4, showLink: true },
+	                    stats: {},
+	                    'ai-feed': { limit: 3 },
+	                    'weekly-timeline': { limit: 7 },
+	                    'quick-links': { showTasks: true, showNotes: true, showDocuments: true },
+	                    note: { content: '' },
+	                    notes: { content: '' },
+	                    'task-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: false, showPriority: false },
+	                    html: { content: '', minHeight: 120 },
+	                    iframe: { url: '', height: 300 },
+	                    video: { url: '', height: 320 },
+	                    link: { url: '', description: '', newTab: true },
+	                    image: { url: '', alt: '', height: 260, fit: 'contain' },
+	                    'dynamic-table': { schemaId: '', schemaIds: [], displayMode: catalogType === 'dynamic-table-single' ? 'panels' : 'tabs', enableAdd: true, enableDocPreview: false },
+	                    timeline: { limit: 5 },
+	                    kpi: {},
+	                    chart: {},
+	                    fields: {},
+	                    cards: { limit: 6 },
+	                    separator: { height: 1 }
+	                };
+	                return JSON.parse(JSON.stringify(defaults[catalogType] || defaults[type] || {}));
+	            },
+
+	            supportsLimit(type = this.newWidget.type) {
+	                return ['overview-fields','overview-tasks','overview-docs','overview-drive','overview-agenda','overview-important-dates','priority-day','today-tasks','tasks','objectives','finance','shopping-list','task-list','tasks-by-record','activity-timeline','recent-records','upcoming-events','important-dates','ai-feed','weekly-timeline','timeline','cards'].includes(String(type || ''));
+	            },
+
+	            supportsShowLink(type = this.newWidget.type) {
+	                return ['overview-fields','overview-tasks','overview-docs','overview-drive','overview-agenda','overview-important-dates','overview-notes','today-tasks','tasks','objectives','tasks-by-record','activity-timeline','recent-records','upcoming-events','important-dates'].includes(String(type || ''));
+	            },
+
+	            supportsShowCompleted(type = this.newWidget.type) {
+	                return ['overview-tasks','tasks','today-tasks','task-list','shopping-list'].includes(String(type || ''));
+	            },
+
+	            supportsShowPriority(type = this.newWidget.type) {
+	                return this.isTaskListWidgetType(type) || String(type || '') === 'overview-tasks';
+	            },
+
+	            supportsInlineAdd(type = this.newWidget.type) {
+	                return this.isTaskListWidgetType(type) || ['overview-agenda','overview-important-dates'].includes(String(type || ''));
+	            },
+
+	            supportsSharing(type = this.newWidget.type) {
+	                return this.isTaskListWidgetType(type);
+	            },
+
+	            selectTaskList(listId) {
+	                const id = String(listId || '');
+	                if (!id) return;
+	                const list = (this.taskLists || []).find(item => item.id === id);
+	                const cfg = this.newWidget.config || {};
+	                cfg.taskListId = id;
+	                this.newWidget.config = cfg;
+	                if (list) {
+	                    if (!this.newWidget.label || ['Tâche', 'Liste de tâches'].includes(this.newWidget.label)) {
+	                        this.newWidget.label = list.label || 'Liste de tâches';
+	                    }
+	                    if (!this.newWidget.color) this.newWidget.color = list.color || '#10b981';
+	                }
+	            },
+
+	            applyDefaultTaskList() {
+	                if (!this.isTaskListWidgetType(this.newWidget.type)) return;
+	                if (this.newWidget.config?.taskListId) return;
+	                const first = (this.taskLists || [])[0];
+	                if (first?.id) this.selectTaskList(first.id);
+	            },
 
             initPicker(data = {}) {
                 const incoming = Array.isArray(data.gridSchemas) ? data.gridSchemas : [];
@@ -404,8 +936,14 @@
                     if (!id || deletedIds.has(id)) return;
                     merged.set(id, { ...schema, id });
                 });
-                this.gridSchemas = Array.from(merged.values());
-                this.accountNumber = data.accountNumber || this.accountNumber || '';
+	                this.gridSchemas = Array.from(merged.values());
+	                this.taskLists = Array.isArray(data.taskLists)
+	                    ? data.taskLists.map(list => ({ ...list, id: String(list.id || list._id || '') })).filter(list => list.id)
+	                    : this.taskLists;
+	                this.homeWidgets = Array.isArray(data.homeWidgets)
+	                    ? data.homeWidgets.map(widget => ({ ...widget, id: String(widget.id || widget._id || '') })).filter(widget => widget.id)
+	                    : this.homeWidgets;
+	                this.accountNumber = data.accountNumber || this.accountNumber || '';
                 this.entityId = data.entityId || this.entityId || '';
                 this.entityName = data.entityName || this.entityName || '';
                 this.ensureSchemaCreateBridge();
@@ -465,7 +1003,10 @@
             initOpen(target) {
                 this.target = target;
                 this.step = 'catalog';
+                this.homeCatalogTab = 'all';
                 this.saving = false;
+                this.taskListQuery = '';
+                this.pendingHomeWidgetDeleteId = '';
                 this.pendingSchemaDeleteId = '';
                 this.deletingSchemaId = '';
                 this.newWidget = { _id: null, _catalogType: '', type: '', label: '', icon: '', color: '#4361ee', config: {} };
@@ -476,14 +1017,17 @@
 
             openEditWidget(target, widget) {
                 this.target = target;
+                this.taskListQuery = '';
+	                const type = widget.type || '';
+	                const defaults = this.defaultConfigForType(type, widget._catalogType || type);
                 this.newWidget = {
                     _id: widget._id,
-                    _catalogType: '',
-                    type: widget.type,
-                    label: widget.label,
-                    icon: widget.icon,
-                    color: widget.color,
-                    config: JSON.parse(JSON.stringify(widget.config || {}))
+                    _catalogType: widget._catalogType || '',
+                    type,
+                    label: widget.label || this.defaultLabelForType(type),
+                    icon: widget.icon || this.defaultIconForType(type),
+                    color: widget.color || '#4361ee',
+                    config: { ...defaults, ...JSON.parse(JSON.stringify(widget.config || {})) }
                 };
                 // Backwards-compat: migrate schemaId → schemaIds for dynamic-table
 	                if (widget.type === 'dynamic-table') {
@@ -492,17 +1036,20 @@
 	                        cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
 	                    }
 	                    if (!cfg.displayMode) cfg.displayMode = cfg.schemaIds.length > 1 ? 'tabs' : 'tabs';
-                        if (cfg.displayMode === 'panels' && cfg.schemaIds.length > 1) cfg.schemaIds = [cfg.schemaIds[0]];
-                        this.syncSchemaId();
-	                }
-                this.step = 'form';
+	                        if (cfg.displayMode === 'panels' && cfg.schemaIds.length > 1) cfg.schemaIds = [cfg.schemaIds[0]];
+	                        this.syncSchemaId();
+		                }
+	                this.applyDefaultTaskList();
+	                this.step = 'form';
                 this.open = true;
                 this.saving = false;
+                this.forceOverlayState(true);
             },
 
             close() {
                 this.open = false;
                 this.pendingSchemaDeleteId = '';
+                this.pendingHomeWidgetDeleteId = '';
                 this.deletingSchemaId = '';
                 this.forceOverlayState(false);
             },
@@ -621,55 +1168,80 @@
                 setTimeout(apply, 180);
             },
 
-            selectType(type) {
-                const w = this.catalogItem(type);
-                if (!w) return;
-                const actualType = type === 'dynamic-table-single' ? 'dynamic-table' : type;
+	            selectType(type) {
+	                if (type === 'home-create-widget') {
+	                    this.step = 'create-type';
+	                    return;
+	                }
+	                if (String(type || '').startsWith('home-saved-widget:')) {
+	                    const widgetId = String(type).replace('home-saved-widget:', '');
+	                    this.insertSavedHomeWidget(widgetId);
+	                    return;
+	                }
+	                const w = this.catalogItem(type);
+	                const homeCreate = this.homeCreateCatalog().find(item => item.type === type);
+	                const source = w || homeCreate;
+	                if (!source) return;
+	                const actualType = type === 'dynamic-table-single' ? 'dynamic-table' : type;
 
-                const defaults = {
-                    'overview-fields': { config: {} },
-                    'overview-tasks': { config: {} },
-                    'overview-docs': { config: {} },
-                    'overview-drive': { config: {} },
-                    'overview-agenda': { config: {} },
-                    'overview-important-dates': { config: {} },
-                    'overview-notes': { config: {} },
-                    'home-today-tasks': { config: {} },
-                    'home-stats': { config: {} },
-                    'home-recent-records': { config: {} },
-                    'home-quick-links': { config: {} },
-                    'note': { config: { content: '' } },
-                    'tasks': { config: { tasks: [] } },
-                    'html': { config: { content: '' } },
-                    'iframe': { config: { url: '', height: 300 } },
-                    'video': { config: { url: '', height: 320 } },
-                    'link': { config: { url: '', description: '', newTab: true } },
-                    'image': { config: { url: '', alt: '' } },
-	                    'dynamic-table': { config: { schemaId: '', schemaIds: [], displayMode: type === 'dynamic-table-single' ? 'panels' : 'tabs', enableAdd: true, enableDocPreview: false } },
-                    'timeline': { config: {} },
-                    'kpi': { config: {} },
-                    'chart': { config: {} },
-                    'fields': { config: {} },
-                    'cards': { config: {} },
-                    'separator': { config: {} }
-                };
-
-                const d = defaults[actualType] || { config: {} };
                 this.newWidget = {
-                    _catalogType: type,
-                    type: actualType,
-                    label: w.label,
-                    icon: w.icon,
-                    color: w.color,
-                    config: JSON.parse(JSON.stringify(d.config))
-                };
+	                    _catalogType: type,
+	                    type: actualType,
+	                    label: source.label,
+	                    icon: source.icon,
+	                    color: source.color,
+	                    config: this.defaultConfigForType(actualType, type)
+	                };
+	                this.applyDefaultTaskList();
 
-                if (w.instant || type === 'separator') {
-                    this.save();
-                } else {
-                    this.step = 'form';
-                }
-            },
+	                if (source.instant || type === 'separator') {
+	                    this.save();
+	                } else {
+	                    this.step = 'form';
+	                }
+	            },
+
+	            insertSavedHomeWidget(widgetId) {
+	                const widget = (this.homeWidgets || []).find(item => item.id === widgetId);
+	                if (!widget) return;
+	                window.dispatchEvent(new CustomEvent('insert-home-overview-widget', {
+	                    detail: {
+	                        target: this.target,
+	                        widget: { ...JSON.parse(JSON.stringify(widget)), _id: widget.id }
+	                    }
+	                }));
+	                this.close();
+	            },
+
+	            editSavedHomeWidget(widgetId) {
+	                const widget = (this.homeWidgets || []).find(item => item.id === widgetId);
+	                if (!widget) return;
+	                this.openEditWidget(this.target || { type: 'home-overview' }, {
+	                    ...JSON.parse(JSON.stringify(widget)),
+	                    _id: widget.id,
+	                    id: widget.id
+	                });
+	            },
+
+	            deleteSavedHomeWidget(widgetId) {
+	                const id = String(widgetId || '');
+	                if (!id) return;
+	                if (this.pendingHomeWidgetDeleteId !== id) {
+	                    this.pendingHomeWidgetDeleteId = id;
+	                    clearTimeout(this._pendingHomeWidgetDeleteTimer);
+	                    this._pendingHomeWidgetDeleteTimer = setTimeout(() => {
+	                        if (this.pendingHomeWidgetDeleteId === id) this.pendingHomeWidgetDeleteId = '';
+	                    }, 3200);
+	                    window.showMessage && window.showMessage('Clique encore pour supprimer ce widget personnalisé.', 'warning');
+	                    return;
+	                }
+	                clearTimeout(this._pendingHomeWidgetDeleteTimer);
+	                this.pendingHomeWidgetDeleteId = '';
+	                this.homeWidgets = (this.homeWidgets || []).filter(widget => widget.id !== id);
+	                window.dispatchEvent(new CustomEvent('delete-home-overview-custom-widget', {
+	                    detail: { widgetId: id }
+	                }));
+	            },
 
             async save() {
                 this.saving = true;
@@ -689,10 +1261,16 @@
                         this.saving = false;
                         window.showMessage ? window.showMessage('Choisis ou crée un TD avant d’ajouter ce widget.', 'warning') : alert('Choisis ou crée un TD avant d’ajouter ce widget.');
                         return;
-                    }
-                }
+	                    }
+	                }
 
-                try {
+	                if (this.isTaskListWidgetType(this.newWidget.type) && !this.newWidget.config?.taskListId) {
+	                    this.saving = false;
+	                    window.showMessage ? window.showMessage('Choisis une liste de tâches avant d’enregistrer ce widget.', 'warning') : alert('Choisis une liste de tâches avant d’enregistrer ce widget.');
+	                    return;
+	                }
+
+	                try {
                     if (this.newWidget._id) {
                         await this.saveExistingWidget();
                     } else {
@@ -777,8 +1355,9 @@
 	            },
 
 	            async saveToOverview() {
+	                const eventName = this.newWidget._id ? 'update-overview-widget' : 'insert-overview-widget';
 	                for (const widget of this._expandedWidgetsForSave()) {
-	                    window.dispatchEvent(new CustomEvent('insert-overview-widget', {
+	                    window.dispatchEvent(new CustomEvent(eventName, {
 	                        detail: {
 	                            target: this.target,
 	                            widget
@@ -802,6 +1381,10 @@
             async saveExistingWidget() {
                 if (this.target?.type === 'home-overview') {
                     await this.saveToHomeOverview();
+                    return;
+                }
+                if (this.target?.type === 'overview') {
+                    await this.saveToOverview();
                     return;
                 }
                 console.log('[widgetPicker] saveExistingWidget:', this.newWidget);
@@ -884,8 +1467,10 @@
 <script type="module" src="/dist/dynamicTable.js"></script>
 
 <style>
+.wp-catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
+@media (max-width: 520px) { .wp-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

@@ -1,7 +1,7 @@
 <div class="ov-card-header">
-    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="18" style="color:#10b981"></iconify-icon>
-    <span>Tâches</span>
-    <a href="<%= _recBase %>/tasks" class="ov-card-link">Voir tout →</a>
+    <iconify-icon :icon="widgetIcon(wid, 'solar:checklist-minimalistic-bold-duotone')" width="18" :style="'color:' + widgetColor(wid, '#10b981')"></iconify-icon>
+    <span x-text="widgetTitle(wid, 'Tâches')">Tâches</span>
+    <a href="<%= _recBase %>/tasks" class="ov-card-link" x-show="widgetShowLink(wid, true)">Voir tout →</a>
 </div>
 <style>
 .ov-tasks-widget { padding:0 4px; }
@@ -62,7 +62,7 @@
             <!-- Task list (max 5) -->
             <template x-if="recentTasks.length > 0">
                 <div class="ov-task-list">
-                    <template x-for="task in recentTasks" :key="task._id">
+                    <template x-for="task in recentTasks.filter(t => widgetOption(wid, 'showCompleted', false) || t.statusLabel !== 'Terminé').slice(0, widgetLimit(wid, 5))" :key="task._id">
                         <div class="ov-task-row">
                             <span class="ov-task-dot" :style="'background:' + (task.statusColor || '#94a3b8')"></span>
                             <span class="ov-task-title" :class="task.statusLabel === 'Terminé' ? 'ov-task-title--done' : ''" x-text="task.title"></span>
@@ -70,7 +70,7 @@
                                 <!-- Status badge -->
                                 <span class="ov-task-badge" :style="'background:' + (task.statusColor || '#94a3b8') + '12;color:' + (task.statusColor || '#94a3b8')" x-text="task.statusLabel"></span>
                                 <!-- Priority badge -->
-                                <template x-if="task.priority && task.priority !== 'Aucune'">
+                                <template x-if="widgetOption(wid, 'showPriority', true) && task.priority && task.priority !== 'Aucune'">
                                     <span class="ov-task-priority" :style="'background:' + (task.priorityColor || '#6b7280') + '12;color:' + (task.priorityColor || '#6b7280')">
                                         <iconify-icon :icon="priorityIcon(task.priority)" width="9"></iconify-icon>
                                         <span x-text="task.priority"></span>
@@ -150,7 +150,7 @@ function ovTasks() {
                     if (b.dueDate) return 1;
                     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
                 });
-                this.recentTasks = allTasks.slice(0, 5);
+                this.recentTasks = allTasks.slice(0, 40);
             } catch (e) {
                 console.error('[ovTasks] Error:', e);
             }

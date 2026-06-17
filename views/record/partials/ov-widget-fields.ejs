@@ -3,6 +3,7 @@ var _showHeader = (typeof _showHeader !== 'undefined') ? _showHeader : true;
 var _isFiche = (typeof _isFiche !== 'undefined') ? _isFiche : false;
 var _fieldsToRender = (typeof _ovFields !== 'undefined') ? _ovFields : (typeof _ficheFields !== 'undefined' ? _ficheFields : []);
 var _hiddenList = (typeof _hiddenFields !== 'undefined') ? _hiddenFields : [];
+var _fieldsHeaderTitle = (typeof entity !== 'undefined' && (entity.nameSingular || entity.name)) ? (entity.nameSingular || entity.name) : 'Informations';
 function _jsonAttr(value) {
     return JSON.stringify(value).replace(/'/g, '&#39;').replace(/</g, '\\u003c');
 }
@@ -12,9 +13,9 @@ function _boolOn(value) {
 %>
 <% if (_showHeader) { %>
 <div class="ov-card-header">
-    <iconify-icon icon="solar:card-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
-    <span><%= entity.nameSingular || entity.name %></span>
-    <a href="<%= _recBase %>/fiche" class="ov-card-link">Voir tout →</a>
+    <iconify-icon :icon="widgetIcon(wid, 'solar:card-bold-duotone')" width="18" :style="'color:' + widgetColor(wid, '#4361ee')"></iconify-icon>
+    <span x-text='widgetTitle(wid, <%- JSON.stringify(_fieldsHeaderTitle).replace(/'/g, '&#39;').replace(/</g, '\\u003C') %>)'><%= _fieldsHeaderTitle %></span>
+    <a href="<%= _recBase %>/fiche" class="ov-card-link" x-show="widgetShowLink(wid, true)">Voir tout →</a>
 </div>
 <% } %>
 <div class="ov-fields-list" <%- _isFiche ? 'x-ref="ficheFieldsList"' : '' %>>
@@ -30,6 +31,7 @@ function _boolOn(value) {
          <% if (f.type !== 'relation' && f.type !== 'file' && f.type !== 'image' && f.type !== 'gallery') { %>@click.outside="autoSave('<%= f.key %>')"<% } %>
          <% } %>
          <% } else { %>
+         x-show="widgetLimit(wid, 12) >= <%= i + 1 %>"
          <% if (_hiddenList.includes(f.key)) { %>
          style="display: none;"
          <% } %>

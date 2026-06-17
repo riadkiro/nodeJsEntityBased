@@ -15,6 +15,7 @@ const RecordTaskSchema = new mongoose.Schema({
     statusColor: { type: String, default: '#9ca3af' },
     priority: { type: String, default: 'Aucune', enum: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'] },
     priorityColor: { type: String, default: '' },
+    isDayPriority: { type: Boolean, default: false, index: true },
     startDate: { type: Date, default: null },
     dueDate: { type: Date, default: null },
     assignedTo: { type: String, default: '' },

@@ -141,6 +141,277 @@ router.get("/api/agenda-hub", async (req, res) => {
 // Tasks Hub API — must be before api-account (has /:id catch-all)
 const TaskListModel = require('../models/task-list.model');
 const RecordTaskModel = require('../models/record-task.model');
+const hubTaskText = (value, fallback = '') => {
+    if (typeof value !== 'string') return fallback;
+    const text = value.trim();
+    if (!text || ['false', 'null', 'undefined'].includes(text.toLowerCase())) return fallback;
+    return text;
+};
+const hubTaskListLabel = (value) => {
+    const label = hubTaskText(value, 'À faire');
+    const lower = label.toLowerCase();
+    return (lower === 'général' || lower === 'tâches du jour' || lower === 'taches du jour') ? 'À faire' : label;
+};
+const hubDefaultStatuses = [
+    { label: 'À faire', color: '#9ca3af', order: 0 },
+    { label: 'En cours', color: '#3b82f6', order: 1 },
+    { label: 'En revue', color: '#f59e0b', order: 2 },
+    { label: 'Terminé', color: '#22c55e', order: 3 },
+    { label: 'Bloqué', color: '#ef4444', order: 4 },
+];
+const hubStatusColors = {
+    'À faire': '#9ca3af',
+    'En cours': '#3b82f6',
+    'En revue': '#f59e0b',
+    'Terminé': '#22c55e',
+    'Bloqué': '#ef4444'
+};
+const hubPriorityColors = {
+    Aucune: '',
+    Basse: '#22c55e',
+    Moyenne: '#f59e0b',
+    Haute: '#ef4444',
+    Urgente: '#dc2626'
+};
+const homeOverviewDataViewId = 'home_overview';
+const homeOverviewDefaultData = () => ({
+    goals: [
+        { id: 'goal_saas', title: 'Lancer mon SaaS', value: 60, color: '#536cff' },
+        { id: 'goal_health', title: 'Perdre 8 kg', value: 40, color: '#4b7bff' },
+        { id: 'goal_savings', title: 'Économiser 500€', value: 25, color: '#71d095' },
+        { id: 'goal_books', title: 'Lire 12 livres', value: 70, color: '#ff8a00' }
+    ],
+    financeRows: [
+        { id: 'finance_total', label: 'Dépenses totales', value: '1 247,50 €', color: '#5b6df7', icon: 'solar:wallet-money-bold-duotone' },
+        { id: 'finance_subs', label: 'Abonnements', value: '67,99 €', color: '#10b981', icon: 'solar:card-bold-duotone' },
+        { id: 'finance_bills', label: 'Factures à venir', value: '156,00 €', color: '#f97316', icon: 'solar:bill-list-bold-duotone' },
+        { id: 'finance_budget', label: 'Budget restant', value: '452,50 €', color: '#10b981', icon: 'solar:wallet-bold-duotone' }
+    ],
+    shoppingItems: [
+        { id: 'shop_lait', label: 'Lait', done: false },
+        { id: 'shop_pain', label: 'Pain', done: true },
+        { id: 'shop_couches', label: 'Couches bébé', done: false },
+        { id: 'shop_fruits', label: 'Fruits', done: false },
+        { id: 'shop_lessive', label: 'Lessive', done: false }
+    ]
+});
+const homeText = (value, fallback = '') => {
+    const text = String(value ?? '').trim();
+    return text ? text.slice(0, 140) : fallback;
+};
+const homeColor = (value, fallback = '#4361ee') => {
+    const color = String(value || '').trim();
+    return /^#[0-9a-f]{3,8}$/i.test(color) ? color : fallback;
+};
+const homePercent = value => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+const normalizeHomeOverviewData = (value = {}) => {
+    const defaults = homeOverviewDefaultData();
+    const src = value && typeof value === 'object' ? value : {};
+    const goals = Array.isArray(src.goals) && src.goals.length ? src.goals : defaults.goals;
+    const financeRows = Array.isArray(src.financeRows) && src.financeRows.length ? src.financeRows : defaults.financeRows;
+    const shoppingItems = Array.isArray(src.shoppingItems) && src.shoppingItems.length ? src.shoppingItems : defaults.shoppingItems;
+
+    return {
+        goals: goals.slice(0, 12).map((goal, index) => ({
+            id: homeText(goal.id, 'goal_' + index),
+            title: homeText(goal.title, defaults.goals[index]?.title || 'Objectif'),
+            value: homePercent(goal.value),
+            color: homeColor(goal.color, defaults.goals[index]?.color || '#536cff')
+        })),
+        financeRows: financeRows.slice(0, 8).map((row, index) => ({
+            id: homeText(row.id, 'finance_' + index),
+            label: homeText(row.label, defaults.financeRows[index]?.label || 'Ligne finance'),
+            value: homeText(row.value, defaults.financeRows[index]?.value || '0,00 €'),
+            color: homeColor(row.color, defaults.financeRows[index]?.color || '#6366f1'),
+            icon: homeText(row.icon, defaults.financeRows[index]?.icon || 'solar:wallet-money-bold-duotone')
+        })),
+        shoppingItems: shoppingItems.slice(0, 40).map((item, index) => ({
+            id: homeText(item.id, 'shop_' + index),
+            label: homeText(item.label, defaults.shoppingItems[index]?.label || 'Article'),
+            done: !!item.done
+        }))
+    };
+};
+async function ensurePersonalTaskRecord(req) {
+    const _tc = require('../middleware/tenant').tenantCollection;
+    const Entity = await _tc(req, "Entity");
+    const Record = await _tc(req, "Record");
+    const slug = 'dexapp-personal-space';
+
+    let entity = await Entity.findOne({ slug });
+    if (!entity) {
+        entity = await Entity.create({
+            name: 'Espace perso',
+            nameSingular: 'Espace perso',
+            namePlural: 'Espace perso',
+            slug,
+            icon: 'solar:user-rounded-bold-duotone',
+            color: '#7c3aed',
+            isSystem: true,
+            enabledStandardFields: ['title', 'description'],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }],
+            createdBy: req.user?._id
+        });
+    }
+
+    let record = await Record.findOne({ entityId: entity._id, slug });
+    if (!record) {
+        record = await Record.create({
+            entityId: entity._id,
+            title: 'Espace perso',
+            computedTitle: 'Espace perso',
+            slug,
+            icon: 'solar:user-rounded-bold-duotone',
+            color: '#7c3aed',
+            published: true,
+            status: 'published',
+            createdBy: req.user?._id
+        });
+    }
+
+    return { entity, record };
+}
+
+async function ensurePersonalTaskList(req, options = {}) {
+    const label = hubTaskListLabel(options.label || 'À faire');
+    const color = options.color || '#6366f1';
+    const icon = options.icon || 'solar:checklist-bold-duotone';
+    const { entity, record } = await ensurePersonalTaskRecord(req);
+    const lists = await TaskListModel.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 });
+    let list = lists.find(l => hubTaskListLabel(l.label).toLowerCase() === label.toLowerCase());
+    if (!list) {
+        list = await TaskListModel.create({
+            recordId: record._id,
+            label,
+            color,
+            icon,
+            order: lists.length,
+            statuses: hubDefaultStatuses
+        });
+    } else if (!list.icon || list.color !== color) {
+        list = await TaskListModel.findByIdAndUpdate(
+            list._id,
+            { $set: { icon: list.icon || icon, color: list.color || color } },
+            { new: true }
+        );
+    }
+
+    const seedTasks = Array.isArray(options.seedTasks) ? options.seedTasks : [];
+    if (seedTasks.length) {
+        const existingTasks = await RecordTaskModel.countDocuments({ taskListId: list._id });
+        if (!existingTasks) {
+            const docs = seedTasks
+                .map((item, index) => {
+                    const title = hubTaskText(item?.title || item?.label, '');
+                    if (!title) return null;
+                    const done = !!item?.done;
+                    return {
+                        taskListId: list._id,
+                        recordId: record._id,
+                        title,
+                        description: hubTaskText(item?.description, ''),
+                        status: done ? 'Terminé' : 'À faire',
+                        statusColor: done ? hubStatusColors['Terminé'] : hubStatusColors['À faire'],
+                        priority: 'Aucune',
+                        priorityColor: '',
+                        order: index
+                    };
+                })
+                .filter(Boolean);
+            if (docs.length) await RecordTaskModel.insertMany(docs);
+        }
+    }
+
+    return { entity, record, list };
+}
+
+async function ensurePersonalTasksTarget(req) {
+    return ensurePersonalTaskList(req, {
+        label: 'À faire',
+        color: '#6366f1',
+        icon: 'solar:checklist-bold-duotone'
+    });
+}
+
+async function resolveHubTaskTarget(req, taskListId = '') {
+    const id = hubTaskText(taskListId, '');
+    if (!id) return ensurePersonalTasksTarget(req);
+
+    const _tc = require('../middleware/tenant').tenantCollection;
+    const Entity = await _tc(req, "Entity");
+    const Record = await _tc(req, "Record");
+    const list = await TaskListModel.findById(id);
+    if (!list) return null;
+
+    const record = await Record.findById(list.recordId);
+    if (!record) return null;
+    const entity = record.entityId ? await Entity.findById(record.entityId) : null;
+    return { entity: entity || {}, record, list };
+}
+
+router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
+    try {
+        const title = hubTaskText(req.body?.title, '');
+        if (!title) return res.status(400).json({ error: 'Title required' });
+
+        const status = hubStatusColors[req.body?.status] ? req.body.status : 'À faire';
+        const priority = hubPriorityColors.hasOwnProperty(req.body?.priority) ? req.body.priority : 'Aucune';
+        const target = await resolveHubTaskTarget(req, req.body?.taskListId);
+        if (!target) return res.status(404).json({ error: 'Liste de tâches introuvable' });
+        const { entity, record, list } = target;
+        const order = await RecordTaskModel.countDocuments({ taskListId: list._id });
+        const task = await RecordTaskModel.create({
+            taskListId: list._id,
+            recordId: record._id,
+            title,
+            description: hubTaskText(req.body?.description, ''),
+            status,
+            statusColor: hubStatusColors[status] || '#9ca3af',
+            priority,
+            priorityColor: hubPriorityColors[priority] || '',
+            startDate: req.body?.startDate || null,
+            dueDate: req.body?.dueDate || null,
+            assignedTo: hubTaskText(req.body?.assignedTo, ''),
+            order
+        });
+
+        res.json({
+            success: true,
+            task: {
+                _id: task._id.toString(),
+                title: task.title,
+                description: task.description || '',
+                status: task.status,
+                statusColor: task.statusColor,
+                priority: task.priority || 'Aucune',
+                priorityColor: task.priorityColor || '',
+                isDayPriority: !!task.isDayPriority,
+                startDate: task.startDate || null,
+                dueDate: task.dueDate || null,
+                assignedTo: task.assignedTo || '',
+                createdAt: task.createdAt || null,
+                updatedAt: task.updatedAt || null,
+                listId: list._id.toString(),
+                listLabel: hubTaskListLabel(list.label),
+                listColor: list.color || '#6366f1',
+                listIcon: list.icon || 'solar:checklist-bold-duotone',
+                recordId: record._id.toString(),
+                recordTitle: record.computedTitle || record.title || 'Espace perso',
+                recordIcon: record.icon || entity.icon || 'solar:user-rounded-bold-duotone',
+                recordColor: record.color || entity.color || '#7c3aed',
+                entityId: entity._id.toString(),
+                entityName: entity.name || 'Espace perso',
+                entitySlug: entity.slug || '',
+                entityIcon: entity.icon || 'solar:user-rounded-bold-duotone',
+                entityColor: entity.color || '#7c3aed',
+                scope: 'personal'
+            }
+        });
+    } catch (error) {
+        console.error('[TasksHub] Create personal task error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 router.get("/api/tasks-hub", async (req, res) => {
     try {
         const _tc = require('../middleware/tenant').tenantCollection;
@@ -148,18 +419,18 @@ router.get("/api/tasks-hub", async (req, res) => {
         const Record = await _tc(req, "Record");
 
         // Scope to tenant: get all record IDs belonging to this tenant first
-        const tenantRecords = await Record.find({}).select('_id title referenceTitle entityId').lean();
+        const tenantRecords = await Record.find({}).select('_id title computedTitle referenceTitle entityId icon color slug image').lean();
         const tenantRecordIds = tenantRecords.map(r => r._id);
         if (tenantRecordIds.length === 0) {
             return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
         }
 
-        const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).lean();
+        const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: 1 }).lean();
         if (allLists.length === 0) {
             return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
         }
 
-        const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).lean();
+        const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: -1 }).lean();
         const records = tenantRecords;
         const recordMap = {};
         records.forEach(r => { recordMap[r._id.toString()] = r; });
@@ -168,6 +439,14 @@ router.get("/api/tasks-hub", async (req, res) => {
         const entities = await Entity.find({ _id: { $in: entityIds } }).select('name slug icon color').lean();
         const entityMap = {};
         entities.forEach(e => { entityMap[e._id.toString()] = e; });
+
+        const tasksByListId = {};
+        allTasks.forEach(task => {
+            const listId = task.taskListId?.toString();
+            if (!listId) return;
+            if (!tasksByListId[listId]) tasksByListId[listId] = [];
+            tasksByListId[listId].push(task);
+        });
 
         const entityGroups = {};
         let totalTasks = 0, totalDone = 0;
@@ -187,17 +466,85 @@ router.get("/api/tasks-hub", async (req, res) => {
                 };
             }
             if (!entityGroups[eId].records[rId]) {
+                const recordTitle = hubTaskText(record.computedTitle || record.referenceTitle || record.title, 'Sans titre');
                 entityGroups[eId].records[rId] = {
-                    recordId: rId, recordTitle: record.referenceTitle || record.title || 'Sans titre',
-                    totalTasks: 0, doneTasks: 0, listsCount: 0
+                    recordId: rId,
+                    recordTitle,
+                    recordSlug: record.slug || '',
+                    recordIcon: record.icon || entity?.icon || 'solar:folder-bold-duotone',
+                    recordColor: record.color || entity?.color || '#4361ee',
+                    entityId: eId,
+                    entityName: entity?.name || 'Sans entité',
+                    entitySlug: entity?.slug || '',
+                    entityIcon: entity?.icon || 'solar:folder-bold-duotone',
+                    entityColor: entity?.color || '#4361ee',
+                    totalTasks: 0,
+                    doneTasks: 0,
+                    listsCount: 0,
+                    lists: [],
+                    tasks: []
                 };
             }
 
-            const listTasks = allTasks.filter(t => t.taskListId.toString() === list._id.toString());
+            const listId = list._id.toString();
+            const listLabel = hubTaskListLabel(list.label);
+            const listColor = list.color || '#6366f1';
+            const listIcon = list.icon || 'solar:checklist-bold-duotone';
+            const listStatuses = (Array.isArray(list.statuses) && list.statuses.length > 0
+                ? list.statuses
+                : hubDefaultStatuses)
+                .slice()
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map(s => ({ label: s.label, color: s.color, order: s.order || 0 }));
+            const listTasks = (tasksByListId[listId] || []).slice().sort((a, b) => {
+                const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+                const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+                if (ao !== bo) return ao - bo;
+                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+            });
+            const normalizedTasks = listTasks.map(t => ({
+                _id: t._id.toString(),
+                title: hubTaskText(t.title, 'Sans titre'),
+                description: t.description || '',
+                status: hubTaskText(t.status, 'À faire'),
+                statusColor: t.statusColor || '#9ca3af',
+                priority: hubTaskText(t.priority, 'Aucune'),
+                priorityColor: t.priorityColor || '',
+                isDayPriority: !!t.isDayPriority,
+                startDate: t.startDate || null,
+                dueDate: t.dueDate || null,
+                assignedTo: t.assignedTo || '',
+                createdAt: t.createdAt || null,
+                updatedAt: t.updatedAt || null,
+                listId,
+                listLabel,
+                listColor,
+                listIcon,
+                recordId: rId,
+                recordTitle: entityGroups[eId].records[rId].recordTitle,
+                recordIcon: entityGroups[eId].records[rId].recordIcon,
+                recordColor: entityGroups[eId].records[rId].recordColor,
+                entityId: eId,
+                entityName: entity?.name || 'Sans entité',
+                entitySlug: entity?.slug || '',
+                entityIcon: entity?.icon || 'solar:folder-bold-duotone',
+                entityColor: entity?.color || '#4361ee'
+            }));
             const done = listTasks.filter(t => t.status === 'Terminé').length;
-            entityGroups[eId].records[rId].totalTasks += listTasks.length;
+            entityGroups[eId].records[rId].totalTasks += normalizedTasks.length;
             entityGroups[eId].records[rId].doneTasks += done;
             entityGroups[eId].records[rId].listsCount += 1;
+            entityGroups[eId].records[rId].lists.push({
+                listId,
+                label: listLabel,
+                color: listColor,
+                icon: listIcon,
+                statuses: listStatuses,
+                totalTasks: normalizedTasks.length,
+                doneTasks: done,
+                tasks: normalizedTasks
+            });
+            entityGroups[eId].records[rId].tasks.push(...normalizedTasks);
             entityGroups[eId].totalTasks += listTasks.length;
             entityGroups[eId].doneTasks += done;
             totalTasks += listTasks.length;
@@ -205,7 +552,17 @@ router.get("/api/tasks-hub", async (req, res) => {
         });
 
         const result = Object.values(entityGroups).map(eg => ({
-            ...eg, records: Object.values(eg.records).sort((a, b) => a.recordTitle.localeCompare(b.recordTitle))
+            ...eg, records: Object.values(eg.records)
+                .sort((a, b) => a.recordTitle.localeCompare(b.recordTitle))
+                .map(record => ({
+                    ...record,
+                    lists: record.lists.sort((a, b) => a.label.localeCompare(b.label)),
+                    tasks: record.tasks.sort((a, b) => {
+                        const ad = a.dueDate ? new Date(a.dueDate) : new Date(a.createdAt || 0);
+                        const bd = b.dueDate ? new Date(b.dueDate) : new Date(b.createdAt || 0);
+                        return ad - bd;
+                    })
+                }))
         })).sort((a, b) => b.totalTasks - a.totalTasks);
 
         res.json({ success: true, entities: result, totalTasks, doneTasks: totalDone });
@@ -219,8 +576,21 @@ router.get("/api/tasks-hub", async (req, res) => {
 router.get("/api/home-overview", async (req, res) => {
     try {
         const _tc = require('../middleware/tenant').tenantCollection;
+        const { ensureEventsEntity } = require('../services/events-entity.service');
+        const mongoose = require('mongoose');
         const Entity = await _tc(req, "Entity");
         const Record = await _tc(req, "Record");
+        const UserPreferences = await _tc(req, "UserPreferences");
+        const prefs = req.user?._id && UserPreferences
+            ? await UserPreferences.findOne({ userId: req.user._id, viewId: homeOverviewDataViewId }).lean()
+            : null;
+        const homeData = normalizeHomeOverviewData(prefs?.preferences?.homeData);
+        const shoppingTarget = await ensurePersonalTaskList(req, {
+            label: 'Liste de courses',
+            color: '#10b981',
+            icon: 'solar:cart-large-bold-duotone',
+            seedTasks: homeData.shoppingItems
+        });
 
         const start = new Date();
         start.setHours(0, 0, 0, 0);
@@ -241,7 +611,7 @@ router.get("/api/home-overview", async (req, res) => {
 
         const records = recordIds.size
             ? await Record.find({ _id: { $in: [...recordIds] } })
-                .select('title computedTitle referenceTitle entityId updatedAt createdAt')
+                .select('title computedTitle referenceTitle entityId icon color updatedAt createdAt')
                 .lean()
             : [];
         const recordMap = {};
@@ -287,8 +657,10 @@ router.get("/api/home-overview", async (req, res) => {
             const entitySlug = entity?.slug || '';
             const taskId = task._id.toString();
             const recordId = record?._id?.toString?.() || '';
+            const listId = list?._id?.toString?.() || task.taskListId?.toString?.() || '';
             return {
                 id: taskId,
+                _id: taskId,
                 title: String(task.title || '').trim() || 'Sans titre',
                 status: task.status || 'À faire',
                 statusColor: task.statusColor || '#9ca3af',
@@ -296,10 +668,19 @@ router.get("/api/home-overview", async (req, res) => {
                 priorityColor: task.priorityColor || '',
                 dueDate: task.dueDate || null,
                 startDate: task.startDate || null,
+                createdAt: task.createdAt || null,
+                updatedAt: task.updatedAt || null,
+                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
+                listId,
+                taskListId: listId,
                 listLabel: cleanLabel(list?.label),
+                listColor: list?.color || '#6366f1',
+                listIcon: list?.icon || 'solar:checklist-bold-duotone',
                 listIsToday: isTodayList(list),
                 recordId,
                 recordTitle: recordTitle(record),
+                recordIcon: record?.icon || '',
+                recordColor: record?.color || '',
                 entityName: entity?.name || 'Sans entité',
                 entitySlug,
                 entityIcon: entity?.icon || 'solar:folder-bold-duotone',
@@ -308,18 +689,104 @@ router.get("/api/home-overview", async (req, res) => {
             };
         });
 
-        const todayTasks = taskRows
-            .filter(task => task.status !== 'Terminé' && (inToday(task.dueDate) || inToday(task.startDate) || task.listIsToday))
-            .sort((a, b) => {
+	        const todayTasks = taskRows
+	            .filter(task => task.status !== 'Terminé' && (inToday(task.dueDate) || inToday(task.startDate) || task.listIsToday))
+	            .sort((a, b) => {
                 const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
                 const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
                 if (aOverdue !== bOverdue) return aOverdue - bOverdue;
                 const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
                 const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
-                return ad - bd;
-            });
+	                return ad - bd;
+	            });
+	        const openTasksSorted = taskRows
+	            .filter(task => task.status !== 'Terminé')
+	            .sort((a, b) => {
+	                const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
+	                const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
+	                if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+	                const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
+	                const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
+	                return ad - bd;
+	            });
+	        const tasksByRecordMap = {};
+	        taskRows.forEach(task => {
+	            if (!task.recordId) return;
+	            if (!tasksByRecordMap[task.recordId]) {
+	                tasksByRecordMap[task.recordId] = {
+		                    id: task.recordId,
+		                    title: task.recordTitle,
+		                    entityName: task.entityName,
+		                    icon: task.recordIcon || task.entityIcon,
+		                    color: task.recordColor || task.entityColor,
+	                    link: task.entitySlug ? `/account/${req.account_number}/record/${task.entitySlug}/${task.recordId}/tasks` : `/account/${req.account_number}/tasks`,
+	                    totalTasks: 0,
+	                    doneTasks: 0,
+	                    openTasks: 0
+	                };
+	            }
+	            tasksByRecordMap[task.recordId].totalTasks += 1;
+	            if (isDone(task)) tasksByRecordMap[task.recordId].doneTasks += 1;
+	            else tasksByRecordMap[task.recordId].openTasks += 1;
+	        });
+		        const tasksByRecord = Object.values(tasksByRecordMap)
+		            .filter(group => group.openTasks > 0)
+		            .sort((a, b) => b.openTasks - a.openTasks || a.title.localeCompare(b.title))
+		            .slice(0, 8);
 
-        const recentRecordsRaw = await Record.find({})
+            const taskSort = (a, b) => {
+                const aDone = isDone(a) ? 1 : 0;
+                const bDone = isDone(b) ? 1 : 0;
+                if (aDone !== bDone) return aDone - bDone;
+                const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+                const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+                if (ao !== bo) return ao - bo;
+                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+            };
+            const tasksByListIdForHome = {};
+            taskRows.forEach(task => {
+                if (!task.listId) return;
+                if (!tasksByListIdForHome[task.listId]) tasksByListIdForHome[task.listId] = [];
+                tasksByListIdForHome[task.listId].push(task);
+            });
+            const taskLists = allLists
+                .filter(list => recordMap[list.recordId?.toString?.() || ''])
+                .map(list => {
+                    const listId = list._id.toString();
+                    const record = recordMap[list.recordId?.toString?.() || ''];
+                    const entity = record?.entityId ? entityMap[record.entityId.toString()] : null;
+                    const entitySlug = entity?.slug || '';
+                    const recordId = record?._id?.toString?.() || '';
+                    const tasks = (tasksByListIdForHome[listId] || []).slice().sort(taskSort);
+                    return {
+                        id: listId,
+                        _id: listId,
+                        label: cleanLabel(list.label),
+                        rawLabel: list.label || '',
+                        color: list.color || '#6366f1',
+                        icon: list.icon || 'solar:checklist-bold-duotone',
+                        recordId,
+                        recordTitle: recordTitle(record),
+                        recordIcon: record?.icon || entity?.icon || 'solar:folder-bold-duotone',
+                        recordColor: record?.color || entity?.color || '#4361ee',
+                        entityName: entity?.name || 'Sans entité',
+                        entitySlug,
+                        entityIcon: entity?.icon || 'solar:folder-bold-duotone',
+                        entityColor: entity?.color || '#4361ee',
+                        link: recordId && entitySlug ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks` : `/account/${req.account_number}/tasks`,
+                        count: tasks.length,
+                        doneCount: tasks.filter(isDone).length,
+                        tasks: tasks.slice(0, 40)
+                    };
+                })
+                .sort((a, b) => {
+                    const aShopping = a.id === shoppingTarget.list._id.toString() ? 0 : 1;
+                    const bShopping = b.id === shoppingTarget.list._id.toString() ? 0 : 1;
+                    if (aShopping !== bShopping) return aShopping - bShopping;
+                    return a.label.localeCompare(b.label);
+                });
+
+	        const recentRecordsRaw = await Record.find({})
             .select('title computedTitle referenceTitle entityId icon color updatedAt createdAt')
             .sort({ updatedAt: -1 })
             .limit(8)
@@ -346,27 +813,269 @@ router.get("/api/home-overview", async (req, res) => {
             };
         });
 
-        const totalTasks = taskRows.length;
-        const doneTasks = taskRows.filter(isDone).length;
-        const openTasks = totalTasks - doneTasks;
-        const overdueCount = taskRows.filter(task => task.status !== 'Terminé' && isBeforeToday(task.dueDate)).length;
+        const eventsEntity = await ensureEventsEntity(req);
+        const eventFieldByName = {};
+        (eventsEntity.customFields || []).forEach(field => {
+            if (field?.name) eventFieldByName[field.name] = field;
+        });
 
-        res.json({
-            success: true,
-            todayTasks,
-            recentRecords,
-            stats: {
+        const normalizeRecordId = value => {
+            const raw = value?._id || value;
+            const id = String(raw || '').trim();
+            return id && mongoose.Types.ObjectId.isValid(id) ? id : '';
+        };
+        const eventParentId = event => {
+            for (const rel of (event.relations || [])) {
+                const values = Array.isArray(rel.value) ? rel.value : [rel.value];
+                const found = values.map(normalizeRecordId).find(Boolean);
+                if (found) return found;
+            }
+            return '';
+        };
+        const eventCustomValue = (event, fieldName) => {
+            const field = eventFieldByName[fieldName];
+            if (!field) return undefined;
+            const fieldId = String(field._id || '');
+            const customField = (event.customFields || []).find(item => {
+                const id = item.field_id?._id || item.field_id;
+                return String(id || '') === fieldId;
+            });
+            return customField ? customField.value : undefined;
+        };
+        const normalizeEventTags = value => {
+            const normalize = item => {
+                if (item && typeof item === 'object') {
+                    return String(item.label || item.value || item.name || '').trim();
+                }
+                return String(item || '').trim();
+            };
+            if (Array.isArray(value)) return value.map(normalize).filter(Boolean);
+            if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean);
+            return [];
+        };
+        const eventBooleanValue = (value, fallback = false) => {
+            if (value === undefined || value === null || value === '') return fallback;
+            if (typeof value === 'boolean') return value;
+            if (typeof value === 'number') return value !== 0;
+            const token = String(value).trim().toLowerCase();
+            if (['true', '1', 'yes', 'oui', 'on'].includes(token)) return true;
+            if (['false', '0', 'no', 'non', 'off'].includes(token)) return false;
+            return fallback;
+        };
+        const isUpcomingWidgetEvent = event => eventBooleanValue(eventCustomValue(event, 'widget_prochains_evenements'), true);
+        const isImportantDateEvent = event => {
+            const explicit = eventCustomValue(event, 'widget_date_importante');
+            if (explicit !== undefined && explicit !== null && explicit !== '') {
+                return eventBooleanValue(explicit, false);
+            }
+            return normalizeEventTags(eventCustomValue(event, 'tags_evenement'))
+                .some(tag => tag.toLowerCase() === 'date importante');
+        };
+        const eventStatus = event => {
+            const statusClass = eventsEntity.statusClassification || null;
+            const cv = (event.classificationValues || []).find(item => {
+                const id = item.classificationId?._id || item.classificationId;
+                return String(id || '') === String(statusClass?._id || '');
+            });
+            const opt = cv ? (statusClass?.options || []).find(option => {
+                const id = cv.optionId?._id || cv.optionId;
+                return String(option._id || '') === String(id || '');
+            }) : null;
+            return {
+                label: opt?.label || cv?.label || 'Planifié',
+                color: opt?.color || cv?.color || '#3b82f6'
+            };
+        };
+        const eventLabelInfo = event => {
+            const tag = normalizeEventTags(eventCustomValue(event, 'tags_evenement'))[0] || '';
+            if (!tag) return { label: '', color: '#64748b' };
+            const tagField = eventFieldByName.tags_evenement;
+            const option = (tagField?.type_config?.options || []).find(opt => {
+                const raw = opt && typeof opt === 'object' ? (opt.value || opt.label) : opt;
+                return String(raw || '').trim().toLowerCase() === tag.toLowerCase();
+            });
+            return {
+                label: String((option && typeof option === 'object' ? option.label : '') || tag).trim(),
+                color: String((option && typeof option === 'object' ? option.color : '') || '#64748b').trim()
+            };
+        };
+        const relativeDateLabel = value => {
+            const target = new Date(value);
+            if (Number.isNaN(target.getTime())) return '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            target.setHours(0, 0, 0, 0);
+            const diffDays = Math.round((target - today) / 86400000);
+            if (diffDays === 0) return "aujourd'hui";
+            if (diffDays === 1) return 'demain';
+            if (diffDays > 1) return `dans ${diffDays} jours`;
+            if (diffDays === -1) return 'hier';
+            return `il y a ${Math.abs(diffDays)} jours`;
+        };
+
+        const eventRecordsRaw = await Record.find({ entityId: eventsEntity._id, date: { $gte: start } })
+            .populate({ path: 'customFields.field_id', select: 'label type name render ui type_config' })
+            .sort({ date: 1 })
+            .limit(120)
+            .lean();
+        const eventParentIds = new Set();
+        eventRecordsRaw.forEach(event => {
+            const parentId = eventParentId(event);
+            if (parentId) eventParentIds.add(parentId);
+        });
+        const eventParentRecords = eventParentIds.size
+            ? await Record.find({ _id: { $in: [...eventParentIds] } })
+                .select('title computedTitle referenceTitle entityId icon color')
+                .lean()
+            : [];
+        const eventParentRecordMap = {};
+        eventParentRecords.forEach(record => { eventParentRecordMap[record._id.toString()] = record; });
+        const eventParentEntityIds = [...new Set(eventParentRecords.map(record => record.entityId?.toString()).filter(Boolean))];
+        const eventParentEntities = eventParentEntityIds.length
+            ? await Entity.find({ _id: { $in: eventParentEntityIds } }).select('name slug icon color').lean()
+            : [];
+        const eventParentEntityMap = {};
+        eventParentEntities.forEach(entity => { eventParentEntityMap[entity._id.toString()] = entity; });
+        const formatHomeEvent = (event, mode = 'upcoming') => {
+            const eventDate = new Date(event.date);
+            const parentId = eventParentId(event);
+            const parent = parentId ? eventParentRecordMap[parentId] : null;
+            const parentEntity = parent?.entityId ? eventParentEntityMap[parent.entityId.toString()] : null;
+            const entitySlug = parentEntity?.slug || '';
+            const eventId = event._id.toString();
+            const status = eventStatus(event);
+            const label = eventLabelInfo(event);
+            const location = String(eventCustomValue(event, 'lieu_evenement') || '').trim();
+            const title = String(event.title || event.computedTitle || '').trim() || 'Sans titre';
+            const time = eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const relative = relativeDateLabel(eventDate);
+            const recordLabel = parent ? recordTitle(parent) : 'Record inconnu';
+            const recordLink = parentId && entitySlug
+                ? `/account/${req.account_number}/record/${entitySlug}/${parentId}/overview`
+                : `/account/${req.account_number}/agenda`;
+            const url = parentId && entitySlug
+                ? `/account/${req.account_number}/record/${entitySlug}/${parentId}/agenda?event=${encodeURIComponent(eventId)}`
+                : `/account/${req.account_number}/agenda`;
+
+            return {
+                id: eventId,
+                title,
+                date: event.date,
+                day: eventDate.getDate().toString().padStart(2, '0'),
+                month: eventDate.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase(),
+                time,
+                relative,
+                status: status.label,
+                statusColor: status.color,
+                color: status.color || (mode === 'important' ? '#f59e0b' : '#14b8a6'),
+                label: label.label,
+                labelColor: label.color,
+                location,
+                recordId: parentId,
+                recordTitle: recordLabel,
+                recordLink,
+                entityName: parentEntity?.name || 'Sans entité',
+                entitySlug,
+                recordIcon: parent?.icon || '',
+                recordColor: parent?.color || '',
+                entityIcon: parent?.icon || parentEntity?.icon || 'solar:folder-bold-duotone',
+                entityColor: parent?.color || parentEntity?.color || '#4361ee',
+                url,
+                tooltip: [title, recordLabel, `${time} · ${status.label}${relative ? ' · ' + relative : ''}`, location, label.label].filter(Boolean).join('\n')
+            };
+        };
+        const upcomingEvents = eventRecordsRaw
+            .filter(isUpcomingWidgetEvent)
+            .slice(0, 8)
+            .map(event => formatHomeEvent(event, 'upcoming'));
+        const importantDates = eventRecordsRaw
+            .filter(isImportantDateEvent)
+            .slice(0, 8)
+            .map(event => formatHomeEvent(event, 'important'));
+
+	        const totalTasks = taskRows.length;
+	        const doneTasks = taskRows.filter(isDone).length;
+	        const openTasks = totalTasks - doneTasks;
+	        const overdueCount = taskRows.filter(task => task.status !== 'Terminé' && isBeforeToday(task.dueDate)).length;
+	        const weekEnd = new Date(start);
+	        weekEnd.setDate(weekEnd.getDate() + 7);
+	        const weekEvents = eventRecordsRaw.filter(event => {
+	            const date = new Date(event.date);
+	            return !Number.isNaN(date.getTime()) && date >= start && date < weekEnd;
+	        }).length;
+
+            if (req.user?._id && UserPreferences && !prefs?.preferences?.homeData) {
+                UserPreferences.findOneAndUpdate(
+                    { userId: req.user._id, viewId: homeOverviewDataViewId },
+                    {
+                        $set: {
+                            userId: req.user._id,
+                            viewId: homeOverviewDataViewId,
+                            'preferences.homeData': homeData,
+                            updatedAt: new Date()
+                        }
+                    },
+                    { upsert: true }
+                ).catch(err => console.warn('[HomeOverview] Seed home data skipped:', err.message));
+            }
+
+	        res.json({
+	            success: true,
+	            todayTasks,
+		            tasks: openTasksSorted.slice(0, 20),
+		            tasksByRecord,
+                    taskLists,
+		            recentRecords,
+		            upcomingEvents,
+	            importantDates,
+	            homeData,
+                defaultWidgets: {
+                    shoppingListId: shoppingTarget.list._id.toString()
+                },
+	            stats: {
                 totalTasks,
                 doneTasks,
                 openTasks,
-                todayTasks: todayTasks.length,
-                overdueCount,
-                listsCount: allLists.length,
+	                todayTasks: todayTasks.length,
+	                overdueCount,
+	                weekEvents,
+	                listsCount: allLists.length,
                 recordsCount: await Record.countDocuments({})
             }
         });
     } catch (error) {
         console.error('[HomeOverview] Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.patch("/api/home-overview/widgets", async (req, res) => {
+    try {
+        if (!req.user?._id) return res.status(401).json({ success: false, error: 'User not authenticated' });
+        const _tc = require('../middleware/tenant').tenantCollection;
+        const UserPreferences = await _tc(req, "UserPreferences");
+        const current = await UserPreferences.findOne({ userId: req.user._id, viewId: homeOverviewDataViewId }).lean();
+        const merged = normalizeHomeOverviewData({
+            ...(current?.preferences?.homeData || {}),
+            ...(req.body?.homeData || req.body || {})
+        });
+
+        await UserPreferences.findOneAndUpdate(
+            { userId: req.user._id, viewId: homeOverviewDataViewId },
+            {
+                $set: {
+                    userId: req.user._id,
+                    viewId: homeOverviewDataViewId,
+                    'preferences.homeData': merged,
+                    updatedAt: new Date()
+                }
+            },
+            { upsert: true, new: true }
+        );
+
+        res.json({ success: true, homeData: merged });
+    } catch (error) {
+        console.error('[HomeOverview] Save widget data error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

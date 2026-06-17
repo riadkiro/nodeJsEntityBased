@@ -230,6 +230,121 @@
         white-space: nowrap;
         flex-shrink: 0;
     }
+    /* ── Home event widgets ── */
+    .home-event-list { display: flex; flex-direction: column; gap: 6px; }
+    .home-event-item {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        min-height: 64px;
+        padding: 8px 10px;
+        border: 1px solid #e8ecf1;
+        border-radius: 10px;
+        background: #fafbff;
+        color: inherit;
+        text-decoration: none;
+        transition: all .12s ease;
+    }
+    .home-event-item:hover {
+        border-color: color-mix(in srgb, var(--event-color, #14b8a6) 32%, #e8ecf1);
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(15,23,42,.04);
+        transform: translateY(-1px);
+    }
+    .home-event-date {
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: color-mix(in srgb, var(--event-color, #14b8a6) 10%, white);
+        flex-shrink: 0;
+    }
+    .home-event-day {
+        color: var(--event-color, #14b8a6);
+        font-size: 16px;
+        line-height: 1;
+        font-weight: 800;
+    }
+    .home-event-month {
+        margin-top: 2px;
+        color: #888da8;
+        font-size: 9px;
+        line-height: 1;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0;
+    }
+    .home-event-body { min-width: 0; }
+    .home-event-title-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+    .home-event-title {
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 800;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+    .home-event-label {
+        display: inline-flex;
+        align-items: center;
+        max-width: 92px;
+        height: 17px;
+        padding: 0 6px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--label-color, #64748b) 24%, #fff);
+        background: color-mix(in srgb, var(--label-color, #64748b) 12%, #fff);
+        color: var(--label-color, #64748b);
+        font-size: 9.5px;
+        font-weight: 800;
+        line-height: 17px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: none;
+    }
+    .home-event-source,
+    .home-event-meta {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+        margin-top: 2px;
+        color: #94a3b8;
+        font-size: 11px;
+        line-height: 1.25;
+    }
+    .home-event-source {
+        color: #64748b;
+        font-weight: 700;
+    }
+    .home-event-source iconify-icon { color: var(--entity-color, #4361ee); flex: none; }
+    .home-event-source span,
+    .home-event-meta-main,
+    .home-event-location span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .home-event-meta-main { flex: 0 1 auto; }
+    .home-event-location {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        min-width: 0;
+        flex: 1 1 auto;
+        white-space: nowrap;
+    }
     /* ── Stats ── */
     .home-stat-grid {
         display: grid;
@@ -327,6 +442,10 @@
     .ov-dm .ov-row-remove { display: flex; position: absolute; top: 50%; right: -28px; transform: translateY(-50%); width: 20px; height: 20px; align-items: center; justify-content: center; border-radius: 50%; background: rgba(239,68,68,.08); color: #ef4444; cursor: pointer; opacity: 0; transition: opacity .15s; border: none; font-size: 11px; }
     .ov-dm .ov-layout-row:hover > .ov-row-remove { opacity: 1; }
     .ov-dm .ov-row-remove:hover { background: rgba(239,68,68,.15); }
+    .ov-widget-config { display: none; }
+    .ov-dm .ov-widget-config { display: flex; position: absolute; top: 6px; right: 30px; z-index: 20; width: 20px; height: 20px; align-items: center; justify-content: center; border-radius: 50%; background: rgba(67,97,238,.08); color: #4361ee; cursor: pointer; opacity: 0; transition: opacity .15s; border: none; font-size: 12px; }
+    .ov-dm .ov-widget-wrap:hover .ov-widget-config { opacity: 1; }
+    .ov-dm .ov-widget-config:hover { background: rgba(67,97,238,.16); }
     .ov-widget-remove { display: none; }
     .ov-dm .ov-widget-remove { display: flex; position: absolute; top: 6px; right: 6px; z-index: 20; width: 20px; height: 20px; align-items: center; justify-content: center; border-radius: 50%; background: rgba(239,68,68,.08); color: #ef4444; cursor: pointer; opacity: 0; transition: opacity .15s; border: none; font-size: 12px; }
     .ov-dm .ov-widget-wrap:hover .ov-widget-remove { opacity: 1; }
@@ -361,11 +480,14 @@
     /* ── Dark ── */
     .dark .home-ov-title h1 { color: #f1f5f9; }
     .dark .ov-card { background: #0e1726; border-color: #1e293b; }
-    .dark .ov-card-title, .dark .home-task-title, .dark .home-stat-card strong,
+    .dark .ov-card-title, .dark .home-task-title, .dark .home-stat-card strong, .dark .home-event-title,
     .dark .home-record-text strong, .dark .home-quick-text strong { color: #f1f5f9; }
     .dark .home-ov-btn { background: #0f172a; border-color: #1e293b; color: #94a3b8; }
-    .dark .home-task-item, .dark .home-record-item, .dark .home-quick-item,
+    .dark .home-task-item, .dark .home-record-item, .dark .home-event-item, .dark .home-quick-item,
     .dark .home-stat-card, .dark .home-empty, .dark .ov-custom-empty { background: #111c2d; border-color: #1e293b; }
+    .dark .home-event-item:hover { background: #0f172a; border-color: color-mix(in srgb, var(--event-color, #14b8a6) 42%, #1e293b); }
+    .dark .home-event-date { background: color-mix(in srgb, var(--event-color, #14b8a6) 18%, #0e1726); }
+    .dark .home-event-label { background: color-mix(in srgb,var(--label-color,#94a3b8) 18%,#0e1726); border-color: color-mix(in srgb,var(--label-color,#94a3b8) 34%,#0e1726); }
     .dark .home-loading { background: #0f172a; border-color: #1e293b; }
     .dark .ov-custom-html, .dark .ov-custom-note { color: #cbd5e1; }
     .dark .ov-custom-note { background: #111c2d; border-color: #1e293b; }
@@ -383,25 +505,1285 @@
     }
 </style>
 
-<div class="home-overview-shell" x-data="homeOverviewHub()" :class="layoutMode ? 'ov-dm' : ''">
+<style>
+    .home-overview-shell {
+        max-width: 1590px;
+        padding: 0 0 28px;
+        font-family: Inter, Nunito, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .home-ov-header {
+        margin-bottom: 28px;
+        align-items: flex-start;
+    }
+    .home-ov-icon { display: none; }
+    .home-ov-title h1 {
+        color: #10192f;
+        font-size: 25px;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+    .home-ov-title p {
+        color: #66789d;
+        font-size: 13px;
+        margin-top: 10px;
+        font-weight: 700;
+    }
+    .home-ov-actions { gap: 9px; }
+    .home-ov-btn {
+        height: 34px;
+        border-radius: 8px;
+        border-color: #e0e6ed;
+        box-shadow: none;
+        color: #475569;
+        font-weight: 600;
+        transition: all .2s;
+    }
+    .home-ov-btn:hover,
+    .home-ov-btn.active {
+        color: #4361ee;
+        border-color: #c7d2fe;
+        background: #f8fbff;
+    }
+    .ov-layout-row {
+        gap: 20px;
+        margin-bottom: 20px;
+        align-items: stretch;
+    }
+    .ov-layout-col { gap: 20px; }
+    .ov-layout-col-nested-only { gap: 0; }
+    .ov-col-widgets {
+        gap: 20px;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+    .ov-dm .ov-col-widgets { min-height: 40px; }
+    .ov-dm .ov-col-widgets:not(.ov-col-widgets-nested-only) {
+        min-height: 86px;
+    }
+    .ov-col-widgets.ov-col-widgets-nested-only {
+        flex: 0 0 0;
+        height: 0;
+        min-height: 0;
+        max-height: 0;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+    .ov-card.dx-card {
+        padding: 0;
+        border: 1px solid #e8ecf1;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: none;
+        overflow: hidden;
+        transition: border-color .2s ease, box-shadow .25s ease, transform .25s ease, background .2s ease;
+    }
+    .ov-card.dx-card:hover {
+        border-color: #dfe6f1;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .04);
+    }
+    .dx-card-header {
+        min-height: 52px;
+        padding: 18px 20px 8px;
+    }
+    .dx-card-title {
+        gap: 8px;
+        color: #0e1726;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0;
+    }
+    .dx-card-title iconify-icon,
+    .ov-card-title iconify-icon {
+        width: 26px;
+        height: 26px;
+        min-width: 26px;
+        border-radius: 8px;
+    }
+    .dx-link {
+        color: #6f6cf6;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .dx-count-pill,
+    .dx-muted-pill,
+    .dx-select-pill,
+    .dx-shared-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 22px;
+        padding: 0 9px;
+        border-radius: 8px;
+        background: #f1f4fa;
+        color: #8390ad;
+        font-size: 10px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .dx-count-pill {
+        background: #efe8ff;
+        color: #9273e8;
+        margin-left: 4px;
+    }
+    .dx-shared-pill {
+        background: #dff8ee;
+        color: #12a477;
+    }
+    .dx-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .dx-priority-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 260px;
+        gap: 24px;
+        align-items: stretch;
+        padding: 8px 22px 22px;
+    }
+    .dx-priority-list,
+    .dx-task-list,
+    .dx-goals,
+    .dx-finance-list,
+    .dx-shopping-list,
+    .dx-record-task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .dx-shopping-list { gap: 6px; }
+    .dx-priority-row,
+    .dx-task-row {
+        display: grid;
+        align-items: center;
+        gap: 12px;
+        min-height: 28px;
+        color: #17223c;
+        text-decoration: none;
+    }
+    .dx-priority-row { grid-template-columns: 18px minmax(0, 1fr) 82px 70px; }
+    .dx-task-row { grid-template-columns: 18px minmax(0, 1fr) 72px 54px 72px; }
+    .dx-check {
+        width: 15px;
+        height: 15px;
+        border-radius: 4px;
+        border: 1.5px solid #9aa8c2;
+        background: #fff;
+        display: inline-flex;
+        flex: none;
+    }
+    .dx-check.is-checked {
+        background: #edf3ff;
+        border-color: #90a7d8;
+        position: relative;
+    }
+    .dx-check.is-checked::after {
+        content: '';
+        width: 7px;
+        height: 4px;
+        border-left: 1.5px solid #647aa8;
+        border-bottom: 1.5px solid #647aa8;
+        transform: rotate(-45deg);
+        margin: 3px auto 0;
+    }
+    .dx-priority-title,
+    .dx-task-row strong {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .dx-tag,
+    .dx-priority {
+        min-width: 0;
+        height: 21px;
+        padding: 0 9px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--tag-color, #64748b) 15%, #fff);
+        border: 1px solid color-mix(in srgb, var(--tag-color, #64748b) 24%, #fff);
+        color: var(--tag-color, #64748b);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-priority {
+        background: transparent;
+        border: 0;
+        color: var(--priority-color, #64748b);
+        justify-content: flex-end;
+        padding: 0;
+    }
+    .dx-time {
+        color: #18213a;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+    }
+    .dx-productivity {
+        border-left: 1px solid #eef2f8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 154px;
+    }
+    .dx-ring {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: conic-gradient(#536cff calc(var(--value) * 1%), #eeeaff 0);
+        display: grid;
+        place-items: center;
+        box-shadow: inset 0 0 0 1px rgba(83, 108, 255, .08);
+    }
+    .dx-ring::before {
+        content: '';
+        position: absolute;
+    }
+    .dx-ring span {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: #fff;
+        color: #536cff;
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+        font-weight: 900;
+    }
+    .dx-productivity strong {
+        color: #17223c;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    .dx-productivity small {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .dx-event-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 20px 14px;
+    }
+    .dx-event-row {
+        min-height: 60px;
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr) 26px;
+        gap: 10px;
+        align-items: center;
+        padding: 5px 8px;
+        border-radius: 8px;
+        border: 1px solid #e7ecf5;
+        background: linear-gradient(180deg, #fff, #fbfcff);
+        color: inherit;
+        text-decoration: none;
+        box-shadow: none;
+        transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+    }
+    .dx-event-row:hover,
+    .dx-event-row:focus-visible {
+        border-color: color-mix(in srgb, var(--event-color, #4361ee) 34%, #e8ecf1);
+        background: #fbfdff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .03);
+        transform: translateY(-1px);
+        outline: none;
+    }
+    .dx-event-date,
+    .dx-mini-date {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--event-color, #4361ee) 10%, #fff);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .dx-event-date strong,
+    .dx-mini-date strong {
+        color: var(--event-color, #4361ee);
+        font-size: 16px;
+        line-height: 1;
+        font-weight: 800;
+    }
+    .dx-event-date span,
+    .dx-mini-date span {
+        color: color-mix(in srgb, var(--event-color, #4361ee) 70%, #64748b);
+        font-size: 9px;
+        line-height: 1;
+        margin-top: 2px;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+    .dx-event-main { min-width: 0; }
+    .dx-event-title-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .dx-event-title-line strong,
+    .dx-date-row strong {
+        color: #15203a;
+        font-size: 12.5px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-event-main > span,
+    .dx-date-row span {
+        display: block;
+        color: #657493;
+        font-size: 11px;
+        font-weight: 500;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-event-record-line {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+        color: #66789d;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-top: 2px;
+    }
+    .dx-event-record-line > span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-event-record-mini {
+        width: 14px;
+        height: 14px;
+        border-radius: 5px;
+        flex: 0 0 14px;
+        display: grid;
+        place-items: center;
+        color: var(--event-record-color, #4361ee);
+        background: color-mix(in srgb, var(--event-record-color, #4361ee) 12%, #fff);
+    }
+    .dx-event-record-mini iconify-icon {
+        display: block;
+        width: 10px;
+        height: 10px;
+        line-height: 0;
+    }
+    .dx-risk-pill {
+        height: 19px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--risk-color, #ef4444) 14%, #fff);
+        color: var(--risk-color, #ef4444);
+        font-size: 9.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        flex: none;
+    }
+    .dx-card-footer-link {
+        display: flex;
+        justify-content: center;
+        color: #765cf6;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+    .dx-event-entity-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        justify-self: end;
+        color: var(--event-icon-color, #4361ee);
+        background: color-mix(in srgb, var(--event-icon-color, #4361ee) 12%, #fff);
+        border: 1px solid color-mix(in srgb, var(--event-icon-color, #4361ee) 18%, #e8ecf1);
+    }
+    .dx-event-entity-icon iconify-icon {
+        display: block;
+        width: 14px;
+        height: 14px;
+        line-height: 0;
+    }
+    .dx-date-row {
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        color: inherit;
+        text-decoration: none;
+        min-height: 48px;
+    }
+    .dx-mini-date {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+    .dx-mini-date strong { font-size: 14px; }
+    .dx-goal-row > div:first-child {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: #17223c;
+        font-size: 12.5px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .dx-goal-row strong {
+        color: #32405f;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .dx-goal-row {
+        cursor: pointer;
+        border-radius: 8px;
+        padding: 2px 0;
+    }
+    .dx-goal-row:hover .dx-progress {
+        box-shadow: 0 0 0 3px rgba(99,102,241,.08);
+    }
+    .dx-progress {
+        height: 6px;
+        border-radius: 999px;
+        background: #edf0f5;
+        overflow: hidden;
+    }
+    .dx-progress span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+    }
+    .dx-new-task {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #6f6cf6;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+    .dx-finance-row {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 38px;
+    }
+    .dx-finance-row > span {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        color: var(--finance-color);
+        background: color-mix(in srgb, var(--finance-color) 14%, #fff);
+        display: grid;
+        place-items: center;
+    }
+    .dx-finance-row label {
+        color: #35415c;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+    .dx-finance-row strong {
+        color: #17223c;
+        font-size: 12.5px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .dx-shopping-row {
+        min-height: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #34405a;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .dx-shopping-row.is-done .dx-task-title {
+        color: #94a3b8;
+        text-decoration: line-through;
+    }
+    .dx-shopping-foot {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .dx-shopping-foot a {
+        color: #7c5cff;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .dx-shopping-row {
+        cursor: pointer;
+        border-radius: 8px;
+        padding: 1px 2px;
+        margin: 0 -4px;
+    }
+    .dx-shopping-row:hover { background: #fbfcff; }
+    .dx-shopping-row.dx-task-row {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) 74px;
+        gap: 10px;
+        align-items: center;
+        min-height: 28px;
+        position: relative;
+        padding: 1px 0;
+        margin: 0 0 0 8px;
+        cursor: default;
+    }
+    .dx-shopping-row.dx-task-row.has-priority {
+        grid-template-columns: 18px minmax(0, 1fr) 74px;
+    }
+    .dx-shopping-row.dx-task-row .dx-check {
+        border: 1.5px solid #9aa8c2;
+        padding: 0;
+        cursor: pointer;
+    }
+    .dx-task-drag {
+        position: absolute;
+        left: -12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #cbd5e1;
+        opacity: 0;
+        cursor: grab;
+        transition: opacity .15s, color .15s;
+    }
+    .dx-task-drag:active { cursor: grabbing; }
+    .dx-shopping-row:hover .dx-task-drag,
+    .dx-shopping-row:focus-within .dx-task-drag {
+        opacity: 1;
+    }
+    .dx-task-drag:hover { color: #64748b; }
+    .dx-task-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #34405a;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: text;
+    }
+    .dx-task-edit {
+        min-width: 0;
+        width: 100%;
+        height: 25px;
+        border: 1.5px solid #8b7cf8;
+        border-radius: 7px;
+        background: #fff;
+        color: #17223c;
+        font: inherit;
+        font-size: 12.5px;
+        font-weight: 650;
+        padding: 0 7px;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(124,92,255,.08);
+    }
+    .dx-task-priority {
+        justify-self: end;
+        min-width: 26px;
+        max-width: 74px;
+        height: 22px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+        padding: 0 2px;
+        overflow: visible;
+        color: var(--priority-color, #64748b);
+        font-size: 10px;
+        font-weight: 750;
+        white-space: nowrap;
+        line-height: 1;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: background .15s, color .15s;
+    }
+    .dx-task-priority iconify-icon {
+        flex: 0 0 auto;
+    }
+    .dx-task-priority span {
+        min-width: 0;
+        overflow: visible;
+        white-space: nowrap;
+    }
+    .dx-task-priority:hover,
+    .dx-task-priority:focus-visible {
+        background: color-mix(in srgb, var(--priority-color, #64748b) 10%, #fff);
+        outline: none;
+    }
+    .dx-task-priority.is-empty {
+        width: 26px;
+        color: #a8b3c7;
+        justify-content: center;
+    }
+    .dx-task-menu-btn {
+        display: none;
+    }
+    .dx-task-ghost {
+        opacity: .45;
+        background: #eef2ff !important;
+        border-radius: 8px;
+    }
+    .dx-task-ctx {
+        position: fixed;
+        z-index: 10020;
+        width: 190px;
+        padding: 5px;
+        border: 1px solid #e8ecf1;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 16px 38px rgba(15,23,42,.14), 0 3px 10px rgba(15,23,42,.08);
+    }
+    .dx-task-ctx button {
+        width: 100%;
+        min-height: 32px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 9px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+    }
+    .dx-task-ctx button:hover { background: #f8fafc; }
+    .dx-task-ctx .danger { color: #ef4444; }
+    .dx-task-ctx .danger:hover { background: #fef2f2; }
+    .dx-task-ctx-label {
+        padding: 8px 9px 4px;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+    }
+    .dx-task-ctx-priorities {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        padding: 0 4px 5px;
+    }
+    .dx-task-ctx-priorities button {
+        min-height: 27px;
+        justify-content: center;
+        gap: 4px;
+        padding: 0 6px;
+        color: var(--priority-color, #64748b);
+        background: color-mix(in srgb, var(--priority-color, #64748b) 9%, #fff);
+        font-size: 10.5px;
+    }
+    .dx-task-ctx-priorities iconify-icon {
+        flex: 0 0 auto;
+    }
+    .dx-inline-add {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 30px;
+        gap: 8px;
+        margin-top: 4px;
+    }
+    .dx-inline-add input {
+        min-width: 0;
+        height: 30px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        color: #17223c;
+        font: inherit;
+        font-size: 12px;
+        padding: 0 10px;
+        outline: none;
+    }
+    .dx-inline-add input:focus {
+        border-color: #8b7cf8;
+        box-shadow: 0 0 0 3px rgba(124,92,255,.09);
+    }
+    .dx-inline-add button,
+    .dx-tiny-btn {
+        height: 30px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        color: #6f6cf6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .dx-inline-add button:hover,
+    .dx-tiny-btn:hover {
+        border-color: #c7d2fe;
+        background: #f8fbff;
+    }
+    .dx-finance-row { cursor: pointer; border-radius: 9px; padding: 4px; margin: -4px; }
+    .dx-finance-row:hover { background: #fbfcff; }
+    .dx-avatars { display: flex; }
+    .dx-avatars span {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        background: #ef7f6d;
+        border: 2px solid #fff;
+        font-size: 9px;
+        font-weight: 700;
+    }
+    .dx-avatars span + span {
+        margin-left: -7px;
+        background: #5b6df7;
+    }
+    .dx-record-task-row {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 42px;
+        color: inherit;
+        text-decoration: none;
+    }
+    .dx-record-task-row strong {
+        color: #17223c;
+        display: block;
+        font-size: 12.5px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-record-task-row span:not(.home-mini-icon) {
+        color: #7886a3;
+        display: block;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    .dx-record-task-row em {
+        color: #f59e0b;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .dx-detail-btn {
+        height: 36px;
+        border-radius: 8px;
+        background: #f1f3f8;
+        color: #35415c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+    .dx-activity-timeline {
+        position: relative;
+        padding: 6px 20px 18px;
+        --activity-axis: 14px;
+    }
+    .dx-activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: calc(20px + var(--activity-axis) - 1px);
+        top: 26px;
+        bottom: 34px;
+        width: 2px;
+        background: #e6ebf5;
+    }
+    .dx-activity-row {
+        position: relative;
+        min-height: 48px;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+        color: inherit;
+        text-decoration: none;
+        padding: 5px 0;
+        border-radius: 10px;
+        transition: background .15s ease, transform .18s ease;
+    }
+    .dx-activity-row:hover {
+        background: #f8fafc;
+        transform: translateX(2px);
+    }
+    .dx-activity-dot {
+        position: relative;
+        z-index: 2;
+        width: 28px;
+        height: 28px;
+        margin-top: 1px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: color-mix(in srgb, var(--activity-color, #4361ee) 12%, #fff);
+        color: var(--activity-color, #4361ee);
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 1px rgba(226, 232, 240, .95);
+    }
+    .dx-activity-dot iconify-icon {
+        display: block;
+        width: 14px;
+        height: 14px;
+        line-height: 0;
+    }
+    .dx-activity-row strong,
+    .dx-ai-note strong {
+        color: #17223c;
+        display: block;
+        font-size: 12.5px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-activity-row > div > span,
+    .dx-ai-note span {
+        color: #7785a3;
+        display: block;
+        font-size: 11px;
+        font-weight: 500;
+        margin-top: 2px;
+    }
+    .dx-stat-grid { gap: 6px; }
+    .dx-stat-grid .home-stat-card {
+        border: 0;
+        border-radius: 8px;
+        background: #f4f6ff;
+        min-height: 58px;
+    }
+    .dx-stat-grid .home-stat-card strong {
+        font-size: 21px;
+        font-weight: 900;
+    }
+    .dx-stat-grid .home-stat-card span {
+        text-transform: none;
+        letter-spacing: 0;
+        color: #6e7d9d;
+        font-weight: 700;
+    }
+    .dx-ai-feed {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .dx-ai-note {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #eee8ff;
+        background: #fbfaff;
+    }
+    .dx-ai-note iconify-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: #7c3aed;
+        background: #f1e9ff;
+    }
+    .dx-week-card { margin-top: 2px; }
+    .dx-week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(120px, 1fr));
+        gap: 18px;
+        overflow-x: auto;
+        padding-bottom: 22px;
+    }
+    .dx-week-day {
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .dx-week-day > strong {
+        color: #7582a1;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .dx-week-event {
+        min-height: 44px;
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: color-mix(in srgb, var(--week-color, #805dca) 13%, #fff);
+        border: 1px solid color-mix(in srgb, var(--week-color, #805dca) 18%, #fff);
+        color: inherit;
+        text-decoration: none;
+    }
+    .dx-week-event span {
+        color: var(--week-color, #805dca);
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .dx-week-event em {
+        color: #17223c;
+        display: block;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+    .dx-week-empty {
+        color: #9aa7c0;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        padding-top: 18px;
+    }
+    .ov-add-choice {
+        display: none;
+        gap: 8px;
+    }
+    .ov-dm .ov-add-choice {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    .ov-dm .ov-add-choice .ov-add-widget-btn,
+    .ov-dm .ov-add-choice .ov-add-nested-row-btn,
+    .ov-dm .ov-nested-add-widget {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 38px;
+        padding: 9px;
+        border: 2px dashed #e2e8f0;
+        border-radius: 10px;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .18s;
+        background: transparent;
+    }
+    .ov-dm .ov-add-choice .ov-add-widget-btn:hover,
+    .ov-dm .ov-add-choice .ov-add-nested-row-btn:hover,
+    .ov-dm .ov-nested-add-widget:hover {
+        border-color: #4361ee;
+        color: #4361ee;
+        background: rgba(67, 97, 238, .035);
+    }
+    .ov-dm .ov-col-widgets > .ov-nested-add-widget {
+        margin-top: 8px;
+        flex: 0 0 auto;
+    }
+    .ov-dragging .ov-add-choice,
+    .ov-dragging .ov-nested-add-widget {
+        pointer-events: none;
+    }
+    .ov-nested-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .ov-layout-row-nested {
+        margin-bottom: 0;
+        padding: 0;
+        border-radius: 12px;
+        background: transparent;
+    }
+    .ov-dm .ov-layout-row-nested {
+        padding: 8px;
+        background: transparent;
+        border: 1px dashed rgba(67, 97, 238, .22);
+    }
+    .ov-dm .ov-layout-row-nested .ov-layout-col {
+        min-height: 96px;
+    }
+    .ov-dm .ov-layout-row-nested .ov-resize-handle {
+        right: -14px;
+        width: 28px;
+    }
+    .ov-dm .ov-layout-row-nested .ov-resize-handle::after {
+        height: 46px;
+        background: rgba(67, 97, 238, .34);
+    }
+    .ov-nested-add-widget { display: none; }
+    .ov-nested-row-drag,
+    .ov-nested-row-move,
+    .ov-nested-row-remove {
+        display: none;
+        position: absolute;
+        top: -7px;
+        z-index: 22;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 0;
+        background: #fee2e2;
+        color: #ef4444;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+    }
+    .ov-nested-row-drag {
+        left: -7px;
+        border-radius: 6px;
+        background: #eef2ff;
+        color: #4361ee;
+        cursor: grab;
+    }
+    .ov-nested-row-drag:active { cursor: grabbing; }
+    .ov-nested-row-move {
+        left: 17px;
+        width: auto;
+        gap: 2px;
+        background: transparent;
+        color: inherit;
+        align-items: center;
+    }
+    .ov-nested-row-move button {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 1px solid #dbe4f0;
+        background: #fff;
+        color: #64748b;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+        transition: all .15s ease;
+    }
+    .ov-nested-row-move button:hover:not(:disabled) {
+        border-color: #4361ee;
+        color: #4361ee;
+        background: #f8fbff;
+    }
+    .ov-nested-row-move button:disabled {
+        opacity: .35;
+        cursor: default;
+    }
+    .ov-nested-row-remove {
+        right: -7px;
+        cursor: pointer;
+    }
+    .ov-dm .ov-layout-row-nested:hover > .ov-nested-row-drag,
+    .ov-dm .ov-layout-row-nested:hover > .ov-nested-row-move,
+    .ov-dm .ov-layout-row-nested:hover > .ov-nested-row-remove { display: flex; }
+    .dark .home-ov-title h1,
+    .dark .dx-card-title,
+    .dark .dx-priority-title,
+    .dark .dx-task-row strong,
+    .dark .dx-event-title-line strong,
+    .dark .dx-date-row strong,
+    .dark .dx-goal-row > div:first-child,
+    .dark .dx-goal-row strong,
+    .dark .dx-finance-row label,
+    .dark .dx-finance-row strong,
+    .dark .dx-shopping-row,
+    .dark .dx-record-task-row strong,
+    .dark .dx-activity-row strong,
+    .dark .dx-ai-note strong,
+    .dark .dx-productivity strong,
+    .dark .dx-time,
+    .dark .dx-week-event em { color: #f1f5f9; }
+    .dark .home-ov-title p,
+    .dark .dx-productivity small,
+    .dark .dx-activity-row > div > span,
+    .dark .dx-ai-note span,
+    .dark .dx-event-record-line,
+    .dark .dx-record-task-row span:not(.home-mini-icon),
+    .dark .dx-stat-grid .home-stat-card span { color: #94a3b8; }
+    .dark .ov-card.dx-card,
+    .dark .dx-ring span { background: #0e1726; }
+    .dark .dx-ring { background: conic-gradient(#536cff calc(var(--value) * 1%), #253b5c 0); }
+    .dark .ov-card.dx-card {
+        border-color: #253b5c;
+        box-shadow: none;
+    }
+    .dark .ov-card.dx-card:hover {
+        border-color: #334e73;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+    }
+    .dark .home-ov-btn {
+        background: #0e1726;
+        border-color: #253b5c;
+        color: #94a3b8;
+    }
+    .dark .home-ov-btn:hover,
+    .dark .home-ov-btn.active {
+        border-color: #4361ee;
+        background: rgba(67, 97, 238, .1);
+        color: #818cf8;
+    }
+    .dark .dx-event-row,
+    .dark .dx-ai-note {
+        background: #111c2d;
+        border-color: #253b5c;
+    }
+    .dark .ov-layout-row-nested,
+    .dark .ov-dm .ov-layout-row-nested,
+    .dark .ov-dm .ov-layout-col {
+        background: transparent;
+    }
+    .dark .ov-dm .ov-layout-row-nested,
+    .dark .ov-dm .ov-layout-col {
+        border-color: rgba(80, 118, 172, .34);
+    }
+    .dark .ov-nested-row-drag,
+    .dark .ov-nested-row-move button {
+        background: #111c2d;
+        border-color: #253b5c;
+        color: #93a4c3;
+    }
+    .dark .ov-nested-row-move button:hover:not(:disabled) {
+        background: #16253c;
+        border-color: #4361ee;
+        color: #818cf8;
+    }
+    .dark .dx-event-row:hover,
+    .dark .dx-event-row:focus-visible,
+    .dark .dx-activity-row:hover {
+        background: #1b2e4b;
+        border-color: color-mix(in srgb, var(--event-color, #4361ee) 38%, #253b5c);
+    }
+    .dark .dx-shopping-row:hover,
+    .dark .dx-finance-row:hover { background: #111f35; }
+    .dark .dx-task-title { color: #dbe5f3; }
+    .dark .dx-task-edit {
+        background: #0e1726;
+        border-color: #818cf8;
+        color: #e0e6ed;
+    }
+    .dark .dx-task-priority:hover,
+    .dark .dx-task-priority:focus-visible {
+        background: color-mix(in srgb, var(--priority-color, #64748b) 16%, #0e1726);
+    }
+    .dark .dx-task-ctx {
+        background: #0e1726;
+        border-color: #253b5c;
+        box-shadow: 0 16px 38px rgba(0,0,0,.38);
+    }
+    .dark .dx-task-ctx button { color: #dbe5f3; }
+    .dark .dx-task-ctx button:hover { background: #111f35; }
+    .dark .dx-task-ctx .danger { color: #f87171; }
+    .dark .dx-task-ctx .danger:hover { background: rgba(239,68,68,.12); }
+    .dark .dx-task-ctx-priorities button {
+        background: color-mix(in srgb, var(--priority-color, #64748b) 17%, #0e1726);
+        color: var(--priority-color, #94a3b8);
+    }
+    .dark .dx-inline-add input,
+    .dark .dx-inline-add button,
+    .dark .dx-tiny-btn {
+        background: #0e1726;
+        border-color: #253b5c;
+        color: #cbd5e1;
+    }
+    .dark .dx-activity-timeline::before { background: #253b5c; }
+    .dark .dx-activity-dot {
+        border-color: #0e1726;
+        box-shadow: 0 0 0 1px #253b5c;
+    }
+    .dark .dx-event-date,
+    .dark .dx-mini-date {
+        background: color-mix(in srgb, var(--event-color, #4361ee) 18%, #0e1726);
+    }
+    .dark .dx-event-entity-icon {
+        background: color-mix(in srgb, var(--event-icon-color, #4361ee) 18%, #0e1726);
+        border-color: color-mix(in srgb, var(--event-icon-color, #4361ee) 30%, #253b5c);
+    }
+    .dark .dx-event-record-mini {
+        background: color-mix(in srgb, var(--event-record-color, #4361ee) 18%, #0e1726);
+    }
+    .dark .dx-detail-btn,
+    .dark .dx-stat-grid .home-stat-card {
+        background: #111c2d;
+        color: #e0e6ed;
+    }
+    .dark .dx-progress { background: #253b5c; }
+    @media (max-width: 1180px) {
+        .dx-priority-body { grid-template-columns: 1fr; }
+        .dx-productivity { border-left: 0; border-top: 1px solid #eef2f8; padding-top: 18px; }
+    }
+    @media (max-width: 1024px) {
+        .ov-add-choice { grid-template-columns: 1fr; }
+        .dx-week-grid { grid-template-columns: repeat(4, minmax(140px, 1fr)); }
+    }
+    @media (max-width: 700px) {
+        .home-overview-shell { padding-bottom: 18px; }
+        .dx-priority-row { grid-template-columns: 18px minmax(0, 1fr) 74px; }
+        .dx-priority-row .dx-time { display: none; }
+        .dx-task-row { grid-template-columns: 18px minmax(0, 1fr) 60px; }
+        .dx-task-row .dx-time,
+        .dx-task-row .dx-priority { display: none; }
+        .dx-shopping-row.dx-task-row,
+        .dx-shopping-row.dx-task-row.has-priority {
+            grid-template-columns: 18px minmax(0, 1fr) 64px;
+        }
+        .dx-week-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    }
+</style>
+
+<div class="home-overview-shell"
+     x-data="homeOverviewHub()"
+     :class="layoutMode ? 'ov-dm' : ''"
+     @click.window="closeHomeTaskMenu()"
+     @keydown.escape.window="closeHomeTaskMenu(); cancelEditHomeTask()">
     <div class="home-ov-header">
         <div class="home-ov-title">
-            <div class="home-ov-icon">
-                <iconify-icon icon="solar:widget-5-bold-duotone" width="24"></iconify-icon>
-            </div>
             <div>
-                <h1>Bonjour, <%= typeof user !== 'undefined' && user && user.name ? user.name.split(' ')[0] : 'utilisateur' %></h1>
-                <p>Vue d'ensemble de votre espace de travail</p>
+                <h1>Bonjour, <%= typeof user !== 'undefined' && user && user.name ? user.name.split(' ')[0] : 'Riad' %> 👋</h1>
+                <p>Voici ce qui se passe aujourd'hui</p>
             </div>
         </div>
         <div class="home-ov-actions">
-            <a class="home-ov-btn" href="/account/<%= account_number %>/tasks">
-                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone"></iconify-icon>
-                Tâches
-            </a>
             <button type="button" class="home-ov-btn" :class="layoutMode ? 'active' : ''" @click="toggleLayoutMode()">
-                <iconify-icon icon="solar:settings-minimalistic-bold-duotone"></iconify-icon>
-                <span x-text="layoutMode ? 'Terminer' : 'Config'"></span>
+                <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                <span x-text="layoutMode ? 'Terminer' : 'Personnaliser'"></span>
+            </button>
+            <button type="button" class="home-ov-btn" title="Options">
+                <iconify-icon icon="tabler:dots" width="16"></iconify-icon>
             </button>
         </div>
     </div>
@@ -423,254 +1805,117 @@
                 <div class="ov-row-drag" title="Déplacer la ligne">⠿</div>
                 <button type="button" class="ov-row-remove" @click="removeRow(row.id)" title="Supprimer la ligne">✕</button>
                 <template x-for="(col, ci) in row.columns" :key="col.id">
-                    <div class="ov-layout-col" :style="'width:' + (col.width/12*100) + '%;position:relative;'">
+                    <div class="ov-layout-col"
+                         :class="{ 'ov-layout-col-nested-only': isNestedOnlyColumn(col) }"
+                         :style="'width:' + (col.width/12*100) + '%;position:relative;'">
                         <div class="ov-col-toolbar">
                             <button type="button" @click="splitColumn(row.id, col.id)" title="Diviser" x-show="col.width >= 4">⫽</button>
                             <button type="button" @click="removeColumn(row.id, col.id)" title="Supprimer" x-show="row.columns.length > 1" style="color:#ef4444;">✕</button>
                         </div>
                         <template x-if="ci < row.columns.length - 1">
-                            <div class="ov-resize-handle" @mousedown="$event.preventDefault(); _onResizeStart($event, row.id, ci)"></div>
+                            <div class="ov-resize-handle" @pointerdown.stop.prevent="_onResizeStart($event, row.id, ci)"></div>
                         </template>
-                        <div class="ov-col-widgets" :data-col-id="col.id">
-                            <template x-for="wid in col.widgetIds" :key="wid">
-                                <div class="ov-widget-wrap" :data-widget-id="wid">
-                                    <div class="ov-widget-drag" title="Déplacer">⠿</div>
-                                    <button type="button" class="ov-widget-remove" @click="removeWidget(wid)" title="Retirer">✕</button>
 
-                                    <!-- Widget: today-tasks -->
-                                    <template x-if="wid === 'today-tasks'">
-                                    <div class="ov-card" style="--ov-color:#10b981">
-                                        <div class="ov-card-header">
-                                            <div class="ov-card-title">
-                                                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone"></iconify-icon>
-                                                <span>Tâches du jour</span>
+                        <template x-if="!isNestedOnlyColumn(col)">
+                            <div class="ov-col-widgets" :data-col-id="col.id">
+                                <template x-for="(wid, wi) in (col.widgetIds || [])" :key="wid + ':' + wi">
+                                    <div class="ov-widget-wrap" :data-widget-id="wid">
+                                        <div class="ov-widget-drag" title="Déplacer">⠿</div>
+                                        <button type="button" class="ov-widget-config" @click.stop="openWidgetSettings(wid)" title="Configurer"><iconify-icon icon="solar:settings-linear" width="13"></iconify-icon></button>
+                                        <button type="button" class="ov-widget-remove" @click="removeWidget(wid, col.id, wi)" title="Retirer">✕</button>
+                                        <%- include('partials/widget-card') %>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <div class="ov-nested-rows" :data-nested-parent-id="col.id" x-show="(col.childRows || []).length">
+	                            <template x-for="childRow in (col.childRows || [])" :key="childRow.id">
+	                                <div class="ov-layout-row ov-layout-row-nested" :data-row-id="childRow.id" :data-parent-col-id="col.id">
+	                                    <div class="ov-nested-row-drag" title="Déplacer la sous-ligne">⠿</div>
+	                                    <div class="ov-nested-row-move" aria-label="Réorganiser la sous-ligne">
+	                                        <button type="button" @click.stop="moveNestedRow(col.id, childRow.id, -1)" :disabled="(col.childRows || [])[0]?.id === childRow.id" title="Monter">
+	                                            <iconify-icon icon="tabler:chevron-up" width="13"></iconify-icon>
+	                                        </button>
+	                                        <button type="button" @click.stop="moveNestedRow(col.id, childRow.id, 1)" :disabled="(col.childRows || [])[(col.childRows || []).length - 1]?.id === childRow.id" title="Descendre">
+	                                            <iconify-icon icon="tabler:chevron-down" width="13"></iconify-icon>
+	                                        </button>
+	                                    </div>
+	                                    <button type="button" class="ov-nested-row-remove" @click="removeNestedRow(col.id, childRow.id)" title="Supprimer la sous-ligne">✕</button>
+	                                    <template x-for="(childCol, childCi) in childRow.columns" :key="childCol.id">
+                                        <div class="ov-layout-col" :style="'width:' + (childCol.width/12*100) + '%;position:relative;'">
+                                            <div class="ov-col-toolbar">
+                                                <button type="button" @click="splitColumn(childRow.id, childCol.id)" title="Diviser" x-show="childCol.width >= 4">⫽</button>
+                                                <button type="button" @click="removeColumn(childRow.id, childCol.id)" title="Supprimer" x-show="childRow.columns.length > 1" style="color:#ef4444;">✕</button>
                                             </div>
-                                            <a class="ov-card-link" href="/account/<%= account_number %>/tasks">Voir tout →</a>
-                                        </div>
-                                        <div class="ov-card-body">
-                                            <template x-if="todayTasks.length === 0">
-                                                <div class="home-empty">
-                                                    <iconify-icon icon="solar:check-circle-bold-duotone" width="28"></iconify-icon>
-                                                    Rien pour aujourd'hui ✓
-                                                </div>
+                                            <template x-if="childCi < childRow.columns.length - 1">
+                                                <div class="ov-resize-handle" @pointerdown.stop.prevent="_onResizeStart($event, childRow.id, childCi)"></div>
                                             </template>
-                                            <template x-if="todayTasks.length > 0">
-                                                <div class="home-task-list">
-                                                    <template x-for="task in todayTasks.slice(0, 5)" :key="task.id">
-                                                        <a class="home-task-item" :href="task.link">
-                                                            <div class="home-task-dot" :style="'background:' + (task.statusColor || '#94a3b8')"></div>
-                                                            <div class="home-task-main">
-                                                                <div class="home-task-title" x-text="task.title"></div>
-                                                                <div class="home-task-meta" x-text="task.listLabel + ' · ' + task.entityName"></div>
-                                                            </div>
-                                                            <template x-if="isOverdue(task)">
-                                                                <span class="home-task-badge overdue">En retard</span>
-                                                            </template>
-                                                            <template x-if="!isOverdue(task)">
-                                                                <span class="home-task-badge today">Aujourd'hui</span>
-                                                            </template>
-                                                        </a>
-                                                    </template>
-                                                    <template x-if="todayTasks.length > 5">
-                                                        <a class="home-task-item" href="/account/<%= account_number %>/tasks" style="justify-content:center;color:#4361ee;font-size:12px;">
-                                                            Voir les <span x-text="todayTasks.length - 5" style="margin:0 3px;"></span> autres →
-                                                        </a>
-                                                    </template>
+                                            <div class="ov-col-widgets" :data-col-id="childCol.id">
+                                                <template x-for="(wid, wi) in (childCol.widgetIds || [])" :key="wid + ':' + wi">
+                                                    <div class="ov-widget-wrap" :data-widget-id="wid">
+                                                        <div class="ov-widget-drag" title="Déplacer">⠿</div>
+                                                        <button type="button" class="ov-widget-config" @click.stop="openWidgetSettings(wid)" title="Configurer"><iconify-icon icon="solar:settings-linear" width="13"></iconify-icon></button>
+                                                        <button type="button" class="ov-widget-remove" @click="removeWidget(wid, childCol.id, wi)" title="Retirer">✕</button>
+                                                        <%- include('partials/widget-card') %>
+                                                    </div>
+                                                </template>
+                                                <div class="ov-nested-add-widget" @click="openWidgetPicker(childCol.id)">
+                                                    <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                                    <span>Widget</span>
                                                 </div>
-                                            </template>
+                                            </div>
                                         </div>
-                                    </div>
                                     </template>
-
-                                    <!-- Widget: stats -->
-                                    <template x-if="wid === 'stats'">
-                                    <div class="ov-card" style="--ov-color:#6366f1">
-                                        <div class="ov-card-header">
-                                            <div class="ov-card-title">
-                                                <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
-                                                <span>Résumé</span>
-                                            </div>
-                                        </div>
-                                        <div class="ov-card-body">
-                                            <div class="home-stat-grid">
-                                                <div class="home-stat-card">
-                                                    <strong x-text="stats.openTasks || 0"></strong>
-                                                    <span>En cours</span>
-                                                </div>
-                                                <div class="home-stat-card">
-                                                    <strong x-text="stats.doneTasks || 0"></strong>
-                                                    <span>Terminées</span>
-                                                </div>
-                                                <div class="home-stat-card">
-                                                    <strong x-text="stats.overdueCount || 0"></strong>
-                                                    <span>En retard</span>
-                                                </div>
-                                                <div class="home-stat-card">
-                                                    <strong x-text="stats.recordsCount || 0"></strong>
-                                                    <span>Records</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    </template>
-
-                                    <!-- Widget: recent-records -->
-                                    <template x-if="wid === 'recent-records'">
-                                    <div class="ov-card" style="--ov-color:#f59e0b">
-                                        <div class="ov-card-header">
-                                            <div class="ov-card-title">
-                                                <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
-                                                <span>Activité récente</span>
-                                            </div>
-                                        </div>
-                                        <div class="ov-card-body">
-                                            <template x-if="recentRecords.length === 0">
-                                                <div class="home-empty">
-                                                    <iconify-icon icon="solar:folder-open-bold-duotone" width="28"></iconify-icon>
-                                                    Aucune activité récente
-                                                </div>
-                                            </template>
-                                            <template x-if="recentRecords.length > 0">
-                                                <div class="home-record-list">
-                                                    <template x-for="rec in recentRecords.slice(0, 5)" :key="rec.id">
-                                                        <a class="home-record-item" :href="rec.link">
-                                                            <div class="home-mini-icon" :style="'--item-color:' + (rec.color || '#4361ee')">
-                                                                <iconify-icon :icon="rec.icon || 'solar:folder-bold-duotone'" width="14"></iconify-icon>
-                                                            </div>
-                                                            <div class="home-record-text">
-                                                                <strong x-text="rec.title"></strong>
-                                                                <span x-text="rec.entityName"></span>
-                                                            </div>
-                                                            <div class="home-record-time" x-text="timeAgo(rec.updatedAt)"></div>
-                                                        </a>
-                                                    </template>
-                                                    <template x-if="recentRecords.length > 5">
-                                                        <a class="home-record-item" href="/account/<%= account_number %>/home" style="justify-content:center;color:#4361ee;font-size:12px;">
-                                                            Voir plus →
-                                                        </a>
-                                                    </template>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                    </template>
-
-                                    <!-- Widget: quick-links -->
-                                    <template x-if="wid === 'quick-links'">
-                                    <div class="ov-card" style="--ov-color:#8b5cf6">
-                                        <div class="ov-card-header">
-                                            <div class="ov-card-title">
-                                                <iconify-icon icon="solar:bolt-circle-bold-duotone"></iconify-icon>
-                                                <span>Raccourcis</span>
-                                            </div>
-                                        </div>
-                                        <div class="ov-card-body">
-                                            <div class="home-quick-list">
-                                                <a class="home-quick-item" href="/account/<%= account_number %>/tasks">
-                                                    <div class="home-mini-icon" style="--item-color:#6366f1"><iconify-icon icon="solar:clipboard-list-bold-duotone" width="14"></iconify-icon></div>
-                                                    <div class="home-quick-text"><strong>Tâches</strong></div>
-                                                </a>
-                                                <a class="home-quick-item" href="/account/<%= account_number %>/notes">
-                                                    <div class="home-mini-icon" style="--item-color:#eab308"><iconify-icon icon="solar:notes-bold-duotone" width="14"></iconify-icon></div>
-                                                    <div class="home-quick-text"><strong>Notes</strong></div>
-                                                </a>
-                                                <a class="home-quick-item" href="/account/<%= account_number %>/documents">
-                                                    <div class="home-mini-icon" style="--item-color:#0ea5e9"><iconify-icon icon="solar:document-text-bold-duotone" width="14"></iconify-icon></div>
-                                                    <div class="home-quick-text"><strong>Documents</strong></div>
-                                                </a>
-                                                <a class="home-quick-item" href="/account/<%= account_number %>/chat">
-                                                    <div class="home-mini-icon" style="--item-color:#f97316"><iconify-icon icon="solar:chat-round-dots-bold-duotone" width="14"></iconify-icon></div>
-                                                    <div class="home-quick-text"><strong>Chat</strong></div>
-                                                </a>
-                                                <a class="home-quick-item" href="/account/<%= account_number %>/media">
-                                                    <div class="home-mini-icon" style="--item-color:#ec4899"><iconify-icon icon="solar:gallery-bold-duotone" width="14"></iconify-icon></div>
-                                                    <div class="home-quick-text"><strong>Médias</strong></div>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    </template>
-
-                                    <!-- Widget: custom (from picker) -->
-                                    <template x-if="isCustomWidget(wid)">
-                                    <div class="ov-card ov-card-custom">
-                                        <div class="ov-card-header">
-                                            <div class="ov-card-title" :style="'--ov-color:' + (getCustomWidget(wid).color || '#4361ee')">
-                                                <iconify-icon :icon="getCustomWidget(wid).icon || customWidgetIcon(getCustomWidget(wid).type)"></iconify-icon>
-                                                <span x-text="getCustomWidget(wid).label || customWidgetLabel(getCustomWidget(wid).type)"></span>
-                                            </div>
-                                        </div>
-                                        <template x-if="getCustomWidget(wid).type === 'iframe'">
-                                            <div>
-                                                <template x-if="customWidgetConfig(wid).url">
-                                                    <iframe class="ov-custom-frame" :src="customWidgetConfig(wid).url" :style="'height:' + (customWidgetConfig(wid).height || 300) + 'px'" allowfullscreen loading="lazy"></iframe>
-                                                </template>
-                                                <template x-if="!customWidgetConfig(wid).url">
-                                                    <div class="ov-custom-empty">URL iframe manquante</div>
-                                                </template>
-                                            </div>
-                                        </template>
-                                        <template x-if="getCustomWidget(wid).type === 'video'">
-                                            <div>
-                                                <template x-if="customWidgetConfig(wid).url && isEmbeddableVideo(customWidgetConfig(wid).url)">
-                                                    <iframe class="ov-custom-frame" :src="videoEmbedUrl(customWidgetConfig(wid).url)" :style="'height:' + (customWidgetConfig(wid).height || 320) + 'px'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
-                                                </template>
-                                                <template x-if="customWidgetConfig(wid).url && !isEmbeddableVideo(customWidgetConfig(wid).url)">
-                                                    <video class="ov-custom-video" :src="customWidgetConfig(wid).url" :style="'max-height:' + (customWidgetConfig(wid).height || 320) + 'px'" controls></video>
-                                                </template>
-                                                <template x-if="!customWidgetConfig(wid).url">
-                                                    <div class="ov-custom-empty">URL vidéo manquante</div>
-                                                </template>
-                                            </div>
-                                        </template>
-                                        <template x-if="getCustomWidget(wid).type === 'image'">
-                                            <div>
-                                                <template x-if="customWidgetConfig(wid).url">
-                                                    <img class="ov-custom-image" :src="customWidgetConfig(wid).url" :alt="customWidgetConfig(wid).alt || 'Image'">
-                                                </template>
-                                                <template x-if="!customWidgetConfig(wid).url">
-                                                    <div class="ov-custom-empty">URL image manquante</div>
-                                                </template>
-                                            </div>
-                                        </template>
-                                        <template x-if="getCustomWidget(wid).type === 'html'">
-                                            <div class="ov-card-body ov-custom-html" x-html="customWidgetConfig(wid).content || ''"></div>
-                                        </template>
-                                        <template x-if="getCustomWidget(wid).type === 'note' || getCustomWidget(wid).type === 'notes'">
-                                            <div class="ov-card-body"><div class="ov-custom-note" x-text="customWidgetConfig(wid).content || 'Note vide'"></div></div>
-                                        </template>
-                                        <template x-if="getCustomWidget(wid).type === 'link'">
-                                            <div class="ov-card-body"><a class="ov-custom-link" :href="customWidgetConfig(wid).url || '#'" :target="customWidgetConfig(wid).newTab ? '_blank' : '_self'" rel="noopener">
-                                                <span x-text="customWidgetConfig(wid).description || customWidgetConfig(wid).url || 'Lien'"></span>
-                                                <iconify-icon icon="solar:arrow-right-up-linear" width="14"></iconify-icon>
-                                            </a></div>
-                                        </template>
-                                        <template x-if="getCustomWidget(wid).type === 'separator'">
-                                            <div class="ov-custom-separator"></div>
-                                        </template>
-                                        <template x-if="['timeline','kpi','chart','fields','cards','tasks'].includes(getCustomWidget(wid).type)">
-                                            <div class="ov-custom-empty" x-text="customWidgetLabel(getCustomWidget(wid).type) + ' prêt à configurer'"></div>
-                                        </template>
-                                    </div>
-                                    </template>
-
                                 </div>
                             </template>
                         </div>
-                        <!-- Add widget button -->
-                        <div class="ov-add-widget-btn" @click="openWidgetPicker(col.id)">
-                            <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                            <span>Widget</span>
+
+                        <div class="ov-add-choice">
+                            <div class="ov-add-widget-btn" @click="openWidgetPicker(col.id)">
+                                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                <span>Widget</span>
+                            </div>
+                            <div class="ov-add-nested-row-btn" @click="addNestedRow(col.id)">
+                                <iconify-icon icon="tabler:layout-rows" width="14"></iconify-icon>
+                                <span>Ligne</span>
+                            </div>
                         </div>
                     </div>
                 </template>
             </div>
         </template>
     </div>
-    <!-- Add row button -->
+
     <div class="ov-add-row-btn" @click="addRow()">
         <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
         <span>Ajouter une ligne</span>
+    </div>
+
+    <div class="dx-task-ctx"
+         x-show="homeTaskMenu"
+         x-cloak
+         :style="homeTaskMenu ? 'left:' + homeTaskMenu.x + 'px;top:' + homeTaskMenu.y + 'px' : ''"
+         @click.stop>
+        <button type="button" x-show="!homeTaskMenu?.priorityOnly" @click="editHomeTaskFromMenu()">
+            <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
+            Modifier
+        </button>
+        <div class="dx-task-ctx-label">Priorité</div>
+        <div class="dx-task-ctx-priorities">
+            <template x-for="priority in homeTaskPriorityChoices" :key="priority.label">
+                <button type="button"
+                        :style="'--priority-color:' + priority.color"
+                        @click="setHomeTaskPriorityFromMenu(priority.label)">
+                    <iconify-icon icon="solar:flag-linear" width="11"></iconify-icon>
+                    <span x-text="priority.label"></span>
+                </button>
+            </template>
+        </div>
+        <button type="button" class="danger" x-show="!homeTaskMenu?.priorityOnly" @click="deleteHomeTaskFromMenu()">
+            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+            Supprimer
+        </button>
     </div>
 </div>
 
@@ -678,25 +1923,105 @@
 document.addEventListener('alpine:init', () => {
     const _accountNumber = '<%= account_number %>';
 
-    Alpine.data('homeOverviewHub', () => ({
-        layoutMode: false,
-        loadingData: true,
-        rows: [],
-        todayTasks: [],
-        recentRecords: [],
-        stats: {},
-        customWidgets: {},
-        _viewId: 'home_overview',
-        _sortables: [],
-        _sortableTimer: null,
-        _observer: null,
-        _sortableIniting: false,
-        _isDragging: false,
-        _resizing: null,
-        _homeWidgetListener: null,
-        _defaultRows: [
-            { id: 'r1', columns: [{ id: 'c1', width: 8, widgetIds: ['today-tasks', 'recent-records'] }, { id: 'c2', width: 4, widgetIds: ['stats', 'quick-links'] }] }
-        ],
+	    Alpine.data('homeOverviewHub', () => ({
+	        layoutMode: false,
+	        loadingData: true,
+	        rows: [],
+	        todayTasks: [],
+		        allTasks: [],
+		        tasksByRecord: [],
+		        homeTaskLists: [],
+		        defaultWidgets: {},
+		        recentRecords: [],
+	        upcomingEvents: [],
+	        importantDates: [],
+	        stats: {},
+	        customWidgets: {},
+	        widgetSettings: {},
+	        _viewId: 'home_overview',
+	        _layoutVersion: 3,
+	        _sortables: [],
+	        _sortableTimer: null,
+	        _observer: null,
+	        _sortableIniting: false,
+	        _isDragging: false,
+	        _resizing: null,
+	        _homeWidgetListener: null,
+		        _homeDataTimer: null,
+		        _homeDataSaving: false,
+		        newTaskTitles: {},
+	        homeTaskRenderVersions: {},
+	        _taskSortables: new Map(),
+	        homeTaskMenu: null,
+	        editingHomeTaskId: '',
+	        editingHomeTaskWidgetId: '',
+	        editingHomeTaskTitle: '',
+	        homeTaskPriorityChoices: [
+	            { label: 'Aucune', color: '#94a3b8' },
+	            { label: 'Basse', color: '#3b82f6' },
+	            { label: 'Moyenne', color: '#f59e0b' },
+	            { label: 'Haute', color: '#ef4444' },
+	            { label: 'Urgente', color: '#dc2626' }
+	        ],
+	        goals: [
+	            { id: 'goal_saas', title: 'Lancer mon SaaS', value: 60, color: '#536cff' },
+	            { id: 'goal_health', title: 'Perdre 8 kg', value: 40, color: '#4b7bff' },
+	            { id: 'goal_savings', title: 'Économiser 500€', value: 25, color: '#71d095' },
+	            { id: 'goal_books', title: 'Lire 12 livres', value: 70, color: '#ff8a00' }
+	        ],
+	        financeRows: [
+	            { id: 'finance_total', label: 'Dépenses totales', value: '1 247,50 €', color: '#5b6df7', icon: 'solar:wallet-money-bold-duotone' },
+	            { id: 'finance_subs', label: 'Abonnements', value: '67,99 €', color: '#10b981', icon: 'solar:card-bold-duotone' },
+	            { id: 'finance_bills', label: 'Factures à venir', value: '156,00 €', color: '#f97316', icon: 'solar:bill-list-bold-duotone' },
+	            { id: 'finance_budget', label: 'Budget restant', value: '452,50 €', color: '#10b981', icon: 'solar:wallet-bold-duotone' }
+	        ],
+	        shoppingItems: [
+	            { id: 'shop_lait', label: 'Lait', done: false },
+	            { id: 'shop_pain', label: 'Pain', done: true },
+	            { id: 'shop_couches', label: 'Couches bébé', done: false },
+	            { id: 'shop_fruits', label: 'Fruits', done: false },
+	            { id: 'shop_lessive', label: 'Lessive', done: false }
+	        ],
+	        _defaultRows: [
+	            { id: 'r1', columns: [
+	                { id: 'c1', width: 8, widgetIds: ['priority-day'] },
+	                { id: 'c2', width: 4, widgetIds: ['upcoming-events'] }
+	            ] },
+	            { id: 'r2', columns: [
+	                { id: 'c3', width: 8, widgetIds: [], childRows: [
+	                    { id: 'nr1', columns: [
+	                        { id: 'nc1', width: 6, widgetIds: ['objectives'] },
+	                        { id: 'nc2', width: 6, widgetIds: ['tasks'] }
+	                    ] },
+	                    { id: 'nr2', columns: [
+	                        { id: 'nc3', width: 4, widgetIds: ['finance'] },
+	                        { id: 'nc4', width: 4, widgetIds: ['shopping-list'] },
+	                        { id: 'nc5', width: 4, widgetIds: ['tasks-by-record'] }
+	                    ] }
+	                ] },
+	                { id: 'c4', width: 4, widgetIds: ['activity-timeline', 'stats', 'ai-feed'] }
+	            ] },
+	            { id: 'r3', columns: [
+	                { id: 'c5', width: 12, widgetIds: ['weekly-timeline'] }
+	            ] }
+	        ],
+	        _defaultWidgetCatalog: {
+	            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true } },
+	            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true } },
+	            'upcoming-events': { type: 'upcoming-events', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6', config: { limit: 4, showLink: true } },
+	            'important-dates': { type: 'important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', config: { limit: 4 } },
+	            objectives: { type: 'objectives', label: 'Objectifs', icon: 'solar:target-bold-duotone', color: '#4361ee', config: { limit: 6, showLink: true } },
+	            tasks: { type: 'tasks', label: 'Tâches', icon: 'solar:clipboard-list-bold-duotone', color: '#8b5cf6', config: { limit: 5, showCompleted: false, showLink: true } },
+	            finance: { type: 'finance', label: 'Finance', icon: 'solar:wallet-money-bold-duotone', color: '#6366f1', config: { limit: 4, period: 'Ce mois-ci' } },
+	            'shopping-list': { type: 'shopping-list', label: 'Liste de courses', icon: 'solar:cart-large-bold-duotone', color: '#10b981', config: { taskListId: '', limit: 8, showCompleted: true, allowAdd: true, shared: true, showPriority: true } },
+	            'tasks-by-record': { type: 'tasks-by-record', label: 'Tâches par record', icon: 'solar:folder-with-files-bold-duotone', color: '#3b82f6', config: { limit: 4, showLink: true } },
+	            'activity-timeline': { type: 'activity-timeline', label: 'Activité récente', icon: 'solar:history-bold-duotone', color: '#10b981', config: { limit: 5, showLink: true } },
+	            stats: { type: 'stats', label: 'Résumé', icon: 'solar:chart-square-bold-duotone', color: '#6366f1', config: {} },
+	            'ai-feed': { type: 'ai-feed', label: 'Feed intelligent IA', icon: 'solar:magic-stick-3-bold-duotone', color: '#7c3aed', config: { limit: 4 } },
+	            'weekly-timeline': { type: 'weekly-timeline', label: 'Timeline', icon: 'solar:calendar-date-bold-duotone', color: '#805dca', config: { limit: 7 } },
+	            'quick-links': { type: 'quick-links', label: 'Raccourcis', icon: 'solar:bolt-circle-bold-duotone', color: '#8b5cf6', config: { showTasks: true, showNotes: true, showDocuments: true } },
+	            'recent-records': { type: 'recent-records', label: 'Activité récente', icon: 'solar:history-bold-duotone', color: '#f59e0b', config: { limit: 5, showLink: true } }
+	        },
 
         async init() {
             this.rows = JSON.parse(JSON.stringify(this._defaultRows));
@@ -704,9 +2029,12 @@ document.addEventListener('alpine:init', () => {
             this._fetchData();
             window.addEventListener('mousemove', (e) => this._onResizeMove(e));
             window.addEventListener('mouseup', () => this._onResizeEnd());
+            window.addEventListener('pointermove', (e) => this._onResizeMove(e));
+            window.addEventListener('pointerup', () => this._onResizeEnd());
             this._homeWidgetListener = (e) => this.insertWidgetFromPicker(e.detail || {});
             window.addEventListener('insert-home-overview-widget', this._homeWidgetListener);
             window.addEventListener('update-home-overview-widget', (e) => this._updateWidgetFromPicker(e.detail || {}));
+            window.addEventListener('delete-home-overview-custom-widget', (e) => this.deleteCustomWidgetFromPicker(e.detail || {}));
             // Re-init sortables when data finishes loading and layout mode is active
             this.$watch('loadingData', (loading) => {
                 if (!loading && this.layoutMode) {
@@ -718,10 +2046,17 @@ document.addEventListener('alpine:init', () => {
         async _fetchData() {
             try {
                 const res = await fetch(`/account/${_accountNumber}/api/home-overview`, { credentials: 'include' });
-                const data = await res.json();
-                if (data.success) {
-                    this.todayTasks = data.todayTasks || [];
-                    this.recentRecords = data.recentRecords || [];
+	                const data = await res.json();
+	                if (data.success) {
+		                    this.todayTasks = data.todayTasks || [];
+		                    this.allTasks = data.tasks || [];
+		                    this.tasksByRecord = data.tasksByRecord || [];
+		                    this.homeTaskLists = (data.taskLists || []).map(list => this.normalizeHomeTaskList(list));
+		                    this.defaultWidgets = data.defaultWidgets || {};
+		                    this.recentRecords = data.recentRecords || [];
+	                    this.upcomingEvents = data.upcomingEvents || [];
+	                    this.importantDates = data.importantDates || [];
+	                    this.applyHomeData(data.homeData || {});
                     this.stats = data.stats || {};
                 }
             } catch (e) {
@@ -731,7 +2066,576 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        toggleLayoutMode(force) {
+        applyHomeData(homeData = {}) {
+            if (Array.isArray(homeData.goals)) this.goals = homeData.goals;
+            if (Array.isArray(homeData.financeRows)) this.financeRows = homeData.financeRows;
+            if (Array.isArray(homeData.shoppingItems)) this.shoppingItems = homeData.shoppingItems;
+        },
+
+        homeDataPayload() {
+            return {
+                goals: this.goals,
+                financeRows: this.financeRows,
+                shoppingItems: this.shoppingItems
+            };
+        },
+
+        scheduleHomeDataSave() {
+            if (this._homeDataTimer) clearTimeout(this._homeDataTimer);
+            this._homeDataTimer = setTimeout(() => this.saveHomeData(), 250);
+        },
+
+        async saveHomeData() {
+            this._homeDataSaving = true;
+            try {
+                const res = await fetch(`/account/${_accountNumber}/api/home-overview/widgets`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ homeData: this.homeDataPayload() })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Sauvegarde impossible');
+                this.applyHomeData(data.homeData || {});
+            } catch (e) {
+                console.error('[HomeHub] save home data error', e);
+                window.showMessage && window.showMessage(e.message || 'Sauvegarde impossible', 'danger');
+            } finally {
+                this._homeDataSaving = false;
+            }
+        },
+
+	        normalizeHomeTask(task = {}) {
+	            const id = String(task._id || task.id || '');
+	            return {
+	                ...task,
+	                id,
+	                _id: id,
+	                title: String(task.title || '').trim() || 'Sans titre',
+	                status: task.status || 'À faire',
+	                statusColor: task.statusColor || '#9ca3af',
+	                priority: task.priority || 'Aucune',
+	                priorityColor: task.priorityColor || this.homeTaskPriorityColor(task.priority),
+	                taskListId: String(task.taskListId || task.listId || ''),
+	                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
+	                createdAt: task.createdAt || null,
+	                updatedAt: task.updatedAt || null
+	            };
+	        },
+
+	        normalizeHomeTaskList(list = {}) {
+	            const id = String(list.id || list._id || '');
+	            return {
+	                ...list,
+	                id,
+	                _id: id,
+	                label: String(list.label || 'Liste de tâches').trim(),
+	                color: list.color || '#10b981',
+	                icon: list.icon || 'solar:checklist-bold-duotone',
+	                link: list.link || `/account/${_accountNumber}/tasks`,
+	                tasks: Array.isArray(list.tasks) ? list.tasks.map(task => this.normalizeHomeTask({ ...task, taskListId: id })) : [],
+	                count: Number(list.count || 0),
+	                doneCount: Number(list.doneCount || 0)
+	            };
+	        },
+
+	        homeTaskListIdForWidget(wid) {
+	            if (wid === 'shopping-list') return String(this.customWidgetConfig(wid).taskListId || this.defaultWidgets.shoppingListId || '');
+	            return String(this.customWidgetConfig(wid).taskListId || this.customWidgetConfig(wid).listId || '');
+	        },
+
+	        homeTaskListForWidget(wid) {
+	            const listId = this.homeTaskListIdForWidget(wid);
+	            return (this.homeTaskLists || []).find(list => list.id === listId) || null;
+	        },
+
+	        homeTaskWidgetItems(wid) {
+	            const list = this.homeTaskListForWidget(wid);
+	            if (!list) return [];
+	            const cfg = this.customWidgetConfig(wid);
+	            const showCompleted = cfg.showCompleted !== false;
+	            const limit = Math.max(1, Math.min(40, Number(cfg.limit || 8)));
+	            return (list.tasks || [])
+	                .filter(task => showCompleted || task.status !== 'Terminé')
+	                .slice(0, limit);
+	        },
+
+	        homeTaskWidgetOpenCount(wid) {
+	            const list = this.homeTaskListForWidget(wid);
+	            if (!list) return 0;
+	            return (list.tasks || []).filter(task => task.status !== 'Terminé').length;
+	        },
+
+	        homeTaskWidgetLink(wid) {
+	            const list = this.homeTaskListForWidget(wid);
+	            return list?.link || `/account/${_accountNumber}/tasks`;
+	        },
+
+	        refreshHomeTaskListCounts(list) {
+	            if (!list) return;
+	            list.count = (list.tasks || []).length;
+	            list.doneCount = (list.tasks || []).filter(task => task.status === 'Terminé').length;
+	        },
+
+	        newTaskTitleFor(wid) {
+	            const value = this.newTaskTitles?.[wid];
+	            if (value === undefined || value === null || value === 'undefined') return '';
+	            return String(value);
+	        },
+
+	        setNewTaskTitle(wid, value) {
+	            this.newTaskTitles = {
+	                ...(this.newTaskTitles || {}),
+	                [wid]: String(value || '')
+	            };
+	        },
+
+	        homeTaskRenderKey(wid) {
+	            return Number(this.homeTaskRenderVersions?.[wid] || 0);
+	        },
+
+	        bumpHomeTaskRender(wid) {
+	            this.homeTaskRenderVersions = {
+	                ...(this.homeTaskRenderVersions || {}),
+	                [wid]: this.homeTaskRenderKey(wid) + 1
+	            };
+	        },
+
+	        savedHomeTaskWidgetConfig(wid) {
+	            if (this.isCustomWidget(wid)) return this.getCustomWidget(wid).config || {};
+	            return (this.widgetSettings && this.widgetSettings[wid] && this.widgetSettings[wid].config) || {};
+	        },
+
+	        setHomeTaskWidgetConfigOption(wid, key, value, save = true) {
+	            if (!wid || !key) return;
+	            if (this.isCustomWidget(wid)) {
+	                const existing = this.getCustomWidget(wid);
+	                this.customWidgets = {
+	                    ...(this.customWidgets || {}),
+	                    [wid]: {
+	                        ...existing,
+	                        config: {
+	                            ...(existing.config || {}),
+	                            [key]: value
+	                        }
+	                    }
+	                };
+	            } else {
+	                const meta = this.getWidgetSettings(wid);
+	                const saved = (this.widgetSettings && this.widgetSettings[wid]) || {};
+	                this.widgetSettings = {
+	                    ...(this.widgetSettings || {}),
+	                    [wid]: {
+	                        type: saved.type || meta.type || wid,
+	                        label: saved.label || meta.label || this.widgetTitle(wid),
+	                        icon: saved.icon || meta.icon || this.widgetIcon(wid),
+	                        color: saved.color || meta.color || this.widgetColor(wid),
+	                        config: {
+	                            ...(meta.config || {}),
+	                            ...(saved.config || {}),
+	                            [key]: value
+	                        }
+	                    }
+	                };
+	            }
+	            if (save) this._saveLayout();
+	        },
+
+	        homeTaskPriorityEnabled(wid) {
+	            const cfg = this.customWidgetConfig(wid);
+	            if (cfg.showPriority === true) return true;
+	            const savedCfg = this.savedHomeTaskWidgetConfig(wid);
+	            if (Object.prototype.hasOwnProperty.call(savedCfg, 'showPriority')) {
+	                return savedCfg.showPriority === true;
+	            }
+	            const list = this.homeTaskListForWidget(wid);
+	            return !!(list && (list.tasks || []).some(task => this.homeTaskPriorityLabel(task.priority) !== 'Aucune'));
+	        },
+
+	        homeTaskPriorityVisible(wid, task = {}) {
+	            if (!this.homeTaskPriorityEnabled(wid)) return false;
+	            const label = this.homeTaskPriorityLabel(task.priority);
+	            return !!label && label !== 'Aucune';
+	        },
+
+	        homeTaskPriorityLabel(priority) {
+	            return String(priority || 'Aucune').trim() || 'Aucune';
+	        },
+
+	        homeTaskPriorityColor(priority) {
+	            const label = this.homeTaskPriorityLabel(priority);
+	            const found = (this.homeTaskPriorityChoices || []).find(item => item.label === label);
+	            return found?.color || '#94a3b8';
+	        },
+
+	        homeTaskId(task = {}) {
+	            return String(task._id || task.id || '');
+	        },
+
+	        findHomeTask(taskId) {
+	            const id = String(taskId || '');
+	            if (!id) return null;
+	            for (const list of this.homeTaskLists || []) {
+	                const task = (list.tasks || []).find(item => this.homeTaskId(item) === id);
+	                if (task) return { list, task };
+	            }
+	            return null;
+	        },
+
+	        patchHomeTaskEverywhere(taskId, patch = {}) {
+	            const id = String(taskId || '');
+	            if (!id) return;
+	            ['allTasks', 'todayTasks'].forEach(key => {
+	                this[key] = (this[key] || []).map(task => {
+	                    if (this.homeTaskId(task) !== id) return task;
+	                    return this.normalizeHomeTask({ ...task, ...patch });
+	                });
+	            });
+	        },
+
+	        removeHomeTaskEverywhere(taskId) {
+	            const id = String(taskId || '');
+	            if (!id) return;
+	            this.allTasks = (this.allTasks || []).filter(task => this.homeTaskId(task) !== id);
+	            this.todayTasks = (this.todayTasks || []).filter(task => this.homeTaskId(task) !== id);
+	        },
+
+	        replaceHomeTaskList(listId, patch = {}) {
+	            const id = String(listId || '');
+	            if (!id) return;
+	            this.homeTaskLists = (this.homeTaskLists || []).map(list => {
+	                if (String(list.id || list._id || '') !== id) return list;
+	                return { ...list, ...patch };
+	            });
+	        },
+
+	        closeHomeTaskMenu() {
+	            this.homeTaskMenu = null;
+	        },
+
+	        openHomeTaskMenu(event, wid, task, options = {}) {
+	            if (!task || !this.homeTaskId(task)) return;
+	            const width = 190;
+	            const height = options.priorityOnly ? 126 : 208;
+	            const source = event?.currentTarget || event?.target;
+	            const rect = source?.getBoundingClientRect?.();
+	            const rawX = event?.clientX || (rect ? rect.right : 0);
+	            const rawY = event?.clientY || (rect ? rect.bottom : 0);
+	            const x = Math.max(8, Math.min(rawX, window.innerWidth - width - 8));
+	            const y = Math.max(8, Math.min(rawY, window.innerHeight - height - 8));
+	            this.homeTaskMenu = { x, y, wid, taskId: this.homeTaskId(task), priorityOnly: options.priorityOnly === true };
+	        },
+
+	        openHomeTaskPriorityMenu(event, wid, task) {
+	            this.openHomeTaskMenu(event, wid, task, { priorityOnly: true });
+	        },
+
+	        editHomeTaskFromMenu() {
+	            const ctx = this.homeTaskMenu;
+	            const found = this.findHomeTask(ctx?.taskId);
+	            if (!ctx || !found) return;
+	            this.closeHomeTaskMenu();
+	            this.startEditHomeTask(ctx.wid, found.task);
+	        },
+
+	        async deleteHomeTaskFromMenu() {
+	            const ctx = this.homeTaskMenu;
+	            const found = this.findHomeTask(ctx?.taskId);
+	            this.closeHomeTaskMenu();
+	            if (!ctx || !found) return;
+	            await this.deleteHomeTaskItem(ctx.wid, found.task);
+	        },
+
+	        async setHomeTaskPriorityFromMenu(priority) {
+	            const ctx = this.homeTaskMenu;
+	            const found = this.findHomeTask(ctx?.taskId);
+	            if (!ctx || !found) return;
+	            this.closeHomeTaskMenu();
+	            this.setHomeTaskWidgetConfigOption(ctx.wid, 'showPriority', true, false);
+	            await this.updateHomeTaskItem(ctx.wid, found.task, { priority });
+	            this.bumpHomeTaskRender(ctx.wid);
+	            this._saveLayout();
+	        },
+
+	        startEditHomeTask(wid, task) {
+	            const id = this.homeTaskId(task);
+	            if (!id) return;
+	            this.closeHomeTaskMenu();
+	            this.editingHomeTaskId = id;
+	            this.editingHomeTaskWidgetId = wid;
+	            this.editingHomeTaskTitle = task.title || '';
+	            this.$nextTick(() => {
+	                const input = Array.from(this.$el?.querySelectorAll?.('.dx-task-edit') || [])
+	                    .find(el => String(el.dataset.taskId || '') === id);
+	                if (input) {
+	                    input.focus();
+	                    input.select();
+	                }
+	            });
+	        },
+
+	        cancelEditHomeTask() {
+	            this.editingHomeTaskId = '';
+	            this.editingHomeTaskWidgetId = '';
+	            this.editingHomeTaskTitle = '';
+	        },
+
+	        async saveEditHomeTask(wid, task) {
+	            const id = this.homeTaskId(task);
+	            if (!id || this.editingHomeTaskId !== id) return;
+	            const title = String(this.editingHomeTaskTitle || '').trim();
+	            if (!title) {
+	                this.cancelEditHomeTask();
+	                return;
+	            }
+	            if (title === task.title) {
+	                this.cancelEditHomeTask();
+	                return;
+	            }
+	            this.cancelEditHomeTask();
+	            await this.updateHomeTaskItem(wid, task, { title });
+	        },
+
+	        async updateHomeTaskItem(wid, task, updates = {}) {
+	            const id = this.homeTaskId(task);
+	            if (!id || !updates || typeof updates !== 'object') return;
+	            const previous = { ...task };
+	            Object.assign(task, updates);
+	            if (updates.priority !== undefined) {
+	                task.priority = this.homeTaskPriorityLabel(updates.priority);
+	                task.priorityColor = this.homeTaskPriorityColor(task.priority);
+	            }
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
+	                    method: 'PUT',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify(updates)
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false || !data.task) throw new Error(data.error || 'Modification impossible');
+	                const normalized = this.normalizeHomeTask({ ...data.task, taskListId: data.task.taskListId || task.taskListId });
+	                Object.assign(task, normalized);
+	                this.patchHomeTaskEverywhere(id, normalized);
+	                const list = this.homeTaskListForWidget(wid) || this.findHomeTask(id)?.list;
+	                this.refreshHomeTaskListCounts(list);
+	            } catch (e) {
+	                Object.assign(task, previous);
+	                window.showMessage && window.showMessage(e.message || 'Modification impossible', 'danger');
+	            }
+	        },
+
+	        async deleteHomeTaskItem(wid, task) {
+	            const id = this.homeTaskId(task);
+	            if (!id) return;
+	            const found = this.findHomeTask(id);
+	            const list = found?.list || this.homeTaskListForWidget(wid);
+	            if (!list) return;
+	            const previousTasks = [...(list.tasks || [])];
+	            const previousAllTasks = [...(this.allTasks || [])];
+	            const previousTodayTasks = [...(this.todayTasks || [])];
+	            list.tasks = previousTasks.filter(item => this.homeTaskId(item) !== id);
+	            this.removeHomeTaskEverywhere(id);
+	            this.refreshHomeTaskListCounts(list);
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
+	                    method: 'DELETE',
+	                    credentials: 'include'
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
+	                this.$nextTick(() => this.refreshHomeTaskSortables());
+	            } catch (e) {
+	                list.tasks = previousTasks;
+	                this.allTasks = previousAllTasks;
+	                this.todayTasks = previousTodayTasks;
+	                this.refreshHomeTaskListCounts(list);
+	                window.showMessage && window.showMessage(e.message || 'Suppression impossible', 'danger');
+	            }
+	        },
+
+	        initHomeTaskSortable(el, wid) {
+	            if (!el || typeof Sortable === 'undefined') return;
+	            if (el._homeTaskSortable) {
+	                try { el._homeTaskSortable.destroy(); } catch (e) {}
+	            }
+	            el._homeTaskSortable = Sortable.create(el, {
+	                animation: 150,
+	                handle: '.dx-task-drag',
+	                draggable: '.dx-task-row',
+	                ghostClass: 'dx-task-ghost',
+	                filter: '.dx-check, .dx-task-priority, .dx-task-menu-btn, .dx-task-edit, .dx-inline-add, .dx-shopping-foot, .ov-custom-empty',
+	                preventOnFilter: false,
+	                onEnd: (evt) => this.reorderHomeTaskWidgetFromDom(evt, wid)
+	            });
+	            this._taskSortables.set(el, el._homeTaskSortable);
+	        },
+
+	        refreshHomeTaskSortables() {
+	            this.$nextTick(() => {
+	                this.$el?.querySelectorAll?.('.dx-shopping-list[data-task-widget-id]').forEach(el => {
+	                    this.initHomeTaskSortable(el, el.dataset.taskWidgetId);
+	                });
+	            });
+	        },
+
+	        syncHomeTaskDomOrder(wid, tasks = []) {
+	            const containers = this.$el?.querySelectorAll?.(`.dx-shopping-list[data-task-widget-id="${wid}"]`) || [];
+	            containers.forEach(container => {
+	                const rowsById = new Map(
+	                    Array.from(container.querySelectorAll(':scope > .dx-task-row'))
+	                        .map(row => [String(row.dataset.taskId || ''), row])
+	                        .filter(([id]) => id)
+	                );
+	                const anchor = container.querySelector(':scope > .dx-inline-add')
+	                    || container.querySelector(':scope > .dx-shopping-foot')
+	                    || null;
+	                tasks.forEach(task => {
+	                    const row = rowsById.get(this.homeTaskId(task));
+	                    if (row) container.insertBefore(row, anchor);
+	                });
+	            });
+	        },
+
+	        revertHomeTaskSortableDom(evt) {
+	            const container = evt?.from;
+	            const item = evt?.item;
+	            if (!container || !item) return;
+	            const siblings = Array.from(container.querySelectorAll(':scope > .dx-task-row'))
+	                .filter(row => row !== item);
+	            const oldIndex = Number.isInteger(evt.oldDraggableIndex) ? evt.oldDraggableIndex : evt.oldIndex;
+	            const ref = Number.isInteger(oldIndex) ? (siblings[oldIndex] || null) : null;
+	            container.insertBefore(item, ref);
+	        },
+
+	        async reorderHomeTaskWidgetFromDom(evt, wid) {
+	            const el = evt?.to || evt?.from;
+	            const list = this.homeTaskListForWidget(wid);
+	            if (!el || !list?.id) return;
+	            const movedId = String(evt?.item?.dataset?.taskId || '');
+	            const orderedIds = Array.from(el.querySelectorAll(':scope > .dx-task-row'))
+	                .map(row => String(row.dataset.taskId || ''))
+	                .filter(Boolean);
+	            this.revertHomeTaskSortableDom(evt);
+	            if (!movedId || orderedIds.length < 2) return;
+	            const byId = new Map((list.tasks || []).map(task => [this.homeTaskId(task), task]));
+	            const visibleTasks = orderedIds.map(id => byId.get(id)).filter(Boolean);
+	            if (visibleTasks.length !== orderedIds.length) return;
+	            const visibleSet = new Set(orderedIds);
+	            let cursor = 0;
+	            const previousTasks = [...(list.tasks || [])];
+	            const nextTasks = previousTasks.map(task => visibleSet.has(this.homeTaskId(task)) ? visibleTasks[cursor++] : task);
+	            nextTasks.forEach((task, index) => { task.order = index; });
+	            list.tasks = nextTasks;
+	            this.replaceHomeTaskList(list.id, { tasks: nextTasks });
+	            this.bumpHomeTaskRender(wid);
+	            this.$nextTick(() => {
+	                this.syncHomeTaskDomOrder(wid, nextTasks);
+	                this.refreshHomeTaskSortables();
+	            });
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/task-lists/${list.id}/reorder`, {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ taskIds: nextTasks.map(task => this.homeTaskId(task)).filter(Boolean) })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Réorganisation impossible');
+	            } catch (e) {
+	                list.tasks = previousTasks;
+	                this.replaceHomeTaskList(list.id, { tasks: previousTasks });
+	                this.bumpHomeTaskRender(wid);
+	                this.$nextTick(() => {
+	                    this.syncHomeTaskDomOrder(wid, previousTasks);
+	                    this.refreshHomeTaskSortables();
+	                });
+	                window.showMessage && window.showMessage(e.message || 'Réorganisation impossible', 'danger');
+	            }
+	        },
+
+	        async toggleHomeTaskItem(wid, task) {
+	            if (!task?._id) return;
+	            const list = this.homeTaskListForWidget(wid);
+	            const previousStatus = task.status;
+	            const previousColor = task.statusColor;
+	            const nextStatus = previousStatus === 'Terminé' ? 'À faire' : 'Terminé';
+	            task.status = nextStatus;
+	            task.statusColor = nextStatus === 'Terminé' ? '#22c55e' : '#9ca3af';
+	            this.patchHomeTaskEverywhere(task._id, { status: task.status, statusColor: task.statusColor });
+	            this.refreshHomeTaskListCounts(list);
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${task._id}/status`, {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ status: nextStatus })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+	                task.status = data.status || nextStatus;
+	                task.statusColor = data.statusColor || task.statusColor;
+	                this.patchHomeTaskEverywhere(task._id, { status: task.status, statusColor: task.statusColor });
+	                this.refreshHomeTaskListCounts(list);
+	            } catch (e) {
+	                task.status = previousStatus;
+	                task.statusColor = previousColor;
+	                this.patchHomeTaskEverywhere(task._id, { status: previousStatus, statusColor: previousColor });
+	                this.refreshHomeTaskListCounts(list);
+	                window.showMessage && window.showMessage(e.message || 'Mise à jour impossible', 'danger');
+	            }
+	        },
+
+	        async addHomeTaskItem(wid) {
+	            const list = this.homeTaskListForWidget(wid);
+	            if (!list?.id) return;
+	            const title = String(this.newTaskTitles[wid] || '').trim();
+	            if (!title) return;
+	            this.newTaskTitles[wid] = '';
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/task-lists/${list.id}/tasks`, {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ title })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false || !data.task) throw new Error(data.error || 'Ajout impossible');
+	                const nextTasks = [...(list.tasks || []), this.normalizeHomeTask({ ...data.task, taskListId: list.id })];
+	                list.tasks = nextTasks;
+	                this.replaceHomeTaskList(list.id, { tasks: nextTasks });
+	                this.bumpHomeTaskRender(wid);
+	                this.refreshHomeTaskListCounts(list);
+	                this.$nextTick(() => this.refreshHomeTaskSortables());
+	            } catch (e) {
+	                this.newTaskTitles[wid] = title;
+	                window.showMessage && window.showMessage(e.message || 'Ajout impossible', 'danger');
+	            }
+	        },
+
+	        editGoal(goal) {
+            const value = window.prompt('Progression de "' + goal.title + '" (%)', goal.value);
+            if (value === null) return;
+            const next = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+            goal.value = next;
+            this.scheduleHomeDataSave();
+        },
+
+        addGoal() {
+            const title = window.prompt('Nom du nouvel objectif');
+            if (!String(title || '').trim()) return;
+            this.goals.push({ id: 'goal_' + Date.now(), title: String(title).trim(), value: 0, color: '#6366f1' });
+            this.scheduleHomeDataSave();
+        },
+
+        editFinanceRow(row) {
+            const value = window.prompt(row.label, row.value);
+            if (value === null) return;
+            row.value = String(value || '').trim() || row.value;
+            this.scheduleHomeDataSave();
+        },
+
+        async toggleLayoutMode(force) {
             this.layoutMode = force !== undefined ? force : !this.layoutMode;
             if (this.layoutMode) {
                 // Wait for Alpine to render the design-mode DOM, then init
@@ -743,6 +2647,7 @@ document.addEventListener('alpine:init', () => {
             } else {
                 this._stopObserver();
                 this._destroySortables();
+                await this._saveLayout();
             }
         },
 
@@ -752,19 +2657,120 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(`/account/${_accountNumber}/api/user/view-preferences/${this._viewId}`, { credentials: 'include' });
                 const data = await res.json();
                 if (data.success && data.preferences && data.preferences.rows) {
-                    this.rows = JSON.parse(JSON.stringify(data.preferences.rows));
-                    this.customWidgets = this._normalizeCustomWidgets(data.preferences.customWidgets);
+                    const migrated = this._migrateLayoutPreferences(data.preferences);
+                    this.rows = migrated.rows;
+                    this.customWidgets = migrated.customWidgets;
+                    this.widgetSettings = migrated.widgetSettings;
+                    if (migrated.changed) this._saveLayout();
                 }
             } catch (e) { /* use defaults */ }
         },
 
         async _saveLayout() {
             try {
-                await fetch(`/account/${_accountNumber}/api/user/view-preferences`, {
+                const res = await fetch(`/account/${_accountNumber}/api/user/view-preferences`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                    body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets } })
+                    body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets, widgetSettings: this.widgetSettings, homeLayoutVersion: this._layoutVersion } })
                 });
-            } catch (e) { console.error('[HomeLayout] save error', e); }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json().catch(() => ({}));
+                if (data.success === false) throw new Error(data.error || 'Save rejected');
+                return true;
+            } catch (e) {
+                console.error('[HomeLayout] save error', e);
+                return false;
+            }
+        },
+
+	        _migrateLayoutPreferences(preferences = {}) {
+	            const savedRows = Array.isArray(preferences.rows) ? preferences.rows : null;
+	            let rows = JSON.parse(JSON.stringify(savedRows || this._defaultRows));
+	            const customWidgets = this._normalizeCustomWidgets(preferences.customWidgets);
+	            const widgetSettings = this._normalizeWidgetSettings(preferences.widgetSettings);
+	            const storedVersion = Number(preferences.homeLayoutVersion || preferences.overviewLayoutVersion || 0);
+	            let changed = storedVersion !== this._layoutVersion;
+
+	            if ((storedVersion > 0 && storedVersion < 3) || (!storedVersion && savedRows && !this._looksLikeCurrentHomeLayout(rows))) {
+	                rows = JSON.parse(JSON.stringify(this._defaultRows));
+	                changed = true;
+	            }
+
+	            const repaired = this._repairCollapsedHomeRows(rows, customWidgets);
+	            if (repaired.changed) {
+	                rows = repaired.rows;
+	                changed = true;
+	            }
+
+	            this._normalizeRows(rows);
+	            return { rows, customWidgets, widgetSettings, changed };
+	        },
+
+	        _repairCollapsedHomeRows(rows, customWidgets = {}) {
+	            const ids = this._collectWidgetIds(rows);
+	            const defaultIds = this._collectWidgetIds(this._defaultRows);
+	            const defaultSet = new Set(defaultIds);
+	            const presentDefaultCount = ids.filter(id => defaultSet.has(id)).length;
+	            const hasCollapsedSingleRow = Array.isArray(rows)
+	                && rows.length <= 1
+	                && presentDefaultCount >= 5
+	                && ids.length >= 6;
+	            const isTooSparse = Array.isArray(rows) && ids.length > 0 && ids.length < 4 && !Object.keys(customWidgets || {}).length;
+	            if (!hasCollapsedSingleRow && !isTooSparse) return { rows, changed: false };
+
+	            const repaired = JSON.parse(JSON.stringify(this._defaultRows));
+	            const customIds = ids.filter(id => id && !defaultSet.has(id));
+	            if (customIds.length) {
+	                const target = this._homeMigrationColumn(repaired);
+	                target.widgetIds = Array.from(new Set([...(target.widgetIds || []), ...customIds]));
+	            }
+	            return { rows: repaired, changed: true };
+	        },
+
+	        _normalizeRows(rows) {
+	            (rows || []).forEach(row => {
+	                row.columns = Array.isArray(row.columns) ? row.columns : [];
+	                row.columns.forEach(col => {
+	                    col.widgetIds = Array.isArray(col.widgetIds) ? col.widgetIds : [];
+	                    col.childRows = Array.isArray(col.childRows) ? col.childRows : [];
+	                    this._normalizeRows(col.childRows);
+	                });
+	            });
+	        },
+
+	        isNestedOnlyColumn(col) {
+	            return !(col?.widgetIds || []).length && !!(col?.childRows || []).length;
+	        },
+
+	        _collectWidgetIds(rows) {
+	            const ids = [];
+	            this._walkColumns(rows, col => {
+	                ids.push(...(col.widgetIds || []));
+	            });
+	            return ids;
+	        },
+
+	        _looksLikeCurrentHomeLayout(rows) {
+	            const homeWidgetIds = new Set([
+	                'priority-day', 'upcoming-events', 'important-dates', 'objectives',
+	                'tasks', 'finance', 'shopping-list', 'tasks-by-record',
+	                'activity-timeline', 'ai-feed', 'weekly-timeline'
+	            ]);
+	            let hasNestedRows = false;
+	            this._walkColumns(rows, col => {
+	                if ((col.childRows || []).length) hasNestedRows = true;
+	            });
+	            return hasNestedRows || this._collectWidgetIds(rows).some(id => homeWidgetIds.has(id));
+	        },
+
+	        _homeMigrationColumn(rows) {
+	            const allColumns = [];
+	            this._walkColumns(rows, col => allColumns.push(col));
+	            const preferred = allColumns.find(col => (col.widgetIds || []).some(id => ['stats', 'quick-links'].includes(id)));
+	            if (preferred) return preferred;
+	            if (allColumns.length) return allColumns.reduce((best, col) => (col.width || 12) < (best.width || 12) ? col : best, allColumns[0]);
+            const fallback = { id: 'c_home_events_' + Date.now(), width: 12, widgetIds: [] };
+            rows.push({ id: 'r_home_events_' + Date.now(), columns: [fallback] });
+            return fallback;
         },
 
         _normalizeCustomWidgets(value) {
@@ -773,92 +2779,281 @@ document.addEventListener('alpine:init', () => {
                 return value.reduce((acc, w) => { if (w && w.id) acc[String(w.id)] = w; return acc; }, {});
             }
             return typeof value === 'object' ? value : {};
-        },
+	        },
 
-        // ── Row/Column management ──
-        addRow() {
-            this.rows.push({ id: 'r_' + Date.now(), columns: [{ id: 'c_' + Date.now(), width: 12, widgetIds: [] }] });
-            this._saveLayout();
-        },
-        removeRow(rowId) { this.rows = this.rows.filter(r => r.id !== rowId); this._saveLayout(); },
-        splitColumn(rowId, colId) {
-            const row = this.rows.find(r => r.id === rowId);
-            if (!row) return;
-            const ci = row.columns.findIndex(c => c.id === colId);
-            if (ci === -1) return;
-            const col = row.columns[ci];
-            if (col.width < 4) return;
-            const half = Math.floor(col.width / 2);
-            col.width = col.width - half;
-            row.columns.splice(ci + 1, 0, { id: 'c_' + Date.now(), width: half, widgetIds: [] });
-            this._saveLayout();
-        },
-        removeColumn(rowId, colId) {
-            const row = this.rows.find(r => r.id === rowId);
-            if (!row || row.columns.length <= 1) return;
-            const ci = row.columns.findIndex(c => c.id === colId);
-            if (ci === -1) return;
+	        _normalizeWidgetSettings(value) {
+	            if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+	            return Object.entries(value).reduce((acc, [id, settings]) => {
+	                if (!id || !settings || typeof settings !== 'object') return acc;
+	                acc[String(id)] = {
+	                    ...settings,
+	                    config: JSON.parse(JSON.stringify(settings.config || {}))
+	                };
+	                return acc;
+	            }, {});
+	        },
+
+	        // ── Row/Column management ──
+	        addRow() {
+	            this.rows.push({ id: 'r_' + Date.now(), columns: [{ id: 'c_' + Date.now(), width: 12, widgetIds: [] }] });
+	            this._saveLayout();
+	        },
+	        removeRow(rowId) { this.rows = this.rows.filter(r => r.id !== rowId); this._saveLayout(); },
+	        addNestedRow(parentColId) {
+	            const found = this._findColumn(parentColId);
+	            if (!found || found.depth >= 1) return;
+	            const stamp = Date.now();
+	            const col = found.col;
+	            col.childRows = Array.isArray(col.childRows) ? col.childRows : [];
+	            col.childRows.push({
+	                id: 'nr_' + stamp,
+	                columns: [
+	                    { id: 'nc_' + stamp + '_1', width: 6, widgetIds: [] },
+	                    { id: 'nc_' + stamp + '_2', width: 6, widgetIds: [] }
+	                ]
+	            });
+	            this._saveLayout();
+	            this.$nextTick(() => this._scheduleSortableInit());
+	        },
+		        removeNestedRow(parentColId, rowId) {
+		            const found = this._findColumn(parentColId);
+		            if (!found) return;
+		            found.col.childRows = (found.col.childRows || []).filter(row => row.id !== rowId);
+		            this._saveLayout();
+		        },
+		        moveNestedRow(parentColId, rowId, direction) {
+		            const found = this._findColumn(parentColId);
+		            const childRows = found?.col?.childRows;
+		            if (!Array.isArray(childRows)) return;
+		            const index = childRows.findIndex(row => row.id === rowId);
+		            const nextIndex = index + Number(direction || 0);
+		            if (index < 0 || nextIndex < 0 || nextIndex >= childRows.length) return;
+		            const [moved] = childRows.splice(index, 1);
+		            childRows.splice(nextIndex, 0, moved);
+		            this._saveLayout();
+		            this.$nextTick(() => this._scheduleSortableInit());
+		        },
+		        splitColumn(rowId, colId) {
+	            const foundRow = this._findRow(rowId);
+	            const row = foundRow?.row;
+	            if (!row) return;
+	            const ci = row.columns.findIndex(c => c.id === colId);
+	            if (ci === -1) return;
+	            const col = row.columns[ci];
+	            if (col.width < 4) return;
+	            const half = Math.floor(col.width / 2);
+	            col.width = col.width - half;
+	            row.columns.splice(ci + 1, 0, { id: 'c_' + Date.now(), width: half, widgetIds: [] });
+	            this._saveLayout();
+	        },
+	        removeColumn(rowId, colId) {
+	            const foundRow = this._findRow(rowId);
+	            const row = foundRow?.row;
+	            if (!row || row.columns.length <= 1) return;
+	            const ci = row.columns.findIndex(c => c.id === colId);
+	            if (ci === -1) return;
             const removed = row.columns.splice(ci, 1)[0];
             const neighbor = row.columns[Math.min(ci, row.columns.length - 1)];
-            if (neighbor) neighbor.width = Math.min(12, neighbor.width + removed.width);
-            this._saveLayout();
-        },
+	            if (neighbor) neighbor.width = Math.min(12, neighbor.width + removed.width);
+	            this._saveLayout();
+	        },
+	        _walkColumns(rows, cb, depth = 0, parentRow = null) {
+	            (rows || []).forEach(row => {
+	                (row.columns || []).forEach(col => {
+	                    cb(col, row, depth, parentRow);
+	                    this._walkColumns(col.childRows || [], cb, depth + 1, row);
+	                });
+	            });
+	        },
+	        _findColumn(colId) {
+	            let found = null;
+	            this._walkColumns(this.rows, (col, row, depth) => {
+	                if (!found && col.id === colId) found = { col, row, depth };
+	            });
+	            return found;
+	        },
+	        _findRow(rowId, rows = this.rows, parentCol = null, depth = 0) {
+	            for (const row of rows || []) {
+	                if (row.id === rowId) return { row, parentCol, depth };
+	                for (const col of row.columns || []) {
+	                    const nested = this._findRow(rowId, col.childRows || [], col, depth + 1);
+	                    if (nested) return nested;
+	                }
+	            }
+	            return null;
+	        },
 
-        // ── Widget management ──
-        _placedWidgets() {
-            const ids = [];
-            this.rows.forEach(r => (r.columns || []).forEach(c => ids.push(...(c.widgetIds || []))));
-            return ids;
-        },
-        addWidget(colId, widgetId, options = {}) {
-            if (!options.allowDuplicate && this._placedWidgets().includes(widgetId)) return;
-            this.rows.forEach(r => r.columns.forEach(c => {
-                if (c.id === colId) c.widgetIds.push(widgetId);
-            }));
-            if (options.save !== false) this._saveLayout();
-        },
-        removeWidget(widgetId) {
-            this.rows.forEach(r => r.columns.forEach(c => {
-                c.widgetIds = (c.widgetIds || []).filter(w => w !== widgetId);
-            }));
-            if (String(widgetId || '').startsWith('cw_')) {
-                const next = { ...this.customWidgets }; delete next[widgetId]; this.customWidgets = next;
-            }
-            this._saveLayout();
-        },
-        isCustomWidget(wid) { return !!(this.customWidgets && this.customWidgets[wid]); },
-        getCustomWidget(wid) { return (this.customWidgets && this.customWidgets[wid]) || { type: '', label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} }; },
-        customWidgetConfig(wid) { return this.getCustomWidget(wid).config || {}; },
-        customWidgetIcon(type) {
-            const m = { note:'solar:notes-bold-duotone', notes:'solar:notes-bold-duotone', html:'solar:code-bold-duotone', iframe:'solar:monitor-bold-duotone', video:'solar:video-library-bold-duotone', link:'solar:link-round-bold-duotone', image:'solar:gallery-bold-duotone', separator:'solar:minus-circle-bold-duotone', timeline:'solar:clock-circle-bold-duotone', kpi:'solar:graph-up-bold-duotone', chart:'solar:chart-bold-duotone', fields:'solar:layers-bold-duotone', cards:'solar:card-bold-duotone', tasks:'solar:checklist-bold-duotone' };
-            return m[type] || 'solar:widget-bold-duotone';
-        },
-        customWidgetLabel(type) {
-            const m = { note:'Note', notes:'Notes', html:'HTML', iframe:'Embed', video:'Vidéo', link:'Lien', image:'Image', separator:'Séparateur', timeline:'Timeline', kpi:'KPI', chart:'Graphique', fields:'Champs', cards:'Cartes', tasks:'Checklist' };
-            return m[type] || 'Widget';
-        },
+	        // ── Widget management ──
+	        _placedWidgets() {
+	            const ids = [];
+	            this._walkColumns(this.rows, col => ids.push(...(col.widgetIds || [])));
+	            return ids;
+	        },
+	        addWidget(colId, widgetId, options = {}) {
+	            if (!options.allowDuplicate && this._placedWidgets().includes(widgetId)) return;
+	            const found = this._findColumn(colId);
+	            if (!found) return;
+	            found.col.widgetIds = Array.isArray(found.col.widgetIds) ? found.col.widgetIds : [];
+	            found.col.widgetIds.push(widgetId);
+	            if (options.save !== false) this._saveLayout();
+	        },
+	        removeWidget(widgetId, colId = '', index = -1) {
+	            const removeFromColumn = (col) => {
+	                col.widgetIds = Array.isArray(col.widgetIds) ? col.widgetIds : [];
+	                const numericIndex = Number(index);
+	                if (Number.isInteger(numericIndex) && numericIndex >= 0 && col.widgetIds[numericIndex] === widgetId) {
+	                    col.widgetIds.splice(numericIndex, 1);
+	                    return true;
+	                }
+	                const foundIndex = col.widgetIds.findIndex(w => w === widgetId);
+	                if (foundIndex >= 0) {
+	                    col.widgetIds.splice(foundIndex, 1);
+	                    return true;
+	                }
+	                return false;
+	            };
+	            if (colId) {
+	                const found = this._findColumn(colId);
+	                if (found?.col && removeFromColumn(found.col)) {
+	                    this._saveLayout();
+	                    return;
+	                }
+	            }
+	            let removed = false;
+	            this._walkColumns(this.rows, c => {
+	                if (!removed) removed = removeFromColumn(c);
+	            });
+	            if (removed) this._saveLayout();
+	        },
+	        isCustomWidget(wid) { return !!(this.customWidgets && this.customWidgets[wid]); },
+	        baseWidgetMeta(wid) {
+	            if (this.isCustomWidget(wid)) return this.getCustomWidget(wid);
+	            return this._defaultWidgetCatalog[wid] || { type: wid, label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
+	        },
+	        getCustomWidget(wid) {
+	            return (this.customWidgets && this.customWidgets[wid]) || { type: '', label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
+	        },
+	        getWidgetSettings(wid) {
+	            const base = this.baseWidgetMeta(wid);
+	            const saved = (this.widgetSettings && this.widgetSettings[wid]) || {};
+	            return {
+	                ...base,
+	                ...saved,
+	                id: wid,
+	                _id: wid,
+	                type: saved.type || base.type || wid,
+	                label: saved.label || base.label || this.customWidgetLabel(base.type || wid),
+	                icon: saved.icon || base.icon || this.customWidgetIcon(base.type || wid),
+	                color: saved.color || base.color || '#4361ee',
+	                config: {
+	                    ...(base.config || {}),
+	                    ...(saved.config || {})
+	                }
+	            };
+	        },
+	        customWidgetConfig(wid) {
+	            if (this.isCustomWidget(wid)) return this.getCustomWidget(wid).config || {};
+	            return this.getWidgetSettings(wid).config || {};
+	        },
+	        widgetTitle(wid, fallback = 'Widget') { return this.getWidgetSettings(wid).label || fallback; },
+	        widgetIcon(wid, fallback = 'solar:widget-bold-duotone') { return this.getWidgetSettings(wid).icon || fallback; },
+	        widgetColor(wid, fallback = '#4361ee') { return this.getWidgetSettings(wid).color || fallback; },
+	        widgetOption(wid, key, fallback = null) {
+	            const cfg = this.getWidgetSettings(wid).config || {};
+	            return cfg[key] !== undefined ? cfg[key] : fallback;
+	        },
+	        widgetLimit(wid, fallback = 5) {
+	            return Math.max(1, Math.min(40, Number(this.widgetOption(wid, 'limit', fallback)) || fallback));
+	        },
+	        widgetShowLink(wid, fallback = true) {
+	            const value = this.widgetOption(wid, 'showLink', fallback);
+	            return value !== false;
+	        },
+	        widgetShared(wid, fallback = false) {
+	            return this.widgetOption(wid, 'shared', fallback) === true;
+	        },
+	        customWidgetIcon(type) {
+	            const m = { note:'solar:notes-bold-duotone', notes:'solar:notes-bold-duotone', html:'solar:code-bold-duotone', iframe:'solar:monitor-bold-duotone', video:'solar:video-library-bold-duotone', link:'solar:link-round-bold-duotone', image:'solar:gallery-bold-duotone', separator:'solar:minus-circle-bold-duotone', timeline:'solar:clock-circle-bold-duotone', kpi:'solar:graph-up-bold-duotone', chart:'solar:chart-bold-duotone', fields:'solar:layers-bold-duotone', cards:'solar:card-bold-duotone', tasks:'solar:checklist-bold-duotone', 'task-list':'solar:checklist-bold-duotone' };
+	            return m[type] || 'solar:widget-bold-duotone';
+	        },
+	        customWidgetLabel(type) {
+	            const m = { note:'Note', notes:'Notes', html:'HTML', iframe:'Embed', video:'Vidéo', link:'Lien', image:'Image', separator:'Séparateur', timeline:'Timeline', kpi:'KPI', chart:'Graphique', fields:'Champs', cards:'Cartes', tasks:'Checklist', 'task-list':'Liste de tâches' };
+	            return m[type] || 'Widget';
+	        },
         isEmbeddableVideo(url) {
             const v = String(url || '').toLowerCase();
             return v.includes('youtube.com') || v.includes('youtu.be') || v.includes('vimeo.com');
         },
-        videoEmbedUrl(url) {
-            const v = String(url || '').trim();
-            try {
-                const p = new URL(v);
+	        videoEmbedUrl(url) {
+	            const v = String(url || '').trim();
+	            try {
+	                const p = new URL(v);
                 if (p.hostname.includes('youtu.be')) { const id = p.pathname.split('/').filter(Boolean)[0]; return id ? `https://www.youtube.com/embed/${id}` : v; }
                 if (p.hostname.includes('youtube.com')) { const id = p.searchParams.get('v') || p.pathname.split('/').filter(Boolean).pop(); return id ? `https://www.youtube.com/embed/${id}` : v; }
                 if (p.hostname.includes('vimeo.com')) { const id = p.pathname.split('/').filter(Boolean).pop(); return id ? `https://player.vimeo.com/video/${id}` : v; }
             } catch (e) {}
-            return v;
-        },
+	            return v;
+	        },
 
-        // ── Widget picker integration ──
-        openWidgetPicker(colId) {
-            const picker = window.Alpine && window.Alpine.store ? window.Alpine.store('widgetPicker') : null;
-            if (!picker) { window.showMessage && window.showMessage('Widget picker indisponible', 'danger'); return; }
-            picker.initPicker({ accountNumber: _accountNumber, gridSchemas: [] });
-            picker.initOpen({ type: 'home-overview', colId, accountNumber: _accountNumber });
-        },
+	        homeWidgetsForPicker() {
+	            return Object.entries(this.customWidgets || {})
+	                .filter(([, widget]) => widget)
+	                .map(([id, widget]) => ({
+	                    id: String(widget.id || id),
+	                    type: widget.type || '',
+	                    label: widget.label || this.customWidgetLabel(widget.type),
+	                    icon: widget.icon || this.customWidgetIcon(widget.type),
+	                    color: widget.color || '#4361ee',
+	                    config: JSON.parse(JSON.stringify(widget.config || {})),
+	                    usageCount: this.widgetUsageCount(String(widget.id || id))
+	                }));
+	        },
+	        widgetUsageCount(widgetId) {
+	            let count = 0;
+	            this._walkColumns(this.rows, col => {
+	                count += (col.widgetIds || []).filter(id => id === widgetId).length;
+	            });
+	            return count;
+	        },
+
+	        // ── Widget picker integration ──
+	        openWidgetPicker(colId) {
+	            const picker = window.Alpine && window.Alpine.store ? window.Alpine.store('widgetPicker') : null;
+	            if (!picker) { window.showMessage && window.showMessage('Widget picker indisponible', 'danger'); return; }
+	            picker.initPicker({
+	                accountNumber: _accountNumber,
+	                gridSchemas: [],
+	                taskLists: this.homeTaskLists,
+	                homeWidgets: this.homeWidgetsForPicker()
+	            });
+	            picker.initOpen({ type: 'home-overview', colId, accountNumber: _accountNumber });
+	        },
+	        openWidgetSettings(wid) {
+	            const picker = window.Alpine && window.Alpine.store ? window.Alpine.store('widgetPicker') : null;
+	            if (!picker) { window.showMessage && window.showMessage('Widget picker indisponible', 'danger'); return; }
+	            picker.initPicker({
+	                accountNumber: _accountNumber,
+	                gridSchemas: [],
+	                taskLists: this.homeTaskLists,
+	                homeWidgets: this.homeWidgetsForPicker()
+	            });
+	            picker.openEditWidget(
+	                { type: 'home-overview', widgetId: wid, accountNumber: _accountNumber },
+	                this._widgetForPicker(wid)
+	            );
+	        },
+	        _widgetForPicker(wid) {
+	            const meta = this.getWidgetSettings(wid);
+	            return {
+	                _id: wid,
+	                id: wid,
+	                type: meta.type || wid,
+	                label: meta.label || this.widgetTitle(wid),
+	                icon: meta.icon || this.widgetIcon(wid),
+	                color: meta.color || this.widgetColor(wid),
+	                config: JSON.parse(JSON.stringify(meta.config || {}))
+	            };
+	        },
         insertWidgetFromPicker(detail) {
             const target = detail?.target || {};
             if (target.type && target.type !== 'home-overview') return;
@@ -874,20 +3069,62 @@ document.addEventListener('alpine:init', () => {
         _updateWidgetFromPicker(detail) {
             const widget = detail?.widget || null;
             if (!widget || !widget._id) return;
-            const existing = this.customWidgets[widget._id];
-            if (!existing) return;
-            this.customWidgets = {
-                ...this.customWidgets,
-                [widget._id]: { ...existing, ...widget, config: JSON.parse(JSON.stringify(widget.config || {})) }
-            };
+	            if (this.customWidgets[widget._id]) {
+	                const existing = this.customWidgets[widget._id];
+	                this.customWidgets = {
+	                    ...this.customWidgets,
+	                    [widget._id]: { ...existing, ...widget, config: JSON.parse(JSON.stringify(widget.config || {})) }
+	                };
+	            } else {
+	                const base = this.baseWidgetMeta(widget._id);
+	                this.widgetSettings = {
+	                    ...this.widgetSettings,
+	                    [widget._id]: {
+	                        type: widget.type || base.type || widget._id,
+	                        label: widget.label || base.label || 'Widget',
+	                        icon: widget.icon || base.icon || 'solar:widget-bold-duotone',
+	                        color: widget.color || base.color || '#4361ee',
+	                        config: JSON.parse(JSON.stringify(widget.config || {}))
+	                    }
+	                };
+            }
             this._saveLayout();
         },
-        _homeWidgetIdsFromPickerWidget(widget) {
-            const type = String(widget.type || '');
-            const homeMap = {
-                'home-today-tasks': 'today-tasks',
-                'home-stats': 'stats',
-                'home-recent-records': 'recent-records',
+	        deleteCustomWidgetFromPicker(detail) {
+	            const widgetId = String(detail?.widgetId || '');
+	            if (!widgetId || !this.customWidgets?.[widgetId]) return;
+	            const nextCustomWidgets = { ...(this.customWidgets || {}) };
+	            delete nextCustomWidgets[widgetId];
+	            this.customWidgets = nextCustomWidgets;
+	            const nextSettings = { ...(this.widgetSettings || {}) };
+	            delete nextSettings[widgetId];
+	            this.widgetSettings = nextSettings;
+	            this._walkColumns(this.rows, col => {
+	                col.widgetIds = (col.widgetIds || []).filter(id => id !== widgetId);
+	            });
+	            this._saveLayout();
+	            this.$nextTick(() => this._scheduleSortableInit());
+	            window.showMessage && window.showMessage('Widget personnalisé supprimé', 'success');
+	        },
+	        _homeWidgetIdsFromPickerWidget(widget) {
+		            const type = String(widget.type || '');
+	            const existingId = String(widget._id || widget.id || '');
+	            if (existingId && this.customWidgets?.[existingId]) return [existingId];
+		            const homeMap = {
+	                'home-priority-day': 'priority-day',
+	                'home-today-tasks': 'today-tasks',
+	                'home-objectives': 'objectives',
+	                'home-tasks': 'tasks',
+	                'home-finance': 'finance',
+	                'home-shopping-list': 'shopping-list',
+	                'home-tasks-by-record': 'tasks-by-record',
+	                'home-activity-timeline': 'activity-timeline',
+	                'home-ai-feed': 'ai-feed',
+	                'home-weekly-timeline': 'weekly-timeline',
+	                'home-stats': 'stats',
+	                'home-recent-records': 'recent-records',
+	                'home-upcoming-events': 'upcoming-events',
+                'home-important-dates': 'important-dates',
                 'home-quick-links': 'quick-links'
             };
             if (homeMap[type]) return [homeMap[type]];
@@ -925,19 +3162,30 @@ document.addEventListener('alpine:init', () => {
             if (typeof Sortable === 'undefined') { this._sortableIniting = false; return; }
             const self = this;
             const rowContainer = this.$refs.ovRowContainer;
-            const colEls = rowContainer ? rowContainer.querySelectorAll('.ov-col-widgets') : [];
+            const colEls = rowContainer ? rowContainer.querySelectorAll('.ov-col-widgets:not(.ov-col-widgets-nested-only)') : [];
             // Retry if Alpine x-for hasn't rendered the columns yet
             if (colEls.length === 0 && this.rows.length > 0) {
                 this._sortableIniting = false;
                 setTimeout(() => this._initSortables(), 300);
                 return;
             }
-            if (rowContainer) {
-                this._sortables.push(new Sortable(rowContainer, {
-                    animation: 150, handle: '.ov-row-drag', ghostClass: 'ov-sort-ghost', draggable: '.ov-layout-row',
-                    onStart() { self._isDragging = true; },
+	            if (rowContainer) {
+	                this._sortables.push(new Sortable(rowContainer, {
+                    animation: 150,
+                    handle: '.ov-row-drag',
+                    ghostClass: 'ov-sort-ghost',
+                    draggable: '.ov-layout-row',
+                    filter: '.ov-layout-row-nested',
+                    scroll: true,
+                    forceAutoScrollFallback: true,
+                    scrollSensitivity: 80,
+                    scrollSpeed: 14,
+                    bubbleScroll: true,
+                    onStart() {
+                        self._setLayoutDragging(true);
+                    },
                     onEnd(evt) {
-                        self._isDragging = false;
+                        self._setLayoutDragging(false);
                         const rowId = evt.item.dataset.rowId;
                         const oldIdx = evt.oldIndex, newIdx = evt.newIndex;
                         if (oldIdx === newIdx) return;
@@ -950,36 +3198,93 @@ document.addEventListener('alpine:init', () => {
                         const [moved] = self.rows.splice(idx, 1);
                         self.rows.splice(newIdx, 0, moved);
                         self._saveLayout();
-                    }
-                }));
-            }
-            colEls.forEach(colEl => {
-                this._sortables.push(new Sortable(colEl, {
-                    animation: 150, handle: '.ov-widget-drag', ghostClass: 'ov-sort-ghost', draggable: '.ov-widget-wrap', group: 'ov-widgets', swapThreshold: 0.65, filter: '.ov-add-widget-btn',
-                    onStart() { self._isDragging = true; },
+	                    }
+	                }));
+	            }
+	            const nestedRowEls = rowContainer ? rowContainer.querySelectorAll('.ov-nested-rows') : [];
+	            nestedRowEls.forEach(nestedEl => {
+	                this._sortables.push(new Sortable(nestedEl, {
+	                    animation: 150,
+	                    handle: '.ov-nested-row-drag',
+	                    ghostClass: 'ov-sort-ghost',
+	                    draggable: '.ov-layout-row-nested',
+	                    direction: 'vertical',
+	                    forceFallback: true,
+	                    fallbackOnBody: true,
+	                    fallbackTolerance: 3,
+	                    scroll: true,
+	                    forceAutoScrollFallback: true,
+	                    scrollSensitivity: 80,
+	                    scrollSpeed: 14,
+	                    bubbleScroll: true,
+	                    onStart() {
+	                        self._setLayoutDragging(true);
+	                    },
+	                    onEnd(evt) {
+	                        self._setLayoutDragging(false);
+	                        const parentColId = evt.from.dataset.nestedParentId;
+	                        const rowId = evt.item.dataset.rowId;
+	                        const oldIdx = evt.oldIndex, newIdx = evt.newIndex;
+	                        if (!parentColId || !rowId || oldIdx === newIdx) return;
+	                        if (evt.item.parentNode) evt.item.parentNode.removeChild(evt.item);
+	                        const rows = evt.from.querySelectorAll(':scope > .ov-layout-row-nested');
+	                        if (oldIdx >= rows.length) evt.from.appendChild(evt.item);
+	                        else evt.from.insertBefore(evt.item, rows[oldIdx] || null);
+	                        const found = self._findColumn(parentColId);
+	                        const childRows = found?.col?.childRows;
+	                        if (!Array.isArray(childRows)) return;
+	                        const idx = childRows.findIndex(row => row.id === rowId);
+	                        if (idx === -1) return;
+	                        const [moved] = childRows.splice(idx, 1);
+	                        childRows.splice(newIdx, 0, moved);
+	                        self._saveLayout();
+	                    }
+	                }));
+	            });
+	            colEls.forEach(colEl => {
+	                this._sortables.push(new Sortable(colEl, {
+                    animation: 150,
+                    handle: '.ov-widget-drag',
+                    ghostClass: 'ov-sort-ghost',
+                    draggable: '.ov-widget-wrap',
+                    group: 'ov-widgets',
+                    swapThreshold: 0.65,
+                    invertSwap: true,
+                    emptyInsertThreshold: 80,
+                    filter: '.ov-add-choice, .ov-add-widget-btn, .ov-add-nested-row-btn, .ov-nested-add-widget',
+                    scroll: true,
+                    forceAutoScrollFallback: true,
+                    scrollSensitivity: 80,
+                    scrollSpeed: 14,
+                    bubbleScroll: true,
+                    onStart() {
+                        self._setLayoutDragging(true);
+                    },
                     onEnd(evt) {
-                        self._isDragging = false;
                         const widgetId = evt.item.dataset.widgetId;
                         const fromColId = evt.from.dataset.colId;
-                        const toColId = evt.to.dataset.colId;
+                        const toColEl = self._resolveWidgetDropTarget(evt);
+                        const toColId = toColEl?.dataset?.colId || '';
+                        self._setLayoutDragging(false);
                         if (!widgetId || !fromColId) return;
-                        const toWidgets = Array.from(evt.to.querySelectorAll(':scope > .ov-widget-wrap'));
+                        const toWidgets = Array.from((toColEl || evt.to).querySelectorAll(':scope > .ov-widget-wrap'));
                         let newIdx = toWidgets.indexOf(evt.item);
                         if (newIdx === -1) newIdx = toWidgets.length;
                         if (evt.item.parentNode) evt.item.parentNode.removeChild(evt.item);
                         const fromWidgets = Array.from(evt.from.querySelectorAll(':scope > .ov-widget-wrap'));
                         if (evt.oldIndex >= fromWidgets.length) evt.from.appendChild(evt.item);
                         else evt.from.insertBefore(evt.item, fromWidgets[evt.oldIndex] || null);
-                        let fromCol = null, toCol = null;
-                        self.rows.forEach(r => r.columns.forEach(c => {
-                            if (c.id === fromColId) fromCol = c;
-                            if (c.id === toColId) toCol = c;
-                        }));
-                        if (!fromCol) return;
+                        const fromFound = self._findColumn(fromColId);
+                        const toFound = self._findColumn(toColId);
+                        const fromCol = fromFound?.col || null;
+                        const toCol = toFound?.col || null;
+                        if (!fromCol || !toCol) return;
+                        fromCol.widgetIds = Array.isArray(fromCol.widgetIds) ? fromCol.widgetIds : [];
                         const fi = fromCol.widgetIds.findIndex(w => w === widgetId);
                         if (fi === -1) return;
                         fromCol.widgetIds.splice(fi, 1);
-                        if (toCol) toCol.widgetIds.splice(newIdx, 0, widgetId);
+                        toCol.widgetIds = Array.isArray(toCol.widgetIds) ? toCol.widgetIds : [];
+                        toCol.widgetIds.splice(newIdx, 0, widgetId);
                         self._saveLayout();
                     }
                 }));
@@ -990,32 +3295,91 @@ document.addEventListener('alpine:init', () => {
             this._sortables.forEach(s => { try { s.destroy(); } catch(e) {} });
             this._sortables = [];
         },
+        _setLayoutDragging(isDragging) {
+            this._isDragging = !!isDragging;
+            this.$el?.classList.toggle('ov-dragging', !!isDragging);
+        },
+        _resolveWidgetDropTarget(evt) {
+            const isUsableDropCol = (el) => el && el.classList?.contains('ov-col-widgets') && !el.classList.contains('ov-col-widgets-nested-only');
+            let colEl = null;
+
+            const originalEvent = evt?.originalEvent;
+            if (originalEvent && Number.isFinite(originalEvent.clientX) && Number.isFinite(originalEvent.clientY)) {
+                const pointedEl = document.elementFromPoint(originalEvent.clientX, originalEvent.clientY);
+                colEl = pointedEl?.closest?.('.ov-col-widgets') || null;
+                if (!isUsableDropCol(colEl)) {
+                    colEl = pointedEl?.closest?.('.ov-layout-col')?.querySelector?.(':scope > .ov-col-widgets') || null;
+                }
+            }
+
+            if (!isUsableDropCol(colEl)) {
+                colEl = evt?.to?.classList?.contains('ov-col-widgets') ? evt.to : null;
+            }
+            if (!isUsableDropCol(colEl)) {
+                colEl = evt?.to?.closest?.('.ov-col-widgets') || null;
+            }
+            if (!colEl && evt?.to?.querySelector) {
+                colEl = evt.to.querySelector(':scope > .ov-col-widgets');
+            }
+
+            return isUsableDropCol(colEl) ? colEl : null;
+        },
 
         // ── Resize ──
         _onResizeStart(e, rowId, colIndex) {
             e.preventDefault();
-            this._resizing = { rowId, colIndex, startX: e.clientX };
+            const foundRow = this._findRow(rowId);
+            const row = foundRow?.row;
+            const col = row?.columns?.[colIndex];
+            const next = row?.columns?.[colIndex + 1];
+            if (!col || !next) return;
+            if (e.currentTarget?.setPointerCapture && e.pointerId != null) {
+                try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+            }
+            this._resizing = {
+                rowId,
+                colIndex,
+                startX: e.clientX,
+                rowEl: e.currentTarget.closest('.ov-layout-row'),
+                startColWidth: Number(col.width) || 0,
+                startNextWidth: Number(next.width) || 0
+            };
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none';
         },
+        _resizeUnitWidth(rowEl, row) {
+            if (!rowEl) return 0;
+            const styles = window.getComputedStyle(rowEl);
+            const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+            const paddingLeft = parseFloat(styles.paddingLeft || '0') || 0;
+            const paddingRight = parseFloat(styles.paddingRight || '0') || 0;
+            const columnCount = Math.max(1, (row?.columns || []).length);
+            const usableWidth = rowEl.clientWidth - paddingLeft - paddingRight - (gap * Math.max(0, columnCount - 1));
+            return Math.max(1, usableWidth / 12);
+        },
         _onResizeMove(e) {
             if (!this._resizing) return;
-            const row = this.rows.find(r => r.id === this._resizing.rowId);
+            const foundRow = this._findRow(this._resizing.rowId);
+            const row = foundRow?.row;
             if (!row) return;
             const ci = this._resizing.colIndex;
             const col = row.columns[ci], next = row.columns[ci + 1];
             if (!col || !next) return;
-            const rowEl = this.$el.querySelector(`[data-row-id="${this._resizing.rowId}"]`);
+            const rowEl = this._resizing.rowEl?.isConnected
+                ? this._resizing.rowEl
+                : this.$el.querySelector(`[data-row-id="${this._resizing.rowId}"]`);
             if (!rowEl) return;
-            const unitW = rowEl.offsetWidth / 12;
-            const dx = e.clientX - this._resizing.startX;
-            const delta = Math.round(dx / unitW);
-            if (delta === 0) return;
-            const newW = col.width + delta, newNextW = next.width - delta;
-            if (newW >= 2 && newNextW >= 2) {
+            const unitW = this._resizeUnitWidth(rowEl, row);
+            if (!unitW) return;
+            const startColWidth = this._resizing.startColWidth;
+            const startNextWidth = this._resizing.startNextWidth;
+            let delta = Math.round((e.clientX - this._resizing.startX) / unitW);
+            delta = Math.max(2 - startColWidth, Math.min(startNextWidth - 2, delta));
+            const newW = startColWidth + delta;
+            const newNextW = startNextWidth - delta;
+            if (col.width !== newW || next.width !== newNextW) {
                 col.width = newW;
                 next.width = newNextW;
-                this._resizing.startX = e.clientX;
             }
         },
         _onResizeEnd() {
@@ -1024,11 +3388,205 @@ document.addEventListener('alpine:init', () => {
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
             this._saveLayout();
-        },
+	        },
 
-        // ── Helpers ──
-        isOverdue(task) {
-            if (!task.dueDate) return false;
+	        // ── Helpers ──
+	        productivityPct() {
+	            const total = Number(this.stats.totalTasks || 0);
+	            const done = Number(this.stats.doneTasks || 0);
+	            if (!total) return 0;
+	            return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+	        },
+	        aiNotes() {
+	            const notes = [];
+	            const important = this.homeEventItems('important')
+	                .filter(ev => ev && ev.title)
+	                .slice(0, 2);
+	            important.forEach(ev => {
+	                const title = String(ev.title || '');
+	                const lower = title.toLowerCase();
+	                const isBirthday = lower.includes('anniversaire');
+	                notes.push({
+	                    icon: isBirthday ? 'solar:gift-bold-duotone' : 'solar:calendar-mark-bold-duotone',
+	                    title,
+	                    text: `${ev.relative || 'Bientôt'}${ev.recordTitle ? ' · ' + ev.recordTitle : ''}${isBirthday ? " — n'oublie pas le cadeau." : ' — prépare les éléments nécessaires.'}`
+	                });
+	            });
+	            const overdue = (this.allTasks || []).find(task => this.isOverdue(task));
+	            if (overdue) {
+	                notes.push({
+	                    icon: 'solar:alarm-bold-duotone',
+	                    title: overdue.title || 'Tâche en retard',
+	                    text: `${overdue.recordTitle || overdue.entityName || 'Tâche'} est en retard: traite-la en priorité.`
+	                });
+	            }
+	            const nextTask = (this.todayTasks || []).find(task => task && task.title);
+	            if (nextTask) {
+	                notes.push({
+	                    icon: 'solar:clipboard-check-bold-duotone',
+	                    title: nextTask.title,
+	                    text: `${nextTask.recordTitle || nextTask.listLabel || 'Aujourd’hui'}: à faire ${this.taskTime(nextTask) !== '—' ? 'à ' + this.taskTime(nextTask) : 'aujourd’hui'}.`
+	                });
+	            }
+	            if (!notes.length) {
+	                notes.push({
+	                    icon: 'solar:magic-stick-3-bold-duotone',
+	                    title: 'Journée claire',
+	                    text: 'Aucune alerte majeure: garde le focus sur les priorités du jour.'
+	                });
+	            }
+	            return notes.slice(0, this.widgetLimit('ai-feed', 3));
+	        },
+	        weeklyItems() {
+	            const now = new Date();
+	            now.setHours(0, 0, 0, 0);
+	            const items = [];
+	            for (let i = 0; i < 7; i += 1) {
+	                const dayDate = new Date(now);
+	                dayDate.setDate(now.getDate() + i);
+	                const event = (this.upcomingEvents || []).find(ev => {
+	                    const date = new Date(ev.date);
+	                    return !Number.isNaN(date.getTime())
+	                        && date.getFullYear() === dayDate.getFullYear()
+	                        && date.getMonth() === dayDate.getMonth()
+	                        && date.getDate() === dayDate.getDate();
+	                });
+	                items.push({
+	                    day: i === 0 ? "Aujourd'hui" : i === 1 ? 'Demain' : dayDate.toLocaleDateString('fr-FR', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase()),
+	                    time: event?.time || '',
+	                    title: event?.title || '',
+	                    color: event?.color || '#94a3b8',
+	                    url: event?.url || `/account/${_accountNumber}/agenda`
+	                });
+	            }
+	            return items;
+	        },
+	        fallbackPriorityItems() {
+	            return [
+	                { id: 'p1', title: 'Appeler le pédiatre', tag: 'Adam', tagColor: '#5b7cfa', time: '09:00' },
+	                { id: 'p2', title: 'Acheter couches bébé', tag: 'Maison', tagColor: '#10b981', time: '10:30' },
+	                { id: 'p3', title: 'Renouveler assurance voiture', tag: 'Clio 4', tagColor: '#f59e0b', time: '—' },
+	                { id: 'p4', title: 'Préparer dossier beau-père', tag: 'Famille', tagColor: '#fb923c', time: '14:00' }
+	            ];
+	        },
+	        fallbackTasks() {
+	            return [
+	                { id: 't1', title: 'Appeler le pédiatre', tag: 'Adam', tagColor: '#a855f7', time: '09:00', priority: 'Haute', priorityColor: '#ef4444', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't2', title: 'Préparer dossier beau-père', tag: 'Famille', tagColor: '#6478ff', time: '14:00', priority: 'Moyenne', priorityColor: '#f59e0b', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't3', title: 'Réserver contrôle technique', tag: 'Clio 4', tagColor: '#f59e0b', time: '—', priority: 'Basse', priorityColor: '#3b82f6', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't4', title: 'Courses du week-end', tag: 'Maison', tagColor: '#10b981', time: '—', priority: 'Basse', priorityColor: '#3b82f6', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't5', title: "Répondre à l'assurance", tag: 'Clio 4', tagColor: '#6478ff', time: '—', priority: 'Moyenne', priorityColor: '#f97316', link: `/account/${_accountNumber}/tasks` }
+	            ];
+	        },
+	        fallbackEvents(kind = 'upcoming') {
+	            if (kind === 'important') {
+	                return [
+	                    { id: 'i1', title: 'Anniversaire Maman', recordTitle: 'Famille', day: '20', month: 'JUIN', time: '20:00', status: 'Important', relative: 'dans 5 jours', color: '#ec4899', label: 'Cadeau', labelColor: '#ec4899', url: `/account/${_accountNumber}/agenda` },
+	                    { id: 'i2', title: 'Assurance Clio 4', recordTitle: 'Clio 4', day: '23', month: 'JUIN', time: '09:00', status: 'À régler', relative: 'dans 8 jours', color: '#f97316', label: 'Risque amende', labelColor: '#ef4444', url: `/account/${_accountNumber}/agenda` }
+	                ];
+	            }
+	            return [
+	                { id: 'e1', title: 'Contrôle Ben Omar Père', recordTitle: 'Famille', day: '16', month: 'JUIN', time: '05:00', status: 'Planifié', relative: 'demain', color: '#4361ee', label: '', labelColor: '#4361ee', url: `/account/${_accountNumber}/agenda` },
+	                { id: 'e2', title: 'Assurance Clio 4', recordTitle: 'Clio 4', day: '23', month: 'JUIN', time: '09:00', status: 'Confirmé', relative: 'dans 8 jours', color: '#10b981', label: 'Risque amende', labelColor: '#ef4444', url: `/account/${_accountNumber}/agenda` },
+	                { id: 'e3', title: 'Fin contrôle technique', recordTitle: 'Clio 4', day: '30', month: 'JUIN', time: '08:00', status: 'Planifié', relative: 'dans 15 jours', color: '#4361ee', label: '', labelColor: '#4361ee', url: `/account/${_accountNumber}/agenda` }
+	            ];
+	        },
+	        priorityItems() {
+	            const dynamic = (this.todayTasks || []).slice(0, 4).map((task, idx) => ({
+	                id: task.id || 'pt_' + idx,
+	                title: task.title || 'Sans titre',
+	                tag: task.recordTitle || task.listLabel || 'Tâche',
+	                tagColor: task.entityColor || '#4361ee',
+	                time: this.taskTime(task)
+	            }));
+	            return dynamic.length ? dynamic : this.fallbackPriorityItems();
+	        },
+	        taskItems() {
+	            const dynamic = (this.allTasks || []).slice(0, 8).map((task, idx) => ({
+	                id: task.id || 'task_' + idx,
+	                title: task.title || 'Sans titre',
+	                tag: task.recordTitle || task.entityName || 'Record',
+	                tagColor: task.entityColor || '#805dca',
+	                time: this.taskTime(task),
+	                priority: task.priority && task.priority !== 'Aucune' ? task.priority : 'Basse',
+	                priorityColor: task.priorityColor || (task.priority === 'Haute' ? '#ef4444' : task.priority === 'Moyenne' ? '#f59e0b' : '#3b82f6'),
+	                link: task.link || `/account/${_accountNumber}/tasks`
+	            }));
+	            return dynamic.length ? dynamic : this.fallbackTasks();
+	        },
+	        homeEventItems(kind = 'upcoming') {
+	            const source = kind === 'important' ? this.importantDates : this.upcomingEvents;
+	            const dynamic = (source || []).map(ev => ({
+	                ...ev,
+	                day: ev.day || this.datePart(ev.date, 'day'),
+	                month: ev.month || this.datePart(ev.date, 'month'),
+	                url: ev.url || `/account/${_accountNumber}/agenda`
+	            }));
+	            return dynamic.length ? dynamic : this.fallbackEvents(kind);
+	        },
+	        eventRecordLabel(ev) {
+	            const record = String(ev?.recordTitle || '').trim();
+	            if (record && !['Record inconnu', 'Sans titre'].includes(record)) return record;
+	            const entity = String(ev?.entityName || '').trim();
+	            return entity && entity !== 'Sans entité' ? entity : '';
+	        },
+	        eventRecordIcon(ev) {
+	            return ev?.recordIcon || ev?.entityIcon || 'solar:folder-bold-duotone';
+	        },
+	        eventRecordColor(ev) {
+	            return ev?.recordColor || ev?.entityColor || ev?.color || '#4361ee';
+	        },
+	        taskRecordItems() {
+	            const dynamic = (this.tasksByRecord || []).map((record, idx) => ({
+	                id: record.id || 'record_task_' + idx,
+	                title: record.title || 'Sans titre',
+	                meta: record.entityName || 'Record',
+	                open: record.openTasks || record.open || 0,
+	                icon: record.icon || 'solar:folder-bold-duotone',
+	                color: record.color || '#4361ee',
+	                link: record.link || `/account/${_accountNumber}/tasks`
+	            }));
+	            if (dynamic.length) return dynamic;
+	            return [
+	                { id: 'r1', title: 'Clio 4', meta: '2 échéances actives', open: 2, icon: 'solar:car-bold-duotone', color: '#4361ee', link: `/account/${_accountNumber}/tasks` },
+	                { id: 'r2', title: 'Maison', meta: '3 tâches restantes', open: 3, icon: 'solar:home-bold-duotone', color: '#10b981', link: `/account/${_accountNumber}/tasks` },
+	                { id: 'r3', title: 'Famille', meta: '1 rappel important', open: 1, icon: 'solar:users-group-rounded-bold-duotone', color: '#f97316', link: `/account/${_accountNumber}/tasks` }
+	            ];
+	        },
+	        activityItems() {
+	            const dynamic = (this.recentRecords || []).map((rec, idx) => ({
+	                id: rec.id || 'act_' + idx,
+	                title: rec.title || 'Record modifié',
+	                meta: `${rec.entityName || 'Record'} · ${this.timeAgo(rec.updatedAt) || 'aujourd’hui'}`,
+	                icon: rec.icon || 'solar:folder-bold-duotone',
+	                color: rec.color || '#4361ee',
+	                link: rec.link || `/account/${_accountNumber}/home`
+	            }));
+	            if (dynamic.length) return dynamic;
+	            return [
+	                { id: 'a1', title: 'Facture Électricité.pdf', meta: 'Ajouté il y a 2h', icon: 'solar:bill-list-bold-duotone', color: '#ef4444', link: `/account/${_accountNumber}/home` },
+	                { id: 'a2', title: 'Paiement Netflix', meta: '-9,99€ · Aujourd’hui', icon: 'solar:play-bold-duotone', color: '#111827', link: `/account/${_accountNumber}/home` },
+	                { id: 'a3', title: 'Note Pédiatre Adam', meta: 'Modifiée il y a 3h', icon: 'solar:notes-bold-duotone', color: '#f59e0b', link: `/account/${_accountNumber}/home` },
+	                { id: 'a4', title: 'Assurance Clio 4', meta: 'Rappel créé · Hier', icon: 'solar:car-bold-duotone', color: '#4361ee', link: `/account/${_accountNumber}/home` },
+	                { id: 'a5', title: 'Anniversaire Maman', meta: 'Dans 4 jours · 20 Juin', icon: 'solar:gift-bold-duotone', color: '#ec4899', link: `/account/${_accountNumber}/home` }
+	            ];
+	        },
+	        taskTime(task) {
+	            const value = task?.dueDate || task?.startDate;
+	            if (!value) return '—';
+	            const date = new Date(value);
+	            if (Number.isNaN(date.getTime())) return '—';
+	            if (date.getHours() === 0 && date.getMinutes() === 0) return '—';
+	            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+	        },
+	        datePart(value, part) {
+	            const date = new Date(value);
+	            if (Number.isNaN(date.getTime())) return part === 'day' ? '--' : '';
+	            if (part === 'day') return String(date.getDate()).padStart(2, '0');
+	            return date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase();
+	        },
+	        isOverdue(task) {
+	            if (!task.dueDate) return false;
             const d = new Date(task.dueDate);
             const now = new Date(); now.setHours(0,0,0,0);
             return d < now;

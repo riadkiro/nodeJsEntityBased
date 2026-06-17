@@ -1,7 +1,7 @@
 <div class="ov-card-header">
-    <iconify-icon icon="solar:cloud-storage-bold-duotone" width="18" style="color:#ec4899"></iconify-icon>
-    <span>Fichiers récents</span>
-    <a href="<%= _recBase %>/drive" class="ov-card-link">Voir tout →</a>
+    <iconify-icon :icon="widgetIcon(wid, 'solar:cloud-storage-bold-duotone')" width="18" :style="'color:' + widgetColor(wid, '#ec4899')"></iconify-icon>
+    <span x-text="widgetTitle(wid, 'Fichiers récents')">Fichiers récents</span>
+    <a href="<%= _recBase %>/drive" class="ov-card-link" x-show="widgetShowLink(wid, true)">Voir tout →</a>
 </div>
 <div x-data="ovDrive()" x-init="load()">
     <!-- Loading -->
@@ -13,7 +13,7 @@
         <div>
             <template x-if="files.length > 0">
                 <div class="ov-drive-grid">
-                    <template x-for="(file, idx) in files" :key="file._id">
+                    <template x-for="(file, idx) in files.slice(0, widgetLimit(wid, 4))" :key="file._id">
                         <div @click="window.openFileViewer(file.url, file.originalName, file.category, files.map(f=>({url:f.url,name:f.originalName,category:f.category})), idx)" class="ov-drive-file" style="cursor:pointer;">
                             <template x-if="file.category === 'image'">
                                 <div class="ov-drive-thumb" style="overflow:hidden;padding:0;">
@@ -62,7 +62,7 @@ function ovDrive() {
                     const attachments = data.attachments || [];
                     this.files = attachments
                         .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
-                        .slice(0, 4)
+                        .slice(0, 40)
                         .map(a => ({
                             _id: a._id || Math.random(),
                             originalName: a.originalName || a.filename,

@@ -1,9 +1,9 @@
 <div class="ov-card-header">
     <div class="flex items-center gap-2">
-        <iconify-icon icon="solar:notebook-bold-duotone" width="17" style="color:#8b5cf6"></iconify-icon>
-        <span>Notes</span>
+        <iconify-icon :icon="widgetIcon(wid, 'solar:notebook-bold-duotone')" width="17" :style="'color:' + widgetColor(wid, '#8b5cf6')"></iconify-icon>
+        <span x-text="widgetTitle(wid, 'Notes')">Notes</span>
     </div>
-    <a href="<%= _recBase %>/notes" class="ov-card-link">Voir tout →</a>
+    <a href="<%= _recBase %>/notes" class="ov-card-link" x-show="widgetShowLink(wid, true)">Voir tout →</a>
 </div>
 
 <div class="ov-note-widget">

@@ -1,14 +1,14 @@
 <div class="ov-agenda-widget" x-data="ovAgendaWidget('upcoming')">
     <div class="ov-card-header">
         <span class="ov-card-header-main">
-            <iconify-icon icon="solar:calendar-bold-duotone" width="18" style="color:#14b8a6"></iconify-icon>
-            <span>Prochains événements</span>
+            <iconify-icon :icon="widgetIcon(wid, 'solar:calendar-bold-duotone')" width="18" :style="'color:' + widgetColor(wid, '#14b8a6')"></iconify-icon>
+            <span x-text="widgetTitle(wid, 'Prochains événements')">Prochains événements</span>
         </span>
         <span class="ov-card-header-actions">
-            <button type="button" class="ov-card-add-btn" title="Ajouter un événement" x-show="canEdit" @click="openForm">
-                <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+            <button type="button" class="ov-card-add-btn" title="Ajouter un événement" aria-label="Ajouter un événement" x-show="canEdit && widgetOption(wid, 'allowAdd', true)" @click="openForm">
+                <iconify-icon icon="tabler:plus" width="15"></iconify-icon>
             </button>
-            <a href="<%= _recBase %>/agenda" class="ov-card-link">Voir tout →</a>
+            <a href="<%= _recBase %>/agenda" class="ov-card-link" x-show="widgetShowLink(wid, true)">Voir tout →</a>
         </span>
     </div>
 
@@ -32,17 +32,35 @@
     </template>
 
     <div class="ov-agenda-row" x-show="!loading && events.length > 0">
-        <template x-for="(ev, idx) in events" :key="idx">
-            <div class="ov-agenda-item">
+        <template x-for="ev in events.slice(0, widgetLimit(wid, 4))" :key="ev.id">
+            <a class="ov-agenda-item" :href="ev.url" :title="ev.tooltip">
                 <div class="ov-agenda-date-box" :style="`background:linear-gradient(135deg,${ev.color}12,${ev.color}06)`">
                     <div class="ov-agenda-day" :style="`color:${ev.color}`" x-text="ev.day"></div>
                     <div class="ov-agenda-month" x-text="ev.month"></div>
                 </div>
                 <div class="ov-agenda-body">
-                    <div class="ov-agenda-title" x-text="ev.title"></div>
-                    <div class="ov-agenda-time"><span x-text="ev.time"></span> · <span x-text="ev.status"></span></div>
+                    <div class="ov-agenda-title-row">
+                        <span class="ov-agenda-title" x-text="ev.title"></span>
+                        <template x-if="ev.label">
+                            <span class="ov-agenda-label" :style="`--ov-label-c:${ev.labelColor}`" x-text="ev.label"></span>
+                        </template>
+                    </div>
+                    <div class="ov-agenda-meta">
+                        <span class="ov-agenda-time">
+                            <span x-text="ev.time"></span> · <span x-text="ev.status"></span>
+                            <template x-if="ev.relative">
+                                <span> · <span x-text="ev.relative"></span></span>
+                            </template>
+                        </span>
+                        <template x-if="ev.location">
+                            <span class="ov-agenda-location">
+                                <iconify-icon icon="solar:map-point-linear" width="12"></iconify-icon>
+                                <span x-text="ev.location"></span>
+                            </span>
+                        </template>
+                    </div>
                 </div>
-            </div>
+            </a>
         </template>
     </div>
 

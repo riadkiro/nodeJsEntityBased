@@ -1,0 +1,507 @@
+<template x-if="wid === 'priority-day' || wid === 'today-tasks'">
+    <div class="ov-card dx-card dx-priority-card" :style="'--ov-color:' + widgetColor(wid, '#805dca')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Priorités du jour')"></span>
+                <span class="dx-count-pill" x-text="priorityItems().length + ' à faire'"></span>
+            </div>
+        </div>
+        <div class="ov-card-body dx-priority-body">
+            <div class="dx-priority-list">
+                <template x-for="item in priorityItems().slice(0, widgetLimit(wid, 4))" :key="item.id">
+                    <div class="dx-priority-row">
+                        <span class="dx-check"></span>
+                        <span class="dx-priority-title" x-text="item.title"></span>
+                        <span class="dx-tag" :style="'--tag-color:' + item.tagColor" x-text="item.tag"></span>
+                        <span class="dx-time" x-text="item.time"></span>
+                    </div>
+                </template>
+            </div>
+            <div class="dx-productivity" x-show="widgetOption(wid, 'showProductivity', true) !== false">
+                <div class="dx-ring" :style="'--value:' + productivityPct()"><span x-text="productivityPct() + '%'"></span></div>
+                <strong>Productivité</strong>
+                <small>Très bon début ! ↗</small>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'upcoming-events'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#8b5cf6')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:calendar-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Prochains événements')"></span>
+            </div>
+            <a class="ov-card-link dx-link" href="/account/<%= account_number %>/agenda" x-show="widgetShowLink(wid, true)">Voir tout</a>
+        </div>
+        <div class="ov-card-body dx-event-list">
+            <template x-for="ev in homeEventItems('upcoming').slice(0, widgetLimit(wid, 4))" :key="ev.id">
+                <a class="dx-event-row" :href="ev.url || '/account/<%= account_number %>/agenda'" :style="'--event-color:' + (ev.color || '#4361ee')">
+                    <div class="dx-event-date">
+                        <strong x-text="ev.day"></strong>
+                        <span x-text="ev.month"></span>
+                    </div>
+                    <div class="dx-event-main">
+                        <div class="dx-event-title-line">
+                            <strong x-text="ev.title"></strong>
+                            <template x-if="ev.label">
+                                <span class="dx-risk-pill" :style="'--risk-color:' + (ev.labelColor || '#ef4444')" x-text="ev.label"></span>
+                            </template>
+                        </div>
+                        <template x-if="eventRecordLabel(ev)">
+                            <div class="dx-event-record-line">
+                                <span class="dx-event-record-mini" :style="'--event-record-color:' + eventRecordColor(ev)">
+                                    <iconify-icon :icon="eventRecordIcon(ev)" width="10"></iconify-icon>
+                                </span>
+                                <span x-text="eventRecordLabel(ev)"></span>
+                            </div>
+                        </template>
+                        <span class="dx-event-meta" x-text="[ev.time, ev.status, ev.relative].filter(Boolean).join(' · ')"></span>
+                    </div>
+                    <span class="dx-event-entity-icon"
+                          :title="[ev.recordTitle, ev.entityName].filter(Boolean).join(' · ')"
+                          :style="'--event-icon-color:' + eventRecordColor(ev)">
+                        <iconify-icon :icon="eventRecordIcon(ev)" width="14"></iconify-icon>
+                    </span>
+                </a>
+            </template>
+            <a class="dx-card-footer-link" href="/account/<%= account_number %>/agenda" x-show="widgetShowLink(wid, true)">Voir le calendrier complet →</a>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'important-dates'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#f59e0b')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:calendar-mark-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Dates importantes')"></span>
+            </div>
+            <a class="ov-card-link dx-link" href="/account/<%= account_number %>/agenda" x-show="widgetShowLink(wid, true)">Voir tout</a>
+        </div>
+        <div class="ov-card-body dx-event-list">
+            <template x-for="ev in homeEventItems('important').slice(0, widgetLimit(wid, 4))" :key="ev.id">
+                <a class="dx-date-row" :href="ev.url || '/account/<%= account_number %>/agenda'" :style="'--event-color:' + (ev.color || '#f59e0b')">
+                    <div class="dx-mini-date"><strong x-text="ev.day"></strong><span x-text="ev.month"></span></div>
+                    <div>
+                        <strong x-text="ev.title"></strong>
+                        <span x-text="[ev.relative, ev.recordTitle].filter(Boolean).join(' · ')"></span>
+                    </div>
+                </a>
+            </template>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'objectives'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#4361ee')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:target-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Objectifs')"></span>
+            </div>
+            <a class="ov-card-link dx-link" href="/account/<%= account_number %>/home" x-show="widgetShowLink(wid, true)">Voir tout</a>
+        </div>
+        <div class="ov-card-body dx-goals">
+            <template x-for="goal in goals.slice(0, widgetLimit(wid, 6))" :key="goal.id || goal.title">
+                <div class="dx-goal-row" @click="editGoal(goal)" title="Modifier la progression">
+                    <div><span x-text="goal.title"></span><strong x-text="goal.value + '%'"></strong></div>
+                    <div class="dx-progress"><span :style="'width:' + goal.value + '%;background:' + goal.color"></span></div>
+                </div>
+            </template>
+            <button type="button" class="dx-tiny-btn" @click="addGoal()">
+                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                Objectif
+            </button>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'tasks'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#8b5cf6')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:clipboard-list-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Tâches')"></span>
+            </div>
+            <div class="dx-header-actions">
+                <span class="dx-muted-pill" x-text="taskItems().length + ' en cours'"></span>
+                <a class="ov-card-link dx-link" href="/account/<%= account_number %>/tasks" x-show="widgetShowLink(wid, true)">Voir tout</a>
+            </div>
+        </div>
+        <div class="ov-card-body dx-task-list">
+            <template x-for="task in taskItems().slice(0, widgetLimit(wid, 5))" :key="task.id">
+                <a class="dx-task-row" :href="task.link || '/account/<%= account_number %>/tasks'">
+                    <span class="dx-check"></span>
+                    <strong x-text="task.title"></strong>
+                    <span class="dx-tag" :style="'--tag-color:' + task.tagColor" x-text="task.tag"></span>
+                    <span class="dx-time" x-text="task.time"></span>
+                    <span class="dx-priority" :style="'--priority-color:' + task.priorityColor" x-text="task.priority"></span>
+                </a>
+            </template>
+            <a class="dx-new-task" href="/account/<%= account_number %>/tasks">
+                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                Nouvelle tâche
+            </a>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'finance'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#6366f1')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:wallet-money-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Finance')"></span>
+            </div>
+            <span class="dx-select-pill" x-text="widgetOption(wid, 'period', 'Ce mois-ci') + '⌄'"></span>
+        </div>
+        <div class="ov-card-body dx-finance-list">
+            <template x-for="row in financeRows.slice(0, widgetLimit(wid, 4))" :key="row.id || row.label">
+                <div class="dx-finance-row" @click="editFinanceRow(row)" title="Modifier cette ligne">
+                    <span :style="'--finance-color:' + row.color"><iconify-icon :icon="row.icon" width="15"></iconify-icon></span>
+                    <label x-text="row.label"></label>
+                    <strong :style="'color:' + row.color" x-text="row.value"></strong>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'shopping-list'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#10b981')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:cart-large-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Liste de courses')"></span>
+            </div>
+            <span class="dx-shared-pill" x-show="widgetShared(wid, true)"><iconify-icon icon="solar:users-group-rounded-bold" width="12"></iconify-icon> Partagée</span>
+        </div>
+        <div class="ov-card-body dx-shopping-list"
+             :data-task-widget-id="wid"
+             x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
+            <template x-for="item in homeTaskWidgetItems(wid)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
+                <div class="dx-shopping-row dx-task-row"
+                     :class="{ 'is-done': item.status === 'Terminé', 'has-priority': homeTaskPriorityVisible(wid, item) }"
+                     :data-task-id="item._id || item.id"
+                     @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
+                    <span class="dx-task-drag" title="Réordonner" @click.stop>
+                        <iconify-icon icon="tabler:grip-vertical" width="13"></iconify-icon>
+                    </span>
+                    <button type="button"
+                            class="dx-check"
+                            :class="item.status === 'Terminé' ? 'is-checked' : ''"
+                            :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
+                            @click.stop="toggleHomeTaskItem(wid, item)"></button>
+                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
+                        <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
+                    </template>
+                    <template x-if="editingHomeTaskId === (item._id || item.id)">
+                        <input class="dx-task-edit"
+                               type="text"
+                               :data-task-id="item._id || item.id"
+                               x-model="editingHomeTaskTitle"
+                               @click.stop
+                               @keydown.enter.prevent="saveEditHomeTask(wid, item)"
+                               @keydown.escape.prevent="cancelEditHomeTask()"
+                               @blur="saveEditHomeTask(wid, item)">
+                    </template>
+                    <button type="button"
+                            class="dx-task-priority"
+                            x-show="homeTaskPriorityEnabled(wid)"
+                            :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+                            :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
+                            :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+                            @pointerdown.stop
+                            @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+                        <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+                        <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
+                    </button>
+                </div>
+            </template>
+            <template x-if="homeTaskWidgetItems(wid).length === 0">
+                <div class="ov-custom-empty">Liste vide</div>
+            </template>
+            <form class="dx-inline-add" @submit.prevent="addHomeTaskItem(wid)" x-show="widgetOption(wid, 'allowAdd', true) !== false">
+                <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" placeholder="Ajouter un article...">
+                <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
+            </form>
+            <div class="dx-shopping-foot">
+                <div class="dx-avatars"><span>R</span><span>M</span></div>
+                <a :href="homeTaskWidgetLink(wid)">Ouvrir</a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'tasks-by-record'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#3b82f6')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:folder-with-files-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Tâches par record')"></span>
+            </div>
+            <span class="dx-muted-pill">Records</span>
+        </div>
+        <div class="ov-card-body dx-record-task-list">
+            <template x-for="record in taskRecordItems().slice(0, widgetLimit(wid, 4))" :key="record.id">
+                <a class="dx-record-task-row" :href="record.link || '/account/<%= account_number %>/tasks'">
+                    <span class="home-mini-icon" :style="'--item-color:' + (record.color || '#4361ee')">
+                        <iconify-icon :icon="record.icon || 'solar:folder-bold-duotone'" width="14"></iconify-icon>
+                    </span>
+                    <div>
+                        <strong x-text="record.title"></strong>
+                        <span x-text="record.meta"></span>
+                    </div>
+                    <em x-text="record.open + ' ouvertes'"></em>
+                </a>
+            </template>
+            <a class="dx-detail-btn" href="/account/<%= account_number %>/tasks" x-show="widgetShowLink(wid, true)">Voir tous les détails</a>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'activity-timeline' || wid === 'recent-records'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#10b981')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:history-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Activité récente')"></span>
+            </div>
+            <a class="ov-card-link dx-link" href="/account/<%= account_number %>/home" x-show="widgetShowLink(wid, true)">Voir tout</a>
+        </div>
+        <div class="ov-card-body dx-activity-timeline">
+            <template x-for="item in activityItems().slice(0, widgetLimit(wid, 5))" :key="item.id">
+                <a class="dx-activity-row" :href="item.link || '/account/<%= account_number %>/home'">
+                    <span class="dx-activity-dot" :style="'--activity-color:' + item.color"><iconify-icon :icon="item.icon" width="14"></iconify-icon></span>
+                    <div>
+                        <strong x-text="item.title"></strong>
+                        <span x-text="item.meta"></span>
+                    </div>
+                </a>
+            </template>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'stats'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#6366f1')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:chart-square-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Résumé')"></span>
+            </div>
+        </div>
+        <div class="ov-card-body">
+            <div class="home-stat-grid dx-stat-grid">
+                <div class="home-stat-card"><strong x-text="stats.openTasks ?? 0"></strong><span>Tâches ouvertes</span></div>
+                <div class="home-stat-card"><strong x-text="goals.length"></strong><span>Objectifs actifs</span></div>
+                <div class="home-stat-card"><strong x-text="stats.weekEvents ?? 0"></strong><span>Événements cette semaine</span></div>
+                <div class="home-stat-card"><strong x-text="financeRows.length"></strong><span>Lignes finance</span></div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'ai-feed'">
+    <div class="ov-card dx-card dx-ai-card" :style="'--ov-color:' + widgetColor(wid, '#7c3aed')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:magic-stick-3-bold-duotone')"></iconify-icon>
+            <span x-text="widgetTitle(wid, 'Feed intelligent IA')"></span>
+            </div>
+            <span class="dx-muted-pill">Dynamique</span>
+        </div>
+        <div class="ov-card-body dx-ai-feed">
+            <template x-for="note in aiNotes()" :key="note.title">
+                <div class="dx-ai-note">
+                    <iconify-icon :icon="note.icon" width="16"></iconify-icon>
+                    <div>
+                        <strong x-text="note.title"></strong>
+                        <span x-text="note.text"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'weekly-timeline'">
+    <div class="ov-card dx-card dx-week-card" :style="'--ov-color:' + widgetColor(wid, '#805dca')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:calendar-date-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Timeline')"></span>
+            </div>
+        </div>
+        <div class="ov-card-body dx-week-grid">
+            <template x-for="day in weeklyItems().slice(0, widgetLimit(wid, 7))" :key="day.day">
+                <div class="dx-week-day">
+                    <strong x-text="day.day"></strong>
+                    <template x-if="day.title">
+                        <a :href="day.url || '/account/<%= account_number %>/agenda'" class="dx-week-event" :style="'--week-color:' + day.color">
+                            <span x-text="day.time"></span>
+                            <em x-text="day.title"></em>
+                        </a>
+                    </template>
+                    <template x-if="!day.title">
+                        <span class="dx-week-empty">Aucun événement</span>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
+
+<template x-if="wid === 'quick-links'">
+    <div class="ov-card dx-card" :style="'--ov-color:' + widgetColor(wid, '#8b5cf6')">
+        <div class="ov-card-header dx-card-header">
+            <div class="ov-card-title dx-card-title">
+                <iconify-icon :icon="widgetIcon(wid, 'solar:bolt-circle-bold-duotone')"></iconify-icon>
+                <span x-text="widgetTitle(wid, 'Raccourcis')"></span>
+            </div>
+        </div>
+        <div class="ov-card-body">
+            <div class="home-quick-list">
+                <a class="home-quick-item" href="/account/<%= account_number %>/tasks" x-show="widgetOption(wid, 'showTasks', true) !== false">
+                    <div class="home-mini-icon" style="--item-color:#6366f1"><iconify-icon icon="solar:clipboard-list-bold-duotone" width="14"></iconify-icon></div>
+                    <div class="home-quick-text"><strong>Tâches</strong></div>
+                </a>
+                <a class="home-quick-item" href="/account/<%= account_number %>/notes" x-show="widgetOption(wid, 'showNotes', true) !== false">
+                    <div class="home-mini-icon" style="--item-color:#eab308"><iconify-icon icon="solar:notes-bold-duotone" width="14"></iconify-icon></div>
+                    <div class="home-quick-text"><strong>Notes</strong></div>
+                </a>
+                <a class="home-quick-item" href="/account/<%= account_number %>/documents" x-show="widgetOption(wid, 'showDocuments', true) !== false">
+                    <div class="home-mini-icon" style="--item-color:#0ea5e9"><iconify-icon icon="solar:document-text-bold-duotone" width="14"></iconify-icon></div>
+                    <div class="home-quick-text"><strong>Documents</strong></div>
+                </a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template x-if="isCustomWidget(wid)">
+    <div class="ov-card ov-card-custom dx-card" :style="'--ov-color:' + (getCustomWidget(wid).color || '#4361ee')">
+	        <div class="ov-card-header dx-card-header">
+	            <div class="ov-card-title dx-card-title" :style="'--ov-color:' + (getCustomWidget(wid).color || '#4361ee')">
+	                <iconify-icon :icon="getCustomWidget(wid).icon || customWidgetIcon(getCustomWidget(wid).type)"></iconify-icon>
+	                <span x-text="getCustomWidget(wid).label || customWidgetLabel(getCustomWidget(wid).type)"></span>
+	            </div>
+	            <template x-if="getCustomWidget(wid).type === 'task-list'">
+	                <span class="dx-muted-pill" x-text="homeTaskWidgetOpenCount(wid) + ' ouvertes'"></span>
+	            </template>
+	            <template x-if="getCustomWidget(wid).type === 'task-list' && customWidgetConfig(wid).shared === true">
+	                <span class="dx-shared-pill"><iconify-icon icon="solar:users-group-rounded-bold" width="12"></iconify-icon> Partagée</span>
+	            </template>
+	        </div>
+        <template x-if="getCustomWidget(wid).type === 'iframe'">
+            <div>
+                <template x-if="customWidgetConfig(wid).url">
+                    <iframe class="ov-custom-frame" :src="customWidgetConfig(wid).url" :style="'height:' + (customWidgetConfig(wid).height || 300) + 'px'" allowfullscreen loading="lazy"></iframe>
+                </template>
+                <template x-if="!customWidgetConfig(wid).url">
+                    <div class="ov-custom-empty">URL iframe manquante</div>
+                </template>
+            </div>
+        </template>
+        <template x-if="getCustomWidget(wid).type === 'video'">
+            <div>
+                <template x-if="customWidgetConfig(wid).url && isEmbeddableVideo(customWidgetConfig(wid).url)">
+                    <iframe class="ov-custom-frame" :src="videoEmbedUrl(customWidgetConfig(wid).url)" :style="'height:' + (customWidgetConfig(wid).height || 320) + 'px'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                </template>
+                <template x-if="customWidgetConfig(wid).url && !isEmbeddableVideo(customWidgetConfig(wid).url)">
+                    <video class="ov-custom-video" :src="customWidgetConfig(wid).url" :style="'max-height:' + (customWidgetConfig(wid).height || 320) + 'px'" controls></video>
+                </template>
+                <template x-if="!customWidgetConfig(wid).url">
+                    <div class="ov-custom-empty">URL vidéo manquante</div>
+                </template>
+            </div>
+        </template>
+        <template x-if="getCustomWidget(wid).type === 'image'">
+            <div>
+                <template x-if="customWidgetConfig(wid).url">
+                    <img class="ov-custom-image" :src="customWidgetConfig(wid).url" :alt="customWidgetConfig(wid).alt || 'Image'" :style="'height:' + (customWidgetConfig(wid).height || 260) + 'px;object-fit:' + (customWidgetConfig(wid).fit || 'contain')">
+                </template>
+                <template x-if="!customWidgetConfig(wid).url">
+                    <div class="ov-custom-empty">URL image manquante</div>
+                </template>
+            </div>
+        </template>
+        <template x-if="getCustomWidget(wid).type === 'html'">
+            <div class="ov-card-body ov-custom-html" x-html="customWidgetConfig(wid).content || ''"></div>
+        </template>
+        <template x-if="getCustomWidget(wid).type === 'note' || getCustomWidget(wid).type === 'notes'">
+            <div class="ov-card-body"><div class="ov-custom-note" x-text="customWidgetConfig(wid).content || 'Note vide'"></div></div>
+        </template>
+	        <template x-if="getCustomWidget(wid).type === 'link'">
+	            <div class="ov-card-body"><a class="ov-custom-link" :href="customWidgetConfig(wid).url || '#'" :target="customWidgetConfig(wid).newTab ? '_blank' : '_self'" rel="noopener">
+	                <span x-text="customWidgetConfig(wid).description || customWidgetConfig(wid).url || 'Lien'"></span>
+	                <iconify-icon icon="solar:arrow-right-up-linear" width="14"></iconify-icon>
+	            </a></div>
+	        </template>
+	        <template x-if="getCustomWidget(wid).type === 'task-list'">
+	            <div class="ov-card-body dx-shopping-list"
+	                 :data-task-widget-id="wid"
+	                 x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
+	                <template x-for="item in homeTaskWidgetItems(wid)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
+	                    <div class="dx-shopping-row dx-task-row"
+	                         :class="{ 'is-done': item.status === 'Terminé', 'has-priority': homeTaskPriorityVisible(wid, item) }"
+	                         :data-task-id="item._id || item.id"
+	                         @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
+	                        <span class="dx-task-drag" title="Réordonner" @click.stop>
+	                            <iconify-icon icon="tabler:grip-vertical" width="13"></iconify-icon>
+	                        </span>
+	                        <button type="button"
+	                                class="dx-check"
+	                                :class="item.status === 'Terminé' ? 'is-checked' : ''"
+	                                :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
+	                                @click.stop="toggleHomeTaskItem(wid, item)"></button>
+	                        <template x-if="editingHomeTaskId !== (item._id || item.id)">
+	                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
+	                        </template>
+	                        <template x-if="editingHomeTaskId === (item._id || item.id)">
+	                            <input class="dx-task-edit"
+	                                   type="text"
+	                                   :data-task-id="item._id || item.id"
+	                                   x-model="editingHomeTaskTitle"
+	                                   @click.stop
+	                                   @keydown.enter.prevent="saveEditHomeTask(wid, item)"
+	                                   @keydown.escape.prevent="cancelEditHomeTask()"
+	                                   @blur="saveEditHomeTask(wid, item)">
+	                        </template>
+	                        <button type="button"
+	                                class="dx-task-priority"
+	                                x-show="homeTaskPriorityEnabled(wid)"
+	                                :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+	                                :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
+	                                :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+	                                @pointerdown.stop
+	                                @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+	                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+	                            <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
+	                        </button>
+	                    </div>
+	                </template>
+	                <template x-if="homeTaskWidgetItems(wid).length === 0">
+	                    <div class="ov-custom-empty">Liste vide</div>
+	                </template>
+	                <form class="dx-inline-add" @submit.prevent="addHomeTaskItem(wid)" x-show="customWidgetConfig(wid).allowAdd !== false">
+	                    <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" placeholder="Ajouter une tâche...">
+	                    <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
+	                </form>
+	                <div class="dx-shopping-foot">
+	                    <span style="font-size:11px;color:#94a3b8;font-weight:600;" x-text="homeTaskListForWidget(wid)?.recordTitle || 'Compte'"></span>
+	                    <a :href="homeTaskWidgetLink(wid)">Ouvrir</a>
+	                </div>
+	            </div>
+	        </template>
+	        <template x-if="getCustomWidget(wid).type === 'separator'">
+	            <div class="ov-custom-separator" :style="'height:' + (customWidgetConfig(wid).height || 1) + 'px'"></div>
+	        </template>
+	        <template x-if="['timeline','kpi','chart','fields','cards'].includes(getCustomWidget(wid).type)">
+	            <div class="ov-custom-empty" x-text="customWidgetLabel(getCustomWidget(wid).type) + ' prêt à configurer'"></div>
+	        </template>
+    </div>
+</template>

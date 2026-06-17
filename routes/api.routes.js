@@ -960,8 +960,10 @@ const cleanTaskText = (value, fallback = '') => {
 }
 
 const cleanTaskListLabel = (value) => {
-    const label = cleanTaskText(value, 'Tâches du jour')
-    return label.toLowerCase() === 'général' ? 'Tâches du jour' : label
+    const label = cleanTaskText(value, 'À faire')
+    const lower = label.toLowerCase()
+    if (lower === 'général' || lower === 'tâches du jour' || lower === 'taches du jour') return 'À faire'
+    return label
 }
 
 /**
@@ -997,6 +999,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
             return {
                 _id: l._id.toString(),
                 label: cleanTaskListLabel(l.label),
+                rawLabel: l.label || '',
                 color: l.color || '#6366f1',
                 viewMode: l.viewMode || 'kanban',
                 statuses: listStatuses,
@@ -1010,6 +1013,8 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                     statusColor: t.statusColor,
                     priority: t.priority || 'Aucune',
                     priorityColor: t.priorityColor || '',
+                    isDayPriority: !!t.isDayPriority,
+                    taskListId: t.taskListId?.toString() || l._id.toString(),
                     startDate: t.startDate || null,
                     dueDate: t.dueDate || null,
                     assignedTo: t.assignedTo || '',
@@ -1193,9 +1198,12 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
             statusColor: t.statusColor,
             priority: t.priority || 'Aucune',
             priorityColor: t.priorityColor || '',
+            isDayPriority: !!t.isDayPriority,
+            taskListId: t.taskListId?.toString() || req.params.listId,
             startDate: t.startDate || null,
             dueDate: t.dueDate || null,
             assignedTo: t.assignedTo || '',
+            order: Number.isFinite(Number(t.order)) ? Number(t.order) : 0,
             createdAt: t.createdAt
         })) })
     } catch (error) {
@@ -1210,7 +1218,7 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
  */
 router.post('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
-        const { title, description, priority, startDate, dueDate, assignedTo, status } = req.body
+        const { title, description, priority, startDate, dueDate, assignedTo, status, isDayPriority } = req.body
         const cleanTitle = cleanTaskText(title)
         if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
 
@@ -1226,6 +1234,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
         }
         const taskStatus = status && statusColors[status] ? status : 'À faire'
+        const order = await RecordTask.countDocuments({ taskListId: req.params.listId })
 
         const task = await RecordTask.create({
             taskListId: req.params.listId,
@@ -1236,9 +1245,11 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             statusColor: statusColors[taskStatus] || '#9ca3af',
             priority: priority || 'Aucune',
             priorityColor: priorityColors[priority] || '',
+            isDayPriority: !!isDayPriority,
             startDate: startDate || null,
             dueDate: dueDate || null,
-            assignedTo: assignedTo || ''
+            assignedTo: assignedTo || '',
+            order
         })
 
         res.json({ success: true, task: {
@@ -1249,9 +1260,12 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             statusColor: task.statusColor,
             priority: task.priority,
             priorityColor: task.priorityColor,
+            isDayPriority: !!task.isDayPriority,
+            taskListId: task.taskListId.toString(),
             startDate: task.startDate,
             dueDate: task.dueDate,
             assignedTo: task.assignedTo,
+            order: task.order,
             createdAt: task.createdAt
         } })
     } catch (error) {
@@ -1343,7 +1357,7 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
  */
 router.put('/api/record-tasks/:taskId', async (req, res) => {
     try {
-        const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo']
+        const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId']
         const updates = {}
 
         const statusColors = {
@@ -1364,6 +1378,16 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             const cleanTitle = cleanTaskText(updates.title)
             if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
             updates.title = cleanTitle
+        }
+
+        if (updates.taskListId !== undefined) {
+            const targetList = await TaskList.findOne({ _id: updates.taskListId }).lean()
+            if (!targetList) return res.status(404).json({ error: 'Target list not found' })
+            const oldTaskForList = await RecordTask.findById(req.params.taskId).select('recordId').lean()
+            if (!oldTaskForList) return res.status(404).json({ error: 'Task not found' })
+            if (targetList.recordId.toString() !== oldTaskForList.recordId.toString()) {
+                return res.status(400).json({ error: 'Target list belongs to another record' })
+            }
         }
 
         // Auto-set color fields
@@ -1419,9 +1443,12 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
                 statusColor: task.statusColor,
                 priority: task.priority || 'Aucune',
                 priorityColor: task.priorityColor || '',
+                isDayPriority: !!task.isDayPriority,
+                taskListId: task.taskListId?.toString() || '',
                 startDate: task.startDate || null,
                 dueDate: task.dueDate || null,
                 assignedTo: task.assignedTo || '',
+                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
                 createdAt: task.createdAt
             }
         })
@@ -1440,9 +1467,19 @@ router.post('/api/task-lists/:listId/reorder', async (req, res) => {
         const { taskIds } = req.body
         if (!Array.isArray(taskIds)) return res.status(400).json({ error: 'taskIds array required' })
 
-        const bulkOps = taskIds.map((id, index) => ({
-            updateOne: { filter: { _id: id }, update: { $set: { order: index } } }
-        }))
+        const list = await TaskList.findById(req.params.listId).select('_id').lean()
+        if (!list) return res.status(404).json({ error: 'List not found' })
+
+        const normalizedTaskIds = taskIds
+            .map(id => String(id || ''))
+            .filter(id => /^[a-f\d]{24}$/i.test(id))
+        const existingTasks = await RecordTask.find({ taskListId: req.params.listId, _id: { $in: normalizedTaskIds } }).select('_id').lean()
+        const allowedIds = new Set(existingTasks.map(task => task._id.toString()))
+        const bulkOps = normalizedTaskIds
+            .filter(id => allowedIds.has(id))
+            .map((id, index) => ({
+                updateOne: { filter: { _id: id, taskListId: req.params.listId }, update: { $set: { order: index } } }
+            }))
         if (bulkOps.length > 0) await RecordTask.bulkWrite(bulkOps)
 
         res.json({ success: true })
@@ -1653,6 +1690,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Overview layout builder
             'rows',
             'customWidgets',
+            'widgetSettings',
+            'homeData',
+            'homeLayoutVersion',
             'overviewLayoutVersion',
             'hiddenRecordModules',
             'noteWidget',

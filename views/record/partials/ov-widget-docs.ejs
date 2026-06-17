@@ -1,9 +1,9 @@
 <div class="ov-card-header">
-    <iconify-icon icon="solar:document-text-bold-duotone" width="18" style="color:#f59e0b"></iconify-icon>
-    <span>Documents modèles</span>
+    <iconify-icon :icon="widgetIcon(wid, 'solar:document-text-bold-duotone')" width="18" :style="'color:' + widgetColor(wid, '#f59e0b')"></iconify-icon>
+    <span x-text="widgetTitle(wid, 'Documents modèles')">Documents modèles</span>
     <span x-show="templates.length > 0" x-text="templates.length"
           style="font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#f59e0b;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;margin-left:2px;"></span>
-    <a href="<%= _recBase %>/docs" class="ov-card-link">Voir tout →</a>
+    <a href="<%= _recBase %>/docs" class="ov-card-link" x-show="widgetShowLink(wid, true)">Voir tout →</a>
 </div>
 <!-- Loading -->
 <div x-show="loading" style="padding:20px;text-align:center;">
@@ -16,7 +16,7 @@
 </div>
 <!-- Template list -->
 <div class="ov-doc-list" x-show="!loading && templates.length > 0">
-    <template x-for="tpl in templates" :key="tpl._id">
+    <template x-for="tpl in templates.slice(0, widgetLimit(wid, 3))" :key="tpl._id">
         <div class="ov-doc-item">
             <iconify-icon icon="solar:file-text-bold-duotone" width="16" style="color:#f59e0b"></iconify-icon>
             <span x-text="tpl.name"></span>

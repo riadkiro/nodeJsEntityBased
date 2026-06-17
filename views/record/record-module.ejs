@@ -586,6 +586,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                                 <template x-for="wid in col.widgetIds" :key="wid">
                                     <div class="ov-widget-wrap" :data-widget-id="wid">
                                         <div class="ov-widget-drag" title="Déplacer">⠿</div>
+                                        <button type="button" class="ov-widget-config" @click.stop="openWidgetSettings(wid)" title="Configurer"><iconify-icon icon="solar:settings-linear" width="13"></iconify-icon></button>
                                         <button type="button" class="ov-widget-remove" @click="removeWidget(wid)" title="Retirer">✕</button>
                                         <!-- Widget: fields -->
                                         <template x-if="wid === 'fields'">
@@ -630,11 +631,11 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                                         <div class="ov-card ov-card-lines">
                                             <template x-if="isSingleLineWidget(wid)">
                                                 <div class="ov-lines-single-header">
-                                                    <div class="ov-lines-single-icon">
-                                                        <iconify-icon icon="solar:notebook-bold-duotone" width="16"></iconify-icon>
+                                                    <div class="ov-lines-single-icon" :style="'color:' + widgetColor(wid, '#00ab55') + ';background:' + widgetColor(wid, '#00ab55') + '12'">
+                                                        <iconify-icon :icon="widgetIcon(wid, 'solar:notebook-bold-duotone')" width="16"></iconify-icon>
                                                     </div>
                                                     <div style="min-width:0;">
-                                                        <div class="ov-lines-single-title" x-text="getLineWidgetTitle(wid)"></div>
+                                                        <div class="ov-lines-single-title" x-text="widgetTitle(wid, getLineWidgetTitle(wid))"></div>
                                                         <div class="ov-lines-single-sub" x-text="getLineWidgetSubtitle(wid)"></div>
                                                     </div>
                                                 </div>
@@ -672,8 +673,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                                         <template x-if="isCustomWidget(wid)">
                                         <div class="ov-card ov-card-custom">
                                             <div class="ov-card-header">
-                                                <iconify-icon :icon="getCustomWidget(wid).icon || customWidgetIcon(getCustomWidget(wid).type)" width="16" :style="'color:' + (getCustomWidget(wid).color || '#4361ee')"></iconify-icon>
-                                                <span x-text="getCustomWidget(wid).label || customWidgetLabel(getCustomWidget(wid).type)"></span>
+                                                <iconify-icon :icon="widgetIcon(wid, customWidgetIcon(getCustomWidget(wid).type))" width="16" :style="'color:' + widgetColor(wid, '#4361ee')"></iconify-icon>
+                                                <span x-text="widgetTitle(wid, customWidgetLabel(getCustomWidget(wid).type))"></span>
                                             </div>
 
                                             <template x-if="getCustomWidget(wid).type === 'iframe'">
@@ -836,17 +837,23 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .ov-agenda-widget{display:flex;flex-direction:column;gap:10px;}
     .ov-card-header-main{display:inline-flex;align-items:center;gap:8px;min-width:0;}
     .ov-card-header-actions{margin-left:auto;display:inline-flex;align-items:center;gap:8px;}
-    .ov-card-add-btn{width:28px;height:28px;border:1px solid #dbeafe;border-radius:8px;background:#eff6ff;color:#2563eb;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
-    .ov-card-add-btn:hover{background:#dbeafe;border-color:#bfdbfe;}
-    .ov-agenda-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
-    .ov-agenda-item{min-width:0;display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e8ecf1;transition:all .2s;}
-    .ov-agenda-item:hover{border-color:#14b8a640;box-shadow:0 2px 8px rgba(0,0,0,.03);}
-    .ov-agenda-date-box{width:48px;height:48px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
-    .ov-agenda-day{font-size:18px;font-weight:800;line-height:1;}
-    .ov-agenda-month{font-size:10px;font-weight:700;text-transform:uppercase;color:#888da8;letter-spacing:.5px;}
-    .ov-agenda-body{min-width:0;}
-    .ov-agenda-title{font-size:13px;font-weight:600;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .ov-agenda-time{font-size:11.5px;color:#888da8;margin-top:2px;}
+    .ov-card-add-btn{width:24px;height:24px;border:0;border-radius:7px;background:transparent;color:#94a3b8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+    .ov-card-add-btn:hover{background:#f1f5f9;color:#2563eb;}
+    .ov-card-add-btn iconify-icon{pointer-events:none;}
+    .ov-agenda-row{display:flex;flex-direction:column;gap:6px;}
+    .ov-agenda-item{min-width:0;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid #e8ecf1;transition:all .2s;text-decoration:none;color:inherit;min-height:58px;}
+    .ov-agenda-item:hover{border-color:#14b8a640;box-shadow:0 2px 8px rgba(0,0,0,.03);background:#fbfdff;}
+    .ov-agenda-date-box{width:42px;height:42px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+    .ov-agenda-day{font-size:16px;font-weight:800;line-height:1;}
+    .ov-agenda-month{font-size:9.5px;font-weight:700;text-transform:uppercase;color:#888da8;letter-spacing:0;}
+    .ov-agenda-body{min-width:0;flex:1;}
+    .ov-agenda-title-row{display:flex;align-items:center;gap:6px;min-width:0;}
+    .ov-agenda-title{font-size:12.5px;font-weight:700;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+    .ov-agenda-label{max-width:98px;display:inline-flex;align-items:center;flex:none;border-radius:999px;background:color-mix(in srgb,var(--ov-label-c,#64748b) 12%,#fff);border:1px solid color-mix(in srgb,var(--ov-label-c,#64748b) 24%,#fff);color:var(--ov-label-c,#64748b);font-size:9.5px;font-weight:800;line-height:16px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ov-agenda-meta{display:flex;align-items:center;gap:7px;min-width:0;margin-top:2px;color:#888da8;font-size:11px;}
+    .ov-agenda-time{font-size:11px;color:#888da8;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;}
+    .ov-agenda-location{display:inline-flex;align-items:center;gap:3px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ov-agenda-location span{min-width:0;overflow:hidden;text-overflow:ellipsis;}
     .ov-agenda-empty{min-height:84px;text-align:center;padding:16px 0;color:#9ca3af;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
     .ov-agenda-form{border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;}
     .ov-agenda-form-grid{display:grid;grid-template-columns:1fr 180px;gap:8px;}
@@ -877,7 +884,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .ov-note-preview-icon{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;}
     .ov-note-preview-title{font-size:13px;font-weight:850;color:#111827;line-height:1.25;}
     .ov-note-preview-meta{font-size:10.5px;font-weight:700;color:#9aa5b5;margin-top:2px;}
-    .ov-note-preview-text{font-size:12.5px;line-height:1.6;color:#5f6b7a;margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+    .ov-note-preview-text{font-size:12.5px;line-height:1.6;color:#5f6b7a;margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;}
     .ov-note-actions{display:flex;justify-content:flex-end;margin-top:12px;}
     .ov-note-open{display:inline-flex;align-items:center;gap:6px;border:1px solid #ddd6fe;border-radius:9px;background:#fff;color:#7c3aed;text-decoration:none;padding:7px 10px;font-size:11.5px;font-weight:850;}
     .ov-note-open:hover{background:#f5f0ff;}
@@ -891,9 +898,12 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .dark .ov-ms-pill{background:#0e1726;border-color:#253b5c;color:#888da8;}
     .dark .ov-ms-pill.active{background:rgba(67,97,238,.15);border-color:#4361ee;color:#4361ee;}
     .dark .ov-doc-item:hover{background:#1b2e4b;}
-    .dark .ov-card-add-btn{background:#111c2d;border-color:#253b5c;color:#93c5fd;}
-    .dark .ov-card-add-btn:hover{background:#1b2e4b;}
+    .dark .ov-card-add-btn{background:transparent;color:#506690;}
+    .dark .ov-card-add-btn:hover{background:#1b2e4b;color:#93c5fd;}
     .dark .ov-agenda-item{border-color:#253b5c;}
+    .dark .ov-agenda-item:hover{background:#111c2d;border-color:#2563eb55;}
+    .dark .ov-agenda-label{background:color-mix(in srgb,var(--ov-label-c,#94a3b8) 18%,#0e1726);border-color:color-mix(in srgb,var(--ov-label-c,#94a3b8) 34%,#0e1726);}
+    .dark .ov-agenda-meta,.dark .ov-agenda-time{color:#506690;}
     .dark .ov-agenda-form{background:#0b1320;border-color:#253b5c;}
     .dark .ov-agenda-input,.dark .ov-agenda-form-btn{background:#111c2d;border-color:#253b5c;color:#e0e6ed;}
     .dark .ov-note-empty,.dark .ov-note-select-btn{background:#0b1320;border-color:#253b5c;}
@@ -928,6 +938,10 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
     .ov-dm .ov-layout-row:hover > .ov-row-remove{opacity:1;}
     .ov-dm .ov-row-remove:hover{background:rgba(239,68,68,.15);}
     .ov-widget-remove{display:none;}
+    .ov-widget-config{display:none;}
+    .ov-dm .ov-widget-config{display:flex;position:absolute;top:6px;right:30px;z-index:20;width:20px;height:20px;align-items:center;justify-content:center;border-radius:6px;background:rgba(67,97,238,.08);color:#4361ee;cursor:pointer;opacity:0;transition:opacity .15s,border-color .15s,background .15s;border:1px solid rgba(67,97,238,.14);font-size:12px;}
+    .ov-dm .ov-widget-wrap:hover .ov-widget-config{opacity:1;}
+    .ov-dm .ov-widget-config:hover{background:rgba(67,97,238,.14);border-color:rgba(67,97,238,.28);}
     .ov-dm .ov-widget-remove{display:flex;position:absolute;top:6px;right:6px;z-index:20;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;background:rgba(239,68,68,.08);color:#ef4444;cursor:pointer;opacity:0;transition:opacity .15s;border:none;font-size:12px;}
     .ov-dm .ov-widget-wrap:hover .ov-widget-remove{opacity:1;}
     .ov-resize-handle{display:none;}
@@ -1062,9 +1076,51 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             },
 
             toPlainText(html) {
+                const raw = String(html || '');
+                if (!raw) return '';
+                if (!/[<&]/.test(raw)) {
+                    return raw
+                        .replace(/\r\n?/g, '\n')
+                        .replace(/[ \t]+\n/g, '\n')
+                        .replace(/\n[ \t]+/g, '\n')
+                        .replace(/\n{3,}/g, '\n\n')
+                        .trim();
+                }
+
                 const box = document.createElement('div');
-                box.innerHTML = html || '';
-                return (box.textContent || box.innerText || '').replace(/\s+/g, ' ').trim();
+                box.innerHTML = raw;
+                const blockTags = new Set(['address', 'article', 'aside', 'blockquote', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'li', 'main', 'nav', 'ol', 'p', 'pre', 'section', 'table', 'tr', 'ul']);
+                const parts = [];
+                const pushBreak = () => {
+                    if (!parts.length) return;
+                    const last = String(parts[parts.length - 1] || '');
+                    if (!last.endsWith('\n')) parts.push('\n');
+                };
+                const walk = node => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        parts.push(node.nodeValue || '');
+                        return;
+                    }
+                    if (node.nodeType !== Node.ELEMENT_NODE) return;
+                    const tag = node.tagName.toLowerCase();
+                    if (tag === 'br' || tag === 'hr') {
+                        pushBreak();
+                        return;
+                    }
+                    const isBlock = blockTags.has(tag);
+                    if (isBlock) pushBreak();
+                    if (tag === 'li') parts.push('• ');
+                    node.childNodes.forEach(walk);
+                    if (isBlock) pushBreak();
+                };
+                box.childNodes.forEach(walk);
+                return parts.join('')
+                    .replace(/\u00a0/g, ' ')
+                    .replace(/[ \t]+\n/g, '\n')
+                    .replace(/\n[ \t]+/g, '\n')
+                    .replace(/[ \t]{2,}/g, ' ')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .trim();
             },
 
             formatDate(value) {
@@ -1444,6 +1500,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             showForm: false,
             canEdit: _overviewRecordModuleCanEdit,
             form: { title: '', date: '' },
+            eventBaseUrl: <%- JSON.stringify(_recBase + '/agenda') %>,
 
             init() {
                 this.resetForm();
@@ -1484,7 +1541,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                             .filter(e => e.date && new Date(e.date) >= now)
                             .filter(e => this.isImportantMode ? this.isImportantDateEvent(e) : this.isUpcomingEvent(e))
                             .sort((a, b) => new Date(a.date) - new Date(b.date))
-                            .slice(0, 4)
+                            .slice(0, 40)
                             .map(e => this.formatEvent(e));
                     } else {
                         this.events = [];
@@ -1559,9 +1616,52 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 
             tagsValue(event) {
                 const value = this.customValue(event, 'tags_evenement');
-                if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+                const normalize = item => {
+                    if (item && typeof item === 'object') {
+                        return String(item.label || item.value || item.name || '').trim();
+                    }
+                    return String(item || '').trim();
+                };
+                if (Array.isArray(value)) return value.map(normalize).filter(Boolean);
                 if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean);
                 return [];
+            },
+
+            eventLocation(event) {
+                return String(this.customValue(event, 'lieu_evenement') || '').trim();
+            },
+
+            eventLabelInfo(event) {
+                const tag = this.tagsValue(event)[0] || '';
+                if (!tag) return null;
+                const tagField = (this.entityData?.customFields || []).find(f => f.name === 'tags_evenement');
+                const option = (tagField?.type_config?.options || []).find(opt => {
+                    const raw = opt && typeof opt === 'object' ? (opt.value || opt.label) : opt;
+                    return String(raw || '').trim().toLowerCase() === tag.toLowerCase();
+                });
+                return {
+                    label: String((option && typeof option === 'object' ? option.label : '') || tag).trim(),
+                    color: String((option && typeof option === 'object' ? option.color : '') || '#64748b').trim()
+                };
+            },
+
+            eventUrl(event) {
+                const id = String(event._id || '').trim();
+                return id ? `${this.eventBaseUrl}?event=${encodeURIComponent(id)}` : this.eventBaseUrl;
+            },
+
+            relativeDateLabel(date) {
+                const target = new Date(date);
+                if (Number.isNaN(target.getTime())) return '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                target.setHours(0, 0, 0, 0);
+                const diffDays = Math.round((target - today) / 86400000);
+                if (diffDays === 0) return "aujourd'hui";
+                if (diffDays === 1) return 'demain';
+                if (diffDays > 1) return `dans ${diffDays} jours`;
+                if (diffDays === -1) return 'hier';
+                return `il y a ${Math.abs(diffDays)} jours`;
             },
 
             booleanValue(value, fallback = false) {
@@ -1582,13 +1682,27 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     return String(cid || '') === String(statusCls?._id || '');
                 });
                 const opt = cv ? (statusCls?.options || []).find(o => String(o._id || '') === String(cv.optionId || '')) : null;
+                const title = event.title || 'Sans titre';
+                const status = opt?.label || cv?.label || 'Planifié';
+                const color = opt?.color || cv?.color || (this.isImportantMode ? '#f59e0b' : '#14b8a6');
+                const location = this.eventLocation(event);
+                const labelInfo = this.eventLabelInfo(event);
+                const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                const relative = this.relativeDateLabel(d);
                 return {
-                    title: event.title || 'Sans titre',
+                    id: String(event._id || ''),
+                    url: this.eventUrl(event),
+                    title,
                     day: d.getDate().toString().padStart(2, '0'),
                     month: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase(),
-                    time: d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                    status: opt?.label || 'Planifié',
-                    color: opt?.color || (this.isImportantMode ? '#f59e0b' : '#14b8a6')
+                    time,
+                    status,
+                    color,
+                    relative,
+                    location,
+                    label: labelInfo?.label || '',
+                    labelColor: labelInfo?.color || '#64748b',
+                    tooltip: [title, `${time} · ${status}${relative ? ' · ' + relative : ''}`, location, labelInfo?.label].filter(Boolean).join('\n')
                 };
             },
 
@@ -1614,9 +1728,19 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
             _viewId: 'overview_<%= entity._id %>',
-            _layoutVersion: 3,
+            _layoutVersion: 4,
             gridSchemas: [],
             customWidgets: {},
+            widgetSettings: {},
+            _defaultWidgetCatalog: {
+                fields: { type: 'overview-fields', label: <%- JSON.stringify(entity.nameSingular || entity.name || 'Informations').replace(/</g, '\\u003C') %>, icon: 'solar:card-bold-duotone', color: '#4361ee', config: { limit: 12, showLink: true } },
+                tasks: { type: 'overview-tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true } },
+                docs: { type: 'overview-docs', label: 'Documents modèles', icon: 'solar:document-text-bold-duotone', color: '#f59e0b', config: { limit: 3, showLink: true } },
+                drive: { type: 'overview-drive', label: 'Fichiers récents', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', config: { limit: 4, showLink: true } },
+                agenda: { type: 'overview-agenda', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', config: { limit: 4, showLink: true, allowAdd: true } },
+                'important-dates': { type: 'overview-important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', config: { limit: 4, showLink: true, allowAdd: true } },
+                notes: { type: 'overview-notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', config: { showLink: true } }
+            },
             _overviewWidgetListener: null,
             _sortables: [],
             _resizing: null,
@@ -1647,6 +1771,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 window.addEventListener('mouseup', () => this._onResizeEnd());
                 this._overviewWidgetListener = (e) => this.insertWidgetFromPicker(e.detail || {});
                 window.addEventListener('insert-overview-widget', this._overviewWidgetListener);
+                window.addEventListener('update-overview-widget', (e) => this.updateWidgetFromPicker(e.detail || {}));
             },
 
             // MutationObserver watches for Alpine x-for DOM changes and re-inits Sortables
@@ -1679,6 +1804,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                         const migrated = this._migrateLayoutPreferences(data.preferences);
                         this.rows = migrated.rows;
                         this.customWidgets = migrated.customWidgets;
+                        this.widgetSettings = migrated.widgetSettings;
                         if (migrated.changed) this._saveLayout();
                     }
                 } catch (e) { /* use defaults */ }
@@ -1687,6 +1813,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             _migrateLayoutPreferences(preferences = {}) {
                 let rows = JSON.parse(JSON.stringify(Array.isArray(preferences.rows) ? preferences.rows : this._defaultRows));
                 const customWidgets = this._normalizeCustomWidgets(preferences.customWidgets);
+                const widgetSettings = this._normalizeWidgetSettings(preferences.widgetSettings);
                 const storedVersion = Number(preferences.overviewLayoutVersion || 0);
                 let changed = storedVersion !== this._layoutVersion;
 
@@ -1722,7 +1849,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     }
                 }
 
-                return { rows, customWidgets, changed };
+                return { rows, customWidgets, widgetSettings, changed };
             },
 
             async _loadGridSchemas() {
@@ -1744,7 +1871,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 try {
                     await fetch(`/account/${this._accountNumber}/api/user/view-preferences`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets, overviewLayoutVersion: this._layoutVersion } })
+                        body: JSON.stringify({ viewId: this._viewId, preferences: { rows: this.rows, customWidgets: this.customWidgets, widgetSettings: this.widgetSettings, overviewLayoutVersion: this._layoutVersion } })
                     });
                 } catch (e) { console.error('[OvLayout] save error', e); }
             },
@@ -1954,6 +2081,18 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 return {};
             },
 
+            _normalizeWidgetSettings(value) {
+                if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+                return Object.entries(value).reduce((acc, [id, settings]) => {
+                    if (!id || !settings || typeof settings !== 'object') return acc;
+                    acc[String(id)] = {
+                        ...settings,
+                        config: JSON.parse(JSON.stringify(settings.config || {}))
+                    };
+                    return acc;
+                }, {});
+            },
+
             // Available widgets not yet placed
             _availableWidgets() {
                 const all = [
@@ -2104,6 +2243,9 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     const next = { ...this.customWidgets };
                     delete next[widgetId];
                     this.customWidgets = next;
+                    const nextSettings = { ...(this.widgetSettings || {}) };
+                    delete nextSettings[widgetId];
+                    this.widgetSettings = nextSettings;
                 }
                 this._saveLayout();
             },
@@ -2120,8 +2262,146 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 return (this.customWidgets && this.customWidgets[widgetId]) || { type: '', label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
             },
 
+            baseWidgetMeta(widgetId) {
+                const id = String(widgetId || '');
+                if (this.isCustomWidget(id)) return this.getCustomWidget(id);
+                if (id.startsWith('lines::')) {
+                    const schema = this.getLineWidgetSchema(id);
+                    const schemaIds = this.getLineWidgetSchemaIds(id);
+                    return {
+                        type: 'dynamic-table',
+                        label: schema?.name || this.getLineWidgetTitle(id),
+                        icon: schema?.icon || 'solar:notebook-bold-duotone',
+                        color: '#00ab55',
+                        config: {
+                            schemaId: schemaIds[0] || '',
+                            schemaIds,
+                            displayMode: schemaIds.length > 1 ? 'tabs' : 'single',
+                            enableAdd: true,
+                            enableDocPreview: false
+                        }
+                    };
+                }
+                return this._defaultWidgetCatalog[id] || { type: id, label: 'Widget', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
+            },
+
+            getWidgetSettings(widgetId) {
+                const id = String(widgetId || '');
+                const base = this.baseWidgetMeta(id);
+                const saved = (this.widgetSettings && this.widgetSettings[id]) || {};
+                return {
+                    ...base,
+                    ...saved,
+                    id,
+                    _id: id,
+                    type: saved.type || base.type || id,
+                    label: saved.label || base.label || this.customWidgetLabel(base.type || id),
+                    icon: saved.icon || base.icon || this.customWidgetIcon(base.type || id),
+                    color: saved.color || base.color || '#4361ee',
+                    config: {
+                        ...(base.config || {}),
+                        ...(saved.config || {})
+                    }
+                };
+            },
+
             customWidgetConfig(widgetId) {
-                return this.getCustomWidget(widgetId).config || {};
+                return this.getWidgetSettings(widgetId).config || {};
+            },
+
+            widgetTitle(widgetId, fallback = 'Widget') {
+                return this.getWidgetSettings(widgetId).label || fallback;
+            },
+
+            widgetIcon(widgetId, fallback = 'solar:widget-bold-duotone') {
+                return this.getWidgetSettings(widgetId).icon || fallback;
+            },
+
+            widgetColor(widgetId, fallback = '#4361ee') {
+                return this.getWidgetSettings(widgetId).color || fallback;
+            },
+
+            widgetOption(widgetId, key, fallback = null) {
+                const cfg = this.getWidgetSettings(widgetId).config || {};
+                return cfg[key] !== undefined ? cfg[key] : fallback;
+            },
+
+            widgetLimit(widgetId, fallback = 5) {
+                return Math.max(1, Math.min(40, Number(this.widgetOption(widgetId, 'limit', fallback)) || fallback));
+            },
+
+            widgetShowLink(widgetId, fallback = true) {
+                return this.widgetOption(widgetId, 'showLink', fallback) !== false;
+            },
+
+            openWidgetSettings(widgetId) {
+                const picker = window.Alpine && window.Alpine.store ? window.Alpine.store('widgetPicker') : null;
+                if (!picker) {
+                    window.showMessage ? window.showMessage('Sélecteur de widgets indisponible', 'danger') : alert('Sélecteur de widgets indisponible');
+                    return;
+                }
+                picker.initPicker({
+                    accountNumber: this._accountNumber,
+                    entityId: this._entityId,
+                    entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>,
+                    gridSchemas: (this.gridSchemas || []).map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>
+                    }))
+                });
+                picker.openEditWidget({
+                    type: 'overview',
+                    widgetId,
+                    accountNumber: this._accountNumber,
+                    entityId: this._entityId,
+                    entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>
+                }, this._widgetForPicker(widgetId));
+            },
+
+            _widgetForPicker(widgetId) {
+                const meta = this.getWidgetSettings(widgetId);
+                return {
+                    _id: String(widgetId || ''),
+                    id: String(widgetId || ''),
+                    _catalogType: meta.type || '',
+                    type: meta.type || String(widgetId || ''),
+                    label: meta.label || this.widgetTitle(widgetId),
+                    icon: meta.icon || this.widgetIcon(widgetId),
+                    color: meta.color || this.widgetColor(widgetId),
+                    config: JSON.parse(JSON.stringify(meta.config || {}))
+                };
+            },
+
+            updateWidgetFromPicker(detail) {
+                const widget = detail?.widget || null;
+                const id = String(widget?._id || widget?.id || detail?.target?.widgetId || '');
+                if (!widget || !id) return;
+                if (this.customWidgets?.[id]) {
+                    const existing = this.customWidgets[id];
+                    this.customWidgets = {
+                        ...(this.customWidgets || {}),
+                        [id]: {
+                            ...existing,
+                            ...widget,
+                            id,
+                            config: JSON.parse(JSON.stringify(widget.config || {}))
+                        }
+                    };
+                } else {
+                    const base = this.baseWidgetMeta(id);
+                    this.widgetSettings = {
+                        ...(this.widgetSettings || {}),
+                        [id]: {
+                            type: widget.type || base.type || id,
+                            label: widget.label || base.label || 'Widget',
+                            icon: widget.icon || base.icon || 'solar:widget-bold-duotone',
+                            color: widget.color || base.color || '#4361ee',
+                            config: JSON.parse(JSON.stringify(widget.config || {}))
+                        }
+                    };
+                }
+                this._saveLayout();
             },
 
             customWidgetIcon(type) {

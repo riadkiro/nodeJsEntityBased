@@ -63,7 +63,7 @@ const ViewSchema = new mongoose.Schema({
                 'equals', 'not_equals', 'contains', 'not_contains',
                 'starts_with', 'ends_with', 'gt', 'gte', 'lt', 'lte',
                 'greater_than', 'less_than', 'between', 'in',
-                'is_empty', 'is_not_empty'
+                'is_empty', 'is_not_empty', 'is_unique'
             ]
         },
         value: { type: mongoose.Schema.Types.Mixed },

@@ -142,31 +142,53 @@
 	                    </div>
 
 	                    <template x-if="$store.widgetPicker.showHomeWidgetMeta()">
-	                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-	                            <div>
-	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Icône</label>
-	                                <div style="display: flex; flex-wrap: wrap; gap: 7px;">
-	                                    <template x-for="icon in $store.widgetPicker.homeIconChoices()" :key="icon">
-	                                        <button type="button"
-	                                                @click="$store.widgetPicker.newWidget.icon = icon"
-	                                                :title="icon"
-	                                                :style="'width:34px;height:34px;border-radius:9px;border:' + ($store.widgetPicker.newWidget.icon === icon ? '1.5px solid #4361ee' : '1px solid #e5e7eb') + ';background:' + ($store.widgetPicker.newWidget.icon === icon ? 'rgba(67,97,238,.07)' : '#fff') + ';color:' + ($store.widgetPicker.newWidget.color || '#4361ee') + ';display:grid;place-items:center;cursor:pointer;'">
-	                                            <iconify-icon :icon="icon" width="17"></iconify-icon>
-	                                        </button>
-	                                    </template>
-	                                </div>
-	                            </div>
-	                            <div>
-	                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Couleur</label>
-	                                <div style="display: flex; flex-wrap: wrap; gap: 7px;">
-	                                    <template x-for="color in $store.widgetPicker.homeColorChoices()" :key="color">
-	                                        <button type="button"
-	                                                @click="$store.widgetPicker.newWidget.color = color"
-	                                                :title="color"
-	                                                :style="'width:28px;height:28px;border-radius:8px;border:' + ($store.widgetPicker.newWidget.color === color ? '2px solid #111827' : '1px solid #e5e7eb') + ';background:' + color + ';box-shadow: inset 0 0 0 3px rgba(255,255,255,.75);cursor:pointer;'">
-	                                        </button>
-	                                    </template>
-	                                </div>
+	                        <div
+	                             x-data="{
+	                                 _iconPicker: null,
+	                                 _colorPicker: null,
+	                                 _lastIconVal: '',
+	                                 _lastColorVal: '',
+	                                 initPickers() {
+	                                     this.$nextTick(() => {
+	                                         const iconMount = this.$refs.wpIconMount;
+	                                         const colorMount = this.$refs.wpColorMount;
+	                                         if (iconMount && window.IconPicker && !this._iconPicker) {
+	                                             this._iconPicker = new IconPicker(iconMount, {
+	                                                 name: 'widget-icon',
+	                                                 value: $store.widgetPicker.newWidget.icon || '',
+	                                                 onSelect: (icon) => { $store.widgetPicker.newWidget.icon = icon; }
+	                                             });
+	                                             this._lastIconVal = $store.widgetPicker.newWidget.icon || '';
+	                                         }
+	                                         if (colorMount && window.ColorPicker && !this._colorPicker) {
+	                                             this._colorPicker = new ColorPicker(colorMount, {
+	                                                 name: 'widget-color',
+	                                                 value: $store.widgetPicker.newWidget.color || '',
+	                                                 allowCustom: true,
+	                                                 allowClear: true,
+	                                                 onSelect: (color) => { $store.widgetPicker.newWidget.color = color; }
+	                                             });
+	                                             this._lastColorVal = $store.widgetPicker.newWidget.color || '';
+	                                         }
+	                                     });
+	                                 },
+	                                 destroyPickers() {
+	                                     if (this._iconPicker) { this._iconPicker.destroy(); this._iconPicker = null; }
+	                                     if (this._colorPicker) { this._colorPicker.destroy(); this._colorPicker = null; }
+	                                 }
+	                             }"
+	                             x-init="initPickers()"
+	                             x-effect="
+	                                 const curIcon = $store.widgetPicker.newWidget.icon || '';
+	                                 const curColor = $store.widgetPicker.newWidget.color || '';
+	                                 if (_iconPicker && curIcon !== _lastIconVal) { _iconPicker.setValue(curIcon); _lastIconVal = curIcon; }
+	                                 if (_colorPicker && curColor !== _lastColorVal) { _colorPicker.setValue(curColor); _lastColorVal = curColor; }
+	                             "
+	                             @destroy.window="destroyPickers()">
+	                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Icône & Couleur</label>
+	                            <div style="display: flex; align-items: center; gap: 8px;">
+	                                <div x-ref="wpIconMount"></div>
+	                                <div x-ref="wpColorMount"></div>
 	                            </div>
 	                        </div>
 	                    </template>
@@ -446,6 +468,9 @@
                                     .wp-schema-row:hover .wp-trash, .wp-schema-row .wp-trash.wp-confirm { opacity: 1; }
                                     .wp-schema-row .wp-trash.wp-confirm { background: #ef4444; border-color: #ef4444; color: #fff; }
                                     .wp-schema-row .wp-trash:disabled { cursor: wait; opacity: .6; }
+                                    .wp-schema-row .wp-edit-btn { width: 30px; height: 30px; border: 1px solid #dbe4ff; border-radius: 9px; background: #fff; color: #4361ee; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: .62; transition: all .15s; }
+                                    .wp-schema-row:hover .wp-edit-btn { opacity: 1; }
+                                    .wp-schema-row .wp-edit-btn:hover { background: rgba(67,97,238,0.08); border-color: #4361ee; }
                                 </style>
                                 <div style="display: flex; flex-direction: column; gap: 6px;"
                                      x-ref="schemaSortable"
@@ -469,6 +494,12 @@
                                                 <div class="wp-name" x-text="s.name"></div>
                                                 <div class="wp-sub">Direct — <span x-text="s.entityName || 'Entity'"></span></div>
                                             </div>
+                                            <button type="button"
+                                                    class="wp-edit-btn"
+                                                    title="Modifier ce TD"
+                                                    @click.stop="$store.widgetPicker.editLineSchema(s.id)">
+                                                <iconify-icon icon="solar:pen-new-square-linear" width="15"></iconify-icon>
+                                            </button>
                                             <button type="button"
                                                     class="wp-trash"
                                                     :class="$store.widgetPicker.pendingSchemaDeleteId === s.id ? 'wp-confirm' : ''"
@@ -1052,6 +1083,10 @@
                 this.pendingHomeWidgetDeleteId = '';
                 this.deletingSchemaId = '';
                 this.forceOverlayState(false);
+                // Cleanup any picker panels appended to body
+                document.querySelectorAll('.picker-panel--icon, .picker-panel--color').forEach(p => {
+                    if (p.style.display !== 'none') p.style.display = 'none';
+                });
             },
 
             ensureSchemaCreateBridge() {
@@ -1061,6 +1096,19 @@
                     const detail = event.detail || {};
                     if (!detail.requestId || detail.requestId !== this.schemaCreatorRequestId) return;
                     this.handleCreatedLineSchema(detail.schema);
+                });
+
+                window.addEventListener('dynamic-table-schema-updated', (event) => {
+                    const detail = event.detail || {};
+                    const schema = detail.schema;
+                    if (!schema) return;
+                    const schemaId = String(schema._id || detail.schemaId || '');
+                    if (!schemaId) return;
+                    this.gridSchemas = this.gridSchemas.map(s =>
+                        String(s.id) === schemaId
+                            ? { ...s, name: schema.name || s.name }
+                            : s
+                    );
                 });
             },
 
@@ -1113,6 +1161,21 @@
                         window.showMessage ? window.showMessage('Modal de création TD indisponible. Recharge la page puis réessaie.', 'danger') : alert('Modal de création TD indisponible.');
                     }
                 }, 350);
+            },
+
+            editLineSchema(schemaId) {
+                const accountNumber = this.target?.accountNumber || this.accountNumber;
+                const entityId = this.target?.entityId || this.entityId;
+                if (!accountNumber || !schemaId) {
+                    window.showMessage ? window.showMessage('Impossible d\'ouvrir l\'éditeur de tableau.', 'warning') : alert('Impossible d\'ouvrir l\'éditeur de tableau.');
+                    return;
+                }
+                const detail = { accountNumber, entityId, schemaId };
+                if (window.openDynamicTableEditModal) {
+                    window.openDynamicTableEditModal(detail);
+                    return;
+                }
+                window.dispatchEvent(new CustomEvent('open-dynamic-table-edit-modal', { detail }));
             },
 
             async deleteLineSchema(schemaId, schemaName = '') {

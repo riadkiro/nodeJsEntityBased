@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
-const NO_VALUE_OPERATORS = new Set(['is_empty', 'is_not_empty'])
+const NO_VALUE_OPERATORS = new Set(['is_empty', 'is_not_empty', 'is_unique'])
+const UNIQUE_OPERATORS = new Set(['is_unique'])
 
 function escapeRegex(value) {
     return String(value ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -16,7 +17,10 @@ function normalizeOperator(operator) {
         startsWith: 'starts_with',
         endsWith: 'ends_with',
         empty: 'is_empty',
-        not_empty: 'is_not_empty'
+        not_empty: 'is_not_empty',
+        unique: 'is_unique',
+        distinct: 'is_unique',
+        no_duplicates: 'is_unique'
     }
     return aliases[op] || op
 }
@@ -260,10 +264,85 @@ function relationCondition(filter) {
     return operator === 'not_equals' ? { $nor: [query] } : query
 }
 
+function normalizeUniqueValue(value) {
+    if (value === undefined || value === null) return ''
+    if (Array.isArray(value)) {
+        return value.map(normalizeUniqueValue).filter(Boolean).join('|')
+    }
+    if (value instanceof Date) return value.toISOString()
+    if (typeof value === 'object') {
+        if (value._id) return String(value._id).trim().toLowerCase()
+        if (value.id) return String(value.id).trim().toLowerCase()
+        if (value.value !== undefined) return normalizeUniqueValue(value.value)
+        if (value.label !== undefined) return normalizeUniqueValue(value.label)
+        return JSON.stringify(value)
+    }
+    return String(value).trim().toLowerCase()
+}
+
+function getRecordFilterValue(record, filter) {
+    const field = String(filter.field || filter.fieldId || '')
+    if (!field) return ''
+
+    if (field === 'title') return record.referenceTitle || record.computedTitle || record.title || ''
+    if (field === 'computedTitle') return record.computedTitle || record.title || ''
+    if (['slug', 'status', 'description', 'content', 'date', 'end_date', 'createdAt', 'updatedAt', 'published', 'isDraft'].includes(field)) {
+        return record[field]
+    }
+
+    if (field.startsWith('classif:')) {
+        const classificationId = field.replace(/^classif:/, '')
+        return (record.classificationValues || [])
+            .filter(value => String(value.classificationId || '') === classificationId)
+            .map(value => value.optionId || value.label || value.optionLabel || '')
+    }
+
+    if (field.startsWith('rel:')) {
+        const relationKey = field.replace(/^rel:/, '')
+        const denormRelation = (record._denorm?.relations || []).find(relation => relation.relationKey === relationKey)
+        if (denormRelation?.records?.length) {
+            return denormRelation.records.map(item => item._id || item.title || '')
+        }
+        const relation = (record.relations || []).find(item => item.key === relationKey || item.relationKey === relationKey)
+        if (!relation) return ''
+        return relation.value
+    }
+
+    const customField = (record.customFields || []).find(item => {
+        const fieldId = item.field_id?._id || item.field_id
+        return fieldId?.toString() === field
+    })
+    return customField?.value
+}
+
+function getUniqueViewFilters(filters = []) {
+    return (Array.isArray(filters) ? filters : []).filter(filter =>
+        filter && (filter.field || filter.fieldId) && UNIQUE_OPERATORS.has(normalizeOperator(filter.operator))
+    )
+}
+
+function applyUniqueViewFilters(records = [], filters = []) {
+    const uniqueFilters = getUniqueViewFilters(filters)
+    if (!uniqueFilters.length) return records
+
+    return uniqueFilters.reduce((currentRecords, filter) => {
+        const seen = new Set()
+        return currentRecords.filter(record => {
+            const key = normalizeUniqueValue(getRecordFilterValue(record, filter))
+            if (!key || seen.has(key)) return false
+            seen.add(key)
+            return true
+        })
+    }, records)
+}
+
 function filterToQuery(filter) {
     const field = String(filter.field || filter.fieldId || '')
     const operator = normalizeOperator(filter.operator)
     if (!field || !operator) return null
+    if (UNIQUE_OPERATORS.has(operator)) {
+        return filterToQuery({ ...filter, operator: 'is_not_empty' })
+    }
     if (!NO_VALUE_OPERATORS.has(operator) && operator !== 'between' && (filter.value === undefined || filter.value === null || filter.value === '')) {
         return null
     }
@@ -325,6 +404,8 @@ function sanitizeViewFilters(filters = []) {
 
 module.exports = {
     buildRecordFilterQuery,
+    applyUniqueViewFilters,
+    getUniqueViewFilters,
     sanitizeViewFilters,
     normalizeOperator
 }

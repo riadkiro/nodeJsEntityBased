@@ -36,7 +36,7 @@ const savedViewSchema = new mongoose.Schema({
         fieldType: String,
         operator: {
             type: String,
-            enum: ['equals', 'not_equals', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty', 'gt', 'lt', 'gte', 'lte', 'between', 'in'],
+            enum: ['equals', 'not_equals', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty', 'is_unique', 'gt', 'lt', 'gte', 'lte', 'between', 'in'],
             default: 'contains'
         },
         value: mongoose.Schema.Types.Mixed,

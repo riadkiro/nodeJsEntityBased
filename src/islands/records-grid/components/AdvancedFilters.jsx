@@ -1,7 +1,7 @@
 /**
  * AdvancedFilters - Field-based advanced filtering for records
  * Allows filtering on any column with operators: contains, equals, starts_with, ends_with,
- * is_empty, is_not_empty, gt, lt, gte, lte, between, not_equals, not_contains
+ * is_empty, is_not_empty, is_unique, gt, lt, gte, lte, between, not_equals, not_contains
  * 
  * Supports AND/OR logic toggle between filters.
  * Classification fields show a dropdown of their options instead of free text input.
@@ -26,20 +26,37 @@ const OPERATORS = {
     // Universal operators
     is_empty: { label: 'Est vide', icon: '∅', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
     is_not_empty: { label: "N'est pas vide", icon: '∃', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
+    is_unique: { label: 'Est unique', icon: '1x', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'select', 'number', 'relation', 'classification'] },
 }
 
 // Get operators available for a field type
-function getOperatorsForType(fieldType) {
+function normalizeFieldType(fieldType) {
     const type = String(fieldType || 'text').toLowerCase()
-    return Object.entries(OPERATORS)
+    if (['string', 'varchar', 'char', 'input', 'text', 'textarea', 'longtext'].includes(type)) return 'text'
+    if (['tel', 'telephone'].includes(type)) return 'phone'
+    if (['integer', 'int', 'float', 'double', 'decimal', 'currency', 'percent'].includes(type)) return 'number'
+    if (['datetime-local', 'timestamp', 'datetime'].includes(type)) return 'date'
+    if (['dropdown', 'list', 'choice', 'choices', 'multiselect', 'multi-select', 'multi_select', 'tags'].includes(type)) return 'select'
+    if (['bool', 'checkbox', 'switch', 'toggle'].includes(type)) return 'boolean'
+    return type || 'text'
+}
+
+function getOperatorsForType(fieldType) {
+    const type = normalizeFieldType(fieldType)
+    const operators = Object.entries(OPERATORS)
         .filter(([_, op]) => op.types.includes(type))
+        .map(([key, op]) => ({ key, ...op }))
+    if (operators.length || type === 'text') return operators
+    return Object.entries(OPERATORS)
+        .filter(([_, op]) => op.types.includes('text'))
         .map(([key, op]) => ({ key, ...op }))
 }
 
 // Detect field type category for input rendering
 function getInputType(fieldType) {
-    if (['number', 'currency', 'percent'].includes(fieldType)) return 'number'
-    if (['date', 'datetime'].includes(fieldType)) return 'date'
+    const type = normalizeFieldType(fieldType)
+    if (type === 'number') return 'number'
+    if (type === 'date') return 'date'
     return 'text'
 }
 
@@ -88,14 +105,15 @@ export default function AdvancedFilters({
 
         const isClassif = columnId.startsWith('classif:')
         const availableOps = getOperatorsForType(column.type)
+        const fallbackOps = availableOps.length ? availableOps : getOperatorsForType('text')
         const defaultOp = isClassif
-            ? (availableOps.find(o => o.key === 'equals') || availableOps[0])
-            : (availableOps.find(o => o.key === 'contains') || availableOps[0])
+            ? (fallbackOps.find(o => o.key === 'equals') || fallbackOps[0])
+            : (fallbackOps.find(o => o.key === 'contains') || fallbackOps[0])
 
         const newFilter = {
             fieldId: columnId,
             fieldName: column.name,
-            fieldType: column.type || 'text',
+            fieldType: normalizeFieldType(column.type),
             operator: defaultOp.key,
             value: '',
             value2: '', // For "between" operator
@@ -129,7 +147,7 @@ export default function AdvancedFilters({
     }, [onFieldFiltersChange])
 
     // No-value operators
-    const isNoValueOp = (op) => ['is_empty', 'is_not_empty'].includes(op)
+    const isNoValueOp = (op) => ['is_empty', 'is_not_empty', 'is_unique'].includes(op)
     const isBetweenOp = (op) => op === 'between'
 
     // Check if a field is a classification field
@@ -246,14 +264,15 @@ export default function AdvancedFilters({
                                                         const newCol = filterableColumns.find(c => c.id === e.target.value)
                                                         if (newCol) {
                                                             const newOps = getOperatorsForType(newCol.type)
+                                                            const fallbackOps = newOps.length ? newOps : getOperatorsForType('text')
                                                             const newIsClassif = e.target.value.startsWith('classif:')
                                                             const defaultOp = newIsClassif
-                                                                ? (newOps.find(o => o.key === 'equals') || newOps[0])
-                                                                : (newOps.find(o => o.key === filter.operator) || newOps[0])
+                                                                ? (fallbackOps.find(o => o.key === 'equals') || fallbackOps[0])
+                                                                : (fallbackOps.find(o => o.key === filter.operator) || fallbackOps[0])
                                                             updateFilter(index, {
                                                                 fieldId: newCol.id,
                                                                 fieldName: newCol.name,
-                                                                fieldType: newCol.type || 'text',
+                                                                fieldType: normalizeFieldType(newCol.type),
                                                                 operator: defaultOp.key,
                                                                 value: '',
                                                                 value2: ''

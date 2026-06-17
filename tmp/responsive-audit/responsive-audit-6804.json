@@ -1,0 +1,60 @@
+{
+  "account": "6804",
+  "baseUrl": "http://127.0.0.1:3000",
+  "generatedAt": "2026-06-15T07:50:45.810Z",
+  "viewports": [
+    {
+      "key": "desktop",
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "pages": [
+    {
+      "key": "home",
+      "url": "http://127.0.0.1:3000/account/6804/home",
+      "type": "account"
+    }
+  ],
+  "results": [
+    {
+      "page": "home",
+      "type": "account",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:3000/account/6804/home",
+      "finalUrl": "http://127.0.0.1:3000/account/6804/home",
+      "httpStatus": 200,
+      "navigationError": "",
+      "navigationWarning": "",
+      "redirectedToLogin": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "metrics": {
+        "title": "Dexapp - DA Group",
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "scrollWidth": 1440,
+        "scrollHeight": 1687,
+        "pageOverflowX": 0,
+        "activePageWidthIssues": 0,
+        "wideElements": [],
+        "offscreenElements": [],
+        "textOverflow": []
+      },
+      "screenshot": ""
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "issues": 0,
+    "byViewport": {
+      "desktop": {
+        "total": 1,
+        "issues": 0
+      }
+    },
+    "issuePages": []
+  }
+}

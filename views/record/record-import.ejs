@@ -1,0 +1,406 @@
+<%
+  const typeOptions = [
+    { value: 'string', label: 'Texte court' },
+    { value: 'text', label: 'Texte long' },
+    { value: 'number', label: 'Nombre' },
+    { value: 'date', label: 'Date' },
+    { value: 'boolean', label: 'Oui / Non' },
+    { value: 'email', label: 'Email' },
+    { value: 'tel', label: 'Telephone' },
+    { value: 'url', label: 'URL' }
+  ];
+  const standardFields = (targets && targets.standardFields) || [];
+  const customFields = (targets && targets.customFields) || [];
+  const listUrl = `/account/${account_number}/record/${entity.slug}/list`;
+  const activeImportJob = typeof importJob !== 'undefined' ? importJob : null;
+%>
+
+<div class="space-y-5">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <ul class="mb-2 flex space-x-2 rtl:space-x-reverse">
+        <li>
+          <a href="/account/<%= account_number %>/dashboard" class="text-primary hover:underline">Dashboard</a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+          <a href="<%= listUrl %>" class="text-primary hover:underline"><%= entity.name %></a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+          <span>Import</span>
+        </li>
+      </ul>
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Importer des donnees</h1>
+    </div>
+    <a href="<%= listUrl %>" class="btn btn-outline-primary gap-2">
+      <iconify-icon icon="solar:arrow-left-linear" width="18"></iconify-icon>
+      <span>Retour</span>
+    </a>
+  </div>
+
+  <% if (error) { %>
+    <div class="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <% if (result) { %>
+    <div class="panel">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-success/10 text-success">
+            <iconify-icon icon="solar:check-circle-bold-duotone" width="24"></iconify-icon>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Import termine</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400"><%= result.originalName %></p>
+        </div>
+        <a href="<%= listUrl %>" class="btn btn-primary gap-2">
+          <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
+          <span>Voir les donnees</span>
+        </a>
+      </div>
+
+      <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= result.createdRows !== undefined ? result.createdRows : result.importedRows %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Lignes creees</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= result.updatedRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Mises a jour</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= result.deletedRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Suppressions</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= result.duplicateRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Doublons detectes</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= result.skippedRows %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Lignes ignorees</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= result.createdFields.length %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Champs crees</div>
+        </div>
+      </div>
+
+      <% if (result.dedupeEnabled) { %>
+        <div class="mt-4 rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+          Mode doublons :
+          <span class="font-semibold"><%= result.duplicateAction === 'delete' ? 'suppression des records CRM qui matchent' : (result.duplicateAction === 'update' ? 'mise a jour des records existants' : 'lignes en doublon ignorees') %></span>.
+          <% if (result.fileDuplicateRows) { %>
+            <span><%= result.fileDuplicateRows %> doublon(s) trouve(s) dans le fichier.</span>
+          <% } %>
+          <% if (result.ambiguousDuplicateRows) { %>
+            <span><%= result.ambiguousDuplicateRows %> ligne(s) ignoree(s) car plusieurs records matchaient.</span>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (result.createdFields && result.createdFields.length) { %>
+        <div class="mt-5 overflow-x-auto">
+          <table class="table-hover w-full">
+            <thead>
+              <tr>
+                <th>Champ</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% result.createdFields.forEach(function(field) { %>
+                <tr>
+                  <td class="font-semibold"><%= field.label %></td>
+                  <td><span class="badge badge-outline-primary"><%= field.type %></span></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  <% } else if (activeImportJob) { 
+    const jobId = activeImportJob.id || activeImportJob._id;
+    const jobStats = activeImportJob.stats || {};
+    const statusUrl = `/account/${account_number}/record/${entity.slug}/import/jobs/${jobId}`;
+  %>
+    <div class="panel" id="import-job-panel" data-status-url="<%= statusUrl %>" data-list-url="<%= listUrl %>">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Import en cours</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400"><%= activeImportJob.originalName || 'import' %></p>
+        </div>
+        <a href="<%= listUrl %>" class="btn btn-outline-primary gap-2">
+          <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
+          <span>Voir les donnees</span>
+        </a>
+      </div>
+
+      <div class="mt-6">
+        <div class="mb-2 flex items-center justify-between text-sm">
+          <span id="import-job-status-label" class="font-semibold text-gray-900 dark:text-white">En attente</span>
+          <span id="import-job-progress-label" class="font-semibold text-primary"><%= activeImportJob.progress || 0 %>%</span>
+        </div>
+        <div class="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-[#1b2e4b]">
+          <div id="import-job-progress-bar" class="h-full rounded-full bg-primary transition-all duration-300" style="width: <%= activeImportJob.progress || 0 %>%"></div>
+        </div>
+        <div class="mt-2 text-xs text-gray-500">
+          <span id="import-job-rows"><%= activeImportJob.processedRows || 0 %> / <%= activeImportJob.totalRows || 0 %></span>
+          <span> ligne(s) traitees</span>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div id="import-job-created" class="text-2xl font-bold text-gray-900 dark:text-white"><%= jobStats.createdRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Creees</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div id="import-job-updated" class="text-2xl font-bold text-gray-900 dark:text-white"><%= jobStats.updatedRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Mises a jour</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div id="import-job-deleted" class="text-2xl font-bold text-gray-900 dark:text-white"><%= jobStats.deletedRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Supprimees</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div id="import-job-duplicates" class="text-2xl font-bold text-gray-900 dark:text-white"><%= jobStats.duplicateRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Doublons</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div id="import-job-skipped" class="text-2xl font-bold text-gray-900 dark:text-white"><%= jobStats.skippedRows || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Ignorees</div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div id="import-job-fields" class="text-2xl font-bold text-gray-900 dark:text-white"><%= jobStats.createdFields || 0 %></div>
+          <div class="text-xs font-semibold uppercase text-gray-500">Champs</div>
+        </div>
+      </div>
+
+      <div id="import-job-message" class="mt-5 hidden rounded-md border px-4 py-3 text-sm font-semibold"></div>
+    </div>
+
+    <script>
+      (() => {
+        const panel = document.getElementById('import-job-panel');
+        if (!panel) return;
+
+        const statusUrl = panel.dataset.statusUrl;
+        const listUrl = panel.dataset.listUrl;
+        const statusLabel = document.getElementById('import-job-status-label');
+        const progressLabel = document.getElementById('import-job-progress-label');
+        const progressBar = document.getElementById('import-job-progress-bar');
+        const rowsLabel = document.getElementById('import-job-rows');
+        const message = document.getElementById('import-job-message');
+        const statIds = {
+          createdRows: 'import-job-created',
+          updatedRows: 'import-job-updated',
+          deletedRows: 'import-job-deleted',
+          duplicateRows: 'import-job-duplicates',
+          skippedRows: 'import-job-skipped',
+          createdFields: 'import-job-fields'
+        };
+
+        const labels = {
+          pending: 'En attente',
+          running: 'Traitement en cours',
+          completed: 'Import termine',
+          failed: 'Import echoue',
+          cancelled: 'Import annule'
+        };
+
+        function setMessage(type, text) {
+          if (!message) return;
+          message.className = 'mt-5 rounded-md border px-4 py-3 text-sm font-semibold ' + (
+            type === 'success'
+              ? 'border-success/30 bg-success/10 text-success'
+              : 'border-danger/30 bg-danger/10 text-danger'
+          );
+          message.innerHTML = text;
+        }
+
+        function update(job) {
+          const progress = Math.max(0, Math.min(100, Number(job.progress || 0)));
+          if (statusLabel) statusLabel.textContent = labels[job.status] || job.status || 'En cours';
+          if (progressLabel) progressLabel.textContent = progress + '%';
+          if (progressBar) progressBar.style.width = progress + '%';
+          if (rowsLabel) rowsLabel.textContent = (job.processedRows || 0) + ' / ' + (job.totalRows || 0);
+
+          const stats = job.stats || {};
+          Object.entries(statIds).forEach(([key, id]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = stats[key] || 0;
+          });
+
+          if (job.status === 'completed') {
+            setMessage('success', 'Import termine. <a class="underline" href="' + listUrl + '">Voir les donnees</a>');
+            return false;
+          }
+          if (job.status === 'failed') {
+            setMessage('danger', job.error || 'Import impossible.');
+            return false;
+          }
+          return true;
+        }
+
+        async function poll() {
+          try {
+            const res = await fetch(statusUrl, { credentials: 'include' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Statut indisponible');
+            if (update(data.job)) window.setTimeout(poll, 1200);
+          } catch (error) {
+            setMessage('danger', error.message || 'Statut indisponible.');
+            window.setTimeout(poll, 4000);
+          }
+        }
+
+        poll();
+      })();
+    </script>
+  <% } else if (importDraft) { %>
+    <form method="post" action="/account/<%= account_number %>/record/<%= entity.slug %>/import/commit" class="panel">
+      <input type="hidden" name="importId" value="<%= importDraft.id %>">
+
+      <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Mapping</h2>
+          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+            <span class="badge badge-outline-primary"><%= importDraft.originalName %></span>
+            <span><%= importDraft.rows.length %> ligne(s)</span>
+            <span><%= importDraft.columns.length %> colonne(s)</span>
+            <% if (importDraft.truncated) { %>
+              <span class="badge badge-outline-warning">Limite <%= 50000 %> lignes</span>
+            <% } %>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary gap-2">
+          <iconify-icon icon="solar:import-bold-duotone" width="18"></iconify-icon>
+          <span>Importer</span>
+        </button>
+      </div>
+
+      <div class="mb-5 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Doublons</h3>
+            <p class="mt-1 text-xs text-gray-500">Coche une ou plusieurs colonnes comme cle de verification. Si une valeur matche un record existant, tu choisis l'action ci-dessous.</p>
+          </div>
+          <select name="duplicateAction" class="form-select min-w-[260px]">
+            <option value="ignore" selected>Si doublon : ignorer la ligne</option>
+            <option value="update">Si doublon : mettre a jour le record</option>
+            <option value="delete">Si doublon : supprimer le record CRM qui matche</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="table-hover min-w-[1160px]">
+          <thead>
+            <tr>
+              <th class="w-[22%]">Colonne fichier</th>
+              <th class="w-[28%]">Champ CRM</th>
+              <th class="w-[22%]">Nouveau champ</th>
+              <th class="w-[14%]">Type</th>
+              <th class="w-[10%]">Doublon</th>
+              <th>Exemples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% importDraft.columns.forEach(function(column) { 
+              const selectedTarget = column.suggestedTarget || '__create__';
+              const detectedType = column.detectedType || 'string';
+            %>
+              <tr>
+                <td class="align-top">
+                  <input type="hidden" name="mapping[<%= column.index %>][columnIndex]" value="<%= column.index %>">
+                  <div class="font-semibold text-gray-900 dark:text-white"><%= column.header %></div>
+                  <div class="mt-1 text-xs text-gray-500"><%= column.nonEmptyCount %> valeur(s)</div>
+                </td>
+                <td class="align-top">
+                  <select name="mapping[<%= column.index %>][target]" class="form-select min-w-[260px]">
+                    <option value="__ignore__" <%= selectedTarget === '__ignore__' ? 'selected' : '' %>>Ignorer</option>
+                    <option value="__create__" <%= selectedTarget === '__create__' ? 'selected' : '' %>>Creer un nouveau champ</option>
+                    <% if (standardFields.length) { %>
+                      <optgroup label="Champs standards">
+                        <% standardFields.forEach(function(field) { %>
+                          <option value="<%= field.target %>" <%= selectedTarget === field.target ? 'selected' : '' %>><%= field.label %></option>
+                        <% }) %>
+                      </optgroup>
+                    <% } %>
+                    <% if (customFields.length) { %>
+                      <optgroup label="Champs de l'entite">
+                        <% customFields.forEach(function(field) { %>
+                          <option value="<%= field.target %>" <%= selectedTarget === field.target ? 'selected' : '' %>><%= field.label %></option>
+                        <% }) %>
+                      </optgroup>
+                    <% } %>
+                  </select>
+                </td>
+                <td class="align-top">
+                  <input type="text" name="mapping[<%= column.index %>][createLabel]" value="<%= column.createLabel || column.header %>" class="form-input min-w-[220px]">
+                </td>
+                <td class="align-top">
+                  <select name="mapping[<%= column.index %>][createType]" class="form-select min-w-[150px]">
+                    <% typeOptions.forEach(function(option) { %>
+                      <option value="<%= option.value %>" <%= detectedType === option.value ? 'selected' : '' %>><%= option.label %></option>
+                    <% }) %>
+                  </select>
+                </td>
+                <td class="align-top">
+                  <label class="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                    <input type="checkbox" name="dedupeFields[]" value="<%= column.index %>" class="form-checkbox text-primary">
+                    <span>Verifier</span>
+                  </label>
+                </td>
+                <td class="align-top">
+                  <div class="flex max-w-[320px] flex-wrap gap-1">
+                    <% (column.samples || []).forEach(function(sample) { %>
+                      <span class="rounded bg-gray-100 px-2 py-1 text-[11px] text-gray-600 dark:bg-[#1b2e4b] dark:text-gray-300"><%= String(sample).slice(0, 70) %></span>
+                    <% }) %>
+                    <% if (!column.samples || column.samples.length === 0) { %>
+                      <span class="text-xs text-gray-400">Vide</span>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-5 flex justify-end gap-2">
+        <a href="/account/<%= account_number %>/record/<%= entity.slug %>/import" class="btn btn-outline-danger">Annuler</a>
+        <button type="submit" class="btn btn-primary gap-2">
+          <iconify-icon icon="solar:import-bold-duotone" width="18"></iconify-icon>
+          <span>Importer</span>
+        </button>
+      </div>
+    </form>
+  <% } else { %>
+    <form method="post" action="/account/<%= account_number %>/record/<%= entity.slug %>/import/analyze" enctype="multipart/form-data" class="panel">
+      <div class="grid gap-5 lg:grid-cols-[1fr_280px] lg:items-start">
+        <div>
+          <label for="importFile" class="mb-2 block text-sm font-semibold text-gray-900 dark:text-white">Fichier</label>
+          <input id="importFile" name="importFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required class="form-input">
+          <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+            <span class="badge badge-outline-primary">CSV</span>
+            <span class="badge badge-outline-primary">XLSX</span>
+          </div>
+        </div>
+        <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#253b5c] dark:bg-[#0e1726]">
+          <div class="text-sm font-semibold text-gray-900 dark:text-white"><%= entity.name %></div>
+          <div class="mt-2 text-xs text-gray-500"><%= customFields.length %> champ(s) existant(s)</div>
+          <button type="submit" class="btn btn-primary mt-4 w-full gap-2">
+            <iconify-icon icon="solar:upload-bold-duotone" width="18"></iconify-icon>
+            <span>Analyser</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  <% } %>
+</div>

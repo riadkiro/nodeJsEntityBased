@@ -3,6 +3,7 @@ const router = express.Router();
 const recordController = require("../controllers/record.controller");
 const uploadTo = require("../middleware/upload");
 const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
+const importUpload = uploadTo((req) => `private_uploads/imports/${req.account_number}/uploads`);
 const { requirePerm } = require('../middleware/permissions');
 
 // API for relations — MUST be before dynamic /:entityName routes
@@ -19,6 +20,10 @@ router.get("/:entityName/list", recordController.list);
 router.get("/:entityName/list-view", recordController.listView);
 router.get("/:entityName/list-api", recordController.listApi);
 router.get("/:entityName/tasks", recordController.tasks);
+router.get("/:entityName/import", requirePerm('records.create'), recordController.importForm);
+router.post("/:entityName/import/analyze", requirePerm('records.create'), importUpload.single("importFile"), recordController.importAnalyze);
+router.post("/:entityName/import/commit", requirePerm('records.create'), recordController.importCommit);
+router.get("/:entityName/import/jobs/:jobId", requirePerm('records.create'), recordController.importJobStatus);
 router.get("/:entityName/add", recordController.addForm);
 router.post("/:entityName/save", requirePerm('records.create'), upload.single("image"), recordController.save);
 router.get("/:entityName/edit/:id", recordController.editForm);

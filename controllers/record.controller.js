@@ -1,17 +1,1075 @@
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
+const readXlsxFile = require('read-excel-file/node');
+const { readSheet: readXlsxSheet } = readXlsxFile;
+const { parse: parseCsv } = require('csv-parse/sync');
 const Entity = require("../models/entity.model");
 const Record = require("../models/record.model");
 const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
 const denormService = require("../services/record-denorm.service");
-const { buildRecordFilterQuery, normalizeOperator } = require("../services/record-filter-query");
+const { buildRecordFilterQuery, normalizeOperator, applyUniqueViewFilters, getUniqueViewFilters } = require("../services/record-filter-query");
 const Account = require("../models/account.model");
 const User = require("../models/user.model");
 
 function isStrictObjectId(value) {
     return /^[a-f0-9]{24}$/i.test(String(value || '').trim());
+}
+
+const IMPORT_LIMITS = {
+    maxRows: 50000,
+    maxColumns: 250,
+    sampleRows: 5,
+    draftTtlMs: 24 * 60 * 60 * 1000
+};
+
+const IMPORT_STANDARD_FIELDS = [
+    { id: '_id', label: 'ID record', aliases: ['_id', 'id', 'record_id', 'record id', 'crm_id', 'crm id', 'mongo_id', 'mongo id'] },
+    { id: 'title', label: 'Titre', aliases: ['title', 'titre', 'name', 'nom', 'business_name', 'business name', 'company_name', 'company name', 'place_name', 'place name'] },
+    { id: 'description', label: 'Description', aliases: ['description', 'desc', 'about', 'a propos', 'details', 'notes'] },
+    { id: 'date', label: 'Date', aliases: ['date', 'created_at', 'created at', 'creation date'] },
+    { id: 'slug', label: 'Slug', aliases: ['slug', 'identifiant'] },
+    { id: 'link', label: 'Lien', aliases: ['link', 'lien', 'url', 'website', 'site', 'site web'] }
+];
+
+function normalizeImportToken(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[_-]+/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function normalizeFieldName(value) {
+    const base = String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .replace(/_+/g, '_');
+    if (!base) return 'champ';
+    return /^[0-9]/.test(base) ? `champ_${base}` : base;
+}
+
+function normalizeCellValue(value) {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    if (typeof value === 'string') return value.trim();
+    return value;
+}
+
+function isEmptyImportValue(value) {
+    return value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
+}
+
+function parseNumberValue(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const normalized = raw
+        .replace(/\s/g, '')
+        .replace(/(?<=\d),(?=\d{1,2}$)/, '.')
+        .replace(/[^0-9.+-]/g, '');
+    if (!normalized || normalized === '-' || normalized === '+') return null;
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : null;
+}
+
+function parseBooleanValue(value) {
+    if (value === true || value === false) return value;
+    const raw = normalizeImportToken(value);
+    if (['true', '1', 'oui', 'yes', 'y', 'on', 'vrai'].includes(raw)) return true;
+    if (['false', '0', 'non', 'no', 'n', 'off', 'faux'].includes(raw)) return false;
+    return null;
+}
+
+function parseDateValue(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+
+    const frenchDate = raw.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+    if (frenchDate) {
+        const year = Number(frenchDate[3].length === 2 ? `20${frenchDate[3]}` : frenchDate[3]);
+        const month = Number(frenchDate[2]) - 1;
+        const day = Number(frenchDate[1]);
+        const date = new Date(Date.UTC(year, month, day));
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function detectImportFieldType(header, values) {
+    const normalizedHeader = normalizeImportToken(header);
+    const nonEmpty = values.map(normalizeCellValue).filter(value => !isEmptyImportValue(value));
+    const strings = nonEmpty.map(value => String(value));
+    const sampleCount = strings.length || 1;
+
+    const emailHits = strings.filter(value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())).length;
+    if (/\b(e ?mail|mail|courriel)\b/.test(normalizedHeader) || emailHits / sampleCount >= 0.6) {
+        return 'email';
+    }
+
+    const urlHits = strings.filter(value => /^(https?:\/\/|www\.)/i.test(value.trim())).length;
+    if (/\b(url|website|site web|site|link|lien|maps|google maps)\b/.test(normalizedHeader) || urlHits / sampleCount >= 0.6) {
+        return 'url';
+    }
+
+    const phoneHits = strings.filter(value => {
+        const compact = value.replace(/[^\d+]/g, '');
+        return compact.length >= 7 && compact.length <= 18 && /^[+\d]+$/.test(compact);
+    }).length;
+    if (/\b(phone|tel|telephone|mobile|whatsapp)\b/.test(normalizedHeader) || phoneHits / sampleCount >= 0.7) {
+        return 'tel';
+    }
+
+    const boolHits = nonEmpty.filter(value => parseBooleanValue(value) !== null).length;
+    if (nonEmpty.length > 0 && boolHits === nonEmpty.length && new Set(strings.map(normalizeImportToken)).size <= 3) {
+        return 'boolean';
+    }
+
+    const dateHits = nonEmpty.filter(value => parseDateValue(value) !== null).length;
+    if (/\b(date|datetime|time|jour)\b/.test(normalizedHeader) && dateHits / sampleCount >= 0.5) {
+        return 'date';
+    }
+    if (dateHits / sampleCount >= 0.8 && strings.some(value => /[\/-]/.test(value))) {
+        return 'date';
+    }
+
+    const numberHits = nonEmpty.filter(value => parseNumberValue(value) !== null).length;
+    const looksLikeIdentifier = /\b(id|siret|siren|phone|tel|postal|zip|code)\b/.test(normalizedHeader);
+    if (!looksLikeIdentifier && numberHits / sampleCount >= 0.8) {
+        return 'number';
+    }
+
+    const maxLength = strings.reduce((max, value) => Math.max(max, value.length), 0);
+    if (maxLength > 120 || /\b(description|about|details|review|avis|notes|commentaire)\b/.test(normalizedHeader)) {
+        return 'text';
+    }
+
+    return 'string';
+}
+
+function fieldTypeConfigFromImportType(type) {
+    switch (type) {
+        case 'email':
+            return { type: 'string', subtype: 'email', ui: { width: 'half', icon: 'solar:letter-bold-duotone' } };
+        case 'tel':
+            return { type: 'string', subtype: 'tel', ui: { width: 'half', icon: 'solar:phone-bold-duotone' } };
+        case 'url':
+            return { type: 'string', subtype: 'url', ui: { width: 'half', icon: 'solar:link-bold-duotone' } };
+        case 'number':
+            return { type: 'number', subtype: '', ui: { width: 'half', icon: 'solar:hashtag-square-bold-duotone' } };
+        case 'date':
+            return { type: 'date', subtype: '', ui: { width: 'half', icon: 'solar:calendar-bold-duotone' } };
+        case 'boolean':
+            return { type: 'boolean', subtype: '', ui: { width: 'half', icon: 'solar:check-square-bold-duotone' } };
+        case 'text':
+            return { type: 'text', subtype: '', ui: { width: 'full', rows: 3, icon: 'solar:document-text-bold-duotone' } };
+        default:
+            return { type: 'string', subtype: '', ui: { width: 'half', icon: 'solar:text-bold-duotone' } };
+    }
+}
+
+function coerceImportValue(value, importType, { standardField = '' } = {}) {
+    const raw = normalizeCellValue(value);
+    if (isEmptyImportValue(raw)) return '';
+
+    const type = String(importType || '').toLowerCase();
+    if (type === 'number') {
+        const parsed = parseNumberValue(raw);
+        return parsed === null ? raw : parsed;
+    }
+    if (type === 'boolean') {
+        const parsed = parseBooleanValue(raw);
+        return parsed === null ? raw : parsed;
+    }
+    if (type === 'date' || standardField === 'date') {
+        const parsed = parseDateValue(raw);
+        if (!parsed) return raw;
+        return standardField === 'date' ? parsed : parsed.toISOString().slice(0, 10);
+    }
+    return String(raw).trim();
+}
+
+function normalizeImportArray(value) {
+    if (Array.isArray(value)) return value;
+    if (value === undefined || value === null || value === '') return [];
+    return [value];
+}
+
+function normalizeDedupeKeyValue(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+    if (value === null || value === undefined) return '';
+    return String(normalizeCellValue(value)).trim().toLowerCase();
+}
+
+function buildImportDedupeMatch(mapping, row) {
+    if (!mapping) return null;
+    const rawValue = row[mapping.columnIndex];
+    if (isEmptyImportValue(rawValue)) return null;
+
+    const value = coerceImportValue(rawValue, mapping.importType, { standardField: mapping.standardField });
+    if (isEmptyImportValue(value)) return null;
+
+    if (mapping.kind === 'standard') {
+        if (mapping.standardField === '_id') {
+            const recordId = String(value || '').trim();
+            if (!isStrictObjectId(recordId)) return null;
+            return {
+                key: `standard:_id:${recordId.toLowerCase()}`,
+                clause: { _id: new mongoose.Types.ObjectId(recordId) }
+            };
+        }
+
+        if (mapping.standardField === 'date') {
+            const dateValue = value instanceof Date ? value : parseDateValue(value);
+            if (!dateValue) return null;
+            return {
+                key: `standard:date:${dateValue.toISOString().slice(0, 10)}`,
+                clause: { date: dateValue }
+            };
+        }
+
+        const cleanValue = String(normalizeCellValue(value)).trim();
+        if (!cleanValue) return null;
+        return {
+            key: `standard:${mapping.standardField}:${normalizeDedupeKeyValue(cleanValue)}`,
+            clause: { [mapping.standardField]: cleanValue }
+        };
+    }
+
+    if (mapping.kind === 'custom' && isStrictObjectId(mapping.fieldId)) {
+        return {
+            key: `custom:${mapping.fieldId}:${normalizeDedupeKeyValue(value)}`,
+            clause: {
+                customFields: {
+                    $elemMatch: {
+                        field_id: new mongoose.Types.ObjectId(mapping.fieldId),
+                        value
+                    }
+                }
+            }
+        };
+    }
+
+    return null;
+}
+
+function mergeImportValuesIntoRecord(record, standardUpdates, customValues) {
+    const merged = {
+        ...record,
+        ...standardUpdates,
+        customFields: Array.isArray(record.customFields) ? [...record.customFields] : [],
+        relations: Array.isArray(record.relations) ? record.relations : [],
+        classificationValues: Array.isArray(record.classificationValues) ? record.classificationValues : []
+    };
+
+    if (customValues && customValues.size > 0) {
+        const byFieldId = new Map();
+        for (const item of merged.customFields) {
+            const fieldId = item?.field_id?._id || item?.field_id;
+            if (!fieldId) continue;
+            byFieldId.set(fieldId.toString(), item);
+        }
+
+        for (const [fieldId, value] of customValues.entries()) {
+            const existing = byFieldId.get(fieldId);
+            byFieldId.set(fieldId, existing ? { ...existing, value } : { field_id: fieldId, value });
+        }
+
+        merged.customFields = [...byFieldId.values()];
+    }
+
+    return merged;
+}
+
+const IMPORT_WORKER_ID = `import-worker-${crypto.randomBytes(4).toString('hex')}`;
+const IMPORT_WORKER_CONFIG = {
+    maxConcurrency: Math.max(1, Number(process.env.IMPORT_WORKER_MAX_CONCURRENCY || 1)),
+    pollIntervalMs: Math.max(1000, Number(process.env.IMPORT_WORKER_POLL_MS || 3000)),
+    rowDelayMs: Math.max(0, Number(process.env.IMPORT_WORKER_ROW_DELAY_MS || 20)),
+    insertBatchSize: Math.max(1, Number(process.env.IMPORT_WORKER_BATCH_SIZE || 50)),
+    progressEveryRows: Math.max(1, Number(process.env.IMPORT_WORKER_PROGRESS_EVERY || 25)),
+    lockTimeoutMs: Math.max(60000, Number(process.env.IMPORT_WORKER_LOCK_TIMEOUT_MS || 15 * 60 * 1000))
+};
+
+const importWorkerState = {
+    contexts: new Map(),
+    activeJobs: 0,
+    pollTimer: null,
+    isPolling: false,
+    cursor: 0
+};
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getImportJobModel(connection) {
+    const ImportJobSchema = require('../models/import-job.model').schema;
+    return connection.models.ImportJob || connection.model('ImportJob', ImportJobSchema);
+}
+
+function serializeImportJob(job) {
+    if (!job) return null;
+    const source = typeof job.toObject === 'function' ? job.toObject() : job;
+    return {
+        id: source._id?.toString() || source.id,
+        status: source.status,
+        progress: Math.max(0, Math.min(100, Number(source.progress || 0))),
+        totalRows: Number(source.totalRows || 0),
+        processedRows: Number(source.processedRows || 0),
+        originalName: source.originalName || '',
+        stats: source.stats || {},
+        result: source.result || null,
+        error: source.error || '',
+        createdAt: source.createdAt,
+        startedAt: source.startedAt,
+        completedAt: source.completedAt
+    };
+}
+
+function startImportWorkerForRequest(req) {
+    if (!req?.tenantDbConnection || !req.account_number) return;
+    importWorkerState.contexts.set(String(req.account_number), {
+        accountNumber: String(req.account_number),
+        connection: req.tenantDbConnection
+    });
+    scheduleImportWorker(100);
+}
+
+function scheduleImportWorker(delayMs = IMPORT_WORKER_CONFIG.pollIntervalMs) {
+    if (importWorkerState.pollTimer) return;
+    importWorkerState.pollTimer = setTimeout(async () => {
+        importWorkerState.pollTimer = null;
+        await pollImportWorker();
+    }, delayMs);
+}
+
+async function pollImportWorker() {
+    if (importWorkerState.isPolling) {
+        scheduleImportWorker();
+        return;
+    }
+
+    importWorkerState.isPolling = true;
+    try {
+        if (importWorkerState.activeJobs >= IMPORT_WORKER_CONFIG.maxConcurrency) return;
+
+        const contexts = [...importWorkerState.contexts.values()];
+        if (contexts.length === 0) return;
+
+        const now = new Date();
+        const staleThreshold = new Date(now.getTime() - IMPORT_WORKER_CONFIG.lockTimeoutMs);
+
+        for (let offset = 0; offset < contexts.length; offset += 1) {
+            if (importWorkerState.activeJobs >= IMPORT_WORKER_CONFIG.maxConcurrency) break;
+
+            const context = contexts[(importWorkerState.cursor + offset) % contexts.length];
+            const ImportJobModel = getImportJobModel(context.connection);
+            const job = await ImportJobModel.findOneAndUpdate(
+                {
+                    $or: [
+                        { status: 'pending', nextRunAt: { $lte: now } },
+                        { status: 'running', lockedAt: { $lt: staleThreshold } }
+                    ]
+                },
+                {
+                    $set: {
+                        status: 'running',
+                        lockedAt: now,
+                        lockedBy: IMPORT_WORKER_ID,
+                        startedAt: now
+                    },
+                    $inc: { attempts: 1 }
+                },
+                { sort: { createdAt: 1 }, new: true }
+            );
+
+            if (!job) continue;
+
+            importWorkerState.cursor = (importWorkerState.cursor + offset + 1) % contexts.length;
+            importWorkerState.activeJobs += 1;
+
+            processImportJob(job, context, ImportJobModel)
+                .catch(error => console.error('[RecordImportWorker] job error:', error))
+                .finally(() => {
+                    importWorkerState.activeJobs = Math.max(0, importWorkerState.activeJobs - 1);
+                    scheduleImportWorker(250);
+                });
+        }
+    } catch (error) {
+        console.error('[RecordImportWorker] poll error:', error);
+    } finally {
+        importWorkerState.isPolling = false;
+        scheduleImportWorker();
+    }
+}
+
+function buildImportDraftDir(accountNumber) {
+    return path.join(__dirname, '..', 'private_uploads', 'imports', String(accountNumber));
+}
+
+function buildImportDraftPath(req, importId) {
+    if (!/^import_[a-f0-9]{24}$/.test(String(importId || ''))) return null;
+    return path.join(buildImportDraftDir(req.account_number), `${importId}.json`);
+}
+
+function cleanupOldImportDrafts(accountNumber) {
+    try {
+        const dir = buildImportDraftDir(accountNumber);
+        if (!fs.existsSync(dir)) return;
+        const now = Date.now();
+        for (const file of fs.readdirSync(dir)) {
+            if (!file.endsWith('.json')) continue;
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
+            if (now - stat.mtimeMs > IMPORT_LIMITS.draftTtlMs) {
+                fs.unlinkSync(filePath);
+            }
+        }
+    } catch (error) {
+        console.warn('[RecordImport] cleanup failed:', error.message);
+    }
+}
+
+function saveImportDraft(req, draft) {
+    cleanupOldImportDrafts(req.account_number);
+    const dir = buildImportDraftDir(req.account_number);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${draft.id}.json`), JSON.stringify(draft));
+}
+
+function loadImportDraft(req, importId) {
+    const draftPath = buildImportDraftPath(req, importId);
+    if (!draftPath || !fs.existsSync(draftPath)) return null;
+    return JSON.parse(fs.readFileSync(draftPath, 'utf8'));
+}
+
+function deleteImportDraft(req, importId) {
+    const draftPath = buildImportDraftPath(req, importId);
+    if (draftPath && fs.existsSync(draftPath)) fs.unlinkSync(draftPath);
+}
+
+async function processImportJob(job, context, ImportJobModel) {
+    const fakeReq = {
+        account_number: context.accountNumber,
+        tenantDbConnection: context.connection,
+        tenantDbReady: true
+    };
+
+    const EntityModel = await tenantCollection(fakeReq, "Entity");
+    const RecordModel = await tenantCollection(fakeReq, "Record");
+    const FieldTemplateModel = await tenantCollection(fakeReq, "FieldTemplate");
+    await tenantCollection(fakeReq, "Classification");
+
+    const stats = {
+        createdRows: 0,
+        updatedRows: 0,
+        deletedRows: 0,
+        skippedRows: 0,
+        duplicateRows: 0,
+        ignoredDuplicateRows: 0,
+        ambiguousDuplicateRows: 0,
+        fileDuplicateRows: 0,
+        createdFields: 0
+    };
+
+    let processedRows = 0;
+    let lastProgressAt = 0;
+
+    const persistProgress = async (force = false) => {
+        const totalRows = Number(job.totalRows || 0);
+        const now = Date.now();
+        if (!force && processedRows % IMPORT_WORKER_CONFIG.progressEveryRows !== 0 && now - lastProgressAt < 1500) return;
+        lastProgressAt = now;
+        await ImportJobModel.updateOne(
+            { _id: job._id },
+            {
+                $set: {
+                    processedRows,
+                    progress: totalRows > 0 ? Math.min(99, Math.round((processedRows / totalRows) * 100)) : 0,
+                    stats,
+                    lockedAt: new Date(),
+                    lockedBy: IMPORT_WORKER_ID
+                }
+            }
+        );
+    };
+
+    try {
+        if (job.attempts > job.maxAttempts) {
+            await ImportJobModel.updateOne(
+                { _id: job._id },
+                {
+                    $set: {
+                        status: 'failed',
+                        error: 'Nombre maximum de tentatives atteint.',
+                        completedAt: new Date(),
+                        lockedAt: null,
+                        lockedBy: null
+                    }
+                }
+            );
+            return;
+        }
+
+        let entity = await EntityModel.findOne({ slug: job.entitySlug })
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification');
+
+        if (!entity) throw new Error('Entite introuvable.');
+
+        const draft = loadImportDraft(fakeReq, job.importId);
+        if (!draft || draft.entityId !== entity._id.toString() || draft.entitySlug !== entity.slug) {
+            throw new Error("Session d'import introuvable. Relancez l'analyse du fichier.");
+        }
+
+        const totalRows = (draft.rows || []).length;
+        await ImportJobModel.updateOne(
+            { _id: job._id },
+            { $set: { totalRows, progress: 0, processedRows: 0, stats } }
+        );
+        job.totalRows = totalRows;
+
+        const payload = job.payload || {};
+        const duplicateAction = ['ignore', 'update', 'delete'].includes(payload.duplicateAction)
+            ? payload.duplicateAction
+            : 'ignore';
+        const dedupeColumnIndexes = new Set(
+            normalizeImportArray(payload.dedupeFields)
+                .map(value => Number(value))
+                .filter(Number.isInteger)
+        );
+
+        const targets = buildImportTargets(entity);
+        const standardByTarget = new Map(targets.standardFields.map(field => [field.target, field]));
+        const customByTarget = new Map((entity.customFields || []).filter(Boolean).map(field => [`custom:${field._id.toString()}`, field]));
+        const columnsByIndex = new Map((draft.columns || []).map(column => [Number(column.index), column]));
+        const mappingRows = normalizeImportArray(payload.mappingRows)
+            .map(item => ({
+                columnIndex: Number(item.columnIndex),
+                target: String(item.target || '__ignore__'),
+                createLabel: String(item.createLabel || '').trim(),
+                createType: String(item.createType || 'string').trim()
+            }))
+            .filter(item => Number.isInteger(item.columnIndex) && columnsByIndex.has(item.columnIndex));
+
+        const preparedMappings = [];
+        const createdFields = [];
+        const fieldIdsToAttach = [];
+        const existingNames = new Set(
+            (await FieldTemplateModel.find({}).select('name').lean())
+                .map(field => field.name)
+                .filter(Boolean)
+        );
+
+        for (const item of mappingRows) {
+            if (item.target === '__ignore__') continue;
+            const column = columnsByIndex.get(item.columnIndex);
+
+            if (item.target === '__create__') {
+                const label = item.createLabel || column.header || `Colonne ${item.columnIndex + 1}`;
+                const importType = item.createType || column.detectedType || 'string';
+                const typeConfig = fieldTypeConfigFromImportType(importType);
+                const field = await FieldTemplateModel.create({
+                    name: buildUniqueFieldName(label, existingNames, entity.slug),
+                    label,
+                    type: typeConfig.type,
+                    subtype: typeConfig.subtype,
+                    type_config: {},
+                    ui: {
+                        placeholder: label,
+                        visible: true,
+                        searchable: true,
+                        ...typeConfig.ui
+                    },
+                    filterable: true,
+                    entities: [entity._id],
+                    isCustom: true,
+                    category: importType === 'number' ? 'numeric' : importType === 'date' ? 'date' : 'custom'
+                });
+
+                fieldIdsToAttach.push(field._id);
+                createdFields.push({ id: field._id.toString(), label: field.label, type: importType });
+                preparedMappings.push({
+                    columnIndex: item.columnIndex,
+                    kind: 'custom',
+                    fieldId: field._id.toString(),
+                    fieldLabel: field.label,
+                    importType
+                });
+                continue;
+            }
+
+            if (item.target.startsWith('standard:') && standardByTarget.has(item.target)) {
+                const field = standardByTarget.get(item.target);
+                const standardField = item.target.replace('standard:', '');
+                preparedMappings.push({
+                    columnIndex: item.columnIndex,
+                    kind: 'standard',
+                    standardField,
+                    fieldLabel: field.label,
+                    importType: standardField === 'date' ? 'date' : (standardField === 'description' ? 'text' : 'string')
+                });
+                continue;
+            }
+
+            if (item.target.startsWith('custom:') && customByTarget.has(item.target)) {
+                const field = customByTarget.get(item.target);
+                preparedMappings.push({
+                    columnIndex: item.columnIndex,
+                    kind: 'custom',
+                    fieldId: field._id.toString(),
+                    fieldLabel: field.label || field.name || 'Champ',
+                    importType: inferImportTypeFromField(field)
+                });
+            }
+        }
+
+        if (preparedMappings.length === 0) throw new Error('Selectionnez au moins un champ a importer.');
+
+        const dedupeMappings = preparedMappings.filter(mapping => dedupeColumnIndexes.has(mapping.columnIndex));
+        if (dedupeColumnIndexes.size > 0 && dedupeMappings.length === 0) {
+            throw new Error('Les colonnes utilisees pour eviter les doublons doivent etre mappees sur un champ CRM.');
+        }
+
+        if (fieldIdsToAttach.length > 0) {
+            await EntityModel.updateOne(
+                { _id: entity._id },
+                { $addToSet: { customFields: { $each: fieldIdsToAttach } } }
+            );
+            entity = await EntityModel.findById(entity._id)
+                .populate('customFields')
+                .populate('classifications')
+                .populate('statusClassification');
+        }
+
+        stats.createdFields = createdFields.length;
+        await persistProgress(true);
+
+        const insertBatch = [];
+        const seenDedupeKeys = new Map();
+
+        const flushInsertBatch = async () => {
+            if (insertBatch.length === 0) return;
+            const docs = insertBatch.map(item => item.recordData);
+            const inserted = await RecordModel.insertMany(docs, { ordered: false });
+            inserted.forEach((doc, index) => {
+                const keys = insertBatch[index]?.dedupeKeys || [];
+                keys.forEach(key => seenDedupeKeys.set(key, { recordId: doc._id.toString() }));
+            });
+            stats.createdRows += inserted.length;
+            insertBatch.length = 0;
+            await persistProgress(true);
+        };
+
+        for (let rowIndex = 0; rowIndex < (draft.rows || []).length; rowIndex += 1) {
+            const row = draft.rows[rowIndex] || [];
+            const recordData = {
+                entityId: entity._id,
+                title: '',
+                published: true,
+                customFields: [],
+                relations: [],
+                classificationValues: [],
+                createdBy: job.createdBy
+            };
+            const standardUpdates = {};
+            const customValues = new Map();
+            let hasMappedValue = false;
+            let firstMappedValue = '';
+
+            for (const mapping of preparedMappings) {
+                const rawValue = row[mapping.columnIndex];
+                if (isEmptyImportValue(rawValue)) continue;
+                const value = coerceImportValue(rawValue, mapping.importType, { standardField: mapping.standardField });
+                if (isEmptyImportValue(value)) continue;
+
+                if (mapping.kind === 'standard') {
+                    if (mapping.standardField === '_id') continue;
+
+                    let standardValue = String(normalizeCellValue(value));
+                    if (mapping.standardField === 'date') {
+                        const dateValue = value instanceof Date ? value : parseDateValue(value);
+                        if (!dateValue) continue;
+                        standardValue = dateValue;
+                    }
+
+                    hasMappedValue = true;
+                    if (firstMappedValue === '') firstMappedValue = String(normalizeCellValue(standardValue));
+                    recordData[mapping.standardField] = standardValue;
+                    standardUpdates[mapping.standardField] = standardValue;
+                } else if (mapping.kind === 'custom') {
+                    hasMappedValue = true;
+                    if (firstMappedValue === '') firstMappedValue = String(normalizeCellValue(value));
+                    customValues.set(mapping.fieldId, value);
+                }
+            }
+
+            const dedupeMatches = dedupeMappings
+                .map(mapping => buildImportDedupeMatch(mapping, row))
+                .filter(Boolean);
+            const dedupeKeys = dedupeMatches.map(match => match.key);
+
+            if (!hasMappedValue) {
+                stats.skippedRows += 1;
+                processedRows += 1;
+                await persistProgress();
+                if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+                continue;
+            }
+
+            recordData.customFields = [...customValues.entries()].map(([field_id, value]) => ({ field_id, value }));
+            if (!recordData.title) recordData.title = firstMappedValue || `Import ligne ${rowIndex + 1}`;
+
+            if (dedupeMatches.length > 0) {
+                const seenMatchesByIdentity = new Map();
+                for (const key of dedupeKeys) {
+                    const seen = seenDedupeKeys.get(key);
+                    if (!seen) continue;
+                    const identity = seen.recordId
+                        ? `record:${seen.recordId}`
+                        : (Number.isInteger(seen.pendingIndex) ? `pending:${seen.pendingIndex}` : (seen.deleted ? 'deleted' : key));
+                    seenMatchesByIdentity.set(identity, seen);
+                }
+                const seenMatches = [...seenMatchesByIdentity.values()];
+
+                if (seenMatches.length > 0) {
+                    stats.duplicateRows += 1;
+                    stats.fileDuplicateRows += 1;
+
+                    if (duplicateAction === 'update' && seenMatches.length === 1) {
+                        const seen = seenMatches[0];
+                        if (Number.isInteger(seen.pendingIndex) && insertBatch[seen.pendingIndex]) {
+                            const pending = insertBatch[seen.pendingIndex];
+                            const mergedPending = mergeImportValuesIntoRecord(pending.recordData, standardUpdates, customValues);
+                            if (!mergedPending.title) mergedPending.title = firstMappedValue || `Import ligne ${rowIndex + 1}`;
+                            const denorm = await denormService.computeDenorm(mergedPending, entity, RecordModel, EntityModel);
+                            Object.assign(mergedPending, denorm);
+                            pending.recordData = mergedPending;
+                        } else if (seen.recordId && isStrictObjectId(seen.recordId)) {
+                            const existingRecord = await RecordModel.findOne({ _id: seen.recordId, entityId: entity._id }).lean();
+                            if (existingRecord) {
+                                const mergedRecord = mergeImportValuesIntoRecord(existingRecord, standardUpdates, customValues);
+                                const denorm = await denormService.computeDenorm(mergedRecord, entity, RecordModel, EntityModel);
+                                await RecordModel.updateOne(
+                                    { _id: existingRecord._id },
+                                    {
+                                        $set: {
+                                            ...standardUpdates,
+                                            customFields: mergedRecord.customFields,
+                                            updatedBy: job.createdBy,
+                                            computedTitle: denorm.computedTitle,
+                                            classificationValues: denorm.classificationValues,
+                                            '_denorm.relations': denorm._denorm.relations
+                                        }
+                                    }
+                                );
+                                stats.updatedRows += 1;
+                            }
+                        } else {
+                            stats.skippedRows += 1;
+                        }
+                    } else {
+                        stats.ignoredDuplicateRows += 1;
+                        stats.skippedRows += 1;
+                    }
+
+                    processedRows += 1;
+                    await persistProgress();
+                    if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+                    continue;
+                }
+
+                const matchQuery = {
+                    entityId: entity._id,
+                    $or: dedupeMatches.map(match => match.clause)
+                };
+
+                if (duplicateAction === 'delete') {
+                    const result = await RecordModel.deleteMany(matchQuery);
+                    if ((result.deletedCount || 0) > 0) {
+                        stats.duplicateRows += 1;
+                        stats.deletedRows += result.deletedCount || 0;
+                        stats.skippedRows += 1;
+                        dedupeKeys.forEach(key => seenDedupeKeys.set(key, { deleted: true }));
+                        processedRows += 1;
+                        await persistProgress();
+                        if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+                        continue;
+                    }
+                } else if (duplicateAction === 'ignore') {
+                    const existing = await RecordModel.findOne(matchQuery).select('_id').lean();
+                    if (existing) {
+                        stats.duplicateRows += 1;
+                        stats.ignoredDuplicateRows += 1;
+                        stats.skippedRows += 1;
+                        dedupeKeys.forEach(key => seenDedupeKeys.set(key, { recordId: existing._id.toString() }));
+                        processedRows += 1;
+                        await persistProgress();
+                        if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+                        continue;
+                    }
+                } else if (duplicateAction === 'update') {
+                    const dbMatches = await RecordModel.find(matchQuery).limit(2).lean();
+
+                    if (dbMatches.length > 1) {
+                        stats.duplicateRows += 1;
+                        stats.ambiguousDuplicateRows += 1;
+                        stats.skippedRows += 1;
+                        processedRows += 1;
+                        await persistProgress();
+                        if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+                        continue;
+                    }
+
+                    if (dbMatches.length === 1) {
+                        const existingRecord = dbMatches[0];
+                        const mergedRecord = mergeImportValuesIntoRecord(existingRecord, standardUpdates, customValues);
+                        if (!mergedRecord.title) mergedRecord.title = existingRecord.title || firstMappedValue || `Import ligne ${rowIndex + 1}`;
+                        const denorm = await denormService.computeDenorm(mergedRecord, entity, RecordModel, EntityModel);
+                        await RecordModel.updateOne(
+                            { _id: existingRecord._id },
+                            {
+                                $set: {
+                                    ...standardUpdates,
+                                    customFields: mergedRecord.customFields,
+                                    updatedBy: job.createdBy,
+                                    computedTitle: denorm.computedTitle,
+                                    classificationValues: denorm.classificationValues,
+                                    '_denorm.relations': denorm._denorm.relations
+                                }
+                            }
+                        );
+                        stats.duplicateRows += 1;
+                        stats.updatedRows += 1;
+                        dedupeKeys.forEach(key => seenDedupeKeys.set(key, { recordId: existingRecord._id.toString() }));
+                        processedRows += 1;
+                        await persistProgress();
+                        if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+                        continue;
+                    }
+                }
+            }
+
+            const denorm = await denormService.computeDenorm(recordData, entity, RecordModel, EntityModel);
+            Object.assign(recordData, denorm);
+            const pendingIndex = insertBatch.push({ recordData, dedupeKeys }) - 1;
+            dedupeKeys.forEach(key => seenDedupeKeys.set(key, { pendingIndex }));
+
+            if (insertBatch.length >= IMPORT_WORKER_CONFIG.insertBatchSize) {
+                await flushInsertBatch();
+            }
+
+            processedRows += 1;
+            await persistProgress();
+            if (IMPORT_WORKER_CONFIG.rowDelayMs > 0) await sleep(IMPORT_WORKER_CONFIG.rowDelayMs);
+        }
+
+        await flushInsertBatch();
+
+        const result = {
+            importedRows: stats.createdRows + stats.updatedRows,
+            createdRows: stats.createdRows,
+            updatedRows: stats.updatedRows,
+            deletedRows: stats.deletedRows,
+            skippedRows: stats.skippedRows,
+            duplicateRows: stats.duplicateRows,
+            ignoredDuplicateRows: stats.ignoredDuplicateRows,
+            ambiguousDuplicateRows: stats.ambiguousDuplicateRows,
+            fileDuplicateRows: stats.fileDuplicateRows,
+            dedupeEnabled: dedupeMappings.length > 0,
+            duplicateAction,
+            createdFields,
+            originalName: draft.originalName,
+            truncated: draft.truncated
+        };
+
+        deleteImportDraft(fakeReq, draft.id);
+
+        await ImportJobModel.updateOne(
+            { _id: job._id },
+            {
+                $set: {
+                    status: 'completed',
+                    progress: 100,
+                    processedRows,
+                    stats,
+                    result,
+                    completedAt: new Date(),
+                    lockedAt: null,
+                    lockedBy: null
+                }
+            }
+        );
+    } catch (error) {
+        console.error('[RecordImportWorker] process error:', error);
+        await ImportJobModel.updateOne(
+            { _id: job._id },
+            {
+                $set: {
+                    status: 'failed',
+                    error: error.message || 'Import impossible.',
+                    processedRows,
+                    stats,
+                    completedAt: new Date(),
+                    lockedAt: null,
+                    lockedBy: null
+                }
+            }
+        );
+    }
+}
+
+function normalizeExcelCellValue(value) {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    if (typeof value !== 'object') return value;
+    if (value.result !== undefined) return normalizeExcelCellValue(value.result);
+    if (value.text !== undefined) return normalizeExcelCellValue(value.text);
+    if (Array.isArray(value.richText)) return value.richText.map(part => part.text || '').join('');
+    if (value.hyperlink) return value.text || value.hyperlink || '';
+    return String(value);
+}
+
+async function readSpreadsheet(filePath, originalName = '') {
+    const extension = path.extname(originalName || filePath).toLowerCase();
+
+    if (extension === '.csv') {
+        const rows = parseCsv(fs.readFileSync(filePath), {
+            bom: true,
+            relax_column_count: true,
+            skip_empty_lines: false
+        });
+        return { sheetName: 'CSV', rows };
+    }
+
+    if (extension === '.xlsx') {
+        const rows = readXlsxSheet
+            ? await readXlsxSheet(filePath, 1)
+            : (await readXlsxFile(filePath))[0]?.data;
+        return {
+            sheetName: 'Feuille 1',
+            rows: (rows || []).map(row => row.map(normalizeExcelCellValue))
+        };
+    }
+
+    throw new Error('Format non pris en charge. Utilisez un fichier CSV ou XLSX.');
+}
+
+function analyzeSpreadsheetRows(rawRows) {
+    const matrix = (rawRows || [])
+        .map(row => Array.isArray(row) ? row.map(normalizeCellValue) : [])
+        .filter(row => row.some(value => !isEmptyImportValue(value)));
+
+    if (matrix.length === 0) throw new Error('Le fichier est vide.');
+
+    const headerRowIndex = matrix.findIndex(row => row.filter(value => !isEmptyImportValue(value)).length >= 1);
+    const headerRow = matrix[headerRowIndex] || matrix[0];
+    const dataRows = matrix.slice(headerRowIndex + 1, headerRowIndex + 1 + IMPORT_LIMITS.maxRows);
+    const width = Math.min(
+        IMPORT_LIMITS.maxColumns,
+        Math.max(headerRow.length, ...dataRows.slice(0, 100).map(row => row.length))
+    );
+
+    const columns = [];
+    for (let index = 0; index < width; index += 1) {
+        const rawHeader = normalizeCellValue(headerRow[index]);
+        const values = dataRows.map(row => normalizeCellValue(row[index]));
+        const hasData = values.some(value => !isEmptyImportValue(value));
+        if (!rawHeader && !hasData) continue;
+
+        const header = rawHeader ? String(rawHeader) : `Colonne ${index + 1}`;
+        const samples = values.filter(value => !isEmptyImportValue(value)).slice(0, IMPORT_LIMITS.sampleRows).map(value => String(value));
+        const detectedType = detectImportFieldType(header, values);
+        const nonEmptyCount = values.filter(value => !isEmptyImportValue(value)).length;
+
+        columns.push({
+            index,
+            header,
+            normalizedHeader: normalizeImportToken(header),
+            detectedType,
+            samples,
+            nonEmptyCount
+        });
+    }
+
+    if (columns.length === 0) throw new Error('Aucune colonne exploitable trouvee.');
+
+    return {
+        columns,
+        rows: dataRows.map(row => Array.from({ length: width }, (_, index) => normalizeCellValue(row[index]))),
+        originalColumnIndexes: columns.map(col => col.index),
+        truncated: matrix.length - headerRowIndex - 1 > IMPORT_LIMITS.maxRows
+    };
+}
+
+function buildImportTargets(entity) {
+    const enabledStandard = new Set(['_id', 'title', ...(entity.enabledStandardFields || [])]);
+    const standardFields = IMPORT_STANDARD_FIELDS
+        .filter(field => enabledStandard.has(field.id))
+        .map(field => ({ ...field, target: `standard:${field.id}`, kind: 'standard' }));
+
+    const customFields = (entity.customFields || []).filter(Boolean).map(field => ({
+        id: (field._id || field).toString(),
+        label: field.label || field.name || 'Champ',
+        name: field.name || '',
+        importType: inferImportTypeFromField(field),
+        target: `custom:${(field._id || field).toString()}`,
+        kind: 'custom',
+        aliases: [field.label, field.name].filter(Boolean)
+    }));
+
+    return { standardFields, customFields, all: [...standardFields, ...customFields] };
+}
+
+function inferImportTypeFromField(field = {}) {
+    const type = String(field.type || '').toLowerCase();
+    const subtype = String(field.subtype || '').toLowerCase();
+    if (['email', 'tel', 'url'].includes(subtype)) return subtype;
+    if (['number', 'date', 'boolean', 'text'].includes(type)) return type;
+    if (['textarea', 'richtext'].includes(type)) return 'text';
+    return 'string';
+}
+
+function suggestImportMapping(column, targets) {
+    const headerToken = column.normalizedHeader;
+    const exact = targets.all.find(target =>
+        (target.aliases || []).some(alias => normalizeImportToken(alias) === headerToken)
+    );
+    if (exact) return exact.target;
+
+    const loose = targets.all.find(target => {
+        const aliases = (target.aliases || []).map(normalizeImportToken).filter(Boolean);
+        return aliases.some(alias => alias === headerToken || (headerToken.length > 3 && alias.includes(headerToken)) || (alias.length > 3 && headerToken.includes(alias)));
+    });
+    if (loose) return loose.target;
+
+    return '__create__';
+}
+
+function buildUniqueFieldName(label, existingNames, entitySlug) {
+    const prefix = normalizeFieldName(entitySlug || 'import');
+    const base = normalizeFieldName(label);
+    let candidate = `${prefix}_${base}`;
+    let counter = 2;
+    while (existingNames.has(candidate)) {
+        candidate = `${prefix}_${base}_${counter}`;
+        counter += 1;
+    }
+    existingNames.add(candidate);
+    return candidate;
 }
 
 /**
@@ -675,7 +1733,15 @@ module.exports = {
                     `/account/${req.account_number}/record/${encodeURIComponent(req.params.entityName)}/${encodeURIComponent(viewDoc.slug)}${queryString ? `?${queryString}` : ''}`
                 );
             }
-            const totalRecords = await RecordModel.countDocuments(countQuery);
+            const uniqueViewFilters = getUniqueViewFilters(viewDoc?.filters || []);
+            const totalRecords = uniqueViewFilters.length > 0
+                ? applyUniqueViewFilters(
+                    await RecordModel.find(countQuery)
+                        .select('title computedTitle customFields relations _denorm classificationValues createdAt updatedAt')
+                        .lean(),
+                    viewDoc?.filters || []
+                ).length
+                : await RecordModel.countDocuments(countQuery);
 
             // viewType from query param (table by default — RecordsGrid handles switching internally)
             const viewType = req.query.viewType || viewDoc?.viewType || 'table';
@@ -747,6 +1813,604 @@ module.exports = {
         } catch (error) {
             console.error(error);
             res.status(500).send("Server Error");
+        }
+    },
+
+    importForm: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            await tenantCollection(req, "FieldTemplate");
+
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields');
+
+            if (!entity) {
+                return res.status(404).render("errors/404", {
+                    message: "Entity not found",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            res.render("record/record-import", {
+                entity,
+                importDraft: null,
+                targets: buildImportTargets(entity),
+                result: null,
+                error: null,
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+        } catch (error) {
+            console.error('[RecordImport] form error:', error);
+            res.status(500).send("Server Error");
+        }
+    },
+
+    importAnalyze: async (req, res) => {
+        let uploadedPath = req.file?.path || '';
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            await tenantCollection(req, "FieldTemplate");
+
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields');
+
+            if (!entity) {
+                return res.status(404).render("errors/404", {
+                    message: "Entity not found",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            if (!req.file) {
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: null,
+                    targets: buildImportTargets(entity),
+                    result: null,
+                    error: "Ajoutez un fichier CSV ou XLSX.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const extension = path.extname(req.file.originalname || '').toLowerCase();
+            if (!['.csv', '.xlsx'].includes(extension)) {
+                throw new Error('Format non pris en charge. Utilisez un fichier CSV ou XLSX.');
+            }
+
+            const parsed = await readSpreadsheet(uploadedPath, req.file.originalname);
+            const analysis = analyzeSpreadsheetRows(parsed.rows);
+            const targets = buildImportTargets(entity);
+            const columns = analysis.columns.map(column => ({
+                ...column,
+                suggestedTarget: suggestImportMapping(column, targets),
+                createLabel: column.header
+            }));
+
+            const draft = {
+                id: `import_${crypto.randomBytes(12).toString('hex')}`,
+                accountNumber: String(req.account_number),
+                entityId: entity._id.toString(),
+                entitySlug: entity.slug,
+                originalName: req.file.originalname || 'import',
+                sheetName: parsed.sheetName,
+                columns,
+                rows: analysis.rows,
+                truncated: analysis.truncated,
+                createdAt: new Date().toISOString()
+            };
+
+            saveImportDraft(req, draft);
+            if (uploadedPath && fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath);
+
+            res.render("record/record-import", {
+                entity,
+                importDraft: draft,
+                targets,
+                result: null,
+                error: null,
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+        } catch (error) {
+            console.error('[RecordImport] analyze error:', error);
+            try {
+                if (uploadedPath && fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath);
+            } catch (_) { }
+
+            try {
+                const EntityModel = await tenantCollection(req, "Entity");
+                const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: null,
+                    targets: entity ? buildImportTargets(entity) : { standardFields: [], customFields: [], all: [] },
+                    result: null,
+                    error: error.message || "Analyse impossible.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            } catch (_) {
+                return res.status(400).send(error.message || "Analyse impossible.");
+            }
+        }
+    },
+
+    importCommit: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+            const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
+
+            let entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('classifications')
+                .populate('statusClassification');
+
+            if (!entity) {
+                return res.status(404).render("errors/404", {
+                    message: "Entity not found",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const draft = loadImportDraft(req, req.body.importId);
+            if (!draft || draft.entityId !== entity._id.toString() || draft.entitySlug !== entity.slug) {
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: null,
+                    targets: buildImportTargets(entity),
+                    result: null,
+                    error: "Session d'import introuvable. Relancez l'analyse du fichier.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const targets = buildImportTargets(entity);
+            const standardByTarget = new Map(targets.standardFields.map(field => [field.target, field]));
+            const customByTarget = new Map((entity.customFields || []).filter(Boolean).map(field => [`custom:${field._id.toString()}`, field]));
+            const columnsByIndex = new Map((draft.columns || []).map(column => [Number(column.index), column]));
+            const rawMappings = req.body.mapping || {};
+            const mappingRows = Object.values(rawMappings)
+                .map(item => ({
+                    columnIndex: Number(item.columnIndex),
+                    target: String(item.target || '__ignore__'),
+                    createLabel: String(item.createLabel || '').trim(),
+                    createType: String(item.createType || 'string').trim()
+                }))
+                .filter(item => Number.isInteger(item.columnIndex) && columnsByIndex.has(item.columnIndex));
+            const dedupeColumnIndexes = new Set(
+                normalizeImportArray(req.body.dedupeFields)
+                    .map(value => Number(value))
+                    .filter(value => Number.isInteger(value) && columnsByIndex.has(value))
+            );
+            const rawDuplicateAction = String(req.body.duplicateAction || 'ignore');
+            const duplicateAction = ['ignore', 'update', 'delete'].includes(rawDuplicateAction) ? rawDuplicateAction : 'ignore';
+
+            if (dedupeColumnIndexes.size > 0 && ['update', 'delete'].includes(duplicateAction)) {
+                const requiredAction = duplicateAction === 'delete' ? 'delete' : 'update';
+                const canApplyDuplicateAction = typeof req.canEntity === 'function'
+                    ? req.canEntity(entity._id.toString(), requiredAction)
+                    : (typeof req.can === 'function' && req.can(`records.${requiredAction}`));
+
+                if (!canApplyDuplicateAction) {
+                    return res.status(403).render("record/record-import", {
+                        entity,
+                        importDraft: draft,
+                        targets,
+                        result: null,
+                        error: duplicateAction === 'delete'
+                            ? "Vous n'avez pas la permission de supprimer des records existants. Choisissez plutot \"ignorer les doublons\"."
+                            : "Vous n'avez pas la permission de mettre a jour des records existants. Choisissez plutot \"ignorer les doublons\".",
+                        account_number: req.account_number,
+                        layout: "layout-app"
+                    });
+                }
+            }
+
+            const mappedColumnIndexes = new Set(
+                mappingRows
+                    .filter(item => item.target !== '__ignore__')
+                    .map(item => item.columnIndex)
+            );
+
+            if (mappedColumnIndexes.size === 0) {
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: draft,
+                    targets,
+                    result: null,
+                    error: "Selectionnez au moins un champ a importer.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            if (dedupeColumnIndexes.size > 0 && ![...dedupeColumnIndexes].some(index => mappedColumnIndexes.has(index))) {
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: draft,
+                    targets,
+                    result: null,
+                    error: "Les colonnes utilisees pour eviter les doublons doivent etre mappees sur un champ CRM.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const ImportJobModel = await tenantCollection(req, "ImportJob");
+            const importJob = await ImportJobModel.create({
+                workspaceId: String(req.account_number),
+                entityId: entity._id,
+                entitySlug: entity.slug,
+                importId: draft.id,
+                originalName: draft.originalName,
+                sheetName: draft.sheetName,
+                status: 'pending',
+                progress: 0,
+                totalRows: (draft.rows || []).length,
+                processedRows: 0,
+                payload: {
+                    mappingRows,
+                    dedupeFields: [...dedupeColumnIndexes],
+                    duplicateAction
+                },
+                createdBy: req.user?._id
+            });
+
+            startImportWorkerForRequest(req);
+
+            return res.render("record/record-import", {
+                entity,
+                importDraft: null,
+                importJob: serializeImportJob(importJob),
+                targets,
+                result: null,
+                error: null,
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+
+            const preparedMappings = [];
+            const createdFields = [];
+            const fieldIdsToAttach = [];
+            const existingNames = new Set(
+                (await FieldTemplateModel.find({}).select('name').lean())
+                    .map(field => field.name)
+                    .filter(Boolean)
+            );
+
+            for (const item of mappingRows) {
+                if (item.target === '__ignore__') continue;
+                const column = columnsByIndex.get(item.columnIndex);
+
+                if (item.target === '__create__') {
+                    const label = item.createLabel || column.header || `Colonne ${item.columnIndex + 1}`;
+                    const importType = item.createType || column.detectedType || 'string';
+                    const typeConfig = fieldTypeConfigFromImportType(importType);
+                    const field = await FieldTemplateModel.create({
+                        name: buildUniqueFieldName(label, existingNames, entity.slug),
+                        label,
+                        type: typeConfig.type,
+                        subtype: typeConfig.subtype,
+                        type_config: {},
+                        ui: {
+                            placeholder: label,
+                            visible: true,
+                            searchable: true,
+                            ...typeConfig.ui
+                        },
+                        filterable: true,
+                        entities: [entity._id],
+                        isCustom: true,
+                        category: importType === 'number' ? 'numeric' : importType === 'date' ? 'date' : 'custom'
+                    });
+
+                    fieldIdsToAttach.push(field._id);
+                    createdFields.push({ id: field._id.toString(), label: field.label, type: importType });
+                    preparedMappings.push({
+                        columnIndex: item.columnIndex,
+                        kind: 'custom',
+                        fieldId: field._id.toString(),
+                        fieldLabel: field.label,
+                        importType
+                    });
+                    continue;
+                }
+
+                if (item.target.startsWith('standard:') && standardByTarget.has(item.target)) {
+                    const field = standardByTarget.get(item.target);
+                    const standardField = item.target.replace('standard:', '');
+                    preparedMappings.push({
+                        columnIndex: item.columnIndex,
+                        kind: 'standard',
+                        standardField,
+                        fieldLabel: field.label,
+                        importType: standardField === 'date' ? 'date' : (standardField === 'description' ? 'text' : 'string')
+                    });
+                    continue;
+                }
+
+                if (item.target.startsWith('custom:') && customByTarget.has(item.target)) {
+                    const field = customByTarget.get(item.target);
+                    preparedMappings.push({
+                        columnIndex: item.columnIndex,
+                        kind: 'custom',
+                        fieldId: field._id.toString(),
+                        fieldLabel: field.label || field.name || 'Champ',
+                        importType: inferImportTypeFromField(field)
+                    });
+                }
+            }
+
+            if (preparedMappings.length === 0) {
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: draft,
+                    targets,
+                    result: null,
+                    error: "Selectionnez au moins un champ a importer.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const dedupeMappings = preparedMappings.filter(mapping => dedupeColumnIndexes.has(mapping.columnIndex));
+            if (dedupeColumnIndexes.size > 0 && dedupeMappings.length === 0) {
+                return res.status(400).render("record/record-import", {
+                    entity,
+                    importDraft: draft,
+                    targets,
+                    result: null,
+                    error: "Les colonnes utilisees pour eviter les doublons doivent etre mappees sur un champ CRM.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            if (fieldIdsToAttach.length > 0) {
+                await EntityModel.updateOne(
+                    { _id: entity._id },
+                    { $addToSet: { customFields: { $each: fieldIdsToAttach } } }
+                );
+                entity = await EntityModel.findById(entity._id)
+                    .populate('customFields')
+                    .populate('classifications')
+                    .populate('statusClassification');
+            }
+
+            const recordsToInsert = [];
+            const pendingIndexByDedupeKey = new Map();
+            let skippedRows = 0;
+            let duplicateRows = 0;
+            let ignoredDuplicateRows = 0;
+            let updatedRows = 0;
+            let ambiguousDuplicateRows = 0;
+            let fileDuplicateRows = 0;
+
+            for (let rowIndex = 0; rowIndex < (draft.rows || []).length; rowIndex += 1) {
+                const row = draft.rows[rowIndex] || [];
+                const recordData = {
+                    entityId: entity._id,
+                    title: '',
+                    published: true,
+                    customFields: [],
+                    relations: [],
+                    classificationValues: [],
+                    createdBy: req.user?._id
+                };
+                const standardUpdates = {};
+                const customValues = new Map();
+                let hasMappedValue = false;
+                let firstMappedValue = '';
+
+                for (const mapping of preparedMappings) {
+                    const rawValue = row[mapping.columnIndex];
+                    if (isEmptyImportValue(rawValue)) continue;
+                    const value = coerceImportValue(rawValue, mapping.importType, { standardField: mapping.standardField });
+                    if (isEmptyImportValue(value)) continue;
+
+                    if (mapping.kind === 'standard') {
+                        if (mapping.standardField === '_id') {
+                            continue;
+                        }
+
+                        let standardValue = String(normalizeCellValue(value));
+                        if (mapping.standardField === 'date') {
+                            const dateValue = value instanceof Date ? value : parseDateValue(value);
+                            if (!dateValue) continue;
+                            standardValue = dateValue;
+                        }
+
+                        hasMappedValue = true;
+                        if (firstMappedValue === '') firstMappedValue = String(normalizeCellValue(standardValue));
+                        recordData[mapping.standardField] = standardValue;
+                        standardUpdates[mapping.standardField] = standardValue;
+                    } else if (mapping.kind === 'custom') {
+                        hasMappedValue = true;
+                        if (firstMappedValue === '') firstMappedValue = String(normalizeCellValue(value));
+                        customValues.set(mapping.fieldId, value);
+                    }
+                }
+
+                const dedupeMatches = dedupeMappings
+                    .map(mapping => buildImportDedupeMatch(mapping, row))
+                    .filter(Boolean);
+
+                if (!hasMappedValue) {
+                    skippedRows += 1;
+                    continue;
+                }
+
+                recordData.customFields = [...customValues.entries()].map(([field_id, value]) => ({ field_id, value }));
+                if (!recordData.title) {
+                    recordData.title = firstMappedValue || `Import ligne ${rowIndex + 1}`;
+                }
+
+                if (dedupeMatches.length > 0) {
+                    const pendingIndexes = [...new Set(
+                        dedupeMatches
+                            .map(match => pendingIndexByDedupeKey.get(match.key))
+                            .filter(index => Number.isInteger(index))
+                    )];
+
+                    if (pendingIndexes.length > 1) {
+                        duplicateRows += 1;
+                        ambiguousDuplicateRows += 1;
+                        skippedRows += 1;
+                        continue;
+                    }
+
+                    if (pendingIndexes.length === 1) {
+                        const pendingIndex = pendingIndexes[0];
+                        duplicateRows += 1;
+                        fileDuplicateRows += 1;
+
+                        if (duplicateAction === 'update') {
+                            const mergedPending = mergeImportValuesIntoRecord(recordsToInsert[pendingIndex], standardUpdates, customValues);
+                            if (!mergedPending.title) mergedPending.title = firstMappedValue || `Import ligne ${rowIndex + 1}`;
+                            const denorm = await denormService.computeDenorm(mergedPending, entity, RecordModel, EntityModel);
+                            Object.assign(mergedPending, denorm);
+                            recordsToInsert[pendingIndex] = mergedPending;
+                            dedupeMatches.forEach(match => pendingIndexByDedupeKey.set(match.key, pendingIndex));
+                        } else {
+                            ignoredDuplicateRows += 1;
+                            skippedRows += 1;
+                        }
+                        continue;
+                    }
+
+                    const dbMatches = await RecordModel.find({
+                        entityId: entity._id,
+                        $or: dedupeMatches.map(match => match.clause)
+                    }).limit(2).lean();
+
+                    if (dbMatches.length > 1) {
+                        duplicateRows += 1;
+                        ambiguousDuplicateRows += 1;
+                        skippedRows += 1;
+                        continue;
+                    }
+
+                    if (dbMatches.length === 1) {
+                        duplicateRows += 1;
+
+                        if (duplicateAction === 'update') {
+                            const existingRecord = dbMatches[0];
+                            const mergedRecord = mergeImportValuesIntoRecord(existingRecord, standardUpdates, customValues);
+                            if (!mergedRecord.title) mergedRecord.title = existingRecord.title || firstMappedValue || `Import ligne ${rowIndex + 1}`;
+                            const denorm = await denormService.computeDenorm(mergedRecord, entity, RecordModel, EntityModel);
+                            const updateSet = {
+                                ...standardUpdates,
+                                customFields: mergedRecord.customFields,
+                                updatedBy: req.user?._id,
+                                computedTitle: denorm.computedTitle,
+                                classificationValues: denorm.classificationValues,
+                                '_denorm.relations': denorm._denorm.relations
+                            };
+
+                            await RecordModel.updateOne({ _id: existingRecord._id }, { $set: updateSet });
+                            updatedRows += 1;
+                        } else {
+                            ignoredDuplicateRows += 1;
+                            skippedRows += 1;
+                        }
+                        continue;
+                    }
+                }
+
+                const denorm = await denormService.computeDenorm(recordData, entity, RecordModel, EntityModel);
+                Object.assign(recordData, denorm);
+                const pendingIndex = recordsToInsert.push(recordData) - 1;
+                dedupeMatches.forEach(match => pendingIndexByDedupeKey.set(match.key, pendingIndex));
+            }
+
+            let insertedCount = 0;
+            const chunkSize = 500;
+            for (let index = 0; index < recordsToInsert.length; index += chunkSize) {
+                const chunk = recordsToInsert.slice(index, index + chunkSize);
+                if (chunk.length === 0) continue;
+                const inserted = await RecordModel.insertMany(chunk, { ordered: false });
+                insertedCount += inserted.length;
+            }
+
+            deleteImportDraft(req, draft.id);
+
+            res.render("record/record-import", {
+                entity,
+                importDraft: null,
+                targets: buildImportTargets(entity),
+                result: {
+                    importedRows: insertedCount + updatedRows,
+                    createdRows: insertedCount,
+                    updatedRows,
+                    skippedRows,
+                    duplicateRows,
+                    ignoredDuplicateRows,
+                    ambiguousDuplicateRows,
+                    fileDuplicateRows,
+                    dedupeEnabled: dedupeMappings.length > 0,
+                    duplicateAction,
+                    createdFields,
+                    originalName: draft.originalName,
+                    truncated: draft.truncated
+                },
+                error: null,
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+        } catch (error) {
+            console.error('[RecordImport] commit error:', error);
+            try {
+                const EntityModel = await tenantCollection(req, "Entity");
+                const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+                const draft = loadImportDraft(req, req.body.importId);
+                return res.status(500).render("record/record-import", {
+                    entity,
+                    importDraft: draft,
+                    targets: entity ? buildImportTargets(entity) : { standardFields: [], customFields: [], all: [] },
+                    result: null,
+                    error: error.message || "Import impossible.",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            } catch (_) {
+                return res.status(500).send("Server Error");
+            }
+        }
+    },
+
+    importJobStatus: async (req, res) => {
+        try {
+            if (!isStrictObjectId(req.params.jobId)) {
+                return res.status(400).json({ success: false, error: 'ID de tache invalide.' });
+            }
+
+            const ImportJobModel = await tenantCollection(req, "ImportJob");
+            const job = await ImportJobModel.findOne({
+                _id: req.params.jobId,
+                entitySlug: req.params.entityName,
+                workspaceId: String(req.account_number)
+            }).lean();
+
+            if (!job) {
+                return res.status(404).json({ success: false, error: "Tache d'import introuvable." });
+            }
+
+            if (['pending', 'running'].includes(job.status)) {
+                startImportWorkerForRequest(req);
+            }
+
+            res.json({ success: true, job: serializeImportJob(job) });
+        } catch (error) {
+            console.error('[RecordImport] job status error:', error);
+            res.status(500).json({ success: false, error: "Statut d'import impossible." });
         }
     },
 

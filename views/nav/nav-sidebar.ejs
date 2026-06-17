@@ -1802,7 +1802,8 @@
                 { value: 'between', label: 'entre', types: ['number', 'currency', 'percent', 'date', 'datetime'] },
                 { value: 'in', label: 'dans la liste', types: ['all'] },
                 { value: 'is_empty', label: 'est vide', types: ['all'] },
-                { value: 'is_not_empty', label: "n'est pas vide", types: ['all'] }
+                { value: 'is_not_empty', label: "n'est pas vide", types: ['all'] },
+                { value: 'is_unique', label: 'est unique', types: ['text', 'textarea', 'title', 'email', 'phone', 'url', 'select', 'number', 'currency', 'percent', 'classification', 'relation'] }
               ],
 
               init() {
@@ -2207,14 +2208,25 @@
                 return this.wizardEntityFields.find(f => f.id === fieldId) || null;
               },
 
+              wizardNormalizeFieldType(type) {
+                const value = String(type || 'text').toLowerCase();
+                if (['string', 'varchar', 'char', 'input', 'text', 'textarea', 'longtext'].includes(value)) return 'text';
+                if (['tel', 'telephone'].includes(value)) return 'phone';
+                if (['dropdown', 'list', 'choice', 'choices', 'multiselect', 'multi-select', 'multi_select', 'tags'].includes(value)) return 'select';
+                if (['integer', 'int', 'float', 'double', 'decimal'].includes(value)) return 'number';
+                if (['datetime-local', 'timestamp'].includes(value)) return 'datetime';
+                if (['bool', 'checkbox', 'switch', 'toggle'].includes(value)) return 'boolean';
+                return value || 'text';
+              },
+
               wizardOperatorsForFilter(filter) {
                 const field = this.getWizardField(filter.field);
-                const type = field?.type || filter.fieldType || 'text';
+                const type = this.wizardNormalizeFieldType(field?.type || filter.fieldType || 'text');
                 return this.wizardOperatorOptions.filter(op => op.types.includes('all') || op.types.includes(type));
               },
 
               wizardDefaultOperator(field) {
-                const type = field?.type || 'text';
+                const type = this.wizardNormalizeFieldType(field?.type || 'text');
                 if ((field?.options || []).length > 0) return 'equals';
                 if (['number', 'currency', 'percent', 'date', 'datetime'].includes(type)) return 'equals';
                 if (['classification', 'select'].includes(type)) return 'equals';
@@ -2226,7 +2238,7 @@
                 const filter = {
                   field: field.id,
                   fieldName: field.label || field.name || 'Champ',
-                  fieldType: field.type || 'text',
+                  fieldType: this.wizardNormalizeFieldType(field.type || 'text'),
                   operator: this.wizardDefaultOperator(field),
                   value: '',
                   value2: '',
@@ -2243,7 +2255,7 @@
                 const field = this.getWizardField(filter.field);
                 if (!field) return;
                 filter.fieldName = field.label || field.name || 'Champ';
-                filter.fieldType = field.type || 'text';
+                filter.fieldType = this.wizardNormalizeFieldType(field.type || 'text');
                 const operators = this.wizardOperatorsForFilter(filter);
                 if (!operators.find(op => op.value === filter.operator)) {
                   filter.operator = this.wizardDefaultOperator(field);
@@ -2253,7 +2265,7 @@
               },
 
               wizardFilterNeedsValue(filter) {
-                return !['is_empty', 'is_not_empty'].includes(filter.operator);
+                return !['is_empty', 'is_not_empty', 'is_unique'].includes(filter.operator);
               },
 
               wizardFilterNeedsSecondValue(filter) {
@@ -2261,7 +2273,7 @@
               },
 
               wizardFilterInputType(filter) {
-                const type = filter.fieldType || this.getWizardField(filter.field)?.type || 'text';
+                const type = this.wizardNormalizeFieldType(filter.fieldType || this.getWizardField(filter.field)?.type || 'text');
                 if (['number', 'currency', 'percent'].includes(type)) return 'number';
                 if (['date', 'datetime'].includes(type)) return 'date';
                 return 'text';
@@ -2274,7 +2286,13 @@
 
               wizardFilterUsesOptions(filter) {
                 const options = this.wizardFilterOptions(filter);
-                return options.length > 0 && ['equals', 'not_equals', 'contains', 'not_contains'].includes(filter.operator);
+                if (options.length === 0) return false;
+                const field = this.getWizardField(filter.field);
+                const type = this.wizardNormalizeFieldType(field?.type || filter.fieldType || 'text');
+                if (['classification', 'select'].includes(type)) {
+                  return ['equals', 'not_equals', 'contains', 'not_contains'].includes(filter.operator);
+                }
+                return ['equals', 'not_equals'].includes(filter.operator);
               },
 
               normalizedWizardFilters() {

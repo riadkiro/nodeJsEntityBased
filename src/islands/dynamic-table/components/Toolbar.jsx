@@ -57,6 +57,7 @@ export default function Toolbar({
 
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {/* Catalogue button — opens the full catalogue modal directly */}
+                {catalogEnabled && (
                 <button
                     type="button"
                     style={btn}
@@ -81,6 +82,7 @@ export default function Toolbar({
                         </span>
                     )}
                 </button>
+                )}
 
                 {showValidateButton && (
                     <button

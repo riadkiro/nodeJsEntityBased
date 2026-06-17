@@ -9,7 +9,7 @@
 const express = require('express')
 const router = express.Router()
 const { tenantCollection } = require('../middleware/tenant')
-const { buildRecordFilterQuery } = require('../services/record-filter-query')
+const { buildRecordFilterQuery, applyUniqueViewFilters, getUniqueViewFilters } = require('../services/record-filter-query')
 const { ensureEventsEntity } = require('../services/events-entity.service')
 
 /**
@@ -28,11 +28,15 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             page = 1,
             limit = 25,
             sort = 'createdAt:desc',
-            q = ''
+            q = '',
+            meta = '1',
+            total: includeTotalQuery = '1'
         } = req.query
 
         const pageNum = parseInt(page)
         const limitNum = parseInt(limit)
+        const includeMeta = meta !== '0'
+        const includeTotal = includeTotalQuery !== '0'
 
         // Register FieldTemplate and Classification BEFORE Entity to allow populate
         await tenantCollection(req, 'FieldTemplate')
@@ -62,7 +66,9 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             }).sort({ order: 1, createdAt: 1 }).lean()
             if (viewDoc) effectiveViewId = viewDoc._id
         }
-        const viewFilterQuery = buildRecordFilterQuery(viewDoc?.filters || [])
+        const viewFilters = viewDoc?.filters || []
+        const viewFilterQuery = buildRecordFilterQuery(viewFilters)
+        const uniqueViewFilters = getUniqueViewFilters(viewFilters)
 
         // Guest/External: restrict to shared records only
         const { getSharedRecordFilter } = require('../middleware/shared-records-helper')
@@ -89,26 +95,44 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         if (Object.keys(viewFilterQuery).length > 0) {
             query = { $and: [query, viewFilterQuery] }
         }
-        console.log('[API] Search query:', JSON.stringify({ q, query }, null, 2))
-
-        // Get total count (required for accurate pagination)
-        const total = await Record.countDocuments(query)
+        if (includeMeta || (q && q.trim())) {
+            console.log('[API] Search query:', JSON.stringify({ q, query }, null, 2))
+        }
 
         // Parse sort
         const [sortField, sortDirection] = sort.split(':')
         const sortObj = { [sortField]: sortDirection === 'asc' ? 1 : -1 }
 
         // Fetch records with pagination - minimal populate for performance
-        const records = await Record.find(query)
-            .select('title computedTitle image customFields status classificationValues relations _denorm createdAt updatedAt')
-            .populate({
-                path: 'customFields.field_id',
-                select: 'label name type fieldType render ui type_config'
-            })
-            .sort(sortObj)
-            .skip((pageNum - 1) * limitNum)
-            .limit(limitNum)
-            .lean()
+        const recordProjection = 'title computedTitle image customFields status classificationValues relations _denorm createdAt updatedAt'
+        let total = null
+        let records = []
+        if (uniqueViewFilters.length > 0) {
+            const matchingRecords = await Record.find(query)
+                .select(recordProjection)
+                .populate({
+                    path: 'customFields.field_id',
+                    select: 'label name type fieldType render ui type_config'
+                })
+                .sort(sortObj)
+                .lean()
+            const uniqueRecords = applyUniqueViewFilters(matchingRecords, viewFilters)
+            total = includeTotal ? uniqueRecords.length : null
+            records = uniqueRecords.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+        } else {
+            // Get total count only when requested. Lazy background calls already know it.
+            total = includeTotal ? await Record.countDocuments(query) : null
+            records = await Record.find(query)
+                .select(recordProjection)
+                .populate({
+                    path: 'customFields.field_id',
+                    select: 'label name type fieldType render ui type_config'
+                })
+                .sort(sortObj)
+                .skip((pageNum - 1) * limitNum)
+                .limit(limitNum)
+                .lean()
+        }
 
         // Build classification list (deduplicated) — used for enrichment + filter groups
         const seenClassIds = new Set()
@@ -206,22 +230,25 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         })
 
         let preferences = null
-        if (req.user?._id) {
-            const prefs = await UserPreferences.findOne({
-                userId: req.user._id,
-                viewId: effectiveViewId
-            }).lean()
-            preferences = prefs?.preferences || null
+        let viewSettings = {}
+        if (includeMeta) {
+            if (req.user?._id) {
+                const prefs = await UserPreferences.findOne({
+                    userId: req.user._id,
+                    viewId: effectiveViewId
+                }).lean()
+                preferences = prefs?.preferences || null
 
-        }
-        const viewSettings = viewDoc?.settings && typeof viewDoc.settings === 'object'
-            ? { ...viewDoc.settings }
-            : {}
+            }
+            viewSettings = viewDoc?.settings && typeof viewDoc.settings === 'object'
+                ? { ...viewDoc.settings }
+                : {}
 
-        if (viewSettings.viewMode) {
-            preferences = {
-                ...(preferences || {}),
-                viewMode: preferences?.viewMode || viewSettings.viewMode
+            if (viewSettings.viewMode) {
+                preferences = {
+                    ...(preferences || {}),
+                    viewMode: preferences?.viewMode || viewSettings.viewMode
+                }
             }
         }
 
@@ -242,7 +269,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         }
 
         // Build columns from entity fields
-        const customFieldColumns = (entity.customFields || []).map(f => ({
+        const customFieldColumns = includeMeta ? (entity.customFields || []).map(f => ({
             id: f._id.toString(),
             name: f.label || f.name || 'Champ',
             type: f.fieldType || f.type || f.render?.input || 'text',
@@ -263,108 +290,120 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             computed: f.category === 'computed' || undefined,
             computedDisplay: f.category === 'computed' ? (f.render?.display?.table || 'text') : undefined,
             computedColor: f.category === 'computed' ? (f.color || '#4361ee') : undefined,
-        }))
+        })) : []
 
         // Relation columns
-        const relationColumns = (entity.relations || []).map(rel => ({
+        const relationColumns = includeMeta ? (entity.relations || []).map(rel => ({
             id: `rel:${rel.key}`,
             name: rel.label || rel.key,
             type: 'relation',
             sortable: false,
             targetEntitySlug: rel.targetEntity?.slug || ''
-        }))
+        })) : []
 
         // Classification columns (use allClassifications for deduplication)
-        const classificationColumns = allClassifications.filter(c => c && c.name).map(c => ({
+        const classificationColumns = includeMeta ? allClassifications.filter(c => c && c.name).map(c => ({
             id: `classif:${c._id.toString()}`,
             name: c.name,
             type: 'classification',
             sortable: false
-        }))
+        })) : []
 
-        const columns = [
+        const columns = includeMeta ? [
             { id: 'title', name: 'Titre', sortable: true },
             ...relationColumns,
             ...customFieldColumns,
             ...classificationColumns,
             { id: 'createdAt', name: 'Créé le', sortable: true },
             { id: 'actions', name: 'Actions', sortable: false }
-        ]
+        ] : []
 
         // Build filter groups from entity classifications (for sidebar filtering)
         // allClassifications already defined above (deduplicated)
 
         // Get ALL records for counting (restricted for guest/external)
-        let countQuery = { entityId }
-        if (sharedFilter) countQuery._id = sharedFilter._id
-        if (Object.keys(viewFilterQuery).length > 0) {
-            countQuery = { $and: [countQuery, viewFilterQuery] }
-        }
-        const allRecordsForCounts = await Record.find(countQuery).select('classificationValues').lean()
-
-        const filterGroups = allClassifications.map(cls => {
-            // Count records per option
-            const optionCounts = {}
-            allRecordsForCounts.forEach(r => {
-                const cvs = r.classificationValues || []
-                cvs.forEach(cv => {
-                    if (cv.classificationId?.toString() === cls._id.toString()) {
-                        const key = cv.optionId?.toString()
-                        if (key) optionCounts[key] = (optionCounts[key] || 0) + 1
-                    }
-                })
-            })
-
-            // All classification filters use tag badge/chip style
-            const isTagType = true
-
-            return {
-                id: cls._id.toString(),
-                name: cls.name || cls.key || 'Classification',
-                classificationId: cls._id.toString(),
-                type: isTagType ? 'tags' : 'list',
-                options: (cls.options || []).map(opt => ({
-                    id: opt._id.toString(),
-                    label: opt.label,
-                    color: opt.color || '#9ca3af',
-                    count: optionCounts[opt._id.toString()] || 0
-                }))
+        let filterGroups = []
+        if (includeMeta) {
+            let countQuery = { entityId }
+            if (sharedFilter) countQuery._id = sharedFilter._id
+            if (Object.keys(viewFilterQuery).length > 0) {
+                countQuery = { $and: [countQuery, viewFilterQuery] }
             }
-        })
+            let allRecordsForCounts = await Record.find(countQuery)
+                .select(uniqueViewFilters.length > 0
+                    ? 'classificationValues customFields relations _denorm title computedTitle createdAt updatedAt'
+                    : 'classificationValues')
+                .lean()
+            if (uniqueViewFilters.length > 0) {
+                allRecordsForCounts = applyUniqueViewFilters(allRecordsForCounts, viewFilters)
+            }
+
+            filterGroups = allClassifications.map(cls => {
+                // Count records per option
+                const optionCounts = {}
+                allRecordsForCounts.forEach(r => {
+                    const cvs = r.classificationValues || []
+                    cvs.forEach(cv => {
+                        if (cv.classificationId?.toString() === cls._id.toString()) {
+                            const key = cv.optionId?.toString()
+                            if (key) optionCounts[key] = (optionCounts[key] || 0) + 1
+                        }
+                    })
+                })
+
+                // All classification filters use tag badge/chip style
+                const isTagType = true
+
+                return {
+                    id: cls._id.toString(),
+                    name: cls.name || cls.key || 'Classification',
+                    classificationId: cls._id.toString(),
+                    type: isTagType ? 'tags' : 'list',
+                    options: (cls.options || []).map(opt => ({
+                        id: opt._id.toString(),
+                        label: opt.label,
+                        color: opt.color || '#9ca3af',
+                        count: optionCounts[opt._id.toString()] || 0
+                    }))
+                }
+            })
+        }
 
         // Load view settings for titleDisplay fallback
         let viewTitleDisplay = null
-        try {
-            if (viewDoc?.settings?.titleDisplay) {
-                viewTitleDisplay = viewDoc.settings.titleDisplay
-            }
-        } catch (e) { /* view not found, no fallback */ }
+        if (includeMeta) {
+            try {
+                if (viewDoc?.settings?.titleDisplay) {
+                    viewTitleDisplay = viewDoc.settings.titleDisplay
+                }
+            } catch (e) { /* view not found, no fallback */ }
+        }
 
         res.json({
             records,
             columns,
             preferences,
-            entity, // Include entity for Kanban (statusClassification, classifications)
-            view: viewDoc ? {
+            entity: includeMeta ? entity : undefined, // Include entity for Kanban (statusClassification, classifications)
+            view: includeMeta && viewDoc ? {
                 _id: viewDoc._id,
                 name: viewDoc.name,
                 slug: viewDoc.slug,
                 viewType: viewDoc.viewType,
                 filters: viewDoc.filters || []
             } : null,
-            viewFilters: viewDoc?.filters || [],
-            viewSettings: {
+            viewFilters: includeMeta ? (viewDoc?.filters || []) : [],
+            viewSettings: includeMeta ? {
                 ...viewSettings,
                 kanbanField: viewSettings.kanbanField || 'status',
                 kanbanTagFields: Array.isArray(viewSettings.kanbanTagFields) ? viewSettings.kanbanTagFields : []
-            },
+            } : {},
             filters: filterGroups,
             viewTitleDisplay, // View-level default for titleDisplay (icon vs avatar)
             pagination: {
                 page: pageNum,
                 limit: limitNum,
                 total,
-                pages: Math.ceil(total / limitNum)
+                pages: total === null ? null : Math.ceil(total / limitNum)
             }
         })
 

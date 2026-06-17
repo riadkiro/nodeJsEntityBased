@@ -26,18 +26,35 @@ const MODAL_OPERATORS = {
     between: { label: 'Entre', icon: '↔', types: ['number', 'date'] },
     is_empty: { label: 'Est vide', icon: '∅', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
     is_not_empty: { label: "N'est pas vide", icon: '∃', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
+    is_unique: { label: 'Est unique', icon: '1x', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'select', 'number', 'relation', 'classification'] },
+}
+
+function normalizeModalFieldType(fieldType) {
+    const type = String(fieldType || 'text').toLowerCase()
+    if (['string', 'varchar', 'char', 'input', 'text', 'textarea', 'longtext'].includes(type)) return 'text'
+    if (['tel', 'telephone'].includes(type)) return 'phone'
+    if (['integer', 'int', 'float', 'double', 'decimal', 'currency', 'percent'].includes(type)) return 'number'
+    if (['datetime-local', 'timestamp', 'datetime'].includes(type)) return 'date'
+    if (['dropdown', 'list', 'choice', 'choices', 'multiselect', 'multi-select', 'multi_select', 'tags'].includes(type)) return 'select'
+    if (['bool', 'checkbox', 'switch', 'toggle'].includes(type)) return 'boolean'
+    return type || 'text'
 }
 
 function getModalOperatorsForType(fieldType) {
-    const type = String(fieldType || 'text').toLowerCase()
-    return Object.entries(MODAL_OPERATORS)
+    const type = normalizeModalFieldType(fieldType)
+    const operators = Object.entries(MODAL_OPERATORS)
         .filter(([_, op]) => op.types.includes(type))
+        .map(([key, op]) => ({ key, ...op }))
+    if (operators.length || type === 'text') return operators
+    return Object.entries(MODAL_OPERATORS)
+        .filter(([_, op]) => op.types.includes('text'))
         .map(([key, op]) => ({ key, ...op }))
 }
 
 function getModalInputType(fieldType) {
-    if (['number', 'currency', 'percent'].includes(fieldType)) return 'number'
-    if (['date', 'datetime'].includes(fieldType)) return 'date'
+    const type = normalizeModalFieldType(fieldType)
+    if (type === 'number') return 'number'
+    if (type === 'date') return 'date'
     return 'text'
 }
 
@@ -57,6 +74,7 @@ function getOperatorShortLabel(op) {
         between: '↔',
         is_empty: '∅',
         is_not_empty: '∃',
+        is_unique: '1x',
     }
     return labels[op] || op
 }
@@ -190,13 +208,14 @@ export default function SavedViewsTabs({
         if (!column) return
         const isClassif = columnId.startsWith('classif:')
         const availableOps = getModalOperatorsForType(column.type)
+        const fallbackOps = availableOps.length ? availableOps : getModalOperatorsForType('text')
         const defaultOp = isClassif
-            ? (availableOps.find(o => o.key === 'equals') || availableOps[0])
-            : (availableOps.find(o => o.key === 'contains') || availableOps[0])
+            ? (fallbackOps.find(o => o.key === 'equals') || fallbackOps[0])
+            : (fallbackOps.find(o => o.key === 'contains') || fallbackOps[0])
         const newFilter = {
             fieldId: columnId,
             fieldName: column.name,
-            fieldType: column.type || 'text',
+            fieldType: normalizeModalFieldType(column.type),
             operator: defaultOp.key,
             value: '',
             value2: '',
@@ -519,7 +538,7 @@ export default function SavedViewsTabs({
                                         const isClassif = filter.fieldId?.startsWith('classif:')
                                         const classifOptions = isClassif ? (classificationOptionsMap[filter.fieldId] || []) : []
                                         const availableOps = getModalOperatorsForType(filter.fieldType)
-                                        const isNoValueOp = ['is_empty', 'is_not_empty'].includes(filter.operator)
+                                        const isNoValueOp = ['is_empty', 'is_not_empty', 'is_unique'].includes(filter.operator)
                                         const isBetweenOp = filter.operator === 'between'
                                         const isBoolean = ['boolean', 'checkbox', 'switch', 'toggle'].includes(String(filter.fieldType || '').toLowerCase())
                                         const currentLogic = filter.logic || 'AND'
@@ -550,13 +569,14 @@ export default function SavedViewsTabs({
                                                             if (newCol) {
                                                                 const newIsClassif = e.target.value.startsWith('classif:')
                                                                 const newOps = getModalOperatorsForType(newCol.type)
+                                                                const fallbackOps = newOps.length ? newOps : getModalOperatorsForType('text')
                                                                 const defaultOp = newIsClassif
-                                                                    ? (newOps.find(o => o.key === 'equals') || newOps[0])
-                                                                    : (newOps.find(o => o.key === filter.operator) || newOps[0])
+                                                                    ? (fallbackOps.find(o => o.key === 'equals') || fallbackOps[0])
+                                                                    : (fallbackOps.find(o => o.key === filter.operator) || fallbackOps[0])
                                                                 updateModalFilter(index, {
                                                                     fieldId: newCol.id,
                                                                     fieldName: newCol.name,
-                                                                    fieldType: newCol.type || 'text',
+                                                                    fieldType: normalizeModalFieldType(newCol.type),
                                                                     operator: defaultOp.key,
                                                                     value: '',
                                                                     value2: ''
@@ -574,7 +594,7 @@ export default function SavedViewsTabs({
                                                         value={filter.operator}
                                                         onChange={(e) => updateModalFilter(index, {
                                                             operator: e.target.value,
-                                                            value: ['is_empty', 'is_not_empty'].includes(e.target.value) ? '' : filter.value,
+                                                            value: ['is_empty', 'is_not_empty', 'is_unique'].includes(e.target.value) ? '' : filter.value,
                                                             value2: ''
                                                         })}
                                                         className="svm-filter-select svm-filter-select--op"

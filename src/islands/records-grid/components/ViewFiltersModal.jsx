@@ -15,23 +15,30 @@ const OPERATORS = {
     between: { label: 'Entre', types: ['number', 'date'] },
     is_empty: { label: 'Est vide', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
     is_not_empty: { label: "N'est pas vide", types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'boolean', 'checkbox', 'switch', 'relation', 'classification'] },
+    is_unique: { label: 'Est unique', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'select', 'number', 'relation', 'classification'] },
 }
 
 function normalizeType(type) {
     const value = String(type || 'text').toLowerCase()
+    if (['string', 'varchar', 'char', 'input', 'text', 'textarea', 'longtext'].includes(value)) return 'text'
+    if (['tel', 'telephone'].includes(value)) return 'phone'
     if (['bool', 'boolean', 'checkbox', 'switch', 'toggle'].includes(value)) return 'boolean'
-    if (['number', 'currency', 'percent', 'decimal'].includes(value)) return 'number'
-    if (['date', 'datetime', 'datetime-local'].includes(value)) return 'date'
+    if (['number', 'currency', 'percent', 'decimal', 'integer', 'int', 'float', 'double'].includes(value)) return 'number'
+    if (['date', 'datetime', 'datetime-local', 'timestamp'].includes(value)) return 'date'
     if (['classification'].includes(value)) return 'classification'
     if (['relation'].includes(value)) return 'relation'
-    if (['select', 'multiselect', 'multi-select', 'multi_select'].includes(value)) return 'select'
+    if (['select', 'dropdown', 'list', 'choice', 'choices', 'multiselect', 'multi-select', 'multi_select', 'tags'].includes(value)) return 'select'
     return value || 'text'
 }
 
 function getOperatorsForType(type) {
     const normalized = normalizeType(type)
-    return Object.entries(OPERATORS)
+    const operators = Object.entries(OPERATORS)
         .filter(([, operator]) => operator.types.includes(normalized))
+        .map(([key, operator]) => ({ key, ...operator }))
+    if (operators.length || normalized === 'text') return operators
+    return Object.entries(OPERATORS)
+        .filter(([, operator]) => operator.types.includes('text'))
         .map(([key, operator]) => ({ key, ...operator }))
 }
 
@@ -43,7 +50,7 @@ function getInputType(type) {
 }
 
 function isNoValueOperator(operator) {
-    return ['is_empty', 'is_not_empty'].includes(operator)
+    return ['is_empty', 'is_not_empty', 'is_unique'].includes(operator)
 }
 
 function isBetweenOperator(operator) {
@@ -103,7 +110,8 @@ export default function ViewFiltersModal({
         if (!column) return
         const type = normalizeType(column.type)
         const operators = getOperatorsForType(type)
-        const defaultOperator = operators.find(operator => operator.key === 'equals') || operators[0]
+        const fallbackOperators = operators.length ? operators : getOperatorsForType('text')
+        const defaultOperator = fallbackOperators.find(operator => operator.key === 'equals') || fallbackOperators[0]
         setFilters(prev => [
             ...prev,
             {

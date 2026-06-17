@@ -15,6 +15,9 @@ import SavedViewsTabs from './components/SavedViewsTabs'
 import PipelineConfigModal from './components/PipelineConfigModal'
 import ViewFiltersModal from './components/ViewFiltersModal'
 
+const INITIAL_RECORD_BATCH_SIZE = 300
+const BACKGROUND_RECORD_BATCH_SIZE = 300
+
 // ─── Helper: Extract the value of a field from a record ───
 function getRecordFieldValue(record, fieldId) {
     // Built-in fields
@@ -128,9 +131,40 @@ function matchFieldFilter(rawValue, filter) {
             return strValue === '' || rawValue == null
         case 'is_not_empty':
             return strValue !== '' && rawValue != null
+        case 'is_unique':
+            return strValue !== '' && rawValue != null
         default:
             return true
     }
+}
+
+function normalizeUniqueValue(value) {
+    if (value == null) return ''
+    if (Array.isArray(value)) return value.map(normalizeUniqueValue).filter(Boolean).join('|')
+    if (value instanceof Date) return value.toISOString()
+    if (typeof value === 'object') {
+        if (value._id) return String(value._id).trim().toLowerCase()
+        if (value.id) return String(value.id).trim().toLowerCase()
+        if (value.value !== undefined) return normalizeUniqueValue(value.value)
+        if (value.label !== undefined) return normalizeUniqueValue(value.label)
+        return JSON.stringify(value)
+    }
+    return String(value).trim().toLowerCase()
+}
+
+function applyUniqueFieldFilters(records, filters = []) {
+    const uniqueFilters = filters.filter(filter => filter.operator === 'is_unique')
+    if (!uniqueFilters.length) return records
+
+    return uniqueFilters.reduce((currentRecords, filter) => {
+        const seen = new Set()
+        return currentRecords.filter(record => {
+            const key = normalizeUniqueValue(getRecordFieldValue(record, filter.fieldId || filter.field))
+            if (!key || seen.has(key)) return false
+            seen.add(key)
+            return true
+        })
+    }, records)
 }
 
 
@@ -149,6 +183,11 @@ export default function RecordsGrid({
     const [displayRecords, setDisplayRecords] = useState([])  // Current page slice
     const [columns, setColumns] = useState([])
     const [loading, setLoading] = useState(true)
+    const [recordLoadProgress, setRecordLoadProgress] = useState({
+        loaded: 0,
+        total: null,
+        loading: false
+    })
 
     const [error, setError] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
@@ -209,16 +248,26 @@ export default function RecordsGrid({
 
     // Refs
     const parentRef = useRef(null)
+    const recordsFetchSeqRef = useRef(0)
 
-    // Fetch ALL records once (CLIENT-SIDE SEARCH)
+    // Fetch the first batch quickly, then lazy-load remaining records in the background.
     const fetchRecords = useCallback(async () => {
-        try {
-            setLoading(true)
-            setError(null)
+        const fetchSeq = recordsFetchSeqRef.current + 1
+        recordsFetchSeqRef.current = fetchSeq
 
+        const mergeRecordsById = (existing, incoming) => {
+            const byId = new Map(existing.map(record => [record._id, record]))
+            incoming.forEach(record => byId.set(record._id, record))
+            return [...byId.values()]
+        }
+
+        const requestRecordsPage = async ({ page, limit, includeMeta, includeTotal }) => {
             const queryParams = new URLSearchParams({
-                limit: 10000,  // Fetch all records
-                sort: `${preferences.sort.field}:${preferences.sort.direction}`
+                page: String(page),
+                limit: String(limit),
+                sort: `${preferences.sort.field}:${preferences.sort.direction}`,
+                meta: includeMeta ? '1' : '0',
+                total: includeTotal ? '1' : '0'
             })
 
             const res = await fetch(
@@ -230,80 +279,142 @@ export default function RecordsGrid({
                 throw new Error(`HTTP ${res.status}`)
             }
 
-            const data = await res.json()
+            return res.json()
+        }
 
-            setAllRecords(data.records || [])
-            setFilteredRecords(data.records || [])
+        try {
+            setLoading(true)
+            setError(null)
+            setAllRecords([])
+            setFilteredRecords([])
+            setDisplayRecords([])
+            setSelectedIds(new Set())
+            setPagination(prev => ({ ...prev, page: 1 }))
+            setRecordLoadProgress({ loaded: 0, total: null, loading: true })
+
+            const firstData = await requestRecordsPage({
+                page: 1,
+                limit: INITIAL_RECORD_BATCH_SIZE,
+                includeMeta: true,
+                includeTotal: true
+            })
+
+            if (recordsFetchSeqRef.current !== fetchSeq) return
+
+            const firstRecords = firstData.records || []
+            const totalRecords = firstData.pagination?.total ?? firstRecords.length
+            setAllRecords(firstRecords)
+            setFilteredRecords(firstRecords)
+            setRecordLoadProgress({
+                loaded: firstRecords.length,
+                total: totalRecords,
+                loading: firstRecords.length < totalRecords
+            })
 
             // Store entity data for Kanban classification columns
-            if (data.entity) {
-                setEntityData(data.entity)
-                if (data.entity.icon) {
-                    setEntityIcon(data.entity.icon)
+            if (firstData.entity) {
+                setEntityData(firstData.entity)
+                if (firstData.entity.icon) {
+                    setEntityIcon(firstData.entity.icon)
                 }
             }
-            if (data.viewSettings) {
-                setViewSettings(data.viewSettings)
+            if (firstData.viewSettings) {
+                setViewSettings(firstData.viewSettings)
             }
-            setViewFilters(Array.isArray(data.viewFilters) ? data.viewFilters : [])
-            setViewMeta(data.view || null)
+            setViewFilters(Array.isArray(firstData.viewFilters) ? firstData.viewFilters : [])
+            setViewMeta(firstData.view || null)
 
             // Store sidebar filters from API
-            if (data.filters) {
-                setSidebarFilters(data.filters)
+            if (firstData.filters) {
+                setSidebarFilters(firstData.filters)
             }
 
             // Merge server preferences with local
-            if (data.preferences) {
+            if (firstData.preferences) {
                 setPreferences(prev => ({
                     ...prev,
                     // Apply viewTitleDisplay as fallback if user has no titleDisplay preference
-                    ...(data.viewTitleDisplay && !data.preferences.titleDisplay ? { titleDisplay: data.viewTitleDisplay } : {}),
-                    ...data.preferences,
-                    columns: data.preferences.columns?.length
-                        ? data.preferences.columns
-                        : data.columns?.map(c => ({ id: c.id, visible: true })) || []
+                    ...(firstData.viewTitleDisplay && !firstData.preferences.titleDisplay ? { titleDisplay: firstData.viewTitleDisplay } : {}),
+                    ...firstData.preferences,
+                    columns: firstData.preferences.columns?.length
+                        ? firstData.preferences.columns
+                        : firstData.columns?.map(c => ({ id: c.id, visible: true })) || []
                 }))
                 // Sync pagination.limit with saved pageSize
-                if (data.preferences.pageSize) {
-                    setPagination(prev => ({ ...prev, limit: data.preferences.pageSize }))
+                if (firstData.preferences.pageSize) {
+                    setPagination(prev => ({ ...prev, limit: firstData.preferences.pageSize }))
                 }
                 // Restore saved view mode (Mission 2)
-                if (data.preferences.viewMode) {
-                    setActiveView(data.preferences.viewMode)
+                if (firstData.preferences.viewMode) {
+                    setActiveView(firstData.preferences.viewMode)
                 }
 
                 // Reorder columns based on saved preferences order
-                if (data.preferences.columns?.length && data.columns?.length) {
+                if (firstData.preferences.columns?.length && firstData.columns?.length) {
                     const orderedColumns = []
                     // First add columns in the order they appear in preferences
-                    data.preferences.columns.forEach(pref => {
-                        const col = data.columns.find(c => c.id === pref.id)
+                    firstData.preferences.columns.forEach(pref => {
+                        const col = firstData.columns.find(c => c.id === pref.id)
                         if (col) orderedColumns.push(col)
                     })
                     // Then add any new columns that aren't in preferences yet
-                    data.columns.forEach(col => {
+                    firstData.columns.forEach(col => {
                         if (!orderedColumns.find(c => c.id === col.id)) {
                             orderedColumns.push(col)
                         }
                     })
                     setColumns(orderedColumns)
                 } else {
-                    setColumns(data.columns || [])
+                    setColumns(firstData.columns || [])
                 }
-            } else if (data.columns) {
-                setColumns(data.columns || [])
+            } else if (firstData.columns) {
+                setColumns(firstData.columns || [])
                 setPreferences(prev => ({
                     ...prev,
                     // Apply viewTitleDisplay as fallback when no user preferences exist
-                    ...(data.viewTitleDisplay ? { titleDisplay: data.viewTitleDisplay } : {}),
-                    columns: data.columns.map(c => ({ id: c.id, visible: true }))
+                    ...(firstData.viewTitleDisplay ? { titleDisplay: firstData.viewTitleDisplay } : {}),
+                    columns: firstData.columns.map(c => ({ id: c.id, visible: true }))
                 }))
             }
 
+            setLoading(false)
+
+            let loadedCount = firstRecords.length
+            let nextPage = 2
+            while (recordsFetchSeqRef.current === fetchSeq && loadedCount < totalRecords) {
+                const data = await requestRecordsPage({
+                    page: nextPage,
+                    limit: BACKGROUND_RECORD_BATCH_SIZE,
+                    includeMeta: false,
+                    includeTotal: false
+                })
+
+                if (recordsFetchSeqRef.current !== fetchSeq) return
+
+                const incoming = data.records || []
+                if (incoming.length === 0) break
+
+                loadedCount += incoming.length
+                setAllRecords(prev => mergeRecordsById(prev, incoming))
+                setRecordLoadProgress({
+                    loaded: Math.min(loadedCount, totalRecords),
+                    total: totalRecords,
+                    loading: loadedCount < totalRecords
+                })
+                nextPage += 1
+            }
+
+            if (recordsFetchSeqRef.current === fetchSeq) {
+                setRecordLoadProgress(prev => ({
+                    ...prev,
+                    loaded: Math.max(prev.loaded, loadedCount),
+                    loading: false
+                }))
+            }
         } catch (err) {
             console.error('[RecordsGrid] Fetch error:', err)
             setError(err.message)
+            setRecordLoadProgress(prev => ({ ...prev, loading: false }))
         } finally {
             setLoading(false)
         }
@@ -543,27 +654,31 @@ export default function RecordsGrid({
         // Record passes if it matches ANY group (OR between groups)
         // Within a group, ALL filters must match (AND within group)
         if (advancedFilters && advancedFilters.length > 0) {
-            result = result.filter(record => {
-                // Build groups of filters connected by AND
-                // OR boundaries create new groups
-                const groups = [[advancedFilters[0]]]
-                for (let i = 1; i < advancedFilters.length; i++) {
-                    const filterLogic = advancedFilters[i].logic || 'AND'
-                    if (filterLogic === 'OR') {
-                        groups.push([advancedFilters[i]])
-                    } else {
-                        groups[groups.length - 1].push(advancedFilters[i])
+            const comparisonFilters = advancedFilters.filter(filter => filter.operator !== 'is_unique')
+            if (comparisonFilters.length > 0) {
+                result = result.filter(record => {
+                    // Build groups of filters connected by AND
+                    // OR boundaries create new groups
+                    const groups = [[comparisonFilters[0]]]
+                    for (let i = 1; i < comparisonFilters.length; i++) {
+                        const filterLogic = comparisonFilters[i].logic || 'AND'
+                        if (filterLogic === 'OR') {
+                            groups.push([comparisonFilters[i]])
+                        } else {
+                            groups[groups.length - 1].push(comparisonFilters[i])
+                        }
                     }
-                }
-                // Record passes if it matches ANY group
-                return groups.some(group =>
-                    // Within a group, ALL filters must match
-                    group.every(filter => {
-                        const fieldValue = getRecordFieldValue(record, filter.fieldId)
-                        return matchFieldFilter(fieldValue, filter)
-                    })
-                )
-            })
+                    // Record passes if it matches ANY group
+                    return groups.some(group =>
+                        // Within a group, ALL filters must match
+                        group.every(filter => {
+                            const fieldValue = getRecordFieldValue(record, filter.fieldId)
+                            return matchFieldFilter(fieldValue, filter)
+                        })
+                    )
+                })
+            }
+            result = applyUniqueFieldFilters(result, advancedFilters)
         }
 
         return result
@@ -597,6 +712,14 @@ export default function RecordsGrid({
         setFilteredRecords(filtered)
     }, [recordsWithSearchIndex, searchQuery, activeFilters, fieldFilters, applyFilters])
 
+    const hasClientSideFilters = useMemo(() => {
+        return Boolean(
+            searchQuery.trim() ||
+            Object.keys(activeFilters || {}).filter(k => k !== '__favourites').length > 0 ||
+            (fieldFilters || []).length > 0
+        )
+    }, [searchQuery, activeFilters, fieldFilters])
+
     // LOCAL PAGINATION - Slice filtered records
     useEffect(() => {
         const start = (pagination.page - 1) * pagination.limit
@@ -604,13 +727,17 @@ export default function RecordsGrid({
         const slice = filteredRecords.slice(start, end)
         setDisplayRecords(slice)
 
+        const totalForPagination = hasClientSideFilters
+            ? filteredRecords.length
+            : Math.max(recordLoadProgress.total || 0, filteredRecords.length)
+
         // Update pagination metadata
         setPagination(prev => ({
             ...prev,
-            total: filteredRecords.length,
-            pages: Math.ceil(filteredRecords.length / pagination.limit)
+            total: totalForPagination,
+            pages: Math.ceil(totalForPagination / pagination.limit)
         }))
-    }, [filteredRecords, pagination.page, pagination.limit])
+    }, [filteredRecords, pagination.page, pagination.limit, hasClientSideFilters, recordLoadProgress.total])
 
     // Save preferences to server
     const savePreferences = useCallback(async (newPrefs) => {
@@ -682,10 +809,20 @@ export default function RecordsGrid({
         fetchRecords()
     }, [accountNumber, entitySlug, fetchRecords, showToast])
 
+    const loadedPageCount = useMemo(() => {
+        return Math.max(1, Math.ceil(filteredRecords.length / Math.max(1, pagination.limit)))
+    }, [filteredRecords.length, pagination.limit])
+
     // Handle page change
     const handlePageChange = useCallback((newPage) => {
-        setPagination(prev => ({ ...prev, page: newPage }))
-    }, [])
+        setPagination(prev => {
+            const requestedPage = Math.max(1, Math.min(newPage, prev.pages || 1))
+            const maxAvailablePage = recordLoadProgress.loading && !hasClientSideFilters
+                ? loadedPageCount
+                : (prev.pages || loadedPageCount)
+            return { ...prev, page: Math.min(requestedPage, maxAvailablePage) }
+        })
+    }, [hasClientSideFilters, loadedPageCount, recordLoadProgress.loading])
 
     // ═══════════════════════════════════════════════════════
     // BULK SELECT handlers
@@ -864,6 +1001,15 @@ export default function RecordsGrid({
         return cols
     }, [columns, preferences.columns])
 
+    const paginationStart = pagination.total === 0
+        ? 0
+        : ((pagination.page - 1) * pagination.limit) + 1
+    const paginationEnd = Math.min(
+        pagination.page * pagination.limit,
+        hasClientSideFilters ? filteredRecords.length : pagination.total
+    )
+    const lazyLoadingActive = recordLoadProgress.loading && !hasClientSideFilters && recordLoadProgress.total > recordLoadProgress.loaded
+
     // Loading state
     if (loading && displayRecords.length === 0) {
         return (
@@ -1009,7 +1155,15 @@ export default function RecordsGrid({
                             {/* Pagination footer */}
                             <div className="dataTable-bottom flex items-center justify-between border-t pt-4 dark:border-gray-800">
                                 <div className="dataTable-info text-gray-500 dark:text-gray-400">
-                                    Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
+                                    <div>
+                                        Affichage de {paginationStart} à {paginationEnd} sur {pagination.total}
+                                    </div>
+                                    {lazyLoadingActive && (
+                                        <div className="mt-1 flex items-center gap-2 text-xs text-primary">
+                                            <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+                                            <span>Chargement en cours : {recordLoadProgress.loaded} / {recordLoadProgress.total}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <nav className="dataTable-pagination">
                                     <ul className="inline-flex items-center space-x-1 rtl:space-x-reverse">
@@ -1037,10 +1191,11 @@ export default function RecordsGrid({
                                                 <li key={pageNum}>
                                                     <button
                                                         onClick={() => handlePageChange(pageNum)}
+                                                        disabled={lazyLoadingActive && pageNum > loadedPageCount}
                                                         className={`flex justify-center font-semibold px-3.5 py-2 rounded-full transition ${pageNum === pagination.page
                                                             ? 'bg-primary text-white dark:bg-primary dark:text-white-light'
                                                             : 'bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary'
-                                                            }`}
+                                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                                                     >
                                                         {pageNum}
                                                     </button>
@@ -1050,7 +1205,7 @@ export default function RecordsGrid({
                                         <li>
                                             <button
                                                 onClick={() => handlePageChange(pagination.page + 1)}
-                                                disabled={pagination.page >= pagination.pages}
+                                                disabled={pagination.page >= pagination.pages || (lazyLoadingActive && pagination.page >= loadedPageCount)}
                                                 className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
                                             >
                                                 &raquo;

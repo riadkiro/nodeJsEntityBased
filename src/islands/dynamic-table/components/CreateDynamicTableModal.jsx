@@ -203,13 +203,39 @@ function buildOptions(optionsText) {
         .map(value => ({ value: keyify(value, value), label: value }))
 }
 
+function schemaToEditDraft(schema) {
+    if (!schema) return initialDraft()
+    return {
+        name: schema.name || '',
+        description: schema.description || '',
+        dataMode: schema.dataMode || 'items',
+        snapshotEnabled: !!(schema.snapshotConfig && schema.snapshotConfig.enabled),
+        columns: (schema.columns || []).map((col, i) => ({
+            id: uid(),
+            label: col.label || `Colonne ${i + 1}`,
+            key: col.key || keyify(col.label, `colonne_${i + 1}`),
+            type: col.type || 'text',
+            width: col.width || 'M',
+            required: !!col.required,
+            visible: col.visible !== false,
+            targetEntity: (col.config && col.config.targetEntity) || '',
+            optionsText: col.type === 'select' || col.type === 'multiselect'
+                ? ((col.config && col.config.options) || []).map(o => o.label || o.value).join('\n')
+                : ''
+        }))
+    }
+}
+
 export default function CreateDynamicTableModal({
     open,
     accountNumber,
     entityId,
     onClose,
-    onCreated
+    onCreated,
+    editSchema = null,
+    onUpdated = null
 }) {
+    const isEditMode = !!editSchema
     const [draft, setDraft] = useState(initialDraft)
     const [entities, setEntities] = useState([])
     const [saving, setSaving] = useState(false)
@@ -218,11 +244,15 @@ export default function CreateDynamicTableModal({
 
     useEffect(() => {
         if (!open) return
-        setDraft(initialDraft())
+        if (isEditMode) {
+            setDraft(schemaToEditDraft(editSchema))
+        } else {
+            setDraft(initialDraft())
+        }
         setError('')
         setSaving(false)
         setTimeout(() => nameRef.current?.select?.(), 40)
-    }, [open])
+    }, [open, isEditMode, editSchema])
 
     useEffect(() => {
         if (!open || !accountNumber) return
@@ -398,20 +428,42 @@ export default function CreateDynamicTableModal({
             setSaving(true)
             setError('')
             const payload = buildPayload()
-            const res = await fetch(`/account/${accountNumber}/api/line-schemas`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(payload)
-            })
-            const data = await res.json().catch(() => null)
-            if (!res.ok || !data?.data?._id) {
-                throw new Error(data?.error || `Erreur HTTP ${res.status}`)
+
+            if (isEditMode && editSchema._id) {
+                // --- EDIT MODE: PUT ---
+                const res = await fetch(`/account/${accountNumber}/api/line-schemas/${editSchema._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                })
+                const data = await res.json().catch(() => null)
+                if (!res.ok) {
+                    throw new Error(data?.error || `Erreur HTTP ${res.status}`)
+                }
+                const updated = data?.data || { ...editSchema, ...payload }
+                onUpdated?.(updated)
+                window.dispatchEvent(new CustomEvent('dynamic-table-schema-updated', {
+                    detail: { schema: updated, schemaId: editSchema._id, accountNumber, entityId }
+                }))
+                onClose?.()
+            } else {
+                // --- CREATE MODE: POST ---
+                const res = await fetch(`/account/${accountNumber}/api/line-schemas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                })
+                const data = await res.json().catch(() => null)
+                if (!res.ok || !data?.data?._id) {
+                    throw new Error(data?.error || `Erreur HTTP ${res.status}`)
+                }
+                onCreated?.(data.data)
+                onClose?.()
             }
-            onCreated?.(data.data)
-            onClose?.()
         } catch (e) {
-            setError(e?.message || 'Création impossible.')
+            setError(e?.message || (isEditMode ? 'Mise à jour impossible.' : 'Création impossible.'))
         } finally {
             setSaving(false)
         }
@@ -429,10 +481,10 @@ export default function CreateDynamicTableModal({
                         </div>
                         <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
-                                Nouveau tableau dynamique
+                                {isEditMode ? 'Modifier le tableau' : 'Nouveau tableau dynamique'}
                             </div>
                             <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>
-                                Configuration du TD
+                                {isEditMode ? 'Modification du TD' : 'Configuration du TD'}
                             </div>
                         </div>
                     </div>
@@ -780,7 +832,10 @@ export default function CreateDynamicTableModal({
                         onClick={submit}
                     >
                         <iconify-icon icon={saving ? 'svg-spinners:ring-resize' : 'solar:diskette-bold'} width="14"></iconify-icon>
-                        {saving ? 'Création...' : 'Créer le TD'}
+                        {saving
+                            ? (isEditMode ? 'Enregistrement...' : 'Création...')
+                            : (isEditMode ? 'Enregistrer' : 'Créer le TD')
+                        }
                     </button>
                 </div>
             </div>

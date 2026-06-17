@@ -4,6 +4,7 @@
  */
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { createPortal } from 'react-dom'
 import DynamicTable from './DynamicTable'
 import CreateDynamicTableModal from './components/CreateDynamicTableModal'
 
@@ -62,6 +63,106 @@ function GlobalCreateDynamicTableModalHost() {
     )
 }
 
+function GlobalEditDynamicTableModalHost() {
+    const [state, setState] = React.useState({
+        open: false,
+        accountNumber: '',
+        entityId: '',
+        schemaId: '',
+        schema: null,
+        loading: false
+    })
+
+    React.useEffect(() => {
+        const openModal = async (detail = {}) => {
+            const accountNumber = detail.accountNumber || ''
+            const schemaId = detail.schemaId || ''
+            const entityId = detail.entityId || ''
+            if (!accountNumber || !schemaId) return
+
+            setState({
+                open: true,
+                accountNumber,
+                entityId,
+                schemaId,
+                schema: null,
+                loading: true
+            })
+
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/line-schemas/${schemaId}`, {
+                    credentials: 'include'
+                })
+                const data = await res.json()
+                const schema = data?.data || data
+                if (schema && schema._id) {
+                    setState(prev => ({ ...prev, schema, loading: false }))
+                } else {
+                    throw new Error('Schema introuvable')
+                }
+            } catch (err) {
+                console.error('[DynamicTable] Failed to load schema for edit:', err)
+                setState(prev => ({ ...prev, open: false, loading: false }))
+                if (window.showMessage) {
+                    window.showMessage('Impossible de charger le schéma pour modification.', 'error')
+                }
+            }
+        }
+
+        const onOpen = (event) => openModal(event.detail || {})
+        window.openDynamicTableEditModal = openModal
+        window.addEventListener('open-dynamic-table-edit-modal', onOpen)
+
+        return () => {
+            window.removeEventListener('open-dynamic-table-edit-modal', onOpen)
+            if (window.openDynamicTableEditModal === openModal) delete window.openDynamicTableEditModal
+        }
+    }, [])
+
+    const close = React.useCallback(() => {
+        setState(prev => ({ ...prev, open: false, schema: null }))
+    }, [])
+
+    const handleUpdated = React.useCallback((updatedSchema) => {
+        if (window.showMessage) {
+            window.showMessage('Tableau mis à jour avec succès.', 'success')
+        }
+        close()
+    }, [close])
+
+    if (state.loading && state.open) {
+        return createPortal(
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 99999,
+                background: 'rgba(15,23,42,0.38)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+                <div style={{
+                    background: '#fff', borderRadius: 14, padding: 32,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12
+                }}>
+                    <iconify-icon icon="svg-spinners:ring-resize" width="24" style={{ color: '#4361ee' }}></iconify-icon>
+                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Chargement du tableau...</span>
+                </div>
+            </div>,
+            document.body
+        )
+    }
+
+    if (!state.schema) return null
+
+    return (
+        <CreateDynamicTableModal
+            open={state.open}
+            accountNumber={state.accountNumber}
+            entityId={state.entityId}
+            onClose={close}
+            editSchema={state.schema}
+            onUpdated={handleUpdated}
+        />
+    )
+}
+
 function mountGlobalCreateModalHost() {
     if (document.getElementById('dynamic-table-create-modal-host')) return
     const host = document.createElement('div')
@@ -71,6 +172,7 @@ function mountGlobalCreateModalHost() {
     createRoot(host).render(
         <React.StrictMode>
             <GlobalCreateDynamicTableModalHost />
+            <GlobalEditDynamicTableModalHost />
         </React.StrictMode>
     )
 }

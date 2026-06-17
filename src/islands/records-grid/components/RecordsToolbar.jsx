@@ -207,9 +207,25 @@ export default function RecordsToolbar({
                     <span className="btn-add-label">Ajouter</span>
                 </button>
 
-                <div className="dataTable-search relative min-w-[180px] flex-1 sm:w-64 sm:flex-none" style={{ marginLeft: 0 }}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        window.location.href = `/account/${accountNumber}/record/${entitySlug}/import`
+                    }}
+                    className="btn-add-expandable block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                    title="Importer des donnees"
+                >
+                    <svg className="btn-add-icon" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M5 21H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span className="btn-add-label">Importer</span>
+                </button>
+
+                <div className="records-toolbar-search dataTable-search relative min-w-[180px] flex-1 sm:w-64 sm:flex-none" style={{ marginLeft: 0 }}>
                     <svg
-                        className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                        className="records-toolbar-search-icon pointer-events-none absolute top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
                         viewBox="0 0 24 24"
                         fill="none"
                     >
@@ -221,8 +237,7 @@ export default function RecordsToolbar({
                         value={searchQuery}
                         onChange={(e) => onSearch(e.target.value)}
                         placeholder="Rechercher..."
-                        className="dataTable-input form-input w-full pl-11 pr-10"
-                        style={{ "padding-left": "33px" }}
+                        className="records-toolbar-search-input dataTable-input form-input w-full pr-10"
                     />
                     {loading && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -679,6 +694,13 @@ export default function RecordsToolbar({
                 @keyframes popoverSlide {
                     from { opacity: 0; transform: translateY(-4px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                .records-toolbar-search .records-toolbar-search-icon {
+                    left: 14px !important;
+                }
+                .records-toolbar-search .records-toolbar-search-input,
+                .records-toolbar-search input.records-toolbar-search-input {
+                    padding-left: 42px !important;
                 }
                 /* Expandable pill buttons - only animation overrides, colors from Tailwind classes */
                 .btn-add-expandable,

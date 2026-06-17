@@ -984,7 +984,10 @@ export default function DynamicTable({
 
         const lines = getSchemaLines(schemaId)
         const hasFilled = lines.some(isFilledLine)
-        if (!hasFilled) return
+        if (!hasFilled) {
+            window.showMessage?.('Aucune ligne avec des données à enregistrer', 'warning')
+            return
+        }
 
         try {
             setValidatingMap(prev => ({ ...prev, [schemaId]: true }))
@@ -1008,16 +1011,21 @@ export default function DynamicTable({
                 })
                 if (!res.ok) {
                     console.error('[DynamicTable] Snapshot validate failed:', res.status)
+                    window.showMessage?.('Erreur lors de la validation', 'error')
                 } else {
                     await loadSnapshotHistory(schema)
+                    window.showMessage?.('Enregistrement validé', 'success')
                 }
+            } else {
+                window.showMessage?.('Données enregistrées', 'success')
             }
         } catch (e) {
             console.error('[DynamicTable] Snapshot validate error:', e)
+            window.showMessage?.('Erreur lors de la validation', 'error')
         } finally {
             setValidatingMap(prev => ({ ...prev, [schemaId]: false }))
         }
-    }, [accountNumber, recordId, getSchemaLines, saveLinesForSchema, loadSnapshotHistory, getSnapshotTargetRecordId])
+    }, [accountNumber, recordId, getSchemaLines, saveLinesForSchema, loadSnapshotHistory, getSnapshotTargetRecordId, columnWidthsMap])
 
     const searchCatalogInPicker = useCallback(async (schema, query, classificationOptionId = '') => {
         const relCol = getRelationCol(schema)
@@ -1043,7 +1051,8 @@ export default function DynamicTable({
 
     const openCatalogPicker = useCallback(async (schema) => {
         const relCol = getRelationCol(schema)
-        if (!relCol) return
+        const targetEntity = schema?.sourceEntityId || relCol?.config?.targetEntity
+        if (!targetEntity) return
 
         setCatalogPicker({
             open: true,
@@ -1102,7 +1111,6 @@ export default function DynamicTable({
 
     const applyCatalogBulkSelection = useCallback((schema) => {
         const relCol = getRelationCol(schema)
-        if (!relCol) return
 
         const selected = catalogPicker.results.filter(r => catalogPicker.selectedIds.includes(r._id))
         if (selected.length === 0) return
@@ -1134,14 +1142,16 @@ export default function DynamicTable({
 
                 // Apply relation + defaults to the target line
                 const selectedItem = pickBestCatalogItem(item, schemaId)
-                const rawHybrid = resolveApplyDefaults(relCol, selectedItem)
+                const rawHybrid = relCol ? resolveApplyDefaults(relCol, selectedItem) : null
                 const hybridDefaults = normalizeDefaultsForSchema(schema, rawHybrid || {})
                 const resolved = resolveLineDefaults(selectedItem, schemaId)
                 const normalizedDefaults = normalizeDefaultsForSchema(schema, resolved?.defaults || {})
 
                 const newValues = { ...lines[targetIdx].values }
-                newValues[relCol.key] = selectedItem._id
-                newValues[relCol.key + '_label'] = selectedItem.label || selectedItem.title
+                if (relCol) {
+                    newValues[relCol.key] = selectedItem._id
+                    newValues[relCol.key + '_label'] = selectedItem.label || selectedItem.title
+                }
 
                 if (hybridDefaults) {
                     for (const [k, v] of Object.entries(hybridDefaults)) {
@@ -1287,6 +1297,7 @@ export default function DynamicTable({
                         validating={!!validatingMap[schema._id]}
                         presets={getTemplatesForSchema(schema._id)}
                         lineCount={getSchemaLines(schema._id).filter(isFilledLine).length}
+                        catalogEnabled={!!(schema?.sourceEntityId || getRelationCol(schema)?.config?.targetEntity)}
                         onValidate={() => handleValidate(schema)}
                         onOpenCatalog={() => openCatalogPicker(schema)}
                     />

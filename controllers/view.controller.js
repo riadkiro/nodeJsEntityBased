@@ -1,6 +1,6 @@
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const mongoose = require("mongoose");
-const { buildRecordFilterQuery, sanitizeViewFilters } = require('../services/record-filter-query');
+const { buildRecordFilterQuery, sanitizeViewFilters, applyUniqueViewFilters } = require('../services/record-filter-query');
 
 function slugBase(name) {
     return String(name || '')
@@ -96,7 +96,8 @@ module.exports = {
                 sort = { [view.settings.sortBy.field]: view.settings.sortBy.direction === 'asc' ? 1 : -1 };
             }
 
-            const records = await RecordModel.find(query).sort(sort).populate('customFields.field_id').lean();
+            let records = await RecordModel.find(query).sort(sort).populate('customFields.field_id').lean();
+            records = applyUniqueViewFilters(records, view.filters || []);
 
             // Use pre-computed title (denormalized at save time)
             // If computedTitle is missing (un-migrated records), fall back to live resolution

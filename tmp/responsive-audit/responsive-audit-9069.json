@@ -1,0 +1,132 @@
+{
+  "account": "9069",
+  "baseUrl": "http://127.0.0.1:3000",
+  "generatedAt": "2026-06-05T16:54:52.951Z",
+  "viewports": [
+    {
+      "key": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "key": "tablet",
+      "width": 820,
+      "height": 1180
+    },
+    {
+      "key": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "pages": [
+    {
+      "key": "record-project-sheet",
+      "url": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "type": "record-module"
+    }
+  ],
+  "results": [
+    {
+      "page": "record-project-sheet",
+      "type": "record-module",
+      "viewport": "desktop",
+      "url": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "finalUrl": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "httpStatus": 200,
+      "navigationError": "",
+      "navigationWarning": "",
+      "redirectedToLogin": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "metrics": {
+        "title": "Dexapp - DA Group",
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "scrollWidth": 1440,
+        "scrollHeight": 1214,
+        "pageOverflowX": 0,
+        "activePageWidthIssues": 0,
+        "wideElements": [],
+        "offscreenElements": [],
+        "textOverflow": []
+      },
+      "screenshot": ""
+    },
+    {
+      "page": "record-project-sheet",
+      "type": "record-module",
+      "viewport": "tablet",
+      "url": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "finalUrl": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "httpStatus": 304,
+      "navigationError": "",
+      "navigationWarning": "",
+      "redirectedToLogin": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "metrics": {
+        "title": "Dexapp - DA Group",
+        "viewportWidth": 820,
+        "viewportHeight": 1180,
+        "scrollWidth": 820,
+        "scrollHeight": 1480,
+        "pageOverflowX": 0,
+        "activePageWidthIssues": 0,
+        "wideElements": [],
+        "offscreenElements": [],
+        "textOverflow": []
+      },
+      "screenshot": ""
+    },
+    {
+      "page": "record-project-sheet",
+      "type": "record-module",
+      "viewport": "mobile",
+      "url": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "finalUrl": "http://127.0.0.1:3000/account/9069/record/projet/6a203b82222dbaaf4486d46e/sheet",
+      "httpStatus": 304,
+      "navigationError": "",
+      "navigationWarning": "",
+      "redirectedToLogin": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "metrics": {
+        "title": "Dexapp - DA Group",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 1262,
+        "pageOverflowX": 0,
+        "activePageWidthIssues": 0,
+        "wideElements": [],
+        "offscreenElements": [],
+        "textOverflow": []
+      },
+      "screenshot": ""
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "passed": 3,
+    "issues": 0,
+    "byViewport": {
+      "desktop": {
+        "total": 1,
+        "issues": 0
+      },
+      "tablet": {
+        "total": 1,
+        "issues": 0
+      },
+      "mobile": {
+        "total": 1,
+        "issues": 0
+      }
+    },
+    "issuePages": []
+  }
+}

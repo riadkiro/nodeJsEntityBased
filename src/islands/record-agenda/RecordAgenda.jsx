@@ -27,6 +27,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     const [prefillDate, setPrefillDate] = useState(null)
     const calendarRef = useRef(null)
     const calendarInstance = useRef(null)
+    const openedDeepLinkEventRef = useRef('')
     const prefsViewId = `agenda-${recordId}`
 
     const baseUrl = `/account/${accountNumber}/api/records/${recordId}/events`
@@ -400,6 +401,22 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
         setIsModalOpen(true)
     }, [])
 
+    // Open an event directly from overview links: /agenda?event=<eventId>
+    useEffect(() => {
+        if (loading || !prefsLoaded || events.length === 0) return
+
+        const params = new URLSearchParams(window.location.search)
+        const eventId = params.get('event') || params.get('eventId') || params.get('openEvent')
+        if (!eventId || openedDeepLinkEventRef.current === eventId) return
+
+        const target = events.find(ev => String(ev._id || '') === eventId)
+        if (!target) return
+
+        openedDeepLinkEventRef.current = eventId
+        setEditingEvent(target)
+        setIsModalOpen(true)
+    }, [events, loading, prefsLoaded])
+
     // ── Render ──
     if (loading || !prefsLoaded) {
         return (
@@ -506,7 +523,10 @@ function normalizeAgendaTags(value) {
         : (typeof value === 'string' ? value.split(',') : [])
 
     return raw
-        .map(item => String(item || '').trim())
+        .map(item => {
+            if (item && typeof item === 'object') return String(item.label || item.value || item.name || '').trim()
+            return String(item || '').trim()
+        })
         .filter(Boolean)
 }
 

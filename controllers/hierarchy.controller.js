@@ -1340,6 +1340,16 @@ module.exports = {
                     .slice(0, 80)
                     .map(value => ({ id: value, label: value, value }));
             };
+            const normalizeFilterFieldType = (type) => {
+                const value = String(type || 'text').toLowerCase();
+                if (['string', 'varchar', 'char', 'input', 'text', 'textarea', 'longtext'].includes(value)) return 'text';
+                if (['tel', 'telephone'].includes(value)) return 'phone';
+                if (['dropdown', 'list', 'choice', 'choices', 'multiselect', 'multi-select', 'multi_select', 'tags'].includes(value)) return 'select';
+                if (['integer', 'int', 'float', 'double', 'decimal'].includes(value)) return 'number';
+                if (['datetime-local', 'timestamp'].includes(value)) return 'datetime';
+                if (['bool', 'checkbox', 'switch', 'toggle'].includes(value)) return 'boolean';
+                return value || 'text';
+            };
 
             const fieldOverrides = entity.fieldOverrides || {};
 
@@ -1449,7 +1459,7 @@ module.exports = {
             const customFilterFields = fields.map(f => ({
                 id: f.id,
                 label: f.label || f.name,
-                type: f.type || 'text',
+                type: normalizeFilterFieldType(f.type),
                 source: 'custom',
                 icon: f.icon,
                 options: (f.options && f.options.length > 0) ? f.options : (distinctCustomOptions[f.id] || [])

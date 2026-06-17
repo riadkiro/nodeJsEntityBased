@@ -18,7 +18,8 @@ const EVENT_TAG_FALLBACK_OPTIONS = [
     { label: 'Risque amende', value: 'Risque amende', color: '#dc2626' },
 ]
 
-const DEFAULT_CREATED_TAG_COLOR = '#64748b'
+const DEFAULT_CREATED_OPTION_COLOR = '#64748b'
+const CREATED_OPTION_COLORS = ['#4361ee', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899', '#64748b']
 const UPCOMING_WIDGET_FIELD = 'widget_prochains_evenements'
 const IMPORTANT_DATE_WIDGET_FIELD = 'widget_date_importante'
 
@@ -42,7 +43,8 @@ export default function EventModal({
     })
     const [saving, setSaving] = useState(false)
     const [formError, setFormError] = useState('')
-    const [createdTagOptions, setCreatedTagOptions] = useState([])
+    const [createdOptions, setCreatedOptions] = useState({ type: [], status: [], tags: [] })
+    const [deletedOptionTokens, setDeletedOptionTokens] = useState({ type: [], status: [], tags: [] })
 
     const isEditing = !!event
 
@@ -50,7 +52,6 @@ export default function EventModal({
     useEffect(() => {
         if (!isOpen) return
         setFormError('')
-        setCreatedTagOptions([])
 
         if (event) {
             const status = getStatusInfo(event)
@@ -161,23 +162,49 @@ export default function EventModal({
         }
     }, [form, isEditing, event, onCreate, onUpdate])
 
-    if (!isOpen) return null
+    const typeField = getEventField(entityData, 'type_evenement')
+    const tagField = getEventField(entityData, 'tags_evenement')
+    const statusClassification = entityData?.statusClassification || null
+    const statusClassificationId = statusClassification?._id?.toString?.() || statusClassification?._id || ''
 
-    const statusOptions = entityData?.statusClassification?.options || []
-    const tagField = getEventTagsField(entityData)
-    const tagOptions = mergeTagOptions([
+    const typeOptions = mergePickerOptions([
+        EVENT_TYPES,
+        typeField?.type_config?.options || [],
+        createdOptions.type,
+        form.type ? [{ label: form.type, value: form.type, color: DEFAULT_CREATED_OPTION_COLOR }] : [],
+    ], deletedOptionTokens.type)
+    const statusOptions = mergePickerOptions([
+        (statusClassification?.options || []).map(normalizeStatusOption),
+        createdOptions.status,
+        form.statusOptionId ? [{ label: 'Statut', value: form.statusOptionId, color: DEFAULT_CREATED_OPTION_COLOR }] : [],
+    ], deletedOptionTokens.status)
+    const tagOptions = mergePickerOptions([
         EVENT_TAG_FALLBACK_OPTIONS,
         tagField?.type_config?.options || [],
-        createdTagOptions,
+        createdOptions.tags,
         normalizeTagValues(form.tags).map(tag => ({ label: tag, value: tag })),
-    ])
+    ], deletedOptionTokens.tags)
 
-    const handleCreateTagOption = async (label) => {
-        const option = { label, value: label, color: DEFAULT_CREATED_TAG_COLOR }
-        const fieldId = tagField?._id?.toString?.() || tagField?._id
+    const rememberCreatedOption = (key, option) => {
+        setCreatedOptions(prev => ({
+            ...prev,
+            [key]: mergePickerOptions([prev[key] || [], [option]])
+        }))
+    }
+
+    const rememberDeletedOption = (key, option) => {
+        setDeletedOptionTokens(prev => ({
+            ...prev,
+            [key]: mergeDeletedTokens(prev[key] || [], option)
+        }))
+    }
+
+    const handleCreateFieldOption = async (key, field, label) => {
+        const option = { label, value: label, color: colorForOptionLabel(label) }
+        const fieldId = field?._id?.toString?.() || field?._id
 
         if (!accountNumber || !fieldId) {
-            setCreatedTagOptions(prev => mergeTagOptions([prev, [option]]))
+            rememberCreatedOption(key, option)
             return option
         }
 
@@ -190,10 +217,79 @@ export default function EventModal({
         const data = await res.json().catch(() => ({}))
         if (!res.ok || !data.success) throw new Error(data.error || 'Création impossible')
 
-        const created = normalizeTagOption(data.option || option)
-        setCreatedTagOptions(prev => mergeTagOptions([prev, [created]]))
+        const created = normalizePickerOption(data.option || option)
+        rememberCreatedOption(key, created)
         return created
     }
+
+    const handleDeleteFieldOption = async (key, field, option) => {
+        const normalized = normalizePickerOption(option)
+        if (!normalized.value) return false
+        if (!confirm(`Supprimer l'option "${normalized.label}" ?`)) return false
+
+        const fieldId = field?._id?.toString?.() || field?._id
+        if (accountNumber && fieldId) {
+            const res = await fetch(`/account/${accountNumber}/field-template/api/${fieldId}/delete-option`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ value: normalized.value, label: normalized.label })
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || !data.success) throw new Error(data.error || 'Suppression impossible')
+        }
+
+        rememberDeletedOption(key, normalized)
+        if (key === 'type' && optionMatchesValue(normalized, form.type)) handleChange('type', '')
+        if (key === 'tags') {
+            handleChange('tags', normalizeTagValues(form.tags).filter(tag => !optionMatchesValue(normalized, tag)))
+        }
+        return true
+    }
+
+    const handleCreateStatusOption = async (label) => {
+        const option = { label, value: label, color: colorForOptionLabel(label) }
+        if (!accountNumber || !statusClassificationId) {
+            rememberCreatedOption('status', option)
+            return option
+        }
+
+        const res = await fetch(`/account/${accountNumber}/classification/api/fast-add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ classificationId: statusClassificationId, label, color: option.color })
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data.success) throw new Error(data.error || 'Création impossible')
+
+        const created = normalizeStatusOption(data.option || option)
+        rememberCreatedOption('status', created)
+        return created
+    }
+
+    const handleDeleteStatusOption = async (option) => {
+        const normalized = normalizePickerOption(option)
+        if (!normalized.value) return false
+        if (!confirm(`Supprimer le statut "${normalized.label}" ?`)) return false
+
+        if (accountNumber && statusClassificationId) {
+            const res = await fetch(`/account/${accountNumber}/classification/api/delete-option`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ classificationId: statusClassificationId, optionId: normalized.value })
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || !data.success) throw new Error(data.error || 'Suppression impossible')
+        }
+
+        rememberDeletedOption('status', normalized)
+        if (String(form.statusOptionId || '') === String(normalized.value || '')) handleChange('statusOptionId', '')
+        return true
+    }
+
+    if (!isOpen) return null
 
     return (
         <div className="ra-modal-overlay" onClick={onClose}>
@@ -256,65 +352,44 @@ export default function EventModal({
                     </div>
 
                     {/* Type & Status row */}
-                    <div className="ra-field-row">
-                        <div className="ra-field" style={{ flex: 1 }}>
-                            <label className="ra-label">Type</label>
-                            <div className="ra-type-pills">
-                                {EVENT_TYPES.map(t => (
-                                    <button
-                                        key={t.value}
-                                        className={`ra-type-pill ${form.type === t.value ? 'active' : ''}`}
-                                        style={{
-                                            '--pill-c': t.color,
-                                            background: form.type === t.value ? `${t.color}15` : undefined,
-                                            borderColor: form.type === t.value ? `${t.color}40` : undefined,
-                                            color: form.type === t.value ? t.color : undefined,
-                                        }}
-                                        onClick={() => handleChange('type', t.value)}
-                                        type="button"
-                                    >
-                                        <span className="ra-pill-dot" style={{ background: t.color }} />
-                                        {t.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                    <div className="ra-field">
+                        <label className="ra-label">Type</label>
+                        <EventOptionSelect
+                            value={form.type}
+                            options={typeOptions}
+                            onChange={next => handleChange('type', next)}
+                            onCreateOption={label => handleCreateFieldOption('type', typeField, label)}
+                            onDeleteOption={option => handleDeleteFieldOption('type', typeField, option)}
+                            placeholder="Rechercher ou créer un type..."
+                        />
                     </div>
 
                     {/* Status */}
-                    {statusOptions.length > 0 && (
+                    {statusClassificationId && (
                         <div className="ra-field">
                             <label className="ra-label">Statut</label>
-                            <div className="ra-status-pills">
-                                {statusOptions.map(opt => (
-                                    <button
-                                        key={opt._id.toString()}
-                                        className={`ra-status-pill ${form.statusOptionId === opt._id.toString() ? 'active' : ''}`}
-                                        style={{
-                                            '--st-c': opt.color,
-                                            background: form.statusOptionId === opt._id.toString() ? `${opt.color}15` : undefined,
-                                            borderColor: form.statusOptionId === opt._id.toString() ? opt.color : undefined,
-                                            color: form.statusOptionId === opt._id.toString() ? opt.color : undefined,
-                                        }}
-                                        onClick={() => handleChange('statusOptionId', opt._id.toString())}
-                                        type="button"
-                                    >
-                                        <span className="ra-pill-dot" style={{ background: opt.color }} />
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
+                            <EventOptionSelect
+                                value={form.statusOptionId}
+                                options={statusOptions}
+                                onChange={next => handleChange('statusOptionId', next)}
+                                onCreateOption={handleCreateStatusOption}
+                                onDeleteOption={handleDeleteStatusOption}
+                                placeholder="Rechercher ou créer un statut..."
+                            />
                         </div>
                     )}
 
                     {/* Tags */}
                     <div className="ra-field">
                         <label className="ra-label">Étiquettes</label>
-                        <EventTagsMultiselect
+                        <EventOptionSelect
+                            multiple
                             value={form.tags}
                             options={tagOptions}
                             onChange={next => handleChange('tags', next)}
-                            onCreateOption={handleCreateTagOption}
+                            onCreateOption={label => handleCreateFieldOption('tags', tagField, label)}
+                            onDeleteOption={option => handleDeleteFieldOption('tags', tagField, option)}
+                            placeholder="Ajouter..."
                         />
                     </div>
 
@@ -417,29 +492,43 @@ export default function EventModal({
     )
 }
 
-function EventTagsMultiselect({ value, options, onChange, onCreateOption }) {
+function EventOptionSelect({
+    value,
+    options,
+    onChange,
+    onCreateOption,
+    onDeleteOption,
+    multiple = false,
+    placeholder = 'Ajouter...'
+}) {
     const [search, setSearch] = useState('')
     const [open, setOpen] = useState(false)
     const [creating, setCreating] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+    const [contextMenu, setContextMenu] = useState(null)
     const rootRef = useRef(null)
     const inputRef = useRef(null)
 
-    const selectedValues = useMemo(() => normalizeTagValues(value), [value])
-    const allOptions = useMemo(() => mergeTagOptions([
+    const selectedValues = useMemo(() => {
+        if (multiple) return normalizeOptionValues(value)
+        const token = value === undefined || value === null ? '' : String(value).trim()
+        return token ? [token] : []
+    }, [multiple, value])
+    const allOptions = useMemo(() => mergePickerOptions([
         options,
-        selectedValues.map(tag => ({ label: tag, value: tag })),
+        selectedValues.map(item => ({ label: item, value: item })),
     ]), [options, selectedValues])
 
     const selectedOptions = useMemo(() => {
-        return selectedValues.map(tag => {
-            return allOptions.find(opt => tagMatchesValue(opt, tag)) || { label: tag, value: tag, color: DEFAULT_CREATED_TAG_COLOR }
+        return selectedValues.map(item => {
+            return allOptions.find(opt => optionMatchesValue(opt, item)) || { label: item, value: item, color: DEFAULT_CREATED_OPTION_COLOR }
         })
     }, [allOptions, selectedValues])
 
     const query = search.trim().toLowerCase()
     const filteredOptions = useMemo(() => {
         return allOptions
-            .filter(opt => !selectedValues.some(tag => tagMatchesValue(opt, tag)))
+            .filter(opt => !selectedValues.some(item => optionMatchesValue(opt, item)))
             .filter(opt => {
                 if (!query) return true
                 return String(opt.label || '').toLowerCase().includes(query) || String(opt.value || '').toLowerCase().includes(query)
@@ -459,108 +548,181 @@ function EventTagsMultiselect({ value, options, onChange, onCreateOption }) {
         const onDown = (event) => {
             if (!rootRef.current || rootRef.current.contains(event.target)) return
             setOpen(false)
+            setContextMenu(null)
             setSearch('')
         }
+        const onEscape = (event) => {
+            if (event.key === 'Escape') {
+                setOpen(false)
+                setContextMenu(null)
+                setSearch('')
+            }
+        }
         document.addEventListener('mousedown', onDown)
-        return () => document.removeEventListener('mousedown', onDown)
+        document.addEventListener('keydown', onEscape)
+        return () => {
+            document.removeEventListener('mousedown', onDown)
+            document.removeEventListener('keydown', onEscape)
+        }
     }, [])
 
-    const addTag = useCallback((option) => {
-        const opt = normalizeTagOption(option)
+    const selectOption = useCallback((option) => {
+        const opt = normalizePickerOption(option)
         if (!opt.value) return
-        const exists = selectedValues.some(tag => tag.toLowerCase() === String(opt.value).toLowerCase())
-        if (!exists) onChange([...selectedValues, opt.value])
+        if (multiple) {
+            const exists = selectedValues.some(item => item.toLowerCase() === String(opt.value).toLowerCase())
+            if (!exists) onChange([...selectedValues, opt.value])
+        } else {
+            onChange(opt.value)
+            setOpen(false)
+        }
         setSearch('')
-        setOpen(true)
+        setContextMenu(null)
+        if (multiple) setOpen(true)
         requestAnimationFrame(() => inputRef.current?.focus())
-    }, [onChange, selectedValues])
+    }, [multiple, onChange, selectedValues])
 
-    const removeTag = useCallback((tag) => {
-        onChange(selectedValues.filter(item => item.toLowerCase() !== String(tag).toLowerCase()))
+    const removeValue = useCallback((item) => {
+        if (multiple) {
+            onChange(selectedValues.filter(value => value.toLowerCase() !== String(item).toLowerCase()))
+        } else {
+            onChange('')
+        }
+        setContextMenu(null)
         requestAnimationFrame(() => inputRef.current?.focus())
-    }, [onChange, selectedValues])
+    }, [multiple, onChange, selectedValues])
 
-    const createTag = useCallback(async () => {
+    const createOption = useCallback(async () => {
         const label = search.trim()
         if (!label || hasExactMatch || creating) return
         setCreating(true)
         try {
             const created = await onCreateOption(label)
-            addTag(created || { label, value: label })
+            selectOption(created || { label, value: label })
         } catch (err) {
-            console.error('[EventTags] Create option error:', err)
+            console.error('[EventOptionSelect] Create option error:', err)
             window.showMessage ? window.showMessage(err.message || 'Création impossible', 'danger') : alert(err.message || 'Création impossible')
         } finally {
             setCreating(false)
         }
-    }, [addTag, creating, hasExactMatch, onCreateOption, search])
+    }, [creating, hasExactMatch, onCreateOption, search, selectOption])
+
+    const openOptionContextMenu = useCallback((event, option) => {
+        if (!onDeleteOption) return
+        event.preventDefault()
+        event.stopPropagation()
+        setContextMenu({
+            x: event.clientX,
+            y: event.clientY,
+            option: normalizePickerOption(option)
+        })
+    }, [onDeleteOption])
+
+    const deleteContextOption = useCallback(async () => {
+        if (!contextMenu?.option || !onDeleteOption || deleting) return
+        setDeleting(true)
+        try {
+            const deleted = await onDeleteOption(contextMenu.option)
+            if (deleted === false) {
+                setContextMenu(null)
+                return
+            }
+            removeValue(contextMenu.option.value)
+            setContextMenu(null)
+            setOpen(false)
+        } catch (err) {
+            console.error('[EventOptionSelect] Delete option error:', err)
+            window.showMessage ? window.showMessage(err.message || 'Suppression impossible', 'danger') : alert(err.message || 'Suppression impossible')
+        } finally {
+            setDeleting(false)
+        }
+    }, [contextMenu, deleting, onDeleteOption, removeValue])
 
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
             event.preventDefault()
-            if (filteredOptions.length > 0) addTag(filteredOptions[0])
-            else createTag()
+            if (filteredOptions.length > 0) selectOption(filteredOptions[0])
+            else createOption()
         } else if (event.key === 'Backspace' && !search && selectedValues.length > 0) {
-            removeTag(selectedValues[selectedValues.length - 1])
+            removeValue(selectedValues[selectedValues.length - 1])
         } else if (event.key === 'Escape') {
             setOpen(false)
+            setContextMenu(null)
             setSearch('')
         }
     }
 
     return (
-        <div className="ra-tag-ms" ref={rootRef}>
-            <div className={`ra-tag-ms-control ${open ? 'open' : ''}`} onClick={() => { setOpen(true); inputRef.current?.focus() }}>
-                {selectedOptions.map(tag => (
+        <div className="ra-option-picker" ref={rootRef}>
+            <div className={`ra-option-control ${open ? 'open' : ''}`} onClick={() => { setOpen(true); inputRef.current?.focus() }}>
+                {selectedOptions.map(option => (
                     <span
-                        key={tag.value}
-                        className="ra-tag-ms-pill"
+                        key={option.value}
+                        className="ra-option-pill"
+                        onContextMenu={event => openOptionContextMenu(event, option)}
+                        title={onDeleteOption ? 'Clic droit pour supprimer cette option' : undefined}
                         style={{
-                            '--tag-c': tag.color || DEFAULT_CREATED_TAG_COLOR,
-                            background: `${tag.color || DEFAULT_CREATED_TAG_COLOR}12`,
-                            borderColor: `${tag.color || DEFAULT_CREATED_TAG_COLOR}35`,
-                            color: tag.color || DEFAULT_CREATED_TAG_COLOR,
+                            '--option-c': option.color || DEFAULT_CREATED_OPTION_COLOR,
+                            background: `${option.color || DEFAULT_CREATED_OPTION_COLOR}12`,
+                            borderColor: `${option.color || DEFAULT_CREATED_OPTION_COLOR}35`,
+                            color: option.color || DEFAULT_CREATED_OPTION_COLOR,
                         }}
                     >
-                        {tag.label}
-                        <button type="button" onClick={(event) => { event.stopPropagation(); removeTag(tag.value) }} aria-label={`Retirer ${tag.label}`}>
+                        <span className="ra-option-dot" style={{ background: option.color || DEFAULT_CREATED_OPTION_COLOR }} />
+                        {option.label}
+                        <button type="button" onClick={(event) => { event.stopPropagation(); removeValue(option.value) }} aria-label={`Retirer ${option.label}`}>
                             ×
                         </button>
                     </span>
                 ))}
                 <input
                     ref={inputRef}
-                    className="ra-tag-ms-input"
+                    className="ra-option-input"
                     value={search}
                     onChange={event => { setSearch(event.target.value); setOpen(true) }}
                     onFocus={() => setOpen(true)}
                     onKeyDown={handleKeyDown}
-                    placeholder={selectedOptions.length ? 'Ajouter...' : 'Important, Date limite...'}
+                    placeholder={selectedOptions.length ? 'Ajouter...' : placeholder}
                 />
             </div>
 
             {open && (filteredOptions.length > 0 || (search.trim() && !hasExactMatch)) && (
-                <div className="ra-tag-ms-menu">
+                <div className="ra-option-menu">
                     {filteredOptions.map(option => (
-                        <button key={option.value} type="button" className="ra-tag-ms-option" onClick={() => addTag(option)}>
-                            <span className="ra-tag-ms-dot" style={{ background: option.color || DEFAULT_CREATED_TAG_COLOR }} />
+                        <button
+                            key={option.value}
+                            type="button"
+                            className="ra-option-item"
+                            onClick={() => selectOption(option)}
+                            onContextMenu={event => openOptionContextMenu(event, option)}
+                            title={onDeleteOption ? 'Clic droit pour supprimer cette option' : undefined}
+                        >
+                            <span className="ra-option-dot" style={{ background: option.color || DEFAULT_CREATED_OPTION_COLOR }} />
                             <span>{option.label}</span>
                         </button>
                     ))}
                     {search.trim() && !hasExactMatch && (
-                        <button type="button" className="ra-tag-ms-create" onClick={createTag} disabled={creating}>
+                        <button type="button" className="ra-option-create" onClick={createOption} disabled={creating}>
                             <span>+</span>
                             {creating ? 'Création...' : `Créer "${search.trim()}"`}
                         </button>
                     )}
                 </div>
             )}
+
+            {contextMenu && (
+                <div className="ra-option-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
+                    <button type="button" onClick={deleteContextOption} disabled={deleting}>
+                        {deleting ? 'Suppression...' : `Supprimer "${contextMenu.option.label}"`}
+                    </button>
+                </div>
+            )}
         </div>
     )
 }
 
-function getEventTagsField(entityData) {
-    return (entityData?.customFields || []).find(field => field?.name === 'tags_evenement') || null
+function getEventField(entityData, fieldName) {
+    return (entityData?.customFields || []).find(field => field?.name === fieldName) || null
 }
 
 function normalizeBooleanValue(value, fallback = false) {
@@ -576,48 +738,87 @@ function normalizeBooleanValue(value, fallback = false) {
 }
 
 function normalizeTagValues(value) {
+    return normalizeOptionValues(value)
+}
+
+function normalizeOptionValues(value) {
     const raw = Array.isArray(value)
         ? value
         : (typeof value === 'string' ? value.split(',') : [])
 
     return raw
-        .map(item => String(item || '').trim())
+        .map(item => {
+            if (item && typeof item === 'object') return String(item.value || item.label || item.name || '').trim()
+            return String(item || '').trim()
+        })
         .filter(Boolean)
         .filter((item, idx, arr) => arr.findIndex(other => other.toLowerCase() === item.toLowerCase()) === idx)
 }
 
-function normalizeTagOption(option) {
+function normalizePickerOption(option) {
     if (typeof option === 'object' && option) {
-        const label = String(option.label || option.value || '').trim()
-        const value = String(option.value || option.label || '').trim()
-        return { label, value, color: option.color || DEFAULT_CREATED_TAG_COLOR }
+        const id = option.id || option._id?.toString?.() || option._id || ''
+        const label = String(option.label || option.value || option.name || id || '').trim()
+        const value = String(option.value || id || option.label || '').trim()
+        return { label, value, color: option.color || DEFAULT_CREATED_OPTION_COLOR, id: String(id || value) }
     }
 
     const value = String(option || '').trim()
-    return { label: value, value, color: DEFAULT_CREATED_TAG_COLOR }
+    return { label: value, value, color: DEFAULT_CREATED_OPTION_COLOR, id: value }
 }
 
-function tagMatchesValue(option, value) {
+function normalizeStatusOption(option) {
+    const normalized = normalizePickerOption(option)
+    const id = option?.id || option?._id?.toString?.() || option?._id || normalized.value
+    return {
+        ...normalized,
+        value: String(id || normalized.value || '').trim(),
+        id: String(id || normalized.value || '').trim(),
+    }
+}
+
+function optionMatchesValue(option, value) {
     const token = String(value || '').trim().toLowerCase()
-    return [option.value, option.label]
+    return [option.value, option.label, option.id]
         .filter(item => item !== undefined && item !== null)
         .some(item => String(item).trim().toLowerCase() === token)
 }
 
-function mergeTagOptions(groups) {
+function mergePickerOptions(groups, deletedTokens = []) {
     const merged = []
     const seen = new Set()
+    const deleted = new Set((deletedTokens || []).map(token => String(token || '').trim().toLowerCase()).filter(Boolean))
 
     groups.flat().forEach(option => {
-        const normalized = normalizeTagOption(option)
+        const normalized = normalizePickerOption(option)
         if (!normalized.value) return
-        const token = normalized.value.toLowerCase()
+        const optionTokens = [normalized.value, normalized.label, normalized.id]
+            .map(token => String(token || '').trim().toLowerCase())
+            .filter(Boolean)
+        if (optionTokens.some(token => deleted.has(token))) return
+        const token = String(normalized.value || normalized.label).toLowerCase()
         if (seen.has(token)) return
         seen.add(token)
         merged.push(normalized)
     })
 
     return merged
+}
+
+function mergeDeletedTokens(tokens, option) {
+    const normalized = normalizePickerOption(option)
+    const next = new Set((tokens || []).map(token => String(token || '').trim().toLowerCase()).filter(Boolean))
+    ;[normalized.value, normalized.label, normalized.id]
+        .map(token => String(token || '').trim().toLowerCase())
+        .filter(Boolean)
+        .forEach(token => next.add(token))
+    return [...next]
+}
+
+function colorForOptionLabel(label) {
+    const text = String(label || '')
+    const total = [...text].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+    return CREATED_OPTION_COLORS[total % CREATED_OPTION_COLORS.length] || DEFAULT_CREATED_OPTION_COLOR
 }
 
 function toLocalDateTime(date) {
@@ -704,65 +905,79 @@ function getModalStyles() {
 .dark .ra-input:focus { border-color:#14b8a6; }
 .ra-textarea { resize:vertical; min-height:60px; line-height:1.45; }
 
-.ra-tag-ms { position:relative; }
-.ra-tag-ms-control {
+.ra-option-picker { position:relative; }
+.ra-option-control {
     min-height:42px; width:100%; padding:6px 8px;
     border:1.5px solid #e2e8f0; border-radius:8px;
     background:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:6px;
     cursor:text; transition:border-color .2s, box-shadow .2s; box-sizing:border-box;
 }
-.ra-tag-ms-control.open {
+.ra-option-control.open {
     border-color:#14b8a6;
     box-shadow:0 0 0 3px rgba(20,184,166,.08);
 }
-.dark .ra-tag-ms-control { background:#1b2e4b; border-color:#253b5c; }
-.dark .ra-tag-ms-control.open { border-color:#14b8a6; }
-.ra-tag-ms-pill {
+.dark .ra-option-control { background:#1b2e4b; border-color:#253b5c; }
+.dark .ra-option-control.open { border-color:#14b8a6; }
+.ra-option-pill {
     display:inline-flex; align-items:center; gap:5px;
     min-height:25px; padding:3px 8px; border:1px solid;
     border-radius:7px; font-size:12px; font-weight:700; line-height:1.2;
 }
-.ra-tag-ms-pill button {
+.ra-option-pill button {
     width:16px; height:16px; border:0; border-radius:50%;
     background:transparent; color:inherit; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
     font-size:14px; line-height:1; opacity:.65; padding:0;
 }
-.ra-tag-ms-pill button:hover { opacity:1; background:rgba(15,23,42,.08); }
-.ra-tag-ms-input {
+.ra-option-pill button:hover { opacity:1; background:rgba(15,23,42,.08); }
+.ra-option-input {
     flex:1; min-width:130px; border:0; outline:0; background:transparent;
     color:#0e1726; font-size:13px; font-family:inherit; padding:4px 3px;
 }
-.ra-tag-ms-input::placeholder { color:#9ca3af; }
-.dark .ra-tag-ms-input { color:#e0e6ed; }
-.ra-tag-ms-menu {
+.ra-option-input::placeholder { color:#9ca3af; }
+.dark .ra-option-input { color:#e0e6ed; }
+.ra-option-menu {
     position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:20;
     background:#fff; border:1px solid #e2e8f0; border-radius:10px;
     box-shadow:0 16px 42px rgba(15,23,42,.14);
     padding:5px; max-height:210px; overflow-y:auto;
 }
-.dark .ra-tag-ms-menu { background:#0e1726; border-color:#253b5c; box-shadow:0 16px 42px rgba(0,0,0,.32); }
-.ra-tag-ms-option,
-.ra-tag-ms-create {
+.dark .ra-option-menu { background:#0e1726; border-color:#253b5c; box-shadow:0 16px 42px rgba(0,0,0,.32); }
+.ra-option-item,
+.ra-option-create {
     width:100%; border:0; background:transparent; border-radius:8px;
     display:flex; align-items:center; gap:8px; padding:8px 9px;
     color:#334155; font-size:12.5px; font-weight:700;
     cursor:pointer; text-align:left; font-family:inherit;
 }
-.ra-tag-ms-option:hover,
-.ra-tag-ms-create:hover { background:#f8fafc; }
-.dark .ra-tag-ms-option,
-.dark .ra-tag-ms-create { color:#e0e6ed; }
-.dark .ra-tag-ms-option:hover,
-.dark .ra-tag-ms-create:hover { background:#1b2e4b; }
-.ra-tag-ms-dot { width:8px; height:8px; border-radius:50%; flex:none; }
-.ra-tag-ms-create { color:#14b8a6; border-top:1px solid #f1f5f9; margin-top:3px; }
-.dark .ra-tag-ms-create { border-top-color:#253b5c; }
-.ra-tag-ms-create span {
+.ra-option-item:hover,
+.ra-option-create:hover { background:#f8fafc; }
+.dark .ra-option-item,
+.dark .ra-option-create { color:#e0e6ed; }
+.dark .ra-option-item:hover,
+.dark .ra-option-create:hover { background:#1b2e4b; }
+.ra-option-dot { width:8px; height:8px; border-radius:50%; flex:none; }
+.ra-option-create { color:#14b8a6; border-top:1px solid #f1f5f9; margin-top:3px; }
+.dark .ra-option-create { border-top-color:#253b5c; }
+.ra-option-create span {
     width:18px; height:18px; border-radius:6px; background:rgba(20,184,166,.12);
     display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800;
 }
-.ra-tag-ms-create:disabled { opacity:.6; cursor:wait; }
+.ra-option-create:disabled { opacity:.6; cursor:wait; }
+.ra-option-context-menu {
+    position:fixed; z-index:10020; min-width:180px;
+    padding:5px; border-radius:9px; border:1px solid #e2e8f0;
+    background:#fff; box-shadow:0 16px 42px rgba(15,23,42,.18);
+}
+.dark .ra-option-context-menu { background:#0e1726; border-color:#253b5c; box-shadow:0 16px 42px rgba(0,0,0,.34); }
+.ra-option-context-menu button {
+    width:100%; border:0; border-radius:7px; background:transparent;
+    color:#ef4444; cursor:pointer; padding:8px 9px; text-align:left;
+    font-size:12px; font-weight:800; font-family:inherit;
+}
+.ra-option-context-menu button:hover { background:#fef2f2; }
+.ra-option-context-menu button:disabled { opacity:.6; cursor:wait; }
+.dark .ra-option-context-menu button:hover { background:rgba(127,29,29,.2); }
 
 .ra-widget-switches { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .ra-widget-switch {
@@ -807,22 +1022,6 @@ function getModalStyles() {
     font-size:12px; font-weight:700; line-height:1.4;
 }
 .dark .ra-modal-error { background:rgba(127,29,29,.18); border-color:#7f1d1d; color:#fecaca; }
-
-.ra-type-pills, .ra-status-pills { display:flex; flex-wrap:wrap; gap:6px; }
-
-.ra-type-pill, .ra-status-pill {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:5px 12px; border-radius:7px;
-    border:1.5px solid #e2e8f0; background:#fff;
-    font-size:12px; font-weight:600; color:#6b7280;
-    cursor:pointer; transition:all .2s; font-family:inherit;
-}
-.ra-type-pill:hover, .ra-status-pill:hover { border-color:#d1d5db; }
-.dark .ra-type-pill, .dark .ra-status-pill {
-    background:#1b2e4b; border-color:#253b5c; color:#888da8;
-}
-
-.ra-pill-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 
 .ra-modal-footer {
     display:flex; align-items:center; justify-content:space-between;

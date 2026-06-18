@@ -148,9 +148,9 @@ const hubTaskText = (value, fallback = '') => {
     return text;
 };
 const hubTaskListLabel = (value) => {
-    const label = hubTaskText(value, 'À faire');
+    const label = hubTaskText(value, 'Liste des tâches');
     const lower = label.toLowerCase();
-    return (lower === 'général' || lower === 'tâches du jour' || lower === 'taches du jour') ? 'À faire' : label;
+    return (lower === 'général' || lower === 'tâches du jour' || lower === 'taches du jour') ? 'Liste des tâches' : label;
 };
 const hubDefaultStatuses = [
     { label: 'À faire', color: '#9ca3af', order: 0 },
@@ -273,7 +273,7 @@ async function ensurePersonalTaskRecord(req) {
 }
 
 async function ensurePersonalTaskList(req, options = {}) {
-    const label = hubTaskListLabel(options.label || 'À faire');
+    const label = hubTaskListLabel(options.label || 'Liste des tâches');
     const color = options.color || '#6366f1';
     const icon = options.icon || 'solar:checklist-bold-duotone';
     const { entity, record } = await ensurePersonalTaskRecord(req);
@@ -327,7 +327,7 @@ async function ensurePersonalTaskList(req, options = {}) {
 
 async function ensurePersonalTasksTarget(req) {
     return ensurePersonalTaskList(req, {
-        label: 'À faire',
+        label: 'Liste des tâches',
         color: '#6366f1',
         icon: 'solar:checklist-bold-duotone'
     });

@@ -26,7 +26,8 @@ const IMPORTANT_DATE_WIDGET_FIELD = 'widget_date_importante'
 export default function EventModal({
     isOpen, onClose, event, entityData, prefillDate,
     onCreate, onUpdate, onDelete,
-    getCustomFieldValue, getStatusInfo, accountNumber
+    getCustomFieldValue, getStatusInfo, accountNumber,
+    taskLists = [], recordId
 }) {
     const [form, setForm] = useState({
         title: '',
@@ -40,6 +41,8 @@ export default function EventModal({
         statusOptionId: '',
         showInUpcomingWidget: true,
         isImportantDate: false,
+        createTask: false,
+        selectedTaskListId: '',
     })
     const [saving, setSaving] = useState(false)
     const [formError, setFormError] = useState('')
@@ -76,6 +79,8 @@ export default function EventModal({
                     getCustomFieldValue(event, IMPORTANT_DATE_WIDGET_FIELD),
                     eventTags.some(tag => tag.toLowerCase() === 'date importante')
                 ),
+                createTask: false,
+                selectedTaskListId: '',
             })
         } else {
             // New event
@@ -99,6 +104,9 @@ export default function EventModal({
             // Default status = first option (Planifié)
             const defaultStatusId = entityData?.statusClassification?.options?.[0]?._id?.toString() || ''
 
+            // Default task list = first one if available
+            const defaultTaskListId = taskLists.length > 0 ? taskLists[0]._id : ''
+
             setForm({
                 title: '',
                 date: defaultDate,
@@ -111,6 +119,8 @@ export default function EventModal({
                 statusOptionId: defaultStatusId,
                 showInUpcomingWidget: true,
                 isImportantDate: false,
+                createTask: false,
+                selectedTaskListId: defaultTaskListId,
             })
         }
     }, [isOpen, event, prefillDate, entityData, getCustomFieldValue, getStatusInfo])
@@ -147,6 +157,12 @@ export default function EventModal({
                 statusOptionId: form.statusOptionId || undefined,
                 showInUpcomingWidget: !!form.showInUpcomingWidget,
                 isImportantDate: !!form.isImportantDate,
+            }
+
+            // Add task creation fields for new events
+            if (!isEditing && form.createTask && form.selectedTaskListId) {
+                payload.createTask = true
+                payload.taskListId = form.selectedTaskListId
             }
 
             if (isEditing) {
@@ -427,6 +443,43 @@ export default function EventModal({
                             </label>
                         </div>
                     </div>
+
+                    {/* Task creation toggle — only for new events */}
+                    {!isEditing && taskLists.length > 0 && (
+                        <div className="ra-field">
+                            <label className="ra-label">Tâche</label>
+                            <div className="ra-widget-switches">
+                                <label className={`ra-widget-switch ${form.createTask ? 'active' : ''}`}>
+                                    <span className="ra-widget-switch-copy">
+                                        <strong>Créer tâche</strong>
+                                        <small>Ajouter aussi une tâche dans la liste</small>
+                                    </span>
+                                    <span className="ra-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!form.createTask}
+                                            onChange={e => handleChange('createTask', e.target.checked)}
+                                        />
+                                        <span />
+                                    </span>
+                                </label>
+                            </div>
+                            {form.createTask && taskLists.length > 1 && (
+                                <select
+                                    className="ra-input"
+                                    value={form.selectedTaskListId}
+                                    onChange={e => handleChange('selectedTaskListId', e.target.value)}
+                                    style={{ marginTop: 8 }}
+                                >
+                                    {taskLists.map(list => (
+                                        <option key={list._id} value={list._id}>
+                                            {list.label || 'Liste des tâches'}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                    )}
 
                     {/* Location */}
                     <div className="ra-field">

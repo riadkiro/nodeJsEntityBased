@@ -1,0 +1,322 @@
+<!-- Shared Task Detail Modal — reusable across hub + record pages -->
+
+<style>
+/* ═══ Task Detail Modal — shared across hub + record ═══ */
+.tdm-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.32);backdrop-filter:blur(4px);z-index:998;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
+.tdm-backdrop.open{opacity:1;pointer-events:auto}
+.tdm-modal{width:min(820px,94vw);max-height:88vh;background:#fff;border-radius:16px;box-shadow:0 32px 80px rgba(15,23,42,.18);display:flex;flex-direction:column;transform:scale(.95) translateY(12px);transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.tdm-backdrop.open .tdm-modal{transform:scale(1) translateY(0)}
+.tdm-head{height:52px;display:flex;align-items:center;gap:10px;padding:0 24px;border-bottom:1px solid #eef2f7}
+.tdm-head-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f118,#6366f108);color:#6366f1;flex:0 0 auto}
+.tdm-head-label{color:#7c89a6;font-size:12.5px;font-weight:700;flex:1;min-width:0}
+.tdm-close{width:30px;height:30px;border:0;border-radius:8px;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s}
+.tdm-close:hover{background:#eef2f7;color:#64748b}
+.tdm-title{padding:20px 24px 4px;font-size:18px;font-weight:850;color:#111827;line-height:1.3}
+.tdm-title-input{width:100%;border:none;outline:none;background:transparent;font-size:18px;font-weight:850;color:#111827;font-family:inherit;padding:0}
+.tdm-title-input:focus{border-bottom:2px solid #6366f1}
+.tdm-body{display:grid;grid-template-columns:minmax(0,1.1fr) auto minmax(0,1fr);gap:0;padding:0 24px 18px;flex:1;overflow:auto}
+.tdm-col{padding:16px 0}
+.tdm-col-desc{padding-right:20px;border-right:1px solid #f1f4f8}
+.tdm-col-props{padding:16px 20px;border-right:1px solid #f1f4f8;min-width:200px}
+.tdm-col-conv{padding-left:20px}
+.tdm-section-label{margin:0 0 8px;color:#7c89a6;font-size:10.5px;font-weight:850;text-transform:uppercase;letter-spacing:.4px}
+.tdm-desc{min-height:140px;width:100%;border:1px solid #e8ecf1;border-radius:11px;background:#fbfcff;color:#0f172a;font-size:12.5px;font-weight:600;line-height:1.55;padding:12px;resize:vertical;font-family:inherit;outline:none}
+.tdm-desc:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.07)}
+.tdm-desc::placeholder{color:#94a3b8}
+.tdm-prop{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f6f9}
+.tdm-prop:last-child{border-bottom:none}
+.tdm-prop iconify-icon{color:#9aa6bf;flex:0 0 auto}
+.tdm-prop-label{min-width:72px;color:#7c89a6;font-size:12px;font-weight:750}
+.tdm-prop-val{margin-left:auto;color:#111827;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px}
+.tdm-prop-select{height:30px;border:1px solid #e8ecf1;border-radius:7px;background:#fff;color:#111827;font-family:inherit;font-size:12px;font-weight:700;padding:0 8px;outline:none;cursor:pointer;margin-left:auto;min-width:100px;transition:border-color .15s}
+.tdm-prop-select:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.08)}
+.tdm-prop-date{height:30px;border:1px solid #e8ecf1;border-radius:7px;background:#fff;color:#111827;font-family:inherit;font-size:12px;font-weight:700;padding:0 8px;outline:none;cursor:pointer;margin-left:auto;min-width:120px;transition:border-color .15s}
+.tdm-prop-date:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.08)}
+.tdm-toggle{position:relative;width:36px;height:20px;border-radius:999px;background:#d1d5db;cursor:pointer;transition:background .2s;border:none;padding:0;margin-left:auto;flex:0 0 auto}
+.tdm-toggle.active{background:#10b981}
+.tdm-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.tdm-toggle.active::after{transform:translateX(16px)}
+.tdm-conv-entry{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f5f6f9}
+.tdm-conv-entry:last-child{border-bottom:none}
+.tdm-conv-text{color:#475569;font-size:12px;font-weight:600;line-height:1.45}
+.tdm-conv-date{color:#b2bdd0;font-size:10.5px;font-weight:700;margin-top:4px}
+.tdm-msg-input{width:100%;height:40px;border:1px solid #e1e7f0;border-radius:10px;color:#0f172a;font-family:inherit;font-size:12px;font-weight:600;padding:0 12px;margin-top:12px;outline:none;background:#fff}
+.tdm-msg-input:focus{border-color:#6366f1}
+.tdm-msg-input::placeholder{color:#94a3b8}
+.tdm-foot{height:58px;border-top:1px solid #eef2f7;display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.tdm-foot-created{color:#b2bdd0;font-size:11px;font-weight:650}
+.tdm-foot-esc{color:#b2bdd0;font-size:11px;font-weight:650}
+.tdm-delete{height:36px;border:1px solid #fecaca;background:#fff;color:#ef4444;border-radius:9px;padding:0 13px;font-family:inherit;font-size:12px;font-weight:800;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .14s}
+.tdm-delete:hover{background:#fef2f2;border-color:#ef4444}
+/* Dark mode */
+.dark .tdm-modal{background:#0e1726;box-shadow:0 32px 80px rgba(0,0,0,.45)}
+.dark .tdm-head{border-color:#1b2e4b}
+.dark .tdm-title,.dark .tdm-title-input{color:#e0e6ed}
+.dark .tdm-desc,.dark .tdm-msg-input{background:#0b1320;border-color:#253b5c;color:#8ea0bd}
+.dark .tdm-prop{border-color:#1b2e4b}
+.dark .tdm-prop-val{color:#e0e6ed}
+.dark .tdm-prop-select,.dark .tdm-prop-date{background:#0b1320;border-color:#253b5c;color:#e0e6ed}
+.dark .tdm-conv-entry{border-color:#1b2e4b}
+.dark .tdm-foot{border-color:#1b2e4b}
+.dark .tdm-close{background:#17233a;color:#8ea0bd}
+.dark .tdm-close:hover{background:#253b5c;color:#e0e6ed}
+.dark .tdm-col-desc,.dark .tdm-col-props{border-color:#1b2e4b}
+/* Responsive */
+@media(max-width:900px){.tdm-modal{width:96vw;max-height:94vh}.tdm-body{grid-template-columns:1fr;gap:0}.tdm-col-desc,.tdm-col-props{border-right:none;border-bottom:1px solid #f1f4f8;padding:14px 0}.tdm-col-conv{padding:14px 0 0}}
+</style>
+
+<!-- ═══ Modal HTML ═══ -->
+<div x-data x-show="$store.taskModal.task" x-cloak>
+    <div class="tdm-backdrop" :class="{'open': $store.taskModal.task}" @click.self="$store.taskModal.close()">
+        <div class="tdm-modal" @keydown.escape.window="$store.taskModal.close()">
+            <template x-if="$store.taskModal.task">
+                <div style="display:flex;flex-direction:column;height:100%">
+                    <div class="tdm-head">
+                        <span class="tdm-head-icon">
+                            <iconify-icon :icon="$store.taskModal.task.listIcon || 'solar:checklist-bold-duotone'" width="15"></iconify-icon>
+                        </span>
+                        <span class="tdm-head-label" x-text="$store.taskModal.task.listLabel || 'Liste des tâches'"></span>
+                        <button class="tdm-close" type="button" @click="$store.taskModal.close()"><iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon></button>
+                    </div>
+                    <div class="tdm-title">
+                        <input type="text" class="tdm-title-input" x-model="$store.taskModal.task.title" @blur="$store.taskModal.updateField('title', $store.taskModal.task.title)">
+                    </div>
+
+                    <div class="tdm-body">
+                        <!-- Col 1: Description -->
+                        <div class="tdm-col tdm-col-desc">
+                            <div class="tdm-section-label">Description</div>
+                            <textarea class="tdm-desc" placeholder="Ajouter une description détaillée..." x-model="$store.taskModal.task.description" @blur="$store.taskModal.updateField('description', $store.taskModal.task.description)"></textarea>
+                        </div>
+
+                        <!-- Col 2: Properties -->
+                        <div class="tdm-col tdm-col-props">
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:check-circle-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Statut</span>
+                                <select class="tdm-prop-select" x-model="$store.taskModal.task.status" @change="$store.taskModal.updateField('status', $store.taskModal.task.status)">
+                                    <option value="À faire">À faire</option>
+                                    <option value="En cours">En cours</option>
+                                    <option value="En revue">En revue</option>
+                                    <option value="Terminé">Terminé</option>
+                                    <option value="Bloqué">Bloqué</option>
+                                </select>
+                            </div>
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:flag-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Priorité</span>
+                                <select class="tdm-prop-select" x-model="$store.taskModal.task.priority" @change="$store.taskModal.updateField('priority', $store.taskModal.task.priority)">
+                                    <option value="Aucune">Normale</option>
+                                    <option value="Basse">Basse</option>
+                                    <option value="Moyenne">Moyenne</option>
+                                    <option value="Haute">Haute</option>
+                                    <option value="Urgente">Urgente</option>
+                                </select>
+                            </div>
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:star-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Priorité jour</span>
+                                <button type="button" class="tdm-toggle" :class="{'active': $store.taskModal.task.isDayPriority}" @click="$store.taskModal.task.isDayPriority = !$store.taskModal.task.isDayPriority; $store.taskModal.updateField('isDayPriority', $store.taskModal.task.isDayPriority)"></button>
+                            </div>
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:user-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Assigné</span>
+                                <span class="tdm-prop-val" x-text="$store.taskModal.task.assignedTo || 'Non assigné'" :style="!$store.taskModal.task.assignedTo ? 'color:#94a3b8' : ''"></span>
+                            </div>
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:calendar-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Début</span>
+                                <input type="date" class="tdm-prop-date" :value="$store.taskModal.toDateVal($store.taskModal.task.startDate)" @change="$store.taskModal.updateField('startDate', $event.target.value || null)">
+                            </div>
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:calendar-mark-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Échéance</span>
+                                <input type="date" class="tdm-prop-date" :value="$store.taskModal.toDateVal($store.taskModal.task.dueDate)" @change="$store.taskModal.updateField('dueDate', $event.target.value || null)">
+                            </div>
+                            <div class="tdm-prop">
+                                <iconify-icon icon="solar:list-linear" width="16"></iconify-icon>
+                                <span class="tdm-prop-label">Liste</span>
+                                <span class="tdm-prop-val" x-text="$store.taskModal.task.listLabel || 'Liste des tâches'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Col 3: Conversation -->
+                        <div class="tdm-col tdm-col-conv">
+                            <div class="tdm-section-label">
+                                <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="14" style="color:#6366f1;vertical-align:-2px"></iconify-icon>
+                                Conversation
+                                <template x-if="$store.taskModal.task._comments && $store.taskModal.task._comments.length">
+                                    <span x-text="'(' + $store.taskModal.task._comments.length + ')'" style="color:#94a3b8;font-weight:700"></span>
+                                </template>
+                            </div>
+                            <div style="flex:1;overflow-y:auto;max-height:260px">
+                                <template x-if="!$store.taskModal.task._comments || !$store.taskModal.task._comments.length">
+                                    <div style="color:#94a3b8;font-size:12px;font-weight:600;padding:18px 0;text-align:center">
+                                        Aucune conversation pour le moment.
+                                    </div>
+                                </template>
+                                <template x-for="comment in ($store.taskModal.task._comments || [])" :key="comment._id || comment.text">
+                                    <div class="tdm-conv-entry">
+                                        <template x-if="comment.type === 'activity'">
+                                            <div>
+                                                <span style="font-size:11.5px;font-weight:700;color:#6366f1" x-text="comment.userName || 'Système'"></span>
+                                                <span style="font-size:11.5px;color:#64748b;font-weight:600" x-text="' a changé la ' + (comment.metadata?.field === 'priority' ? 'priorité' : comment.metadata?.field) + ' : '"></span>
+                                                <span style="font-size:11px;font-weight:800;padding:2px 6px;border-radius:4px;background:#f1f5f9;color:#64748b" x-text="comment.metadata?.oldValue || '—'"></span>
+                                                <span style="font-size:11px;color:#94a3b8"> → </span>
+                                                <span style="font-size:11px;font-weight:800;padding:2px 6px;border-radius:4px;background:#eef2ff;color:#4f46e5" x-text="comment.metadata?.newValue || '—'"></span>
+                                                <div class="tdm-conv-date" x-text="$store.taskModal.formatDate(comment.createdAt)"></div>
+                                            </div>
+                                        </template>
+                                        <template x-if="comment.type !== 'activity'">
+                                            <div>
+                                                <span style="font-size:11.5px;font-weight:700;color:#6366f1" x-text="comment.userName || 'Système'"></span>
+                                                <div class="tdm-conv-text" x-text="comment.text"></div>
+                                                <div class="tdm-conv-date" x-text="$store.taskModal.formatDate(comment.createdAt)"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                            <input class="tdm-msg-input" type="text" placeholder="Écrire un message..." @keydown.enter="$store.taskModal.sendComment($event.target.value); $event.target.value = ''">
+                        </div>
+                    </div>
+
+                    <div class="tdm-foot">
+                        <button class="tdm-delete" type="button" @click="$store.taskModal.remove()"><iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon> Supprimer</button>
+                        <span class="tdm-foot-created" x-text="'Créée le ' + $store.taskModal.formatLongDate($store.taskModal.task.createdAt)"></span>
+                        <span class="tdm-foot-esc">Esc pour fermer</span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const API = '/account/<%= account_number %>';
+
+    Alpine.store('taskModal', {
+        task: null,
+        _onUpdate: null,   // callback after update
+        _onDelete: null,   // callback after delete
+
+        async open(taskObj, { onUpdate, onDelete } = {}) {
+            this.task = { ...taskObj, _comments: [] };
+            this._onUpdate = onUpdate || null;
+            this._onDelete = onDelete || null;
+            // Fetch comments
+            if (taskObj._id) {
+                try {
+                    const res = await fetch(API + '/api/record-tasks/' + taskObj._id + '/comments', { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.comments)) {
+                        this.task._comments = data.comments;
+                    }
+                } catch (e) { console.warn('[TaskModal] Comments fetch error:', e); }
+            }
+        },
+
+        close() {
+            this.task = null;
+            this._onUpdate = null;
+            this._onDelete = null;
+        },
+
+        async updateField(field, value) {
+            if (!this.task?._id) return;
+            try {
+                const body = {};
+                body[field] = value;
+                await fetch(API + '/api/record-tasks/' + this.task._id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+                if (this._onUpdate) this._onUpdate(this.task._id, field, value);
+                if (window.showMessage) window.showMessage('Tâche mise à jour', 'success');
+            } catch (e) {
+                console.error('[TaskModal] Update error:', e);
+                if (window.showMessage) window.showMessage('Erreur lors de la mise à jour', 'danger');
+            }
+        },
+
+        async remove() {
+            if (!this.task?._id) return;
+            if (!confirm('Supprimer cette tâche ?')) return;
+            try {
+                await fetch(API + '/api/record-tasks/' + this.task._id, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const taskId = this.task._id;
+                if (this._onDelete) this._onDelete(taskId);
+                this.close();
+                if (window.showMessage) window.showMessage('Tâche supprimée', 'success');
+            } catch (e) {
+                console.error('[TaskModal] Delete error:', e);
+                if (window.showMessage) window.showMessage('Erreur lors de la suppression', 'danger');
+            }
+        },
+
+        async sendComment(text) {
+            if (!this.task?._id || !text?.trim()) return;
+            try {
+                const res = await fetch(API + '/api/record-tasks/' + this.task._id + '/comments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ text: text.trim() })
+                });
+                const data = await res.json();
+                if (data.success && data.comment) {
+                    this.task._comments = [...(this.task._comments || []), data.comment];
+                }
+            } catch (e) {
+                console.error('[TaskModal] Comment error:', e);
+            }
+        },
+
+        toDateVal(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toISOString().split('T')[0];
+        },
+
+        formatDate(value) {
+            if (!value) return '—';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '—';
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const diff = Math.round((target - today) / 86400000);
+            if (diff === 0) return "Aujourd'hui";
+            if (diff === 1) return 'Demain';
+            if (diff === -1) return 'Hier';
+            if (diff < -1) return 'Il y a ' + Math.abs(diff) + 'j';
+            if (diff <= 7) return d.toLocaleDateString('fr-FR', { weekday: 'long' });
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        },
+
+        formatLongDate(value) {
+            if (!value) return '—';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '—';
+            return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+    });
+
+    // Listen for custom event from React islands
+    window.addEventListener('open-task-modal', (e) => {
+        if (e.detail?.task) {
+            Alpine.store('taskModal').open(e.detail.task, {
+                onUpdate: e.detail.onUpdate || null,
+                onDelete: e.detail.onDelete || null,
+            });
+        }
+    });
+});
+</script>

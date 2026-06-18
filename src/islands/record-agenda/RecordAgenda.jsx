@@ -17,6 +17,7 @@ import ListView from './components/ListView'
 export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     const [events, setEvents] = useState([])
     const [entityData, setEntityData] = useState(null)
+    const [taskLists, setTaskLists] = useState([])
     const [loading, setLoading] = useState(true)
     const [prefsLoaded, setPrefsLoaded] = useState(false)
     const [error, setError] = useState('')
@@ -32,6 +33,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
 
     const baseUrl = `/account/${accountNumber}/api/records/${recordId}/events`
     const prefsUrl = `/account/${accountNumber}/api/user/view-preferences`
+    const taskListsUrl = `/account/${accountNumber}/api/record/${recordId}/task-lists`
 
     // ── Preferences: Load ──
     useEffect(() => {
@@ -158,6 +160,21 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     }, [baseUrl])
 
     useEffect(() => { fetchEvents() }, [fetchEvents])
+
+    // ── Fetch task lists for "Créer tâche" feature ──
+    const fetchTaskLists = useCallback(async () => {
+        try {
+            const res = await fetch(taskListsUrl, { credentials: 'include' })
+            const data = await res.json().catch(() => ({}))
+            if (Array.isArray(data)) setTaskLists(data)
+            else if (Array.isArray(data.lists)) setTaskLists(data.lists)
+            else setTaskLists([])
+        } catch (e) {
+            console.warn('[RecordAgenda] Task lists fetch error:', e)
+            setTaskLists([])
+        }
+    }, [taskListsUrl])
+    useEffect(() => { fetchTaskLists() }, [fetchTaskLists])
 
     // Use a ref for calendarViewType to avoid recreating calendar on view switch
     const calendarViewTypeRef = useRef(calendarViewType)
@@ -325,16 +342,37 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
     const handleCreateEvent = useCallback(async (eventData) => {
         try {
             setError('')
+            const { createTask, taskListId, ...eventPayload } = eventData
             const res = await fetch(baseUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(eventData)
+                body: JSON.stringify(eventPayload)
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.success) {
                 throw new Error(data.error || data.message || "Impossible de creer l'evenement.")
             }
+
+            // Create a task if requested
+            if (createTask && taskListId) {
+                try {
+                    await fetch(`/account/${accountNumber}/api/task-lists/${taskListId}/tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            title: eventPayload.title || 'Nouvelle tâche',
+                            status: 'À faire',
+                            startDate: eventPayload.date || null,
+                            dueDate: eventPayload.endDate || eventPayload.date || null,
+                        })
+                    })
+                } catch (taskErr) {
+                    console.warn('[RecordAgenda] Task creation error (non-blocking):', taskErr)
+                }
+            }
+
             await fetchEvents()
             setIsModalOpen(false)
             setEditingEvent(null)
@@ -344,7 +382,7 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
             setError(err.message || "Impossible de creer l'evenement.")
             throw err
         }
-    }, [baseUrl, fetchEvents])
+    }, [baseUrl, fetchEvents, accountNumber])
 
     const handleUpdateEvent = useCallback(async (eventId, eventData) => {
         try {
@@ -512,6 +550,8 @@ export default function RecordAgenda({ accountNumber, recordId, entitySlug }) {
                 getCustomFieldValue={getCustomFieldValue}
                 getStatusInfo={getStatusInfo}
                 accountNumber={accountNumber}
+                taskLists={taskLists}
+                recordId={recordId}
             />
         </div>
     )

@@ -17,14 +17,14 @@
 .th-rail-body::-webkit-scrollbar,.th-scroll::-webkit-scrollbar{width:5px;height:5px}
 .th-rail-body::-webkit-scrollbar-thumb,.th-scroll::-webkit-scrollbar-thumb{background:#d9e1ef;border-radius:999px}
 .th-side-title{margin:11px 8px 6px;color:#7c89a6;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.45px}
-.th-space{width:100%;min-height:34px;display:flex;align-items:center;gap:8px;border:1px solid transparent;background:transparent;border-radius:9px;padding:6px 8px;color:#475569;font-family:inherit;text-align:left;cursor:pointer;transition:all .18s;margin-bottom:1px}
-.th-space:hover{background:#fff;border-color:#e8ecf1;box-shadow:0 4px 14px rgba(15,23,42,.04)}
-.th-space.active{background:#eef2ff;border-color:#d8ddff;color:#4f46e5}
+.th-space{width:100%;min-height:34px;display:flex;align-items:center;gap:8px;border:none;background:transparent;border-radius:0;padding:6px 8px;color:#475569;font-family:inherit;text-align:left;cursor:pointer;transition:all .18s;margin-bottom:1px;border-left:2.5px solid transparent}
+.th-space:hover{background:#fafbff;border-left-color:#c7d2fe}
+.th-space.active{background:#eef2ff;border-left-color:#4f46e5;color:#4f46e5}
 .th-space-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .th-space-title{flex:1;min-width:0;font-size:12.2px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th-record-node{margin-bottom:2px}
-.th-list-node{margin:0 0 3px 13px;padding-left:9px;border-left:1px solid #e7ecf5}
-.th-list-node .th-space{min-height:27px;padding:3px 7px 3px 6px;gap:7px;border-radius:8px;margin-bottom:0}
+.th-list-node{margin:0 0 3px 13px;padding-left:9px;border-left:1.5px solid #e7ecf5}
+.th-list-node .th-space{min-height:27px;padding:3px 7px 3px 6px;gap:7px;border-radius:8px;margin-bottom:0;border-left:none}
 .th-list-node .th-space-icon{width:19px;height:19px;border-radius:6px}
 .th-list-node .th-space-title{font-size:11.5px;font-weight:700}
 .th-list-node .th-badge{min-width:18px;height:18px;padding:0 5px;font-size:10px}
@@ -43,75 +43,10 @@
 .th-manage-btn{width:100%;height:44px;border-radius:10px;border:1px solid #dde5f0;background:#fff;color:#475569;font-family:inherit;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;padding:0 12px;cursor:pointer;transition:all .18s}
 .th-manage-btn:hover{border-color:#c7d2fe;color:#4f46e5;box-shadow:0 8px 18px rgba(15,23,42,.04)}
 .th-main{min-width:0;overflow:auto;background:#fff}
-.th-main-inner{padding:20px 28px 32px;max-width:1180px;margin:0 auto}
-.th-top-card{border:1px solid #e8ecf1;border-radius:14px;background:linear-gradient(135deg,#ffffff 0%,#fbfcff 58%,#f6f7ff 100%);padding:18px 22px;display:flex;align-items:center;gap:18px;box-shadow:0 10px 30px rgba(15,23,42,.035)}
-.th-title-block{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
-.th-title-block h2{margin:0;font-size:18px;font-weight:850;color:#111827;letter-spacing:0}
-.th-title-block p{margin:3px 0 0;color:#7c89a6;font-size:12.5px;font-weight:500}
-.th-mini-stats{display:flex;align-items:stretch;gap:18px}
-.th-mini-stat{min-width:76px;text-align:center;border-left:1px solid #e8ecf1;padding-left:18px}
-.th-mini-stat b{display:block;font-size:17px;font-weight:850;line-height:1;color:#4f46e5}
-.th-mini-stat.green b{color:#10b981}.th-mini-stat.orange b{color:#f97316}
-.th-mini-stat span{display:block;margin-top:5px;color:#7c89a6;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.45px}
-.th-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
-.th-stat-card{border:1px solid #e8ecf1;border-radius:12px;background:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .18s}
-.th-stat-card:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(15,23,42,.055);border-color:#d7deea}
-.th-stat-card strong{display:block;color:#111827;font-size:16px;font-weight:850;line-height:1}
-.th-stat-card span{display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:600}
-.th-toolbar{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px;margin:10px 0 18px}
-.th-segment,.th-filter-set{display:inline-flex;align-items:center;border:1px solid #dfe6f2;background:#fff;border-radius:10px;padding:3px}
-.th-segment button,.th-filter-set button{height:34px;border:none;background:transparent;border-radius:8px;padding:0 13px;color:#64748b;font-family:inherit;font-size:12px;font-weight:750;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .16s}
-.th-segment button.active,.th-filter-set button.active{background:#eef2ff;color:#4f46e5;box-shadow:0 1px 3px rgba(15,23,42,.06)}
-.th-filter-set button.danger.active{background:#fff7ed;color:#f97316}
-.th-filter-set{justify-self:end}
-.th-toolbar-actions{grid-column:1 / -1;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
-.th-task-search{width:208px}
-.th-soft-btn,.th-primary-btn,.th-icon-btn{height:38px;border-radius:10px;border:1px solid #dfe6f2;background:#fff;color:#475569;font-family:inherit;font-size:12px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 13px;cursor:pointer;transition:all .17s;white-space:nowrap}
-.th-soft-btn:hover,.th-icon-btn:hover,.th-soft-btn.active{border-color:#c7d2fe;color:#4f46e5;background:#fbfcff}
-.th-primary-btn{border-color:#4f46e5;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;box-shadow:0 10px 22px rgba(79,70,229,.18)}
-.th-primary-btn:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(79,70,229,.24)}
-.th-icon-btn{width:38px;padding:0}
-.th-analytics-grid{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(250px,.8fr) minmax(270px,1fr);gap:14px;margin:0 0 16px}
-.th-analytics-grid .th-panel{margin-bottom:0}
-.th-today-focus{border:1px solid #e8ecf1;border-radius:14px;background:#fff;margin-bottom:14px;overflow:hidden;box-shadow:0 10px 28px rgba(15,23,42,.026)}
-.th-today-head{height:58px;display:flex;align-items:center;gap:11px;padding:0 18px;border-bottom:1px solid #eef2f7}
-.th-today-head h3{margin:0;color:#111827;font-size:13.5px;font-weight:820;letter-spacing:0}
-.th-today-head p{margin:2px 0 0;color:#7c89a6;font-size:12px;font-weight:500}
-.th-today-count{height:22px;min-width:24px;padding:0 8px;border-radius:999px;background:#f5f3ff;color:#7c3aed;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
-.th-today-body{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px;padding:0 18px 18px}
-.th-today-list{min-width:0}
-.th-today-row{height:44px;display:grid;grid-template-columns:28px minmax(0,1fr) minmax(92px,128px) 64px;align-items:center;gap:12px;border-bottom:1px solid #f1f4f8;cursor:pointer;transition:background .15s,box-shadow .15s}
-.th-today-row:hover{background:#fbfcff;box-shadow:inset 3px 0 0 var(--row-accent,#6366f1)}
-.th-today-row:last-child{border-bottom:none}
-.th-today-title{color:#172033;font-size:12.8px;font-weight:720;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.th-today-time{color:#0f172a;font-size:12px;font-weight:760;text-align:right}
-.th-today-score{border-left:1px solid #eef2f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:150px}
-.th-productivity-donut{width:88px;height:88px;border-radius:50%;background:conic-gradient(#6366f1 0 var(--pct,0%),#e8eef8 var(--pct,0%) 100%);position:relative}
-.th-productivity-donut::after{content:'';position:absolute;inset:13px;border-radius:50%;background:#fff}
-.th-productivity-donut b{position:absolute;inset:13px;display:flex;align-items:center;justify-content:center;color:#4f46e5;font-size:22px;font-weight:900;z-index:1}
-.th-today-score strong{color:#111827;font-size:13px;font-weight:820}
-.th-today-score span{color:#64748b;font-size:12px;font-weight:600}
-.th-section{border:1px solid #e8ecf1;border-radius:13px;background:#fff;margin-bottom:14px;overflow:hidden;box-shadow:0 10px 28px rgba(15,23,42,.026)}
-.th-section-head{height:56px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid #eef2f7}
-.th-section-head h3{margin:0;font-size:13.5px;font-weight:850;color:#111827;letter-spacing:0}
-.th-section-head p{margin:2px 0 0;color:#7c89a6;font-size:12px;font-weight:500}
+.th-main-inner{padding:24px 32px 40px;max-width:920px;margin:0 auto}
+.th-check{width:18px;height:18px;border:1.7px solid #cbd5e1;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .16s;flex:0 0 auto}
+.th-check.checked{background:#10b981;border-color:#10b981}
 .th-count-chip{height:22px;min-width:24px;padding:0 7px;border-radius:999px;background:#eef2ff;color:#4f46e5;font-size:11px;font-weight:850;display:inline-flex;align-items:center;justify-content:center}
-.th-section-link{margin-left:auto;color:#4f46e5;text-decoration:none;font-size:12px;font-weight:750;cursor:pointer}
-.th-task-row{height:49px;display:grid;grid-template-columns:28px minmax(200px,1.5fr) minmax(110px,.55fr) minmax(86px,.38fr) minmax(86px,.38fr) 38px;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid #f1f4f8;transition:all .15s;cursor:pointer}
-.th-task-row:hover{background:#fbfcff;box-shadow:inset 3px 0 0 var(--row-accent,#6366f1)}
-.th-task-row:last-child{border-bottom:none}
-.th-check{width:18px;height:18px;border:1.7px solid #cbd5e1;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .16s}
-.th-check.checked,.th-task-row.done .th-check{background:#10b981;border-color:#10b981}
-.th-task-row.done .th-task-name{text-decoration:line-through;color:#94a3b8}
-.th-task-name{font-size:12.8px;font-weight:750;color:#172033;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.th-task-sub{display:flex;align-items:center;gap:6px;margin-top:4px;color:#7c89a6;font-size:11px;font-weight:600;min-width:0}
-.th-chip{height:22px;padding:0 8px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;white-space:nowrap;min-width:0}
-.th-record-chip{max-width:150px;background:#f8fafc;border:1px solid #e8ecf1;color:#64748b}
-.th-assignee{display:flex;align-items:center;gap:8px;min-width:0;color:#64748b;font-size:12px;font-weight:700}
-.th-avatar{width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,#ddd6fe,#f5d0fe);color:#5b21b6;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:850;flex:0 0 auto;border:2px solid #fff}
-.th-date{display:inline-flex;align-items:center;gap:6px;color:#64748b;font-size:12px;font-weight:700}
-.th-priority{justify-self:start}
-.th-menu-dot{color:#7c89a6}
 .th-add-row{height:38px;display:flex;align-items:center;gap:7px;padding:0 18px;color:#9aa6bf;font-size:12.5px;font-weight:650;cursor:pointer}
 .th-add-row:hover{color:#4f46e5;background:#fbfcff}
 .th-quick-add{min-height:52px;border:1px solid #dfe6f2;border-radius:12px;background:#fff;box-shadow:0 12px 26px rgba(15,23,42,.045);display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 12px;margin:-4px 0 16px}
@@ -121,97 +56,90 @@
 .th-empty{padding:54px 20px;text-align:center;color:#94a3b8}
 .th-empty h3{margin:10px 0 4px;color:#111827;font-size:15px;font-weight:800}
 .th-empty p{margin:0;font-size:12.5px}
-.th-kanban{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:10px;align-items:stretch}
-.th-kcol{min-height:470px;border:1px solid #e8ecf1;border-radius:13px;overflow:hidden;background:linear-gradient(180deg,var(--col-soft,#f8fafc),#fff 42%)}
-.th-kcol-head{height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-top:3px solid var(--col,#64748b);border-bottom:1px solid #edf1f6}
-.th-kcol-title{font-size:12.5px;font-weight:850;color:var(--col,#64748b)}
-.th-kcards{padding:10px;display:flex;flex-direction:column;gap:9px}
-.th-kcard{border:1px solid #e8ecf1;border-radius:11px;background:#fff;padding:12px;cursor:pointer;transition:all .17s}
-.th-kcard:hover{transform:translateY(-1px);box-shadow:0 12px 22px rgba(15,23,42,.06);border-color:#d5ddeb}
-.th-kcard-title{font-size:12.8px;font-weight:800;color:#172033;line-height:1.35;margin-bottom:8px}
-.th-kmeta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.th-kfooter{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f1f4f8;padding-top:9px;color:#7c89a6;font-size:11px;font-weight:750}
-.th-panel{border:1px solid #e8ecf1;border-radius:13px;background:#fff;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px rgba(15,23,42,.03)}
-.th-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
-.th-panel-title{display:flex;align-items:center;gap:8px;margin:0;color:#111827;font-size:13.5px;font-weight:850}
-.th-panel-link{font-size:12px;color:#4f46e5;font-weight:750;text-decoration:none;cursor:pointer}
-.th-donut-row{display:flex;align-items:center;gap:18px}
-.th-donut{width:112px;height:112px;border-radius:50%;background:conic-gradient(#10b981 0deg,#10b981 var(--done-deg),#3b82f6 var(--done-deg),#3b82f6 var(--active-deg),#ef4444 var(--active-deg),#ef4444 var(--late-deg),#e2e8f0 var(--late-deg) 360deg);position:relative;flex:0 0 auto}
-.th-donut::after{content:'';position:absolute;inset:18px;border-radius:50%;background:#fff}
-.th-donut-center{position:absolute;inset:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
-.th-donut-center b{font-size:22px;font-weight:900;color:#111827;line-height:1}
-.th-donut-center span{font-size:9px;font-weight:850;text-transform:uppercase;color:#7c89a6;margin-top:3px}
-.th-legend{flex:1;display:flex;flex-direction:column;gap:9px;min-width:0}
-.th-legend-row{display:flex;align-items:center;gap:8px;color:#475569;font-size:12px;font-weight:650}
-.th-dot{width:8px;height:8px;border-radius:999px;flex:0 0 auto}
-.th-legend-row b{margin-left:auto;color:#111827;font-weight:850}
-.th-bars{height:108px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;border-bottom:1px solid #eef2f7;padding-bottom:10px}
-.th-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
-.th-bar{width:16px;min-height:8px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#a5b4fc,#6366f1);box-shadow:0 8px 20px rgba(99,102,241,.18)}
-.th-bar-bg{width:16px;height:86px;border-radius:8px;background:#f1f5f9;display:flex;align-items:end;justify-content:center;overflow:hidden}
-.th-bar-label{font-size:10px;font-weight:750;color:#7c89a6}
-.th-split-row{display:grid;grid-template-columns:34px minmax(0,1fr) 34px 42px;gap:10px;align-items:center;margin-top:12px}
-.th-split-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
-.th-split-name{color:#475569;font-size:12px;font-weight:800}
-.th-split-track{height:5px;border-radius:999px;background:#edf2f7;margin-top:6px;overflow:hidden}
-.th-split-fill{height:100%;border-radius:999px;background:#6366f1}
-.th-split-count,.th-split-pct{color:#111827;font-size:12px;font-weight:850;text-align:right}
-.th-reminder{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f4f8}
-.th-reminder:last-child{border-bottom:none}
-.th-reminder-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.th-reminder-title{color:#172033;font-size:12.5px;font-weight:800;line-height:1.25}
-.th-reminder-sub{margin-top:3px;color:#7c89a6;font-size:11px;font-weight:600}
-.th-drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.14);z-index:998;opacity:0;pointer-events:none;transition:opacity .2s}
-.th-drawer-backdrop.open{opacity:1;pointer-events:auto}
-.th-drawer{position:fixed;top:0;right:0;width:min(430px,96vw);height:100vh;background:#fff;border-left:1px solid #e8ecf1;box-shadow:-24px 0 58px rgba(15,23,42,.13);z-index:999;transform:translateX(102%);transition:transform .25s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
-.th-drawer.open{transform:translateX(0)}
-.th-drawer-head{height:76px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid #eef2f7}
-.th-drawer-title{flex:1;min-width:0}
-.th-drawer-title h3{margin:0;color:#111827;font-size:17px;font-weight:850;line-height:1.25}
-.th-drawer-title p{margin:4px 0 0;color:#7c89a6;font-size:12px;font-weight:650}
-.th-drawer-close{width:34px;height:34px;border:0;border-radius:9px;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.th-drawer-body{flex:1;overflow:auto;padding:22px 24px}
-.th-prop{display:grid;grid-template-columns:24px 96px minmax(0,1fr);align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f1f4f8}
-.th-prop iconify-icon{color:#9aa6bf}
-.th-prop span{color:#7c89a6;font-size:12px;font-weight:750}
-.th-prop b{justify-self:end;color:#475569;font-size:12px;font-weight:800}
-.th-desc-label{margin:22px 0 8px;color:#7c89a6;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.4px}
-.th-desc-box{min-height:82px;border:1px solid #e8ecf1;border-radius:11px;background:#fbfcff;color:#94a3b8;font-size:12.5px;font-weight:600;line-height:1.5;padding:12px}
-.th-subtask{display:flex;align-items:center;gap:10px;color:#475569;font-size:12.5px;font-weight:650;padding:8px 0}
-.th-chat-box{margin-top:18px;border-top:1px solid #eef2f7;padding-top:16px}
-.th-message{background:#f8fafc;border-radius:11px;padding:11px 12px;color:#64748b;font-size:12px;font-weight:600;line-height:1.45;margin:10px 0}
-.th-message-input{height:42px;border:1px solid #e1e7f0;border-radius:11px;color:#94a3b8;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600}
-.th-drawer-foot{height:72px;border-top:1px solid #eef2f7;display:flex;align-items:center;justify-content:space-between;padding:0 24px;color:#b2bdd0;font-size:11px;font-weight:650}
-.th-delete{height:36px;border:1px solid #fecaca;background:#fff;color:#ef4444;border-radius:9px;padding:0 13px;font-family:inherit;font-size:12px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+/* ═══ Content area ═══ */
+.th-content-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:28px}
+.th-content-title{font-size:22px;font-weight:850;color:#111827;margin:0;letter-spacing:-.01em}
+.th-content-subtitle{font-size:13px;color:#94a3b8;font-weight:500;margin:5px 0 0;line-height:1.4}
+.th-new-task-btn{height:42px;border-radius:10px;border:none;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;font-family:inherit;font-size:13px;font-weight:750;padding:0 22px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 6px 18px rgba(79,70,229,.22);transition:all .18s;white-space:nowrap;flex:0 0 auto}
+.th-new-task-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(79,70,229,.3)}
+.th-date-tabs{display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.th-date-tab{height:36px;padding:0 15px;border-radius:999px;border:1.5px solid #e8ecf1;background:#fff;color:#64748b;font-family:inherit;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:all .16s}
+.th-date-tab:hover{border-color:#c7d2fe;color:#4f46e5}
+.th-date-tab.active{border-color:#4f46e5;background:#eef2ff;color:#4f46e5}
+.th-tab-count{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#eef2f7;color:#64748b;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;justify-content:center}
+.th-date-tab.active .th-tab-count{background:#ddd6fe;color:#4f46e5}
+.th-date-tabs-right{margin-left:auto;display:inline-flex;align-items:center;border:1.5px solid #e8ecf1;border-radius:999px;overflow:hidden;background:#fff}
+.th-view-toggle{height:34px;padding:0 14px;border:none;background:transparent;color:#64748b;font-family:inherit;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:all .14s}
+.th-view-toggle:hover{color:#4f46e5}
+.th-view-toggle.active{background:#eef2ff;color:#4f46e5}
+.th-priority-pills{display:flex;align-items:center;gap:8px;margin-bottom:24px}
+.th-priority-pill{height:32px;padding:0 14px;border-radius:999px;border:none;background:#f1f5f9;color:#64748b;font-family:inherit;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .14s}
+.th-priority-pill:hover{background:#e8ecf1}
+.th-priority-pill.active{background:#eef2ff;color:#4f46e5}
+.th-priority-pill .pdot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.th-group-header{display:flex;align-items:center;gap:8px;padding:12px 0 6px}
+.th-group-flag{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.th-group-title{font-size:13px;font-weight:800;color:#111827}
+.th-group-count{min-width:20px;height:20px;padding:0 6px;border-radius:999px;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;justify-content:center}
+.th-task-item{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto 24px;align-items:center;gap:10px;padding:7px 8px;border-bottom:1px solid #f3f4f6;transition:background .12s;cursor:pointer}
+.th-task-item:hover{background:#fafbff}
+.th-task-checkbox{width:18px;height:18px;border:1.5px solid #d1d5db;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:transparent}
+.th-task-checkbox.checked{background:#10b981;border-color:#10b981;color:#fff}
+.th-task-info{min-width:0}
+.th-task-title-text{font-size:12.5px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-task-item.done .th-task-title-text{text-decoration:line-through;color:#94a3b8}
+.th-task-record-label{display:flex;align-items:center;gap:4px;margin-top:2px;font-size:10.5px;color:#94a3b8;font-weight:600}
+.th-task-record-dot{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+.th-task-date-label{display:inline-flex;align-items:center;gap:4px;color:#94a3b8;font-size:11px;font-weight:650;white-space:nowrap}
+.th-task-priority-badge{height:20px;padding:0 8px;border-radius:5px;font-size:10px;font-weight:800;display:inline-flex;align-items:center;white-space:nowrap}
+.th-task-menu-btn{width:24px;height:24px;border:none;background:transparent;color:#c5cdd8;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:5px;transition:all .12s;position:relative}
+.th-task-menu-btn:hover{background:#f3f4f6;color:#6b7280}
+.th-ctx-menu{position:absolute;top:100%;right:0;min-width:160px;background:#fff;border:1px solid #e8ecf1;border-radius:10px;box-shadow:0 12px 32px rgba(15,23,42,.12);z-index:99;padding:4px}
+.th-ctx-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:none;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:650;border-radius:7px;cursor:pointer;transition:background .12s;text-align:left}
+.th-ctx-item:hover{background:#f3f4f6}
+.th-ctx-item.danger{color:#ef4444}
+.th-ctx-item.danger:hover{background:#fef2f2}
+.th-inline-add{display:flex;align-items:center;gap:6px;padding:6px 8px;color:#b0b8c9;font-size:11.5px;font-weight:600;cursor:pointer;transition:color .12s}
+.th-inline-add:hover{color:#4f46e5}
+/* Dark mode — sidebar */
 .dark .th-wrap,.dark .th-main{background:#060818;color:#e5edf7}
 .dark .th-shell,.dark .th-rail{border-color:#1b2e4b}
 .dark .th-rail{background:#0b1320}
 .dark .th-rail-head,.dark .th-manage{border-color:#1b2e4b}
-.dark .th-brand h1,.dark .th-title-block h2,.dark .th-stat-card strong,.dark .th-section-head h3,.dark .th-task-name,.dark .th-kcard-title,.dark .th-panel-title,.dark .th-donut-center b,.dark .th-legend-row b,.dark .th-reminder-title,.dark .th-drawer-title h3{color:#e0e6ed}
-.dark .th-brand p,.dark .th-title-block p,.dark .th-stat-card span,.dark .th-task-sub,.dark .th-date,.dark .th-assignee,.dark .th-reminder-sub,.dark .th-drawer-title p{color:#8ea0bd}
-.dark .th-input,.dark .th-manage-btn,.dark .th-top-card,.dark .th-stat-card,.dark .th-segment,.dark .th-filter-set,.dark .th-soft-btn,.dark .th-icon-btn,.dark .th-section,.dark .th-kcol,.dark .th-kcard,.dark .th-panel,.dark .th-drawer,.dark .th-desc-box,.dark .th-message,.dark .th-message-input{background:#0e1726;border-color:#253b5c;color:#e0e6ed;box-shadow:none}
+.dark .th-brand h1,.dark .th-content-title,.dark .th-group-title,.dark .th-modal-title{color:#e0e6ed}
+.dark .th-brand p,.dark .th-content-subtitle{color:#8ea0bd}
+.dark .th-input,.dark .th-manage-btn,.dark .th-quick-add{background:#0e1726;border-color:#253b5c;color:#e0e6ed;box-shadow:none}
 .dark .th-rail-widget{background:#0e1726;border-color:#253b5c;box-shadow:none}
 .dark .th-rail-widget-head span{color:#8ea0bd}
 .dark .th-rail-bar-bg{background:#17233a}
-.dark .th-quick-add{background:#0e1726;border-color:#253b5c;box-shadow:none}
 .dark .th-quick-add input{color:#e0e6ed}
-.dark .th-top-card{background:linear-gradient(135deg,#0e1726 0%,#0b1320 100%)}
-.dark .th-section-head,.dark .th-task-row,.dark .th-kcol-head,.dark .th-kfooter,.dark .th-panel,.dark .th-prop,.dark .th-drawer-head,.dark .th-drawer-foot,.dark .th-chat-box,.dark .th-today-head,.dark .th-today-row,.dark .th-today-score{border-color:#253b5c}
-.dark .th-today-focus{background:#0e1726;border-color:#253b5c;box-shadow:none}
-.dark .th-today-head h3,.dark .th-today-title,.dark .th-today-score strong{color:#e0e6ed}
-.dark .th-today-head p,.dark .th-today-score span{color:#8ea0bd}
-.dark .th-productivity-donut::after{background:#0e1726}
-.dark .th-task-row:hover,.dark .th-today-row:hover,.dark .th-add-row:hover{background:#111f35}
-.dark .th-space:hover,.dark .th-segment button.active,.dark .th-filter-set button.active{background:#17233a}
-.dark .th-space.active{background:#1b2447;border-color:#303b73;color:#a5b4fc}
+.dark .th-space:hover{background:#111f35;border-left-color:#253b5c}
+.dark .th-space.active{background:#1b2447;border-left-color:#6366f1;color:#a5b4fc}
 .dark .th-list-node{border-color:#253b5c}
+.dark .th-ctx-menu{background:#0e1726;border-color:#253b5c;box-shadow:0 12px 32px rgba(0,0,0,.35)}
+.dark .th-ctx-item{color:#e0e6ed}
+.dark .th-ctx-item:hover{background:#17233a}
 .dark .th-badge{background:#1b2e4b;color:#8ea0bd}
-.dark .th-record-chip{background:#111f35;border-color:#253b5c;color:#9fb0cb}
-.dark .th-donut::after{background:#0e1726}
-.dark .th-bar-bg{background:#17233a}
-.dark .th-drawer-backdrop{background:rgba(0,0,0,.4)}
-@media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}.th-analytics-grid{grid-template-columns:1fr 1fr}.th-kanban{grid-template-columns:repeat(3,minmax(210px,1fr))}}
-@media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-top-card{align-items:flex-start;flex-direction:column}.th-toolbar{display:flex;align-items:flex-start;flex-direction:column}.th-toolbar-actions{width:100%;margin-left:0;flex-wrap:wrap;justify-content:flex-start}.th-filter-set{justify-self:start;max-width:100%;overflow:auto}.th-analytics-grid,.th-today-body{grid-template-columns:1fr}.th-today-score{border-left:0;border-top:1px solid #eef2f7;padding-top:16px}.th-mini-stats{width:100%;justify-content:space-between}.th-stat-grid{grid-template-columns:repeat(2,1fr)}.th-task-row,.th-today-row{grid-template-columns:28px minmax(0,1fr) 32px}.th-task-row>.th-assignee,.th-task-row>.th-date,.th-task-row>.th-priority,.th-today-row>.th-chip,.th-today-row>.th-today-time{display:none}.th-kanban{grid-template-columns:1fr}.th-task-search{width:100%}}
+/* Dark mode — content */
+.dark .th-new-task-btn{box-shadow:0 6px 18px rgba(79,70,229,.35)}
+.dark .th-date-tab{background:#0e1726;border-color:#253b5c;color:#8ea0bd}
+.dark .th-date-tab.active{background:#1b2447;border-color:#4f46e5;color:#a5b4fc}
+.dark .th-tab-count{background:#17233a;color:#8ea0bd}
+.dark .th-date-tab.active .th-tab-count{background:#2d2b73;color:#a5b4fc}
+.dark .th-date-tabs-right{background:#0e1726;border-color:#253b5c}
+.dark .th-view-toggle{color:#8ea0bd}
+.dark .th-view-toggle.active{background:#1b2447;color:#a5b4fc}
+.dark .th-priority-pill{background:#17233a;color:#8ea0bd}
+.dark .th-priority-pill.active{background:#1b2447;color:#a5b4fc}
+.dark .th-task-item{border-color:#1b2e4b}
+.dark .th-task-item:hover{background:#111f35}
+.dark .th-task-checkbox{border-color:#475569;background:#0e1726}
+.dark .th-task-title-text{color:#e0e6ed}
+.dark .th-task-record-label,.dark .th-task-date-label{color:#6b7f9e}
+.dark .th-inline-add{color:#6b7f9e}.dark .th-inline-add:hover{color:#a5b4fc}
+/* Responsive */
+@media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
+@media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
 </style>
 
 <div class="th-wrap" x-data="tasksHubApp" x-cloak>
@@ -275,7 +203,6 @@
 	                        </div>
 	                    </div>
 	                </template>
-
             </div>
             <div class="th-manage">
                 <button class="th-manage-btn" type="button">
@@ -287,282 +214,134 @@
 
         <main class="th-main th-scroll">
             <div class="th-main-inner">
-                <section class="th-top-card">
-                    <div class="th-title-block">
-                        <div class="th-icon-box"><iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="22"></iconify-icon></div>
-                        <div>
-                            <h2 x-text="mainTitle"></h2>
-                            <p x-text="mainSubtitle"></p>
-                        </div>
+                <div class="th-content-header">
+                    <div>
+                        <h2 class="th-content-title" x-text="mainTitle"></h2>
+                        <p class="th-content-subtitle" x-text="mainSubtitle"></p>
                     </div>
-                </section>
+                    <button class="th-new-task-btn" type="button" @click="showQuickAdd()">
+                        <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                        Nouvelle tâche
+                    </button>
+                </div>
 
-                <div class="th-toolbar">
-                    <div class="th-segment" aria-label="Vue">
-                        <button type="button" :class="{'active': viewMode === 'list'}" @click="viewMode = 'list'">
-                            <iconify-icon icon="solar:list-bold-duotone" width="15"></iconify-icon> Liste
+                <div class="th-date-tabs">
+                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'late'}" @click="activeFilter = 'late'">
+                        En retard <span class="th-tab-count" x-text="lateFilterCount"></span>
+                    </button>
+                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'today'}" @click="activeFilter = 'today'">
+                        Aujourd'hui <span class="th-tab-count" x-text="todayFilterCount"></span>
+                    </button>
+                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'tomorrow'}" @click="activeFilter = 'tomorrow'">
+                        Demain <span class="th-tab-count" x-text="tomorrowFilterCount"></span>
+                    </button>
+                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'week'}" @click="activeFilter = 'week'">
+                        Cette semaine <span class="th-tab-count" x-text="weekFilterCount"></span>
+                    </button>
+                    <div class="th-date-tabs-right">
+                        <button class="th-view-toggle" type="button" :class="{'active': activeFilter === 'all'}" @click="activeFilter = 'all'; sortMode = 'all'">
+                            <iconify-icon icon="solar:list-bold" width="14"></iconify-icon> Toutes
                         </button>
-                        <button type="button" :class="{'active': viewMode === 'kanban'}" @click="viewMode = 'kanban'">
-                            <iconify-icon icon="solar:widget-5-bold-duotone" width="15"></iconify-icon> Kanban
+                        <button class="th-view-toggle" type="button" :class="{'active': sortMode === 'recent'}" @click="activeFilter = 'all'; sortMode = sortMode === 'recent' ? 'all' : 'recent'">
+                            <iconify-icon icon="solar:clock-circle-bold" width="14"></iconify-icon> Récentes
                         </button>
-                    </div>
-                    <div class="th-filter-set">
-                        <button type="button" :class="{'active': activeFilter === 'all'}" @click="activeFilter = 'all'">Tout</button>
-                        <button type="button" :class="{'active': activeFilter === 'today'}" @click="activeFilter = 'today'">Aujourd'hui</button>
-                        <button type="button" :class="{'active': activeFilter === 'week'}" @click="activeFilter = 'week'">Cette semaine</button>
-                        <button type="button" class="danger" :class="{'active': activeFilter === 'late'}" @click="activeFilter = 'late'">En retard</button>
-                    </div>
-                    <div class="th-toolbar-actions">
-                        <button class="th-soft-btn" type="button" :class="{'active': showAnalytics}" @click="showAnalytics = !showAnalytics">
-                            <iconify-icon icon="solar:chart-square-bold-duotone" width="15"></iconify-icon> Analytics
-                        </button>
-                        <div class="th-search th-task-search" style="margin:0">
-                            <iconify-icon icon="solar:magnifer-linear" width="15"></iconify-icon>
-                            <input class="th-input" type="text" placeholder="Rechercher une tâche..." x-model="taskSearch">
-                        </div>
-                        <button class="th-soft-btn" type="button"><iconify-icon icon="solar:filter-linear" width="15"></iconify-icon> Filtrer</button>
-                        <button class="th-soft-btn" type="button"><iconify-icon icon="solar:sort-from-top-to-bottom-linear" width="15"></iconify-icon> Trier</button>
-                        <button class="th-primary-btn" type="button" @click="showQuickAdd()"><iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon> Nouvelle tâche</button>
-                        <button class="th-icon-btn" type="button"><iconify-icon icon="solar:menu-dots-bold" width="17"></iconify-icon></button>
                     </div>
                 </div>
 
-	                <form class="th-quick-add" x-show="addingTask" x-transition @submit.prevent="createPersonalTask()">
-	                    <span class="th-check"></span>
-	                    <input x-ref="newTaskInput" type="text" x-model="newTaskTitle" :placeholder="quickAddPlaceholder" :disabled="creatingTask" @keydown.escape.prevent="cancelQuickAdd()">
-                    <button class="th-primary-btn" type="submit" :disabled="creatingTask">
+                <div class="th-priority-pills">
+                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'all'}" @click="priorityFilter = 'all'">
+                        <iconify-icon icon="solar:check-circle-bold" width="14" x-show="priorityFilter === 'all'" style="color:#4f46e5"></iconify-icon>
+                        Toutes
+                    </button>
+                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'Haute'}" @click="priorityFilter = 'Haute'">
+                        <span class="pdot" style="background:#ef4444"></span> Haute
+                    </button>
+                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'Moyenne'}" @click="priorityFilter = 'Moyenne'">
+                        <span class="pdot" style="background:#f97316"></span> Moyenne
+                    </button>
+                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'Normale'}" @click="priorityFilter = 'Normale'">
+                        <span class="pdot" style="background:#10b981"></span> Normale
+                    </button>
+                </div>
+
+                <form class="th-quick-add" x-show="addingTask" x-transition @submit.prevent="createPersonalTask()">
+                    <span class="th-check"></span>
+                    <input x-ref="newTaskInput" type="text" x-model="newTaskTitle" :placeholder="quickAddPlaceholder" :disabled="creatingTask" @keydown.escape.prevent="cancelQuickAdd()">
+                    <button class="th-new-task-btn" type="submit" :disabled="creatingTask" style="height:34px;padding:0 14px;font-size:12px;box-shadow:none">
                         <iconify-icon :icon="creatingTask ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="15"></iconify-icon>
                         Ajouter
                     </button>
-                    <button class="th-icon-btn" type="button" @click="cancelQuickAdd()" :disabled="creatingTask"><iconify-icon icon="solar:close-circle-linear" width="17"></iconify-icon></button>
+                    <button class="th-task-menu-btn" type="button" @click="cancelQuickAdd()" :disabled="creatingTask"><iconify-icon icon="solar:close-circle-linear" width="17"></iconify-icon></button>
                 </form>
                 <div class="th-quick-add-error" x-show="addError" x-text="addError"></div>
 
-                <section class="th-analytics-grid" x-show="showAnalytics" x-transition>
-                    <section class="th-panel">
-                        <div class="th-panel-head">
-                            <h3 class="th-panel-title">Vue d'ensemble</h3>
-                            <span class="th-count-chip" x-text="completionPct + '%'"></span>
+                <template x-for="section in prioritySections" :key="section.key">
+                    <div x-show="section.tasks.length">
+                        <div class="th-group-header">
+                            <span class="th-group-flag" :style="'background:' + section.bg + ';color:' + section.color">
+                                <iconify-icon :icon="section.icon" width="14"></iconify-icon>
+                            </span>
+                            <span class="th-group-title" x-text="section.title"></span>
+                            <span class="th-group-count" :style="'background:' + section.bg + ';color:' + section.color" x-text="section.tasks.length"></span>
                         </div>
-                        <div class="th-donut-row">
-                            <div class="th-donut" :style="donutStyle">
-                                <div class="th-donut-center"><b x-text="visibleTasks.length"></b><span>Tâches</span></div>
-                            </div>
-                            <div class="th-legend">
-                                <div class="th-legend-row"><span class="th-dot" style="background:#10b981"></span>Terminées <b x-text="doneVisibleCount"></b></div>
-                                <div class="th-legend-row"><span class="th-dot" style="background:#3b82f6"></span>En cours <b x-text="activeVisibleCount"></b></div>
-                                <div class="th-legend-row"><span class="th-dot" style="background:#ef4444"></span>En retard <b x-text="overdueCount"></b></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="th-panel">
-                        <div class="th-panel-head">
-                            <h3 class="th-panel-title">Charge de travail</h3>
-                            <button class="th-soft-btn" type="button" style="height:30px;padding:0 9px">Cette semaine</button>
-                        </div>
-                        <div class="th-bars">
-                            <template x-for="bar in workloadBars" :key="'analytics-' + bar.label">
-                                <div class="th-bar-wrap">
-                                    <div class="th-bar-bg"><div class="th-bar" :style="'height:' + bar.height + '%'"></div></div>
-                                    <span class="th-bar-label" x-text="bar.label"></span>
+                        <div>
+                            <template x-for="task in section.tasks" :key="task._id">
+                                <div class="th-task-item" :class="{'done': isDone(task)}" @click="openTask(task)">
+                                    <span class="th-task-checkbox" :class="{'checked': isDone(task)}" @click.stop="toggleTaskStatus(task)">
+                                        <iconify-icon icon="solar:check-read-linear" width="13"></iconify-icon>
+                                    </span>
+                                    <div class="th-task-info">
+                                        <div class="th-task-title-text" x-text="task.title"></div>
+                                        <div class="th-task-record-label">
+                                            <span class="th-task-record-dot" :style="'background:' + (task.recordColor || task.entityColor || '#6366f1')"></span>
+                                            <span x-text="task.recordTitle"></span>
+                                        </div>
+                                    </div>
+                                    <span class="th-task-date-label">
+                                        <iconify-icon icon="solar:calendar-linear" width="14"></iconify-icon>
+                                        <span x-text="formatRelativeDate(taskDisplayDate(task))"></span>
+                                    </span>
+                                    <span class="th-task-priority-badge" :style="priorityStyle(task.priority)" x-text="priorityLabel(task.priority)"></span>
+                                    <div style="position:relative">
+                                        <button class="th-task-menu-btn" type="button" @click.stop="ctxTaskId = ctxTaskId === task._id ? null : task._id">
+                                            <iconify-icon icon="solar:menu-dots-bold" width="17"></iconify-icon>
+                                        </button>
+                                        <div class="th-ctx-menu" x-show="ctxTaskId === task._id" x-transition.opacity @click.outside="ctxTaskId = null" @click.stop style="display:none">
+                                            <button class="th-ctx-item" type="button" @click="ctxTaskId = null; openTask(task)">
+                                                <iconify-icon icon="solar:pen-new-square-linear" width="14"></iconify-icon> Modifier
+                                            </button>
+                                            <button class="th-ctx-item" type="button" @click="ctxTaskId = null; toggleTaskStatus(task)">
+                                                <iconify-icon icon="solar:check-circle-linear" width="14"></iconify-icon>
+                                                <span x-text="isDone(task) ? 'Rouvrir' : 'Terminer'"></span>
+                                            </button>
+                                            <button class="th-ctx-item danger" type="button" @click="ctxTaskId = null; deleteTask(task)">
+                                                <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon> Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </template>
+                            <div class="th-inline-add" @click="showQuickAdd('À faire', section.priorities[0] || 'Aucune')">
+                                <iconify-icon icon="solar:add-circle-linear" width="15"></iconify-icon>
+                                Ajouter une tâche
+                            </div>
                         </div>
-                    </section>
-
-                    <section class="th-panel">
-                        <div class="th-panel-head">
-                            <h3 class="th-panel-title">Rappels intelligents</h3>
-                            <a class="th-panel-link">Voir tout</a>
-                        </div>
-                        <template x-for="task in smartReminders" :key="task._id">
-                            <div class="th-reminder" @click="openTask(task)" style="cursor:pointer">
-                                <span class="th-reminder-icon" :style="'background:' + colorSoft(rowAccent(task)) + ';color:' + rowAccent(task)">
-                                    <iconify-icon :icon="isOverdue(task) ? 'solar:clock-circle-bold-duotone' : 'solar:calendar-date-bold-duotone'" width="15"></iconify-icon>
-                                </span>
-                                <div style="min-width:0">
-                                    <div class="th-reminder-title" x-text="task.title"></div>
-                                    <div class="th-reminder-sub"><span x-text="formatDate(taskDisplayDate(task))"></span> · <span x-text="task.recordTitle"></span></div>
-                                </div>
-                            </div>
-                        </template>
-                    </section>
-                </section>
-
-                <template x-if="viewMode === 'list'">
-                    <div>
-                        <section class="th-today-focus" x-show="activeFilter === 'today' && todayPanelTasks.length">
-                            <div class="th-today-head">
-                                <div class="th-icon-box" style="width:30px;height:30px;background:#f5f3ff;color:#7c3aed">
-                                    <iconify-icon icon="solar:star-bold-duotone" width="16"></iconify-icon>
-                                </div>
-                                <div style="min-width:0">
-                                    <h3>Priorités du jour</h3>
-                                    <p><span x-text="todayPanelTasks.length"></span> tâches à traiter aujourd'hui</p>
-                                </div>
-                                <span class="th-today-count" x-text="todayTodoCount + ' à faire'"></span>
-                            </div>
-                            <div class="th-today-body">
-                                <div class="th-today-list">
-                                    <template x-for="task in todayPanelTasks" :key="'today-' + task._id">
-                                        <div class="th-today-row" :class="{'done': isDone(task)}" :style="'--row-accent:' + rowAccent(task)" @click="openTask(task)">
-                                            <span class="th-check" :class="{'checked': isDone(task)}"><iconify-icon icon="solar:check-read-linear" width="13"></iconify-icon></span>
-                                            <div style="min-width:0">
-                                                <div class="th-today-title" x-text="task.title"></div>
-                                            </div>
-                                            <span class="th-chip th-record-chip">
-                                                <iconify-icon :icon="task.recordIcon || task.entityIcon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (task.recordColor || task.entityColor || '#6366f1')"></iconify-icon>
-                                                <span x-text="task.recordTitle"></span>
-                                            </span>
-                                            <span class="th-today-time" x-text="formatTime(taskDisplayDate(task))"></span>
-                                        </div>
-                                    </template>
-                                    <div class="th-add-row" @click="showQuickAdd('À faire')"><iconify-icon icon="solar:add-circle-linear" width="15"></iconify-icon> Ajouter une tâche</div>
-                                </div>
-                                <div class="th-today-score">
-                                    <div class="th-productivity-donut" :style="'--pct:' + todayCompletionPct + '%'"><b x-text="todayCompletionPct + '%'"></b></div>
-                                    <strong>Productivité</strong>
-                                    <span>Très bon début ! ↗</span>
-                                </div>
-                            </div>
-                        </section>
-                        <template x-for="section in listSections" :key="section.key">
-                            <section class="th-section" x-show="section.tasks.length">
-                                <div class="th-section-head">
-                                    <div class="th-icon-box" :style="'width:30px;height:30px;background:' + section.bg + ';color:' + section.color">
-                                        <iconify-icon :icon="section.icon" width="16"></iconify-icon>
-                                    </div>
-                                    <div>
-                                        <h3><span x-text="section.title"></span></h3>
-                                        <p x-text="section.subtitle"></p>
-                                    </div>
-                                    <span class="th-count-chip" x-text="section.tasks.length"></span>
-                                    <iconify-icon icon="solar:alt-arrow-up-linear" width="14" style="color:#94a3b8"></iconify-icon>
-                                </div>
-                                <template x-for="task in section.tasks" :key="task._id">
-                                    <div class="th-task-row" :class="{'done': isDone(task)}" :style="'--row-accent:' + rowAccent(task)" @click="openTask(task)">
-                                        <span class="th-check"><iconify-icon icon="solar:check-read-linear" width="13"></iconify-icon></span>
-                                        <div style="min-width:0">
-                                            <div class="th-task-name" x-text="task.title"></div>
-                                            <div class="th-task-sub">
-                                                <span class="th-chip th-record-chip">
-                                                    <iconify-icon :icon="task.recordIcon || task.entityIcon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (task.recordColor || task.entityColor || '#6366f1')"></iconify-icon>
-                                                    <span x-text="task.recordTitle"></span>
-                                                </span>
-                                                <template x-if="task.description"><span class="th-chip" style="background:#f1f5f9;color:#64748b">Note</span></template>
-                                            </div>
-                                        </div>
-                                        <div class="th-assignee">
-                                            <span class="th-avatar" x-text="assigneeInitials(task)"></span>
-                                            <span x-text="task.assignedTo || 'Moi'"></span>
-                                        </div>
-                                        <div class="th-date"><iconify-icon icon="solar:calendar-linear" width="14"></iconify-icon><span x-text="formatDate(taskDisplayDate(task))"></span></div>
-                                        <span class="th-chip th-priority" :style="priorityStyle(task.priority)" x-text="task.priority || 'Aucune'"></span>
-                                        <iconify-icon class="th-menu-dot" icon="solar:menu-dots-bold" width="17"></iconify-icon>
-                                    </div>
-                                </template>
-                                <div class="th-add-row" @click="showQuickAdd()"><iconify-icon icon="solar:add-circle-linear" width="15"></iconify-icon> Ajouter une tâche</div>
-                            </section>
-                        </template>
-                        <template x-if="!visibleTasks.length && !sideLoading">
-                            <div class="th-empty">
-                                <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="42"></iconify-icon>
-                                <h3>Aucune tâche dans cette vue</h3>
-                                <p>Changez de filtre ou sélectionnez un autre espace.</p>
-                            </div>
-                        </template>
                     </div>
                 </template>
 
-                <template x-if="viewMode === 'kanban'">
-                    <div class="th-kanban">
-                        <template x-for="col in kanbanColumns" :key="col.label">
-                            <section class="th-kcol" :style="'--col:' + col.color + ';--col-soft:' + col.soft">
-                                <div class="th-kcol-head">
-                                    <span class="th-kcol-title" x-text="col.label"></span>
-                                    <span class="th-badge" x-text="tasksByStatus(col.label).length"></span>
-                                </div>
-                                <div class="th-kcards">
-                                    <template x-for="task in tasksByStatus(col.label)" :key="task._id">
-                                        <article class="th-kcard" @click="openTask(task)">
-                                            <div style="display:flex;align-items:flex-start;gap:8px">
-                                                <span class="th-check" :class="{'checked': isDone(task)}"></span>
-                                                <div class="th-kcard-title" x-text="task.title"></div>
-                                                <iconify-icon icon="solar:menu-dots-bold" width="16" style="margin-left:auto;color:#7c89a6"></iconify-icon>
-                                            </div>
-                                            <div class="th-kmeta">
-                                                <span class="th-chip th-record-chip">
-                                                    <iconify-icon :icon="task.recordIcon || task.entityIcon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (task.recordColor || task.entityColor || '#6366f1')"></iconify-icon>
-                                                    <span x-text="task.recordTitle"></span>
-                                                </span>
-                                                <span class="th-chip" :style="scopeChipStyle(task)" x-text="task.scope === 'company' ? 'Société' : 'Perso'"></span>
-                                            </div>
-                                            <div class="th-kmeta">
-                                                <span class="th-date"><iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon><span x-text="formatDate(taskDisplayDate(task))"></span></span>
-                                                <span class="th-chip" :style="priorityStyle(task.priority)" x-text="task.priority || 'Aucune'"></span>
-                                            </div>
-                                            <div class="th-kfooter">
-                                                <span><iconify-icon icon="solar:checklist-minimalistic-linear" width="13"></iconify-icon> <span x-text="isDone(task) ? '3/3' : '0/3'"></span></span>
-                                                <span><iconify-icon icon="solar:chat-round-dots-linear" width="13"></iconify-icon> <span x-text="isDone(task) ? 2 : 1"></span></span>
-                                            </div>
-                                        </article>
-                                    </template>
-                                    <div class="th-add-row" style="padding:0;color:#7c89a6" @click="showQuickAdd(col.label)"><iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon> Ajouter une tâche</div>
-                                </div>
-                            </section>
-                        </template>
+                <template x-if="!priorityFilteredTasks.length && !sideLoading">
+                    <div class="th-empty">
+                        <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="42"></iconify-icon>
+                        <h3>Aucune tâche dans cette vue</h3>
+                        <p>Changez de filtre ou sélectionnez un autre espace.</p>
                     </div>
                 </template>
             </div>
         </main>
-
     </div>
 
-    <div class="th-drawer-backdrop" :class="{'open': detailTask}" @click="closeTask()"></div>
-    <aside class="th-drawer" :class="{'open': detailTask}">
-        <template x-if="detailTask">
-            <div style="display:flex;flex-direction:column;height:100%">
-                <div class="th-drawer-head">
-                    <span class="th-check" :class="{'checked': isDone(detailTask)}"></span>
-                    <div class="th-drawer-title">
-                        <h3 x-text="detailTask.title"></h3>
-                        <p><span x-text="detailTask.recordTitle"></span> · <span x-text="detailTask.listLabel"></span></p>
-                    </div>
-                    <button class="th-drawer-close" type="button" @click="closeTask()"><iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon></button>
-                </div>
-                <div class="th-drawer-body">
-                    <div class="th-prop"><iconify-icon icon="solar:check-circle-linear" width="15"></iconify-icon><span>Statut</span><b x-text="detailTask.status || 'À faire'"></b></div>
-                    <div class="th-prop"><iconify-icon icon="solar:flag-linear" width="15"></iconify-icon><span>Priorité</span><b x-text="detailTask.priority || 'Aucune'"></b></div>
-                    <div class="th-prop"><iconify-icon icon="solar:user-linear" width="15"></iconify-icon><span>Assigné</span><b x-text="detailTask.assignedTo || 'Moi'"></b></div>
-                    <div class="th-prop"><iconify-icon icon="solar:calendar-linear" width="15"></iconify-icon><span>Début</span><b x-text="formatDate(detailTask.startDate || detailTask.createdAt)"></b></div>
-                    <div class="th-prop"><iconify-icon icon="solar:calendar-mark-linear" width="15"></iconify-icon><span>Échéance</span><b x-text="formatDate(detailTask.dueDate || detailTask.createdAt)"></b></div>
-                    <div class="th-prop"><iconify-icon icon="solar:list-linear" width="15"></iconify-icon><span>Liste</span><b x-text="detailTask.listLabel || 'Tâches du jour'"></b></div>
-
-                    <div class="th-desc-label">Description</div>
-                    <div class="th-desc-box" x-text="detailTask.description || 'Ajouter une description détaillée...'"></div>
-
-                    <div class="th-desc-label">Sous-tâches <span style="float:right;color:#94a3b8">0/2</span></div>
-                    <div class="th-subtask"><span class="th-check"></span> Vérifier les documents</div>
-                    <div class="th-subtask"><span class="th-check"></span> Préparer les informations</div>
-                    <div class="th-add-row" style="padding:0"><iconify-icon icon="solar:add-circle-linear" width="15"></iconify-icon> Ajouter une sous-tâche</div>
-
-                    <div class="th-chat-box">
-                        <div style="display:flex;align-items:center;gap:20px;color:#6366f1;font-size:12px;font-weight:800;border-bottom:1px solid #eef2f7;padding-bottom:10px">
-                            <span><iconify-icon icon="solar:chat-round-dots-bold-duotone" width="15"></iconify-icon> Conversations <span class="th-count-chip" style="height:18px;min-width:18px">1</span></span>
-                            <span style="color:#94a3b8"><iconify-icon icon="solar:pulse-2-linear" width="15"></iconify-icon> Activité</span>
-                        </div>
-                        <div class="th-message">N'oublie pas les documents médicaux.</div>
-                        <div class="th-message-input">Écrire un message...</div>
-                    </div>
-                </div>
-                <div class="th-drawer-foot">
-                    <button class="th-delete" type="button"><iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon> Supprimer</button>
-                    <span>Esc pour fermer</span>
-                </div>
-            </div>
-        </template>
-    </aside>
+    <!-- ═══ Shared Task Detail Modal ═══ -->
+    <%- include('../partials/task-detail-modal') %>
 </div>
 
 <script>
@@ -573,32 +352,26 @@ document.addEventListener('alpine:init', () => {
         entities: [],
         sideLoading: true,
         searchQuery: '',
-	        taskSearch: '',
-	        activeScope: 'personal',
-	        activeRecordId: null,
-	        activeListId: null,
-        activeFilter: 'all',
-        viewMode: 'list',
-        showAnalytics: false,
-        detailTask: null,
+        taskSearch: '',
+        activeScope: 'personal',
+        activeRecordId: null,
+        activeListId: null,
+        activeFilter: 'today',
+        priorityFilter: 'all',
+        sortMode: 'all',
+        ctxTaskId: null,
         addingTask: false,
         creatingTask: false,
         newTaskTitle: '',
         quickAddStatus: 'À faire',
+        quickAddPriority: 'Aucune',
         addError: '',
         fallbackTasks: [
-            { _id:'static-1', title:'Pédiatre Adam', status:'À faire', statusColor:'#9ca3af', priority:'Haute', dueDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' },
-            { _id:'static-2', title:'Renouveler assurance Clio 4', status:'À faire', statusColor:'#9ca3af', priority:'Basse', dueDate:'2026-06-20', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:'Cette semaine', recordTitle:'Clio 4', recordIcon:'solar:car-bold-duotone', recordColor:'#3b82f6', entityName:'Voiture', entitySlug:'voiture', entityIcon:'solar:car-bold-duotone', entityColor:'#3b82f6', scope:'personal' },
-            { _id:'static-3', title:'Préparer réunion client', status:'En cours', statusColor:'#3b82f6', priority:'Moyenne', dueDate:'2026-06-18', createdAt:'2026-06-15', assignedTo:'Yanis', listLabel:'À venir', recordTitle:'Lotissement Saidia', recordIcon:'solar:buildings-2-bold-duotone', recordColor:'#0284c7', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
-            { _id:'static-4', title:'Envoyer devis #2026-045', status:'En revue', statusColor:'#f59e0b', priority:'Moyenne', dueDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Sofia', listLabel:'Priorités', recordTitle:'CSA', recordIcon:'solar:buildings-bold-duotone', recordColor:'#7c3aed', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
-            { _id:'static-5', title:'Tache test 2', status:'À faire', statusColor:'#9ca3af', priority:'Moyenne', dueDate:'2026-06-15', createdAt:'2026-06-15', assignedTo:'Ben', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' }
-        ],
-        kanbanColumns: [
-            { label:'À faire', color:'#64748b', soft:'#f4f6fa' },
-            { label:'En cours', color:'#3b82f6', soft:'#eff6ff' },
-            { label:'En revue', color:'#f97316', soft:'#fff7ed' },
-            { label:'Terminé', color:'#10b981', soft:'#ecfdf5' },
-            { label:'Bloqué', color:'#ef4444', soft:'#fef2f2' }
+            { _id:'static-1', title:'Pédiatre Adam', status:'À faire', priority:'Haute', dueDate:'2026-06-16', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' },
+            { _id:'static-2', title:'Renouveler assurance Clio 4', status:'À faire', priority:'Basse', dueDate:'2026-06-20', startDate:'2026-06-18', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:'Cette semaine', recordTitle:'Clio 4', recordIcon:'solar:car-bold-duotone', recordColor:'#3b82f6', entityName:'Voiture', entitySlug:'voiture', entityIcon:'solar:car-bold-duotone', entityColor:'#3b82f6', scope:'personal' },
+            { _id:'static-3', title:'Préparer réunion client', status:'En cours', priority:'Moyenne', dueDate:'2026-06-18', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Yanis', listLabel:'À venir', recordTitle:'Lotissement Saidia', recordIcon:'solar:buildings-2-bold-duotone', recordColor:'#0284c7', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
+            { _id:'static-4', title:'Envoyer devis #2026-045', status:'En revue', priority:'Moyenne', dueDate:'2026-06-16', startDate:'2026-06-15', createdAt:'2026-06-15', assignedTo:'Sofia', listLabel:'Priorités', recordTitle:'CSA', recordIcon:'solar:buildings-bold-duotone', recordColor:'#7c3aed', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
+            { _id:'static-5', title:'Tache test 2', status:'À faire', priority:'Moyenne', dueDate:'2026-06-15', startDate:'2026-06-14', createdAt:'2026-06-15', assignedTo:'Ben', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' }
         ],
 
         async init() {
@@ -610,14 +383,12 @@ document.addEventListener('alpine:init', () => {
             this.sideLoading = true;
             try {
                 const res = await fetch(API + '/api/tasks-hub', { credentials:'include' });
-	                const data = await res.json();
-	                if (data.success) {
-	                    this.entities = data.entities || [];
-	                    if (!this.activeScope) this.activeScope = 'personal';
-	                }
-            } catch (e) {
-                console.error('[TasksHub]', e);
-            }
+                const data = await res.json();
+                if (data.success) {
+                    this.entities = data.entities || [];
+                    if (!this.activeScope) this.activeScope = 'personal';
+                }
+            } catch (e) { console.error('[TasksHub]', e); }
             this.sideLoading = false;
         },
 
@@ -626,23 +397,10 @@ document.addEventListener('alpine:init', () => {
             (this.entities || []).forEach(entity => {
                 (entity.records || []).forEach(record => {
                     const scope = this.classifyRecord(record, entity);
-	                    const normalized = {
-	                        ...record,
-	                        entityName: record.entityName || entity.entityName,
-	                        entitySlug: record.entitySlug || entity.entitySlug,
-	                        entityIcon: record.entityIcon || entity.entityIcon,
-	                        entityColor: record.entityColor || entity.entityColor,
-	                        scope
-	                    };
-	                    normalized.lists = (record.lists || []).map(list => ({
-	                        ...list,
-	                        id: String(list.id || list.listId || ''),
-	                        listId: String(list.listId || list.id || ''),
-	                        icon: list.icon || 'solar:checklist-bold-duotone',
-	                        color: list.color || record.recordColor || entity.entityColor || '#6366f1'
-	                    })).filter(list => list.id);
-	                    normalized.tasks = (record.tasks || []).map(task => ({ ...task, scope }));
-	                    records.push(normalized);
+                    const normalized = { ...record, entityName: record.entityName || entity.entityName, entitySlug: record.entitySlug || entity.entitySlug, entityIcon: record.entityIcon || entity.entityIcon, entityColor: record.entityColor || entity.entityColor, scope };
+                    normalized.lists = (record.lists || []).map(list => ({ ...list, id: String(list.id || list.listId || ''), listId: String(list.listId || list.id || ''), icon: list.icon || 'solar:checklist-bold-duotone', color: list.color || record.recordColor || entity.entityColor || '#6366f1' })).filter(list => list.id);
+                    normalized.tasks = (record.tasks || []).map(task => ({ ...task, scope }));
+                    records.push(normalized);
                 });
             });
             if (!records.length) return this.fallbackRecords;
@@ -653,169 +411,134 @@ document.addEventListener('alpine:init', () => {
             const byKey = {};
             this.fallbackTasks.forEach(task => {
                 const key = task.recordTitle;
-	                if (!byKey[key]) byKey[key] = {
-                    recordId: 'static-' + key.toLowerCase().replace(/\s+/g, '-'),
-                    recordTitle: task.recordTitle,
-                    recordIcon: task.recordIcon,
-                    recordColor: task.recordColor,
-                    entityName: task.entityName,
-                    entitySlug: task.entitySlug,
-                    entityIcon: task.entityIcon,
-                    entityColor: task.entityColor,
-                    scope: task.scope,
-                    totalTasks: 0,
-                    doneTasks: 0,
-	                    listsCount: 1,
-	                    lists: [],
-	                    tasks: []
-	                };
+                if (!byKey[key]) byKey[key] = { recordId: 'static-' + key.toLowerCase().replace(/\s+/g, '-'), recordTitle: task.recordTitle, recordIcon: task.recordIcon, recordColor: task.recordColor, entityName: task.entityName, entitySlug: task.entitySlug, entityIcon: task.entityIcon, entityColor: task.entityColor, scope: task.scope, totalTasks: 0, doneTasks: 0, listsCount: 1, lists: [], tasks: [] };
                 byKey[key].tasks.push(task);
                 byKey[key].totalTasks++;
                 if (this.isDone(task)) byKey[key].doneTasks++;
-	            });
-	            Object.values(byKey).forEach(record => {
-	                record.lists = [{
-	                    id: record.recordId + '-default',
-	                    listId: record.recordId + '-default',
-	                    label: 'À faire',
-	                    icon: 'solar:checklist-bold-duotone',
-	                    color: record.recordColor,
-	                    totalTasks: record.totalTasks,
-	                    doneTasks: record.doneTasks
-	                }];
-	            });
-	            return Object.values(byKey);
-	        },
+            });
+            Object.values(byKey).forEach(record => {
+                record.lists = [{ id: record.recordId + '-default', listId: record.recordId + '-default', label: 'Liste des tâches', icon: 'solar:checklist-bold-duotone', color: record.recordColor, totalTasks: record.totalTasks, doneTasks: record.doneTasks }];
+            });
+            return Object.values(byKey);
+        },
 
         classifyRecord(record, entity = {}) {
-            const text = [record.entitySlug, record.entityName, entity.entitySlug, entity.entityName, record.recordTitle]
-                .filter(Boolean).join(' ').toLowerCase();
+            const text = [record.entitySlug, record.entityName, entity.entitySlug, entity.entityName, record.recordTitle].filter(Boolean).join(' ').toLowerCase();
             const companyWords = ['soci', 'societe', 'société', 'entreprise', 'company', 'client', 'prospect', 'projet', 'chantier', 'lotissement', 'group', 'csa', 'da group'];
             return companyWords.some(word => text.includes(word)) ? 'company' : 'personal';
         },
 
-        get filteredPersonalRecords() {
-            return this.filterSidebar(this.allRecords.filter(r => r.scope === 'personal' && r.totalTasks > 0));
+        get filteredPersonalRecords() { return this.filterSidebar(this.allRecords.filter(r => r.scope === 'personal' && r.totalTasks > 0)); },
+        get filteredCompanyRecords() { return this.filterSidebar(this.allRecords.filter(r => r.scope === 'company' && r.totalTasks > 0)); },
+        filterSidebar(records) {
+            const q = this.searchQuery.trim().toLowerCase();
+            if (!q) return records;
+            return records.filter(r => ((r.recordTitle || '').toLowerCase().includes(q) || (r.entityName || '').toLowerCase().includes(q) || (r.lists || []).some(list => (list.label || '').toLowerCase().includes(q))));
         },
-        get filteredCompanyRecords() {
-            return this.filterSidebar(this.allRecords.filter(r => r.scope === 'company' && r.totalTasks > 0));
-        },
-	        filterSidebar(records) {
-	            const q = this.searchQuery.trim().toLowerCase();
-	            if (!q) return records;
-	            return records.filter(r => (
-	                (r.recordTitle || '').toLowerCase().includes(q) ||
-	                (r.entityName || '').toLowerCase().includes(q) ||
-	                (r.lists || []).some(list => (list.label || '').toLowerCase().includes(q))
-	            ));
-	        },
-	        selectScope(scope) {
-	            this.activeScope = scope;
-	            this.activeRecordId = null;
-	            this.activeListId = null;
-	            this.activeFilter = 'all';
-	        },
-	        selectRecord(record, scope) {
-	            this.activeScope = scope || record.scope || 'personal';
-	            this.activeRecordId = record.recordId;
-	            this.activeListId = null;
-	            this.activeFilter = 'all';
-	        },
-	        selectList(record, list, scope) {
-	            this.activeScope = scope || record.scope || 'personal';
-	            this.activeRecordId = record.recordId;
-	            this.activeListId = String(list.id || list.listId || '');
-	            this.activeFilter = 'all';
-	        },
+        selectScope(scope) { this.activeScope = scope; this.activeRecordId = null; this.activeListId = null; this.activeFilter = 'today'; this.priorityFilter = 'all'; },
+        selectRecord(record, scope) { this.activeScope = scope || record.scope || 'personal'; this.activeRecordId = record.recordId; this.activeListId = null; this.activeFilter = 'all'; this.priorityFilter = 'all'; },
+        selectList(record, list, scope) { this.activeScope = scope || record.scope || 'personal'; this.activeRecordId = record.recordId; this.activeListId = String(list.id || list.listId || ''); this.activeFilter = 'all'; this.priorityFilter = 'all'; },
 
-	        get activeRecords() {
-	            let records = this.allRecords.filter(r => r.totalTasks > 0);
-	            if (this.activeRecordId) return records.filter(r => r.recordId === this.activeRecordId);
-	            return records.filter(r => r.scope === this.activeScope);
-	        },
-	        get activeRecord() {
-	            return this.activeRecordId ? this.allRecords.find(r => r.recordId === this.activeRecordId) : null;
-	        },
-	        get activeList() {
-	            if (!this.activeListId) return null;
-	            return (this.activeRecord?.lists || []).find(list => String(list.id || list.listId || '') === this.activeListId) || null;
-	        },
-	        get rawVisibleTasks() {
-	            return this.activeRecords.flatMap(record => (record.tasks || [])
-	                .filter(task => !this.activeListId || String(task.listId || task.taskListId || '') === this.activeListId)
-	                .map(task => {
-	                    const taskListId = String(task.listId || task.taskListId || '');
-	                    const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === taskListId) || (record.lists || [])[0] || {};
-	                    const listId = taskListId || String(fallbackList.id || fallbackList.listId || '');
-	                    return {
-	                        ...task,
-	                        recordId: task.recordId || record.recordId,
-	                        listId,
-	                        taskListId: listId,
-	                        listLabel: task.listLabel || fallbackList.label || 'À faire',
-	                        listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone',
-	                        listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1',
-	                        recordTitle: task.recordTitle || record.recordTitle,
-	                        recordIcon: task.recordIcon || record.recordIcon,
-	                        recordColor: task.recordColor || record.recordColor,
-	                        entityName: task.entityName || record.entityName,
-	                        entityIcon: task.entityIcon || record.entityIcon,
-	                        entityColor: task.entityColor || record.entityColor,
-	                        scope: record.scope
-	                    };
-	                }));
-	        },
+        get activeRecords() {
+            let records = this.allRecords.filter(r => r.totalTasks > 0);
+            if (this.activeRecordId) return records.filter(r => r.recordId === this.activeRecordId);
+            return records.filter(r => r.scope === this.activeScope);
+        },
+        get activeRecord() { return this.activeRecordId ? this.allRecords.find(r => r.recordId === this.activeRecordId) : null; },
+        get activeList() {
+            if (!this.activeListId) return null;
+            return (this.activeRecord?.lists || []).find(list => String(list.id || list.listId || '') === this.activeListId) || null;
+        },
+        get rawVisibleTasks() {
+            return this.activeRecords.flatMap(record => (record.tasks || [])
+                .filter(task => !this.activeListId || String(task.listId || task.taskListId || '') === this.activeListId)
+                .map(task => {
+                    const taskListId = String(task.listId || task.taskListId || '');
+                    const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === taskListId) || (record.lists || [])[0] || {};
+                    const listId = taskListId || String(fallbackList.id || fallbackList.listId || '');
+                    return { ...task, recordId: task.recordId || record.recordId, listId, taskListId: listId, listLabel: task.listLabel || fallbackList.label || 'Liste des tâches', listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone', listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1', recordTitle: task.recordTitle || record.recordTitle, recordIcon: task.recordIcon || record.recordIcon, recordColor: task.recordColor || record.recordColor, entityName: task.entityName || record.entityName, entityIcon: task.entityIcon || record.entityIcon, entityColor: task.entityColor || record.entityColor, scope: record.scope };
+                }));
+        },
+
+        // ═══ "Aujourd'hui" = startDate ≤ today + dueDate not expired, OR isDayPriority ═══
+        isTodayTask(task) {
+            if (this.isDone(task)) return false;
+            // isDayPriority always shows
+            if (task.isDayPriority) return true;
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            // startDate ≤ today AND (no dueDate OR dueDate ≥ today)
+            const start = task.startDate ? new Date(task.startDate) : null;
+            const due = task.dueDate ? new Date(task.dueDate) : null;
+            if (start && !Number.isNaN(start.getTime())) {
+                const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                if (startDay <= todayStart) {
+                    if (!due || Number.isNaN(due.getTime())) return true;
+                    const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+                    return dueDay >= todayStart;
+                }
+            }
+            // If only dueDate = today
+            if (due && !Number.isNaN(due.getTime())) return this.isSameDay(task.dueDate);
+            return false;
+        },
+
         get visibleTasks() {
             const q = this.taskSearch.trim().toLowerCase();
-            return this.rawVisibleTasks
+            const filtered = this.rawVisibleTasks
                 .filter(task => {
-                    if (this.activeFilter === 'today') return this.isToday(task) || this.isSameDay(task.startDate);
-                    if (this.activeFilter === 'week') return this.isTaskInThisWeek(task);
+                    if (this.activeFilter === 'today') return this.isTodayTask(task);
+                    if (this.activeFilter === 'tomorrow') return this.isTomorrow(task);
+                    if (this.activeFilter === 'week') return this.isTaskInThisWeek(task) || this.isTodayTask(task);
                     if (this.activeFilter === 'late') return this.isOverdue(task);
                     return true;
                 })
-                .filter(task => !q || [task.title, task.recordTitle, task.entityName, task.listLabel].filter(Boolean).join(' ').toLowerCase().includes(q))
-                .sort((a, b) => this.sortDate(a) - this.sortDate(b));
+                .filter(task => !q || [task.title, task.recordTitle, task.entityName, task.listLabel].filter(Boolean).join(' ').toLowerCase().includes(q));
+            if (this.sortMode === 'recent') return filtered.sort((a, b) => this.latestTaskTime(b) - this.latestTaskTime(a));
+            return filtered.sort((a, b) => this.sortDate(a) - this.sortDate(b));
         },
-	        get mainTitle() {
-	            if (this.activeList) return this.activeList.label || 'Liste de tâches';
-	            if (this.activeRecordId) return this.activeRecords[0]?.recordTitle || 'Tasks Hub';
-	            return 'Tasks Hub Perso';
-	        },
-	        get mainSubtitle() {
-	            if (this.activeList) return (this.activeRecord?.recordTitle || 'Record') + ' · liste de tâches';
-	            if (this.activeRecordId) return (this.activeRecords[0]?.entityName || 'Enregistrement') + ' · tâches du record';
-	            return 'Tâches de votre compte personnel uniquement';
-	        },
-        get doneVisibleCount() { return this.visibleTasks.filter(t => this.isDone(t)).length; },
-        get activeVisibleCount() { return this.visibleTasks.filter(t => !this.isDone(t) && !this.isOverdue(t)).length; },
-        get overdueCount() { return this.visibleTasks.filter(t => this.isOverdue(t)).length; },
-        get todayCount() { return this.visibleTasks.filter(t => this.isToday(t)).length; },
-        get todayPriorityCount() { return this.visibleTasks.filter(t => this.isTodayPriority(t)).length; },
-        get activeListsCount() { return new Set(this.visibleTasks.map(t => t.listId || t.listLabel || 'Tâches du jour')).size; },
-        get completionPct() { return this.visibleTasks.length ? Math.round((this.doneVisibleCount / this.visibleTasks.length) * 100) : 0; },
-        get todayPanelTasks() {
-            return this.visibleTasks
-                .filter(task => this.isTodayPriority(task))
-                .sort((a, b) => this.sortDate(a) - this.sortDate(b));
+
+        get mainTitle() {
+            if (this.activeList) return this.activeList.label || 'Liste de tâches';
+            if (this.activeRecordId) return this.activeRecords[0]?.recordTitle || 'Tasks Hub';
+            return 'Tasks Hub Perso';
         },
-        get todayTodoCount() { return this.todayPanelTasks.filter(task => !this.isDone(task)).length; },
-        get todayCompletionPct() {
-            return this.todayPanelTasks.length ? Math.round(((this.todayPanelTasks.length - this.todayTodoCount) / this.todayPanelTasks.length) * 100) : 0;
+        get mainSubtitle() {
+            if (this.activeList) return (this.activeRecord?.recordTitle || 'Record') + ' · liste de tâches';
+            if (this.activeRecordId) return (this.activeRecords[0]?.entityName || 'Enregistrement') + ' · tâches du record';
+            return 'Vos tâches, organisées simplement pour avancer chaque jour.';
         },
-        get personalTaskCount() { return this.allRecords.filter(r => r.scope === 'personal').reduce((s, r) => s + (r.totalTasks || 0), 0); },
-        get companyTaskCount() { return this.allRecords.filter(r => r.scope === 'company').reduce((s, r) => s + (r.totalTasks || 0), 0); },
-        get personalPct() {
-            const total = this.personalTaskCount + this.companyTaskCount;
-            return total ? Math.round((this.personalTaskCount / total) * 100) : 0;
+
+        // Filter counts (on rawVisibleTasks, before date filter)
+        get lateFilterCount() { return this.rawVisibleTasks.filter(t => this.isOverdue(t)).length; },
+        get todayFilterCount() { return this.rawVisibleTasks.filter(t => this.isTodayTask(t)).length; },
+        get tomorrowFilterCount() { return this.rawVisibleTasks.filter(t => this.isTomorrow(t)).length; },
+        get weekFilterCount() { return this.rawVisibleTasks.filter(t => this.isTaskInThisWeek(t) || this.isTodayTask(t)).length; },
+
+        // Priority filtered tasks
+        get priorityFilteredTasks() {
+            if (this.priorityFilter === 'all') return this.visibleTasks;
+            if (this.priorityFilter === 'Haute') return this.visibleTasks.filter(t => t.priority === 'Haute' || t.priority === 'Urgente');
+            if (this.priorityFilter === 'Moyenne') return this.visibleTasks.filter(t => t.priority === 'Moyenne');
+            if (this.priorityFilter === 'Normale') return this.visibleTasks.filter(t => !t.priority || t.priority === 'Aucune' || t.priority === 'Basse' || t.priority === 'Normale');
+            return this.visibleTasks;
         },
-        get companyPct() { return Math.max(0, 100 - this.personalPct); },
-        get donutStyle() {
-            const total = Math.max(1, this.visibleTasks.length);
-            const done = Math.round((this.doneVisibleCount / total) * 360);
-            const active = done + Math.round((this.activeVisibleCount / total) * 360);
-            const late = active + Math.round((this.overdueCount / total) * 360);
-            return `--done-deg:${done}deg;--active-deg:${active}deg;--late-deg:${late}deg`;
+
+        // Priority sections: Haute, Moyenne, Normale
+        get prioritySections() {
+            const groups = [
+                { key:'high', title:'Priorité haute', icon:'solar:flag-bold', color:'#ef4444', bg:'#fef2f2', priorities:['Haute','Urgente'] },
+                { key:'medium', title:'Priorité moyenne', icon:'solar:flag-bold', color:'#f97316', bg:'#fff7ed', priorities:['Moyenne'] },
+                { key:'normal', title:'Priorité normale', icon:'solar:flag-bold', color:'#10b981', bg:'#ecfdf5', priorities:['Basse','Normale','Aucune',''] }
+            ];
+            const tasks = this.priorityFilteredTasks.filter(t => !this.isDone(t));
+            return groups.map(g => ({ ...g, tasks: tasks.filter(t => g.priorities.includes(t.priority || 'Aucune')).sort((a, b) => this.sortDate(a) - this.sortDate(b)) }));
+        },
+
+        get quickAddPlaceholder() {
+            if (this.activeList) return 'Ajouter dans ' + this.activeList.label;
+            if (this.activeRecord) return 'Ajouter dans ' + this.activeRecord.recordTitle + ' · Liste des tâches';
+            return 'Ajouter dans Espace perso · Liste des tâches';
         },
         get workloadBars() {
             const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -831,59 +554,48 @@ document.addEventListener('alpine:init', () => {
             return labels.map((label, index) => ({ label, height: Math.max(10, Math.round((counts[index] / max) * 92)) }));
         },
         get weekTaskCount() { return this.rawVisibleTasks.filter(task => this.isTaskInThisWeek(task)).length; },
-	        get smartReminders() {
-	            return this.visibleTasks.filter(task => !this.isDone(task)).slice(0, 4);
-	        },
-	        get quickAddPlaceholder() {
-	            if (this.activeList) return 'Ajouter dans ' + this.activeList.label;
-	            if (this.activeRecord) return 'Ajouter dans ' + this.activeRecord.recordTitle + ' · À faire';
-	            return 'Ajouter dans Espace perso · À faire';
-	        },
-        get listSections() {
-            const sections = new Map();
-            const ensureSection = (task) => {
-                const recordId = String(task.recordId || 'record');
-                const listId = String(task.listId || task.taskListId || task.listLabel || 'default');
-                const key = recordId + ':' + listId;
-                if (!sections.has(key)) {
-                    const color = task.listColor || task.recordColor || task.entityColor || '#6366f1';
-                    sections.set(key, {
-                        key,
-                        title: task.listLabel || 'À faire',
-                        subtitle: task.recordTitle || 'Espace perso',
-                        icon: task.listIcon || 'solar:checklist-bold-duotone',
-                        color,
-                        bg: this.colorSoft(color),
-                        tasks: []
-                    });
-                }
-                return sections.get(key);
-            };
-            this.visibleTasks.forEach(task => ensureSection(task).tasks.push(task));
-            return Array.from(sections.values())
-                .map(section => ({
-                    ...section,
-                    subtitle: section.subtitle + ' · ' + section.tasks.length + ' ' + (section.tasks.length > 1 ? 'tâches' : 'tâche'),
-                    tasks: section.tasks.slice().sort((a, b) => this.sortDate(a) - this.sortDate(b))
-                }))
-                .sort((a, b) => a.subtitle.localeCompare(b.subtitle, 'fr') || a.title.localeCompare(b.title, 'fr'));
-        },
 
-        tasksByStatus(status) {
-            return this.visibleTasks.filter(task => this.bucketStatus(task) === status);
+        async openTask(task) {
+            const self = this;
+            Alpine.store('taskModal').open(task, {
+                onUpdate: () => self.loadHub(),
+                onDelete: () => self.loadHub(),
+            });
         },
-        bucketStatus(task) {
-            if (this.isDone(task)) return 'Terminé';
-            const status = task.status || 'À faire';
-            if (['En cours','En revue','Bloqué'].includes(status)) return status;
-            return 'À faire';
+        closeTask() { Alpine.store('taskModal').close(); },
+        async updateTaskField(task, field, value) {
+            Alpine.store('taskModal').updateField(field, value);
         },
-	        openTask(task) { this.detailTask = task; },
-	        closeTask() { this.detailTask = null; },
-	        showQuickAdd(status = 'À faire') {
-	            this.quickAddStatus = this.kanbanColumns.some(col => col.label === status) ? status : 'À faire';
-	            this.addingTask = true;
-	            this.addError = '';
+        async deleteTask(task) {
+            Alpine.store('taskModal').task = task;
+            Alpine.store('taskModal')._onDelete = () => this.loadHub();
+            Alpine.store('taskModal').remove();
+        },
+        async toggleTaskStatus(task) {
+            if (!task?._id) return;
+            const newStatus = this.isDone(task) ? 'À faire' : 'Terminé';
+            try {
+                await fetch(API + '/api/record-tasks/' + task._id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                await this.loadHub();
+                if (window.showMessage) window.showMessage(newStatus === 'Terminé' ? 'Tâche terminée' : 'Tâche rouverte', 'success');
+            } catch (e) { console.error('[TasksHub] Toggle error:', e); }
+        },
+        toDateInputValue(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toISOString().split('T')[0];
+        },
+        showQuickAdd(status = 'À faire', priority = 'Aucune') {
+            this.quickAddStatus = status || 'À faire';
+            this.quickAddPriority = priority || 'Aucune';
+            this.addingTask = true;
+            this.addError = '';
             this.$nextTick(() => this.$refs.newTaskInput?.focus());
         },
         cancelQuickAdd() {
@@ -891,6 +603,7 @@ document.addEventListener('alpine:init', () => {
             this.addingTask = false;
             this.newTaskTitle = '';
             this.quickAddStatus = 'À faire';
+            this.quickAddPriority = 'Aucune';
             this.addError = '';
         },
         async createPersonalTask() {
@@ -899,30 +612,25 @@ document.addEventListener('alpine:init', () => {
             this.creatingTask = true;
             this.addError = '';
             try {
-	                const res = await fetch(API + '/api/tasks-hub/personal-tasks', {
-	                    method: 'POST',
-	                    headers: { 'Content-Type': 'application/json' },
-	                    credentials: 'include',
-	                    body: JSON.stringify({ title, status: this.quickAddStatus || 'À faire', taskListId: this.activeListId || '' })
-	                });
-	                const data = await res.json();
-	                if (!data.success) throw new Error(data.error || 'Impossible de créer la tâche');
-	                this.newTaskTitle = '';
-	                this.quickAddStatus = 'À faire';
-	                if (!this.activeListId && !this.activeRecordId) this.activeScope = 'personal';
-	                this.activeFilter = 'all';
-	                this.taskSearch = '';
-	                await this.loadHub();
-	                this.$nextTick(() => this.$refs.newTaskInput?.focus());
-	                if (window.showMessage) window.showMessage('Tâche ajoutée dans ' + (this.activeList?.label || 'Espace perso · À faire'), 'success');
+                const res = await fetch(API + '/api/tasks-hub/personal-tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ title, status: this.quickAddStatus || 'À faire', priority: this.quickAddPriority || 'Aucune', startDate: new Date().toISOString().split('T')[0], taskListId: this.activeListId || '' }) });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Impossible de créer la tâche');
+                this.newTaskTitle = '';
+                this.quickAddStatus = 'À faire';
+                if (!this.activeListId && !this.activeRecordId) this.activeScope = 'personal';
+                this.activeFilter = 'all';
+                this.taskSearch = '';
+                await this.loadHub();
+                this.$nextTick(() => this.$refs.newTaskInput?.focus());
+                if (window.showMessage) window.showMessage('Tâche ajoutée dans ' + (this.activeList?.label || 'Espace perso · Liste des tâches'), 'success');
             } catch (e) {
                 console.error('[TasksHub] Create task error:', e);
                 this.addError = e.message || 'Impossible de créer la tâche';
                 if (window.showMessage) window.showMessage(this.addError, 'danger');
-            } finally {
-                this.creatingTask = false;
-            }
+            } finally { this.creatingTask = false; }
         },
+
+        // ═══ Helpers ═══
         isDone(task) { return (task.status || '').toLowerCase() === 'terminé'; },
         isOverdue(task) {
             if (this.isDone(task) || !task.dueDate) return false;
@@ -931,20 +639,15 @@ document.addEventListener('alpine:init', () => {
             due.setHours(23,59,59,999);
             return due < new Date();
         },
-        isToday(task) {
-            if (!task.dueDate) return false;
-            return this.isSameDay(task.dueDate);
+        isToday(task) { return task.dueDate ? this.isSameDay(task.dueDate) : false; },
+        isTomorrow(task) {
+            const d = task.dueDate ? new Date(task.dueDate) : null;
+            if (!d || Number.isNaN(d.getTime())) return false;
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            return d.getFullYear() === tomorrow.getFullYear() && d.getMonth() === tomorrow.getMonth() && d.getDate() === tomorrow.getDate();
         },
-        isThisWeek(task) {
-            if (!task.dueDate) return false;
-            return this.isDateThisWeek(task.dueDate);
-        },
-        isTodayPriority(task) {
-            return !!task.isDayPriority || this.isSameDay(task.startDate) || this.isToday(task);
-        },
-        isTaskInThisWeek(task) {
-            return this.isDateThisWeek(task.startDate) || this.isDateThisWeek(task.dueDate);
-        },
+        isTaskInThisWeek(task) { return this.isDateThisWeek(task.startDate) || this.isDateThisWeek(task.dueDate); },
         isSameDay(value) {
             if (!value) return false;
             const d = new Date(value);
@@ -957,21 +660,15 @@ document.addEventListener('alpine:init', () => {
             const d = new Date(value);
             if (Number.isNaN(d.getTime())) return false;
             const n = new Date();
-            const start = new Date(n);
-            start.setHours(0,0,0,0);
-            const end = new Date(start);
-            end.setDate(end.getDate() + 7);
+            const start = new Date(n); start.setHours(0,0,0,0);
+            const end = new Date(start); end.setDate(end.getDate() + 7);
             return d >= start && d <= end;
         },
         latestTaskTime(task) {
-            const dates = [task.updatedAt, task.createdAt]
-                .map(value => value ? new Date(value).getTime() : 0)
-                .filter(value => Number.isFinite(value));
+            const dates = [task.updatedAt, task.createdAt].map(v => v ? new Date(v).getTime() : 0).filter(v => Number.isFinite(v));
             return dates.length ? Math.max(...dates) : 0;
         },
-        taskDisplayDate(task) {
-            return task.startDate || task.dueDate || task.updatedAt || task.createdAt;
-        },
+        taskDisplayDate(task) { return task.startDate || task.dueDate || task.updatedAt || task.createdAt; },
         sortDate(task) {
             const d = task.startDate ? new Date(task.startDate) : (task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt || Date.now()));
             return Number.isNaN(d.getTime()) ? Date.now() : d.getTime();
@@ -982,39 +679,37 @@ document.addEventListener('alpine:init', () => {
             if (Number.isNaN(d.getTime())) return '—';
             return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
         },
-        formatTime(value) {
+        formatLongDate(value) {
             if (!value) return '—';
             const d = new Date(value);
             if (Number.isNaN(d.getTime())) return '—';
-            if (d.getHours() === 0 && d.getMinutes() === 0) return '—';
-            return d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+            return d.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
         },
-        assigneeInitials(task) {
-            const name = task.assignedTo || 'Moi';
-            return String(name).split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+        formatRelativeDate(value) {
+            if (!value) return '—';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '—';
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const diff = Math.round((target - today) / 86400000);
+            if (diff === 0) return "Aujourd'hui";
+            if (diff === 1) return 'Demain';
+            if (diff === -1) return 'Hier';
+            if (diff < -1) return 'Il y a ' + Math.abs(diff) + 'j';
+            if (diff <= 7) return d.toLocaleDateString('fr-FR', { weekday: 'long' });
+            return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
         },
-        rowAccent(task) {
-            if (this.isOverdue(task)) return '#ef4444';
-            if (task.priority === 'Haute' || task.priority === 'Urgente') return '#ef4444';
-            if (task.priority === 'Moyenne') return '#f97316';
-            if (this.isDone(task)) return '#10b981';
-            return task.recordColor || task.entityColor || '#6366f1';
+        // Priority label: Basse → Normale
+        priorityLabel(priority) {
+            if (!priority || priority === 'Aucune') return 'Normale';
+            if (priority === 'Basse') return 'Normale';
+            return priority;
         },
         priorityStyle(priority) {
-            const map = {
-                Urgente: ['#fee2e2', '#dc2626'],
-                Haute: ['#fef2f2', '#ef4444'],
-                Moyenne: ['#fff7ed', '#f97316'],
-                Basse: ['#ecfdf5', '#10b981'],
-                Aucune: ['#f1f5f9', '#64748b']
-            };
+            const map = { Urgente:['#fee2e2','#dc2626'], Haute:['#fef2f2','#ef4444'], Moyenne:['#fff7ed','#f97316'], Basse:['#ecfdf5','#10b981'], Normale:['#ecfdf5','#10b981'], Aucune:['#f1f5f9','#64748b'] };
             const [bg, color] = map[priority || 'Aucune'] || map.Aucune;
             return `background:${bg};color:${color}`;
-        },
-        scopeChipStyle(task) {
-            return task.scope === 'company'
-                ? 'background:#e0f2fe;color:#0284c7'
-                : 'background:#ede9fe;color:#7c3aed';
         },
         colorSoft(color) {
             const hex = color || '#6366f1';

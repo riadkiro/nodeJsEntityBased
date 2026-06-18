@@ -787,18 +787,10 @@ document.addEventListener('alpine:init', () => {
                     self.showDetail(ev);
                 },
                 dateClick: (info) => {
-                    // Open the record page of the first linked record's agenda if possible
-                    // For now, navigate to the first record's agenda for event creation
-                    if (self.filteredEvents.length > 0) {
-                        const firstEv = self.filteredEvents[0];
-                        const link = self.getRecordLink(firstEv);
-                        if (link !== '#') {
-                            window.location.href = link;
-                            return;
-                        }
+                    // Switch to day view for the clicked date
+                    if (self.calendar) {
+                        self.calendar.changeView('timeGridDay', info.dateStr);
                     }
-                    // If no events/records, show an alert
-                    alert("Pour créer un événement, ouvrez l'agenda depuis une fiche.");
                 },
                 eventDrop: async (info) => {
                     const ev = info.event.extendedProps._ev;

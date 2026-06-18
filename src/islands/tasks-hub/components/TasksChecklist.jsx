@@ -197,7 +197,29 @@ export default function TasksChecklist({
                 {/* Task content */}
                 <div
                     className="flex-1 min-w-0"
-                    onClick={() => window.location.href = `/account/${accountNumber}/record/${entitySlug}/${task._id}`}
+                    onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-task-modal', {
+                            detail: {
+                                task: {
+                                    _id: task._id,
+                                    title: task.title || 'Sans titre',
+                                    description: task.description || '',
+                                    status: task.status || 'À faire',
+                                    priority: task.priority || 'Aucune',
+                                    isDayPriority: task.isDayPriority || false,
+                                    assignedTo: task.assignedTo || '',
+                                    startDate: task.startDate || null,
+                                    dueDate: task.dueDate || null,
+                                    createdAt: task.createdAt || null,
+                                    listLabel: task.taskListLabel || 'Liste des tâches',
+                                    listIcon: 'solar:checklist-bold-duotone',
+                                    recordTitle: task.recordTitle || '',
+                                },
+                                onUpdate: () => window.location.reload(),
+                                onDelete: () => window.location.reload(),
+                            }
+                        }));
+                    }}
                 >
                     <div className="flex items-center gap-2 flex-wrap">
                         <span

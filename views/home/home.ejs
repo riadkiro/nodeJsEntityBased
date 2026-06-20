@@ -2434,12 +2434,13 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('mouseup', () => this._onResizeEnd());
             window.addEventListener('pointermove', (e) => this._onResizeMove(e));
             window.addEventListener('pointerup', () => this._onResizeEnd());
-            this._homeWidgetListener = (e) => this.insertWidgetFromPicker(e.detail || {});
-            window.addEventListener('insert-home-overview-widget', this._homeWidgetListener);
-            window.addEventListener('update-home-overview-widget', (e) => this._updateWidgetFromPicker(e.detail || {}));
-            window.addEventListener('delete-home-overview-custom-widget', (e) => this.deleteCustomWidgetFromPicker(e.detail || {}));
-            // Re-init sortables when data finishes loading and layout mode is active
-            this.$watch('loadingData', (loading) => {
+	            this._homeWidgetListener = (e) => this.insertWidgetFromPicker(e.detail || {});
+	            window.addEventListener('insert-home-overview-widget', this._homeWidgetListener);
+	            window.addEventListener('update-home-overview-widget', (e) => this._updateWidgetFromPicker(e.detail || {}));
+	            window.addEventListener('delete-home-overview-custom-widget', (e) => this.deleteCustomWidgetFromPicker(e.detail || {}));
+	            window.addEventListener('close-home-task-menu', () => this.closeHomeTaskMenu());
+	            // Re-init sortables when data finishes loading and layout mode is active
+	            this.$watch('loadingData', (loading) => {
                 if (!loading && this.layoutMode) {
                     this.$nextTick(() => this._startObserver());
                 }
@@ -2869,6 +2870,7 @@ document.addEventListener('alpine:init', () => {
 
 	        openHomeTaskModal(wid, task) {
 	            if (!task || !task._id) return;
+	            this.closeHomeTaskMenu();
 	            const list = this.homeTaskListForWidget(wid);
 	            const taskObj = {
 	                ...task,

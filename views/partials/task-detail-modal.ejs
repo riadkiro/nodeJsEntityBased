@@ -15,7 +15,7 @@
 .tdm-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(340px,1.08fr) minmax(285px,.74fr) minmax(330px,.9fr);overflow:hidden}
 .tdm-main{padding:28px 32px;overflow-y:auto;border-right:1px solid #f1f3f5}
 .tdm-props{padding:26px 20px;overflow-y:auto;border-right:1px solid #f1f3f5}
-.tdm-conv{display:flex;flex-direction:column;min-width:0;background:#fafbfc}
+.tdm-conv{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%;overflow:hidden;background:#fafbfc}
 .tdm-title-input{width:100%;border:0;border-bottom:2px solid transparent;outline:0;background:transparent;font-family:inherit;font-size:20px;font-weight:600;line-height:1.3;color:#0e1726;padding:0 0 15px;transition:border-color .16s}
 .tdm-title-input:focus{border-bottom-color:#4361ee}
 .tdm-section-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 8px}
@@ -103,7 +103,11 @@
 .tdm-clear-assign button:hover{background:#f8fafc;color:#ef4444}
 .tdm-conv-head{height:50px;display:flex;align-items:center;gap:8px;padding:0 18px;border-bottom:1px solid #f1f3f5;color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;flex:0 0 auto}
 .tdm-conv-head iconify-icon{color:#4361ee}
-.tdm-conv-feed{flex:1;min-height:0;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:7px}
+.tdm-conv-feed{flex:1;min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:14px 12px;display:flex;flex-direction:column;gap:7px}
+.tdm-conv-feed::-webkit-scrollbar{width:7px}
+.tdm-conv-feed::-webkit-scrollbar-track{background:transparent}
+.tdm-conv-feed::-webkit-scrollbar-thumb{background:#dbe4f0;border-radius:999px}
+.tdm-conv-feed:hover::-webkit-scrollbar-thumb{background:#cbd5e1}
 .tdm-conv-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#bfc9d4;font-size:12px;font-weight:500;text-align:center;padding:20px}
 .tdm-conv-entry{align-self:flex-start;max-width:92%;padding:7px 10px;border-radius:12px;background:#fff;border:1px solid #e8ecf1}
 .tdm-conv-activity{align-self:center;text-align:center;background:#f8fafc;border-color:#eef2f7;color:#94a3b8}
@@ -406,7 +410,7 @@
                                 Conversation
                                 <span x-text="'(' + (($store.taskModal.task._comments || []).length) + ')'" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:11px"></span>
                             </div>
-                            <div class="tdm-conv-feed">
+	                            <div class="tdm-conv-feed" data-task-conversation-feed>
                                 <template x-if="!$store.taskModal.task._comments || !$store.taskModal.task._comments.length">
                                     <div class="tdm-conv-empty">
                                         <iconify-icon icon="solar:chat-round-dots-linear" width="32"></iconify-icon>
@@ -522,16 +526,41 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 try {
-                    const res = await fetch(API + '/api/record-tasks/' + taskObj._id + '/comments', { credentials: 'include' });
-                    const data = await res.json();
-                    if (data.success && Array.isArray(data.comments) && this.task) {
-                        this.task._comments = data.comments;
-                    }
-                } catch (e) {
-                    console.warn('[TaskModal] Comments fetch error:', e);
-                }
-            }
-        },
+	                    const res = await fetch(API + '/api/record-tasks/' + taskObj._id + '/comments', { credentials: 'include' });
+	                    const data = await res.json();
+	                    if (data.success && Array.isArray(data.comments) && this.task) {
+	                        this.task._comments = this.sortConversation(data.comments);
+	                        this.scrollConversationToRecent();
+	                    }
+	                } catch (e) {
+	                    console.warn('[TaskModal] Comments fetch error:', e);
+	                }
+	            }
+	        },
+
+	        sortConversation(comments = []) {
+	            return [...(comments || [])].sort((a, b) => {
+	                const ad = new Date(a?.createdAt || 0).getTime() || 0;
+	                const bd = new Date(b?.createdAt || 0).getTime() || 0;
+	                return ad - bd;
+	            });
+	        },
+
+	        scrollConversationToRecent({ smooth = false } = {}) {
+	            const run = () => {
+	                const feed = document.querySelector('.tdm-backdrop.open [data-task-conversation-feed]');
+	                if (!feed) return;
+	                feed.scrollTo({
+	                    top: feed.scrollHeight,
+	                    behavior: smooth ? 'smooth' : 'auto'
+	                });
+	            };
+	            if (window.Alpine?.nextTick) {
+	                window.Alpine.nextTick(() => requestAnimationFrame(run));
+	            } else {
+	                requestAnimationFrame(run);
+	            }
+	        },
 
 	        close() {
 	            this.task = null;
@@ -920,11 +949,12 @@ document.addEventListener('alpine:init', () => {
                     credentials: 'include',
                     body: JSON.stringify({ text: text.trim() })
                 });
-                const data = await res.json();
-                if (data.success && data.comment) {
-                    this.task._comments = [...(this.task._comments || []), data.comment];
-                }
-            } catch (e) {
+	                const data = await res.json();
+	                if (data.success && data.comment) {
+	                    this.task._comments = this.sortConversation([...(this.task._comments || []), data.comment]);
+	                    this.scrollConversationToRecent({ smooth: true });
+	                }
+	            } catch (e) {
                 console.error('[TaskModal] Comment error:', e);
             }
         },

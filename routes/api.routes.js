@@ -8,9 +8,14 @@
  */
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
+const crypto = require('crypto')
 const { tenantCollection } = require('../middleware/tenant')
 const { buildRecordFilterQuery, applyUniqueViewFilters, getUniqueViewFilters } = require('../services/record-filter-query')
 const { ensureEventsEntity } = require('../services/events-entity.service')
+const { sanitizeUploadedFilename } = require('../utils/filename-encoding')
 
 /**
  * GET /account/:account_number/api/entity/:entityId/views/:viewId/records
@@ -1005,6 +1010,220 @@ const cleanTaskListLabel = (value) => {
     return label
 }
 
+const defaultTaskStatuses = [
+    { label: 'À faire',  color: '#9ca3af', order: 0 },
+    { label: 'En cours', color: '#3b82f6', order: 1 },
+    { label: 'En revue', color: '#f59e0b', order: 2 },
+    { label: 'Terminé',  color: '#22c55e', order: 3 },
+    { label: 'Bloqué',   color: '#ef4444', order: 4 },
+]
+
+const defaultTaskPriorities = [
+    { label: 'Aucune',  color: '#cbd5e1', order: 0 },
+    { label: 'Basse',   color: '#22c55e', order: 1 },
+    { label: 'Moyenne', color: '#f59e0b', order: 2 },
+    { label: 'Haute',   color: '#ef4444', order: 3 },
+    { label: 'Urgente', color: '#dc2626', order: 4 },
+]
+
+const taskAttachmentUrl = (req, attachment = {}) => {
+    if (!attachment.filename) return ''
+    const dl = attachment.originalName ? `?dl=${encodeURIComponent(attachment.originalName)}` : ''
+    return `/account/${req.account_number}/uploads/attachments/${attachment.filename}${dl}`
+}
+
+const taskAttachmentPayload = (req, attachment = {}) => ({
+    _id: attachment._id?.toString?.() || String(attachment._id || ''),
+    filename: attachment.filename || '',
+    originalName: attachment.originalName || attachment.filename || 'Fichier',
+    mimeType: attachment.mimeType || '',
+    size: Number(attachment.size || 0),
+    uploadedAt: attachment.uploadedAt || null,
+    uploadedBy: attachment.uploadedBy || null,
+    url: taskAttachmentUrl(req, attachment)
+})
+
+const normalizeTaskOptions = (options, fallback) => {
+    const source = Array.isArray(options) && options.length > 0 ? options : fallback
+    return source
+        .map((item, index) => ({
+            label: cleanTaskText(item?.label, ''),
+            color: typeof item?.color === 'string' ? item.color : '',
+            order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index
+        }))
+        .filter(item => item.label)
+        .sort((a, b) => a.order - b.order)
+}
+
+const getListStatuses = (list) => normalizeTaskOptions(list?.statuses, defaultTaskStatuses)
+const getListPriorities = (list) => normalizeTaskOptions(list?.priorities, defaultTaskPriorities)
+
+const optionColor = (options, label, fallback = '#9ca3af') => {
+    const cleanLabel = cleanTaskText(label, '')
+    const found = (options || []).find(item => item.label === cleanLabel)
+    return found?.color || fallback
+}
+
+const cleanTaskOptionPayload = (options, fallback, fallbackColor) => {
+    const cleaned = (Array.isArray(options) ? options : [])
+        .map((item, index) => ({
+            label: cleanTaskText(item?.label, ''),
+            color: typeof item?.color === 'string' && item.color ? item.color : fallbackColor,
+            order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index
+        }))
+        .filter(item => item.label)
+
+    return cleaned.length ? cleaned : fallback
+}
+
+const syncTaskOptions = async ({ listId, kind, previousOptions, nextOptions, renames = [] }) => {
+    const field = kind === 'priority' ? 'priority' : 'status'
+    const colorField = kind === 'priority' ? 'priorityColor' : 'statusColor'
+    const fallback = nextOptions[0] || (kind === 'priority' ? defaultTaskPriorities[0] : defaultTaskStatuses[0])
+    const nextLabels = new Set(nextOptions.map(item => item.label))
+    const renamePairs = (Array.isArray(renames) ? renames : [])
+        .map(item => ({
+            from: cleanTaskText(item?.from, ''),
+            to: cleanTaskText(item?.to, '')
+        }))
+        .filter(item => item.from && item.to && item.from !== item.to)
+
+    for (const option of nextOptions) {
+        await RecordTask.updateMany(
+            { taskListId: listId, [field]: option.label },
+            { $set: { [colorField]: option.color || '' } }
+        )
+    }
+
+    for (const pair of renamePairs) {
+        const next = nextOptions.find(item => item.label === pair.to)
+        if (!next) continue
+        await RecordTask.updateMany(
+            { taskListId: listId, [field]: pair.from },
+            { $set: { [field]: next.label, [colorField]: next.color || '' } }
+        )
+    }
+
+    const renamedFrom = new Set(renamePairs.map(item => item.from))
+    const removedLabels = (previousOptions || [])
+        .map(item => item?.label)
+        .filter(label => label && !nextLabels.has(label) && !renamedFrom.has(label))
+
+    if (removedLabels.length) {
+        await RecordTask.updateMany(
+            { taskListId: listId, [field]: { $in: removedLabels } },
+            { $set: { [field]: fallback.label, [colorField]: fallback.color || '' } }
+        )
+    }
+}
+
+const serializeRecordTask = (req, task, list = null, extra = {}) => {
+    const taskList = list || {}
+    const statuses = getListStatuses(taskList)
+    const priorities = getListPriorities(taskList)
+    const status = cleanTaskText(task.status, 'À faire')
+    const priority = cleanTaskText(task.priority, 'Aucune')
+    return {
+        _id: task._id?.toString?.() || String(task._id || ''),
+        title: cleanTaskText(task.title, 'Sans titre'),
+        description: task.description || '',
+        status,
+        statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
+        priority,
+        priorityColor: task.priorityColor || optionColor(priorities, priority, ''),
+        isDayPriority: !!task.isDayPriority,
+        taskListId: task.taskListId?.toString?.() || String(task.taskListId || taskList._id || ''),
+        startDate: task.startDate || null,
+        dueDate: task.dueDate || null,
+        assignedTo: task.assignedTo || '',
+        order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+        completedAt: task.completedAt || null,
+        attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att)),
+        listLabel: taskList.label ? cleanTaskListLabel(taskList.label) : extra.listLabel,
+        listColor: taskList.color || extra.listColor,
+        listIcon: taskList.icon || extra.listIcon,
+        statuses,
+        priorities,
+        ...extra
+    }
+}
+
+const taskAttachmentForbiddenExts = new Set([
+    '.exe', '.bat', '.cmd', '.com', '.scr', '.pif', '.msi', '.msp', '.mst',
+    '.js', '.jse', '.vbs', '.vbe', '.wsf', '.wsh', '.ps1', '.psm1', '.psd1',
+    '.php', '.php3', '.php4', '.php5', '.phtml', '.py', '.rb', '.pl', '.cgi',
+    '.asp', '.aspx', '.jsp', '.jar', '.war', '.class', '.sh', '.bash',
+    '.zsh', '.ksh', '.dll', '.so', '.dylib', '.hta', '.inf', '.reg',
+    '.url', '.lnk', '.app', '.command'
+])
+
+const taskAttachmentStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.round(Math.random() * 1E9)}`
+        const taskIdSegment = /^[a-f\d]{24}$/i.test(String(req.params.taskId || ''))
+            ? String(req.params.taskId)
+            : 'unknown-task'
+        const dir = path.join(
+            __dirname,
+            '../private_uploads/attachments',
+            String(req.account_number),
+            'tasks',
+            taskIdSegment,
+            uploadId
+        )
+        fs.mkdirSync(dir, { recursive: true })
+        cb(null, dir)
+    },
+    filename: (req, file, cb) => {
+        file.originalname = sanitizeUploadedFilename(file.originalname, 'fichier')
+        cb(null, file.originalname)
+    }
+})
+
+const taskAttachmentUpload = multer({
+    storage: taskAttachmentStorage,
+    limits: { fileSize: 50 * 1024 * 1024, files: 10 },
+    fileFilter: (req, file, cb) => {
+        file.originalname = sanitizeUploadedFilename(file.originalname, 'fichier')
+        const ext = path.extname(file.originalname).toLowerCase()
+        if (taskAttachmentForbiddenExts.has(ext)) {
+            return cb(new Error(`Extension de fichier interdite: ${ext}`), false)
+        }
+        const parts = file.originalname.split('.')
+        if (parts.length > 2 && parts.slice(1).some(part => taskAttachmentForbiddenExts.has('.' + part.toLowerCase()))) {
+            return cb(new Error(`Extension cachée détectée: ${file.originalname}`), false)
+        }
+        cb(null, true)
+    }
+})
+
+const taskAttachmentRelativePath = (req, filePath) => {
+    const base = path.resolve(__dirname, '../private_uploads/attachments', String(req.account_number))
+    const absolute = path.resolve(filePath)
+    if (!absolute.startsWith(base + path.sep)) return ''
+    return path.relative(base, absolute).split(path.sep).join('/')
+}
+
+const removeTaskAttachmentFile = (req, filename) => {
+    if (!filename || String(filename).includes('..')) return
+    const base = path.resolve(__dirname, '../private_uploads/attachments', String(req.account_number))
+    const target = path.resolve(base, filename)
+    if (!target.startsWith(base + path.sep)) return
+    if (fs.existsSync(target)) {
+        fs.rmSync(target, { force: true })
+        const parent = path.dirname(target)
+        try {
+            if (parent.startsWith(base + path.sep) && fs.existsSync(parent) && fs.readdirSync(parent).length === 0) {
+                fs.rmdirSync(parent)
+            }
+        } catch (error) {
+            console.warn('[API] Task attachment cleanup skipped:', error.message)
+        }
+    }
+}
+
 /**
  * GET /account/:account_number/api/record/:recordId/task-lists
  * Get all task lists for a specific record with task counts
@@ -1025,40 +1244,20 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 if (aD !== bD) return aD - bD
                 return new Date(b.createdAt) - new Date(a.createdAt)
             })
-            const defaultStatuses = [
-                { label: 'À faire',  color: '#9ca3af', order: 0 },
-                { label: 'En cours', color: '#3b82f6', order: 1 },
-                { label: 'En revue', color: '#f59e0b', order: 2 },
-                { label: 'Terminé',  color: '#22c55e', order: 3 },
-                { label: 'Bloqué',   color: '#ef4444', order: 4 },
-            ]
-            const listStatuses = (l.statuses && l.statuses.length > 0)
-                ? l.statuses.sort((a, b) => a.order - b.order).map(s => ({ label: s.label, color: s.color, order: s.order }))
-                : defaultStatuses
+            const listStatuses = getListStatuses(l)
+            const listPriorities = getListPriorities(l)
             return {
                 _id: l._id.toString(),
                 label: cleanTaskListLabel(l.label),
                 rawLabel: l.label || '',
                 color: l.color || '#6366f1',
+                icon: l.icon || 'solar:checklist-bold-duotone',
                 viewMode: l.viewMode || 'kanban',
                 statuses: listStatuses,
+                priorities: listPriorities,
                 count: listTasks.length,
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
-                tasks: sorted.slice(0, 10).map(t => ({
-                    _id: t._id.toString(),
-                    title: cleanTaskText(t.title, 'Sans titre'),
-                    description: t.description || '',
-                    status: t.status,
-                    statusColor: t.statusColor,
-                    priority: t.priority || 'Aucune',
-                    priorityColor: t.priorityColor || '',
-                    isDayPriority: !!t.isDayPriority,
-                    taskListId: t.taskListId?.toString() || l._id.toString(),
-                    startDate: t.startDate || null,
-                    dueDate: t.dueDate || null,
-                    assignedTo: t.assignedTo || '',
-                    createdAt: t.createdAt
-                }))
+                tasks: sorted.slice(0, 10).map(t => serializeRecordTask(req, t, l))
             }
         })
 
@@ -1093,22 +1292,76 @@ router.put('/api/task-lists/:listId/view-mode', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/statuses', async (req, res) => {
     try {
-        const { statuses } = req.body
+        const { statuses, renames } = req.body
         if (!Array.isArray(statuses) || statuses.length === 0) {
             return res.status(400).json({ error: 'At least one status is required' })
         }
-        const cleaned = statuses.map((s, i) => ({
-            label: (s.label || '').trim(),
-            color: s.color || '#9ca3af',
-            order: typeof s.order === 'number' ? s.order : i
-        })).filter(s => s.label)
+        const list = await TaskList.findById(req.params.listId).lean()
+        if (!list) return res.status(404).json({ error: 'List not found' })
+        const previous = getListStatuses(list)
+        const cleaned = cleanTaskOptionPayload(statuses, defaultTaskStatuses, '#9ca3af')
         if (cleaned.length === 0) {
             return res.status(400).json({ error: 'At least one valid status is required' })
         }
         await TaskList.findByIdAndUpdate(req.params.listId, { statuses: cleaned })
+        await syncTaskOptions({
+            listId: req.params.listId,
+            kind: 'status',
+            previousOptions: previous,
+            nextOptions: cleaned,
+            renames
+        })
         res.json({ success: true, statuses: cleaned })
     } catch (error) {
         console.error('[API] Update statuses error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-lists/:listId/priorities
+ * Update the custom priorities for a task list.
+ */
+router.put('/api/task-lists/:listId/priorities', async (req, res) => {
+    try {
+        const { priorities, renames } = req.body
+        if (!Array.isArray(priorities) || priorities.length === 0) {
+            return res.status(400).json({ error: 'At least one priority is required' })
+        }
+        const list = await TaskList.findById(req.params.listId).lean()
+        if (!list) return res.status(404).json({ error: 'List not found' })
+        const previous = getListPriorities(list)
+        const cleaned = cleanTaskOptionPayload(priorities, defaultTaskPriorities, '#cbd5e1')
+        await TaskList.findByIdAndUpdate(req.params.listId, { priorities: cleaned })
+        await syncTaskOptions({
+            listId: req.params.listId,
+            kind: 'priority',
+            previousOptions: previous,
+            nextOptions: cleaned,
+            renames
+        })
+        res.json({ success: true, priorities: cleaned })
+    } catch (error) {
+        console.error('[API] Update priorities error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/task-lists/:listId/options
+ * Fetch the reusable status and priority options for a task list.
+ */
+router.get('/api/task-lists/:listId/options', async (req, res) => {
+    try {
+        const list = await TaskList.findById(req.params.listId).lean()
+        if (!list) return res.status(404).json({ error: 'List not found' })
+        res.json({
+            success: true,
+            statuses: getListStatuses(list),
+            priorities: getListPriorities(list)
+        })
+    } catch (error) {
+        console.error('[API] Task list options error:', error)
         res.status(500).json({ error: error.message })
     }
 })
@@ -1131,7 +1384,19 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
             order: (maxOrder?.order || 0) + 1
         })
 
-        res.json({ success: true, list: { _id: list._id.toString(), label: list.label, color: list.color, count: 0, doneCount: 0 } })
+        res.json({
+            success: true,
+            list: {
+                _id: list._id.toString(),
+                label: list.label,
+                color: list.color,
+                icon: list.icon || 'solar:checklist-bold-duotone',
+                statuses: getListStatuses(list),
+                priorities: getListPriorities(list),
+                count: 0,
+                doneCount: 0
+            }
+        })
     } catch (error) {
         console.error('[API] Create task list error:', error)
         res.status(500).json({ error: error.message })
@@ -1228,23 +1493,9 @@ router.delete('/api/task-lists/:listId', async (req, res) => {
  */
 router.get('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
+        const list = await TaskList.findById(req.params.listId).lean()
         const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
-        res.json({ success: true, tasks: tasks.map(t => ({
-            _id: t._id.toString(),
-            title: cleanTaskText(t.title, 'Sans titre'),
-            description: t.description || '',
-            status: t.status,
-            statusColor: t.statusColor,
-            priority: t.priority || 'Aucune',
-            priorityColor: t.priorityColor || '',
-            isDayPriority: !!t.isDayPriority,
-            taskListId: t.taskListId?.toString() || req.params.listId,
-            startDate: t.startDate || null,
-            dueDate: t.dueDate || null,
-            assignedTo: t.assignedTo || '',
-            order: Number.isFinite(Number(t.order)) ? Number(t.order) : 0,
-            createdAt: t.createdAt
-        })) })
+        res.json({ success: true, tasks: tasks.map(t => serializeRecordTask(req, t, list)) })
     } catch (error) {
         console.error('[API] Get tasks error:', error)
         res.status(500).json({ error: error.message })
@@ -1264,15 +1515,10 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
 
-        const priorityColors = {
-            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
-        }
-
-        const statusColors = {
-            'À faire': '#9ca3af', 'En cours': '#3b82f6',
-            'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
-        }
-        const taskStatus = status && statusColors[status] ? status : 'À faire'
+        const listStatuses = getListStatuses(list)
+        const listPriorities = getListPriorities(list)
+        const taskStatus = cleanTaskText(status, 'À faire')
+        const taskPriority = cleanTaskText(priority, 'Aucune')
         const order = await RecordTask.countDocuments({ taskListId: req.params.listId })
 
         const task = await RecordTask.create({
@@ -1281,9 +1527,9 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             title: cleanTitle,
             description: description || '',
             status: taskStatus,
-            statusColor: statusColors[taskStatus] || '#9ca3af',
-            priority: priority || 'Aucune',
-            priorityColor: priorityColors[priority] || '',
+            statusColor: optionColor(listStatuses, taskStatus, '#9ca3af'),
+            priority: taskPriority,
+            priorityColor: optionColor(listPriorities, taskPriority, ''),
             isDayPriority: !!isDayPriority,
             startDate: startDate || null,
             dueDate: dueDate || null,
@@ -1291,22 +1537,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             order
         })
 
-        res.json({ success: true, task: {
-            _id: task._id.toString(),
-            title: task.title,
-            description: task.description,
-            status: task.status,
-            statusColor: task.statusColor,
-            priority: task.priority,
-            priorityColor: task.priorityColor,
-            isDayPriority: !!task.isDayPriority,
-            taskListId: task.taskListId.toString(),
-            startDate: task.startDate,
-            dueDate: task.dueDate,
-            assignedTo: task.assignedTo,
-            order: task.order,
-            createdAt: task.createdAt
-        } })
+        res.json({ success: true, task: serializeRecordTask(req, task, list) })
     } catch (error) {
         console.error('[API] Create task error:', error)
         res.status(500).json({ error: error.message })
@@ -1340,23 +1571,104 @@ router.put('/api/record-tasks/:taskId/rename', async (req, res) => {
 router.post('/api/record-tasks/:taskId/status', async (req, res) => {
     try {
         const { status } = req.body
-        const statusColors = {
-            'À faire': '#9ca3af',
-            'En cours': '#3b82f6',
-            'En revue': '#f59e0b',
-            'Terminé': '#22c55e',
-            'Bloqué': '#ef4444'
-        }
-
-        const statusColor = statusColors[status] || '#9ca3af'
+        const oldTask = await RecordTask.findById(req.params.taskId).lean()
+        if (!oldTask) return res.status(404).json({ error: 'Task not found' })
+        const list = await TaskList.findById(oldTask.taskListId).lean()
+        const statusColor = optionColor(getListStatuses(list), status, '#9ca3af')
         const completedAt = status === 'Terminé' ? new Date() : null
         const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor, completedAt }, { new: true })
-        if (!task) return res.status(404).json({ error: 'Task not found' })
 
-        res.json({ success: true, status: task.status, statusColor: task.statusColor, completedAt: task.completedAt || null })
+        res.json({
+            success: true,
+            status: task.status,
+            statusColor: task.statusColor,
+            completedAt: task.completedAt || null,
+            task: serializeRecordTask(req, task, list)
+        })
     } catch (error) {
         console.error('[API] Task status error:', error)
         res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/record-tasks/:taskId/attachments
+ * Add one or more files to a task.
+ */
+router.post('/api/record-tasks/:taskId/attachments', (req, res, next) => {
+    taskAttachmentUpload.array('files', 10)(req, res, (err) => {
+        if (err) return res.status(400).json({ success: false, error: err.message })
+        next()
+    })
+}, async (req, res) => {
+    try {
+        const task = await RecordTask.findById(req.params.taskId)
+        if (!task) {
+            ;(req.files || []).forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
+            return res.status(404).json({ success: false, error: 'Task not found' })
+        }
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, error: 'Aucun fichier fourni' })
+        }
+
+        const newAttachments = req.files
+            .map(file => ({
+                filename: taskAttachmentRelativePath(req, file.path),
+                originalName: file.originalname || file.filename,
+                mimeType: file.mimetype || '',
+                size: file.size || 0,
+                uploadedAt: new Date(),
+                uploadedBy: req.user?._id
+            }))
+            .filter(file => file.filename)
+
+        if (!newAttachments.length) return res.status(400).json({ success: false, error: 'Fichier invalide' })
+
+        task.attachments = task.attachments || []
+        task.attachments.push(...newAttachments)
+        await task.save()
+
+        const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        res.json({
+            success: true,
+            task: serializeRecordTask(req, task, list),
+            attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att))
+        })
+    } catch (error) {
+        console.error('[API] Task attachment upload error:', error)
+        res.status(500).json({ success: false, error: error.message })
+    }
+})
+
+/**
+ * DELETE /account/:account_number/api/record-tasks/:taskId/attachments/:attachmentId
+ * Remove a file from a task.
+ */
+router.delete('/api/record-tasks/:taskId/attachments/:attachmentId', async (req, res) => {
+    try {
+        const task = await RecordTask.findById(req.params.taskId)
+        if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
+
+        const attachment = typeof task.attachments?.id === 'function'
+            ? task.attachments.id(req.params.attachmentId)
+            : (task.attachments || []).find(att => String(att._id) === String(req.params.attachmentId))
+        if (!attachment) return res.status(404).json({ success: false, error: 'Pièce jointe introuvable' })
+
+        const filename = attachment.filename
+        if (typeof attachment.deleteOne === 'function') attachment.deleteOne()
+        else task.attachments = (task.attachments || []).filter(att => String(att._id) !== String(req.params.attachmentId))
+        await task.save()
+        removeTaskAttachmentFile(req, filename)
+
+        const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        res.json({
+            success: true,
+            task: serializeRecordTask(req, task, list),
+            attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att))
+        })
+    } catch (error) {
+        console.error('[API] Task attachment delete error:', error)
+        res.status(500).json({ success: false, error: error.message })
     }
 })
 
@@ -1368,6 +1680,7 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
     try {
         const task = await RecordTask.findByIdAndDelete(req.params.taskId)
         if (!task) return res.status(404).json({ error: 'Task not found' })
+        ;(task.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
         res.json({ success: true })
     } catch (error) {
         console.error('[API] Delete task error:', error)
@@ -1383,8 +1696,8 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
     try {
         const task = await RecordTask.findById(req.params.taskId).lean()
         if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
-        task.title = cleanTaskText(task.title, 'Sans titre')
-        res.json({ success: true, task })
+        const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        res.json({ success: true, task: serializeRecordTask(req, task, list) })
     } catch (err) {
         console.error('[API] Get task error:', err)
         res.status(500).json({ success: false, error: err.message })
@@ -1399,14 +1712,9 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
     try {
         const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId']
         const updates = {}
-
-        const statusColors = {
-            'À faire': '#9ca3af', 'En cours': '#3b82f6',
-            'En revue': '#f59e0b', 'Terminé': '#22c55e', 'Bloqué': '#ef4444'
-        }
-        const priorityColors = {
-            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
-        }
+        const oldTask = await RecordTask.findById(req.params.taskId).lean()
+        if (!oldTask) return res.status(404).json({ error: 'Task not found' })
+        let targetList = oldTask.taskListId ? await TaskList.findById(oldTask.taskListId).lean() : null
 
         allowedFields.forEach(f => {
             if (req.body[f] !== undefined) {
@@ -1421,21 +1729,21 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         }
 
         if (updates.taskListId !== undefined) {
-            const targetList = await TaskList.findOne({ _id: updates.taskListId }).lean()
+            targetList = await TaskList.findOne({ _id: updates.taskListId }).lean()
             if (!targetList) return res.status(404).json({ error: 'Target list not found' })
-            const oldTaskForList = await RecordTask.findById(req.params.taskId).select('recordId').lean()
-            if (!oldTaskForList) return res.status(404).json({ error: 'Task not found' })
-            if (targetList.recordId.toString() !== oldTaskForList.recordId.toString()) {
+            if (targetList.recordId.toString() !== oldTask.recordId.toString()) {
                 return res.status(400).json({ error: 'Target list belongs to another record' })
             }
         }
 
         // Auto-set color fields and completedAt
         if (updates.status) {
-            updates.statusColor = statusColors[updates.status] || '#9ca3af'
+            updates.statusColor = optionColor(getListStatuses(targetList), updates.status, '#9ca3af')
             updates.completedAt = updates.status === 'Terminé' ? new Date() : null
         }
-        if (updates.priority) updates.priorityColor = priorityColors[updates.priority] || ''
+        if (updates.priority) {
+            updates.priorityColor = optionColor(getListPriorities(targetList), updates.priority, '')
+        }
 
         // Handle null dates
         if (updates.startDate === '' || updates.startDate === null) updates.startDate = null
@@ -1444,10 +1752,6 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({ error: 'No valid fields to update' })
         }
-
-        // Fetch current task BEFORE update for activity logging
-        const oldTask = await RecordTask.findById(req.params.taskId).lean()
-        if (!oldTask) return res.status(404).json({ error: 'Task not found' })
 
         const task = await RecordTask.findByIdAndUpdate(req.params.taskId, updates, { new: true })
 
@@ -1478,24 +1782,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
 
         res.json({
             success: true,
-            task: {
-                _id: task._id.toString(),
-                title: cleanTaskText(task.title, 'Sans titre'),
-                description: task.description || '',
-                status: task.status,
-                statusColor: task.statusColor,
-                priority: task.priority || 'Aucune',
-                priorityColor: task.priorityColor || '',
-                isDayPriority: !!task.isDayPriority,
-                taskListId: task.taskListId?.toString() || '',
-                startDate: task.startDate || null,
-                dueDate: task.dueDate || null,
-                assignedTo: task.assignedTo || '',
-                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
-                createdAt: task.createdAt,
-                updatedAt: task.updatedAt,
-                completedAt: task.completedAt || null
-            }
+            task: serializeRecordTask(req, task, targetList)
         })
     } catch (error) {
         console.error('[API] Update task error:', error)

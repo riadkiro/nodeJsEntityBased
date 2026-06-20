@@ -25,6 +25,17 @@ const TaskListSchema = new mongoose.Schema({
         { label: 'Terminé',  color: '#22c55e', order: 3 },
         { label: 'Bloqué',   color: '#ef4444', order: 4 },
     ]},
+    priorities: { type: [{
+        label: { type: String, required: true },
+        color: { type: String, default: '' },
+        order: { type: Number, default: 0 }
+    }], default: [
+        { label: 'Aucune',  color: '#cbd5e1', order: 0 },
+        { label: 'Basse',   color: '#22c55e', order: 1 },
+        { label: 'Moyenne', color: '#f59e0b', order: 2 },
+        { label: 'Haute',   color: '#ef4444', order: 3 },
+        { label: 'Urgente', color: '#dc2626', order: 4 },
+    ]},
 }, { timestamps: true });
 
 TaskListSchema.index({ recordId: 1, order: 1 });

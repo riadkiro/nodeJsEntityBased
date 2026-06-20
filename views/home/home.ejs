@@ -693,129 +693,6 @@
 	    .dx-day-date-button > span {
 	        line-height: 1;
 	    }
-	    .dx-day-calendar {
-	        position: fixed;
-	        z-index: 10030;
-	        width: min(262px, calc(100vw - 24px));
-	        padding: 10px;
-	        border: 1px solid #e8ecf1;
-	        border-radius: 14px;
-	        background: #fff;
-	        box-shadow: 0 18px 42px rgba(15,23,42,.14), 0 4px 12px rgba(15,23,42,.07);
-	    }
-	    .dx-day-calendar-head {
-	        display: flex;
-	        align-items: center;
-	        justify-content: space-between;
-	        gap: 8px;
-	        padding: 2px 2px 8px;
-	    }
-	    .dx-day-calendar-title {
-	        color: #172033;
-	        font-size: 12.5px;
-	        font-weight: 850;
-	        text-transform: capitalize;
-	    }
-	    .dx-day-calendar-navs {
-	        display: inline-flex;
-	        align-items: center;
-	        gap: 4px;
-	    }
-	    .dx-day-calendar-nav {
-	        width: 28px;
-	        height: 28px;
-	        border: 0;
-	        border-radius: 8px;
-	        background: #f8fafc;
-	        color: #64748b;
-	        display: inline-flex;
-	        align-items: center;
-	        justify-content: center;
-	        cursor: pointer;
-	        transition: background .14s ease, color .14s ease;
-	    }
-	    .dx-day-calendar-nav:hover {
-	        background: #efe8ff;
-	        color: #6f55dc;
-	    }
-	    .dx-day-calendar-weekdays,
-	    .dx-day-calendar-grid {
-	        display: grid;
-	        grid-template-columns: repeat(7, minmax(0, 1fr));
-	        gap: 3px;
-	    }
-	    .dx-day-calendar-weekdays {
-	        margin: 3px 0 5px;
-	        color: #94a3b8;
-	        font-size: 10px;
-	        font-weight: 850;
-	        text-align: center;
-	        text-transform: uppercase;
-	    }
-	    .dx-day-calendar-day {
-	        height: 30px;
-	        border: 0;
-	        border-radius: 8px;
-	        background: transparent;
-	        color: #334155;
-	        display: inline-flex;
-	        align-items: center;
-	        justify-content: center;
-	        font: inherit;
-	        font-size: 12px;
-	        font-weight: 750;
-	        cursor: pointer;
-	        transition: background .12s ease, color .12s ease, box-shadow .12s ease;
-	    }
-	    .dx-day-calendar-day:hover {
-	        background: #f6f3ff;
-	        color: #6f55dc;
-	    }
-	    .dx-day-calendar-day.is-muted {
-	        color: #cbd5e1;
-	        font-weight: 650;
-	    }
-	    .dx-day-calendar-day.is-today {
-	        color: #6f55dc;
-	        box-shadow: inset 0 0 0 1px #ddd6fe;
-	    }
-	    .dx-day-calendar-day.is-selected,
-	    .dx-day-calendar-day.is-selected:hover {
-	        background: #7c5cff;
-	        color: #fff;
-	        box-shadow: 0 6px 14px rgba(124,92,255,.22);
-	    }
-	    .dx-day-calendar-foot {
-	        display: flex;
-	        align-items: center;
-	        justify-content: space-between;
-	        gap: 6px;
-	        margin-top: 10px;
-	        padding-top: 9px;
-	        border-top: 1px solid #f1f5f9;
-	    }
-	    .dx-day-calendar-quick {
-	        height: 28px;
-	        border: 1px solid #e7defe;
-	        border-radius: 8px;
-	        background: #fff;
-	        color: #6f55dc;
-	        display: inline-flex;
-	        align-items: center;
-	        justify-content: center;
-	        gap: 5px;
-	        padding: 0 9px;
-	        font: inherit;
-	        font-size: 10.5px;
-	        font-weight: 800;
-	        cursor: pointer;
-	        transition: background .14s ease, border-color .14s ease, color .14s ease;
-	    }
-	    .dx-day-calendar-quick:hover {
-	        background: #efe8ff;
-	        border-color: #d7c6ff;
-	        color: #7c5cff;
-	    }
 	    .dx-day-date-label {
 	        height: 22px;
 	        display: inline-flex;
@@ -2111,47 +1988,6 @@
 	        background: #17233a;
 	        color: #c4b5fd;
 	    }
-	    .dark .dx-day-calendar {
-	        background: #0e1726;
-	        border-color: #253b5c;
-	        box-shadow: 0 18px 42px rgba(0,0,0,.38);
-	    }
-	    .dark .dx-day-calendar-title { color: #f1f5f9; }
-	    .dark .dx-day-calendar-nav {
-	        background: #111f35;
-	        color: #8ea0bd;
-	    }
-	    .dark .dx-day-calendar-nav:hover {
-	        background: #17233a;
-	        color: #c4b5fd;
-	    }
-	    .dark .dx-day-calendar-weekdays { color: #536882; }
-	    .dark .dx-day-calendar-day { color: #dbe5f3; }
-	    .dark .dx-day-calendar-day:hover {
-	        background: #17233a;
-	        color: #c4b5fd;
-	    }
-	    .dark .dx-day-calendar-day.is-muted { color: #536882; }
-	    .dark .dx-day-calendar-day.is-today {
-	        color: #c4b5fd;
-	        box-shadow: inset 0 0 0 1px #3b2f70;
-	    }
-	    .dark .dx-day-calendar-day.is-selected,
-	    .dark .dx-day-calendar-day.is-selected:hover {
-	        background: #7c5cff;
-	        color: #fff;
-	    }
-	    .dark .dx-day-calendar-foot { border-top-color: #253b5c; }
-	    .dark .dx-day-calendar-quick {
-	        background: #0b1320;
-	        border-color: #253b5c;
-	        color: #a78bfa;
-	    }
-	    .dark .dx-day-calendar-quick:hover {
-	        background: #17233a;
-	        border-color: #3b2f70;
-	        color: #c4b5fd;
-	    }
 	    .dark .dx-day-date-label {
 	        color: #8ea0bd;
 	    }
@@ -2436,49 +2272,6 @@
         <span>Ajouter une ligne</span>
     </div>
 
-    <div class="dx-day-calendar"
-         x-show="todayWidgetCalendar"
-         x-cloak
-         x-transition.opacity.duration.120ms
-         :style="todayWidgetCalendarStyle()"
-         @click.stop>
-        <div class="dx-day-calendar-head">
-            <div class="dx-day-calendar-title" x-text="todayWidgetCalendarTitle()"></div>
-            <div class="dx-day-calendar-navs">
-                <button type="button" class="dx-day-calendar-nav" title="Mois précédent" @click="shiftTodayWidgetCalendarMonth(-1)">
-                    <iconify-icon icon="tabler:chevron-left" width="15"></iconify-icon>
-                </button>
-                <button type="button" class="dx-day-calendar-nav" title="Mois suivant" @click="shiftTodayWidgetCalendarMonth(1)">
-                    <iconify-icon icon="tabler:chevron-right" width="15"></iconify-icon>
-                </button>
-            </div>
-        </div>
-        <div class="dx-day-calendar-weekdays">
-            <template x-for="weekday in ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']" :key="weekday">
-                <span x-text="weekday"></span>
-            </template>
-        </div>
-        <div class="dx-day-calendar-grid">
-            <template x-for="day in todayWidgetCalendarDays()" :key="day.key">
-                <button type="button"
-                        class="dx-day-calendar-day"
-                        :class="{ 'is-muted': !day.currentMonth, 'is-today': day.today, 'is-selected': day.selected }"
-                        :aria-label="day.label"
-                        @click="selectTodayWidgetCalendarDate(day.key)"
-                        x-text="day.day"></button>
-            </template>
-        </div>
-        <div class="dx-day-calendar-foot">
-            <button type="button" class="dx-day-calendar-quick" @click="selectTodayWidgetCalendarToday()">
-                <iconify-icon icon="solar:calendar-date-linear" width="13"></iconify-icon>
-                Aujourd'hui
-            </button>
-            <button type="button" class="dx-day-calendar-quick" @click="selectTodayWidgetCalendarTomorrow()">
-                Demain
-            </button>
-        </div>
-    </div>
-
     <div class="dx-task-ctx"
          x-show="homeTaskMenu"
          x-cloak
@@ -2546,7 +2339,6 @@ document.addEventListener('alpine:init', () => {
 		        _homeDataSaving: false,
 			        newTaskTitles: {},
 			        todayWidgetDates: {},
-			        todayWidgetCalendar: null,
 	        homeTaskRenderVersions: {},
 	        _taskSortables: new Map(),
 	        homeTaskMenu: null,
@@ -4416,11 +4208,6 @@ document.addEventListener('alpine:init', () => {
 	                String(date.getDate()).padStart(2, '0')
 	            ].join('-');
 	        },
-	        dateFromDayKey(dateKey) {
-	            const key = this.normalizeDayDateKey(dateKey);
-	            const [year, month, day] = key.split('-').map(Number);
-	            return new Date(year, month - 1, day, 12, 0, 0, 0);
-	        },
 	        todayWidgetDate(wid) {
 	            return this.normalizeDayDateKey(this.todayWidgetDates?.[wid] || this.todayDateKey());
 	        },
@@ -4435,101 +4222,23 @@ document.addEventListener('alpine:init', () => {
 	            this.$nextTick(() => this.refreshHomeTaskSortables());
 	        },
 	        openTodayWidgetDatePicker(event, wid) {
-	            const button = event?.currentTarget;
-	            const rect = button?.getBoundingClientRect?.();
-	            const selected = this.todayWidgetDate(wid);
-	            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 320;
-	            const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 480;
-	            const panelWidth = Math.min(262, Math.max(240, viewportWidth - 24));
-	            const panelHeight = 318;
-	            const margin = 8;
-	            const left = rect ? rect.left : margin;
-	            const top = rect ? rect.bottom + 8 : margin;
-	            const x = Math.max(margin, Math.min(left, viewportWidth - panelWidth - margin));
-	            let y = Math.max(margin, top);
-	            if (rect && y + panelHeight > viewportHeight - margin) {
-	                y = Math.max(margin, rect.top - panelHeight - margin);
-	            }
 	            this.closeHomeTaskMenu();
-	            this.todayWidgetCalendar = {
-	                wid,
-	                x,
-	                y,
-	                month: selected.slice(0, 7)
-	            };
+	            if (window.DxDatePicker && typeof window.DxDatePicker.open === 'function') {
+	                window.DxDatePicker.open({
+	                    anchor: event?.currentTarget,
+	                    type: 'date',
+	                    value: this.todayWidgetDate(wid),
+	                    onSelect: value => this.setTodayWidgetDate(wid, value)
+	                });
+	                return;
+	            }
+	            const fallback = window.prompt('Choisir une date (AAAA-MM-JJ)', this.todayWidgetDate(wid));
+	            if (fallback) this.setTodayWidgetDate(wid, fallback);
 	        },
 	        closeTodayWidgetCalendar() {
-	            this.todayWidgetCalendar = null;
-	        },
-	        todayWidgetCalendarStyle() {
-	            if (!this.todayWidgetCalendar) return '';
-	            return `left:${this.todayWidgetCalendar.x || 8}px;top:${this.todayWidgetCalendar.y || 8}px;`;
-	        },
-	        todayWidgetCalendarBaseDate() {
-	            const monthKey = this.todayWidgetCalendar?.month || this.todayDateKey().slice(0, 7);
-	            const [year, month] = monthKey.split('-').map(Number);
-	            return new Date(year || new Date().getFullYear(), (month || 1) - 1, 1, 12, 0, 0, 0);
-	        },
-	        todayWidgetCalendarTitle() {
-	            const label = this.todayWidgetCalendarBaseDate().toLocaleDateString('fr-FR', {
-	                month: 'long',
-	                year: 'numeric'
-	            });
-	            return label.charAt(0).toUpperCase() + label.slice(1);
-	        },
-	        shiftTodayWidgetCalendarMonth(delta) {
-	            if (!this.todayWidgetCalendar) return;
-	            const base = this.todayWidgetCalendarBaseDate();
-	            base.setMonth(base.getMonth() + Number(delta || 0), 1);
-	            this.todayWidgetCalendar = {
-	                ...this.todayWidgetCalendar,
-	                month: this.dateKeyFromDate(base).slice(0, 7)
-	            };
-	        },
-	        todayWidgetCalendarDays() {
-	            if (!this.todayWidgetCalendar) return [];
-	            const base = this.todayWidgetCalendarBaseDate();
-	            const start = new Date(base);
-	            const mondayOffset = (base.getDay() + 6) % 7;
-	            start.setDate(base.getDate() - mondayOffset);
-	            const selected = this.todayWidgetDate(this.todayWidgetCalendar.wid);
-	            const today = this.todayDateKey();
-	            return Array.from({ length: 42 }, (_, index) => {
-	                const dayDate = new Date(start);
-	                dayDate.setDate(start.getDate() + index);
-	                const key = this.dateKeyFromDate(dayDate);
-	                return {
-	                    key,
-	                    day: dayDate.getDate(),
-	                    currentMonth: dayDate.getMonth() === base.getMonth(),
-	                    selected: key === selected,
-	                    today: key === today,
-	                    label: dayDate.toLocaleDateString('fr-FR', {
-	                        weekday: 'long',
-	                        day: 'numeric',
-	                        month: 'long',
-	                        year: 'numeric'
-	                    })
-	                };
-	            });
-	        },
-	        selectTodayWidgetCalendarDate(dateKey) {
-	            const wid = this.todayWidgetCalendar?.wid;
-	            if (!wid) return;
-	            this.setTodayWidgetDate(wid, dateKey);
-	            this.closeTodayWidgetCalendar();
-	        },
-	        selectTodayWidgetCalendarToday() {
-	            const wid = this.todayWidgetCalendar?.wid;
-	            if (!wid) return;
-	            this.setTodayWidgetDate(wid, this.todayDateKey());
-	            this.closeTodayWidgetCalendar();
-	        },
-	        selectTodayWidgetCalendarTomorrow() {
-	            const wid = this.todayWidgetCalendar?.wid;
-	            if (!wid) return;
-	            this.setTodayWidgetDate(wid, this.todayDateKey(1));
-	            this.closeTodayWidgetCalendar();
+	            if (window.DxDatePicker && typeof window.DxDatePicker.close === 'function') {
+	                window.DxDatePicker.close();
+	            }
 	        },
 	        resetTodayWidgetDate(wid) {
 	            this.setTodayWidgetDate(wid, this.todayDateKey());

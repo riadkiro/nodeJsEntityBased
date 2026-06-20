@@ -776,6 +776,49 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         return true
     }, [buildHistoryEntry])
 
+    const applyPickedDateToText = useCallback((value, pickerState) => {
+        if (!value || !pickerState) return
+        const [y, m, d] = value.split('-')
+        if (!y || !m || !d) return
+        const formatted = `${d}/${m}/${y}`
+        const { textNode, start, end } = pickerState
+        if (textNode && textNode.parentNode) {
+            pushUndoSnapshot('insert-date')
+            const text = textNode.textContent
+            textNode.textContent = text.substring(0, start) + formatted + text.substring(end)
+            triggerSave()
+        }
+        setDatePickerState(null)
+    }, [pushUndoSnapshot, triggerSave])
+
+    useEffect(() => {
+        if (!datePickerState || typeof window === 'undefined' || !window.DxDatePicker) return
+        const pickerState = datePickerState
+        const rect = pickerState.rect || { left: 24, top: 24, bottom: 48, width: 1, height: 1 }
+        const anchor = {
+            getBoundingClientRect: () => ({
+                left: rect.left,
+                top: rect.top,
+                bottom: rect.bottom || rect.top + (rect.height || 24),
+                right: rect.right || rect.left + (rect.width || 1),
+                width: rect.width || 1,
+                height: rect.height || 24
+            })
+        }
+        window.DxDatePicker.open({
+            anchor,
+            type: 'date',
+            value: window.DxDatePicker.todayKey ? window.DxDatePicker.todayKey() : '',
+            onSelect: value => applyPickedDateToText(value, pickerState),
+            onClose: () => setDatePickerState(null)
+        })
+        return () => {
+            if (window.DxDatePicker && typeof window.DxDatePicker.close === 'function') {
+                window.DxDatePicker.close(false, false)
+            }
+        }
+    }, [datePickerState, applyPickedDateToText])
+
     const restoreHistoryEntry = useCallback((entry) => {
         if (!entry?.doc) return false
 
@@ -3611,87 +3654,6 @@ ${pagesHtml}
                     onClose={() => setImagePickerTarget(null)}
                     onSelect={applyImageToPlaceholder}
                 />
-            )}
-
-            {/* Floating Date Picker */}
-            {datePickerState && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: Math.min(datePickerState.rect.top, window.innerHeight - 80),
-                        left: Math.min(datePickerState.rect.left, window.innerWidth - 280),
-                        zIndex: 10000,
-                        background: '#fff',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-                        border: '1px solid #e2e8f0',
-                        padding: '12px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        fontFamily: "'Inter', sans-serif",
-                        animation: 'bindingPickerIn 0.15s ease-out'
-                    }}
-                >
-                    <iconify-icon icon="solar:calendar-bold-duotone" width="18" style={{ color: '#6366f1', flexShrink: 0 }}></iconify-icon>
-                    <input
-                        type="date"
-                        autoFocus
-                        style={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            padding: '6px 10px',
-                            fontSize: '13px',
-                            color: '#1e293b',
-                            outline: 'none',
-                            fontFamily: "'Inter', sans-serif",
-                            minWidth: '140px'
-                        }}
-                        onFocus={(e) => e.target.showPicker?.()}
-                        onChange={(e) => {
-                            const val = e.target.value
-                            if (!val) return
-                            // Format as DD/MM/YYYY
-                            const [y, m, d] = val.split('-')
-                            const formatted = `${d}/${m}/${y}`
-
-                            const { textNode, start, end } = datePickerState
-                            if (textNode && textNode.parentNode) {
-                                pushUndoSnapshot('insert-date')
-                                const text = textNode.textContent
-                                textNode.textContent = text.substring(0, start) + formatted + text.substring(end)
-                                triggerSave()
-                            }
-                            setDatePickerState(null)
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Escape') setDatePickerState(null)
-                        }}
-                        onBlur={() => {
-                            // Delay to allow onChange to fire first
-                            setTimeout(() => setDatePickerState(null), 150)
-                        }}
-                    />
-                    <button
-                        onClick={() => setDatePickerState(null)}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '6px',
-                            border: 'none',
-                            background: '#f1f5f9',
-                            color: '#94a3b8',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            flexShrink: 0
-                        }}
-                    >
-                        ✕
-                    </button>
-                </div>
             )}
 
             {/* Success Modal Overlay */}

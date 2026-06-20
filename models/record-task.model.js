@@ -13,7 +13,7 @@ const RecordTaskSchema = new mongoose.Schema({
     description: { type: String, default: '' },
     status: { type: String, default: 'À faire' },
     statusColor: { type: String, default: '#9ca3af' },
-    priority: { type: String, default: 'Aucune', enum: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'] },
+    priority: { type: String, default: 'Aucune' },
     priorityColor: { type: String, default: '' },
     isDayPriority: { type: Boolean, default: false, index: true },
     startDate: { type: Date, default: null },
@@ -21,6 +21,14 @@ const RecordTaskSchema = new mongoose.Schema({
     assignedTo: { type: String, default: '' },
     order: { type: Number, default: 0 },
     completedAt: { type: Date, default: null },
+    attachments: [{
+        filename: { type: String, required: true },
+        originalName: { type: String, default: '' },
+        mimeType: { type: String, default: '' },
+        size: { type: Number, default: 0 },
+        uploadedAt: { type: Date, default: Date.now },
+        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
 }, { timestamps: true });
 
 RecordTaskSchema.index({ taskListId: 1, order: 1 });

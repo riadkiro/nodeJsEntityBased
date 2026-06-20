@@ -3683,7 +3683,7 @@ document.addEventListener('alpine:init', () => {
 	            const all = this.todayWidgetTasks(wid);
 	            const hide = this.widgetOption(wid, 'hideCompleted', false);
 	            if (hide) return all.filter(t => t.status !== 'Terminé');
-	            return all.filter(t => t.status !== 'Terminé');
+	            return all;
 	        },
 	        completedTodayTasks() {
 	            const now = new Date();

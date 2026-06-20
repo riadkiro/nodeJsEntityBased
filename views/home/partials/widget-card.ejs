@@ -4,7 +4,7 @@
             <div class="ov-card-title dx-card-title">
                 <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
                 <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
-                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
+                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).filter(t => t.status !== 'Terminé').length + ' à faire'"></span>
             </div>
             <a class="ov-card-link dx-link" href="/account/<%= account_number %>/tasks">Voir tout</a>
         </div>
@@ -13,7 +13,7 @@
             <div class="dx-shopping-list dx-priority-task-list"
                  :data-task-widget-id="wid"
                  x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
-                <template x-for="item in todayWidgetOpenTasks(wid).slice(0, widgetLimit(wid, 8))" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
+                <template x-for="item in todayWidgetOpenTasks(wid).slice(0, widgetLimit(wid, 40))" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                     <div class="dx-shopping-row dx-task-row dx-single-line"
                          :class="{ 'is-done': item.status === 'Terminé' }"
                          :data-task-id="item._id || item.id"

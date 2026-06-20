@@ -644,6 +644,50 @@ router.get("/api/home-overview", async (req, res) => {
         start.setHours(0, 0, 0, 0);
         const end = new Date(start);
         end.setDate(end.getDate() + 1);
+        const requestedTimeZone = String(req.query?.tz || '').trim();
+        const resolveTimeZone = value => {
+            if (!value) return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+            try {
+                new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date());
+                return value;
+            } catch (_) {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+            }
+        };
+        const clientTimeZone = resolveTimeZone(requestedTimeZone);
+        const dayFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: clientTimeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const formatDateKeyInTimeZone = value => {
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            const parts = Object.fromEntries(dayFormatter.formatToParts(date).map(part => [part.type, part.value]));
+            return `${parts.year}-${parts.month}-${parts.day}`;
+        };
+        const valueHasExplicitTime = value => {
+            if (!value) return false;
+            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return false;
+            return date.getUTCHours() !== 0
+                || date.getUTCMinutes() !== 0
+                || date.getUTCSeconds() !== 0
+                || date.getUTCMilliseconds() !== 0;
+        };
+        const dateOnlyKey = value => {
+            if (!value) return '';
+            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toISOString().split('T')[0];
+        };
+        const calendarDateKey = value => valueHasExplicitTime(value)
+            ? formatDateKeyInTimeZone(value)
+            : dateOnlyKey(value);
+        const todayKey = formatDateKeyInTimeZone(new Date());
 
         // Scope to tenant: get all record IDs belonging to this tenant first
         const tenantRecordIds = await Record.find({}).distinct('_id');
@@ -677,16 +721,12 @@ router.get("/api/home-overview", async (req, res) => {
 
         const isDone = task => String(task?.status || '') === 'Terminé';
         const inToday = value => {
-            if (!value) return false;
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) return false;
-            return date >= start && date < end;
+            const key = calendarDateKey(value);
+            return !!key && key === todayKey;
         };
         const isBeforeToday = value => {
-            if (!value) return false;
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) return false;
-            return date < start;
+            const key = calendarDateKey(value);
+            return !!key && key < todayKey;
         };
         const overdueReferenceDate = task => task?.dueDate || task?.startDate || null;
         const isTaskOverdue = task => !isDone(task) && isBeforeToday(overdueReferenceDate(task));
@@ -771,7 +811,7 @@ router.get("/api/home-overview", async (req, res) => {
 	                const cAt = task.completedAt ? new Date(task.completedAt).getTime() : 0;
 	                const uAt = task.updatedAt ? new Date(task.updatedAt).getTime() : 0;
 	                const checkTime = cAt || uAt;
-	                return checkTime >= start.getTime() && checkTime < end.getTime();
+	                return inToday(checkTime);
 	            });
 		        const openTasksSorted = taskRows
 		            .filter(task => task.status !== 'Terminé')

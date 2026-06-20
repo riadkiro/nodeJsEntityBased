@@ -2473,7 +2473,9 @@ document.addEventListener('alpine:init', () => {
 
         async _fetchData() {
             try {
-                const res = await fetch(`/account/${_accountNumber}/api/home-overview`, { credentials: 'include' });
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                const timezoneQuery = timezone ? `?tz=${encodeURIComponent(timezone)}` : '';
+                const res = await fetch(`/account/${_accountNumber}/api/home-overview${timezoneQuery}`, { credentials: 'include' });
 	                const data = await res.json();
 	                if (data.success) {
 		                    this.todayTasks = data.todayTasks || [];
@@ -4737,14 +4739,7 @@ document.addEventListener('alpine:init', () => {
 	        taskDayDiff(value, useLocal = false) {
 	            const key = this.taskDateKey(value, useLocal);
 	            if (!key) return 0;
-	            const now = new Date();
-	            const todayKey = useLocal
-	                ? [
-	                    now.getFullYear(),
-	                    String(now.getMonth() + 1).padStart(2, '0'),
-	                    String(now.getDate()).padStart(2, '0')
-	                ].join('-')
-	                : now.toISOString().split('T')[0];
+	            const todayKey = this.todayDateKey();
 	            const toUtcDay = raw => {
 	                const [year, month, day] = raw.split('-').map(Number);
 	                return Date.UTC(year, month - 1, day);

@@ -3708,7 +3708,7 @@ document.addEventListener('alpine:init', () => {
 	            return result;
 	        },
 	        completedTodayDayTasks() {
-	            return this.completedTodayTasks().filter(t => !!t.isDayPriority);
+	            return (this.todayTasks || []).filter(t => t.status === 'Terminé');
 	        },
 	        allWidgetTasks(wid) {
 	            const list = this.homeTaskListForWidget(wid);

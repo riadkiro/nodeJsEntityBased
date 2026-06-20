@@ -60,32 +60,38 @@
                                    @blur="saveEditTodayTask(wid, item)">
                         </template>
 	                        <span class="dx-row-meta dx-day-row-meta">
-	                            <span class="dx-task-due-badge"
-	                                  x-show="taskDueLabel(item)"
-	                                  :class="{ 'is-overdue': taskDueState(item) === 'overdue' }"
-	                                  :title="taskDueTitle(item)">
-	                                <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
-	                                <span x-text="taskDueLabel(item)"></span>
-	                            </span>
-	                            <span class="dx-task-record-line"
-	                                  x-show="taskRecordLabel(item)"
-	                                  :style="'--task-record-color:' + taskRecordColor(item)"
-	                                  :title="taskRecordLabel(item)">
+		                            <span class="dx-task-due-badge"
+		                                  x-show="taskDueLabel(item)"
+		                                  :class="{ 'is-overdue': taskDueState(item) === 'overdue' }"
+		                                  :title="taskDueTitle(item)">
+		                                <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
+		                                <span x-text="taskDueLabel(item)"></span>
+		                            </span>
+		                            <span class="dx-task-attachment-badge"
+		                                  x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+		                                  title="Pièce jointe">
+		                                <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+		                            </span>
+		                            <span class="dx-task-record-line"
+		                                  x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
+		                                  :style="'--task-record-color:' + taskRecordColor(item)"
+		                                  :title="taskRecordLabel(item)">
 	                                <span class="dx-task-record-mini">
 	                                    <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
 	                                </span>
 	                                <span x-text="taskRecordLabel(item)"></span>
 	                            </span>
-	                            <button type="button"
-	                                    class="dx-task-priority dx-day-row-priority"
-	                                    x-show="homeTaskPriorityLabel(item.priority) !== 'Aucune'"
-	                                    :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
-	                                    :title="'Priorité ' + homeTaskPriorityLabel(item.priority)"
-	                                    @pointerdown.stop
-	                                    @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
-	                                <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
-	                                <span x-text="homeTaskPriorityLabel(item.priority)"></span>
-	                            </button>
+		                            <button type="button"
+		                                    class="dx-task-priority dx-day-row-priority"
+		                                    x-show="homeTaskPriorityEnabled(wid)"
+		                                    :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+		                                    :style="'--priority-color:' + homeTaskPriorityColor(item.priority, item)"
+		                                    :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+		                                    @pointerdown.stop
+		                                    @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+		                                <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+		                                <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
+		                            </button>
 	                        </span>
                     </div>
                 </template>
@@ -265,11 +271,26 @@
                                @keydown.escape.prevent="cancelEditHomeTask()"
                                @blur="saveEditTodayTask(wid, item)">
                     </template>
-	                    <span class="dx-row-meta">
-	                        <span class="dx-priority-badge" x-show="item.priority && item.priority !== 'Aucune'" :style="'color:' + (item.priorityColor || '#3b82f6')" x-text="item.priority"></span>
-	                        <span class="dx-tag" x-show="item.recordTitle" :style="'--tag-color:' + (item.entityColor || '#805dca')" x-text="item.recordTitle"></span>
-	                        <span class="dx-date-badge" x-show="taskDateLabel(item)" x-text="taskDateLabel(item)"></span>
-                    </span>
+		                    <span class="dx-row-meta dx-task-row-actions">
+		                        <span class="dx-task-attachment-badge"
+		                              x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+		                              title="Pièce jointe">
+		                            <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+		                        </span>
+		                        <button type="button"
+		                                class="dx-task-priority"
+		                                x-show="homeTaskPriorityEnabled(wid)"
+		                                :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+		                                :style="'--priority-color:' + homeTaskPriorityColor(item.priority, item)"
+		                                :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+		                                @pointerdown.stop
+		                                @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+		                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+		                            <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
+		                        </button>
+		                        <span class="dx-tag" x-show="homeTaskRecordEnabled(wid) && item.recordTitle" :style="'--tag-color:' + (item.entityColor || '#805dca')" x-text="item.recordTitle"></span>
+		                        <span class="dx-date-badge" x-show="taskDateLabel(item)" x-text="taskDateLabel(item)"></span>
+	                    </span>
                 </div>
             </template>
             <template x-if="allWidgetTasks(wid).length === 0">
@@ -347,15 +368,29 @@
                                @keydown.escape.prevent="cancelEditHomeTask()"
                                @blur="saveEditHomeTask(wid, item)">
 	                    </template>
-	                    <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskPriorityEnabled(wid)">
-	                        <button type="button"
-	                                class="dx-task-priority"
-	                                x-show="homeTaskPriorityEnabled(wid)"
-	                                :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
-	                                :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
-	                                :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
-	                                @pointerdown.stop
-	                                @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+		                    <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskRowMetaEnabled(wid, item)">
+		                        <span class="dx-task-attachment-badge"
+		                              x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+		                              title="Pièce jointe">
+		                            <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+		                        </span>
+		                        <span class="dx-task-record-line"
+		                              x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
+		                              :style="'--task-record-color:' + taskRecordColor(item)"
+		                              :title="taskRecordLabel(item)">
+		                            <span class="dx-task-record-mini">
+		                                <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
+		                            </span>
+		                            <span x-text="taskRecordLabel(item)"></span>
+		                        </span>
+		                        <button type="button"
+		                                class="dx-task-priority"
+		                                x-show="homeTaskPriorityEnabled(wid)"
+		                                :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+		                                :style="'--priority-color:' + homeTaskPriorityColor(item.priority, item)"
+		                                :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+		                                @pointerdown.stop
+		                                @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
 	                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
 	                            <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
 	                        </button>
@@ -617,15 +652,29 @@
 	                                   @keydown.escape.prevent="cancelEditHomeTask()"
 	                                   @blur="saveEditHomeTask(wid, item)">
 		                        </template>
-		                        <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskPriorityEnabled(wid)">
-		                            <button type="button"
-		                                    class="dx-task-priority"
-		                                    x-show="homeTaskPriorityEnabled(wid)"
-		                                    :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
-		                                    :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
-		                                    :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
-		                                    @pointerdown.stop
-		                                    @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+			                        <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskRowMetaEnabled(wid, item)">
+			                            <span class="dx-task-attachment-badge"
+			                                  x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+			                                  title="Pièce jointe">
+			                                <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+			                            </span>
+			                            <span class="dx-task-record-line"
+			                                  x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
+			                                  :style="'--task-record-color:' + taskRecordColor(item)"
+			                                  :title="taskRecordLabel(item)">
+			                                <span class="dx-task-record-mini">
+			                                    <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
+			                                </span>
+			                                <span x-text="taskRecordLabel(item)"></span>
+			                            </span>
+			                            <button type="button"
+			                                    class="dx-task-priority"
+			                                    x-show="homeTaskPriorityEnabled(wid)"
+			                                    :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+			                                    :style="'--priority-color:' + homeTaskPriorityColor(item.priority, item)"
+			                                    :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+			                                    @pointerdown.stop
+			                                    @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
 		                                <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
 		                                <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
 		                            </button>

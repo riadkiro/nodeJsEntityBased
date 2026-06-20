@@ -1330,9 +1330,12 @@ router.put('/api/task-lists/:listId/priorities', async (req, res) => {
         }
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
-        const previous = getListPriorities(list)
-        const cleaned = cleanTaskOptionPayload(priorities, defaultTaskPriorities, '#cbd5e1')
-        await TaskList.findByIdAndUpdate(req.params.listId, { priorities: cleaned })
+	        const previous = getListPriorities(list)
+	        const cleaned = cleanTaskOptionPayload(priorities, defaultTaskPriorities, '#cbd5e1')
+	        if (cleaned.length === 0) {
+	            return res.status(400).json({ error: 'At least one valid priority is required' })
+	        }
+	        await TaskList.findByIdAndUpdate(req.params.listId, { priorities: cleaned })
         await syncTaskOptions({
             listId: req.params.listId,
             kind: 'priority',

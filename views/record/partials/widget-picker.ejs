@@ -394,13 +394,21 @@
 	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.allowAdd" class="form-checkbox" style="accent-color:#4361ee;">
 	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Ajout rapide</span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.supportsShowPriority()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showPriority" class="form-checkbox" style="accent-color:#f59e0b;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher la priorité</span>
-	                                </label>
-	                                <label x-show="$store.widgetPicker.supportsSharing()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.shared" class="form-checkbox" style="accent-color:#10b981;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Activer le partage</span>
+		                                <label x-show="$store.widgetPicker.supportsShowPriority()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showPriority" class="form-checkbox" style="accent-color:#f59e0b;">
+		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher la priorité</span>
+		                                </label>
+		                                <label x-show="$store.widgetPicker.supportsShowAttachments()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showAttachments" class="form-checkbox" style="accent-color:#64748b;">
+		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher les pièces jointes</span>
+		                                </label>
+		                                <label x-show="$store.widgetPicker.supportsShowRecord()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showRecord" class="form-checkbox" style="accent-color:#4361ee;">
+		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher le record</span>
+		                                </label>
+		                                <label x-show="$store.widgetPicker.supportsSharing()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.shared" class="form-checkbox" style="accent-color:#10b981;">
+		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Activer le partage</span>
 	                                </label>
 	                                <label x-show="$store.widgetPicker.newWidget.type === 'priority-day'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
 	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.hideCompleted" class="form-checkbox" style="accent-color:#805dca;">
@@ -863,12 +871,12 @@
 	                    'overview-agenda': { limit: 4, showLink: true, allowAdd: true },
 	                    'overview-important-dates': { limit: 4, showLink: true, allowAdd: true },
 	                    'overview-notes': { showLink: true },
-	                    'home-priority-day': { limit: 4, hideCompleted: false },
-	                    'home-today-tasks': { limit: 5, showCompleted: false, showLink: true },
+		                    'home-priority-day': { limit: 4, hideCompleted: false, showPriority: true, showAttachments: true, showRecord: true },
+		                    'home-today-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
 	                    'home-objectives': { limit: 6, showLink: true },
-	                    'home-tasks': { limit: 5, showCompleted: false, showLink: true },
+		                    'home-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
 	                    'home-finance': { limit: 4, period: 'Ce mois-ci' },
-	                    'home-shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true },
+		                    'home-shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false },
 	                    'home-tasks-by-record': { limit: 4, showLink: true },
 	                    'home-activity-timeline': { limit: 5, showLink: true },
 	                    'home-ai-feed': { limit: 3 },
@@ -878,12 +886,12 @@
 	                    'home-upcoming-events': { limit: 4, showLink: true },
 	                    'home-important-dates': { limit: 4, showLink: true },
 	                    'home-quick-links': { showTasks: true, showNotes: true, showDocuments: true },
-	                    'priority-day': { limit: 4, hideCompleted: false },
-	                    'today-tasks': { limit: 5, showCompleted: false, showLink: true },
+		                    'priority-day': { limit: 4, hideCompleted: false, showPriority: true, showAttachments: true, showRecord: true },
+		                    'today-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
 	                    objectives: { limit: 6, showLink: true },
-	                    tasks: { tasks: [], limit: 5, showCompleted: false, showLink: true },
+		                    tasks: { tasks: [], limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
 	                    finance: { limit: 4, period: 'Ce mois-ci' },
-	                    'shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true },
+		                    'shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false },
 	                    'tasks-by-record': { limit: 4, showLink: true },
 	                    'activity-timeline': { limit: 5, showLink: true },
 	                    'recent-records': { limit: 5, showLink: true },
@@ -895,7 +903,7 @@
 	                    'quick-links': { showTasks: true, showNotes: true, showDocuments: true },
 	                    note: { content: '' },
 	                    notes: { content: '' },
-	                    'task-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: false, showPriority: false },
+		                    'task-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: false, showPriority: true, showAttachments: true, showRecord: true },
 	                    html: { content: '', minHeight: 120 },
 	                    iframe: { url: '', height: 300 },
 	                    video: { url: '', height: 320 },
@@ -924,9 +932,17 @@
 	                return ['overview-tasks','tasks','today-tasks','task-list','shopping-list'].includes(String(type || ''));
 	            },
 
-	            supportsShowPriority(type = this.newWidget.type) {
-	                return this.isTaskListWidgetType(type) || String(type || '') === 'overview-tasks';
-	            },
+		            supportsShowPriority(type = this.newWidget.type) {
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		            },
+
+		            supportsShowAttachments(type = this.newWidget.type) {
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		            },
+
+		            supportsShowRecord(type = this.newWidget.type) {
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		            },
 
 	            supportsInlineAdd(type = this.newWidget.type) {
 	                return this.isTaskListWidgetType(type) || ['overview-agenda','overview-important-dates'].includes(String(type || ''));

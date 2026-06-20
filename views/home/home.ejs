@@ -1323,17 +1323,31 @@
 	        height: 10px;
 	        line-height: 0;
 	    }
-	    .dx-date-badge {
-	        font-size: 10px;
-	        font-weight: 600;
+		    .dx-date-badge {
+		        font-size: 10px;
+		        font-weight: 600;
+		        color: #94a3b8;
+		        white-space: nowrap;
+	    }
+	    .dx-task-attachment-badge {
+	        width: 18px;
+	        height: 18px;
+	        border-radius: 6px;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
 	        color: #94a3b8;
-	        white-space: nowrap;
-    }
-    .dx-shopping-row.dx-task-row .dx-check {
-        border: 1.5px solid #9aa8c2;
-        padding: 0;
-        cursor: pointer;
-    }
+	        flex: 0 0 auto;
+	    }
+	    .dx-task-attachment-badge iconify-icon {
+	        display: block;
+	        pointer-events: none;
+	    }
+	    .dx-shopping-row.dx-task-row .dx-check {
+	        border: 1.5px solid #9aa8c2;
+	        padding: 0;
+	        cursor: pointer;
+	    }
     .dx-task-drag {
         position: absolute;
         left: -20px;
@@ -2395,14 +2409,14 @@ document.addEventListener('alpine:init', () => {
 	            ] }
 	        ],
 	        _defaultWidgetCatalog: {
-	            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true, hideCompleted: false } },
-	            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:calendar-date-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true } },
+		            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true, hideCompleted: false, showPriority: true, showAttachments: true, showRecord: true } },
+		            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:calendar-date-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true } },
 	            'upcoming-events': { type: 'upcoming-events', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6', config: { limit: 4, showLink: true } },
 	            'important-dates': { type: 'important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', config: { limit: 4 } },
 	            objectives: { type: 'objectives', label: 'Objectifs', icon: 'solar:target-bold-duotone', color: '#4361ee', config: { limit: 6, showLink: true } },
-	            tasks: { type: 'tasks', label: 'Tâches', icon: 'solar:clipboard-list-bold-duotone', color: '#8b5cf6', config: { limit: 5, showCompleted: false, showLink: true } },
+		            tasks: { type: 'tasks', label: 'Tâches', icon: 'solar:clipboard-list-bold-duotone', color: '#8b5cf6', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true } },
 	            finance: { type: 'finance', label: 'Finance', icon: 'solar:wallet-money-bold-duotone', color: '#6366f1', config: { limit: 4, period: 'Ce mois-ci' } },
-	            'shopping-list': { type: 'shopping-list', label: 'Liste de courses', icon: 'solar:cart-large-bold-duotone', color: '#10b981', config: { taskListId: '', limit: 8, showCompleted: true, allowAdd: true, shared: true, showPriority: true } },
+		            'shopping-list': { type: 'shopping-list', label: 'Liste de courses', icon: 'solar:cart-large-bold-duotone', color: '#10b981', config: { taskListId: '', limit: 8, showCompleted: true, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false } },
 	            'tasks-by-record': { type: 'tasks-by-record', label: 'Tâches par record', icon: 'solar:folder-with-files-bold-duotone', color: '#3b82f6', config: { limit: 4, showLink: true } },
 	            'activity-timeline': { type: 'activity-timeline', label: 'Activité récente', icon: 'solar:history-bold-duotone', color: '#10b981', config: { limit: 5, showLink: true } },
 	            stats: { type: 'stats', label: 'Résumé', icon: 'solar:chart-square-bold-duotone', color: '#6366f1', config: {} },
@@ -2514,10 +2528,12 @@ document.addEventListener('alpine:init', () => {
 	                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
 	                createdAt: task.createdAt || null,
 	                updatedAt: task.updatedAt || null,
-	                completedAt: task.completedAt || null,
-	                isDayPriority: !!task.isDayPriority
-	            };
-	        },
+		                completedAt: task.completedAt || null,
+		                isDayPriority: !!task.isDayPriority,
+		                assignedTo: task.assignedTo || '',
+		                attachments: Array.isArray(task.attachments) ? task.attachments : []
+		            };
+		        },
 
 	        normalizeHomeTaskList(list = {}) {
 	            const id = String(list.id || list._id || '');
@@ -2637,18 +2653,41 @@ document.addEventListener('alpine:init', () => {
 	            if (save) this._saveLayout();
 	        },
 
-	        homeTaskPriorityEnabled(wid) {
-	            const cfg = this.customWidgetConfig(wid);
-	            if (cfg.showPriority === true) return true;
-	            const savedCfg = this.savedHomeTaskWidgetConfig(wid);
-	            if (Object.prototype.hasOwnProperty.call(savedCfg, 'showPriority')) {
-	                return savedCfg.showPriority === true;
-	            }
-	            const list = this.homeTaskListForWidget(wid);
-	            return !!(list && (list.tasks || []).some(task => this.homeTaskPriorityLabel(task.priority) !== 'Aucune'));
-	        },
+		        homeTaskWidgetType(wid) {
+		            return this.isCustomWidget(wid) ? this.getCustomWidget(wid).type : (this.getWidgetSettings(wid).type || wid);
+		        },
 
-	        homeTaskPriorityVisible(wid, task = {}) {
+		        homeTaskDisplayOption(wid, key, fallback = true) {
+		            const cfg = this.customWidgetConfig(wid);
+		            if (Object.prototype.hasOwnProperty.call(cfg, key)) return cfg[key] !== false;
+		            const savedCfg = this.savedHomeTaskWidgetConfig(wid);
+		            if (Object.prototype.hasOwnProperty.call(savedCfg, key)) return savedCfg[key] !== false;
+		            return fallback !== false;
+		        },
+
+		        homeTaskPriorityEnabled(wid) {
+		            return this.homeTaskDisplayOption(wid, 'showPriority', ['priority-day', 'today-tasks', 'tasks', 'shopping-list', 'task-list'].includes(this.homeTaskWidgetType(wid)));
+		        },
+
+		        homeTaskAttachmentsEnabled(wid) {
+		            return this.homeTaskDisplayOption(wid, 'showAttachments', ['priority-day', 'today-tasks', 'tasks', 'shopping-list', 'task-list'].includes(this.homeTaskWidgetType(wid)));
+		        },
+
+		        homeTaskRecordEnabled(wid) {
+		            return this.homeTaskDisplayOption(wid, 'showRecord', !['shopping-list'].includes(String(wid)));
+		        },
+
+		        taskHasAttachments(task = {}) {
+		            return Array.isArray(task.attachments) && task.attachments.length > 0;
+		        },
+
+		        homeTaskRowMetaEnabled(wid, task = {}) {
+		            return this.homeTaskPriorityEnabled(wid)
+		                || (this.homeTaskAttachmentsEnabled(wid) && this.taskHasAttachments(task))
+		                || (this.homeTaskRecordEnabled(wid) && !!this.taskRecordLabel(task));
+		        },
+
+		        homeTaskPriorityVisible(wid, task = {}) {
 	            if (!this.homeTaskPriorityEnabled(wid)) return false;
 	            const label = this.homeTaskPriorityLabel(task.priority);
 	            return !!label && label !== 'Aucune';
@@ -2658,10 +2697,11 @@ document.addEventListener('alpine:init', () => {
 	            return String(priority || 'Aucune').trim() || 'Aucune';
 	        },
 
-	        homeTaskPriorityColor(priority) {
-	            const label = this.homeTaskPriorityLabel(priority);
-	            const found = (this.homeTaskPriorityChoices || []).find(item => item.label === label);
-	            return found?.color || '#94a3b8';
+		        homeTaskPriorityColor(priority, task = null) {
+		            if (task?.priorityColor) return task.priorityColor;
+		            const label = this.homeTaskPriorityLabel(priority);
+		            const found = (this.homeTaskPriorityChoices || []).find(item => item.label === label);
+		            return found?.color || '#94a3b8';
 	        },
 
 	        homeTaskId(task = {}) {
@@ -2799,10 +2839,17 @@ document.addEventListener('alpine:init', () => {
 	            };
 	            Alpine.store('taskModal').open(taskObj, {
 		                onUpdate: (taskId, field, value, updatedTask = null) => {
-		                    const id = String(taskId || '');
-		                    const found = this.findHomeTask(id);
-		                    if (!id || !found) return;
-		                    const patch = this.normalizeHomeTask({
+			                    const id = String(taskId || '');
+			                    const found = this.findHomeTask(id);
+			                    if (!id || !found) return;
+			                    if (['priorities', 'statuses'].includes(field)) {
+			                        if (updatedTask) {
+			                            this.patchHomeTaskEverywhere(id, this.normalizeHomeTask({ ...found.task, ...updatedTask }));
+			                        }
+			                        this.refreshHomeOverview();
+			                        return;
+			                    }
+			                    const patch = this.normalizeHomeTask({
 		                        ...found.task,
 		                        ...(updatedTask || {}),
 		                        [field]: value
@@ -2819,10 +2866,10 @@ document.addEventListener('alpine:init', () => {
 		                        patch.statusColor = updatedTask?.statusColor || statusColors[patch.status] || '#9ca3af';
 		                        patch.completedAt = patch.status === 'Terminé' ? (patch.completedAt || new Date().toISOString()) : null;
 		                    }
-		                    if (field === 'priority') {
-		                        patch.priority = this.homeTaskPriorityLabel(value);
-		                        patch.priorityColor = this.homeTaskPriorityColor(patch.priority);
-		                    }
+			                    if (field === 'priority') {
+			                        patch.priority = this.homeTaskPriorityLabel(value);
+			                        patch.priorityColor = updatedTask?.priorityColor || this.homeTaskPriorityColor(patch.priority, patch);
+			                    }
 		                    if (field === 'isDayPriority') {
 		                        patch.isDayPriority = value === true;
 		                    }
@@ -2958,10 +3005,10 @@ document.addEventListener('alpine:init', () => {
 	            if (!id || !updates || typeof updates !== 'object') return false;
 	            const previous = { ...task };
 	            Object.assign(task, updates);
-	            if (updates.priority !== undefined) {
-	                task.priority = this.homeTaskPriorityLabel(updates.priority);
-	                task.priorityColor = this.homeTaskPriorityColor(task.priority);
-	            }
+		            if (updates.priority !== undefined) {
+		                task.priority = this.homeTaskPriorityLabel(updates.priority);
+		                task.priorityColor = this.homeTaskPriorityColor(task.priority, task);
+		            }
 	            try {
 	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
 	                    method: 'PUT',
@@ -3029,7 +3076,7 @@ document.addEventListener('alpine:init', () => {
 	                handle: '.dx-task-drag',
 	                draggable: '.dx-task-row',
 	                ghostClass: 'dx-task-ghost',
-	                filter: '.dx-check, .dx-task-priority, .dx-task-menu-btn, .dx-task-edit, .dx-inline-add, .dx-shopping-foot, .ov-custom-empty',
+		                filter: '.dx-check, .dx-task-priority, .dx-task-attachment-badge, .dx-task-menu-btn, .dx-task-edit, .dx-inline-add, .dx-shopping-foot, .ov-custom-empty',
 	                preventOnFilter: false,
 	                onEnd: (evt) => this.reorderHomeTaskWidgetFromDom(evt, wid)
 	            });

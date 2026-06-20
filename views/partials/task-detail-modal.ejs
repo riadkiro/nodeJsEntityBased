@@ -22,7 +22,7 @@
 .tdm-section-label{margin:0;color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.45px;line-height:1.2}
 .tdm-desc{min-height:205px;width:100%;border:1.5px solid #e8ecf1;border-radius:10px;background:#fafbfc;color:#0e1726;font-size:13px;font-weight:500;line-height:1.6;padding:12px 14px;resize:vertical;font-family:inherit;outline:none;transition:all .16s}
 .tdm-desc:focus{border-color:#4361ee;background:#fff;box-shadow:0 0 0 3px #4361ee10}
-.tdm-desc::placeholder,.tdm-msg-input::placeholder,.tdm-option-search::placeholder,.tdm-prop-input::placeholder{color:#bfc9d4}
+.tdm-desc::placeholder,.tdm-msg-input::placeholder,.tdm-option-search::placeholder,.tdm-prop-input::placeholder,.tdm-invite-input::placeholder{color:#bfc9d4}
 .tdm-mini-btn{height:28px;border:1px solid #e0e7ff;background:#fff;color:#4f46e5;border-radius:8px;padding:0 10px;font-family:inherit;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .14s}
 .tdm-mini-btn:hover{background:#eef2ff;border-color:#c7d2fe}
 .tdm-attachments{margin-top:4px}
@@ -79,6 +79,28 @@
 .tdm-option-save{background:#4361ee;color:#fff}
 .tdm-option-cancel{background:#f1f5f9;color:#64748b}
 .tdm-option-delete{margin-left:auto;background:#fef2f2;color:#ef4444}
+.tdm-assign-btn{width:100%;min-height:32px;border:0;border-radius:8px;background:#f8fafc;color:#0e1726;font-family:inherit;font-size:12px;font-weight:600;line-height:1.2;padding:6px 9px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;text-align:left;transition:all .15s}
+.tdm-assign-btn:hover,.tdm-assign-btn.active{background:#eef2ff;color:#4361ee}
+.tdm-assign-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdm-assign-popover{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:#fff;border:1px solid #e8ecf1;border-radius:12px;box-shadow:0 16px 44px rgba(15,23,42,.14);padding:10px;z-index:72}
+.tdm-assign-list{display:flex;flex-direction:column;gap:3px;max-height:190px;overflow-y:auto}
+.tdm-assign-row{min-height:36px;border:0;border-radius:9px;background:transparent;padding:5px 7px;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:8px;font-family:inherit;text-align:left;color:#0e1726;cursor:pointer}
+.tdm-assign-row:hover,.tdm-assign-row.active{background:#f8fafc}
+.tdm-assign-avatar{width:26px;height:26px;border-radius:9px;background:#eef2ff;color:#4361ee;display:grid;place-items:center;font-size:11px;font-weight:800;overflow:hidden}
+.tdm-assign-avatar img{width:100%;height:100%;object-fit:cover}
+.tdm-assign-name{display:block;font-size:12px;font-weight:700;line-height:1.2;color:#0e1726;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdm-assign-email{display:block;margin-top:1px;font-size:10.5px;font-weight:600;line-height:1.2;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdm-assign-empty{padding:10px;border:1px dashed #dbe4f0;border-radius:10px;background:#fbfcff;color:#94a3b8;font-size:12px;font-weight:600;line-height:1.45;text-align:center}
+.tdm-invite-box{margin-top:9px;padding-top:9px;border-top:1px solid #eef2f7;display:flex;flex-direction:column;gap:7px}
+.tdm-invite-label{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;color:#94a3b8}
+.tdm-invite-row{display:flex;gap:6px}
+.tdm-invite-input{min-width:0;flex:1;height:32px;border:1.5px solid #e8ecf1;border-radius:8px;background:#fff;color:#0e1726;font-family:inherit;font-size:12px;font-weight:500;padding:0 9px;outline:0}
+.tdm-invite-input:focus{border-color:#4361ee;box-shadow:0 0 0 3px #4361ee10}
+.tdm-invite-btn{height:32px;border:0;border-radius:8px;background:#4361ee;color:#fff;font-family:inherit;font-size:11.5px;font-weight:800;padding:0 10px;cursor:pointer}
+.tdm-invite-btn:disabled{opacity:.55;cursor:not-allowed}
+.tdm-clear-assign{border-top:1px solid #eef2f7;margin-top:7px;padding-top:7px}
+.tdm-clear-assign button{width:100%;height:32px;border:0;border-radius:8px;background:#fff;color:#64748b;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;text-align:left;padding:0 8px}
+.tdm-clear-assign button:hover{background:#f8fafc;color:#ef4444}
 .tdm-conv-head{height:50px;display:flex;align-items:center;gap:8px;padding:0 18px;border-bottom:1px solid #f1f3f5;color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;flex:0 0 auto}
 .tdm-conv-head iconify-icon{color:#4361ee}
 .tdm-conv-feed{flex:1;min-height:0;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:7px}
@@ -101,11 +123,11 @@
 .dark .tdm-modal{background:#0e1726;color:#e0e6ed;box-shadow:0 32px 90px rgba(0,0,0,.45)}
 .dark .tdm-head,.dark .tdm-main,.dark .tdm-props,.dark .tdm-conv,.dark .tdm-conv-head,.dark .tdm-msg-wrap,.dark .tdm-foot{border-color:#253b5c}
 .dark .tdm-conv,.dark .tdm-attachment-drop{background:#0b1320}
-.dark .tdm-title-input,.dark .tdm-desc,.dark .tdm-msg-input,.dark .tdm-prop-input,.dark .tdm-prop-date,.dark .tdm-prop-time,.dark .tdm-option-popover,.dark .tdm-option-search,.dark .tdm-option-editor-input{background:#111f35;border-color:#253b5c;color:#e0e6ed}
+.dark .tdm-title-input,.dark .tdm-desc,.dark .tdm-msg-input,.dark .tdm-prop-input,.dark .tdm-prop-date,.dark .tdm-prop-time,.dark .tdm-option-popover,.dark .tdm-option-search,.dark .tdm-option-editor-input,.dark .tdm-assign-popover,.dark .tdm-invite-input{background:#111f35;border-color:#253b5c;color:#e0e6ed}
 .dark .tdm-option-row{color:#e0e6ed}
-.dark .tdm-option-row:hover,.dark .tdm-option-row.active{background:#1b2e4b}
+.dark .tdm-option-row:hover,.dark .tdm-option-row.active,.dark .tdm-assign-row:hover,.dark .tdm-assign-row.active{background:#1b2e4b}
 .dark .tdm-attachment-item,.dark .tdm-conv-entry{background:#111f35;border-color:#253b5c}
-.dark .tdm-attachment-name,.dark .tdm-prop-text,.dark .tdm-conv-text{color:#e0e6ed}
+.dark .tdm-attachment-name,.dark .tdm-prop-text,.dark .tdm-conv-text,.dark .tdm-assign-name{color:#e0e6ed}
 .dark .tdm-close{background:#17233a;color:#8ea0bd}
 .dark .tdm-close:hover{background:#253b5c;color:#e0e6ed}
 
@@ -122,7 +144,7 @@
     .tdm-prop{align-items:flex-start}
     .tdm-prop-value{justify-content:flex-start}
     .tdm-prop-datetime{justify-content:flex-start;flex-wrap:wrap}
-    .tdm-option-popover{right:auto;left:0;width:min(292px,calc(100vw - 32px))}
+	    .tdm-option-popover,.tdm-assign-popover{right:auto;left:0;width:min(292px,calc(100vw - 32px))}
 }
 </style>
 
@@ -281,13 +303,61 @@
                                 </div>
                             </div>
 
-                            <div class="tdm-prop">
-                                <span class="tdm-prop-icon"><iconify-icon icon="solar:user-linear" width="15"></iconify-icon></span>
-                                <span class="tdm-prop-label">Assigné</span>
-                                <div class="tdm-prop-value">
-                                    <input type="text" class="tdm-prop-input" placeholder="Non assigné" x-model="$store.taskModal.task.assignedTo" @change="$store.taskModal.updateField('assignedTo', $store.taskModal.task.assignedTo)">
-                                </div>
-                            </div>
+	                            <div class="tdm-prop">
+	                                <span class="tdm-prop-icon"><iconify-icon icon="solar:user-linear" width="15"></iconify-icon></span>
+	                                <span class="tdm-prop-label">Assigner à</span>
+	                                <div class="tdm-prop-value" @click.stop>
+	                                    <button type="button"
+	                                            class="tdm-assign-btn"
+	                                            :class="{ 'active': $store.taskModal.assignMenu }"
+	                                            @click="$store.taskModal.toggleAssignMenu()">
+	                                        <span class="tdm-assign-label" x-text="$store.taskModal.assigneeLabel()"></span>
+	                                        <iconify-icon icon="solar:alt-arrow-down-linear" width="13"></iconify-icon>
+	                                    </button>
+	                                    <div class="tdm-assign-popover" x-show="$store.taskModal.assignMenu" x-transition>
+	                                        <template x-if="$store.taskModal.teamLoading">
+	                                            <div class="tdm-assign-empty">Chargement de l'équipe...</div>
+	                                        </template>
+	                                        <template x-if="!$store.taskModal.teamLoading">
+	                                            <div>
+	                                                <div class="tdm-assign-list">
+	                                                    <template x-for="member in $store.taskModal.activeTeamMembers()" :key="member._id || member.email">
+	                                                        <button type="button"
+	                                                                class="tdm-assign-row"
+	                                                                :class="{ 'active': $store.taskModal.isAssignedTo(member) }"
+	                                                                @click="$store.taskModal.assignTo(member)">
+	                                                            <span class="tdm-assign-avatar">
+	                                                                <template x-if="member.avatar"><img :src="member.avatar" alt=""></template>
+	                                                                <template x-if="!member.avatar"><span x-text="$store.taskModal.memberInitial(member)"></span></template>
+	                                                            </span>
+	                                                            <span>
+	                                                                <span class="tdm-assign-name" x-text="member.name || member.email || 'Utilisateur'"></span>
+	                                                                <span class="tdm-assign-email" x-text="member.email || member.role || ''"></span>
+	                                                            </span>
+	                                                            <iconify-icon x-show="$store.taskModal.isAssignedTo(member)" icon="solar:check-circle-bold" width="14" style="color:#22c55e"></iconify-icon>
+	                                                        </button>
+	                                                    </template>
+	                                                </div>
+	                                                <template x-if="$store.taskModal.activeTeamMembers().length === 0">
+	                                                    <div class="tdm-assign-empty">Aucun membre disponible pour cette équipe.</div>
+	                                                </template>
+	                                                <template x-if="$store.taskModal.activeTeamMembers().length <= 1">
+	                                                    <div class="tdm-invite-box">
+	                                                        <div class="tdm-invite-label">Inviter des personnes à rejoindre votre team</div>
+	                                                        <div class="tdm-invite-row">
+	                                                            <input class="tdm-invite-input" type="email" placeholder="email@exemple.com" x-model="$store.taskModal.inviteEmail" @keydown.enter.prevent="$store.taskModal.inviteTeamMember()">
+	                                                            <button type="button" class="tdm-invite-btn" :disabled="$store.taskModal.inviteBusy" @click="$store.taskModal.inviteTeamMember()">Inviter</button>
+	                                                        </div>
+	                                                    </div>
+	                                                </template>
+	                                                <div class="tdm-clear-assign" x-show="$store.taskModal.task.assignedTo">
+	                                                    <button type="button" @click="$store.taskModal.clearAssignee()">Retirer l'assignation</button>
+	                                                </div>
+	                                            </div>
+	                                        </template>
+	                                    </div>
+	                                </div>
+	                            </div>
 
                             <div class="tdm-prop">
                                 <span class="tdm-prop-icon"><iconify-icon icon="solar:calendar-linear" width="15"></iconify-icon></span>
@@ -392,11 +462,17 @@ document.addEventListener('alpine:init', () => {
         statusOptions: [],
         priorityOptions: [],
         optionMenu: null,
-        optionSearch: { status: '', priority: '' },
-        optionEditor: null,
-        uploadBusy: false,
-        _onUpdate: null,
-        _onDelete: null,
+	        optionSearch: { status: '', priority: '' },
+	        optionEditor: null,
+	        uploadBusy: false,
+	        teamMembers: [],
+	        teamInvitations: [],
+	        teamLoading: false,
+	        assignMenu: false,
+	        inviteEmail: '',
+	        inviteBusy: false,
+	        _onUpdate: null,
+	        _onDelete: null,
         defaults: {
             statuses: [
                 { label: 'À faire', color: '#9ca3af', order: 0 },
@@ -426,8 +502,9 @@ document.addEventListener('alpine:init', () => {
                 status: taskObj?.status || 'À faire',
                 priority: taskObj?.priority || 'Aucune'
             };
-            this._onUpdate = onUpdate || null;
-            this._onDelete = onDelete || null;
+	            this._onUpdate = onUpdate || null;
+	            this._onDelete = onDelete || null;
+	            this.loadTeamMembers();
 
             if (taskObj?._id) {
                 try {
@@ -455,13 +532,16 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        close() {
-            this.task = null;
-            this.closeMenus();
-            this.uploadBusy = false;
-            this._onUpdate = null;
-            this._onDelete = null;
-        },
+	        close() {
+	            this.task = null;
+	            this.closeMenus();
+	            this.uploadBusy = false;
+	            this.assignMenu = false;
+	            this.inviteEmail = '';
+	            this.inviteBusy = false;
+	            this._onUpdate = null;
+	            this._onDelete = null;
+	        },
 
         normalizeOptions(options, fallback = []) {
             const source = Array.isArray(options) && options.length ? options : fallback;
@@ -498,12 +578,100 @@ document.addEventListener('alpine:init', () => {
             this.optionSearch[kind] = '';
         },
 
-        closeMenus() {
-            this.optionMenu = null;
-            this.optionEditor = null;
-        },
+	        closeMenus() {
+	            this.optionMenu = null;
+	            this.optionEditor = null;
+	            this.assignMenu = false;
+	        },
 
-        filteredOptions(kind) {
+	        toggleAssignMenu() {
+	            this.optionMenu = null;
+	            this.optionEditor = null;
+	            this.assignMenu = !this.assignMenu;
+	            if (this.assignMenu && !this.teamLoading && this.teamMembers.length === 0) this.loadTeamMembers();
+	        },
+
+	        async loadTeamMembers() {
+	            this.teamLoading = true;
+	            try {
+	                const res = await fetch(API + '/api/team/members', { credentials: 'include' });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Equipe indisponible');
+	                this.teamMembers = Array.isArray(data.members) ? data.members.filter(member => member && member.status !== 'removed') : [];
+	                this.teamInvitations = Array.isArray(data.invitations) ? data.invitations : [];
+	            } catch (e) {
+	                console.warn('[TaskModal] Team members error:', e);
+	                this.teamMembers = [];
+	                this.teamInvitations = [];
+	            } finally {
+	                this.teamLoading = false;
+	            }
+	        },
+
+	        activeTeamMembers() {
+	            return (this.teamMembers || []).filter(member => member && member.status !== 'removed');
+	        },
+
+	        memberInitial(member) {
+	            const text = String(member?.name || member?.email || '?').trim();
+	            return text ? text.charAt(0).toUpperCase() : '?';
+	        },
+
+	        memberAssignValue(member) {
+	            return String(member?.name || member?.email || '').trim();
+	        },
+
+	        assigneeLabel() {
+	            return String(this.task?.assignedTo || '').trim() || 'Non assigné';
+	        },
+
+	        isAssignedTo(member) {
+	            const current = String(this.task?.assignedTo || '').trim().toLowerCase();
+	            if (!current) return false;
+	            return [member?.name, member?.email]
+	                .filter(Boolean)
+	                .some(value => String(value).trim().toLowerCase() === current);
+	        },
+
+	        async assignTo(member) {
+	            const value = this.memberAssignValue(member);
+	            if (!this.task || !value) return;
+	            this.assignMenu = false;
+	            this.task.assignedTo = value;
+	            await this.updateField('assignedTo', value);
+	        },
+
+	        async clearAssignee() {
+	            if (!this.task) return;
+	            this.assignMenu = false;
+	            this.task.assignedTo = '';
+	            await this.updateField('assignedTo', '');
+	        },
+
+	        async inviteTeamMember() {
+	            const email = String(this.inviteEmail || '').trim().toLowerCase();
+	            if (!email || this.inviteBusy) return;
+	            this.inviteBusy = true;
+	            try {
+	                const res = await fetch(API + '/api/team/invite', {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ email, role: 'member' })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Invitation impossible');
+	                this.inviteEmail = '';
+	                await this.loadTeamMembers();
+	                if (window.showMessage) window.showMessage('Invitation envoyée', 'success');
+	            } catch (e) {
+	                if (window.showMessage) window.showMessage(e.message || 'Invitation impossible', 'danger');
+	            } finally {
+	                this.inviteBusy = false;
+	            }
+	        },
+
+	        filteredOptions(kind) {
             const meta = this.optionMeta(kind);
             const q = String(this.optionSearch[kind] || '').trim().toLowerCase();
             const options = this[meta.optionsKey] || [];
@@ -527,18 +695,20 @@ document.addEventListener('alpine:init', () => {
             await this.updateField(meta.field, option.label);
         },
 
-        async createOption(kind) {
-            const label = String(this.optionSearch[kind] || '').trim();
-            if (!label) return;
-            const meta = this.optionMeta(kind);
-            const next = this.normalizeOptions([
-                ...(this[meta.optionsKey] || []),
-                { label, color: kind === 'priority' ? '#8b5cf6' : '#4361ee', order: (this[meta.optionsKey] || []).length }
-            ], this.defaults[meta.payload]);
-            const saved = await this.saveOptions(kind, next);
-            const created = saved.find(option => option.label === label) || next[next.length - 1];
-            await this.selectOption(kind, created);
-        },
+	        async createOption(kind) {
+	            const label = String(this.optionSearch[kind] || '').trim();
+	            if (!label) return;
+	            const meta = this.optionMeta(kind);
+	            const next = this.normalizeOptions([
+	                ...(this[meta.optionsKey] || []),
+	                { label, color: kind === 'priority' ? '#8b5cf6' : '#4361ee', order: (this[meta.optionsKey] || []).length }
+	            ], this.defaults[meta.payload]);
+	            try {
+	                const saved = await this.saveOptions(kind, next);
+	                const created = saved.find(option => option.label === label) || next[next.length - 1];
+	                await this.selectOption(kind, created);
+	            } catch (e) {}
+	        },
 
         openOptionEditor(kind, option) {
             this.optionEditor = {
@@ -567,9 +737,14 @@ document.addEventListener('alpine:init', () => {
                 if (window.showMessage) window.showMessage('Cette option existe déjà', 'warning');
                 return;
             }
-            const saved = await this.saveOptions(editor.kind, options, {
-                renames: editor.originalLabel !== label ? [{ from: editor.originalLabel, to: label }] : []
-            });
+	            let saved = [];
+	            try {
+	                saved = await this.saveOptions(editor.kind, options, {
+	                    renames: editor.originalLabel !== label ? [{ from: editor.originalLabel, to: label }] : []
+	                });
+	            } catch (e) {
+	                return;
+	            }
             if (this.task?.[meta.field] === editor.originalLabel || this.task?.[meta.field] === label) {
                 const updated = saved.find(option => option.label === label) || { label, color: editor.color };
                 this.task[meta.field] = updated.label;
@@ -588,19 +763,25 @@ document.addEventListener('alpine:init', () => {
                 if (window.showMessage) window.showMessage('Gardez au moins une option', 'warning');
                 return;
             }
-            const saved = await this.saveOptions(editor.kind, options.map((option, index) => ({ ...option, order: index })));
+	            let saved = [];
+	            try {
+	                saved = await this.saveOptions(editor.kind, options.map((option, index) => ({ ...option, order: index })));
+	            } catch (e) {
+	                return;
+	            }
             if (this.task?.[meta.field] === editor.originalLabel) {
                 await this.selectOption(editor.kind, saved[0]);
             }
             this.optionEditor = null;
         },
 
-        async saveOptions(kind, options, metaPayload = {}) {
-            const meta = this.optionMeta(kind);
-            const cleaned = this.normalizeOptions(options, this.defaults[meta.payload]);
-            this[meta.optionsKey] = cleaned;
-            if (!this.task?.taskListId) return cleaned;
-            try {
+	        async saveOptions(kind, options, metaPayload = {}) {
+	            const meta = this.optionMeta(kind);
+	            const cleaned = this.normalizeOptions(options, this.defaults[meta.payload]);
+	            const previous = this[meta.optionsKey] || [];
+	            this[meta.optionsKey] = cleaned;
+	            if (!this.task?.taskListId) return cleaned;
+	            try {
                 const res = await fetch(API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -612,13 +793,15 @@ document.addEventListener('alpine:init', () => {
                 this[meta.optionsKey] = this.normalizeOptions(data[meta.payload], cleaned);
                 this.task[meta.payload] = this[meta.optionsKey];
                 if (this._onUpdate) this._onUpdate(this.task._id, meta.payload, this[meta.optionsKey], this.task);
-                return this[meta.optionsKey];
-            } catch (e) {
-                console.error('[TaskModal] Option save error:', e);
-                if (window.showMessage) window.showMessage('Erreur lors de l’enregistrement des options', 'danger');
-                return cleaned;
-            }
-        },
+	                return this[meta.optionsKey];
+	            } catch (e) {
+	                this[meta.optionsKey] = previous;
+	                this.task[meta.payload] = previous;
+	                console.error('[TaskModal] Option save error:', e);
+	                if (window.showMessage) window.showMessage('Erreur lors de l’enregistrement des options', 'danger');
+	                throw e;
+	            }
+	        },
 
         async updateField(field, value) {
             if (!this.task?._id) return;

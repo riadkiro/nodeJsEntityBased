@@ -25,7 +25,7 @@
                                 title="Marquer terminé"
                                 @click.stop="toggleTodayTaskItem(wid, item)"></button>
                         <template x-if="editingHomeTaskId !== (item._id || item.id)">
-                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditTodayTask(wid, item)"></span>
+                            <span class="dx-task-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" @dblclick.stop="startEditTodayTask(wid, item)" style="cursor:pointer;"></span>
                         </template>
                         <template x-if="editingHomeTaskId === (item._id || item.id)">
                             <input class="dx-task-edit"
@@ -60,9 +60,9 @@
                 </div>
                 <div class="dx-completed-list">
                     <template x-for="item in completedTodayDayTasks()" :key="item._id || item.id">
-                        <div class="dx-completed-row" @click.stop="toggleTodayTaskItem(wid, item)">
-                            <iconify-icon icon="solar:check-circle-bold" class="dx-done-icon"></iconify-icon>
-                            <span class="dx-done-title" x-text="item.title"></span>
+                        <div class="dx-completed-row">
+                            <iconify-icon icon="solar:check-circle-bold" class="dx-done-icon" @click.stop="toggleTodayTaskItem(wid, item)" style="cursor:pointer;"></iconify-icon>
+                            <span class="dx-done-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" style="cursor:pointer;"></span>
                             <span class="dx-done-record" x-show="item.recordTitle && item.recordTitle !== 'Espace perso'" x-text="item.recordTitle"></span>
                         </div>
                     </template>

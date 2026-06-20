@@ -1,4 +1,5 @@
 <%- include('../record/partials/widget-picker') %>
+<%- include('../partials/task-detail-modal') %>
 
 <style>
     .home-overview-shell {
@@ -2189,6 +2190,10 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        async refreshHomeOverview() {
+            await this._fetchData();
+        },
+
         applyHomeData(homeData = {}) {
             if (Array.isArray(homeData.goals)) this.goals = homeData.goals;
             if (Array.isArray(homeData.financeRows)) this.financeRows = homeData.financeRows;
@@ -2464,8 +2469,33 @@ document.addEventListener('alpine:init', () => {
 	            const found = this.findHomeTask(ctx?.taskId);
 	            if (!ctx || !found) return;
 	            this.closeHomeTaskMenu();
-	            this.startEditHomeTask(ctx.wid, found.task);
+	            this.openHomeTaskModal(ctx.wid, found.task);
 	        },
+
+	        openHomeTaskModal(wid, task) {
+	            if (!task || !task._id) return;
+	            const taskObj = {
+	                ...task,
+	                _id: task._id || task.id,
+	                listLabel: task.listLabel || task.recordTitle || 'Tâches du jour',
+	                listIcon: 'solar:star-bold-duotone'
+	            };
+	            Alpine.store('taskModal').open(taskObj, {
+	                onUpdate: (taskId, field, value) => {
+	                    // Sync back to home state
+	                    const found = this.findHomeTask(taskId);
+	                    if (found) {
+	                        found.task[field] = value;
+	                        this.bumpHomeTaskRender(wid);
+	                        this.bumpHomeTaskRender('priority-day');
+	                    }
+	                },
+	                onDelete: () => {
+	                    this.refreshHomeOverview();
+	                }
+	            });
+	        },
+
 
 	        async deleteHomeTaskFromMenu() {
 	            const ctx = this.homeTaskMenu;

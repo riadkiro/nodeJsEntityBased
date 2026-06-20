@@ -693,7 +693,7 @@ router.get("/api/home-overview", async (req, res) => {
         });
 
 	        const todayTasks = taskRows
-	            .filter(task => task.isDayPriority || inToday(task.dueDate) || inToday(task.startDate) || task.listIsToday)
+	            .filter(task => task.isDayPriority || inToday(task.startDate) || task.listIsToday)
 	            .sort((a, b) => {
                 const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
                 const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;

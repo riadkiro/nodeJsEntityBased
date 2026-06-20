@@ -203,7 +203,8 @@
         iconEl.setAttribute('icon', getIcon(cat));
         iconEl.style.color = getColor(cat);
         var dlName = filename || url.split('/').pop();
-        dlEl.href = url + '?dl=' + encodeURIComponent(dlName);
+        var dlSep = url.indexOf('?') >= 0 ? '&' : '?';
+        dlEl.href = url + dlSep + 'dl=' + encodeURIComponent(dlName);
         dlEl.download = dlName;
         ntEl.href = url;
         editEl.style.display = editAction ? '' : 'none';
@@ -279,7 +280,12 @@
     // ── Keyboard: ESC, Left/Right arrows ──
     document.addEventListener('keydown', function(e) {
         if (!modal.classList.contains('fv-open')) return;
-        if (e.key === 'Escape') { window.closeFileViewer(); return; }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            window.closeFileViewer();
+            return;
+        }
         if (e.key === 'ArrowLeft') { window._fvNav(-1); e.preventDefault(); }
         if (e.key === 'ArrowRight') { window._fvNav(1); e.preventDefault(); }
     });

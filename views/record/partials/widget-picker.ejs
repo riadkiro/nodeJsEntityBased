@@ -404,7 +404,7 @@
 	                                </label>
 	                                <label x-show="$store.widgetPicker.newWidget.type === 'priority-day'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
 	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.hideCompleted" class="form-checkbox" style="accent-color:#805dca;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Masquer les tâches terminées</span>
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Barrer les tâches terminées</span>
 	                                </label>
 	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
 	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showTasks" class="form-checkbox" style="accent-color:#4361ee;">
@@ -623,7 +623,7 @@
                 { type: 'overview-important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', desc: 'Échéances et dates clés', targets: ['overview'], instant: true },
                 { type: 'overview-notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', desc: 'Notes liées au record', targets: ['overview'], instant: true },
                 { type: 'home-priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', desc: 'Priorités, tags et productivité', targets: ['home-overview'], instant: true },
-                { type: 'home-today-tasks', label: 'Tâches du jour', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', desc: 'Toutes les tâches à faire aujourd’hui', targets: ['home-overview'], instant: true },
+                { type: 'home-today-tasks', label: 'Tâches du jour', icon: 'solar:calendar-date-bold-duotone', color: '#10b981', desc: 'Toutes les tâches à faire aujourd’hui', targets: ['home-overview'], instant: true },
                 { type: 'home-objectives', label: 'Objectifs', icon: 'solar:target-bold-duotone', color: '#4361ee', desc: 'Objectifs avec progression', targets: ['home-overview'], instant: true },
                 { type: 'home-tasks', label: 'Tâches', icon: 'solar:clipboard-list-bold-duotone', color: '#8b5cf6', desc: 'Liste des tâches en cours', targets: ['home-overview'], instant: true },
                 { type: 'home-finance', label: 'Finance', icon: 'solar:wallet-money-bold-duotone', color: '#6366f1', desc: 'Synthèse finance statique', targets: ['home-overview'], instant: true },
@@ -787,7 +787,7 @@
 	                    'task-list': 'solar:checklist-bold-duotone',
 	                    'shopping-list': 'solar:cart-large-bold-duotone',
 	                    'priority-day': 'solar:star-bold-duotone',
-	                    'today-tasks': 'solar:checklist-minimalistic-bold-duotone',
+	                    'today-tasks': 'solar:calendar-date-bold-duotone',
 	                    'upcoming-events': 'solar:calendar-bold-duotone',
 	                    'important-dates': 'solar:calendar-mark-bold-duotone',
 	                    objectives: 'solar:target-bold-duotone',

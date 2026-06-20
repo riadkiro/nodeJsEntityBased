@@ -367,10 +367,11 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
             description: hubTaskText(req.body?.description, ''),
             status,
             statusColor: hubStatusColors[status] || '#9ca3af',
-            priority,
-            priorityColor: hubPriorityColors[priority] || '',
-            startDate: req.body?.startDate || null,
-            dueDate: req.body?.dueDate || null,
+	            priority,
+	            priorityColor: hubPriorityColors[priority] || '',
+	            isDayPriority: !!req.body?.isDayPriority,
+	            startDate: req.body?.startDate || null,
+	            dueDate: req.body?.dueDate || null,
             assignedTo: hubTaskText(req.body?.assignedTo, ''),
             order
         });
@@ -410,9 +411,34 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
     } catch (error) {
         console.error('[TasksHub] Create personal task error:', error);
         res.status(500).json({ error: error.message });
+	    }
+	});
+
+router.post("/api/tasks-hub/reorder", async (req, res) => {
+    try {
+        const taskIds = Array.isArray(req.body?.taskIds) ? req.body.taskIds : [];
+        const normalizedTaskIds = taskIds
+            .map(id => String(id || ''))
+            .filter(id => /^[a-f\d]{24}$/i.test(id));
+        if (!normalizedTaskIds.length) return res.status(400).json({ error: 'taskIds array required' });
+
+        const existingTasks = await RecordTaskModel.find({ _id: { $in: normalizedTaskIds } }).select('_id').lean();
+        const allowedIds = new Set(existingTasks.map(task => task._id.toString()));
+        const bulkOps = normalizedTaskIds
+            .filter(id => allowedIds.has(id))
+            .map((id, index) => ({
+                updateOne: { filter: { _id: id }, update: { $set: { order: index } } }
+            }));
+        if (bulkOps.length > 0) await RecordTaskModel.bulkWrite(bulkOps);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[TasksHub] Reorder tasks error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
-router.get("/api/tasks-hub", async (req, res) => {
+
+	router.get("/api/tasks-hub", async (req, res) => {
     try {
         const _tc = require('../middleware/tenant').tenantCollection;
         const Entity = await _tc(req, "Entity");
@@ -692,16 +718,22 @@ router.get("/api/home-overview", async (req, res) => {
             };
         });
 
-	        const todayTasks = taskRows
-	            .filter(task => task.isDayPriority || task.listIsToday)
-	            .sort((a, b) => {
-                const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
-                const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
-                if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-                const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
-                const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
-	                return ad - bd;
-	            });
+	        const compareHomeTasks = (a, b) => {
+	            const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
+	            const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
+	            if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+	            const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
+	            const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
+	            if (ad !== bd) return ad - bd;
+	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+	            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+	            if (ao !== bo) return ao - bo;
+	            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+	        };
+
+		        const todayTasks = taskRows
+		            .filter(task => task.isDayPriority || task.listIsToday)
+		            .sort(compareHomeTasks);
 	        const completedToday = taskRows
 	            .filter(task => {
 	                if (task.status !== 'Terminé') return false;
@@ -710,16 +742,9 @@ router.get("/api/home-overview", async (req, res) => {
 	                const checkTime = cAt || uAt;
 	                return checkTime >= start.getTime() && checkTime < end.getTime();
 	            });
-	        const openTasksSorted = taskRows
-	            .filter(task => task.status !== 'Terminé')
-	            .sort((a, b) => {
-	                const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
-	                const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
-	                if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-	                const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
-	                const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
-	                return ad - bd;
-	            });
+		        const openTasksSorted = taskRows
+		            .filter(task => task.status !== 'Terminé')
+		            .sort(compareHomeTasks);
 	        const tasksByRecordMap = {};
 	        taskRows.forEach(task => {
 	            if (!task.recordId) return;

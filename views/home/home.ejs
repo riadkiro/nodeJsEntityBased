@@ -625,15 +625,210 @@
         font-weight: 700;
         white-space: nowrap;
     }
-    .dx-count-pill {
-        background: #efe8ff;
-        color: #9273e8;
-        margin-left: 4px;
-    }
-    .dx-shared-pill {
-        background: #dff8ee;
-        color: #12a477;
-    }
+	    .dx-count-pill {
+	        background: #efe8ff;
+	        color: #9273e8;
+	        margin-left: 4px;
+	    }
+	    .dx-day-nav-btn {
+	        height: 22px;
+	        border: 1px solid #e7defe;
+	        border-radius: 8px;
+	        background: #fff;
+	        color: #6f55dc;
+	        padding: 0 8px;
+	        font: inherit;
+	        font-size: 10.5px;
+	        font-weight: 800;
+	        line-height: 1;
+	        cursor: pointer;
+	        align-self: center;
+	        transition: background .14s ease, border-color .14s ease, color .14s ease;
+	    }
+	    .dx-day-nav-btn:hover,
+	    .dx-day-nav-btn.is-active {
+	        background: #efe8ff;
+	        border-color: #d7c6ff;
+	        color: #7c5cff;
+	    }
+	    .dx-day-date-button {
+	        min-width: 20px;
+	        height: 22px;
+	        border: 0;
+	        border-radius: 8px;
+	        background: transparent;
+	        color: #8b7cf8;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        gap: 5px;
+	        position: relative;
+	        overflow: hidden;
+	        cursor: pointer;
+	        flex: 0 0 auto;
+	        align-self: center;
+	        line-height: 0;
+	        transform: translateY(1px);
+	        padding: 0 2px;
+	        font-size: 10.5px;
+	        font-weight: 800;
+	        white-space: nowrap;
+	        transition: background .14s ease, color .14s ease;
+	    }
+	    .dx-day-date-button:hover {
+	        color: #6f55dc;
+	    }
+	    .dx-day-date-button.is-active {
+	        padding: 0 8px;
+	        background: #efe8ff;
+	        color: #7c5cff;
+	    }
+	    .dx-day-date-button > iconify-icon {
+	        width: 13px;
+	        height: 13px;
+	        min-width: 13px;
+	        border-radius: 0;
+	        pointer-events: none;
+	    }
+	    .dx-day-date-button > span {
+	        line-height: 1;
+	    }
+	    .dx-day-calendar {
+	        position: fixed;
+	        z-index: 10030;
+	        width: min(262px, calc(100vw - 24px));
+	        padding: 10px;
+	        border: 1px solid #e8ecf1;
+	        border-radius: 14px;
+	        background: #fff;
+	        box-shadow: 0 18px 42px rgba(15,23,42,.14), 0 4px 12px rgba(15,23,42,.07);
+	    }
+	    .dx-day-calendar-head {
+	        display: flex;
+	        align-items: center;
+	        justify-content: space-between;
+	        gap: 8px;
+	        padding: 2px 2px 8px;
+	    }
+	    .dx-day-calendar-title {
+	        color: #172033;
+	        font-size: 12.5px;
+	        font-weight: 850;
+	        text-transform: capitalize;
+	    }
+	    .dx-day-calendar-navs {
+	        display: inline-flex;
+	        align-items: center;
+	        gap: 4px;
+	    }
+	    .dx-day-calendar-nav {
+	        width: 28px;
+	        height: 28px;
+	        border: 0;
+	        border-radius: 8px;
+	        background: #f8fafc;
+	        color: #64748b;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        cursor: pointer;
+	        transition: background .14s ease, color .14s ease;
+	    }
+	    .dx-day-calendar-nav:hover {
+	        background: #efe8ff;
+	        color: #6f55dc;
+	    }
+	    .dx-day-calendar-weekdays,
+	    .dx-day-calendar-grid {
+	        display: grid;
+	        grid-template-columns: repeat(7, minmax(0, 1fr));
+	        gap: 3px;
+	    }
+	    .dx-day-calendar-weekdays {
+	        margin: 3px 0 5px;
+	        color: #94a3b8;
+	        font-size: 10px;
+	        font-weight: 850;
+	        text-align: center;
+	        text-transform: uppercase;
+	    }
+	    .dx-day-calendar-day {
+	        height: 30px;
+	        border: 0;
+	        border-radius: 8px;
+	        background: transparent;
+	        color: #334155;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        font: inherit;
+	        font-size: 12px;
+	        font-weight: 750;
+	        cursor: pointer;
+	        transition: background .12s ease, color .12s ease, box-shadow .12s ease;
+	    }
+	    .dx-day-calendar-day:hover {
+	        background: #f6f3ff;
+	        color: #6f55dc;
+	    }
+	    .dx-day-calendar-day.is-muted {
+	        color: #cbd5e1;
+	        font-weight: 650;
+	    }
+	    .dx-day-calendar-day.is-today {
+	        color: #6f55dc;
+	        box-shadow: inset 0 0 0 1px #ddd6fe;
+	    }
+	    .dx-day-calendar-day.is-selected,
+	    .dx-day-calendar-day.is-selected:hover {
+	        background: #7c5cff;
+	        color: #fff;
+	        box-shadow: 0 6px 14px rgba(124,92,255,.22);
+	    }
+	    .dx-day-calendar-foot {
+	        display: flex;
+	        align-items: center;
+	        justify-content: space-between;
+	        gap: 6px;
+	        margin-top: 10px;
+	        padding-top: 9px;
+	        border-top: 1px solid #f1f5f9;
+	    }
+	    .dx-day-calendar-quick {
+	        height: 28px;
+	        border: 1px solid #e7defe;
+	        border-radius: 8px;
+	        background: #fff;
+	        color: #6f55dc;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        gap: 5px;
+	        padding: 0 9px;
+	        font: inherit;
+	        font-size: 10.5px;
+	        font-weight: 800;
+	        cursor: pointer;
+	        transition: background .14s ease, border-color .14s ease, color .14s ease;
+	    }
+	    .dx-day-calendar-quick:hover {
+	        background: #efe8ff;
+	        border-color: #d7c6ff;
+	        color: #7c5cff;
+	    }
+	    .dx-day-date-label {
+	        height: 22px;
+	        display: inline-flex;
+	        align-items: center;
+	        color: #7c89a6;
+	        font-size: 10.5px;
+	        font-weight: 800;
+	        white-space: nowrap;
+	    }
+	    .dx-shared-pill {
+	        background: #dff8ee;
+	        color: #12a477;
+	    }
     .dx-header-actions {
         display: flex;
         align-items: center;
@@ -814,11 +1009,39 @@
     .dx-completed-row:hover {
         background: #f0fdf4;
     }
-    .dx-done-icon {
-        color: #22c55e;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
+	    .dx-done-action {
+	        width: 16px;
+	        height: 16px;
+	        border: 0;
+	        background: transparent;
+	        color: #22c55e;
+	        display: inline-grid;
+	        place-items: center;
+	        flex: 0 0 auto;
+	        padding: 0;
+	        cursor: pointer;
+	    }
+	    .dx-done-icon,
+	    .dx-done-remove-icon {
+	        grid-area: 1 / 1;
+	        font-size: 14px;
+	        transition: color .12s ease, opacity .12s ease, transform .12s ease;
+	    }
+	    .dx-done-remove-icon {
+	        color: #ef4444;
+	        opacity: 0;
+	        transform: scale(.75);
+	    }
+	    .dx-done-action:hover .dx-done-icon,
+	    .dx-done-action:focus-visible .dx-done-icon {
+	        opacity: 0;
+	        transform: scale(.75);
+	    }
+	    .dx-done-action:hover .dx-done-remove-icon,
+	    .dx-done-action:focus-visible .dx-done-remove-icon {
+	        opacity: 1;
+	        transform: scale(1);
+	    }
     .dx-done-title {
         font-size: 12px;
         font-weight: 600;
@@ -1134,34 +1357,100 @@
     .dx-shopping-row.dx-single-line {
         grid-template-columns: 18px minmax(0, 1fr) auto;
     }
-    .dx-row-meta {
-        display: flex;
+	    .dx-row-meta {
+	        display: flex;
+	        align-items: center;
+	        gap: 6px;
+	        flex-shrink: 0;
+	        white-space: nowrap;
+	        overflow: hidden;
+	    }
+	    .dx-day-row-meta {
+	        min-width: 0;
+	        margin-left: auto;
+	        justify-content: flex-end;
+	    }
+	    .dx-priority-badge {
+	        font-size: 10px;
+	        font-weight: 750;
+	        white-space: nowrap;
+	        letter-spacing: .01em;
+    }
+    .dx-day-priority-badge {
+        color: #3b82f6;
+        display: inline-flex;
         align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-        white-space: nowrap;
-        overflow: hidden;
+        justify-content: center;
+        line-height: 1;
+        flex: 0 0 auto;
     }
-    .dx-priority-badge {
-        font-size: 10px;
-        font-weight: 750;
-        white-space: nowrap;
-        letter-spacing: .01em;
+    .dx-day-priority-badge iconify-icon {
+        display: block;
+        pointer-events: none;
     }
-    .dx-overdue-badge {
-        font-size: 10px;
-        font-weight: 600;
-        color: #ef4444;
-        background: rgba(239, 68, 68, .08);
+	    .dx-overdue-badge {
+	        font-size: 10px;
+	        font-weight: 600;
+	        color: #ef4444;
+	        background: rgba(239, 68, 68, .08);
         padding: 1px 6px;
         border-radius: 4px;
-        white-space: nowrap;
-    }
-    .dx-date-badge {
-        font-size: 10px;
-        font-weight: 600;
-        color: #94a3b8;
-        white-space: nowrap;
+	        white-space: nowrap;
+	    }
+	    .dx-task-due-badge {
+	        height: 20px;
+	        display: inline-flex;
+	        align-items: center;
+	        gap: 3px;
+	        color: #64748b;
+	        font-size: 10px;
+	        font-weight: 750;
+	        line-height: 1;
+	    }
+	    .dx-task-due-badge iconify-icon {
+	        flex: 0 0 auto;
+	    }
+	    .dx-task-due-badge.is-overdue {
+	        color: #ef4444;
+	    }
+	    .dx-task-record-line {
+	        min-width: 0;
+	        display: inline-flex;
+	        align-items: center;
+	        gap: 4px;
+	        color: #66789d;
+	        font-size: 10px;
+	        font-weight: 800;
+	        line-height: 1.15;
+	    }
+	    .dx-task-record-line > span:last-child {
+	        min-width: 0;
+	        max-width: 96px;
+	        overflow: hidden;
+	        text-overflow: ellipsis;
+	        white-space: nowrap;
+	    }
+	    .dx-task-record-mini {
+	        width: 14px;
+	        height: 14px;
+	        border-radius: 5px;
+	        flex: 0 0 14px;
+	        display: grid;
+	        place-items: center;
+	        color: var(--task-record-color, #4361ee);
+	        background: color-mix(in srgb, var(--task-record-color, #4361ee) 12%, #fff);
+	    }
+	    .dx-task-record-mini iconify-icon {
+	        display: block;
+	        width: 10px;
+	        height: 10px;
+	        line-height: 0;
+	    }
+	    .dx-date-badge {
+	        font-size: 10px;
+	        font-weight: 600;
+	        color: #94a3b8;
+	        white-space: nowrap;
     }
     .dx-shopping-row.dx-task-row .dx-check {
         border: 1.5px solid #9aa8c2;
@@ -1198,6 +1487,17 @@
         font-size: 12.5px;
         font-weight: 600;
         cursor: text;
+    }
+    .dx-task-title-wrap {
+        min-width: 0;
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        overflow: hidden;
+    }
+    .dx-task-title-wrap .dx-task-title {
+        flex: 0 1 auto;
     }
     .dx-task-edit {
         min-width: 0;
@@ -1250,11 +1550,20 @@
         background: color-mix(in srgb, var(--priority-color, #64748b) 10%, #fff);
         outline: none;
     }
-    .dx-task-priority.is-empty {
-        width: 26px;
-        color: #a8b3c7;
-        justify-content: center;
-    }
+	    .dx-task-priority.is-empty {
+	        width: 26px;
+	        color: #a8b3c7;
+	        justify-content: center;
+	    }
+	    .dx-task-priority.dx-day-row-priority {
+	        margin-left: 2px;
+	        max-width: 92px;
+	    }
+	    .dx-task-row-actions {
+	        justify-content: flex-end;
+	        gap: 4px;
+	        overflow: visible;
+	    }
     .dx-task-menu-btn {
         display: none;
     }
@@ -1266,7 +1575,7 @@
     .dx-task-ctx {
         position: fixed;
         z-index: 10020;
-        width: 190px;
+        width: 210px;
         padding: 5px;
         border: 1px solid #e8ecf1;
         border-radius: 12px;
@@ -1291,6 +1600,46 @@
         cursor: pointer;
     }
     .dx-task-ctx button:hover { background: #f8fafc; }
+    .dx-task-ctx-toggle {
+        justify-content: space-between;
+    }
+    .dx-task-ctx-toggle-main {
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .dx-task-ctx-toggle-main iconify-icon {
+        color: #3b82f6;
+        flex: 0 0 auto;
+    }
+    .dx-task-switch {
+        width: 32px;
+        height: 18px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        position: relative;
+        flex: 0 0 auto;
+        transition: background .16s ease;
+    }
+    .dx-task-switch::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .22);
+        transition: transform .16s ease;
+    }
+    .dx-task-switch.is-on {
+        background: #3b82f6;
+    }
+    .dx-task-switch.is-on::after {
+        transform: translateX(14px);
+    }
     .dx-task-ctx .danger { color: #ef4444; }
     .dx-task-ctx .danger:hover { background: #fef2f2; }
     .dx-task-ctx-label {
@@ -1738,7 +2087,75 @@
     .dark .dx-done-title { color: #64748b; }
     .dark .dx-done-record { color: #536882; }
     .dark .dx-completed-empty { color: #536882; }
-    .dark .home-ov-title p,
+	    .dark .dx-day-priority-badge {
+	        color: #60a5fa;
+	    }
+	    .dark .dx-day-nav-btn {
+	        background: #0b1320;
+	        border-color: #253b5c;
+	        color: #a78bfa;
+	    }
+	    .dark .dx-day-date-button {
+	        color: #a78bfa;
+	    }
+	    .dark .dx-day-nav-btn:hover,
+	    .dark .dx-day-nav-btn.is-active {
+	        background: #17233a;
+	        border-color: #3b2f70;
+	        color: #c4b5fd;
+	    }
+	    .dark .dx-day-date-button:hover {
+	        color: #c4b5fd;
+	    }
+	    .dark .dx-day-date-button.is-active {
+	        background: #17233a;
+	        color: #c4b5fd;
+	    }
+	    .dark .dx-day-calendar {
+	        background: #0e1726;
+	        border-color: #253b5c;
+	        box-shadow: 0 18px 42px rgba(0,0,0,.38);
+	    }
+	    .dark .dx-day-calendar-title { color: #f1f5f9; }
+	    .dark .dx-day-calendar-nav {
+	        background: #111f35;
+	        color: #8ea0bd;
+	    }
+	    .dark .dx-day-calendar-nav:hover {
+	        background: #17233a;
+	        color: #c4b5fd;
+	    }
+	    .dark .dx-day-calendar-weekdays { color: #536882; }
+	    .dark .dx-day-calendar-day { color: #dbe5f3; }
+	    .dark .dx-day-calendar-day:hover {
+	        background: #17233a;
+	        color: #c4b5fd;
+	    }
+	    .dark .dx-day-calendar-day.is-muted { color: #536882; }
+	    .dark .dx-day-calendar-day.is-today {
+	        color: #c4b5fd;
+	        box-shadow: inset 0 0 0 1px #3b2f70;
+	    }
+	    .dark .dx-day-calendar-day.is-selected,
+	    .dark .dx-day-calendar-day.is-selected:hover {
+	        background: #7c5cff;
+	        color: #fff;
+	    }
+	    .dark .dx-day-calendar-foot { border-top-color: #253b5c; }
+	    .dark .dx-day-calendar-quick {
+	        background: #0b1320;
+	        border-color: #253b5c;
+	        color: #a78bfa;
+	    }
+	    .dark .dx-day-calendar-quick:hover {
+	        background: #17233a;
+	        border-color: #3b2f70;
+	        color: #c4b5fd;
+	    }
+	    .dark .dx-day-date-label {
+	        color: #8ea0bd;
+	    }
+	    .dark .home-ov-title p,
     .dark .dx-productivity small,
     .dark .dx-activity-row > div > span,
     .dark .dx-ai-note span,
@@ -1819,6 +2236,8 @@
     }
     .dark .dx-task-ctx button { color: #dbe5f3; }
     .dark .dx-task-ctx button:hover { background: #111f35; }
+    .dark .dx-task-switch { background: #334155; }
+    .dark .dx-task-switch.is-on { background: #3b82f6; }
     .dark .dx-task-ctx .danger { color: #f87171; }
     .dark .dx-task-ctx .danger:hover { background: rgba(239,68,68,.12); }
     .dark .dx-task-ctx-priorities button {
@@ -1845,9 +2264,19 @@
         background: color-mix(in srgb, var(--event-icon-color, #4361ee) 18%, #0e1726);
         border-color: color-mix(in srgb, var(--event-icon-color, #4361ee) 30%, #253b5c);
     }
-    .dark .dx-event-record-mini {
-        background: color-mix(in srgb, var(--event-record-color, #4361ee) 18%, #0e1726);
-    }
+	    .dark .dx-event-record-mini {
+	        background: color-mix(in srgb, var(--event-record-color, #4361ee) 18%, #0e1726);
+	    }
+	    .dark .dx-task-record-mini {
+	        background: color-mix(in srgb, var(--task-record-color, #4361ee) 18%, #0e1726);
+	    }
+	    .dark .dx-task-record-line,
+	    .dark .dx-task-due-badge {
+	        color: #8ea0bd;
+	    }
+	    .dark .dx-task-due-badge.is-overdue {
+	        color: #f87171;
+	    }
     .dark .dx-detail-btn,
     .dark .dx-stat-grid .home-stat-card {
         background: #111c2d;
@@ -1874,7 +2303,8 @@
         .dx-shopping-row.dx-task-row.has-priority {
             grid-template-columns: 18px minmax(0, 1fr) auto;
         }
-        .dx-shopping-row.dx-single-line .dx-date-badge { display: none; }
+	        .dx-shopping-row.dx-single-line .dx-task-due-badge,
+	        .dx-shopping-row.dx-single-line .dx-task-record-line { display: none; }
         .dx-week-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
     }
 </style>
@@ -1882,8 +2312,8 @@
 <div class="home-overview-shell"
      x-data="homeOverviewHub()"
      :class="layoutMode ? 'ov-dm' : ''"
-     @click.window="closeHomeTaskMenu()"
-     @keydown.escape.window="closeHomeTaskMenu(); cancelEditHomeTask()">
+     @click.window="closeHomeTaskMenu(); closeTodayWidgetCalendar()"
+     @keydown.escape.window="closeHomeTaskMenu(); closeTodayWidgetCalendar(); cancelEditHomeTask()">
     <div class="home-ov-header">
         <div class="home-ov-title">
             <div>
@@ -2006,6 +2436,49 @@
         <span>Ajouter une ligne</span>
     </div>
 
+    <div class="dx-day-calendar"
+         x-show="todayWidgetCalendar"
+         x-cloak
+         x-transition.opacity.duration.120ms
+         :style="todayWidgetCalendarStyle()"
+         @click.stop>
+        <div class="dx-day-calendar-head">
+            <div class="dx-day-calendar-title" x-text="todayWidgetCalendarTitle()"></div>
+            <div class="dx-day-calendar-navs">
+                <button type="button" class="dx-day-calendar-nav" title="Mois précédent" @click="shiftTodayWidgetCalendarMonth(-1)">
+                    <iconify-icon icon="tabler:chevron-left" width="15"></iconify-icon>
+                </button>
+                <button type="button" class="dx-day-calendar-nav" title="Mois suivant" @click="shiftTodayWidgetCalendarMonth(1)">
+                    <iconify-icon icon="tabler:chevron-right" width="15"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="dx-day-calendar-weekdays">
+            <template x-for="weekday in ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']" :key="weekday">
+                <span x-text="weekday"></span>
+            </template>
+        </div>
+        <div class="dx-day-calendar-grid">
+            <template x-for="day in todayWidgetCalendarDays()" :key="day.key">
+                <button type="button"
+                        class="dx-day-calendar-day"
+                        :class="{ 'is-muted': !day.currentMonth, 'is-today': day.today, 'is-selected': day.selected }"
+                        :aria-label="day.label"
+                        @click="selectTodayWidgetCalendarDate(day.key)"
+                        x-text="day.day"></button>
+            </template>
+        </div>
+        <div class="dx-day-calendar-foot">
+            <button type="button" class="dx-day-calendar-quick" @click="selectTodayWidgetCalendarToday()">
+                <iconify-icon icon="solar:calendar-date-linear" width="13"></iconify-icon>
+                Aujourd'hui
+            </button>
+            <button type="button" class="dx-day-calendar-quick" @click="selectTodayWidgetCalendarTomorrow()">
+                Demain
+            </button>
+        </div>
+    </div>
+
     <div class="dx-task-ctx"
          x-show="homeTaskMenu"
          x-cloak
@@ -2015,13 +2488,12 @@
             <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
             Modifier
         </button>
-        <button type="button" x-show="!homeTaskMenu?.priorityOnly && !isTaskDayPriority(homeTaskMenu?.taskId)" @click="addToDayPriorityFromMenu()">
-            <iconify-icon icon="solar:star-bold-duotone" width="14" style="color:#f59e0b;"></iconify-icon>
-            Ajouter à : Tâches du jour
-        </button>
-        <button type="button" x-show="!homeTaskMenu?.priorityOnly && isTaskDayPriority(homeTaskMenu?.taskId)" @click="removeFromDayPriorityFromMenu()">
-            <iconify-icon icon="solar:star-line-duotone" width="14" style="color:#94a3b8;"></iconify-icon>
-            Retirer des Tâches du jour
+        <button type="button" class="dx-task-ctx-toggle" x-show="!homeTaskMenu?.priorityOnly" @click="toggleDayPriorityFromMenu()">
+            <span class="dx-task-ctx-toggle-main">
+                <iconify-icon icon="solar:bolt-bold-duotone" width="14"></iconify-icon>
+                <span>À faire aujourd’hui</span>
+            </span>
+            <span class="dx-task-switch" :class="{ 'is-on': isTaskDayPriority(homeTaskMenu?.taskId) }"></span>
         </button>
         <div class="dx-task-ctx-label">Priorité</div>
         <div class="dx-task-ctx-priorities">
@@ -2072,7 +2544,9 @@ document.addEventListener('alpine:init', () => {
 	        _homeWidgetListener: null,
 		        _homeDataTimer: null,
 		        _homeDataSaving: false,
-		        newTaskTitles: {},
+			        newTaskTitles: {},
+			        todayWidgetDates: {},
+			        todayWidgetCalendar: null,
 	        homeTaskRenderVersions: {},
 	        _taskSortables: new Map(),
 	        homeTaskMenu: null,
@@ -2129,8 +2603,8 @@ document.addEventListener('alpine:init', () => {
 	            ] }
 	        ],
 	        _defaultWidgetCatalog: {
-	            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true } },
-	            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true } },
+	            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true, hideCompleted: false } },
+	            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:calendar-date-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true } },
 	            'upcoming-events': { type: 'upcoming-events', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6', config: { limit: 4, showLink: true } },
 	            'important-dates': { type: 'important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', config: { limit: 4 } },
 	            objectives: { type: 'objectives', label: 'Objectifs', icon: 'solar:target-bold-duotone', color: '#4361ee', config: { limit: 6, showLink: true } },
@@ -2425,6 +2899,47 @@ document.addEventListener('alpine:init', () => {
 	                    return this.normalizeHomeTask({ ...task, ...patch });
 	                });
 	            });
+	            this.completedTodayData = (this.completedTodayData || []).map(task => {
+	                if (this.homeTaskId(task) !== id) return task;
+	                return this.normalizeHomeTask({ ...task, ...patch });
+	            });
+	            this.homeTaskLists = (this.homeTaskLists || []).map(list => {
+	                let touched = false;
+	                const tasks = (list.tasks || []).map(task => {
+	                    if (this.homeTaskId(task) !== id) return task;
+	                    touched = true;
+	                    return this.normalizeHomeTask({ ...task, ...patch, taskListId: task.taskListId || list.id });
+	                });
+	                if (!touched) return list;
+	                const nextList = { ...list, tasks };
+	                this.refreshHomeTaskListCounts(nextList);
+	                return nextList;
+	            });
+	            this.bumpImpactedHomeTaskWidgets();
+	        },
+
+	        syncCompletedTodayData(taskId, task = null) {
+	            const id = String(taskId || '');
+	            if (!id) return;
+	            const source = task || this.findHomeTask(id)?.task || null;
+	            if (source?.status === 'Terminé') {
+	                const completedAt = source.completedAt || new Date().toISOString();
+	                const normalized = this.normalizeHomeTask({ ...source, completedAt });
+	                this.completedTodayData = [
+	                    ...(this.completedTodayData || []).filter(item => this.homeTaskId(item) !== id),
+	                    normalized
+	                ];
+	            } else {
+	                this.completedTodayData = (this.completedTodayData || []).filter(item => this.homeTaskId(item) !== id);
+	            }
+	        },
+
+	        bumpImpactedHomeTaskWidgets() {
+	            const ids = new Set(['priority-day', 'today-tasks', 'tasks', 'shopping-list']);
+	            Object.entries(this.customWidgets || {}).forEach(([id, widget]) => {
+	                if (['task-list', 'tasks', 'shopping-list'].includes(String(widget?.type || ''))) ids.add(id);
+	            });
+	            ids.forEach(id => this.bumpHomeTaskRender(id));
 	        },
 
 	        removeHomeTaskEverywhere(taskId) {
@@ -2432,6 +2947,15 @@ document.addEventListener('alpine:init', () => {
 	            if (!id) return;
 	            this.allTasks = (this.allTasks || []).filter(task => this.homeTaskId(task) !== id);
 	            this.todayTasks = (this.todayTasks || []).filter(task => this.homeTaskId(task) !== id);
+	            this.completedTodayData = (this.completedTodayData || []).filter(task => this.homeTaskId(task) !== id);
+	            this.homeTaskLists = (this.homeTaskLists || []).map(list => {
+	                const nextTasks = (list.tasks || []).filter(task => this.homeTaskId(task) !== id);
+	                if (nextTasks.length === (list.tasks || []).length) return list;
+	                const nextList = { ...list, tasks: nextTasks };
+	                this.refreshHomeTaskListCounts(nextList);
+	                return nextList;
+	            });
+	            this.bumpImpactedHomeTaskWidgets();
 	        },
 
 	        replaceHomeTaskList(listId, patch = {}) {
@@ -2474,22 +2998,55 @@ document.addEventListener('alpine:init', () => {
 
 	        openHomeTaskModal(wid, task) {
 	            if (!task || !task._id) return;
+	            const list = this.homeTaskListForWidget(wid);
 	            const taskObj = {
 	                ...task,
 	                _id: task._id || task.id,
-	                listLabel: task.listLabel || task.recordTitle || 'Tâches du jour',
-	                listIcon: 'solar:star-bold-duotone'
+	                listLabel: task.listLabel || list?.label || task.recordTitle || 'Tâches du jour',
+	                listIcon: task.listIcon || list?.icon || this.widgetIcon(wid, 'solar:checklist-bold-duotone')
 	            };
 	            Alpine.store('taskModal').open(taskObj, {
-	                onUpdate: (taskId, field, value) => {
-	                    // Sync back to home state
-	                    const found = this.findHomeTask(taskId);
-	                    if (found) {
-	                        found.task[field] = value;
-	                        this.bumpHomeTaskRender(wid);
-	                        this.bumpHomeTaskRender('priority-day');
-	                    }
-	                },
+		                onUpdate: (taskId, field, value, updatedTask = null) => {
+		                    const id = String(taskId || '');
+		                    const found = this.findHomeTask(id);
+		                    if (!id || !found) return;
+		                    const patch = this.normalizeHomeTask({
+		                        ...found.task,
+		                        ...(updatedTask || {}),
+		                        [field]: value
+		                    });
+		                    if (field === 'status') {
+		                        const statusColors = {
+		                            'À faire': '#9ca3af',
+		                            'En cours': '#3b82f6',
+		                            'En revue': '#f59e0b',
+		                            'Terminé': '#22c55e',
+		                            'Bloqué': '#ef4444'
+		                        };
+		                        patch.status = value || patch.status;
+		                        patch.statusColor = updatedTask?.statusColor || statusColors[patch.status] || '#9ca3af';
+		                        patch.completedAt = patch.status === 'Terminé' ? (patch.completedAt || new Date().toISOString()) : null;
+		                    }
+		                    if (field === 'priority') {
+		                        patch.priority = this.homeTaskPriorityLabel(value);
+		                        patch.priorityColor = this.homeTaskPriorityColor(patch.priority);
+		                    }
+		                    if (field === 'isDayPriority') {
+		                        patch.isDayPriority = value === true;
+		                    }
+		                    this.patchHomeTaskEverywhere(id, patch);
+		                    const syncedTask = this.findHomeTask(id)?.task || patch;
+		                    if (syncedTask.isDayPriority && !(this.todayTasks || []).some(item => this.homeTaskId(item) === id)) {
+		                        this.todayTasks = [...(this.todayTasks || []), this.normalizeHomeTask(syncedTask)];
+		                    }
+		                    if (field === 'status') this.syncCompletedTodayData(id, syncedTask);
+		                    if (field === 'isDayPriority') {
+		                        if (!patch.isDayPriority && !syncedTask.listIsToday) {
+		                            this.todayTasks = (this.todayTasks || []).filter(item => this.homeTaskId(item) !== id);
+		                        }
+		                    }
+		                    this.bumpImpactedHomeTaskWidgets();
+		                },
 	                onDelete: () => {
 	                    this.refreshHomeOverview();
 	                }
@@ -2547,6 +3104,24 @@ document.addEventListener('alpine:init', () => {
 	            this.bumpHomeTaskRender('today-tasks');
 	        },
 
+	        async toggleDayPriorityFromMenu() {
+	            const ctx = this.homeTaskMenu;
+	            const found = this.findHomeTask(ctx?.taskId);
+	            if (!ctx || !found) return;
+	            const nextValue = !found.task?.isDayPriority;
+	            this.closeHomeTaskMenu();
+	            const updated = await this.updateHomeTaskItem(ctx.wid, found.task, { isDayPriority: nextValue });
+	            if (!updated) return;
+	            const id = this.homeTaskId(found.task);
+	            if (nextValue && !this.todayTasks.find(t => this.homeTaskId(t) === id)) {
+	                this.todayTasks = [...(this.todayTasks || []), this.normalizeHomeTask(found.task)];
+	            }
+	            if (!nextValue && !found.task?.listIsToday) {
+	                this.todayTasks = (this.todayTasks || []).filter(t => this.homeTaskId(t) !== id);
+	            }
+	            this.bumpImpactedHomeTaskWidgets();
+	        },
+
 	        startEditHomeTask(wid, task) {
 	            const id = this.homeTaskId(task);
 	            if (!id) return;
@@ -2588,7 +3163,7 @@ document.addEventListener('alpine:init', () => {
 
 	        async updateHomeTaskItem(wid, task, updates = {}) {
 	            const id = this.homeTaskId(task);
-	            if (!id || !updates || typeof updates !== 'object') return;
+	            if (!id || !updates || typeof updates !== 'object') return false;
 	            const previous = { ...task };
 	            Object.assign(task, updates);
 	            if (updates.priority !== undefined) {
@@ -2609,9 +3184,11 @@ document.addEventListener('alpine:init', () => {
 	                this.patchHomeTaskEverywhere(id, normalized);
 	                const list = this.homeTaskListForWidget(wid) || this.findHomeTask(id)?.list;
 	                this.refreshHomeTaskListCounts(list);
+	                return true;
 	            } catch (e) {
 	                Object.assign(task, previous);
 	                window.showMessage && window.showMessage(e.message || 'Modification impossible', 'danger');
+	                return false;
 	            }
 	        },
 
@@ -2704,16 +3281,98 @@ document.addEventListener('alpine:init', () => {
 	            container.insertBefore(item, ref);
 	        },
 
+	        reorderHomeTaskCollection(source = [], orderedIds = [], orderedTasksById = new Map(), orderMap = new Map()) {
+	            const idsInSource = new Set((source || []).map(task => this.homeTaskId(task)).filter(Boolean));
+	            const localOrderedIds = orderedIds.filter(id => idsInSource.has(id));
+	            if (!localOrderedIds.length) return source || [];
+	            let cursor = 0;
+	            return (source || []).map(task => {
+	                const id = this.homeTaskId(task);
+	                if (!id || !orderMap.has(id)) return task;
+	                const nextId = localOrderedIds[cursor++] || id;
+	                const replacement = orderedTasksById.get(nextId) || task;
+	                return this.normalizeHomeTask({ ...task, ...replacement, order: orderMap.get(nextId) });
+	            });
+	        },
+
+	        async reorderDayTaskWidget(orderedIds, wid) {
+	            const taskSources = [
+	                ...(this.todayTasks || []),
+	                ...(this.allTasks || []),
+	                ...(this.completedTodayData || []),
+	                ...((this.homeTaskLists || []).flatMap(list => list.tasks || []))
+	            ];
+	            const sourceById = new Map();
+	            taskSources.forEach(task => {
+	                const id = this.homeTaskId(task);
+	                if (id && !sourceById.has(id)) sourceById.set(id, task);
+	            });
+	            const orderedTasks = orderedIds.map(id => sourceById.get(id)).filter(Boolean);
+	            if (orderedTasks.length !== orderedIds.length) return;
+
+	            const previousAllTasks = [...(this.allTasks || [])];
+	            const previousTodayTasks = [...(this.todayTasks || [])];
+	            const previousCompletedTodayData = [...(this.completedTodayData || [])];
+	            const previousHomeTaskLists = (this.homeTaskLists || []).map(list => ({
+	                ...list,
+	                tasks: [...(list.tasks || [])]
+	            }));
+	            const orderedTasksById = new Map(orderedTasks.map(task => [this.homeTaskId(task), task]));
+	            const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+
+	            this.todayTasks = this.reorderHomeTaskCollection(this.todayTasks, orderedIds, orderedTasksById, orderMap);
+	            this.allTasks = this.reorderHomeTaskCollection(this.allTasks, orderedIds, orderedTasksById, orderMap);
+	            this.completedTodayData = this.reorderHomeTaskCollection(this.completedTodayData, orderedIds, orderedTasksById, orderMap);
+	            this.homeTaskLists = (this.homeTaskLists || []).map(list => {
+	                const tasks = this.reorderHomeTaskCollection(list.tasks, orderedIds, orderedTasksById, orderMap);
+	                if (tasks === list.tasks) return list;
+	                const nextList = { ...list, tasks };
+	                this.refreshHomeTaskListCounts(nextList);
+	                return nextList;
+	            });
+	            this.bumpHomeTaskRender(wid);
+	            this.$nextTick(() => {
+	                this.syncHomeTaskDomOrder(wid, orderedTasks);
+	                this.refreshHomeTaskSortables();
+	            });
+
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/tasks-hub/reorder`, {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ taskIds: orderedIds })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Réorganisation impossible');
+	            } catch (e) {
+	                this.allTasks = previousAllTasks;
+	                this.todayTasks = previousTodayTasks;
+	                this.completedTodayData = previousCompletedTodayData;
+	                this.homeTaskLists = previousHomeTaskLists;
+	                this.bumpHomeTaskRender(wid);
+	                this.$nextTick(() => {
+	                    this.syncHomeTaskDomOrder(wid, orderedTasks);
+	                    this.refreshHomeTaskSortables();
+	                });
+	                window.showMessage && window.showMessage(e.message || 'Réorganisation impossible', 'danger');
+	            }
+	        },
+
 	        async reorderHomeTaskWidgetFromDom(evt, wid) {
 	            const el = evt?.to || evt?.from;
 	            const list = this.homeTaskListForWidget(wid);
-	            if (!el || !list?.id) return;
+	            if (!el) return;
 	            const movedId = String(evt?.item?.dataset?.taskId || '');
 	            const orderedIds = Array.from(el.querySelectorAll(':scope > .dx-task-row'))
 	                .map(row => String(row.dataset.taskId || ''))
 	                .filter(Boolean);
 	            this.revertHomeTaskSortableDom(evt);
 	            if (!movedId || orderedIds.length < 2) return;
+	            if (!list?.id) {
+	                await this.reorderDayTaskWidget(orderedIds, wid);
+	                return;
+	            }
 	            const byId = new Map((list.tasks || []).map(task => [this.homeTaskId(task), task]));
 	            const visibleTasks = orderedIds.map(id => byId.get(id)).filter(Boolean);
 	            if (visibleTasks.length !== orderedIds.length) return;
@@ -2751,32 +3410,46 @@ document.addEventListener('alpine:init', () => {
 	        },
 
 	        async toggleHomeTaskItem(wid, task) {
-	            if (!task?._id) return;
+	            const id = this.homeTaskId(task);
+	            if (!id) return;
 	            const list = this.homeTaskListForWidget(wid);
 	            const previousStatus = task.status;
 	            const previousColor = task.statusColor;
+	            const previousCompletedAt = task.completedAt;
 	            const nextStatus = previousStatus === 'Terminé' ? 'À faire' : 'Terminé';
 	            task.status = nextStatus;
 	            task.statusColor = nextStatus === 'Terminé' ? '#22c55e' : '#9ca3af';
-	            this.patchHomeTaskEverywhere(task._id, { status: task.status, statusColor: task.statusColor });
+	            task.completedAt = nextStatus === 'Terminé' ? new Date().toISOString() : null;
+	            this.patchHomeTaskEverywhere(id, { status: task.status, statusColor: task.statusColor, completedAt: task.completedAt });
+	            if (task.isDayPriority && !(this.todayTasks || []).some(item => this.homeTaskId(item) === id)) {
+	                this.todayTasks = [...(this.todayTasks || []), this.normalizeHomeTask(task)];
+	            }
+	            this.syncCompletedTodayData(id, task);
 	            this.refreshHomeTaskListCounts(list);
 	            try {
-	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${task._id}/status`, {
+	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}/status`, {
 	                    method: 'POST',
 	                    headers: { 'Content-Type': 'application/json' },
 	                    credentials: 'include',
 	                    body: JSON.stringify({ status: nextStatus })
 	                });
 	                const data = await res.json().catch(() => ({}));
-	                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
-	                task.status = data.status || nextStatus;
-	                task.statusColor = data.statusColor || task.statusColor;
-	                this.patchHomeTaskEverywhere(task._id, { status: task.status, statusColor: task.statusColor });
+		                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+		                task.status = data.status || nextStatus;
+		                task.statusColor = data.statusColor || task.statusColor;
+		                task.completedAt = task.status === 'Terminé' ? (data.completedAt || task.completedAt || new Date().toISOString()) : null;
+		                this.patchHomeTaskEverywhere(id, { status: task.status, statusColor: task.statusColor, completedAt: task.completedAt });
+		                if (task.isDayPriority && !(this.todayTasks || []).some(item => this.homeTaskId(item) === id)) {
+		                    this.todayTasks = [...(this.todayTasks || []), this.normalizeHomeTask(task)];
+		                }
+		                this.syncCompletedTodayData(id, task);
 	                this.refreshHomeTaskListCounts(list);
 	            } catch (e) {
 	                task.status = previousStatus;
 	                task.statusColor = previousColor;
-	                this.patchHomeTaskEverywhere(task._id, { status: previousStatus, statusColor: previousColor });
+	                task.completedAt = previousCompletedAt;
+	                this.patchHomeTaskEverywhere(id, { status: previousStatus, statusColor: previousColor, completedAt: previousCompletedAt });
+	                this.syncCompletedTodayData(id, task);
 	                this.refreshHomeTaskListCounts(list);
 	                window.showMessage && window.showMessage(e.message || 'Mise à jour impossible', 'danger');
 	            }
@@ -3136,18 +3809,24 @@ document.addEventListener('alpine:init', () => {
 	                ...base,
 	                ...saved,
 	                id: wid,
-	                _id: wid,
-	                type: saved.type || base.type || wid,
-	                label: saved.label || base.label || this.customWidgetLabel(base.type || wid),
-	                icon: saved.icon || base.icon || this.customWidgetIcon(base.type || wid),
-	                color: saved.color || base.color || '#4361ee',
+		                _id: wid,
+		                type: saved.type || base.type || wid,
+		                label: saved.label || base.label || this.customWidgetLabel(base.type || wid),
+		                icon: this.normalizedHomeWidgetIcon(wid, saved.icon || base.icon || this.customWidgetIcon(base.type || wid)),
+		                color: saved.color || base.color || '#4361ee',
 	                config: {
 	                    ...(base.config || {}),
 	                    ...(saved.config || {})
 	                }
 	            };
-	        },
-	        customWidgetConfig(wid) {
+		        },
+		        normalizedHomeWidgetIcon(wid, icon) {
+		            if (wid === 'today-tasks' && icon === 'solar:checklist-minimalistic-bold-duotone') {
+		                return 'solar:calendar-date-bold-duotone';
+		            }
+		            return icon;
+		        },
+		        customWidgetConfig(wid) {
 	            if (this.isCustomWidget(wid)) return this.getCustomWidget(wid).config || {};
 	            return this.getWidgetSettings(wid).config || {};
 	        },
@@ -3712,15 +4391,236 @@ document.addEventListener('alpine:init', () => {
 	        },
 
 	        // ── Interactive widget task adapters ──
-	        todayWidgetTasks(wid) {
-	            // First try to use a task-list if configured
+	        todayDateKey(offsetDays = 0) {
+	            const date = new Date();
+	            date.setHours(12, 0, 0, 0);
+	            date.setDate(date.getDate() + Number(offsetDays || 0));
+	            return [
+	                date.getFullYear(),
+	                String(date.getMonth() + 1).padStart(2, '0'),
+	                String(date.getDate()).padStart(2, '0')
+	            ].join('-');
+	        },
+	        normalizeDayDateKey(value) {
+	            if (!value) return this.todayDateKey();
+	            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+	            const date = new Date(value);
+	            if (Number.isNaN(date.getTime())) return this.todayDateKey();
+	            return this.dateKeyFromDate(date);
+	        },
+	        dateKeyFromDate(date) {
+	            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return this.todayDateKey();
+	            return [
+	                date.getFullYear(),
+	                String(date.getMonth() + 1).padStart(2, '0'),
+	                String(date.getDate()).padStart(2, '0')
+	            ].join('-');
+	        },
+	        dateFromDayKey(dateKey) {
+	            const key = this.normalizeDayDateKey(dateKey);
+	            const [year, month, day] = key.split('-').map(Number);
+	            return new Date(year, month - 1, day, 12, 0, 0, 0);
+	        },
+	        todayWidgetDate(wid) {
+	            return this.normalizeDayDateKey(this.todayWidgetDates?.[wid] || this.todayDateKey());
+	        },
+	        setTodayWidgetDate(wid, value) {
+	            if (!wid) return;
+	            const dateKey = this.normalizeDayDateKey(value);
+	            this.todayWidgetDates = {
+	                ...(this.todayWidgetDates || {}),
+	                [wid]: dateKey
+	            };
+	            this.bumpHomeTaskRender(wid);
+	            this.$nextTick(() => this.refreshHomeTaskSortables());
+	        },
+	        openTodayWidgetDatePicker(event, wid) {
+	            const button = event?.currentTarget;
+	            const rect = button?.getBoundingClientRect?.();
+	            const selected = this.todayWidgetDate(wid);
+	            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 320;
+	            const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 480;
+	            const panelWidth = Math.min(262, Math.max(240, viewportWidth - 24));
+	            const panelHeight = 318;
+	            const margin = 8;
+	            const left = rect ? rect.left : margin;
+	            const top = rect ? rect.bottom + 8 : margin;
+	            const x = Math.max(margin, Math.min(left, viewportWidth - panelWidth - margin));
+	            let y = Math.max(margin, top);
+	            if (rect && y + panelHeight > viewportHeight - margin) {
+	                y = Math.max(margin, rect.top - panelHeight - margin);
+	            }
+	            this.closeHomeTaskMenu();
+	            this.todayWidgetCalendar = {
+	                wid,
+	                x,
+	                y,
+	                month: selected.slice(0, 7)
+	            };
+	        },
+	        closeTodayWidgetCalendar() {
+	            this.todayWidgetCalendar = null;
+	        },
+	        todayWidgetCalendarStyle() {
+	            if (!this.todayWidgetCalendar) return '';
+	            return `left:${this.todayWidgetCalendar.x || 8}px;top:${this.todayWidgetCalendar.y || 8}px;`;
+	        },
+	        todayWidgetCalendarBaseDate() {
+	            const monthKey = this.todayWidgetCalendar?.month || this.todayDateKey().slice(0, 7);
+	            const [year, month] = monthKey.split('-').map(Number);
+	            return new Date(year || new Date().getFullYear(), (month || 1) - 1, 1, 12, 0, 0, 0);
+	        },
+	        todayWidgetCalendarTitle() {
+	            const label = this.todayWidgetCalendarBaseDate().toLocaleDateString('fr-FR', {
+	                month: 'long',
+	                year: 'numeric'
+	            });
+	            return label.charAt(0).toUpperCase() + label.slice(1);
+	        },
+	        shiftTodayWidgetCalendarMonth(delta) {
+	            if (!this.todayWidgetCalendar) return;
+	            const base = this.todayWidgetCalendarBaseDate();
+	            base.setMonth(base.getMonth() + Number(delta || 0), 1);
+	            this.todayWidgetCalendar = {
+	                ...this.todayWidgetCalendar,
+	                month: this.dateKeyFromDate(base).slice(0, 7)
+	            };
+	        },
+	        todayWidgetCalendarDays() {
+	            if (!this.todayWidgetCalendar) return [];
+	            const base = this.todayWidgetCalendarBaseDate();
+	            const start = new Date(base);
+	            const mondayOffset = (base.getDay() + 6) % 7;
+	            start.setDate(base.getDate() - mondayOffset);
+	            const selected = this.todayWidgetDate(this.todayWidgetCalendar.wid);
+	            const today = this.todayDateKey();
+	            return Array.from({ length: 42 }, (_, index) => {
+	                const dayDate = new Date(start);
+	                dayDate.setDate(start.getDate() + index);
+	                const key = this.dateKeyFromDate(dayDate);
+	                return {
+	                    key,
+	                    day: dayDate.getDate(),
+	                    currentMonth: dayDate.getMonth() === base.getMonth(),
+	                    selected: key === selected,
+	                    today: key === today,
+	                    label: dayDate.toLocaleDateString('fr-FR', {
+	                        weekday: 'long',
+	                        day: 'numeric',
+	                        month: 'long',
+	                        year: 'numeric'
+	                    })
+	                };
+	            });
+	        },
+	        selectTodayWidgetCalendarDate(dateKey) {
+	            const wid = this.todayWidgetCalendar?.wid;
+	            if (!wid) return;
+	            this.setTodayWidgetDate(wid, dateKey);
+	            this.closeTodayWidgetCalendar();
+	        },
+	        selectTodayWidgetCalendarToday() {
+	            const wid = this.todayWidgetCalendar?.wid;
+	            if (!wid) return;
+	            this.setTodayWidgetDate(wid, this.todayDateKey());
+	            this.closeTodayWidgetCalendar();
+	        },
+	        selectTodayWidgetCalendarTomorrow() {
+	            const wid = this.todayWidgetCalendar?.wid;
+	            if (!wid) return;
+	            this.setTodayWidgetDate(wid, this.todayDateKey(1));
+	            this.closeTodayWidgetCalendar();
+	        },
+	        resetTodayWidgetDate(wid) {
+	            this.setTodayWidgetDate(wid, this.todayDateKey());
+	            this.closeTodayWidgetCalendar();
+	        },
+	        selectTomorrowTodayWidget(wid) {
+	            this.setTodayWidgetDate(wid, this.todayDateKey(1));
+	            this.closeTodayWidgetCalendar();
+	        },
+	        todayWidgetIsToday(wid) {
+	            return this.todayWidgetDate(wid) === this.todayDateKey();
+	        },
+	        todayWidgetIsTomorrow(wid) {
+	            return this.todayWidgetDate(wid) === this.todayDateKey(1);
+	        },
+	        todayWidgetHasCustomDate(wid) {
+	            return !this.todayWidgetIsToday(wid) && !this.todayWidgetIsTomorrow(wid);
+	        },
+	        formatDayDateKey(dateKey, options = {}) {
+	            const key = this.normalizeDayDateKey(dateKey);
+	            const [year, month, day] = key.split('-').map(Number);
+	            const date = new Date(year, month - 1, day);
+	            const format = options.long
+	                ? { day: 'numeric', month: 'long' }
+	                : { day: 'numeric', month: 'short' };
+	            return date.toLocaleDateString('fr-FR', format).replace('.', '');
+	        },
+	        todayWidgetDatePhrase(wid) {
+	            if (this.todayWidgetIsToday(wid)) return "aujourd'hui";
+	            if (this.todayWidgetIsTomorrow(wid)) return 'demain';
+	            return 'le ' + this.formatDayDateKey(this.todayWidgetDate(wid), { long: true });
+	        },
+	        todayWidgetSelectedLabel(wid) {
+	            return this.formatDayDateKey(this.todayWidgetDate(wid));
+	        },
+	        todayWidgetEmptyLabel(wid) {
+	            if (this.todayWidgetIsToday(wid)) return 'Aucune tâche pour le moment';
+	            return 'Aucune tâche pour ' + this.todayWidgetDatePhrase(wid);
+	        },
+	        todayWidgetAddPlaceholder(wid) {
+	            if (this.todayWidgetIsToday(wid)) return 'Ajouter une tâche...';
+	            return 'Ajouter une tâche pour ' + this.todayWidgetDatePhrase(wid) + '...';
+	        },
+	        taskScheduleDateKey(task = {}) {
+	            const value = task.dueDate || task.startDate;
+	            if (!value) return '';
+	            const useLocal = this.dateValueHasExplicitTime(value);
+	            return this.taskDateKey(value, useLocal);
+	        },
+	        taskMatchesTodayWidgetDate(task, wid) {
+	            const selected = this.todayWidgetDate(wid);
+	            const scheduled = this.taskScheduleDateKey(task);
+	            if (scheduled) return scheduled === selected;
+	            return selected === this.todayDateKey();
+	        },
+	        todayWidgetSourceTasks(wid) {
 	            const list = this.homeTaskListForWidget(wid);
-	            if (list) return this.homeTaskWidgetItems(wid);
-	            // Fall back to todayTasks from the hub API
-	            return (this.todayTasks || []).filter(t => t && (t._id || t.id));
+	            if (list) return (list.tasks || []).filter(t => t && (t._id || t.id));
+	            const selected = this.todayWidgetDate(wid);
+	            const byId = new Map();
+	            const addTask = task => {
+	                const id = this.homeTaskId(task);
+	                if (id && !byId.has(id)) byId.set(id, task);
+	            };
+	            (this.todayTasks || []).forEach(addTask);
+	            (this.allTasks || []).forEach(task => {
+	                if (this.taskScheduleDateKey(task) === selected) addTask(task);
+	            });
+	            const source = Array.from(byId.values());
+	            return source.filter(t => t && (t._id || t.id));
+	        },
+	        todayWidgetDateTasks(wid) {
+	            return this.todayWidgetSourceTasks(wid)
+	                .filter(task => this.taskMatchesTodayWidgetDate(task, wid));
+	        },
+	        todayWidgetTasks(wid) {
+	            const all = this.todayWidgetDateTasks(wid);
+	            if (!this.homeTaskListForWidget(wid)) return all;
+	            return all.slice(0, this.widgetLimit(wid, 8));
 	        },
 	        todayWidgetOpenTasks(wid) {
+	            const all = this.todayWidgetDateTasks(wid);
+	            return all.filter(t => t.status !== 'Terminé');
+	        },
+	        todayWidgetShowCompletedInline(wid) {
+	            return this.widgetOption(wid, 'hideCompleted', false) === true
+	                || this.widgetOption(wid, 'showCompleted', false) === true;
+	        },
+	        todayWidgetVisibleTasks(wid) {
 	            const all = this.todayWidgetTasks(wid);
+	            if (this.todayWidgetShowCompletedInline(wid)) return all;
 	            return all.filter(t => t.status !== 'Terminé');
 	        },
 	        completedTodayTasks() {
@@ -3745,8 +4645,20 @@ document.addEventListener('alpine:init', () => {
 	            }
 	            return result;
 	        },
-	        completedTodayDayTasks() {
-	            return (this.todayTasks || []).filter(t => t.status === 'Terminé');
+	        completedTodayDayTasks(wid = null) {
+	            const source = wid ? this.todayWidgetDateTasks(wid) : (this.todayTasks || []);
+	            return source.filter(t => t && t.status === 'Terminé');
+	        },
+	        completedDayTitle(wid) {
+	            const phrase = this.todayWidgetDatePhrase(wid);
+	            const prefix = this.todayWidgetIsToday(wid) ? 'Terminées ' : 'Terminées pour ';
+	            return prefix + phrase + ' (' + this.completedTodayDayTasks(wid).length + ')';
+	        },
+	        completedDayEmptyLabel(wid) {
+	            const phrase = this.todayWidgetDatePhrase(wid);
+	            return this.todayWidgetIsToday(wid)
+	                ? 'Aucune tâche terminée ' + phrase
+	                : 'Aucune tâche terminée pour ' + phrase;
 	        },
 	        allWidgetTasks(wid) {
 	            const list = this.homeTaskListForWidget(wid);
@@ -3761,36 +4673,35 @@ document.addEventListener('alpine:init', () => {
 	            if (!task?._id && !task?.id) return;
 	            const id = task._id || task.id;
 	            const prevStatus = task.status;
+	            const prevStatusColor = task.statusColor;
 	            const prevCompletedAt = task.completedAt;
 	            const nextStatus = prevStatus === 'Terminé' ? 'À faire' : 'Terminé';
 	            task.status = nextStatus;
+	            task.statusColor = nextStatus === 'Terminé' ? '#22c55e' : '#9ca3af';
 	            task.completedAt = nextStatus === 'Terminé' ? new Date().toISOString() : null;
-	            this.patchHomeTaskEverywhere(id, { status: nextStatus, completedAt: task.completedAt });
-	            // Update completedTodayData for instant UI
-	            if (nextStatus === 'Terminé') {
-	                this.completedTodayData = [...(this.completedTodayData || []).filter(t => (t._id || t.id) !== id), { ...task }];
-	            } else {
-	                this.completedTodayData = (this.completedTodayData || []).filter(t => (t._id || t.id) !== id);
-	            }
+	            this.patchHomeTaskEverywhere(id, { status: nextStatus, statusColor: task.statusColor, completedAt: task.completedAt });
+	            this.syncCompletedTodayData(id, task);
 	            try {
 	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
 	                    method: 'PUT',
 	                    headers: { 'Content-Type': 'application/json' },
-	                    credentials: 'include',
-	                    body: JSON.stringify({ status: nextStatus })
-	                });
-	                const data = await res.json().catch(() => ({}));
-	                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
-	            } catch (e) {
+		                    credentials: 'include',
+		                    body: JSON.stringify({ status: nextStatus })
+		                });
+		                const data = await res.json().catch(() => ({}));
+		                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+		                const serverTask = data.task ? this.normalizeHomeTask({ ...task, ...data.task }) : task;
+		                task.status = serverTask.status || nextStatus;
+		                task.statusColor = serverTask.statusColor || task.statusColor;
+		                task.completedAt = task.status === 'Terminé' ? (serverTask.completedAt || task.completedAt || new Date().toISOString()) : null;
+		                this.patchHomeTaskEverywhere(id, { status: task.status, statusColor: task.statusColor, completedAt: task.completedAt });
+		                this.syncCompletedTodayData(id, task);
+		            } catch (e) {
 	                task.status = prevStatus;
+	                task.statusColor = prevStatusColor;
 	                task.completedAt = prevCompletedAt;
-	                this.patchHomeTaskEverywhere(id, { status: prevStatus, completedAt: prevCompletedAt });
-	                // Rollback completedTodayData
-	                if (prevStatus === 'Terminé') {
-	                    this.completedTodayData = [...(this.completedTodayData || []).filter(t => (t._id || t.id) !== id), { ...task }];
-	                } else {
-	                    this.completedTodayData = (this.completedTodayData || []).filter(t => (t._id || t.id) !== id);
-	                }
+	                this.patchHomeTaskEverywhere(id, { status: prevStatus, statusColor: prevStatusColor, completedAt: prevCompletedAt });
+	                this.syncCompletedTodayData(id, task);
 	                window.showMessage && window.showMessage(e.message || 'Erreur', 'danger');
 	            }
 	        },
@@ -3800,21 +4711,22 @@ document.addEventListener('alpine:init', () => {
 	            if (list) return this.addHomeTaskItem(wid);
 	            // Add as personal task via hub API
 	            const title = String(this.newTaskTitles[wid] || '').trim();
-	            if (!title) return;
-	            this.newTaskTitles[wid] = '';
-	            try {
-	                const res = await fetch(`/account/${_accountNumber}/api/tasks-hub/personal-tasks`, {
-	                    method: 'POST',
-	                    headers: { 'Content-Type': 'application/json' },
+		            if (!title) return;
+		            this.newTaskTitles[wid] = '';
+		            const selectedDate = this.todayWidgetDate(wid);
+		            try {
+		                const res = await fetch(`/account/${_accountNumber}/api/tasks-hub/personal-tasks`, {
+		                    method: 'POST',
+		                    headers: { 'Content-Type': 'application/json' },
 	                    credentials: 'include',
 	                    body: JSON.stringify({
-	                        title,
-	                        status: 'À faire',
-	                        priority: 'Aucune',
-	                        isDayPriority: wid === 'priority-day',
-	                        startDate: new Date().toISOString().split('T')[0]
-	                    })
-	                });
+		                        title,
+		                        status: 'À faire',
+		                        priority: 'Aucune',
+		                        isDayPriority: wid === 'priority-day' || wid === 'today-tasks',
+		                        startDate: selectedDate
+		                    })
+		                });
 	                const data = await res.json().catch(() => ({}));
 	                if (!data.success || !data.task) throw new Error(data.error || 'Ajout impossible');
 	                const normalized = this.normalizeHomeTask(data.task);
@@ -3890,6 +4802,17 @@ document.addEventListener('alpine:init', () => {
 	        eventRecordColor(ev) {
 	            return ev?.recordColor || ev?.entityColor || ev?.color || '#4361ee';
 	        },
+	        taskRecordLabel(task) {
+	            const record = String(task?.recordTitle || '').trim();
+	            if (record && !['Record inconnu', 'Sans titre', 'Espace perso'].includes(record)) return record;
+	            return '';
+	        },
+	        taskRecordIcon(task) {
+	            return task?.recordIcon || task?.entityIcon || 'solar:folder-bold-duotone';
+	        },
+	        taskRecordColor(task) {
+	            return task?.recordColor || task?.entityColor || '#4361ee';
+	        },
 	        taskRecordItems() {
 	            const dynamic = (this.tasksByRecord || []).map((record, idx) => ({
 	                id: record.id || 'record_task_' + idx,
@@ -3925,12 +4848,49 @@ document.addEventListener('alpine:init', () => {
 	                { id: 'a5', title: 'Anniversaire Maman', meta: 'Dans 4 jours · 20 Juin', icon: 'solar:gift-bold-duotone', color: '#ec4899', link: `/account/${_accountNumber}/home` }
 	            ];
 	        },
+	        dateValueHasExplicitTime(value) {
+	            if (!value) return false;
+	            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+	            const date = new Date(value);
+	            if (Number.isNaN(date.getTime())) return false;
+	            return date.getUTCHours() !== 0
+	                || date.getUTCMinutes() !== 0
+	                || date.getUTCSeconds() !== 0
+	                || date.getUTCMilliseconds() !== 0;
+	        },
+	        taskDateKey(value, useLocal = false) {
+	            if (!value) return '';
+	            const date = new Date(value);
+	            if (Number.isNaN(date.getTime())) return '';
+	            if (!useLocal) return date.toISOString().split('T')[0];
+	            return [
+	                date.getFullYear(),
+	                String(date.getMonth() + 1).padStart(2, '0'),
+	                String(date.getDate()).padStart(2, '0')
+	            ].join('-');
+	        },
+	        taskDayDiff(value, useLocal = false) {
+	            const key = this.taskDateKey(value, useLocal);
+	            if (!key) return 0;
+	            const now = new Date();
+	            const todayKey = useLocal
+	                ? [
+	                    now.getFullYear(),
+	                    String(now.getMonth() + 1).padStart(2, '0'),
+	                    String(now.getDate()).padStart(2, '0')
+	                ].join('-')
+	                : now.toISOString().split('T')[0];
+	            const toUtcDay = raw => {
+	                const [year, month, day] = raw.split('-').map(Number);
+	                return Date.UTC(year, month - 1, day);
+	            };
+	            return Math.round((toUtcDay(key) - toUtcDay(todayKey)) / 86400000);
+	        },
 	        taskTime(task) {
 	            const value = task?.dueDate || task?.startDate;
-	            if (!value) return '—';
+	            if (!value || !this.dateValueHasExplicitTime(value)) return '';
 	            const date = new Date(value);
-	            if (Number.isNaN(date.getTime())) return '—';
-	            if (date.getHours() === 0 && date.getMinutes() === 0) return '—';
+	            if (Number.isNaN(date.getTime())) return '';
 	            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
 	        },
 	        taskDateLabel(task) {
@@ -3938,17 +4898,56 @@ document.addEventListener('alpine:init', () => {
 	            if (!value) return '';
 	            const date = new Date(value);
 	            if (Number.isNaN(date.getTime())) return '';
-	            const now = new Date();
-	            now.setHours(0, 0, 0, 0);
-	            const taskDay = new Date(date);
-	            taskDay.setHours(0, 0, 0, 0);
-	            const diffDays = Math.round((taskDay - now) / 86400000);
+	            const hasTime = this.dateValueHasExplicitTime(value);
+	            const diffDays = this.taskDayDiff(value, hasTime);
+	            const labelDate = hasTime ? date : (() => {
+	                const [year, month, day] = this.taskDateKey(value, false).split('-').map(Number);
+	                return new Date(year, month - 1, day);
+	            })();
 	            if (diffDays === 0) return "Aujourd'hui";
 	            if (diffDays === 1) return 'Demain';
 	            if (diffDays === -1) return 'Hier';
-	            if (diffDays < -1) return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
-	            if (diffDays <= 6) return date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
-	            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+	            if (diffDays < -1) return labelDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+	            if (diffDays <= 6) return labelDate.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
+	            return labelDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+	        },
+	        taskDueLabel(task) {
+	            if (!task?.dueDate || task?.status === 'Terminé') return '';
+	            const date = new Date(task.dueDate);
+	            if (Number.isNaN(date.getTime())) return '';
+	            const hasTime = this.dateValueHasExplicitTime(task.dueDate);
+	            if (!hasTime) {
+	                const diffDays = this.taskDayDiff(task.dueDate, false);
+	                if (diffDays < 0) return 'En retard';
+	                return this.taskDateLabel(task);
+	            }
+	            const diffMs = date.getTime() - Date.now();
+	            if (diffMs < 0) return 'En retard';
+	            const minutes = Math.max(1, Math.round(diffMs / 60000));
+	            if (minutes < 60) return `dans ${minutes} min`;
+	            const hours = Math.round(minutes / 60);
+	            if (hours < 24) return `dans ${hours}h`;
+	            return [this.taskDateLabel(task), this.taskTime(task)].filter(Boolean).join(' ');
+	        },
+	        taskDueState(task) {
+	            if (!task?.dueDate || task?.status === 'Terminé') return '';
+	            const date = new Date(task.dueDate);
+	            if (Number.isNaN(date.getTime())) return '';
+	            if (this.dateValueHasExplicitTime(task.dueDate)) return date.getTime() < Date.now() ? 'overdue' : 'upcoming';
+	            return this.taskDayDiff(task.dueDate, false) < 0 ? 'overdue' : 'upcoming';
+	        },
+	        taskDueTitle(task) {
+	            if (!task?.dueDate) return '';
+	            const date = new Date(task.dueDate);
+	            if (Number.isNaN(date.getTime())) return '';
+	            const hasTime = this.dateValueHasExplicitTime(task.dueDate);
+	            const labelDate = hasTime ? date : (() => {
+	                const [year, month, day] = this.taskDateKey(task.dueDate, false).split('-').map(Number);
+	                return new Date(year, month - 1, day);
+	            })();
+	            const day = labelDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+	            const time = this.taskTime(task);
+	            return `Échéance ${day}${time ? ' à ' + time : ''}`;
 	        },
 	        datePart(value, part) {
 	            const date = new Date(value);
@@ -3957,11 +4956,8 @@ document.addEventListener('alpine:init', () => {
 	            return date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase();
 	        },
 	        isOverdue(task) {
-	            if (!task.dueDate) return false;
-            const d = new Date(task.dueDate);
-            const now = new Date(); now.setHours(0,0,0,0);
-            return d < now;
-        },
+	            return this.taskDueState(task) === 'overdue';
+	        },
         timeAgo(dateStr) {
             if (!dateStr) return '';
             const diff = Date.now() - new Date(dateStr).getTime();

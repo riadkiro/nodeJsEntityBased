@@ -1353,7 +1353,7 @@ router.post('/api/record-tasks/:taskId/status', async (req, res) => {
         const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor, completedAt }, { new: true })
         if (!task) return res.status(404).json({ error: 'Task not found' })
 
-        res.json({ success: true, status: task.status, statusColor: task.statusColor })
+        res.json({ success: true, status: task.status, statusColor: task.statusColor, completedAt: task.completedAt || null })
     } catch (error) {
         console.error('[API] Task status error:', error)
         res.status(500).json({ error: error.message })
@@ -1492,7 +1492,9 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
                 dueDate: task.dueDate || null,
                 assignedTo: task.assignedTo || '',
                 order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
-                createdAt: task.createdAt
+                createdAt: task.createdAt,
+                updatedAt: task.updatedAt,
+                completedAt: task.completedAt || null
             }
         })
     } catch (error) {

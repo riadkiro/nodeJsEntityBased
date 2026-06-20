@@ -1,11 +1,31 @@
 <template x-if="wid === 'priority-day' || wid === 'today-tasks'">
     <div class="ov-card dx-card dx-priority-card" :style="'--ov-color:' + widgetColor(wid, '#805dca')">
         <div class="ov-card-header dx-card-header">
-            <div class="ov-card-title dx-card-title">
-                <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
-                <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
-                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
-            </div>
+	            <div class="ov-card-title dx-card-title">
+	                <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
+	                <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
+	                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
+	                <button type="button"
+	                        class="dx-day-nav-btn"
+	                        x-show="!todayWidgetIsToday(wid)"
+	                        @click.stop="resetTodayWidgetDate(wid)">
+	                    Aujourd'hui
+	                </button>
+	                <button type="button"
+	                        class="dx-day-nav-btn"
+	                        :class="{ 'is-active': todayWidgetIsTomorrow(wid) }"
+	                        @click.stop="selectTomorrowTodayWidget(wid)">
+	                    Demain
+	                </button>
+		                <button type="button"
+		                        class="dx-day-date-button"
+		                        :class="{ 'is-active': todayWidgetHasCustomDate(wid) }"
+		                        title="Choisir une date"
+		                        @click.stop="openTodayWidgetDatePicker($event, wid)">
+		                    <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
+		                    <span x-show="todayWidgetHasCustomDate(wid)" x-text="todayWidgetSelectedLabel(wid)"></span>
+		                </button>
+	            </div>
             <a class="ov-card-link dx-link" href="/account/<%= account_number %>/tasks">Voir tout</a>
         </div>
         <div class="ov-card-body dx-priority-body">
@@ -13,8 +33,9 @@
             <div class="dx-shopping-list dx-priority-task-list"
                  :data-task-widget-id="wid"
                  x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
-                <template x-for="item in todayWidgetOpenTasks(wid).slice(0, 40)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
+                <template x-for="item in todayWidgetVisibleTasks(wid).slice(0, 40)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                     <div class="dx-shopping-row dx-task-row dx-single-line"
+                         :class="{ 'is-done': item.status === 'Terminé' }"
                          :data-task-id="item._id || item.id"
                          @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
                         <span class="dx-task-drag" title="Réordonner" @click.stop>
@@ -22,7 +43,8 @@
                         </span>
                         <button type="button"
                                 class="dx-check"
-                                title="Marquer terminé"
+                                :class="item.status === 'Terminé' ? 'is-checked' : ''"
+                                :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
                                 @click.stop="toggleTodayTaskItem(wid, item)"></button>
                         <template x-if="editingHomeTaskId !== (item._id || item.id)">
                             <span class="dx-task-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" @dblclick.stop="startEditTodayTask(wid, item)" style="cursor:pointer;"></span>
@@ -37,38 +59,68 @@
                                    @keydown.escape.prevent="cancelEditHomeTask()"
                                    @blur="saveEditTodayTask(wid, item)">
                         </template>
-                        <span class="dx-row-meta">
-                            <span class="dx-overdue-badge" x-show="item.dueDate && new Date(item.dueDate) < new Date(new Date().toDateString())" x-text="'Échue le ' + new Date(item.dueDate).toLocaleDateString('fr-FR', {day:'numeric',month:'short'})"></span>
-                            <span class="dx-priority-badge" x-show="item.priority && item.priority !== 'Aucune'" :style="'color:' + (item.priorityColor || '#3b82f6')" x-text="item.priority"></span>
-                            <span class="dx-tag" x-show="item.recordTitle && item.recordTitle !== 'Espace perso'" :style="'--tag-color:' + (item.entityColor || '#4361ee')" x-text="item.recordTitle"></span>
-                        </span>
+	                        <span class="dx-row-meta dx-day-row-meta">
+	                            <span class="dx-task-due-badge"
+	                                  x-show="taskDueLabel(item)"
+	                                  :class="{ 'is-overdue': taskDueState(item) === 'overdue' }"
+	                                  :title="taskDueTitle(item)">
+	                                <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
+	                                <span x-text="taskDueLabel(item)"></span>
+	                            </span>
+	                            <span class="dx-task-record-line"
+	                                  x-show="taskRecordLabel(item)"
+	                                  :style="'--task-record-color:' + taskRecordColor(item)"
+	                                  :title="taskRecordLabel(item)">
+	                                <span class="dx-task-record-mini">
+	                                    <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
+	                                </span>
+	                                <span x-text="taskRecordLabel(item)"></span>
+	                            </span>
+	                            <button type="button"
+	                                    class="dx-task-priority dx-day-row-priority"
+	                                    x-show="homeTaskPriorityLabel(item.priority) !== 'Aucune'"
+	                                    :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
+	                                    :title="'Priorité ' + homeTaskPriorityLabel(item.priority)"
+	                                    @pointerdown.stop
+	                                    @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+	                                <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+	                                <span x-text="homeTaskPriorityLabel(item.priority)"></span>
+	                            </button>
+	                        </span>
                     </div>
                 </template>
-                <template x-if="todayWidgetOpenTasks(wid).length === 0">
-                    <div class="ov-custom-empty">Aucune tâche pour le moment</div>
-                </template>
-                <form class="dx-inline-add" @submit.prevent="addTodayTask(wid)">
-                    <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" placeholder="Ajouter une tâche...">
-                    <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
-                </form>
+	                <template x-if="todayWidgetVisibleTasks(wid).length === 0">
+	                    <div class="ov-custom-empty" x-text="todayWidgetEmptyLabel(wid)"></div>
+	                </template>
+	                <form class="dx-inline-add" @submit.prevent="addTodayTask(wid)">
+	                    <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" :placeholder="todayWidgetAddPlaceholder(wid)">
+	                    <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
+	                </form>
             </div>
             <!-- Right: Completed today list (only day-priority tasks) -->
-            <div class="dx-completed-today" x-show="!widgetOption(wid, 'hideCompleted', false)">
+            <div class="dx-completed-today">
                 <div class="dx-completed-header">
                     <iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;font-size:15px;"></iconify-icon>
-                    <strong x-text="'Terminées aujourd\'hui (' + completedTodayDayTasks().length + ')'"></strong>
+	                    <strong x-text="completedDayTitle(wid)"></strong>
                 </div>
                 <div class="dx-completed-list">
-                    <template x-for="item in completedTodayDayTasks()" :key="item._id || item.id">
+                    <template x-for="item in completedTodayDayTasks(wid)" :key="item._id || item.id">
                         <div class="dx-completed-row">
-                            <iconify-icon icon="solar:check-circle-bold" class="dx-done-icon" @click.stop="toggleTodayTaskItem(wid, item)" style="cursor:pointer;"></iconify-icon>
+	                            <button type="button"
+	                                    class="dx-done-action"
+	                                    title="Remettre à faire"
+	                                    aria-label="Remettre à faire"
+	                                    @click.stop="toggleTodayTaskItem(wid, item)">
+	                                <iconify-icon icon="solar:check-circle-bold" class="dx-done-icon"></iconify-icon>
+	                                <iconify-icon icon="solar:close-circle-bold" class="dx-done-remove-icon"></iconify-icon>
+	                            </button>
                             <span class="dx-done-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" style="cursor:pointer;"></span>
                             <span class="dx-done-record" x-show="item.recordTitle && item.recordTitle !== 'Espace perso'" x-text="item.recordTitle"></span>
                         </div>
                     </template>
-                    <template x-if="completedTodayDayTasks().length === 0">
-                        <div class="dx-completed-empty">Aucune tâche terminée aujourd'hui</div>
-                    </template>
+	                    <template x-if="completedTodayDayTasks(wid).length === 0">
+	                        <div class="dx-completed-empty" x-text="completedDayEmptyLabel(wid)"></div>
+	                    </template>
                 </div>
             </div>
         </div>
@@ -195,9 +247,14 @@
                             :class="item.status === 'Terminé' ? 'is-checked' : ''"
                             :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
                             @click.stop="toggleTodayTaskItem(wid, item)"></button>
-                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
-                        <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditTodayTask(wid, item)"></span>
-                    </template>
+	                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
+	                        <span class="dx-task-title-wrap">
+	                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditTodayTask(wid, item)"></span>
+	                            <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
+	                                <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+	                            </span>
+	                        </span>
+	                    </template>
                     <template x-if="editingHomeTaskId === (item._id || item.id)">
                         <input class="dx-task-edit"
                                type="text"
@@ -208,10 +265,10 @@
                                @keydown.escape.prevent="cancelEditHomeTask()"
                                @blur="saveEditTodayTask(wid, item)">
                     </template>
-                    <span class="dx-row-meta">
-                        <span class="dx-priority-badge" x-show="item.priority && item.priority !== 'Aucune'" :style="'color:' + (item.priorityColor || '#3b82f6')" x-text="item.priority"></span>
-                        <span class="dx-tag" x-show="item.recordTitle" :style="'--tag-color:' + (item.entityColor || '#805dca')" x-text="item.recordTitle"></span>
-                        <span class="dx-date-badge" x-show="taskDateLabel(item)" x-text="taskDateLabel(item)"></span>
+	                    <span class="dx-row-meta">
+	                        <span class="dx-priority-badge" x-show="item.priority && item.priority !== 'Aucune'" :style="'color:' + (item.priorityColor || '#3b82f6')" x-text="item.priority"></span>
+	                        <span class="dx-tag" x-show="item.recordTitle" :style="'--tag-color:' + (item.entityColor || '#805dca')" x-text="item.recordTitle"></span>
+	                        <span class="dx-date-badge" x-show="taskDateLabel(item)" x-text="taskDateLabel(item)"></span>
                     </span>
                 </div>
             </template>
@@ -272,9 +329,14 @@
                             :class="item.status === 'Terminé' ? 'is-checked' : ''"
                             :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
                             @click.stop="toggleHomeTaskItem(wid, item)"></button>
-                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
-                        <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
-                    </template>
+	                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
+	                        <span class="dx-task-title-wrap">
+	                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
+	                            <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
+	                                <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+	                            </span>
+	                        </span>
+	                    </template>
                     <template x-if="editingHomeTaskId === (item._id || item.id)">
                         <input class="dx-task-edit"
                                type="text"
@@ -284,18 +346,20 @@
                                @keydown.enter.prevent="saveEditHomeTask(wid, item)"
                                @keydown.escape.prevent="cancelEditHomeTask()"
                                @blur="saveEditHomeTask(wid, item)">
-                    </template>
-                    <button type="button"
-                            class="dx-task-priority"
-                            x-show="homeTaskPriorityEnabled(wid)"
-                            :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
-                            :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
-                            :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
-                            @pointerdown.stop
-                            @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
-                        <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
-                        <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
-                    </button>
+	                    </template>
+	                    <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskPriorityEnabled(wid)">
+	                        <button type="button"
+	                                class="dx-task-priority"
+	                                x-show="homeTaskPriorityEnabled(wid)"
+	                                :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+	                                :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
+	                                :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+	                                @pointerdown.stop
+	                                @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+	                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+	                            <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
+	                        </button>
+	                    </span>
                 </div>
             </template>
             <template x-if="homeTaskWidgetItems(wid).length === 0">
@@ -535,9 +599,14 @@
 	                                :class="item.status === 'Terminé' ? 'is-checked' : ''"
 	                                :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
 	                                @click.stop="toggleHomeTaskItem(wid, item)"></button>
-	                        <template x-if="editingHomeTaskId !== (item._id || item.id)">
-	                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
-	                        </template>
+		                        <template x-if="editingHomeTaskId !== (item._id || item.id)">
+		                            <span class="dx-task-title-wrap">
+		                                <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
+		                                <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
+		                                    <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+		                                </span>
+		                            </span>
+		                        </template>
 	                        <template x-if="editingHomeTaskId === (item._id || item.id)">
 	                            <input class="dx-task-edit"
 	                                   type="text"
@@ -547,18 +616,20 @@
 	                                   @keydown.enter.prevent="saveEditHomeTask(wid, item)"
 	                                   @keydown.escape.prevent="cancelEditHomeTask()"
 	                                   @blur="saveEditHomeTask(wid, item)">
-	                        </template>
-	                        <button type="button"
-	                                class="dx-task-priority"
-	                                x-show="homeTaskPriorityEnabled(wid)"
-	                                :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
-	                                :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
-	                                :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
-	                                @pointerdown.stop
-	                                @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
-	                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
-	                            <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
-	                        </button>
+		                        </template>
+		                        <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskPriorityEnabled(wid)">
+		                            <button type="button"
+		                                    class="dx-task-priority"
+		                                    x-show="homeTaskPriorityEnabled(wid)"
+		                                    :class="{ 'is-empty': !homeTaskPriorityVisible(wid, item) }"
+		                                    :style="'--priority-color:' + homeTaskPriorityColor(item.priority)"
+		                                    :title="homeTaskPriorityVisible(wid, item) ? 'Priorité ' + homeTaskPriorityLabel(item.priority) : 'Ajouter une priorité'"
+		                                    @pointerdown.stop
+		                                    @click.stop="openHomeTaskPriorityMenu($event, wid, item)">
+		                                <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+		                                <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
+		                            </button>
+		                        </span>
 	                    </div>
 	                </template>
 	                <template x-if="homeTaskWidgetItems(wid).length === 0">

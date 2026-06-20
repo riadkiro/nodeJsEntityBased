@@ -30,8 +30,13 @@
 .tdm-prop-val{margin-left:auto;color:#111827;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px}
 .tdm-prop-select{height:30px;border:1px solid #e8ecf1;border-radius:7px;background:#fff;color:#111827;font-family:inherit;font-size:12px;font-weight:700;padding:0 8px;outline:none;cursor:pointer;margin-left:auto;min-width:100px;transition:border-color .15s}
 .tdm-prop-select:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.08)}
-.tdm-prop-date{height:30px;border:1px solid #e8ecf1;border-radius:7px;background:#fff;color:#111827;font-family:inherit;font-size:12px;font-weight:700;padding:0 8px;outline:none;cursor:pointer;margin-left:auto;min-width:120px;transition:border-color .15s}
-.tdm-prop-date:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.08)}
+	.tdm-prop-date{height:30px;border:1px solid #e8ecf1;border-radius:7px;background:#fff;color:#111827;font-family:inherit;font-size:12px;font-weight:700;padding:0 8px;outline:none;cursor:pointer;margin-left:auto;min-width:120px;transition:border-color .15s}
+	.tdm-prop-date:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.08)}
+	.tdm-prop-datetime{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0}
+	.tdm-prop-datetime .tdm-prop-date{margin-left:0;min-width:112px}
+	.tdm-prop-time{height:30px;width:72px;border:1px solid #e8ecf1;border-radius:7px;background:#fff;color:#111827;font-family:inherit;font-size:12px;font-weight:700;padding:0 6px;outline:none;cursor:pointer;transition:border-color .15s}
+	.tdm-prop-time:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.08)}
+	.tdm-prop-time:disabled{opacity:.45;cursor:not-allowed}
 .tdm-toggle{position:relative;width:36px;height:20px;border-radius:999px;background:#d1d5db;cursor:pointer;transition:background .2s;border:none;padding:0;margin-left:auto;flex:0 0 auto}
 .tdm-toggle.active{background:#10b981}
 .tdm-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
@@ -55,7 +60,7 @@
 .dark .tdm-desc,.dark .tdm-msg-input{background:#0b1320;border-color:#253b5c;color:#8ea0bd}
 .dark .tdm-prop{border-color:#1b2e4b}
 .dark .tdm-prop-val{color:#e0e6ed}
-.dark .tdm-prop-select,.dark .tdm-prop-date{background:#0b1320;border-color:#253b5c;color:#e0e6ed}
+	.dark .tdm-prop-select,.dark .tdm-prop-date,.dark .tdm-prop-time{background:#0b1320;border-color:#253b5c;color:#e0e6ed}
 .dark .tdm-conv-entry{border-color:#1b2e4b}
 .dark .tdm-foot{border-color:#1b2e4b}
 .dark .tdm-close{background:#17233a;color:#8ea0bd}
@@ -123,16 +128,36 @@
                                 <span class="tdm-prop-label">Assigné</span>
                                 <span class="tdm-prop-val" x-text="$store.taskModal.task.assignedTo || 'Non assigné'" :style="!$store.taskModal.task.assignedTo ? 'color:#94a3b8' : ''"></span>
                             </div>
-                            <div class="tdm-prop">
-                                <iconify-icon icon="solar:calendar-linear" width="16"></iconify-icon>
-                                <span class="tdm-prop-label">Début</span>
-                                <input type="date" class="tdm-prop-date" :value="$store.taskModal.toDateVal($store.taskModal.task.startDate)" @change="$store.taskModal.updateField('startDate', $event.target.value || null)">
-                            </div>
-                            <div class="tdm-prop">
-                                <iconify-icon icon="solar:calendar-mark-linear" width="16"></iconify-icon>
-                                <span class="tdm-prop-label">Échéance</span>
-                                <input type="date" class="tdm-prop-date" :value="$store.taskModal.toDateVal($store.taskModal.task.dueDate)" @change="$store.taskModal.updateField('dueDate', $event.target.value || null)">
-                            </div>
+	                            <div class="tdm-prop">
+	                                <iconify-icon icon="solar:calendar-linear" width="16"></iconify-icon>
+	                                <span class="tdm-prop-label">Début</span>
+	                                <span class="tdm-prop-datetime">
+	                                    <input type="date"
+	                                           class="tdm-prop-date"
+	                                           :value="$store.taskModal.toDateVal($store.taskModal.task.startDate)"
+	                                           @change="$store.taskModal.updateTaskDatePart('startDate', 'date', $event.target.value || '')">
+	                                    <input type="time"
+	                                           class="tdm-prop-time"
+	                                           :value="$store.taskModal.toTimeVal($store.taskModal.task.startDate)"
+	                                           :disabled="!$store.taskModal.toDateVal($store.taskModal.task.startDate)"
+	                                           @change="$store.taskModal.updateTaskDatePart('startDate', 'time', $event.target.value || '')">
+	                                </span>
+	                            </div>
+	                            <div class="tdm-prop">
+	                                <iconify-icon icon="solar:calendar-mark-linear" width="16"></iconify-icon>
+	                                <span class="tdm-prop-label">Échéance</span>
+	                                <span class="tdm-prop-datetime">
+	                                    <input type="date"
+	                                           class="tdm-prop-date"
+	                                           :value="$store.taskModal.toDateVal($store.taskModal.task.dueDate)"
+	                                           @change="$store.taskModal.updateTaskDatePart('dueDate', 'date', $event.target.value || '')">
+	                                    <input type="time"
+	                                           class="tdm-prop-time"
+	                                           :value="$store.taskModal.toTimeVal($store.taskModal.task.dueDate)"
+	                                           :disabled="!$store.taskModal.toDateVal($store.taskModal.task.dueDate)"
+	                                           @change="$store.taskModal.updateTaskDatePart('dueDate', 'time', $event.target.value || '')">
+	                                </span>
+	                            </div>
                             <div class="tdm-prop">
                                 <iconify-icon icon="solar:list-linear" width="16"></iconify-icon>
                                 <span class="tdm-prop-label">Liste</span>
@@ -223,23 +248,27 @@ document.addEventListener('alpine:init', () => {
             this._onDelete = null;
         },
 
-        async updateField(field, value) {
-            if (!this.task?._id) return;
-            try {
-                const body = {};
-                body[field] = value;
-                await fetch(API + '/api/record-tasks/' + this.task._id, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(body)
-                });
-                if (this._onUpdate) this._onUpdate(this.task._id, field, value);
-                if (window.showMessage) window.showMessage('Tâche mise à jour', 'success');
-            } catch (e) {
-                console.error('[TaskModal] Update error:', e);
-                if (window.showMessage) window.showMessage('Erreur lors de la mise à jour', 'danger');
-            }
+	        async updateField(field, value) {
+	            if (!this.task?._id) return;
+	            try {
+	                const body = {};
+	                body[field] = value;
+	                const res = await fetch(API + '/api/record-tasks/' + this.task._id, {
+	                    method: 'PUT',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify(body)
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+	                const updatedTask = data.task ? { ...this.task, ...data.task } : { ...this.task, [field]: value };
+	                this.task = updatedTask;
+	                if (this._onUpdate) this._onUpdate(this.task._id, field, value, updatedTask);
+	                if (window.showMessage) window.showMessage('Tâche mise à jour', 'success');
+	            } catch (e) {
+	                console.error('[TaskModal] Update error:', e);
+	                if (window.showMessage) window.showMessage('Erreur lors de la mise à jour', 'danger');
+	            }
         },
 
         async remove() {
@@ -278,14 +307,64 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        toDateVal(value) {
-            if (!value) return '';
-            const d = new Date(value);
-            if (Number.isNaN(d.getTime())) return '';
-            return d.toISOString().split('T')[0];
-        },
+	        toDateVal(value) {
+	            if (!value) return '';
+	            const d = new Date(value);
+	            if (Number.isNaN(d.getTime())) return '';
+	            if (this.dateValueHasExplicitTime(value)) {
+	                const year = d.getFullYear();
+	                const month = String(d.getMonth() + 1).padStart(2, '0');
+	                const day = String(d.getDate()).padStart(2, '0');
+	                return `${year}-${month}-${day}`;
+	            }
+	            return d.toISOString().split('T')[0];
+	        },
 
-        formatDate(value) {
+	        toTimeVal(value) {
+	            if (!value || !this.dateValueHasExplicitTime(value)) return '';
+	            const d = new Date(value);
+	            if (Number.isNaN(d.getTime())) return '';
+	            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+	        },
+
+	        dateValueHasExplicitTime(value) {
+	            if (!value) return false;
+	            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+	            const d = new Date(value);
+	            if (Number.isNaN(d.getTime())) return false;
+	            return d.getUTCHours() !== 0
+	                || d.getUTCMinutes() !== 0
+	                || d.getUTCSeconds() !== 0
+	                || d.getUTCMilliseconds() !== 0;
+	        },
+
+	        composeDateTime(dateValue, timeValue) {
+	            const date = String(dateValue || '').trim();
+	            if (!date) return null;
+	            const time = String(timeValue || '').trim();
+	            if (!time) return date;
+	            const [year, month, day] = date.split('-').map(Number);
+	            const [hour, minute] = time.split(':').map(Number);
+	            if (!year || !month || !day || !Number.isFinite(hour) || !Number.isFinite(minute)) return date;
+	            return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
+	        },
+
+	        updateTaskDatePart(field, part, value) {
+	            if (!this.task || !['startDate', 'dueDate'].includes(field)) return;
+	            const currentDate = this.toDateVal(this.task[field]);
+	            const currentTime = this.toTimeVal(this.task[field]);
+	            const nextDate = part === 'date' ? String(value || '') : currentDate;
+	            const nextTime = part === 'time' ? String(value || '') : currentTime;
+	            const nextValue = this.composeDateTime(nextDate, nextTime);
+	            this.task[field] = nextValue;
+	            this.updateField(field, nextValue);
+	        },
+
+	        updateDueDatePart(part, value) {
+	            this.updateTaskDatePart('dueDate', part, value);
+	        },
+
+	        formatDate(value) {
             if (!value) return '—';
             const d = new Date(value);
             if (Number.isNaN(d.getTime())) return '—';

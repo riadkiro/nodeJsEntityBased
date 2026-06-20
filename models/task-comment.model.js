@@ -16,6 +16,14 @@ const TaskCommentSchema = new mongoose.Schema({
 
     // Content
     text: { type: String, default: '' },
+    attachments: [{
+        filename: { type: String, required: true },
+        originalName: { type: String, default: '' },
+        mimeType: { type: String, default: '' },
+        size: { type: Number, default: 0 },
+        uploadedAt: { type: Date, default: Date.now },
+        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
 
     // Author
     userId: { type: String, default: '' },

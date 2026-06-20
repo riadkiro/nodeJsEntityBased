@@ -29,13 +29,14 @@
 .tdm-attachment-drop{border:1.5px dashed #dbe4f0;border-radius:11px;background:#fbfcff;min-height:74px;padding:10px;display:flex;flex-direction:column;gap:7px;transition:all .14s}
 .tdm-attachment-drop:hover{border-color:#c7d2fe;background:#f8faff}
 .tdm-attachment-empty{min-height:52px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:500;text-align:center}
-.tdm-attachment-item{min-height:38px;display:flex;align-items:center;gap:9px;border:1px solid #eef2f7;border-radius:9px;background:#fff;padding:7px 8px;color:#334155;text-decoration:none}
-.tdm-attachment-icon{width:26px;height:26px;border-radius:8px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.tdm-attachment-meta{min-width:0;flex:1}
-.tdm-attachment-name{display:block;color:#1e293b;font-size:12.3px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tdm-attachment-size{display:block;margin-top:2px;color:#94a3b8;font-size:10.5px;font-weight:600;line-height:1.2}
-.tdm-attachment-remove{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:#cbd5e1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s}
-.tdm-attachment-remove:hover{background:#fef2f2;color:#ef4444}
+	.tdm-attachment-item{min-height:38px;display:flex;align-items:center;gap:9px;border:1px solid #eef2f7;border-radius:9px;background:#fff;padding:7px 8px;color:#334155;text-decoration:none}
+	.tdm-attachment-icon{width:26px;height:26px;border-radius:8px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+	.tdm-attachment-meta{min-width:0;flex:1}
+	.tdm-attachment-open{border:0;background:transparent;text-align:left;padding:0;cursor:pointer;font-family:inherit}
+	.tdm-attachment-name{display:block;color:#1e293b;font-size:12.3px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+	.tdm-attachment-size{display:block;margin-top:2px;color:#94a3b8;font-size:10.5px;font-weight:600;line-height:1.2}
+	.tdm-attachment-remove{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:#cbd5e1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s}
+	.tdm-attachment-remove:hover{background:#fef2f2;color:#ef4444}
 .tdm-prop{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 0;border-bottom:1px solid #f8f9fa}
 .tdm-prop:last-child{border-bottom:none}
 .tdm-prop-icon{width:16px;color:#bfc9d4;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -107,17 +108,53 @@
 .tdm-conv-feed::-webkit-scrollbar{width:7px}
 .tdm-conv-feed::-webkit-scrollbar-track{background:transparent}
 .tdm-conv-feed::-webkit-scrollbar-thumb{background:#dbe4f0;border-radius:999px}
-.tdm-conv-feed:hover::-webkit-scrollbar-thumb{background:#cbd5e1}
-.tdm-conv-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#bfc9d4;font-size:12px;font-weight:500;text-align:center;padding:20px}
-.tdm-conv-entry{align-self:flex-start;max-width:92%;padding:7px 10px;border-radius:12px;background:#fff;border:1px solid #e8ecf1}
-.tdm-conv-activity{align-self:center;text-align:center;background:#f8fafc;border-color:#eef2f7;color:#94a3b8}
-.tdm-conv-user{color:#64748b;font-size:10.5px;font-weight:700;line-height:1.3}
-.tdm-conv-text{color:#334155;font-size:12.5px;font-weight:500;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-.tdm-conv-date{color:#bfc9d4;font-size:9.5px;font-weight:600;margin-top:3px}
-.tdm-activity-val{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:1px 6px;font-size:9.5px;font-weight:700}
-.tdm-msg-wrap{padding:10px 12px;border-top:1px solid #f1f3f5;flex:0 0 auto}
-.tdm-msg-input{width:100%;min-height:44px;max-height:98px;border:1.5px solid #e8ecf1;border-radius:10px;color:#0e1726;font-family:inherit;font-size:12px;font-weight:500;line-height:1.5;padding:9px 12px;outline:none;background:#fff;resize:none;transition:all .15s}
-.tdm-msg-input:focus{border-color:#4361ee;box-shadow:0 0 0 3px #4361ee10}
+	.tdm-conv-feed:hover::-webkit-scrollbar-thumb{background:#cbd5e1}
+	.tdm-conv-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#bfc9d4;font-size:12px;font-weight:500;text-align:center;padding:20px}
+	.tdm-conv-entry{align-self:flex-start;max-width:92%;padding:7px 10px;border-radius:12px;background:#fff;border:1px solid #e8ecf1}
+	.tdm-conv-entry.is-message{padding:0;border:0;background:transparent;max-width:82%}
+	.tdm-conv-entry.is-mine{align-self:flex-end}
+	.tdm-conv-entry.is-other{align-self:flex-start}
+	.tdm-conv-activity{align-self:center;text-align:center;background:#f8fafc;border-color:#eef2f7;color:#94a3b8}
+	.tdm-chat-bubble{min-width:120px;border:1px solid #e8ecf1;background:#fff;border-radius:14px;padding:8px 10px;box-shadow:0 8px 18px rgba(15,23,42,.035)}
+	.tdm-conv-entry.is-mine .tdm-chat-bubble{background:#eef2ff;border-color:#dfe5ff}
+	.tdm-conv-entry.is-mine .tdm-conv-date{text-align:right}
+	.tdm-conv-user{color:#64748b;font-size:10.5px;font-weight:700;line-height:1.3}
+	.tdm-conv-text{color:#334155;font-size:12.5px;font-weight:500;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+	.tdm-conv-date{color:#bfc9d4;font-size:9.5px;font-weight:600;margin-top:3px}
+	.tdm-activity-val{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:1px 6px;font-size:9.5px;font-weight:700}
+	.tdm-msg-wrap{padding:10px 12px;border-top:1px solid #f1f3f5;flex:0 0 auto}
+	.tdm-chat-attachments{display:flex;flex-direction:column;gap:6px;margin-top:7px}
+	.tdm-chat-attachment{border:1px solid #e8ecf1;border-radius:10px;background:#fff;color:#334155;font-family:inherit;text-align:left;padding:7px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .14s;max-width:230px}
+	.tdm-chat-attachment:hover{border-color:#c7d2fe;background:#f8faff}
+	.tdm-chat-thumb{width:132px;max-width:100%;height:86px;border-radius:9px;object-fit:cover;display:block;background:#f8fafc}
+	.tdm-chat-file-icon{width:28px;height:28px;border-radius:9px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+	.tdm-chat-file-meta{min-width:0;display:flex;flex-direction:column;gap:2px}
+	.tdm-chat-file-name{font-size:11.5px;font-weight:700;line-height:1.25;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+	.tdm-chat-file-size{font-size:10px;font-weight:600;line-height:1.2;color:#94a3b8}
+	.tdm-chat-pending{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+	.tdm-chat-pending-item{height:28px;max-width:170px;border:1px solid #e8ecf1;background:#fff;border-radius:8px;padding:0 6px;display:flex;align-items:center;gap:6px;color:#334155;font-size:11px;font-weight:600}
+	.tdm-chat-pending-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+	.tdm-chat-pending-remove{width:18px;height:18px;border:0;border-radius:5px;background:transparent;color:#94a3b8;display:flex;align-items:center;justify-content:center;cursor:pointer}
+	.tdm-chat-pending-remove:hover{background:#fef2f2;color:#ef4444}
+	.tdm-chat-input-shell{border:1.5px solid #e8ecf1;border-radius:12px;background:#fff;padding:7px;transition:all .15s}
+	.tdm-chat-input-shell:focus-within{border-color:#4361ee;box-shadow:0 0 0 3px #4361ee10}
+	.tdm-chat-input-row{display:flex;align-items:flex-end;gap:7px}
+	.tdm-chat-icon-btn{width:30px;height:30px;border:0;border-radius:9px;background:#f8fafc;color:#6366f1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s;flex:0 0 auto}
+	.tdm-chat-icon-btn:hover{background:#eef2ff;color:#4361ee}
+	.tdm-chat-icon-btn:disabled{opacity:.55;cursor:not-allowed}
+	.tdm-chat-send{background:#4361ee;color:#fff}
+	.tdm-chat-send:hover{background:#3651d4;color:#fff}
+	.tdm-msg-input{width:100%;min-height:30px;max-height:98px;border:0;border-radius:0;color:#0e1726;font-family:inherit;font-size:12px;font-weight:500;line-height:1.5;padding:6px 2px;outline:none;background:transparent;resize:none}
+	.tdm-viewer-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.56);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px}
+	.tdm-viewer{width:min(980px,calc(100vw - 48px));height:min(760px,calc(100vh - 48px));background:#fff;border-radius:16px;box-shadow:0 32px 90px rgba(15,23,42,.28);display:flex;flex-direction:column;overflow:hidden}
+	.tdm-viewer-head{height:52px;border-bottom:1px solid #eef2f7;padding:0 14px 0 18px;display:flex;align-items:center;gap:10px;flex:0 0 auto}
+	.tdm-viewer-title{min-width:0;flex:1;color:#1e293b;font-size:13px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+	.tdm-viewer-action{height:32px;border:0;border-radius:9px;background:#f8fafc;color:#64748b;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:11.5px;font-weight:700;text-decoration:none;cursor:pointer;transition:all .14s}
+	.tdm-viewer-action:hover{background:#eef2ff;color:#4361ee}
+	.tdm-viewer-close{width:32px;padding:0;justify-content:center}
+	.tdm-viewer-body{flex:1;min-height:0;background:#f8fafc;display:flex;align-items:center;justify-content:center;padding:16px}
+	.tdm-viewer-image{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 16px 34px rgba(15,23,42,.12)}
+	.tdm-viewer-frame{width:100%;height:100%;border:0;border-radius:10px;background:#fff}
 .tdm-foot{height:58px;border-top:1px solid #f1f3f5;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex:0 0 auto}
 .tdm-foot-created,.tdm-foot-esc{color:#bfc9d4;font-size:11px;font-weight:600}
 .tdm-delete{height:36px;border:1.5px solid #fecaca;background:#fff;color:#ef4444;border-radius:9px;padding:0 14px;font-family:inherit;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .14s}
@@ -127,13 +164,14 @@
 .dark .tdm-modal{background:#0e1726;color:#e0e6ed;box-shadow:0 32px 90px rgba(0,0,0,.45)}
 .dark .tdm-head,.dark .tdm-main,.dark .tdm-props,.dark .tdm-conv,.dark .tdm-conv-head,.dark .tdm-msg-wrap,.dark .tdm-foot{border-color:#253b5c}
 .dark .tdm-conv,.dark .tdm-attachment-drop{background:#0b1320}
-.dark .tdm-title-input,.dark .tdm-desc,.dark .tdm-msg-input,.dark .tdm-prop-input,.dark .tdm-prop-date,.dark .tdm-prop-time,.dark .tdm-option-popover,.dark .tdm-option-search,.dark .tdm-option-editor-input,.dark .tdm-assign-popover,.dark .tdm-invite-input{background:#111f35;border-color:#253b5c;color:#e0e6ed}
-.dark .tdm-option-row{color:#e0e6ed}
-.dark .tdm-option-row:hover,.dark .tdm-option-row.active,.dark .tdm-assign-row:hover,.dark .tdm-assign-row.active{background:#1b2e4b}
-.dark .tdm-attachment-item,.dark .tdm-conv-entry{background:#111f35;border-color:#253b5c}
-.dark .tdm-attachment-name,.dark .tdm-prop-text,.dark .tdm-conv-text,.dark .tdm-assign-name{color:#e0e6ed}
-.dark .tdm-close{background:#17233a;color:#8ea0bd}
-.dark .tdm-close:hover{background:#253b5c;color:#e0e6ed}
+	.dark .tdm-title-input,.dark .tdm-desc,.dark .tdm-msg-input,.dark .tdm-prop-input,.dark .tdm-prop-date,.dark .tdm-prop-time,.dark .tdm-option-popover,.dark .tdm-option-search,.dark .tdm-option-editor-input,.dark .tdm-assign-popover,.dark .tdm-invite-input{background:#111f35;border-color:#253b5c;color:#e0e6ed}
+	.dark .tdm-option-row{color:#e0e6ed}
+	.dark .tdm-option-row:hover,.dark .tdm-option-row.active,.dark .tdm-assign-row:hover,.dark .tdm-assign-row.active{background:#1b2e4b}
+	.dark .tdm-attachment-item,.dark .tdm-conv-entry,.dark .tdm-chat-bubble,.dark .tdm-chat-attachment,.dark .tdm-chat-pending-item,.dark .tdm-chat-input-shell,.dark .tdm-viewer{background:#111f35;border-color:#253b5c}
+	.dark .tdm-conv-entry.is-mine .tdm-chat-bubble{background:#16264a;border-color:#2a3f72}
+	.dark .tdm-attachment-name,.dark .tdm-prop-text,.dark .tdm-conv-text,.dark .tdm-assign-name,.dark .tdm-chat-file-name,.dark .tdm-viewer-title{color:#e0e6ed}
+	.dark .tdm-close{background:#17233a;color:#8ea0bd}
+	.dark .tdm-close:hover{background:#253b5c;color:#e0e6ed}
 
 @media(max-width:1040px){
     .tdm-modal{width:96vw;height:94vh}
@@ -155,7 +193,7 @@
 <!-- ═══ Modal HTML ═══ -->
 <div x-data x-show="$store.taskModal.task" x-cloak>
     <div class="tdm-backdrop" :class="{'open': $store.taskModal.task}" @click.self="$store.taskModal.close()">
-        <div class="tdm-modal" @keydown.escape.window="$store.taskModal.close()" @click="$store.taskModal.closeMenus()">
+	        <div class="tdm-modal" @keydown.escape.window="$store.taskModal.viewer ? $store.taskModal.closeAttachmentViewer() : $store.taskModal.close()" @click="$store.taskModal.closeMenus()">
             <template x-if="$store.taskModal.task">
                 <div class="tdm-shell">
                     <div class="tdm-head">
@@ -193,18 +231,18 @@
                                             <span class="tdm-attachment-icon">
                                                 <iconify-icon :icon="$store.taskModal.attachmentIcon(attachment)" width="15"></iconify-icon>
                                             </span>
-                                            <a class="tdm-attachment-meta" :href="$store.taskModal.attachmentUrl(attachment)" target="_blank" rel="noopener" @click.stop>
-                                                <span class="tdm-attachment-name" x-text="attachment.originalName || attachment.filename || 'Fichier'"></span>
-                                                <span class="tdm-attachment-size" x-text="$store.taskModal.formatBytes(attachment.size)"></span>
-                                            </a>
+	                                            <button class="tdm-attachment-meta tdm-attachment-open" type="button" @click.stop="$store.taskModal.openAttachmentViewer(attachment)">
+	                                                <span class="tdm-attachment-name" x-text="attachment.originalName || attachment.filename || 'Fichier'"></span>
+	                                                <span class="tdm-attachment-size" x-text="$store.taskModal.formatBytes(attachment.size)"></span>
+	                                            </button>
                                             <button class="tdm-attachment-remove" type="button" title="Retirer" @click.stop="$store.taskModal.deleteAttachment(attachment)">
                                                 <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
                                             </button>
                                         </div>
                                     </template>
-                                </div>
-                            </div>
-                        </div>
+	        </div>
+	    </div>
+		</div>
 
                         <div class="tdm-props">
                             <div class="tdm-prop">
@@ -418,31 +456,83 @@
                                         <span style="font-size:11px">Échangez avec votre équipe ici</span>
                                     </div>
                                 </template>
-                                <template x-for="comment in ($store.taskModal.task._comments || [])" :key="comment._id || comment.text || comment.createdAt">
-                                    <div class="tdm-conv-entry" :class="{'tdm-conv-activity': comment.type === 'activity'}">
-                                        <template x-if="comment.type === 'activity'">
-                                            <div>
-                                                <span class="tdm-conv-user" x-text="comment.userName || 'Système'"></span>
+	                                <template x-for="comment in ($store.taskModal.task._comments || [])" :key="comment._id || comment.text || comment.createdAt">
+	                                    <div class="tdm-conv-entry"
+	                                         :class="{
+	                                             'tdm-conv-activity': comment.type === 'activity',
+	                                             'is-message': comment.type !== 'activity',
+	                                             'is-mine': comment.type !== 'activity' && comment.isMine,
+	                                             'is-other': comment.type !== 'activity' && !comment.isMine
+	                                         }">
+	                                        <template x-if="comment.type === 'activity'">
+	                                            <div>
+	                                                <span class="tdm-conv-user" x-text="comment.userName || 'Système'"></span>
                                                 <span class="tdm-conv-text" x-text="' a changé la ' + $store.taskModal.activityFieldLabel(comment.metadata?.field) + ' : '"></span>
                                                 <span class="tdm-activity-val" :style="$store.taskModal.activityValueStyle(comment.metadata?.field, comment.metadata?.oldValue)" x-text="comment.metadata?.oldValue || '—'"></span>
                                                 <span style="color:#bfc9d4;font-size:10px"> → </span>
                                                 <span class="tdm-activity-val" :style="$store.taskModal.activityValueStyle(comment.metadata?.field, comment.metadata?.newValue)" x-text="comment.metadata?.newValue || '—'"></span>
                                                 <div class="tdm-conv-date" x-text="$store.taskModal.formatDate(comment.createdAt)"></div>
-                                            </div>
-                                        </template>
-                                        <template x-if="comment.type !== 'activity'">
-                                            <div>
-                                                <div class="tdm-conv-user" x-text="comment.userName || 'Système'"></div>
-                                                <div class="tdm-conv-text" x-text="comment.text"></div>
-                                                <div class="tdm-conv-date" x-text="$store.taskModal.formatDate(comment.createdAt)"></div>
-                                            </div>
-                                        </template>
+	                                            </div>
+	                                        </template>
+	                                        <template x-if="comment.type !== 'activity'">
+	                                            <div class="tdm-chat-bubble">
+	                                                <template x-if="!comment.isMine">
+	                                                    <div class="tdm-conv-user" x-text="comment.userName || 'Système'"></div>
+	                                                </template>
+	                                                <template x-if="comment.text">
+	                                                    <div class="tdm-conv-text" x-text="comment.text"></div>
+	                                                </template>
+	                                                <template x-if="comment.attachments && comment.attachments.length">
+	                                                    <div class="tdm-chat-attachments">
+	                                                        <template x-for="attachment in comment.attachments" :key="attachment._id || attachment.filename">
+	                                                            <button class="tdm-chat-attachment" type="button" @click.stop="$store.taskModal.openAttachmentViewer(attachment)">
+	                                                                <template x-if="$store.taskModal.isImageAttachment(attachment)">
+	                                                                    <img class="tdm-chat-thumb" :src="$store.taskModal.attachmentUrl(attachment)" :alt="attachment.originalName || 'Image'">
+	                                                                </template>
+	                                                                <template x-if="!$store.taskModal.isImageAttachment(attachment)">
+	                                                                    <span class="tdm-chat-file-icon">
+	                                                                        <iconify-icon :icon="$store.taskModal.attachmentIcon(attachment)" width="15"></iconify-icon>
+	                                                                    </span>
+	                                                                </template>
+	                                                                <span class="tdm-chat-file-meta">
+	                                                                    <span class="tdm-chat-file-name" x-text="attachment.originalName || attachment.filename || 'Fichier'"></span>
+	                                                                    <span class="tdm-chat-file-size" x-text="$store.taskModal.formatBytes(attachment.size)"></span>
+	                                                                </span>
+	                                                            </button>
+	                                                        </template>
+	                                                    </div>
+	                                                </template>
+	                                                <div class="tdm-conv-date" x-text="$store.taskModal.formatDate(comment.createdAt)"></div>
+	                                            </div>
+	                                        </template>
                                     </div>
                                 </template>
                             </div>
-                            <div class="tdm-msg-wrap">
-                                <textarea class="tdm-msg-input" rows="2" placeholder="Écrire un message..." @keydown.enter.prevent="$store.taskModal.sendComment($event.target.value); $event.target.value = ''"></textarea>
-                            </div>
+	                            <div class="tdm-msg-wrap">
+	                                <input class="tdm-hidden-input" x-ref="taskChatFileInput" type="file" multiple @change="$store.taskModal.addChatFiles($event.target.files); $event.target.value = ''">
+	                                <div class="tdm-chat-pending" x-show="$store.taskModal.chatFiles.length" x-cloak>
+	                                    <template x-for="item in $store.taskModal.chatFiles" :key="item.id">
+	                                        <div class="tdm-chat-pending-item">
+	                                            <iconify-icon :icon="$store.taskModal.fileIcon(item.file)" width="13"></iconify-icon>
+	                                            <span class="tdm-chat-pending-name" x-text="item.name"></span>
+	                                            <button class="tdm-chat-pending-remove" type="button" @click="$store.taskModal.removeChatFile(item.id)">
+	                                                <iconify-icon icon="solar:close-circle-linear" width="13"></iconify-icon>
+	                                            </button>
+	                                        </div>
+	                                    </template>
+	                                </div>
+	                                <div class="tdm-chat-input-shell" @dragover.prevent @drop.prevent="$store.taskModal.handleChatDrop($event)">
+	                                    <div class="tdm-chat-input-row">
+	                                        <button class="tdm-chat-icon-btn" type="button" title="Ajouter un fichier" @click="$refs.taskChatFileInput.click()" :disabled="$store.taskModal.chatSending">
+	                                            <iconify-icon icon="solar:paperclip-rounded-linear" width="16"></iconify-icon>
+	                                        </button>
+	                                        <textarea class="tdm-msg-input" x-ref="taskChatText" rows="1" placeholder="Écrire un message..." @paste="$store.taskModal.handleChatPaste($event)" @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $store.taskModal.submitCommentFrom($event.target); }"></textarea>
+	                                        <button class="tdm-chat-icon-btn tdm-chat-send" type="button" title="Envoyer" @click="$store.taskModal.submitCommentFrom($refs.taskChatText)" :disabled="$store.taskModal.chatSending">
+	                                            <iconify-icon icon="solar:plain-2-bold" width="15"></iconify-icon>
+	                                        </button>
+	                                    </div>
+	                                </div>
+	                            </div>
                         </div>
                     </div>
 
@@ -454,10 +544,32 @@
                 </div>
             </template>
         </div>
-    </div>
-</div>
+	    </div>
+	    <div class="tdm-viewer-backdrop" x-show="$store.taskModal.viewer" x-cloak @click.self="$store.taskModal.closeAttachmentViewer()">
+	        <div class="tdm-viewer">
+	            <div class="tdm-viewer-head">
+	                <span class="tdm-viewer-title" x-text="$store.taskModal.viewer?.name || 'Fichier'"></span>
+	                <a class="tdm-viewer-action" :href="$store.taskModal.viewer?.downloadUrl || $store.taskModal.viewer?.url || '#'" target="_blank" rel="noopener">
+	                    <iconify-icon icon="solar:download-minimalistic-linear" width="14"></iconify-icon>
+	                    Télécharger
+	                </a>
+	                <button class="tdm-viewer-action tdm-viewer-close" type="button" @click="$store.taskModal.closeAttachmentViewer()">
+	                    <iconify-icon icon="solar:close-circle-linear" width="17"></iconify-icon>
+	                </button>
+	            </div>
+	            <div class="tdm-viewer-body">
+	                <template x-if="$store.taskModal.viewer?.type === 'image'">
+	                    <img class="tdm-viewer-image" :src="$store.taskModal.viewer.url" :alt="$store.taskModal.viewer.name || 'Image'">
+	                </template>
+	                <template x-if="$store.taskModal.viewer?.type === 'pdf'">
+	                    <iframe class="tdm-viewer-frame" :src="$store.taskModal.viewer.url" :title="$store.taskModal.viewer.name || 'PDF'"></iframe>
+	                </template>
+	            </div>
+	        </div>
+	    </div>
+	</div>
 
-<script>
+	<script>
 document.addEventListener('alpine:init', () => {
     const API = '/account/<%= account_number %>';
 
@@ -472,11 +584,14 @@ document.addEventListener('alpine:init', () => {
 	        teamMembers: [],
 	        teamInvitations: [],
 	        teamLoading: false,
-	        assignMenu: false,
-	        inviteEmail: '',
-	        inviteBusy: false,
-	        _onUpdate: null,
-	        _onDelete: null,
+		        assignMenu: false,
+		        inviteEmail: '',
+		        inviteBusy: false,
+		        chatFiles: [],
+		        chatSending: false,
+		        viewer: null,
+		        _onUpdate: null,
+		        _onDelete: null,
         defaults: {
             statuses: [
                 { label: 'À faire', color: '#9ca3af', order: 0 },
@@ -495,10 +610,13 @@ document.addEventListener('alpine:init', () => {
         },
         colorPalette: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#dc2626','#ec4899','#8b5cf6','#64748b'],
 
-	        async open(taskObj, { onUpdate, onDelete } = {}) {
-	            window.dispatchEvent(new CustomEvent('close-home-task-menu'));
-	            this.closeMenus();
-	            this.statusOptions = this.normalizeOptions(taskObj?.statuses, this.defaults.statuses);
+		        async open(taskObj, { onUpdate, onDelete } = {}) {
+		            window.dispatchEvent(new CustomEvent('close-home-task-menu'));
+		            this.closeMenus();
+		            this.clearChatFiles();
+		            this.closeAttachmentViewer();
+		            this.chatSending = false;
+		            this.statusOptions = this.normalizeOptions(taskObj?.statuses, this.defaults.statuses);
             this.priorityOptions = this.normalizeOptions(taskObj?.priorities, this.defaults.priorities);
             this.task = {
                 ...taskObj,
@@ -562,13 +680,16 @@ document.addEventListener('alpine:init', () => {
 	            }
 	        },
 
-	        close() {
-	            this.task = null;
-	            this.closeMenus();
-	            this.uploadBusy = false;
-	            this.assignMenu = false;
-	            this.inviteEmail = '';
-	            this.inviteBusy = false;
+		        close() {
+		            this.task = null;
+		            this.closeMenus();
+		            this.uploadBusy = false;
+		            this.chatSending = false;
+		            this.clearChatFiles();
+		            this.closeAttachmentViewer();
+		            this.assignMenu = false;
+		            this.inviteEmail = '';
+		            this.inviteBusy = false;
 	            this._onUpdate = null;
 	            this._onDelete = null;
 	        },
@@ -901,18 +1022,76 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        attachmentUrl(attachment) {
-            return attachment?.url || (attachment?.filename ? API + '/uploads/attachments/' + attachment.filename : '#');
-        },
+	        attachmentUrl(attachment) {
+	            return attachment?.url || (attachment?.filename ? API + '/uploads/attachments/' + attachment.filename : '#');
+	        },
 
-        attachmentIcon(attachment) {
-            const mime = String(attachment?.mimeType || '').toLowerCase();
-            if (mime.includes('image')) return 'solar:gallery-linear';
-            if (mime.includes('pdf')) return 'solar:file-text-linear';
+	        attachmentDownloadUrl(attachment) {
+	            return attachment?.downloadUrl || this.attachmentUrl(attachment);
+	        },
+
+	        attachmentName(attachment) {
+	            return String(attachment?.originalName || attachment?.filename || 'Fichier');
+	        },
+
+	        attachmentExtension(attachment) {
+	            const name = this.attachmentName(attachment).split('?')[0].toLowerCase();
+	            const index = name.lastIndexOf('.');
+	            return index >= 0 ? name.slice(index) : '';
+	        },
+
+	        isImageAttachment(attachment) {
+	            const mime = String(attachment?.mimeType || '').toLowerCase();
+	            const ext = this.attachmentExtension(attachment);
+	            return mime.startsWith('image/') && mime !== 'image/svg+xml'
+	                || ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif'].includes(ext);
+	        },
+
+	        isPdfAttachment(attachment) {
+	            const mime = String(attachment?.mimeType || '').toLowerCase();
+	            return mime.includes('pdf') || this.attachmentExtension(attachment) === '.pdf';
+	        },
+
+	        openAttachmentViewer(attachment) {
+	            const url = this.attachmentUrl(attachment);
+	            if (!url || url === '#') return;
+	            if (this.isImageAttachment(attachment)) {
+	                this.viewer = {
+	                    type: 'image',
+	                    url,
+	                    downloadUrl: this.attachmentDownloadUrl(attachment),
+	                    name: this.attachmentName(attachment)
+	                };
+	                return;
+	            }
+	            if (this.isPdfAttachment(attachment)) {
+	                this.viewer = {
+	                    type: 'pdf',
+	                    url,
+	                    downloadUrl: this.attachmentDownloadUrl(attachment),
+	                    name: this.attachmentName(attachment)
+	                };
+	                return;
+	            }
+	            window.open(this.attachmentDownloadUrl(attachment), '_blank', 'noopener');
+	        },
+
+	        closeAttachmentViewer() {
+	            this.viewer = null;
+	        },
+
+	        attachmentIcon(attachment) {
+	            const mime = String(attachment?.mimeType || '').toLowerCase();
+	            if (mime.includes('image')) return 'solar:gallery-linear';
+	            if (mime.includes('pdf')) return 'solar:file-text-linear';
             if (mime.includes('spreadsheet') || mime.includes('excel') || mime.includes('csv')) return 'solar:document-add-linear';
             if (mime.includes('word') || mime.includes('document')) return 'solar:document-text-linear';
-            return 'solar:paperclip-rounded-linear';
-        },
+	            return 'solar:paperclip-rounded-linear';
+	        },
+
+	        fileIcon(file) {
+	            return this.attachmentIcon({ mimeType: file?.type || '', originalName: file?.name || '' });
+	        },
 
         formatBytes(bytes) {
             const size = Number(bytes || 0);
@@ -940,24 +1119,96 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async sendComment(text) {
-            if (!this.task?._id || !text?.trim()) return;
-            try {
-                const res = await fetch(API + '/api/record-tasks/' + this.task._id + '/comments', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ text: text.trim() })
-                });
-	                const data = await res.json();
-	                if (data.success && data.comment) {
-	                    this.task._comments = this.sortConversation([...(this.task._comments || []), data.comment]);
-	                    this.scrollConversationToRecent({ smooth: true });
+	        addChatFiles(files) {
+	            const list = Array.from(files || []).filter(Boolean);
+	            if (!list.length) return;
+	            const next = list.slice(0, Math.max(0, 10 - this.chatFiles.length)).map((file) => ({
+	                id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+	                file,
+	                name: file.name || 'Image collée',
+	                size: file.size || 0,
+	                type: file.type || '',
+	                previewUrl: file.type?.startsWith('image/') ? URL.createObjectURL(file) : ''
+	            }));
+	            this.chatFiles = [...this.chatFiles, ...next];
+	        },
+
+	        removeChatFile(id) {
+	            const item = this.chatFiles.find(file => file.id === id);
+	            if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+	            this.chatFiles = this.chatFiles.filter(file => file.id !== id);
+	        },
+
+	        clearChatFiles() {
+	            (this.chatFiles || []).forEach(item => {
+	                if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+	            });
+	            this.chatFiles = [];
+	        },
+
+	        handleChatPaste(event) {
+	            const items = Array.from(event.clipboardData?.items || []);
+	            const pasted = items
+	                .filter(item => item.kind === 'file')
+	                .map(item => item.getAsFile())
+	                .filter(file => file && String(file.type || '').startsWith('image/'));
+	            const files = pasted.length
+	                ? pasted
+	                : Array.from(event.clipboardData?.files || []).filter(file => String(file.type || '').startsWith('image/'));
+	            if (!files.length) return;
+	            event.preventDefault();
+	            this.addChatFiles(files);
+	        },
+
+	        handleChatDrop(event) {
+	            this.addChatFiles(event.dataTransfer?.files || []);
+	        },
+
+	        async submitCommentFrom(input) {
+	            const sent = await this.sendComment(input?.value || '');
+	            if (sent && input) {
+	                input.value = '';
+	                input.style.height = '';
+	            }
+	        },
+
+	        async sendComment(text) {
+	            const cleanText = String(text || '').trim();
+	            const files = (this.chatFiles || []).map(item => item.file).filter(Boolean);
+	            if (!this.task?._id || (!cleanText && !files.length) || this.chatSending) return false;
+	            this.chatSending = true;
+	            try {
+	                let payload;
+	                const options = {
+	                    method: 'POST',
+	                    credentials: 'include'
+	                };
+	                if (files.length) {
+	                    payload = new FormData();
+	                    payload.append('text', cleanText);
+	                    files.forEach(file => payload.append('files', file, file.name || 'image-collee.png'));
+	                    options.body = payload;
+	                } else {
+	                    options.headers = { 'Content-Type': 'application/json' };
+	                    options.body = JSON.stringify({ text: cleanText });
 	                }
-	            } catch (e) {
-                console.error('[TaskModal] Comment error:', e);
-            }
-        },
+	                const res = await fetch(API + '/api/record-tasks/' + this.task._id + '/comments', options);
+		                const data = await res.json().catch(() => ({}));
+		                if (!res.ok || data.success === false) throw new Error(data.error || 'Message impossible');
+		                if (data.comment) {
+		                    this.clearChatFiles();
+		                    this.task._comments = this.sortConversation([...(this.task._comments || []), data.comment]);
+		                    this.scrollConversationToRecent({ smooth: true });
+		                    return true;
+		                }
+		            } catch (e) {
+	                console.error('[TaskModal] Comment error:', e);
+	                if (window.showMessage) window.showMessage(e.message || 'Erreur lors de l’envoi du message', 'danger');
+	            } finally {
+	                this.chatSending = false;
+	            }
+	            return false;
+	        },
 
         toDateVal(value) {
             if (!value) return '';

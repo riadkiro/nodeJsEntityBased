@@ -1026,9 +1026,9 @@ const defaultTaskPriorities = [
     { label: 'Urgente', color: '#dc2626', order: 4 },
 ]
 
-const taskAttachmentUrl = (req, attachment = {}) => {
+const taskAttachmentUrl = (req, attachment = {}, { download = false } = {}) => {
     if (!attachment.filename) return ''
-    const dl = attachment.originalName ? `?dl=${encodeURIComponent(attachment.originalName)}` : ''
+    const dl = download && attachment.originalName ? `?dl=${encodeURIComponent(attachment.originalName)}` : ''
     return `/account/${req.account_number}/uploads/attachments/${attachment.filename}${dl}`
 }
 
@@ -1040,8 +1040,28 @@ const taskAttachmentPayload = (req, attachment = {}) => ({
     size: Number(attachment.size || 0),
     uploadedAt: attachment.uploadedAt || null,
     uploadedBy: attachment.uploadedBy || null,
-    url: taskAttachmentUrl(req, attachment)
+    url: taskAttachmentUrl(req, attachment),
+    downloadUrl: taskAttachmentUrl(req, attachment, { download: true })
 })
+
+const serializeTaskComment = (req, comment = {}) => {
+    const currentUserId = req.user?._id?.toString?.() || ''
+    const userId = comment.userId?.toString?.() || String(comment.userId || '')
+    return {
+        _id: comment._id?.toString?.() || String(comment._id || ''),
+        taskId: comment.taskId?.toString?.() || String(comment.taskId || ''),
+        type: comment.type,
+        text: comment.text,
+        userId,
+        userName: comment.userName,
+        userAvatar: comment.userAvatar,
+        metadata: comment.metadata || {},
+        attachments: (comment.attachments || []).map(att => taskAttachmentPayload(req, att)),
+        publishedToChat: comment.publishedToChat || false,
+        isMine: !!currentUserId && userId === currentUserId,
+        createdAt: comment.createdAt
+    }
+}
 
 const normalizeTaskOptions = (options, fallback) => {
     const source = Array.isArray(options) && options.length > 0 ? options : fallback
@@ -1480,8 +1500,20 @@ router.delete('/api/task-lists/:listId', async (req, res) => {
         const list = await TaskList.findByIdAndDelete(req.params.listId)
         if (!list) return res.status(404).json({ error: 'List not found' })
 
-        // Also delete all tasks in this list
+        // Also delete all tasks in this list and their uploaded files
+        const tasks = await RecordTask.find({ taskListId: req.params.listId }).select('attachments').lean()
+        const taskIds = tasks.map(task => task._id)
+        const comments = taskIds.length
+            ? await TaskComment.find({ taskId: { $in: taskIds } }).select('attachments').lean()
+            : []
+        tasks.forEach(task => {
+            ;(task.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
+        })
+        comments.forEach(comment => {
+            ;(comment.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
+        })
         await RecordTask.deleteMany({ taskListId: req.params.listId })
+        if (taskIds.length) await TaskComment.deleteMany({ taskId: { $in: taskIds } })
 
         res.json({ success: true })
     } catch (error) {
@@ -1681,9 +1713,14 @@ router.delete('/api/record-tasks/:taskId/attachments/:attachmentId', async (req,
  */
 router.delete('/api/record-tasks/:taskId', async (req, res) => {
     try {
+        const comments = await TaskComment.find({ taskId: req.params.taskId }).select('attachments').lean()
         const task = await RecordTask.findByIdAndDelete(req.params.taskId)
         if (!task) return res.status(404).json({ error: 'Task not found' })
         ;(task.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
+        comments.forEach(comment => {
+            ;(comment.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
+        })
+        await TaskComment.deleteMany({ taskId: req.params.taskId })
         res.json({ success: true })
     } catch (error) {
         console.error('[API] Delete task error:', error)
@@ -1840,18 +1877,7 @@ router.get('/api/record-tasks/:taskId/comments', async (req, res) => {
 
         res.json({
             success: true,
-            comments: comments.map(c => ({
-                _id: c._id.toString(),
-                taskId: c.taskId.toString(),
-                type: c.type,
-                text: c.text,
-                userId: c.userId,
-                userName: c.userName,
-                userAvatar: c.userAvatar,
-                metadata: c.metadata || {},
-                publishedToChat: c.publishedToChat || false,
-                createdAt: c.createdAt
-            }))
+            comments: comments.map(c => serializeTaskComment(req, c))
         })
     } catch (error) {
         console.error('[API] Get task comments error:', error)
@@ -1861,25 +1887,55 @@ router.get('/api/record-tasks/:taskId/comments', async (req, res) => {
 
 /**
  * POST /account/:account_number/api/record-tasks/:taskId/comments
- * Post a comment on a task, optionally publish to record chat
+ * Post a comment on a task, optionally with attachments.
  */
-router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
+router.post('/api/record-tasks/:taskId/comments', (req, res, next) => {
+    const contentType = String(req.headers['content-type'] || '').toLowerCase()
+    if (!contentType.includes('multipart/form-data')) return next()
+    taskAttachmentUpload.array('files', 10)(req, res, (err) => {
+        if (err) {
+            ;(req.files || []).forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
+            return res.status(400).json({ success: false, error: err.message })
+        }
+        next()
+    })
+}, async (req, res) => {
     try {
         const { text, publishToChat } = req.body
-        if (!text?.trim()) return res.status(400).json({ error: 'Comment text required' })
+        const cleanText = cleanTaskText(text, '')
+        const files = Array.isArray(req.files) ? req.files : []
+        if (!cleanText && files.length === 0) return res.status(400).json({ error: 'Comment text or attachment required' })
 
         const task = await RecordTask.findById(req.params.taskId).lean()
-        if (!task) return res.status(404).json({ error: 'Task not found' })
+        if (!task) {
+            files.forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
+            return res.status(404).json({ error: 'Task not found' })
+        }
 
         const userId = req.user?._id?.toString() || ''
         const userName = req.user?.name || 'Anonyme'
         const userAvatar = req.user?.avatar || ''
+        const attachments = files
+            .map(file => ({
+                filename: taskAttachmentRelativePath(req, file.path),
+                originalName: file.originalname || file.filename,
+                mimeType: file.mimetype || '',
+                size: file.size || 0,
+                uploadedAt: new Date(),
+                uploadedBy: req.user?._id
+            }))
+            .filter(file => file.filename)
+        if (files.length && attachments.length === 0) {
+            files.forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
+            return res.status(400).json({ success: false, error: 'Fichier invalide' })
+        }
 
         const comment = await TaskComment.create({
             taskId: task._id,
             recordId: task.recordId,
             type: 'comment',
-            text: text.trim(),
+            text: cleanText,
+            attachments,
             userId,
             userName,
             userAvatar,
@@ -1887,7 +1943,7 @@ router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
         })
 
         // If publishToChat is true, also send to the record's chat conversation
-        if (publishToChat) {
+        if (publishToChat && cleanText) {
             try {
                 const Conversation = await tenantCollection(req, 'Conversation')
                 const Message = await tenantCollection(req, 'Message')
@@ -1931,7 +1987,7 @@ router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
                     })
                 }
 
-                const chatText = `__TASK__${task._id}|${task.title}__END__\n${text.trim()}`
+                const chatText = `__TASK__${task._id}|${task.title}__END__\n${cleanText}`
                 await Message.create({
                     conversationId: conv._id,
                     senderId: userId,
@@ -1963,20 +2019,10 @@ router.post('/api/record-tasks/:taskId/comments', async (req, res) => {
 
         res.json({
             success: true,
-            comment: {
-                _id: comment._id.toString(),
-                taskId: comment.taskId.toString(),
-                type: comment.type,
-                text: comment.text,
-                userId: comment.userId,
-                userName: comment.userName,
-                userAvatar: comment.userAvatar,
-                metadata: comment.metadata || {},
-                publishedToChat: comment.publishedToChat,
-                createdAt: comment.createdAt
-            }
+            comment: serializeTaskComment(req, comment)
         })
     } catch (error) {
+        ;(req.files || []).forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
         console.error('[API] Post task comment error:', error)
         res.status(500).json({ error: error.message })
     }

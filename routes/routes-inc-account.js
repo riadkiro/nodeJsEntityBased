@@ -688,6 +688,8 @@ router.get("/api/home-overview", async (req, res) => {
             if (Number.isNaN(date.getTime())) return false;
             return date < start;
         };
+        const overdueReferenceDate = task => task?.dueDate || task?.startDate || null;
+        const isTaskOverdue = task => !isDone(task) && isBeforeToday(overdueReferenceDate(task));
         const isTodayList = list => /^(g[eé]n[eé]ral|t[âa]ches?\s+du\s+jour)$/i.test(String(list?.label || '').trim());
         const cleanLabel = label => String(label || '').trim().toLowerCase() === 'général' ? 'Tâches du jour' : (String(label || '').trim() || 'Tâches du jour');
         const recordTitle = record => record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
@@ -748,8 +750,8 @@ router.get("/api/home-overview", async (req, res) => {
         });
 
 	        const compareHomeTasks = (a, b) => {
-	            const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
-	            const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;
+	            const aOverdue = isTaskOverdue(a) ? 0 : 1;
+	            const bOverdue = isTaskOverdue(b) ? 0 : 1;
 	            if (aOverdue !== bOverdue) return aOverdue - bOverdue;
 	            const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
 	            const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
@@ -1063,7 +1065,7 @@ router.get("/api/home-overview", async (req, res) => {
 	        const totalTasks = taskRows.length;
 	        const doneTasks = taskRows.filter(isDone).length;
 	        const openTasks = totalTasks - doneTasks;
-	        const overdueCount = taskRows.filter(task => task.status !== 'Terminé' && isBeforeToday(task.dueDate)).length;
+	        const overdueCount = taskRows.filter(isTaskOverdue).length;
 	        const weekEnd = new Date(start);
 	        weekEnd.setDate(weekEnd.getDate() + 7);
 	        const weekEvents = eventRecordsRaw.filter(event => {

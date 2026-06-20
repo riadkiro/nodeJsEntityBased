@@ -4778,7 +4778,12 @@ document.addEventListener('alpine:init', () => {
 	            return date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase();
 	        },
 	        isOverdue(task) {
-	            return this.taskDueState(task) === 'overdue';
+	            if (!task || task.status === 'Terminé') return false;
+	            if (task.dueDate) return this.taskDueState(task) === 'overdue';
+	            if (!task.startDate) return false;
+	            const date = new Date(task.startDate);
+	            if (Number.isNaN(date.getTime())) return false;
+	            return this.taskDayDiff(task.startDate, this.dateValueHasExplicitTime(task.startDate)) < 0;
 	        },
         timeAgo(dateStr) {
             if (!dateStr) return '';

@@ -3,7 +3,7 @@
         <div class="ov-card-header dx-card-header">
             <div class="ov-card-title dx-card-title">
                 <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
-                <span x-text="widgetTitle(wid, 'Priorités du jour')"></span>
+                <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
                 <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
             </div>
             <a class="ov-card-link dx-link" href="/account/<%= account_number %>/tasks">Voir tout</a>
@@ -41,33 +41,33 @@
                         </template>
                         <span class="dx-row-meta">
                             <span class="dx-priority-badge" x-show="item.priority && item.priority !== 'Aucune'" :style="'color:' + (item.priorityColor || '#3b82f6')" x-text="item.priority"></span>
-                            <span class="dx-tag" x-show="item.recordTitle" :style="'--tag-color:' + (item.entityColor || '#4361ee')" x-text="item.recordTitle"></span>
+                            <span class="dx-tag" x-show="item.recordTitle && item.recordTitle !== 'Espace perso'" :style="'--tag-color:' + (item.entityColor || '#4361ee')" x-text="item.recordTitle"></span>
                         </span>
                     </div>
                 </template>
                 <template x-if="todayWidgetOpenTasks(wid).length === 0">
-                    <div class="ov-custom-empty">Aucune priorité pour le moment</div>
+                    <div class="ov-custom-empty">Aucune tâche pour le moment</div>
                 </template>
                 <form class="dx-inline-add" @submit.prevent="addTodayTask(wid)">
                     <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" placeholder="Ajouter une tâche...">
                     <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
                 </form>
             </div>
-            <!-- Right: Completed today list -->
+            <!-- Right: Completed today list (only day-priority tasks) -->
             <div class="dx-completed-today">
                 <div class="dx-completed-header">
                     <iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;font-size:15px;"></iconify-icon>
-                    <strong x-text="'Terminées aujourd\'hui (' + completedTodayTasks().length + ')'"></strong>
+                    <strong x-text="'Terminées aujourd\'hui (' + completedTodayDayTasks().length + ')'"></strong>
                 </div>
                 <div class="dx-completed-list">
-                    <template x-for="item in completedTodayTasks()" :key="item._id || item.id">
+                    <template x-for="item in completedTodayDayTasks()" :key="item._id || item.id">
                         <div class="dx-completed-row" @click.stop="toggleTodayTaskItem(wid, item)">
                             <iconify-icon icon="solar:check-circle-bold" class="dx-done-icon"></iconify-icon>
                             <span class="dx-done-title" x-text="item.title"></span>
-                            <span class="dx-done-record" x-show="item.recordTitle" x-text="item.recordTitle"></span>
+                            <span class="dx-done-record" x-show="item.recordTitle && item.recordTitle !== 'Espace perso'" x-text="item.recordTitle"></span>
                         </div>
                     </template>
-                    <template x-if="completedTodayTasks().length === 0">
+                    <template x-if="completedTodayDayTasks().length === 0">
                         <div class="dx-completed-empty">Aucune tâche terminée aujourd'hui</div>
                     </template>
                 </div>

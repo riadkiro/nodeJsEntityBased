@@ -672,6 +672,7 @@ router.get("/api/home-overview", async (req, res) => {
                 createdAt: task.createdAt || null,
                 updatedAt: task.updatedAt || null,
                 completedAt: task.completedAt || null,
+                isDayPriority: !!task.isDayPriority,
                 order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
                 listId,
                 taskListId: listId,
@@ -692,7 +693,7 @@ router.get("/api/home-overview", async (req, res) => {
         });
 
 	        const todayTasks = taskRows
-	            .filter(task => task.status !== 'Terminé' && (inToday(task.dueDate) || inToday(task.startDate) || task.listIsToday))
+	            .filter(task => task.status !== 'Terminé' && (task.isDayPriority || inToday(task.dueDate) || inToday(task.startDate) || task.listIsToday))
 	            .sort((a, b) => {
                 const aOverdue = isBeforeToday(a.dueDate) ? 0 : 1;
                 const bOverdue = isBeforeToday(b.dueDate) ? 0 : 1;

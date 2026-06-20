@@ -2004,6 +2004,14 @@
             <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
             Modifier
         </button>
+        <button type="button" x-show="!homeTaskMenu?.priorityOnly && !isTaskDayPriority(homeTaskMenu?.taskId)" @click="addToDayPriorityFromMenu()">
+            <iconify-icon icon="solar:star-bold-duotone" width="14" style="color:#f59e0b;"></iconify-icon>
+            Ajouter à : Tâches du jour
+        </button>
+        <button type="button" x-show="!homeTaskMenu?.priorityOnly && isTaskDayPriority(homeTaskMenu?.taskId)" @click="removeFromDayPriorityFromMenu()">
+            <iconify-icon icon="solar:star-line-duotone" width="14" style="color:#94a3b8;"></iconify-icon>
+            Retirer des Tâches du jour
+        </button>
         <div class="dx-task-ctx-label">Priorité</div>
         <div class="dx-task-ctx-priorities">
             <template x-for="priority in homeTaskPriorityChoices" :key="priority.label">
@@ -2225,7 +2233,8 @@ document.addEventListener('alpine:init', () => {
 	                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
 	                createdAt: task.createdAt || null,
 	                updatedAt: task.updatedAt || null,
-	                completedAt: task.completedAt || null
+	                completedAt: task.completedAt || null,
+	                isDayPriority: !!task.isDayPriority
 	            };
 	        },
 
@@ -2425,8 +2434,8 @@ document.addEventListener('alpine:init', () => {
 
 	        openHomeTaskMenu(event, wid, task, options = {}) {
 	            if (!task || !this.homeTaskId(task)) return;
-	            const width = 190;
-	            const height = options.priorityOnly ? 126 : 208;
+	            const width = 240;
+	            const height = options.priorityOnly ? 126 : 260;
 	            const source = event?.currentTarget || event?.target;
 	            const rect = source?.getBoundingClientRect?.();
 	            const rawX = event?.clientX || (rect ? rect.right : 0);
@@ -2465,6 +2474,37 @@ document.addEventListener('alpine:init', () => {
 	            await this.updateHomeTaskItem(ctx.wid, found.task, { priority });
 	            this.bumpHomeTaskRender(ctx.wid);
 	            this._saveLayout();
+	        },
+
+	        isTaskDayPriority(taskId) {
+	            if (!taskId) return false;
+	            const found = this.findHomeTask(taskId);
+	            return !!found?.task?.isDayPriority;
+	        },
+
+	        async addToDayPriorityFromMenu() {
+	            const ctx = this.homeTaskMenu;
+	            const found = this.findHomeTask(ctx?.taskId);
+	            if (!ctx || !found) return;
+	            this.closeHomeTaskMenu();
+	            await this.updateHomeTaskItem(ctx.wid, found.task, { isDayPriority: true });
+	            // Also add to todayTasks for immediate UI
+	            const id = this.homeTaskId(found.task);
+	            if (!this.todayTasks.find(t => (t._id || t.id) === id)) {
+	                this.todayTasks = [...this.todayTasks, found.task];
+	            }
+	            this.bumpHomeTaskRender('priority-day');
+	            this.bumpHomeTaskRender('today-tasks');
+	        },
+
+	        async removeFromDayPriorityFromMenu() {
+	            const ctx = this.homeTaskMenu;
+	            const found = this.findHomeTask(ctx?.taskId);
+	            if (!ctx || !found) return;
+	            this.closeHomeTaskMenu();
+	            await this.updateHomeTaskItem(ctx.wid, found.task, { isDayPriority: false });
+	            this.bumpHomeTaskRender('priority-day');
+	            this.bumpHomeTaskRender('today-tasks');
 	        },
 
 	        startEditHomeTask(wid, task) {
@@ -3667,6 +3707,9 @@ document.addEventListener('alpine:init', () => {
 	            }
 	            return result;
 	        },
+	        completedTodayDayTasks() {
+	            return this.completedTodayTasks().filter(t => !!t.isDayPriority);
+	        },
 	        allWidgetTasks(wid) {
 	            const list = this.homeTaskListForWidget(wid);
 	            if (list) return this.homeTaskWidgetItems(wid);
@@ -3729,7 +3772,7 @@ document.addEventListener('alpine:init', () => {
 	                    body: JSON.stringify({
 	                        title,
 	                        status: 'À faire',
-	                        priority: wid === 'priority-day' ? 'Haute' : 'Aucune',
+	                        priority: 'Aucune',
 	                        isDayPriority: wid === 'priority-day',
 	                        startDate: new Date().toISOString().split('T')[0]
 	                    })

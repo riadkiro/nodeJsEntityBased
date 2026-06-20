@@ -1265,15 +1265,23 @@
         display: block;
         pointer-events: none;
     }
-	    .dx-overdue-badge {
-	        font-size: 10px;
-	        font-weight: 600;
-	        color: #ef4444;
-	        background: rgba(239, 68, 68, .08);
-        padding: 1px 6px;
-        border-radius: 4px;
-	        white-space: nowrap;
-	    }
+		    .dx-overdue-badge {
+		        min-height: 22px;
+		        display: inline-flex;
+		        align-items: center;
+		        gap: 4px;
+		        color: #d97706;
+		        background: #fff7ed;
+		        border: 1px solid #fed7aa;
+	        padding: 0 7px;
+	        border-radius: 8px;
+		        font-size: 10.5px;
+		        font-weight: 800;
+		        line-height: 1;
+		        white-space: nowrap;
+		        align-self: center;
+		    }
+		    .dx-overdue-badge iconify-icon { flex: 0 0 auto; }
 	    .dx-task-due-badge {
 	        height: 20px;
 	        display: inline-flex;
@@ -2013,7 +2021,7 @@
     .dark .dx-record-task-row span:not(.home-mini-icon),
     .dark .dx-date-badge,
     .dark .dx-stat-grid .home-stat-card span { color: #94a3b8; }
-    .dark .dx-overdue-badge { color: #f87171; background: rgba(239, 68, 68, .12); }
+	    .dark .dx-overdue-badge { color: #fbbf24; background: rgba(245, 158, 11, .14); border-color: rgba(245, 158, 11, .28); }
     .dark .ov-card.dx-card,
     .dark .dx-ring span { background: #0e1726; }
     .dark .dx-ring { background: conic-gradient(#536cff calc(var(--value) * 1%), #253b5c 0); }
@@ -4408,13 +4416,29 @@ document.addEventListener('alpine:init', () => {
 	            if (!this.homeTaskListForWidget(wid)) return all;
 	            return all.slice(0, this.widgetLimit(wid, 8));
 	        },
-	        todayWidgetOpenTasks(wid) {
-	            const all = this.todayWidgetDateTasks(wid);
-	            return all.filter(t => t.status !== 'Terminé');
-	        },
-	        todayWidgetShowCompletedInline(wid) {
-	            return this.widgetOption(wid, 'hideCompleted', false) === true
-	                || this.widgetOption(wid, 'showCompleted', false) === true;
+		        todayWidgetOpenTasks(wid) {
+		            const all = this.todayWidgetDateTasks(wid);
+		            return all.filter(t => t.status !== 'Terminé');
+		        },
+		        todayWidgetOverdueTasks(wid) {
+		            const list = this.homeTaskListForWidget(wid);
+		            const source = list
+		                ? (list.tasks || [])
+		                : [...(this.allTasks || []), ...(this.todayTasks || [])];
+		            const seen = new Set();
+		            return source.filter(task => {
+		                const id = this.homeTaskId(task);
+		                if (!id || seen.has(id) || task.status === 'Terminé' || !this.isOverdue(task)) return false;
+		                seen.add(id);
+		                return true;
+		            });
+		        },
+		        todayWidgetOverdueCount(wid) {
+		            return this.todayWidgetOverdueTasks(wid).length;
+		        },
+		        todayWidgetShowCompletedInline(wid) {
+		            return this.widgetOption(wid, 'hideCompleted', false) === true
+		                || this.widgetOption(wid, 'showCompleted', false) === true;
 	        },
 	        todayWidgetVisibleTasks(wid) {
 	            const all = this.todayWidgetTasks(wid);

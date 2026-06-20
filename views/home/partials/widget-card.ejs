@@ -2,12 +2,19 @@
     <div class="ov-card dx-card dx-priority-card" :style="'--ov-color:' + widgetColor(wid, '#805dca')">
         <div class="ov-card-header dx-card-header">
 	            <div class="ov-card-title dx-card-title">
-	                <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
-	                <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
-	                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
-	                <button type="button"
-	                        class="dx-day-nav-btn"
-	                        x-show="!todayWidgetIsToday(wid)"
+		                <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
+		                <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
+		                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
+		                <span class="dx-overdue-badge"
+		                      x-cloak
+		                      x-show="todayWidgetOverdueCount(wid) > 0"
+		                      :title="todayWidgetOverdueCount(wid) + ' tâche' + (todayWidgetOverdueCount(wid) > 1 ? 's' : '') + ' en retard'">
+		                    <iconify-icon icon="solar:danger-triangle-bold-duotone" width="12"></iconify-icon>
+		                    <span x-text="todayWidgetOverdueCount(wid) + ' en retard'"></span>
+		                </span>
+		                <button type="button"
+		                        class="dx-day-nav-btn"
+		                        x-show="!todayWidgetIsToday(wid)"
 	                        @click.stop="resetTodayWidgetDate(wid)">
 	                    Aujourd'hui
 	                </button>

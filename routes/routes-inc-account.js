@@ -516,6 +516,7 @@ router.get("/api/tasks-hub", async (req, res) => {
                 assignedTo: t.assignedTo || '',
                 createdAt: t.createdAt || null,
                 updatedAt: t.updatedAt || null,
+                completedAt: t.completedAt || null,
                 listId,
                 listLabel,
                 listColor,
@@ -670,6 +671,7 @@ router.get("/api/home-overview", async (req, res) => {
                 startDate: task.startDate || null,
                 createdAt: task.createdAt || null,
                 updatedAt: task.updatedAt || null,
+                completedAt: task.completedAt || null,
                 order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
                 listId,
                 taskListId: listId,
@@ -698,6 +700,14 @@ router.get("/api/home-overview", async (req, res) => {
                 const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
                 const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
 	                return ad - bd;
+	            });
+	        const completedToday = taskRows
+	            .filter(task => {
+	                if (task.status !== 'Terminé') return false;
+	                const cAt = task.completedAt ? new Date(task.completedAt).getTime() : 0;
+	                const uAt = task.updatedAt ? new Date(task.updatedAt).getTime() : 0;
+	                const checkTime = cAt || uAt;
+	                return checkTime >= start.getTime() && checkTime < end.getTime();
 	            });
 	        const openTasksSorted = taskRows
 	            .filter(task => task.status !== 'Terminé')
@@ -1022,6 +1032,7 @@ router.get("/api/home-overview", async (req, res) => {
 	        res.json({
 	            success: true,
 	            todayTasks,
+	            completedToday,
 		            tasks: openTasksSorted.slice(0, 20),
 		            tasksByRecord,
                     taskLists,

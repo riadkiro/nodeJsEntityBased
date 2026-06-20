@@ -403,8 +403,8 @@
 	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Activer le partage</span>
 	                                </label>
 	                                <label x-show="$store.widgetPicker.newWidget.type === 'priority-day'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showProductivity" class="form-checkbox" style="accent-color:#805dca;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Bloc productivité</span>
+	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.hideCompleted" class="form-checkbox" style="accent-color:#805dca;">
+	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Masquer les tâches terminées</span>
 	                                </label>
 	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
 	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showTasks" class="form-checkbox" style="accent-color:#4361ee;">
@@ -863,7 +863,7 @@
 	                    'overview-agenda': { limit: 4, showLink: true, allowAdd: true },
 	                    'overview-important-dates': { limit: 4, showLink: true, allowAdd: true },
 	                    'overview-notes': { showLink: true },
-	                    'home-priority-day': { limit: 4, showProductivity: true },
+	                    'home-priority-day': { limit: 4, hideCompleted: false },
 	                    'home-today-tasks': { limit: 5, showCompleted: false, showLink: true },
 	                    'home-objectives': { limit: 6, showLink: true },
 	                    'home-tasks': { limit: 5, showCompleted: false, showLink: true },
@@ -878,7 +878,7 @@
 	                    'home-upcoming-events': { limit: 4, showLink: true },
 	                    'home-important-dates': { limit: 4, showLink: true },
 	                    'home-quick-links': { showTasks: true, showNotes: true, showDocuments: true },
-	                    'priority-day': { limit: 4, showProductivity: true },
+	                    'priority-day': { limit: 4, hideCompleted: false },
 	                    'today-tasks': { limit: 5, showCompleted: false, showLink: true },
 	                    objectives: { limit: 6, showLink: true },
 	                    tasks: { tasks: [], limit: 5, showCompleted: false, showLink: true },

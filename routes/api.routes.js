@@ -1349,7 +1349,8 @@ router.post('/api/record-tasks/:taskId/status', async (req, res) => {
         }
 
         const statusColor = statusColors[status] || '#9ca3af'
-        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor }, { new: true })
+        const completedAt = status === 'Terminé' ? new Date() : null
+        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor, completedAt }, { new: true })
         if (!task) return res.status(404).json({ error: 'Task not found' })
 
         res.json({ success: true, status: task.status, statusColor: task.statusColor })
@@ -1429,8 +1430,11 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             }
         }
 
-        // Auto-set color fields
-        if (updates.status) updates.statusColor = statusColors[updates.status] || '#9ca3af'
+        // Auto-set color fields and completedAt
+        if (updates.status) {
+            updates.statusColor = statusColors[updates.status] || '#9ca3af'
+            updates.completedAt = updates.status === 'Terminé' ? new Date() : null
+        }
         if (updates.priority) updates.priorityColor = priorityColors[updates.priority] || ''
 
         // Handle null dates

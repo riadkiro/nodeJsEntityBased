@@ -20,9 +20,11 @@ const RecordTaskSchema = new mongoose.Schema({
     dueDate: { type: Date, default: null },
     assignedTo: { type: String, default: '' },
     order: { type: Number, default: 0 },
+    completedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 RecordTaskSchema.index({ taskListId: 1, order: 1 });
 RecordTaskSchema.index({ recordId: 1 });
+RecordTaskSchema.index({ completedAt: 1 });
 
 module.exports = mongoose.model('RecordTask', RecordTaskSchema);

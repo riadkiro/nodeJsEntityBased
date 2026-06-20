@@ -774,6 +774,76 @@
         font-size: 12px;
         font-weight: 600;
     }
+    /* ── Completed today panel (right side of priority-day) ── */
+    .dx-completed-today {
+        border-left: 1px solid #eef2f8;
+        padding-left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 80px;
+    }
+    .dx-completed-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+    .dx-completed-header strong {
+        font-size: 12px;
+        font-weight: 700;
+        color: #34405a;
+    }
+    .dx-completed-list {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        overflow-y: auto;
+        max-height: 180px;
+    }
+    .dx-completed-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 2px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background .12s;
+    }
+    .dx-completed-row:hover {
+        background: #f0fdf4;
+    }
+    .dx-done-icon {
+        color: #22c55e;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+    .dx-done-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-decoration: line-through;
+        text-decoration-color: rgba(148, 163, 184, .35);
+        text-decoration-thickness: 1px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dx-done-record {
+        font-size: 9.5px;
+        font-weight: 650;
+        color: #a3b1c7;
+        margin-left: auto;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .dx-completed-empty {
+        font-size: 11.5px;
+        color: #94a3b8;
+        font-weight: 500;
+        padding: 8px 0;
+    }
     .dx-event-list {
         display: flex;
         flex-direction: column;
@@ -1047,7 +1117,7 @@
     .dx-shopping-row:hover { background: #fbfcff; }
     .dx-shopping-row.dx-task-row {
         display: grid;
-        grid-template-columns: 18px minmax(0, 1fr) 74px;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
         gap: 10px;
         align-items: center;
         min-height: 28px;
@@ -1057,7 +1127,31 @@
         cursor: default;
     }
     .dx-shopping-row.dx-task-row.has-priority {
-        grid-template-columns: 18px minmax(0, 1fr) 74px;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+    }
+    /* ── Single-line compact row with meta area ── */
+    .dx-shopping-row.dx-single-line {
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+    }
+    .dx-row-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    .dx-priority-badge {
+        font-size: 10px;
+        font-weight: 750;
+        white-space: nowrap;
+        letter-spacing: .01em;
+    }
+    .dx-date-badge {
+        font-size: 10px;
+        font-weight: 600;
+        color: #94a3b8;
+        white-space: nowrap;
     }
     .dx-shopping-row.dx-task-row .dx-check {
         border: 1.5px solid #9aa8c2;
@@ -1066,7 +1160,7 @@
     }
     .dx-task-drag {
         position: absolute;
-        left: -12px;
+        left: -20px;
         top: 50%;
         transform: translateY(-50%);
         width: 14px;
@@ -1626,14 +1720,21 @@
     .dark .dx-activity-row strong,
     .dark .dx-ai-note strong,
     .dark .dx-productivity strong,
+    .dark .dx-completed-header strong,
     .dark .dx-time,
     .dark .dx-week-event em { color: #f1f5f9; }
+    .dark .dx-completed-today { border-left-color: #253b5c; }
+    .dark .dx-completed-row:hover { background: rgba(34, 197, 94, .08); }
+    .dark .dx-done-title { color: #64748b; }
+    .dark .dx-done-record { color: #536882; }
+    .dark .dx-completed-empty { color: #536882; }
     .dark .home-ov-title p,
     .dark .dx-productivity small,
     .dark .dx-activity-row > div > span,
     .dark .dx-ai-note span,
     .dark .dx-event-record-line,
     .dark .dx-record-task-row span:not(.home-mini-icon),
+    .dark .dx-date-badge,
     .dark .dx-stat-grid .home-stat-card span { color: #94a3b8; }
     .dark .ov-card.dx-card,
     .dark .dx-ring span { background: #0e1726; }
@@ -1745,6 +1846,7 @@
     @media (max-width: 1180px) {
         .dx-priority-body { grid-template-columns: 1fr; }
         .dx-productivity { border-left: 0; border-top: 1px solid #eef2f8; padding-top: 18px; }
+        .dx-completed-today { border-left: 0; border-top: 1px solid #eef2f8; padding-left: 0; padding-top: 12px; }
     }
     @media (max-width: 1024px) {
         .ov-add-choice { grid-template-columns: 1fr; }
@@ -1759,8 +1861,9 @@
         .dx-task-row .dx-priority { display: none; }
         .dx-shopping-row.dx-task-row,
         .dx-shopping-row.dx-task-row.has-priority {
-            grid-template-columns: 18px minmax(0, 1fr) 64px;
+            grid-template-columns: 18px minmax(0, 1fr) auto;
         }
+        .dx-shopping-row.dx-single-line .dx-date-badge { display: none; }
         .dx-week-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
     }
 </style>
@@ -1928,6 +2031,7 @@ document.addEventListener('alpine:init', () => {
 	        loadingData: true,
 	        rows: [],
 	        todayTasks: [],
+	        completedTodayData: [],
 		        allTasks: [],
 		        tasksByRecord: [],
 		        homeTaskLists: [],
@@ -2049,6 +2153,7 @@ document.addEventListener('alpine:init', () => {
 	                const data = await res.json();
 	                if (data.success) {
 		                    this.todayTasks = data.todayTasks || [];
+		                    this.completedTodayData = data.completedToday || [];
 		                    this.allTasks = data.tasks || [];
 		                    this.tasksByRecord = data.tasksByRecord || [];
 		                    this.homeTaskLists = (data.taskLists || []).map(list => this.normalizeHomeTaskList(list));
@@ -2119,7 +2224,8 @@ document.addEventListener('alpine:init', () => {
 	                taskListId: String(task.taskListId || task.listId || ''),
 	                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
 	                createdAt: task.createdAt || null,
-	                updatedAt: task.updatedAt || null
+	                updatedAt: task.updatedAt || null,
+	                completedAt: task.completedAt || null
 	            };
 	        },
 
@@ -2279,6 +2385,10 @@ document.addEventListener('alpine:init', () => {
 	                const task = (list.tasks || []).find(item => this.homeTaskId(item) === id);
 	                if (task) return { list, task };
 	            }
+	            // Also search hub-level task arrays
+	            const hubTask = (this.todayTasks || []).find(t => this.homeTaskId(t) === id)
+	                || (this.allTasks || []).find(t => this.homeTaskId(t) === id);
+	            if (hubTask) return { list: null, task: hubTask };
 	            return null;
 	        },
 
@@ -2430,13 +2540,16 @@ document.addEventListener('alpine:init', () => {
 	            if (!id) return;
 	            const found = this.findHomeTask(id);
 	            const list = found?.list || this.homeTaskListForWidget(wid);
-	            if (!list) return;
-	            const previousTasks = [...(list.tasks || [])];
 	            const previousAllTasks = [...(this.allTasks || [])];
 	            const previousTodayTasks = [...(this.todayTasks || [])];
-	            list.tasks = previousTasks.filter(item => this.homeTaskId(item) !== id);
+	            let previousListTasks = null;
+	            if (list) {
+	                previousListTasks = [...(list.tasks || [])];
+	                list.tasks = previousListTasks.filter(item => this.homeTaskId(item) !== id);
+	                this.refreshHomeTaskListCounts(list);
+	            }
 	            this.removeHomeTaskEverywhere(id);
-	            this.refreshHomeTaskListCounts(list);
+	            this.bumpHomeTaskRender(wid);
 	            try {
 	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
 	                    method: 'DELETE',
@@ -2446,10 +2559,13 @@ document.addEventListener('alpine:init', () => {
 	                if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
 	                this.$nextTick(() => this.refreshHomeTaskSortables());
 	            } catch (e) {
-	                list.tasks = previousTasks;
+	                if (list && previousListTasks) {
+	                    list.tasks = previousListTasks;
+	                    this.refreshHomeTaskListCounts(list);
+	                }
 	                this.allTasks = previousAllTasks;
 	                this.todayTasks = previousTodayTasks;
-	                this.refreshHomeTaskListCounts(list);
+	                this.bumpHomeTaskRender(wid);
 	                window.showMessage && window.showMessage(e.message || 'Suppression impossible', 'danger');
 	            }
 	        },
@@ -3514,6 +3630,163 @@ document.addEventListener('alpine:init', () => {
 	            }));
 	            return dynamic.length ? dynamic : this.fallbackTasks();
 	        },
+
+	        // ── Interactive widget task adapters ──
+	        todayWidgetTasks(wid) {
+	            // First try to use a task-list if configured
+	            const list = this.homeTaskListForWidget(wid);
+	            if (list) return this.homeTaskWidgetItems(wid);
+	            // Fall back to todayTasks from the hub API
+	            return (this.todayTasks || []).filter(t => t && (t._id || t.id));
+	        },
+	        todayWidgetOpenTasks(wid) {
+	            const all = this.todayWidgetTasks(wid);
+	            const hide = this.widgetOption(wid, 'hideCompleted', false);
+	            if (hide) return all.filter(t => t.status !== 'Terminé');
+	            return all.filter(t => t.status !== 'Terminé');
+	        },
+	        completedTodayTasks() {
+	            const now = new Date();
+	            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+	            const todayEnd = todayStart + 86400000;
+	            const allSources = [...(this.completedTodayData || []), ...(this.todayTasks || []), ...(this.allTasks || [])];
+	            // De-duplicate by id
+	            const seen = new Set();
+	            const result = [];
+	            for (const t of allSources) {
+	                const id = t?._id || t?.id;
+	                if (!id || seen.has(id)) continue;
+	                seen.add(id);
+	                if (t.status !== 'Terminé') continue;
+	                const cAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
+	                const uAt = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
+	                const checkTime = cAt || uAt;
+	                if (checkTime >= todayStart && checkTime < todayEnd) {
+	                    result.push(t);
+	                }
+	            }
+	            return result;
+	        },
+	        allWidgetTasks(wid) {
+	            const list = this.homeTaskListForWidget(wid);
+	            if (list) return this.homeTaskWidgetItems(wid);
+	            return (this.allTasks || []).filter(t => t && (t._id || t.id));
+	        },
+	        async toggleTodayTaskItem(wid, task) {
+	            // If it's a task-list widget, delegate
+	            const list = this.homeTaskListForWidget(wid);
+	            if (list) return this.toggleHomeTaskItem(wid, task);
+	            // Direct API toggle
+	            if (!task?._id && !task?.id) return;
+	            const id = task._id || task.id;
+	            const prevStatus = task.status;
+	            const prevCompletedAt = task.completedAt;
+	            const nextStatus = prevStatus === 'Terminé' ? 'À faire' : 'Terminé';
+	            task.status = nextStatus;
+	            task.completedAt = nextStatus === 'Terminé' ? new Date().toISOString() : null;
+	            this.patchHomeTaskEverywhere(id, { status: nextStatus, completedAt: task.completedAt });
+	            // Update completedTodayData for instant UI
+	            if (nextStatus === 'Terminé') {
+	                this.completedTodayData = [...(this.completedTodayData || []).filter(t => (t._id || t.id) !== id), { ...task }];
+	            } else {
+	                this.completedTodayData = (this.completedTodayData || []).filter(t => (t._id || t.id) !== id);
+	            }
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
+	                    method: 'PUT',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ status: nextStatus })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+	            } catch (e) {
+	                task.status = prevStatus;
+	                task.completedAt = prevCompletedAt;
+	                this.patchHomeTaskEverywhere(id, { status: prevStatus, completedAt: prevCompletedAt });
+	                // Rollback completedTodayData
+	                if (prevStatus === 'Terminé') {
+	                    this.completedTodayData = [...(this.completedTodayData || []).filter(t => (t._id || t.id) !== id), { ...task }];
+	                } else {
+	                    this.completedTodayData = (this.completedTodayData || []).filter(t => (t._id || t.id) !== id);
+	                }
+	                window.showMessage && window.showMessage(e.message || 'Erreur', 'danger');
+	            }
+	        },
+	        async addTodayTask(wid) {
+	            // If it's a task-list widget, delegate
+	            const list = this.homeTaskListForWidget(wid);
+	            if (list) return this.addHomeTaskItem(wid);
+	            // Add as personal task via hub API
+	            const title = String(this.newTaskTitles[wid] || '').trim();
+	            if (!title) return;
+	            this.newTaskTitles[wid] = '';
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/tasks-hub/personal-tasks`, {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({
+	                        title,
+	                        status: 'À faire',
+	                        priority: wid === 'priority-day' ? 'Haute' : 'Aucune',
+	                        isDayPriority: wid === 'priority-day',
+	                        startDate: new Date().toISOString().split('T')[0]
+	                    })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!data.success || !data.task) throw new Error(data.error || 'Ajout impossible');
+	                const normalized = this.normalizeHomeTask(data.task);
+	                this.allTasks = [...(this.allTasks || []), normalized];
+	                if (wid === 'priority-day' || wid === 'today-tasks') {
+	                    this.todayTasks = [...(this.todayTasks || []), normalized];
+	                }
+	                this.bumpHomeTaskRender(wid);
+	            } catch (e) {
+	                this.newTaskTitles[wid] = title;
+	                window.showMessage && window.showMessage(e.message || 'Ajout impossible', 'danger');
+	            }
+	        },
+	        startEditTodayTask(wid, task) {
+	            const list = this.homeTaskListForWidget(wid);
+	            if (list) return this.startEditHomeTask(wid, task);
+	            const id = task._id || task.id;
+	            if (!id) return;
+	            this.editingHomeTaskId = id;
+	            this.editingHomeTaskWidgetId = wid;
+	            this.editingHomeTaskTitle = task.title || '';
+	            this.$nextTick(() => {
+	                const input = Array.from(this.$el?.querySelectorAll?.('.dx-task-edit') || [])
+	                    .find(el => String(el.dataset.taskId || '') === id);
+	                if (input) { input.focus(); input.select(); }
+	            });
+	        },
+	        async saveEditTodayTask(wid, task) {
+	            const list = this.homeTaskListForWidget(wid);
+	            if (list) return this.saveEditHomeTask(wid, task);
+	            const id = task._id || task.id;
+	            if (!id || this.editingHomeTaskId !== id) return;
+	            const title = String(this.editingHomeTaskTitle || '').trim();
+	            if (!title || title === task.title) { this.cancelEditHomeTask(); return; }
+	            this.cancelEditHomeTask();
+	            const prevTitle = task.title;
+	            task.title = title;
+	            this.patchHomeTaskEverywhere(id, { title });
+	            try {
+	                const res = await fetch(`/account/${_accountNumber}/api/record-tasks/${id}`, {
+	                    method: 'PUT',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    credentials: 'include',
+	                    body: JSON.stringify({ title })
+	                });
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Modification impossible');
+	            } catch (e) {
+	                task.title = prevTitle;
+	                this.patchHomeTaskEverywhere(id, { title: prevTitle });
+	                window.showMessage && window.showMessage(e.message || 'Erreur', 'danger');
+	            }
+	        },
 	        homeEventItems(kind = 'upcoming') {
 	            const source = kind === 'important' ? this.importantDates : this.upcomingEvents;
 	            const dynamic = (source || []).map(ev => ({
@@ -3578,6 +3851,23 @@ document.addEventListener('alpine:init', () => {
 	            if (Number.isNaN(date.getTime())) return '—';
 	            if (date.getHours() === 0 && date.getMinutes() === 0) return '—';
 	            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+	        },
+	        taskDateLabel(task) {
+	            const value = task?.dueDate || task?.startDate;
+	            if (!value) return '';
+	            const date = new Date(value);
+	            if (Number.isNaN(date.getTime())) return '';
+	            const now = new Date();
+	            now.setHours(0, 0, 0, 0);
+	            const taskDay = new Date(date);
+	            taskDay.setHours(0, 0, 0, 0);
+	            const diffDays = Math.round((taskDay - now) / 86400000);
+	            if (diffDays === 0) return "Aujourd'hui";
+	            if (diffDays === 1) return 'Demain';
+	            if (diffDays === -1) return 'Hier';
+	            if (diffDays < -1) return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+	            if (diffDays <= 6) return date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
+	            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
 	        },
 	        datePart(value, part) {
 	            const date = new Date(value);

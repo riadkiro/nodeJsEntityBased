@@ -651,6 +651,22 @@
 	        border-color: #d7c6ff;
 	        color: #7c5cff;
 	    }
+	    .dx-overdue-nav-btn {
+	        display: inline-flex;
+	        align-items: center;
+	        gap: 4px;
+	        color: #b45309;
+	        border-color: #f7d9ab;
+	    }
+	    .dx-overdue-nav-btn iconify-icon {
+	        flex: 0 0 auto;
+	    }
+	    .dx-overdue-nav-btn:hover,
+	    .dx-overdue-nav-btn.is-active {
+	        background: #fff7ed;
+	        border-color: #fdba74;
+	        color: #d97706;
+	    }
 	    .dx-day-date-button {
 	        min-width: 20px;
 	        height: 22px;
@@ -1265,23 +1281,6 @@
         display: block;
         pointer-events: none;
     }
-		    .dx-overdue-badge {
-		        min-height: 22px;
-		        display: inline-flex;
-		        align-items: center;
-		        gap: 4px;
-		        color: #d97706;
-		        background: #fff7ed;
-		        border: 1px solid #fed7aa;
-	        padding: 0 7px;
-	        border-radius: 8px;
-		        font-size: 10.5px;
-		        font-weight: 800;
-		        line-height: 1;
-		        white-space: nowrap;
-		        align-self: center;
-		    }
-		    .dx-overdue-badge iconify-icon { flex: 0 0 auto; }
 	    .dx-task-due-badge {
 	        height: 20px;
 	        display: inline-flex;
@@ -2003,6 +2002,16 @@
 	        border-color: #3b2f70;
 	        color: #c4b5fd;
 	    }
+	    .dark .dx-overdue-nav-btn {
+	        color: #fbbf24;
+	        border-color: rgba(245, 158, 11, .28);
+	    }
+	    .dark .dx-overdue-nav-btn:hover,
+	    .dark .dx-overdue-nav-btn.is-active {
+	        background: rgba(245, 158, 11, .14);
+	        border-color: rgba(245, 158, 11, .42);
+	        color: #fbbf24;
+	    }
 	    .dark .dx-day-date-button:hover {
 	        color: #c4b5fd;
 	    }
@@ -2021,7 +2030,6 @@
     .dark .dx-record-task-row span:not(.home-mini-icon),
     .dark .dx-date-badge,
     .dark .dx-stat-grid .home-stat-card span { color: #94a3b8; }
-	    .dark .dx-overdue-badge { color: #fbbf24; background: rgba(245, 158, 11, .14); border-color: rgba(245, 158, 11, .28); }
     .dark .ov-card.dx-card,
     .dark .dx-ring span { background: #0e1726; }
     .dark .dx-ring { background: conic-gradient(#536cff calc(var(--value) * 1%), #253b5c 0); }
@@ -2361,6 +2369,7 @@ document.addEventListener('alpine:init', () => {
 		        _homeDataSaving: false,
 			        newTaskTitles: {},
 			        todayWidgetDates: {},
+			        todayWidgetModes: {},
 	        homeTaskRenderVersions: {},
 	        _taskSortables: new Map(),
 	        homeTaskMenu: null,
@@ -4308,12 +4317,31 @@ document.addEventListener('alpine:init', () => {
 	        todayWidgetDate(wid) {
 	            return this.normalizeDayDateKey(this.todayWidgetDates?.[wid] || this.todayDateKey());
 	        },
+	        todayWidgetMode(wid) {
+	            return this.todayWidgetModes?.[wid] || 'date';
+	        },
+	        todayWidgetIsOverdue(wid) {
+	            return this.todayWidgetMode(wid) === 'overdue';
+	        },
+	        setTodayWidgetMode(wid, mode = 'date') {
+	            if (!wid) return;
+	            this.todayWidgetModes = {
+	                ...(this.todayWidgetModes || {}),
+	                [wid]: mode
+	            };
+	            this.bumpHomeTaskRender(wid);
+	            this.$nextTick(() => this.refreshHomeTaskSortables());
+	        },
 	        setTodayWidgetDate(wid, value) {
 	            if (!wid) return;
 	            const dateKey = this.normalizeDayDateKey(value);
 	            this.todayWidgetDates = {
 	                ...(this.todayWidgetDates || {}),
 	                [wid]: dateKey
+	            };
+	            this.todayWidgetModes = {
+	                ...(this.todayWidgetModes || {}),
+	                [wid]: 'date'
 	            };
 	            this.bumpHomeTaskRender(wid);
 	            this.$nextTick(() => this.refreshHomeTaskSortables());
@@ -4345,14 +4373,18 @@ document.addEventListener('alpine:init', () => {
 	            this.setTodayWidgetDate(wid, this.todayDateKey(1));
 	            this.closeTodayWidgetCalendar();
 	        },
+	        selectOverdueTodayWidget(wid) {
+	            this.setTodayWidgetMode(wid, 'overdue');
+	            this.closeTodayWidgetCalendar();
+	        },
 	        todayWidgetIsToday(wid) {
-	            return this.todayWidgetDate(wid) === this.todayDateKey();
+	            return !this.todayWidgetIsOverdue(wid) && this.todayWidgetDate(wid) === this.todayDateKey();
 	        },
 	        todayWidgetIsTomorrow(wid) {
-	            return this.todayWidgetDate(wid) === this.todayDateKey(1);
+	            return !this.todayWidgetIsOverdue(wid) && this.todayWidgetDate(wid) === this.todayDateKey(1);
 	        },
 	        todayWidgetHasCustomDate(wid) {
-	            return !this.todayWidgetIsToday(wid) && !this.todayWidgetIsTomorrow(wid);
+	            return !this.todayWidgetIsOverdue(wid) && !this.todayWidgetIsToday(wid) && !this.todayWidgetIsTomorrow(wid);
 	        },
 	        formatDayDateKey(dateKey, options = {}) {
 	            const key = this.normalizeDayDateKey(dateKey);
@@ -4364,6 +4396,7 @@ document.addEventListener('alpine:init', () => {
 	            return date.toLocaleDateString('fr-FR', format).replace('.', '');
 	        },
 	        todayWidgetDatePhrase(wid) {
+	            if (this.todayWidgetIsOverdue(wid)) return 'les tâches en retard';
 	            if (this.todayWidgetIsToday(wid)) return "aujourd'hui";
 	            if (this.todayWidgetIsTomorrow(wid)) return 'demain';
 	            return 'le ' + this.formatDayDateKey(this.todayWidgetDate(wid), { long: true });
@@ -4372,10 +4405,12 @@ document.addEventListener('alpine:init', () => {
 	            return this.formatDayDateKey(this.todayWidgetDate(wid));
 	        },
 	        todayWidgetEmptyLabel(wid) {
+	            if (this.todayWidgetIsOverdue(wid)) return 'Aucune tâche en retard';
 	            if (this.todayWidgetIsToday(wid)) return 'Aucune tâche pour le moment';
 	            return 'Aucune tâche pour ' + this.todayWidgetDatePhrase(wid);
 	        },
 	        todayWidgetAddPlaceholder(wid) {
+	            if (this.todayWidgetIsOverdue(wid)) return 'Ajouter une tâche...';
 	            if (this.todayWidgetIsToday(wid)) return 'Ajouter une tâche...';
 	            return 'Ajouter une tâche pour ' + this.todayWidgetDatePhrase(wid) + '...';
 	        },
@@ -4408,6 +4443,7 @@ document.addEventListener('alpine:init', () => {
 	            return source.filter(t => t && (t._id || t.id));
 	        },
 	        todayWidgetDateTasks(wid) {
+	            if (this.todayWidgetIsOverdue(wid)) return this.todayWidgetOverdueTasks(wid);
 	            return this.todayWidgetSourceTasks(wid)
 	                .filter(task => this.taskMatchesTodayWidgetDate(task, wid));
 	        },

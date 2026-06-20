@@ -5,16 +5,19 @@
 		                <iconify-icon :icon="widgetIcon(wid, 'solar:star-bold-duotone')"></iconify-icon>
 		                <span x-text="widgetTitle(wid, 'Tâches du jour')"></span>
 		                <span class="dx-count-pill" x-text="todayWidgetOpenTasks(wid).length + ' à faire'"></span>
-		                <span class="dx-overdue-badge"
-		                      x-cloak
-		                      x-show="todayWidgetOverdueCount(wid) > 0"
-		                      :title="todayWidgetOverdueCount(wid) + ' tâche' + (todayWidgetOverdueCount(wid) > 1 ? 's' : '') + ' en retard'">
-		                    <iconify-icon icon="solar:danger-triangle-bold-duotone" width="12"></iconify-icon>
+		                <button type="button"
+		                        class="dx-day-nav-btn dx-overdue-nav-btn"
+		                        x-cloak
+		                        x-show="todayWidgetOverdueCount(wid) > 0"
+		                        :class="{ 'is-active': todayWidgetIsOverdue(wid) }"
+		                        :title="todayWidgetOverdueCount(wid) + ' tâche' + (todayWidgetOverdueCount(wid) > 1 ? 's' : '') + ' en retard'"
+		                        @click.stop="selectOverdueTodayWidget(wid)">
+		                    <iconify-icon icon="solar:danger-triangle-linear" width="11"></iconify-icon>
 		                    <span x-text="todayWidgetOverdueCount(wid) + ' en retard'"></span>
-		                </span>
+		                </button>
 		                <button type="button"
 		                        class="dx-day-nav-btn"
-		                        x-show="!todayWidgetIsToday(wid)"
+		                        x-show="!todayWidgetIsToday(wid) || todayWidgetIsOverdue(wid)"
 	                        @click.stop="resetTodayWidgetDate(wid)">
 	                    Aujourd'hui
 	                </button>
@@ -105,7 +108,7 @@
 	                <template x-if="todayWidgetVisibleTasks(wid).length === 0">
 	                    <div class="ov-custom-empty" x-text="todayWidgetEmptyLabel(wid)"></div>
 	                </template>
-	                <form class="dx-inline-add" @submit.prevent="addTodayTask(wid)">
+	                <form class="dx-inline-add" x-show="!todayWidgetIsOverdue(wid)" @submit.prevent="addTodayTask(wid)">
 	                    <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" :placeholder="todayWidgetAddPlaceholder(wid)">
 	                    <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
 	                </form>

@@ -173,6 +173,22 @@ const hubPriorityColors = {
     Haute: '#ef4444',
     Urgente: '#dc2626'
 };
+const hubDefaultPriorities = Object.entries(hubPriorityColors).map(([label, color], order) => ({
+    label,
+    color: color || '#cbd5e1',
+    order
+}));
+const hubTaskOptions = (options, fallback) => {
+    const source = Array.isArray(options) && options.length ? options : fallback;
+    return source
+        .map((option, index) => ({
+            label: hubTaskText(option?.label, ''),
+            color: option?.color || fallback[index]?.color || '#94a3b8',
+            order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
+        }))
+        .filter(option => option.label)
+        .sort((a, b) => a.order - b.order);
+};
 const homeOverviewDataViewId = 'home_overview';
 const homeOverviewDefaultData = () => ({
     goals: [
@@ -517,12 +533,8 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
             const listLabel = hubTaskListLabel(list.label);
             const listColor = list.color || '#6366f1';
             const listIcon = list.icon || 'solar:checklist-bold-duotone';
-            const listStatuses = (Array.isArray(list.statuses) && list.statuses.length > 0
-                ? list.statuses
-                : hubDefaultStatuses)
-                .slice()
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                .map(s => ({ label: s.label, color: s.color, order: s.order || 0 }));
+            const listStatuses = hubTaskOptions(list.statuses, hubDefaultStatuses);
+            const listPriorities = hubTaskOptions(list.priorities, hubDefaultPriorities);
             const listTasks = (tasksByListId[listId] || []).slice().sort((a, b) => {
                 const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
                 const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
@@ -574,8 +586,9 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 label: listLabel,
                 color: listColor,
                 icon: listIcon,
-                statuses: listStatuses,
-                totalTasks: normalizedTasks.length,
+	                statuses: listStatuses,
+	                priorities: listPriorities,
+	                totalTasks: normalizedTasks.length,
                 doneTasks: done,
                 tasks: normalizedTasks
             });
@@ -815,9 +828,11 @@ router.get("/api/home-overview", async (req, res) => {
                         _id: listId,
                         label: cleanLabel(list.label),
                         rawLabel: list.label || '',
-                        color: list.color || '#6366f1',
-                        icon: list.icon || 'solar:checklist-bold-duotone',
-                        recordId,
+	                        color: list.color || '#6366f1',
+	                        icon: list.icon || 'solar:checklist-bold-duotone',
+	                        statuses: hubTaskOptions(list.statuses, hubDefaultStatuses),
+	                        priorities: hubTaskOptions(list.priorities, hubDefaultPriorities),
+	                        recordId,
                         recordTitle: recordTitle(record),
                         recordIcon: record?.icon || entity?.icon || 'solar:folder-bold-duotone',
                         recordColor: record?.color || entity?.color || '#4361ee',

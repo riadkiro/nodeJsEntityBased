@@ -2304,10 +2304,10 @@
         </button>
         <div class="dx-task-ctx-label">Priorité</div>
         <div class="dx-task-ctx-priorities">
-            <template x-for="priority in homeTaskPriorityChoices" :key="priority.label">
-                <button type="button"
-                        :style="'--priority-color:' + priority.color"
-                        @click="setHomeTaskPriorityFromMenu(priority.label)">
+	            <template x-for="priority in homeTaskPriorityMenuOptions()" :key="priority.label">
+	                <button type="button"
+	                        :style="'--priority-color:' + priority.color"
+	                        @click="setHomeTaskPriorityFromMenu(priority)">
                     <iconify-icon icon="solar:flag-linear" width="11"></iconify-icon>
                     <span x-text="priority.label"></span>
                 </button>
@@ -2542,11 +2542,13 @@ document.addEventListener('alpine:init', () => {
 	                id,
 	                _id: id,
 	                label: String(list.label || 'Liste de tâches').trim(),
-	                color: list.color || '#10b981',
-	                icon: list.icon || 'solar:checklist-bold-duotone',
-	                link: list.link || `/account/${_accountNumber}/tasks`,
-	                tasks: Array.isArray(list.tasks) ? list.tasks.map(task => this.normalizeHomeTask({ ...task, taskListId: id })) : [],
-	                count: Number(list.count || 0),
+		                color: list.color || '#10b981',
+		                icon: list.icon || 'solar:checklist-bold-duotone',
+		                link: list.link || `/account/${_accountNumber}/tasks`,
+		                statuses: Array.isArray(list.statuses) ? list.statuses : [],
+		                priorities: Array.isArray(list.priorities) ? list.priorities : [],
+		                tasks: Array.isArray(list.tasks) ? list.tasks.map(task => this.normalizeHomeTask({ ...task, taskListId: id })) : [],
+		                count: Number(list.count || 0),
 	                doneCount: Number(list.doneCount || 0)
 	            };
 	        },
@@ -2697,11 +2699,44 @@ document.addEventListener('alpine:init', () => {
 	            return String(priority || 'Aucune').trim() || 'Aucune';
 	        },
 
-		        homeTaskPriorityColor(priority, task = null) {
-		            if (task?.priorityColor) return task.priorityColor;
-		            const label = this.homeTaskPriorityLabel(priority);
-		            const found = (this.homeTaskPriorityChoices || []).find(item => item.label === label);
-		            return found?.color || '#94a3b8';
+	        normalizeHomeTaskOptions(options = [], fallback = this.homeTaskPriorityChoices) {
+	            const source = Array.isArray(options) && options.length ? options : fallback;
+	            const seen = new Set();
+	            return source
+	                .map((option, index) => ({
+	                    label: this.homeTaskPriorityLabel(option?.label || option),
+	                    color: option?.color || fallback[index]?.color || '#94a3b8',
+	                    order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
+	                }))
+	                .filter(option => {
+	                    if (!option.label || seen.has(option.label.toLowerCase())) return false;
+	                    seen.add(option.label.toLowerCase());
+	                    return true;
+	                })
+	                .sort((a, b) => a.order - b.order);
+	        },
+
+	        homeTaskPriorityOptionsForList(list = null) {
+	            const options = this.normalizeHomeTaskOptions(list?.priorities, this.homeTaskPriorityChoices);
+	            if (!options.some(option => option.label === 'Aucune')) {
+	                return [{ label: 'Aucune', color: '#94a3b8', order: -1 }, ...options];
+	            }
+	            return options;
+	        },
+
+	        homeTaskPriorityMenuOptions() {
+	            const ctx = this.homeTaskMenu || {};
+	            const found = this.findHomeTask(ctx.taskId);
+	            const list = found?.list || this.homeTaskListForWidget(ctx.wid);
+	            return this.homeTaskPriorityOptionsForList(list);
+	        },
+
+	        homeTaskPriorityColor(priority, task = null) {
+	            if (task?.priorityColor) return task.priorityColor;
+	            const label = this.homeTaskPriorityLabel(priority);
+	            const found = (this.homeTaskPriorityOptionsForList(this.findHomeTask(this.homeTaskId(task || {}))?.list) || [])
+	                .find(item => item.label === label);
+	            return found?.color || '#94a3b8';
 	        },
 
 	        homeTaskId(task = {}) {
@@ -2716,11 +2751,15 @@ document.addEventListener('alpine:init', () => {
 	                if (task) return { list, task };
 	            }
 	            // Also search hub-level task arrays
-	            const hubTask = (this.todayTasks || []).find(t => this.homeTaskId(t) === id)
-	                || (this.allTasks || []).find(t => this.homeTaskId(t) === id);
-	            if (hubTask) return { list: null, task: hubTask };
-	            return null;
-	        },
+		            const hubTask = (this.todayTasks || []).find(t => this.homeTaskId(t) === id)
+		                || (this.allTasks || []).find(t => this.homeTaskId(t) === id);
+		            if (hubTask) {
+		                const listId = String(hubTask.taskListId || hubTask.listId || '');
+		                const list = (this.homeTaskLists || []).find(item => String(item.id || item._id || '') === listId) || null;
+		                return { list, task: hubTask };
+		            }
+		            return null;
+		        },
 
 	        patchHomeTaskEverywhere(taskId, patch = {}) {
 	            const id = String(taskId || '');
@@ -2905,9 +2944,10 @@ document.addEventListener('alpine:init', () => {
 	            const ctx = this.homeTaskMenu;
 	            const found = this.findHomeTask(ctx?.taskId);
 	            if (!ctx || !found) return;
+	            const label = this.homeTaskPriorityLabel(priority?.label || priority);
 	            this.closeHomeTaskMenu();
 	            this.setHomeTaskWidgetConfigOption(ctx.wid, 'showPriority', true, false);
-	            await this.updateHomeTaskItem(ctx.wid, found.task, { priority });
+	            await this.updateHomeTaskItem(ctx.wid, found.task, { priority: label });
 	            this.bumpHomeTaskRender(ctx.wid);
 	            this._saveLayout();
 	        },

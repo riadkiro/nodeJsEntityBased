@@ -1003,6 +1003,20 @@ const cleanTaskText = (value, fallback = '') => {
     return text
 }
 
+const sanitizeTaskDescriptionHtml = (value = '') => {
+    if (typeof value !== 'string') return ''
+    let html = value.trim()
+    if (!html) return ''
+    if (html.length > 30000) html = html.slice(0, 30000)
+    return html
+        .replace(/<\s*(script|style|iframe|object|embed|meta|link|form|button|textarea|select)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<\s*(script|style|iframe|object|embed|meta|link|form|button|textarea|select)[^>]*\/?>/gi, '')
+        .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s+style\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s+(href|src)\s*=\s*(['"]?)\s*(javascript:|vbscript:|data:text\/html)[^'"\s>]*\2/gi, '')
+        .replace(/\s+src\s*=\s*(['"]?)\s*data:image\/svg\+xml[^'"\s>]*\1/gi, '')
+}
+
 const cleanTaskListLabel = (value) => {
     const label = cleanTaskText(value, 'À faire')
     const lower = label.toLowerCase()
@@ -1560,7 +1574,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             taskListId: req.params.listId,
             recordId: list.recordId,
             title: cleanTitle,
-            description: description || '',
+            description: sanitizeTaskDescriptionHtml(description || ''),
             status: taskStatus,
             statusColor: optionColor(listStatuses, taskStatus, '#9ca3af'),
             priority: taskPriority,
@@ -1766,6 +1780,10 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             const cleanTitle = cleanTaskText(updates.title)
             if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
             updates.title = cleanTitle
+        }
+
+        if (updates.description !== undefined) {
+            updates.description = sanitizeTaskDescriptionHtml(updates.description)
         }
 
         if (updates.taskListId !== undefined) {

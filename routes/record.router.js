@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const recordController = require("../controllers/record.controller");
+const newsletterController = require("../controllers/newsletter.controller");
 const uploadTo = require("../middleware/upload");
 const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 const importUpload = uploadTo((req) => `private_uploads/imports/${req.account_number}/uploads`);
@@ -20,6 +21,8 @@ router.get("/:entityName/list", recordController.list);
 router.get("/:entityName/list-view", recordController.listView);
 router.get("/:entityName/list-api", recordController.listApi);
 router.get("/:entityName/tasks", recordController.tasks);
+router.get("/:entityName/newsletter", requirePerm('email.view'), newsletterController.entityPage);
+router.get("/:entityName/:viewSlug/newsletter", requirePerm('email.view'), newsletterController.entityPage);
 router.get("/:entityName/import", requirePerm('records.create'), recordController.importForm);
 router.post("/:entityName/import/analyze", requirePerm('records.create'), importUpload.single("importFile"), recordController.importAnalyze);
 router.post("/:entityName/import/commit", requirePerm('records.create'), recordController.importCommit);

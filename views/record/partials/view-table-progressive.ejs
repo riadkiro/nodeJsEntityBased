@@ -9,11 +9,14 @@
   // Build viewId for uniqueness
   const viewId = (typeof view !== 'undefined' && view._id) ? view._id.toString() : entity._id.toString();
   const viewDisplayName = (typeof view !== 'undefined' && view && view.name) ? view.name : entity.name;
+  const newsletterHref = (typeof view !== 'undefined' && view && view.slug)
+    ? `/account/${account_number}/record/${entity.slug}/${view.slug}/newsletter`
+    : `/account/${account_number}/record/${entity.slug}/newsletter`;
 %>
 
 <!-- views/record/partials/view-table-progressive.ejs -->
 <div class="flex flex-col h-[calc(100vh_-_120px)]">
-    <div class="mb-4 flex items-center justify-between flex-shrink-0">
+    <div class="mb-4 flex items-center justify-between gap-3 flex-shrink-0">
         <ul class="flex space-x-2 rtl:space-x-reverse">
             <li>
                 <a href="/account/<%= account_number %>/dashboard" class="text-primary hover:underline">Dashboard</a>
@@ -22,6 +25,12 @@
                 <span><%= viewDisplayName %></span>
             </li>
         </ul>
+        <a href="<%= newsletterHref %>"
+           class="inline-flex items-center gap-2 rounded-lg border border-[#dfe6f1] bg-white px-3 py-2 text-xs font-bold text-[#334155] transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:border-[#253b5c] dark:bg-[#0e1726] dark:text-white-dark"
+           title="Configurer une newsletter pour cette liste">
+            <iconify-icon icon="solar:letter-bold-duotone" width="16"></iconify-icon>
+            Newsletter
+        </a>
     </div>
     <div class="flex-1 min-h-0 overflow-hidden">
         <div id="records-grid-<%= viewId %>"

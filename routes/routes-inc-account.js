@@ -57,6 +57,7 @@ router.use("/api/team", require("./api/api-team.router.js"));
 router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
 router.use("/api/record-access", require("./api/api-record-access.router.js"));
 router.use("/api/billing", require("./api/api-billing.router.js"));
+router.use("/api/newsletter", require("./api/api-newsletter.router.js"));
 
 // Notes Hub API — must be before api-account (has /:id catch-all)
 router.use("/api/notes-hub", require("./api/api-notes-hub.router.js"));

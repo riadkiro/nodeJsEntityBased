@@ -31,7 +31,7 @@ function getTransporter() {
 // ═══════════════════════════════════════════
 // Generic send
 // ═══════════════════════════════════════════
-async function send({ to, subject, html, text }) {
+async function send({ to, subject, html, text, from, replyTo }) {
     const t = getTransporter();
     if (!t) {
         console.log(`[Mailer] (dry-run) Would send to ${to}: ${subject}`);
@@ -39,11 +39,12 @@ async function send({ to, subject, html, text }) {
     }
 
     const info = await t.sendMail({
-        from: `"${mailConfig.from.name}" <${mailConfig.from.email}>`,
+        from: from || `"${mailConfig.from.name}" <${mailConfig.from.email}>`,
         to,
         subject,
         html,
         text: text || subject,
+        ...(replyTo ? { replyTo } : {}),
     });
 
     console.log(`[Mailer] Sent to ${to} — messageId: ${info.messageId}`);

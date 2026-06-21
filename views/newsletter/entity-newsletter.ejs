@@ -1,0 +1,565 @@
+<%
+  const newsletterScopeName = sourceView ? sourceView.name : (entity.namePlural || entity.name);
+  const recordListHref = sourceView && sourceView.slug
+    ? `/account/${account_number}/record/${entity.slug}/${sourceView.slug}`
+    : `/account/${account_number}/record/${entity.slug}/list`;
+%>
+
+<style>
+  .nl-shell{max-width:1380px;margin:0 auto;color:#0f172a}
+  .nl-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .nl-breadcrumb{font-size:12px;color:#64748b;margin-bottom:6px}
+  .nl-title{font-size:24px;font-weight:800;letter-spacing:0;margin:0;color:#0f172a}
+  .nl-subtitle{font-size:13px;color:#94a3b8;margin:5px 0 0}
+  .nl-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .nl-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:8px 14px;border-radius:10px;border:1px solid #dfe6f1;background:#fff;color:#334155;font-size:12px;font-weight:800;cursor:pointer;transition:.15s;text-decoration:none}
+  .nl-btn:hover{border-color:#c7d2fe;color:#4361ee;background:#f8faff}
+  .nl-btn-primary{border-color:#4361ee;background:#4361ee;color:#fff}
+  .nl-btn-primary:hover{background:#3854d8;color:#fff}
+  .nl-btn-green{border-color:#10b981;background:#10b981;color:#fff}
+  .nl-btn-green:hover{background:#059669;color:#fff}
+  .nl-btn-danger{border-color:#fecaca;background:#fff5f5;color:#ef4444}
+  .nl-btn:disabled{opacity:.55;cursor:not-allowed}
+  .nl-grid{display:grid;grid-template-columns:300px minmax(0,1fr) 340px;gap:16px;align-items:start}
+  .nl-card{background:#fff;border:1px solid #e5eaf3;border-radius:12px;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+  .nl-card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid #eef2f7}
+  .nl-card-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#0f172a}
+  .nl-card-b{padding:16px}
+  .nl-muted{font-size:12px;color:#94a3b8}
+  .nl-list{display:flex;flex-direction:column;gap:8px}
+  .nl-campaign{width:100%;text-align:left;border:1px solid #edf1f7;background:#fff;border-radius:10px;padding:11px 12px;cursor:pointer;transition:.15s}
+  .nl-campaign:hover,.nl-campaign.is-active{border-color:#c7d2fe;background:#f8faff}
+  .nl-campaign-name{font-size:13px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nl-campaign-meta{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:#94a3b8}
+  .nl-pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:800;background:#eef2ff;color:#4361ee}
+  .nl-pill-gray{background:#f1f5f9;color:#64748b}
+  .nl-pill-green{background:#dcfce7;color:#16a34a}
+  .nl-pill-orange{background:#ffedd5;color:#f97316}
+  .nl-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .nl-field{display:flex;flex-direction:column;gap:6px}
+  .nl-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7b8aa5}
+  .nl-input,.nl-select,.nl-textarea{width:100%;border:1px solid #dfe6f1;border-radius:10px;background:#fff;color:#0f172a;font-size:13px;line-height:1.4;outline:none;transition:.15s}
+  .nl-input,.nl-select{height:38px;padding:8px 11px}
+  .nl-textarea{min-height:110px;padding:11px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  .nl-input:focus,.nl-select:focus,.nl-textarea:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.10)}
+  .nl-section{padding:16px;border-top:1px solid #eef2f7}
+  .nl-section:first-child{border-top:0}
+  .nl-template{border:1px solid #e5eaf3;border-radius:12px;margin-bottom:14px;overflow:hidden;background:#fff}
+  .nl-template-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #eef2f7}
+  .nl-template-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#0f172a}
+  .nl-template-body{padding:14px;display:grid;gap:12px}
+  .nl-condition{display:grid;grid-template-columns:minmax(0,1.2fr) 130px minmax(0,1fr) 34px;gap:8px;align-items:center;margin-top:8px}
+  .nl-preview-list{display:grid;gap:8px}
+  .nl-preview-item{border:1px solid #edf1f7;border-radius:10px;padding:10px;background:#fff}
+  .nl-preview-email{font-size:12px;font-weight:800;color:#0f172a}
+  .nl-preview-meta{font-size:11px;color:#94a3b8;margin-top:4px}
+  .nl-empty{padding:20px;border:1px dashed #d8e0ec;border-radius:12px;text-align:center;color:#94a3b8;font-size:12px}
+  .nl-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .nl-stat{padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #edf1f7}
+  .nl-stat-v{font-size:21px;font-weight:900;color:#0f172a;line-height:1}
+  .nl-stat-l{font-size:11px;color:#94a3b8;margin-top:5px;font-weight:700}
+  .dark .nl-shell,.dark .nl-title,.dark .nl-card-title,.dark .nl-template-title,.dark .nl-campaign-name,.dark .nl-preview-email,.dark .nl-stat-v{color:#e5e7eb}
+  .dark .nl-card,.dark .nl-template,.dark .nl-campaign,.dark .nl-input,.dark .nl-select,.dark .nl-textarea,.dark .nl-preview-item{background:#0e1726;border-color:#253b5c;color:#e5e7eb}
+  .dark .nl-template-h,.dark .nl-stat{background:#111c2d;border-color:#253b5c}
+  @media(max-width:1180px){.nl-grid{grid-template-columns:1fr}.nl-form-grid{grid-template-columns:1fr}}
+</style>
+
+<div class="nl-shell" x-data="newsletterBuilder()" x-init="init()">
+  <div class="nl-top">
+    <div>
+      <div class="nl-breadcrumb">
+        <a href="<%= recordListHref %>" class="text-primary hover:underline"><%= newsletterScopeName %></a>
+        <span> / Newsletter</span>
+      </div>
+      <h1 class="nl-title">Newsletter <%= newsletterScopeName %></h1>
+      <p class="nl-subtitle">Choisissez le champ email, segmentez les records et envoyez des emails HTML, texte ou modele sobre.</p>
+    </div>
+    <div class="nl-actions">
+      <a class="nl-btn" href="<%= recordListHref %>">
+        <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+        Retour
+      </a>
+      <button class="nl-btn" type="button" @click="newCampaign()">
+        <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+        Nouvelle
+      </button>
+      <button class="nl-btn nl-btn-primary" type="button" @click="saveCampaign()" :disabled="saving">
+        <iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon>
+        <span x-text="saving ? 'Enregistrement...' : 'Enregistrer'"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="nl-grid">
+    <aside class="nl-card">
+      <div class="nl-card-h">
+        <div class="nl-card-title">
+          <iconify-icon icon="solar:letter-bold-duotone" width="18" style="color:#4361ee"></iconify-icon>
+          Campagnes
+        </div>
+        <span class="nl-pill nl-pill-gray" x-text="campaigns.length"></span>
+      </div>
+      <div class="nl-card-b">
+        <div class="nl-list" x-show="campaigns.length">
+          <template x-for="campaign in campaigns" :key="campaign._id || campaign.localId">
+            <button type="button" class="nl-campaign" :class="{ 'is-active': current && current._id === campaign._id }" @click="selectCampaign(campaign)">
+              <div class="nl-campaign-name" x-text="campaign.name"></div>
+              <div class="nl-campaign-meta">
+                <span class="nl-pill" :class="campaign.status === 'sent' ? 'nl-pill-green' : campaign.status === 'draft' ? 'nl-pill-gray' : 'nl-pill-orange'" x-text="campaign.status || 'draft'"></span>
+                <span x-text="(campaign.templates || []).length + ' emails'"></span>
+              </div>
+            </button>
+          </template>
+        </div>
+        <div class="nl-empty" x-show="!campaigns.length">Aucune campagne pour cette entite.</div>
+      </div>
+    </aside>
+
+    <main class="nl-card">
+      <div class="nl-card-h">
+        <div class="nl-card-title">
+          <iconify-icon icon="solar:tuning-square-bold-duotone" width="18" style="color:#10b981"></iconify-icon>
+          Configuration
+        </div>
+        <span class="nl-pill" x-text="current._id ? 'Sauvegardee' : 'Brouillon local'"></span>
+      </div>
+
+      <div class="nl-section">
+        <div class="nl-form-grid">
+          <div class="nl-field">
+            <label class="nl-label">Nom de la campagne</label>
+            <input class="nl-input" x-model="current.name" placeholder="Newsletter associations" />
+          </div>
+          <div class="nl-field">
+            <label class="nl-label">Champ email</label>
+            <select class="nl-select" x-model="current.emailField.field" @change="syncEmailFieldName()">
+              <template x-for="field in fields" :key="field.id">
+                <option :value="field.id" x-text="field.label + (field.emailCandidate ? '  - recommande' : '')"></option>
+              </template>
+            </select>
+          </div>
+          <div class="nl-field">
+            <label class="nl-label">Nom expediteur</label>
+            <input class="nl-input" x-model="current.sender.name" placeholder="Dexapp" />
+          </div>
+          <div class="nl-field">
+            <label class="nl-label">Email expediteur</label>
+            <input class="nl-input" x-model="current.sender.email" placeholder="contact@domaine.com" />
+          </div>
+        </div>
+      </div>
+
+      <div class="nl-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+          <div>
+            <div class="nl-card-title">Segment de base</div>
+            <div class="nl-muted">Optionnel : limiter la newsletter a certains records.</div>
+          </div>
+          <button type="button" class="nl-btn" @click="addCondition(current.filters)">
+            <iconify-icon icon="solar:filter-bold" width="15"></iconify-icon>
+            Filtre
+          </button>
+        </div>
+        <template x-for="(condition, idx) in current.filters" :key="'base-' + idx">
+          <div class="nl-condition">
+            <select class="nl-select" x-model="condition.field" @change="syncCondition(condition)">
+              <template x-for="field in fields" :key="field.id">
+                <option :value="field.id" x-text="field.label"></option>
+              </template>
+            </select>
+            <select class="nl-select" x-model="condition.operator">
+              <option value="contains">Contient</option>
+              <option value="equals">Egal</option>
+              <option value="not_equals">Different</option>
+              <option value="is_not_empty">Renseigne</option>
+              <option value="is_empty">Vide</option>
+              <option value="gt">Superieur</option>
+              <option value="lt">Inferieur</option>
+            </select>
+            <input class="nl-input" x-model="condition.value" placeholder="Valeur" :disabled="['is_empty','is_not_empty'].includes(condition.operator)" />
+            <button type="button" class="nl-btn" style="padding:0;width:34px;min-height:34px" @click="current.filters.splice(idx,1)">
+              <iconify-icon icon="solar:trash-bin-trash-linear" width="15"></iconify-icon>
+            </button>
+          </div>
+        </template>
+        <div class="nl-empty" x-show="!current.filters.length">Tous les records avec un email valide seront inclus.</div>
+      </div>
+
+      <div class="nl-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+          <div>
+            <div class="nl-card-title">Emails de la sequence</div>
+            <div class="nl-muted">Chaque email peut avoir ses propres conditions.</div>
+          </div>
+          <button type="button" class="nl-btn" @click="addTemplate()">
+            <iconify-icon icon="solar:letter-unread-linear" width="15"></iconify-icon>
+            Email
+          </button>
+        </div>
+
+        <template x-for="(tpl, tplIdx) in current.templates" :key="tpl.key">
+          <section class="nl-template">
+            <div class="nl-template-h">
+              <div class="nl-template-title">
+                <input type="checkbox" class="form-checkbox" x-model="tpl.enabled" />
+                <input class="nl-input" style="height:32px;max-width:220px" x-model="tpl.name" />
+              </div>
+              <div class="nl-actions">
+                <span class="nl-pill nl-pill-gray" x-text="'#' + (tplIdx + 1)"></span>
+                <button type="button" class="nl-btn" style="padding:0;width:34px;min-height:34px" @click="removeTemplate(tplIdx)" :disabled="current.templates.length <= 1">
+                  <iconify-icon icon="solar:trash-bin-trash-linear" width="15"></iconify-icon>
+                </button>
+              </div>
+            </div>
+            <div class="nl-template-body">
+              <div class="nl-form-grid">
+                <div class="nl-field">
+                  <label class="nl-label">Sujet</label>
+                  <input class="nl-input" x-model="tpl.subject" placeholder="Bonjour {{title}}" />
+                </div>
+                <div class="nl-field">
+                  <label class="nl-label">Format</label>
+                  <select class="nl-select" x-model="tpl.format">
+                    <option value="designed">Modele sobre</option>
+                    <option value="html">HTML libre</option>
+                    <option value="text">Texte simple</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="nl-field">
+                <label class="nl-label">Preheader</label>
+                <input class="nl-input" x-model="tpl.preheader" placeholder="Petit texte visible dans la boite mail" />
+              </div>
+
+              <div class="nl-field" x-show="tpl.format !== 'text'">
+                <label class="nl-label">HTML</label>
+                <textarea class="nl-textarea" x-model="tpl.bodyHtml" placeholder="<p>Bonjour {{title}},</p>"></textarea>
+              </div>
+              <div class="nl-field">
+                <label class="nl-label">Texte</label>
+                <textarea class="nl-textarea" x-model="tpl.bodyText" placeholder="Bonjour {{title}},"></textarea>
+              </div>
+
+              <div class="nl-form-grid" x-show="tpl.format === 'designed'">
+                <div class="nl-field">
+                  <label class="nl-label">Bouton CTA</label>
+                  <input class="nl-input" x-model="tpl.ctaLabel" placeholder="En savoir plus" />
+                </div>
+                <div class="nl-field">
+                  <label class="nl-label">Lien CTA</label>
+                  <input class="nl-input" x-model="tpl.ctaUrl" placeholder="https://..." />
+                </div>
+              </div>
+
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div>
+                    <div class="nl-label">Conditions de cet email</div>
+                    <div class="nl-muted">Exemple : type contient hotel, pays egal Belgique, etc.</div>
+                  </div>
+                  <button type="button" class="nl-btn" @click="addCondition(tpl.conditions)">
+                    <iconify-icon icon="solar:filter-bold" width="15"></iconify-icon>
+                    Condition
+                  </button>
+                </div>
+                <template x-for="(condition, idx) in tpl.conditions" :key="tpl.key + '-condition-' + idx">
+                  <div class="nl-condition">
+                    <select class="nl-select" x-model="condition.field" @change="syncCondition(condition)">
+                      <template x-for="field in fields" :key="field.id">
+                        <option :value="field.id" x-text="field.label"></option>
+                      </template>
+                    </select>
+                    <select class="nl-select" x-model="condition.operator">
+                      <option value="contains">Contient</option>
+                      <option value="equals">Egal</option>
+                      <option value="not_equals">Different</option>
+                      <option value="is_not_empty">Renseigne</option>
+                      <option value="is_empty">Vide</option>
+                      <option value="gt">Superieur</option>
+                      <option value="lt">Inferieur</option>
+                    </select>
+                    <input class="nl-input" x-model="condition.value" placeholder="Valeur" :disabled="['is_empty','is_not_empty'].includes(condition.operator)" />
+                    <button type="button" class="nl-btn" style="padding:0;width:34px;min-height:34px" @click="tpl.conditions.splice(idx,1)">
+                      <iconify-icon icon="solar:trash-bin-trash-linear" width="15"></iconify-icon>
+                    </button>
+                  </div>
+                </template>
+                <div class="nl-empty" x-show="!tpl.conditions.length">Cet email s'applique a tout le segment de base.</div>
+              </div>
+            </div>
+          </section>
+        </template>
+      </div>
+    </main>
+
+    <aside class="nl-card">
+      <div class="nl-card-h">
+        <div class="nl-card-title">
+          <iconify-icon icon="solar:chart-square-bold-duotone" width="18" style="color:#f97316"></iconify-icon>
+          Controle
+        </div>
+      </div>
+      <div class="nl-card-b">
+        <div class="nl-stats">
+          <div class="nl-stat">
+            <div class="nl-stat-v" x-text="preview ? preview.total : '-'"></div>
+            <div class="nl-stat-l">emails eligibles</div>
+          </div>
+          <div class="nl-stat">
+            <div class="nl-stat-v" x-text="preview ? preview.scanned : '-'"></div>
+            <div class="nl-stat-l">records scannes</div>
+          </div>
+        </div>
+
+        <div style="display:grid;gap:8px;margin-top:14px">
+          <button type="button" class="nl-btn" @click="previewCampaign()" :disabled="loading || !current._id">
+            <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
+            <span x-text="loading ? 'Analyse...' : 'Previsualiser'"></span>
+          </button>
+          <div class="nl-field">
+            <label class="nl-label">Email de test</label>
+            <input class="nl-input" x-model="testEmail" placeholder="<%= user.email %>" />
+          </div>
+          <button type="button" class="nl-btn" @click="sendTest()" :disabled="loading || !current._id">
+            <iconify-icon icon="solar:plain-bold" width="16"></iconify-icon>
+            Envoyer test
+          </button>
+          <button type="button" class="nl-btn nl-btn-green" @click="sendCampaign(false)" :disabled="loading || !current._id">
+            <iconify-icon icon="solar:mailbox-bold-duotone" width="16"></iconify-icon>
+            Envoyer 100 max
+          </button>
+          <button type="button" class="nl-btn" @click="sendCampaign(true)" :disabled="loading || !current._id">
+            <iconify-icon icon="solar:shield-check-bold-duotone" width="16"></iconify-icon>
+            Simulation
+          </button>
+        </div>
+
+        <div style="margin-top:16px" x-show="preview">
+          <div class="nl-card-title" style="margin-bottom:10px">Repartition</div>
+          <template x-for="item in (preview?.byTemplate || [])" :key="item.key">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef2f7">
+              <span style="font-size:12px;font-weight:800" x-text="item.name"></span>
+              <span class="nl-pill" x-text="item.count"></span>
+            </div>
+          </template>
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="nl-card-title" style="margin-bottom:10px">Exemples</div>
+          <div class="nl-preview-list" x-show="preview && preview.sample && preview.sample.length">
+            <template x-for="item in preview.sample" :key="item.recordId + item.template">
+              <div class="nl-preview-item">
+                <div class="nl-preview-email" x-text="item.email"></div>
+                <div class="nl-preview-meta" x-text="item.template + ' - ' + item.subject"></div>
+              </div>
+            </template>
+          </div>
+          <div class="nl-empty" x-show="!preview || !preview.sample || !preview.sample.length">Enregistrez puis lancez une previsualisation.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+window.__NEWSLETTER_DATA__ = <%- initialData %>;
+
+document.addEventListener('alpine:init', () => {
+  Alpine.data('newsletterBuilder', () => ({
+    accountNumber: '',
+    entity: {},
+    fields: [],
+    campaigns: [],
+    current: null,
+    preview: null,
+    sourceView: null,
+    defaultFilters: [],
+    saving: false,
+    loading: false,
+    testEmail: '<%= user.email || "" %>',
+
+    init() {
+      const data = window.__NEWSLETTER_DATA__ || {};
+      this.accountNumber = data.accountNumber;
+      this.entity = data.entity || {};
+      this.sourceView = data.sourceView || null;
+      this.defaultFilters = data.defaultFilters || [];
+      this.fields = data.fields || [];
+      this.campaigns = data.campaigns || [];
+      this.defaultTemplates = data.defaultTemplates || [];
+      if (this.campaigns.length) this.selectCampaign(this.campaigns[0]);
+      else this.newCampaign();
+    },
+
+    clone(value) {
+      return JSON.parse(JSON.stringify(value || null));
+    },
+
+    preferredEmailField() {
+      return this.fields.find(field => field.emailCandidate) || this.fields.find(field => field.source === 'custom') || this.fields[0] || { id: '', label: '' };
+    },
+
+    newCampaign() {
+      const emailField = this.preferredEmailField();
+      this.current = {
+        localId: 'local_' + Date.now(),
+        name: `Newsletter ${this.sourceView?.name || this.entity.namePlural || this.entity.name || ''}`.trim(),
+        status: 'draft',
+        sourceView: this.sourceView || { viewId: '', slug: '', name: '' },
+        emailField: { field: emailField.id, fieldName: emailField.label, source: emailField.source || 'custom' },
+        sender: { name: '', email: '', replyTo: '' },
+        filters: this.clone(this.defaultFilters),
+        templates: this.clone(this.defaultTemplates)
+      };
+      this.preview = null;
+    },
+
+    selectCampaign(campaign) {
+      this.current = this.clone(campaign);
+      if (!this.current.sender) this.current.sender = { name: '', email: '', replyTo: '' };
+      if (!this.current.sourceView) this.current.sourceView = this.sourceView || { viewId: '', slug: '', name: '' };
+      if (!this.current.emailField) {
+        const emailField = this.preferredEmailField();
+        this.current.emailField = { field: emailField.id, fieldName: emailField.label, source: emailField.source || 'custom' };
+      }
+      if (!Array.isArray(this.current.filters)) this.current.filters = [];
+      if (!Array.isArray(this.current.templates) || !this.current.templates.length) this.current.templates = this.clone(this.defaultTemplates);
+      this.preview = null;
+    },
+
+    fieldById(id) {
+      return this.fields.find(field => field.id === id) || this.fields[0] || { id: '', label: '', type: 'text', source: 'custom' };
+    },
+
+    syncEmailFieldName() {
+      const field = this.fieldById(this.current.emailField.field);
+      this.current.emailField.fieldName = field.label;
+      this.current.emailField.source = field.source || 'custom';
+    },
+
+    syncCondition(condition) {
+      const field = this.fieldById(condition.field);
+      condition.fieldName = field.label;
+      condition.fieldType = field.type || 'text';
+    },
+
+    addCondition(target) {
+      const field = this.fields[0] || { id: '', label: '', type: 'text' };
+      target.push({ field: field.id, fieldName: field.label, fieldType: field.type || 'text', operator: 'contains', value: '', logic: target.length ? 'AND' : 'AND' });
+    },
+
+    addTemplate() {
+      const next = this.current.templates.length + 1;
+      this.current.templates.push({
+        key: 'local_tpl_' + Date.now(),
+        name: `Email ${next}`,
+        enabled: true,
+        subject: 'Bonjour {{title}}',
+        preheader: '',
+        format: 'html',
+        bodyText: 'Bonjour,',
+        bodyHtml: '<p>Bonjour {{title}},</p>',
+        ctaLabel: '',
+        ctaUrl: '',
+        conditions: [],
+        order: next - 1
+      });
+    },
+
+    removeTemplate(index) {
+      if (this.current.templates.length <= 1) return;
+      this.current.templates.splice(index, 1);
+    },
+
+    async saveCampaign() {
+      this.saving = true;
+      this.syncEmailFieldName();
+      this.current.templates.forEach((tpl, index) => { tpl.order = index; });
+      try {
+        const isExisting = !!this.current._id;
+        const url = isExisting
+          ? `/account/${this.accountNumber}/api/newsletter/entity/${this.entity.slug}/campaigns/${this.current._id}`
+          : `/account/${this.accountNumber}/api/newsletter/entity/${this.entity.slug}/campaigns`;
+        const res = await fetch(url, {
+          method: isExisting ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.current)
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur');
+        const saved = data.campaign;
+        const idx = this.campaigns.findIndex(item => item._id === saved._id || item.localId === this.current.localId);
+        if (idx >= 0) this.campaigns.splice(idx, 1, saved);
+        else this.campaigns.unshift(saved);
+        this.selectCampaign(saved);
+        window.showMessage ? window.showMessage('Newsletter enregistree') : null;
+      } catch (error) {
+        alert(error.message || 'Erreur');
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    async previewCampaign() {
+      this.loading = true;
+      try {
+        const res = await fetch(`/account/${this.accountNumber}/api/newsletter/entity/${this.entity.slug}/campaigns/${this.current._id}/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur');
+        this.preview = data.preview;
+      } catch (error) {
+        alert(error.message || 'Erreur');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async sendTest() {
+      this.loading = true;
+      try {
+        const res = await fetch(`/account/${this.accountNumber}/api/newsletter/entity/${this.entity.slug}/campaigns/${this.current._id}/send-test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ to: this.testEmail })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur');
+        alert(data.message || 'Test envoye');
+      } catch (error) {
+        alert(error.message || 'Erreur');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async sendCampaign(dryRun) {
+      if (!dryRun && !confirm('Confirmer l envoi de la newsletter ? Le premier lot est limite a 100 emails.')) return;
+      this.loading = true;
+      try {
+        const res = await fetch(`/account/${this.accountNumber}/api/newsletter/entity/${this.entity.slug}/campaigns/${this.current._id}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ confirmSend: !dryRun, dryRun: !!dryRun, limit: 100 })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur');
+        const r = data.result || {};
+        alert(`${dryRun ? 'Simulation' : 'Envoi'} termine: ${r.sent || 0} envoyes, ${r.dryRun || 0} simules, ${r.failed || 0} erreurs, ${r.skipped || 0} ignores.`);
+        await this.previewCampaign();
+      } catch (error) {
+        alert(error.message || 'Erreur');
+      } finally {
+        this.loading = false;
+      }
+    }
+  }));
+});
+</script>

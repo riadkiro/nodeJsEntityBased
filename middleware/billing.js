@@ -10,6 +10,7 @@
 
 const Subscription = require('../models/subscription.model');
 const Usage = require('../models/usage.model');
+const { getDefaultPlanDefinition, getPlanLimits } = require('../services/billing-catalog');
 
 // Cache subscriptions for 60s to avoid DB hits on every request
 const subscriptionCache = new Map();
@@ -25,20 +26,11 @@ async function getSubscription(accountNumber) {
     
     // If no subscription exists, return free plan defaults
     if (!sub) {
+        const freePlan = getDefaultPlanDefinition('free');
         sub = {
             planSlug: 'free',
             status: 'active',
-            effectiveLimits: {
-                users: 1,
-                externalCollaborators: 2,
-                guests: 5,
-                entities: 3,
-                records: 500,
-                storageMB: 1024,
-                aiCreditsPerMonth: 50,
-                automationsPerMonth: 0,
-                apiCallsPerMonth: 0,
-            },
+            effectiveLimits: getPlanLimits(freePlan),
         };
     }
 

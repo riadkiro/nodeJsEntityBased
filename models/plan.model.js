@@ -3,18 +3,27 @@ const mongoose = require('mongoose');
 /**
  * Plan — SaaS subscription plan definition
  * ──────────────────────────────────────────
- * Defines the available plans: Free, Pro, Business, Enterprise
- * with their limits and feature flags.
+ * Defines the available plans and pricing metadata.
+ * Provider identifiers are kept separate so Stripe or Chargebee can be wired
+ * without changing the subscription model later.
  */
 const PlanSchema = new mongoose.Schema({
-    slug: { type: String, unique: true, required: true }, // 'free', 'pro', 'business', 'enterprise'
+    slug: { type: String, unique: true, required: true },
     name: { type: String, required: true },
     description: { type: String },
+    audience: { type: String, enum: ['personal', 'professional'], default: 'personal' },
+    billingModel: { type: String, enum: ['free', 'flat', 'per_seat'], default: 'flat' },
     
     // Pricing
     price: {
-        monthly: { type: Number, default: 0 },  // Base price in EUR/user/month
-        annual: { type: Number, default: 0 },    // Annual price per user/month (with discount)
+        monthly: { type: Number, default: 0 },
+        annual: { type: Number, default: 0 },
+    },
+
+    seatPolicy: {
+        included: { type: Number, default: 1 },
+        min: { type: Number, default: 1 },
+        max: { type: Number, default: -1 },
     },
 
     // Limits (-1 = unlimited)
@@ -51,6 +60,19 @@ const PlanSchema = new mongoose.Schema({
     color: { type: String },
     isActive: { type: Boolean, default: true },
     isPublic: { type: Boolean, default: true }, // Show on pricing page
+
+    providerRefs: {
+        stripe: {
+            productId: { type: String },
+            monthlyPriceId: { type: String },
+            annualPriceId: { type: String },
+        },
+        chargebee: {
+            itemId: { type: String },
+            monthlyItemPriceId: { type: String },
+            annualItemPriceId: { type: String },
+        },
+    },
 
 }, { timestamps: true });
 

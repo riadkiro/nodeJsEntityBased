@@ -23,9 +23,14 @@ const SubscriptionSchema = new mongoose.Schema({
         regionMultiplier: { type: Number, default: 1.0 }, // For localized pricing
         
         // Payment provider
+        provider: { type: String, enum: ['manual', 'stripe', 'chargebee'], default: 'manual' },
+        providerCustomerId: { type: String },
+        providerSubscriptionId: { type: String },
+        providerPriceId: { type: String },
         stripeCustomerId: { type: String },
         stripeSubscriptionId: { type: String },
         paymentMethod: { type: String }, // 'card', 'sepa', etc.
+        adminNote: { type: String },
         
         // Billing dates
         nextBillingDate: { type: Date },
@@ -45,6 +50,16 @@ const SubscriptionSchema = new mongoose.Schema({
         included: { type: Number, default: 1 },     // From plan
         purchased: { type: Number, default: 0 },     // Extra seats purchased
         used: { type: Number, default: 1 },           // Currently active members
+        billable: { type: Number, default: 1 },       // Seats billed by provider/manual invoice
+    },
+
+    priceSnapshot: {
+        currency: { type: String, default: 'EUR' },
+        billingModel: { type: String, enum: ['free', 'flat', 'per_seat'], default: 'free' },
+        monthlyUnitAmount: { type: Number, default: 0 },
+        annualUnitAmount: { type: Number, default: 0 },
+        monthlyTotalAmount: { type: Number, default: 0 },
+        billableSeats: { type: Number, default: 1 },
     },
 
     // Status
@@ -69,6 +84,7 @@ const SubscriptionSchema = new mongoose.Schema({
         storageMB:             { type: Number, default: 1024 },
         aiCreditsPerMonth:     { type: Number, default: 50 },
         automationsPerMonth:   { type: Number, default: 0 },
+        documentsPerMonth:     { type: Number, default: -1 },
         apiCallsPerMonth:      { type: Number, default: 0 },
     },
 

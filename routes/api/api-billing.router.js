@@ -7,6 +7,13 @@ const Usage = require('../../models/usage.model');
 const Account = require('../../models/account.model');
 const { requirePerm } = require('../../middleware/permissions');
 const { invalidateCache } = require('../../middleware/billing');
+const {
+    buildPriceSnapshot,
+    ensureDefaultBillingPlans,
+    getActiveSeatCount,
+    getPlanLimits,
+    getPlanSeatPolicy,
+} = require('../../services/billing-catalog');
 
 // ═══════════════════════════════════════════
 // PUBLIC — Plans & Addons (no auth required for pricing page)
@@ -15,6 +22,7 @@ const { invalidateCache } = require('../../middleware/billing');
 // ── GET /api/billing/plans ────────────────────────────
 router.get('/plans', async (req, res) => {
     try {
+        await ensureDefaultBillingPlans();
         const plans = await Plan.find({ isActive: true, isPublic: true })
             .sort({ order: 1 })
             .lean();
@@ -46,18 +54,22 @@ router.get('/addons', async (req, res) => {
 // Get current workspace subscription
 router.get('/subscription', async (req, res) => {
     try {
+        await ensureDefaultBillingPlans();
         let sub = await Subscription.findOne({ accountNumber: req.account_number }).lean();
         
         if (!sub) {
             // No subscription yet — return free defaults
             const freePlan = await Plan.findOne({ slug: 'free' }).lean();
+            const account = await Account.findOne({ account_number: req.account_number }).lean();
             sub = {
                 planSlug: 'free',
                 plan: freePlan,
                 status: 'active',
-                effectiveLimits: freePlan?.limits || {},
-                seats: { included: 1, purchased: 0, used: 1 },
+                effectiveLimits: getPlanLimits(freePlan),
+                seats: { included: 1, purchased: 0, used: getActiveSeatCount(account), billable: 1 },
                 addons: [],
+                billing: { cycle: 'monthly', currency: 'EUR', provider: 'manual' },
+                priceSnapshot: buildPriceSnapshot(freePlan, null, account),
             };
         } else {
             // Enrich with plan details
@@ -121,17 +133,20 @@ router.get('/usage', async (req, res) => {
 // Change subscription plan (admin/owner only)
 router.post('/change-plan', requirePerm('settings.update'), async (req, res) => {
     try {
+        await ensureDefaultBillingPlans();
         const { planSlug, cycle } = req.body;
         if (!planSlug) return res.status(400).json({ error: 'planSlug required' });
 
         const plan = await Plan.findOne({ slug: planSlug, isActive: true });
         if (!plan) return res.status(404).json({ error: 'Plan not found' });
 
+        const account = await Account.findOne({ account_number: req.account_number });
+        const activeSeats = getActiveSeatCount(account);
+        const seatPolicy = getPlanSeatPolicy(plan);
         let sub = await Subscription.findOne({ accountNumber: req.account_number });
         
         if (!sub) {
             // Create new subscription
-            const account = await Account.findOne({ account_number: req.account_number });
             sub = new Subscription({
                 accountNumber: req.account_number,
                 accountId: account?._id,
@@ -142,13 +157,25 @@ router.post('/change-plan', requirePerm('settings.update'), async (req, res) => 
                 },
                 status: plan.slug === 'free' ? 'active' : 'trialing',
                 trialEndsAt: plan.slug !== 'free' ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) : null,
-                effectiveLimits: { ...plan.limits.toObject() },
+                seats: {
+                    included: seatPolicy.included,
+                    purchased: 0,
+                    used: activeSeats,
+                    billable: plan.billingModel === 'per_seat' ? Math.max(seatPolicy.min, activeSeats) : 1,
+                },
+                effectiveLimits: getPlanLimits(plan),
             });
         } else {
             sub.planSlug = plan.slug;
             sub.planId = plan._id;
             if (cycle) sub.billing.cycle = cycle;
-            sub.effectiveLimits = { ...plan.limits.toObject() };
+            sub.seats.included = seatPolicy.included;
+            sub.seats.used = activeSeats;
+            sub.seats.billable = plan.billingModel === 'per_seat'
+                ? Math.max(seatPolicy.min, activeSeats, Number(sub.seats.billable || 0))
+                : 1;
+            sub.seats.purchased = Math.max(0, sub.seats.billable - seatPolicy.included);
+            sub.effectiveLimits = getPlanLimits(plan);
             
             // Recalculate with addons
             for (const activeAddon of sub.addons) {
@@ -168,6 +195,8 @@ router.post('/change-plan', requirePerm('settings.update'), async (req, res) => 
                 }
             }
         }
+
+        sub.priceSnapshot = buildPriceSnapshot(plan, sub, account);
 
         await sub.save();
         invalidateCache(req.account_number);
@@ -219,7 +248,7 @@ router.post('/add-addon', requirePerm('settings.update'), async (req, res) => {
 
         // Recalculate effective limits
         const plan = await Plan.findOne({ slug: sub.planSlug });
-        sub.effectiveLimits = { ...plan.limits.toObject() };
+        sub.effectiveLimits = getPlanLimits(plan);
         for (const activeAddon of sub.addons) {
             const a = await Addon.findOne({ slug: activeAddon.addonSlug });
             if (a?.provides) {
@@ -263,7 +292,7 @@ router.post('/remove-addon', requirePerm('settings.update'), async (req, res) =>
 
         // Recalculate effective limits
         const plan = await Plan.findOne({ slug: sub.planSlug });
-        sub.effectiveLimits = { ...plan.limits.toObject() };
+        sub.effectiveLimits = getPlanLimits(plan);
         for (const activeAddon of sub.addons) {
             const a = await Addon.findOne({ slug: activeAddon.addonSlug });
             if (a?.provides) {

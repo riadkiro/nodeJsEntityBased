@@ -24,6 +24,7 @@ router.get("/", superadminController.dashboard);
 router.get("/users", superadminController.usersList);
 router.get("/users/:userId", superadminController.userDetail);
 router.get("/accounts", superadminController.accountsList);
+router.get("/billing", superadminController.billingPage);
 router.get("/entity-templates", entityTemplateController.listPage);
 router.get("/space-templates", spaceTemplateController.listPage);
 
@@ -35,6 +36,8 @@ router.post("/api/users/membership", superadminController.updateMembership);
 router.post("/api/users/delete", superadminController.deleteUser);
 router.post("/api/accounts/status", superadminController.updateAccountStatus);
 router.post("/api/accounts/invite", superadminController.inviteToAccount);
+router.post("/api/billing/plans/sync-defaults", superadminController.syncBillingPlans);
+router.post("/api/billing/subscription", superadminController.updateAccountSubscription);
 
 // JSON APIs
 router.get("/api/users", superadminController.usersApi);

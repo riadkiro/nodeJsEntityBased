@@ -11,11 +11,43 @@
  */
 const User = require("../models/user.model");
 const Account = require("../models/account.model");
+const Plan = require("../models/plan.model");
+const Subscription = require("../models/subscription.model");
 const {
     convertPendingInvitesToGrants,
     invitationRedirectUrl,
 } = require("../services/record-access-invitations");
 const { ensureTenantDatabase } = require("../services/tenant-provisioning");
+const { invalidateCache } = require("../middleware/billing");
+const {
+    BILLING_CYCLES,
+    BILLING_PROVIDERS,
+    SUBSCRIPTION_STATUSES,
+    buildPriceSnapshot,
+    ensureDefaultBillingPlans,
+    getActiveSeatCount,
+    getBillableSeats,
+    getDefaultPlanDefinition,
+    getPlanLimits,
+    getPlanSeatPolicy,
+} = require("../services/billing-catalog");
+
+function jsonForScript(value) {
+    return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
+function optionalDate(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateInput(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+}
 
 module.exports = {
 
@@ -181,6 +213,234 @@ module.exports = {
         } catch (error) {
             console.error("[SuperAdmin] Accounts list error:", error);
             res.status(500).send("Server Error");
+        }
+    },
+
+    // ── Billing / Subscriptions ──────────────────────────────
+    billingPage: async (req, res) => {
+        try {
+            await ensureDefaultBillingPlans();
+
+            const [plans, accounts] = await Promise.all([
+                Plan.find({ isActive: true }).sort({ order: 1 }).lean(),
+                Account.find().sort({ created_on: -1 }).lean(),
+            ]);
+
+            const accountNumbers = accounts.map(acc => acc.account_number).filter(Boolean);
+            const ownerIds = accounts.map(acc => acc.ownerId).filter(Boolean);
+
+            const [subscriptions, owners] = await Promise.all([
+                Subscription.find({ accountNumber: { $in: accountNumbers } }).lean(),
+                User.find({ _id: { $in: ownerIds } }).select('name email avatar').lean(),
+            ]);
+
+            const planMap = new Map(plans.map(plan => [plan.slug, plan]));
+            const subscriptionMap = new Map(subscriptions.map(sub => [sub.accountNumber, sub]));
+            const ownerMap = new Map(owners.map(owner => [String(owner._id), owner]));
+            const defaultFreePlan = planMap.get('free') || getDefaultPlanDefinition('free');
+
+            const rows = accounts.map(account => {
+                const sub = subscriptionMap.get(account.account_number);
+                const plan = planMap.get(sub?.planSlug) || defaultFreePlan;
+                const activeSeats = getActiveSeatCount(account);
+                const seatPolicy = getPlanSeatPolicy(plan);
+                const workingSub = sub || {
+                    planSlug: 'free',
+                    status: 'active',
+                    billing: { cycle: 'monthly', currency: 'EUR', provider: 'manual' },
+                    seats: {
+                        included: seatPolicy.included,
+                        purchased: 0,
+                        used: activeSeats,
+                        billable: 1,
+                    },
+                    effectiveLimits: getPlanLimits(plan),
+                };
+                const priceSnapshot = buildPriceSnapshot(plan, workingSub, account);
+                const billableSeats = getBillableSeats(plan, workingSub, account);
+                const owner = account.ownerId ? ownerMap.get(String(account.ownerId)) : null;
+
+                return {
+                    accountNumber: account.account_number,
+                    accountId: account._id,
+                    accountName: account.name,
+                    accountIcon: account.icon,
+                    accountStatus: account.status,
+                    ownerName: owner?.name || 'Sans propriétaire',
+                    ownerEmail: owner?.email || '',
+                    planSlug: plan.slug,
+                    planName: plan.name,
+                    planColor: plan.color || '#64748b',
+                    billingModel: plan.billingModel || 'free',
+                    status: workingSub.status || 'active',
+                    provider: workingSub.billing?.provider || 'manual',
+                    cycle: workingSub.billing?.cycle || 'monthly',
+                    activeSeats,
+                    billableSeats,
+                    monthlyAmount: priceSnapshot.monthlyTotalAmount || 0,
+                    nextBillingDate: workingSub.billing?.nextBillingDate || null,
+                    nextBillingDateInput: formatDateInput(workingSub.billing?.nextBillingDate),
+                    currentPeriodEndInput: formatDateInput(workingSub.currentPeriodEnd),
+                    trialEndsAtInput: formatDateInput(workingSub.trialEndsAt),
+                    providerCustomerId: workingSub.billing?.providerCustomerId || workingSub.billing?.stripeCustomerId || '',
+                    providerSubscriptionId: workingSub.billing?.providerSubscriptionId || workingSub.billing?.stripeSubscriptionId || '',
+                    providerPriceId: workingSub.billing?.providerPriceId || '',
+                    adminNote: workingSub.billing?.adminNote || '',
+                    createdOn: account.created_on,
+                    hasSubscription: Boolean(sub),
+                };
+            });
+
+            const stats = rows.reduce((acc, row) => {
+                acc.mrr += row.monthlyAmount;
+                if (row.monthlyAmount > 0 && ['active', 'trialing', 'past_due'].includes(row.status)) acc.paid += 1;
+                if (row.status === 'trialing') acc.trialing += 1;
+                if (row.planSlug === 'free') acc.free += 1;
+                if (row.provider !== 'manual') acc.providerLinked += 1;
+                return acc;
+            }, { mrr: 0, paid: 0, trialing: 0, free: 0, providerLinked: 0 });
+
+            res.render("superadmin/sa-billing", {
+                layout: "layout-superadmin",
+                user: req.user,
+                rows,
+                plans,
+                stats: {
+                    ...stats,
+                    mrr: Math.round(stats.mrr * 100) / 100,
+                    accounts: rows.length,
+                },
+                billingJson: jsonForScript({
+                    rows,
+                    plans,
+                    stats,
+                    providers: BILLING_PROVIDERS,
+                    statuses: SUBSCRIPTION_STATUSES,
+                    cycles: BILLING_CYCLES,
+                }),
+            });
+        } catch (error) {
+            console.error("[SuperAdmin] Billing page error:", error);
+            res.status(500).send("Server Error");
+        }
+    },
+
+    // ── API: Billing catalog seed ────────────────────────────
+    syncBillingPlans: async (req, res) => {
+        try {
+            const plans = await ensureDefaultBillingPlans();
+            res.json({ success: true, plans });
+        } catch (error) {
+            console.error("[SuperAdmin] Sync billing plans error:", error);
+            res.status(500).json({ error: "Server Error" });
+        }
+    },
+
+    // ── API: Update Workspace Subscription ───────────────────
+    updateAccountSubscription: async (req, res) => {
+        try {
+            await ensureDefaultBillingPlans();
+
+            const {
+                accountNumber,
+                planSlug,
+                status,
+                provider,
+                cycle,
+                billableSeats,
+                nextBillingDate,
+                currentPeriodEnd,
+                trialEndsAt,
+                providerCustomerId,
+                providerSubscriptionId,
+                providerPriceId,
+                adminNote,
+            } = req.body;
+
+            if (!accountNumber || !planSlug) {
+                return res.status(400).json({ error: 'accountNumber and planSlug are required' });
+            }
+
+            if (status && !SUBSCRIPTION_STATUSES.includes(status)) {
+                return res.status(400).json({ error: 'Invalid subscription status' });
+            }
+
+            if (provider && !BILLING_PROVIDERS.includes(provider)) {
+                return res.status(400).json({ error: 'Invalid billing provider' });
+            }
+
+            if (cycle && !BILLING_CYCLES.includes(cycle)) {
+                return res.status(400).json({ error: 'Invalid billing cycle' });
+            }
+
+            const [account, plan] = await Promise.all([
+                Account.findOne({ account_number: String(accountNumber) }),
+                Plan.findOne({ slug: planSlug, isActive: true }),
+            ]);
+
+            if (!account) return res.status(404).json({ error: 'Account not found' });
+            if (!plan) return res.status(404).json({ error: 'Plan not found' });
+
+            const activeSeats = getActiveSeatCount(account);
+            const seatPolicy = getPlanSeatPolicy(plan);
+            const resolvedStatus = plan.billingModel === 'free' ? 'active' : (status || 'active');
+
+            let sub = await Subscription.findOne({ accountNumber: account.account_number });
+            if (!sub) {
+                sub = new Subscription({
+                    accountNumber: account.account_number,
+                    accountId: account._id,
+                });
+            }
+
+            sub.accountId = account._id;
+            sub.planSlug = plan.slug;
+            sub.planId = plan._id;
+            sub.status = resolvedStatus;
+            sub.trialEndsAt = optionalDate(trialEndsAt);
+            sub.currentPeriodStart = sub.currentPeriodStart || new Date();
+            sub.currentPeriodEnd = optionalDate(currentPeriodEnd);
+            sub.canceledAt = resolvedStatus === 'canceled' ? (sub.canceledAt || new Date()) : null;
+
+            sub.billing = {
+                ...(sub.billing?.toObject ? sub.billing.toObject() : sub.billing || {}),
+                cycle: cycle || sub.billing?.cycle || 'monthly',
+                currency: 'EUR',
+                provider: provider || sub.billing?.provider || 'manual',
+                providerCustomerId: providerCustomerId || '',
+                providerSubscriptionId: providerSubscriptionId || '',
+                providerPriceId: providerPriceId || '',
+                stripeCustomerId: provider === 'stripe' ? (providerCustomerId || sub.billing?.stripeCustomerId || '') : sub.billing?.stripeCustomerId,
+                stripeSubscriptionId: provider === 'stripe' ? (providerSubscriptionId || sub.billing?.stripeSubscriptionId || '') : sub.billing?.stripeSubscriptionId,
+                nextBillingDate: optionalDate(nextBillingDate),
+                adminNote: adminNote || '',
+            };
+
+            const requestedSeats = Number(billableSeats);
+            const resolvedBillableSeats = plan.billingModel === 'per_seat'
+                ? getBillableSeats(plan, { ...sub.toObject(), seats: { ...sub.seats?.toObject?.(), used: activeSeats } }, account, requestedSeats)
+                : 1;
+
+            sub.seats = {
+                included: seatPolicy.included,
+                used: activeSeats,
+                billable: resolvedBillableSeats,
+                purchased: Math.max(0, resolvedBillableSeats - seatPolicy.included),
+            };
+            sub.effectiveLimits = getPlanLimits(plan);
+            sub.priceSnapshot = buildPriceSnapshot(plan, sub, account, resolvedBillableSeats);
+
+            await sub.save();
+            invalidateCache(account.account_number);
+
+            res.json({
+                success: true,
+                message: `Abonnement ${account.name} mis à jour`,
+                subscription: sub,
+            });
+        } catch (error) {
+            console.error("[SuperAdmin] Update account subscription error:", error);
+            res.status(500).json({ error: "Server Error" });
         }
     },
 

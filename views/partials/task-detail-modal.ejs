@@ -1,5 +1,8 @@
 <!-- Shared Task Detail Modal — reusable across hub + record pages -->
 
+<link rel="stylesheet" href="/css/app/rich-text-editor.css">
+<script src="/js/rich-text-editor.js"></script>
+
 <style>
 /* ═══ Task Detail Modal — aligned with record tasks surface ═══ */
 .tdm-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.34);backdrop-filter:blur(4px);z-index:998;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
@@ -20,7 +23,7 @@
 .tdm-title-input:focus{border-bottom-color:#4361ee}
 .tdm-section-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 8px}
 .tdm-section-label{margin:0;color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.45px;line-height:1.2}
-.tdm-desc-editor{border:1.5px solid #e8ecf1;border-radius:11px;background:#fafbfc;overflow:hidden;transition:all .16s}
+.tdm-desc-editor{border:1.5px solid #e8ecf1;border-radius:11px;background:#fafbfc;overflow:visible;transition:all .16s}
 .tdm-desc-editor:focus-within{border-color:#4361ee;background:#fff;box-shadow:0 0 0 3px #4361ee10}
 .tdm-desc-toolbar{min-height:36px;padding:6px 8px;border-bottom:1px solid #edf1f6;display:flex;align-items:center;gap:4px;flex-wrap:wrap;background:#fff}
 .tdm-desc-tool{width:26px;height:24px;border:0;border-radius:7px;background:transparent;color:#8492ae;display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:11px;font-weight:800;line-height:1;cursor:pointer;transition:all .14s}
@@ -229,31 +232,17 @@
                             <div class="tdm-section-row">
                                 <div class="tdm-section-label">Description</div>
                             </div>
-                            <div class="tdm-desc-editor" @click.stop>
-                                <div class="tdm-desc-toolbar" @mousedown.prevent>
-                                    <button class="tdm-desc-tool is-text" type="button" title="Titre" @click="$store.taskModal.execDescriptionCommand('formatBlock', 'h3')">T</button>
-                                    <button class="tdm-desc-tool" type="button" title="Gras" @click="$store.taskModal.execDescriptionCommand('bold')"><iconify-icon icon="solar:text-bold-linear" width="14"></iconify-icon></button>
-                                    <button class="tdm-desc-tool" type="button" title="Italique" @click="$store.taskModal.execDescriptionCommand('italic')"><iconify-icon icon="solar:text-italic-linear" width="14"></iconify-icon></button>
-                                    <button class="tdm-desc-tool" type="button" title="Souligner" @click="$store.taskModal.execDescriptionCommand('underline')"><iconify-icon icon="solar:text-underline-linear" width="14"></iconify-icon></button>
-                                    <span class="tdm-desc-sep"></span>
-                                    <button class="tdm-desc-tool" type="button" title="Liste" @click="$store.taskModal.execDescriptionCommand('insertUnorderedList')"><iconify-icon icon="solar:list-bold-duotone" width="14"></iconify-icon></button>
-                                    <button class="tdm-desc-tool" type="button" title="Liste numérotée" @click="$store.taskModal.execDescriptionCommand('insertOrderedList')"><iconify-icon icon="solar:list-arrow-down-minimalistic-linear" width="14"></iconify-icon></button>
-                                    <button class="tdm-desc-tool" type="button" title="Checklist" @click="$store.taskModal.insertDescriptionChecklist()"><iconify-icon icon="solar:checklist-minimalistic-linear" width="14"></iconify-icon></button>
-                                    <span class="tdm-desc-sep"></span>
-                                    <button class="tdm-desc-tool" type="button" title="Lien" @click="$store.taskModal.insertDescriptionLink()"><iconify-icon icon="solar:link-round-linear" width="14"></iconify-icon></button>
-                                    <button class="tdm-desc-tool" type="button" title="Image" @click="$refs.taskDescriptionImageInput.click()"><iconify-icon icon="solar:gallery-add-linear" width="14"></iconify-icon></button>
-                                    <button class="tdm-desc-tool" type="button" title="Nettoyer" @click="$store.taskModal.execDescriptionCommand('removeFormat')"><iconify-icon icon="solar:eraser-linear" width="14"></iconify-icon></button>
-                                </div>
-                                <input class="tdm-hidden-input" x-ref="taskDescriptionImageInput" type="file" accept="image/*" multiple @change="$store.taskModal.uploadDescriptionImages($event.target.files); $event.target.value = ''">
+                            <div class="tdm-desc-editor dx-rte" @click.stop
+                                 x-init="$store.taskModal.initDescriptionEditor($el)"
+                                 x-effect="$store.taskModal.syncDescriptionEditor()">
+                                <div class="dx-rte-toolbar" data-dx-rte-toolbar></div>
+                                <input class="tdm-hidden-input" data-task-description-image type="file" accept="image/*" multiple @change="$store.taskModal.descriptionEditorInstance?.handleImageFiles($event.target.files); $event.target.value = ''">
                                 <div class="tdm-desc-area"
+                                     data-dx-rte-editor
                                      contenteditable="true"
-                                     data-placeholder="Ajouter une description détaillée..."
-                                     @input="$store.taskModal.onDescriptionInput($event)"
-                                     @change="$store.taskModal.onDescriptionInput($event)"
-                                     @blur="$store.taskModal.flushDescriptionSave()"
-                                     @paste="$store.taskModal.handleDescriptionPaste($event)"
-                                     x-effect="$store.taskModal.syncDescriptionEditor($el)">
+                                     data-placeholder="Ajouter une description détaillée...">
                                 </div>
+                                <div class="dx-rte-image-toolbar" data-dx-rte-image-toolbar></div>
                             </div>
                             <div class="tdm-desc-status" x-text="$store.taskModal.descriptionStatus"></div>
 
@@ -612,6 +601,7 @@ document.addEventListener('alpine:init', () => {
 		        chatFiles: [],
 		        chatSending: false,
 		        descriptionStatus: '',
+		        descriptionEditorInstance: null,
 		        _descriptionSaveTimer: null,
 		        _descriptionSavedHtml: '',
 		        _descriptionEditorSyncing: false,
@@ -718,6 +708,8 @@ document.addEventListener('alpine:init', () => {
 		            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 		            this._descriptionSaveTimer = null;
 		            this._descriptionSavedHtml = '';
+		            if (this.descriptionEditorInstance) this.descriptionEditorInstance.destroy();
+		            this.descriptionEditorInstance = null;
 		            this.clearChatFiles();
 		            this.assignMenu = false;
 		            this.inviteEmail = '';
@@ -986,131 +978,60 @@ document.addEventListener('alpine:init', () => {
 	            }
 	        },
 
-	        descriptionEditor() {
-	            return document.querySelector('.tdm-backdrop.open .tdm-desc-area');
-	        },
-
-	        escapeHtml(value = '') {
-	            return String(value || '')
-	                .replace(/&/g, '&amp;')
-	                .replace(/</g, '&lt;')
-	                .replace(/>/g, '&gt;')
-	                .replace(/"/g, '&quot;')
-	                .replace(/'/g, '&#39;');
-	        },
-
-	        plainDescriptionToHtml(value = '') {
-	            const lines = String(value || '').split(/\r?\n/);
-	            return lines.map(line => line.trim()
-	                ? `<p>${this.escapeHtml(line)}</p>`
-	                : '<p><br></p>'
-	            ).join('');
-	        },
-
-	        normalizeDescriptionHtml(value = '') {
-	            const raw = String(value || '').trim();
-	            if (!raw) return '';
-	            if (!/<[a-z][\s\S]*>/i.test(raw)) return this.plainDescriptionToHtml(raw);
-	            return this.sanitizeDescriptionHtml(raw);
-	        },
-
-	        isSafeDescriptionUrl(value = '') {
-	            const url = String(value || '').trim();
-	            if (!url) return false;
-	            if (/^(https?:|mailto:|tel:|\/)/i.test(url)) return true;
-	            return false;
-	        },
-
-	        isSafeDescriptionImageSrc(value = '') {
-	            const src = String(value || '').trim();
-	            if (this.isSafeDescriptionUrl(src)) return true;
-	            return /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(src);
-	        },
-
-	        sanitizeDescriptionHtml(html = '') {
-	            const root = document.createElement('div');
-	            root.innerHTML = String(html || '');
-	            root.querySelectorAll('script,style,iframe,object,embed,meta,link,form,button,textarea,select').forEach(el => el.remove());
-	            const allowed = new Set(['P','BR','DIV','SPAN','STRONG','B','EM','I','U','S','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG','INPUT']);
-	            const walk = node => {
-	                [...node.children].forEach(child => {
-	                    if (!allowed.has(child.tagName)) {
-	                        child.replaceWith(...child.childNodes);
-	                        return;
-	                    }
-	                    [...child.attributes].forEach(attr => {
-	                        const name = attr.name.toLowerCase();
-	                        if (name.startsWith('on') || name === 'style') child.removeAttribute(attr.name);
-	                    });
-	                    if (child.tagName === 'A') {
-	                        const href = child.getAttribute('href') || '';
-	                        if (this.isSafeDescriptionUrl(href)) {
-	                            child.setAttribute('target', '_blank');
-	                            child.setAttribute('rel', 'noopener noreferrer');
-	                        } else {
-	                            child.removeAttribute('href');
-	                        }
-	                        [...child.attributes].forEach(attr => {
-	                            if (!['href','target','rel'].includes(attr.name.toLowerCase())) child.removeAttribute(attr.name);
-	                        });
-	                    } else if (child.tagName === 'IMG') {
-	                        const src = child.getAttribute('src') || '';
-	                        if (!this.isSafeDescriptionImageSrc(src)) {
-	                            child.remove();
-	                            return;
-	                        }
-	                        [...child.attributes].forEach(attr => {
-	                            if (!['src','alt','title'].includes(attr.name.toLowerCase())) child.removeAttribute(attr.name);
-	                        });
-	                    } else if (child.tagName === 'INPUT') {
-	                        if ((child.getAttribute('type') || '').toLowerCase() !== 'checkbox') {
-	                            child.remove();
-	                            return;
-	                        }
-	                        [...child.attributes].forEach(attr => {
-	                            if (!['type','checked'].includes(attr.name.toLowerCase())) child.removeAttribute(attr.name);
-	                        });
-	                    } else {
-	                        const className = child.getAttribute('class') || '';
-	                        [...child.attributes].forEach(attr => child.removeAttribute(attr.name));
-	                        if (child.tagName === 'DIV' && className.split(/\s+/).includes('tdm-desc-check-row')) {
-	                            child.setAttribute('class', 'tdm-desc-check-row');
-	                        }
-	                    }
-	                    walk(child);
-	                });
-	            };
-	            walk(root);
-	            return root.innerHTML.trim();
-	        },
-
-	        syncDescriptionCheckboxAttributes(root) {
-	            if (!root) return;
-	            root.querySelectorAll('input[type="checkbox"]').forEach(input => {
-	                if (input.checked) input.setAttribute('checked', '');
-	                else input.removeAttribute('checked');
+	        initDescriptionEditor(root) {
+	            if (!root || !window.DexRichTextEditor) return;
+	            if (this.descriptionEditorInstance?.root === root) return;
+	            if (this.descriptionEditorInstance) this.descriptionEditorInstance.destroy();
+	            this.descriptionEditorInstance = window.DexRichTextEditor.create(root, {
+	                key: String(this.task?._id || ''),
+	                initialHtml: this.normalizeDescriptionHtml(this.task?.description || ''),
+	                placeholder: 'Ajouter une description détaillée...',
+	                features: ['heading', 'bold', 'italic', 'underline', 'unorderedList', 'orderedList', 'quote', 'checklist', 'link', 'image', 'clear'],
+	                onPickImage: (editor) => editor.root?.querySelector('[data-task-description-image]')?.click(),
+	                uploadImages: (files) => this.uploadDescriptionImages(files),
+	                onChange: (html) => this.onDescriptionInput(html),
+	                onBlur: () => this.flushDescriptionSave()
 	            });
 	        },
 
-	        syncDescriptionEditor(editor) {
-	            if (!editor || !this.task) return;
-	            const html = this.normalizeDescriptionHtml(this.task.description || '');
-	            const taskId = String(this.task._id || '');
-	            const focused = document.activeElement === editor || editor.contains(document.activeElement);
-	            if (focused && editor.dataset.taskId === taskId) return;
-	            if (editor.dataset.taskId !== taskId || editor.innerHTML !== html) {
-	                this._descriptionEditorSyncing = true;
-	                editor.innerHTML = html;
-	                editor.dataset.taskId = taskId;
-	                requestAnimationFrame(() => { this._descriptionEditorSyncing = false; });
-	            }
+	        descriptionEditor() {
+	            return this.descriptionEditorInstance?.editor || document.querySelector('.tdm-backdrop.open .tdm-desc-area');
 	        },
 
-	        onDescriptionInput(event) {
+	        escapeHtml(value = '') {
+	            return window.DexRichTextEditor
+	                ? window.DexRichTextEditor.escapeHtml(value)
+	                : String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+	        },
+
+	        plainDescriptionToHtml(value = '') {
+	            return window.DexRichTextEditor ? window.DexRichTextEditor.plainToHtml(value) : this.escapeHtml(value);
+	        },
+
+	        normalizeDescriptionHtml(value = '') {
+	            return window.DexRichTextEditor ? window.DexRichTextEditor.normalizeHtml(value) : this.plainDescriptionToHtml(value);
+	        },
+
+	        sanitizeDescriptionHtml(html = '') {
+	            return window.DexRichTextEditor ? window.DexRichTextEditor.sanitizeHtml(html) : String(html || '');
+	        },
+
+	        syncDescriptionCheckboxAttributes(root) {
+	            if (window.DexRichTextEditor) window.DexRichTextEditor.syncCheckboxAttributes(root);
+	        },
+
+	        syncDescriptionEditor() {
+	            if (!this.descriptionEditorInstance || !this.task) return;
+	            this.descriptionEditorInstance.setHtml(this.task.description || '', {
+	                key: String(this.task._id || '')
+	            });
+	        },
+
+	        onDescriptionInput(payload) {
 	            if (this._descriptionEditorSyncing || !this.task) return;
-	            const editor = event?.currentTarget || this.descriptionEditor();
-	            this.syncDescriptionCheckboxAttributes(editor);
-	            const html = this.sanitizeDescriptionHtml(editor?.innerHTML || '');
+	            const html = typeof payload === 'string'
+	                ? this.sanitizeDescriptionHtml(payload)
+	                : (this.descriptionEditorInstance?.getHtml() || this.sanitizeDescriptionHtml(this.descriptionEditor()?.innerHTML || ''));
 	            this.task.description = html;
 	            this.descriptionStatus = 'Modifications en cours...';
 	            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
@@ -1121,10 +1042,8 @@ document.addEventListener('alpine:init', () => {
 	            if (!this.task?._id) return;
 	            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 	            this._descriptionSaveTimer = null;
-	            const editor = this.descriptionEditor();
-	            this.syncDescriptionCheckboxAttributes(editor);
-	            const clean = this.sanitizeDescriptionHtml(editor?.innerHTML || this.task.description || '');
-	            if (editor && editor.innerHTML !== clean && document.activeElement !== editor) editor.innerHTML = clean;
+	            const clean = this.descriptionEditorInstance?.getHtml()
+	                || this.sanitizeDescriptionHtml(this.descriptionEditor()?.innerHTML || this.task.description || '');
 	            this.task.description = clean;
 	            if (clean === this._descriptionSavedHtml) {
 	                this.descriptionStatus = '';
@@ -1142,65 +1061,36 @@ document.addEventListener('alpine:init', () => {
 	        },
 
 	        focusDescriptionEditor() {
-	            const editor = this.descriptionEditor();
-	            if (editor) editor.focus();
-	            return editor;
+	            this.descriptionEditorInstance?.focus();
+	            return this.descriptionEditor();
 	        },
 
 	        execDescriptionCommand(command, value = null) {
-	            const editor = this.focusDescriptionEditor();
-	            if (!editor) return;
-	            document.execCommand(command, false, value);
-	            this.onDescriptionInput({ currentTarget: editor });
+	            this.descriptionEditorInstance?.exec(command, value);
 	        },
 
 	        insertDescriptionHtml(html) {
-	            const editor = this.focusDescriptionEditor();
-	            if (!editor) return;
-	            document.execCommand('insertHTML', false, this.sanitizeDescriptionHtml(html));
-	            this.onDescriptionInput({ currentTarget: editor });
+	            this.descriptionEditorInstance?.insertHtml(html);
 	        },
 
 	        insertDescriptionChecklist() {
-	            this.insertDescriptionHtml('<div class="tdm-desc-check-row"><input type="checkbox"><span>Élément à cocher</span></div><p><br></p>');
+	            this.descriptionEditorInstance?.insertChecklist('Element a cocher');
 	        },
 
 	        insertDescriptionLink() {
-	            const url = window.prompt('Lien à ajouter');
-	            if (!url || !this.isSafeDescriptionUrl(url)) return;
-	            const selection = window.getSelection?.();
-	            if (selection && String(selection).trim()) {
-	                this.execDescriptionCommand('createLink', url);
-	                return;
-	            }
-	            this.insertDescriptionHtml(`<a href="${this.escapeHtml(url)}">${this.escapeHtml(url)}</a>`);
+	            this.descriptionEditorInstance?.insertLinkPrompt();
 	        },
 
 	        handleDescriptionPaste(event) {
-	            const files = Array.from(event.clipboardData?.files || [])
-	                .filter(file => String(file.type || '').startsWith('image/'));
-	            if (files.length) {
-	                event.preventDefault();
-	                this.uploadDescriptionImages(files);
-	                return;
-	            }
-	            const html = event.clipboardData?.getData('text/html');
-	            const text = event.clipboardData?.getData('text/plain') || '';
-	            event.preventDefault();
-	            if (html) {
-	                this.insertDescriptionHtml(html);
-	            } else if (text) {
-	                document.execCommand('insertText', false, text);
-	                this.onDescriptionInput({ currentTarget: this.descriptionEditor() });
-	            }
+	            this.descriptionEditorInstance?.handlePaste(event);
 	        },
 
 	        async uploadDescriptionImages(files) {
 	            const images = Array.from(files || []).filter(file => file && String(file.type || '').startsWith('image/'));
-	            if (!this.task?._id || !images.length || this.uploadBusy) return;
+	            if (!this.task?._id || !images.length || this.uploadBusy) return [];
 	            const before = new Set((this.task.attachments || []).map(att => att._id || att.filename));
-	            const editor = this.descriptionEditor();
-	            const draftDescription = this.sanitizeDescriptionHtml(editor?.innerHTML || this.task.description || '');
+	            const draftDescription = this.descriptionEditorInstance?.getHtml()
+	                || this.sanitizeDescriptionHtml(this.descriptionEditor()?.innerHTML || this.task.description || '');
 	            this.uploadBusy = true;
 	            try {
 	                const body = new FormData();
@@ -1218,15 +1108,15 @@ document.addEventListener('alpine:init', () => {
 	                if (this._onUpdate) this._onUpdate(this.task._id, 'attachments', this.task.attachments || [], this.task);
 	                const inserted = (this.task.attachments || [])
 	                    .filter(att => !before.has(att._id || att.filename) && this.isImageAttachment(att));
-	                inserted.forEach(att => {
-	                    const url = this.attachmentUrl(att);
-	                    this.insertDescriptionHtml(`<p><img src="${this.escapeHtml(url)}" alt="${this.escapeHtml(this.attachmentName(att))}"></p>`);
-	                });
-	                await this.flushDescriptionSave();
 	                if (window.showMessage) window.showMessage('Image ajoutée', 'success');
+	                return inserted.map(att => ({
+	                    url: this.attachmentUrl(att),
+	                    alt: this.attachmentName(att)
+	                }));
 	            } catch (e) {
 	                console.error('[TaskModal] Description image upload error:', e);
 	                if (window.showMessage) window.showMessage(e.message || 'Erreur lors de l’ajout de l’image', 'danger');
+	                return [];
 	            } finally {
 	                this.uploadBusy = false;
 	            }

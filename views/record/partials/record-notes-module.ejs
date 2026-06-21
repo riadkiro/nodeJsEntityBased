@@ -1,4 +1,7 @@
 <!-- Record Notes Module — Evernote-like: Left sidebar + Right editor -->
+<link rel="stylesheet" href="/css/app/rich-text-editor.css">
+<script src="/js/rich-text-editor.js"></script>
+
 <style>
 /* ══════════════════════════════════════════════════════════════
    NOTES MODULE — EVERNOTE LAYOUT
@@ -2725,7 +2728,9 @@ document.addEventListener('alpine:init', () => {
                 onSelect: (img) => {
                     this.$refs.editorContent?.focus();
                     this.restoreSelection();
-                    const html = '<div><img src="' + img.url + '" alt="' + (img.alt || 'image') + '" style="max-width:100%;"></div><div><br></div>';
+                    const html = window.DexRichTextEditor
+                        ? window.DexRichTextEditor.imageHtml(img.url, img.alt || 'image', '100%')
+                        : '<div><img src="' + img.url + '" alt="' + (img.alt || 'image') + '" style="max-width:100%;"></div><div><br></div>';
                     document.execCommand('insertHTML', false, html);
                     this.scheduleAutosave();
                 }
@@ -2742,7 +2747,9 @@ document.addEventListener('alpine:init', () => {
                 this.$refs.editorContent?.querySelectorAll('.ne-img-selected').forEach(el => el.classList.remove('ne-img-selected'));
                 e.target.classList.add('ne-img-selected');
                 this.selectedImage = e.target;
-                this.selectedImageSize = e.target.style.width || '100%';
+                this.selectedImageSize = window.DexRichTextEditor
+                    ? window.DexRichTextEditor.getImageSize(e.target)
+                    : (e.target.style.width || '100%');
                 this.$nextTick(() => this.positionImageToolbar(e.target));
                 return;
             }
@@ -2780,7 +2787,11 @@ document.addEventListener('alpine:init', () => {
 
         resizeImage(size) {
             if (!this.selectedImage) return;
-            this.selectedImage.style.width = size;
+            if (window.DexRichTextEditor) {
+                window.DexRichTextEditor.applyImageSize(this.selectedImage, size);
+            } else {
+                this.selectedImage.style.width = size;
+            }
             this.selectedImageSize = size;
             this.scheduleAutosave();
             this.$nextTick(() => this.positionImageToolbar(this.selectedImage));
@@ -2807,11 +2818,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         insertCheckbox() {
-            const html = '<div class="note-checklist-item" contenteditable="false">' +
-                '<input type="checkbox" onclick="event.stopPropagation()">' +
-                '<span class="note-checklist-text" contenteditable="true">Tâche</span>' +
-                '<button class="note-checklist-delete" contenteditable="false" onclick="this.parentElement.remove()" title="Supprimer">×</button>' +
-                '</div><div><br></div>';
+            const html = window.DexRichTextEditor
+                ? window.DexRichTextEditor.checklistHtml('Tache', { variant: 'note' })
+                : '<div class="note-checklist-item" contenteditable="false">' +
+                    '<input type="checkbox" onclick="event.stopPropagation()">' +
+                    '<span class="note-checklist-text" contenteditable="true">Tâche</span>' +
+                    '<button class="note-checklist-delete" contenteditable="false" onclick="this.parentElement.remove()" title="Supprimer">×</button>' +
+                    '</div><div><br></div>';
             document.execCommand('insertHTML', false, html);
             this.scheduleAutosave();
         },

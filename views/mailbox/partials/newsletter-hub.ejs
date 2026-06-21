@@ -34,12 +34,32 @@
     .nlh-builder{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;min-height:620px}
     .nlh-palette{display:grid;gap:8px;align-content:start}
     .nlh-palette button{justify-content:flex-start}
+    .nlh-palette-group{display:grid;gap:7px;padding-bottom:10px;border-bottom:1px solid #eef2f7}
+    .nlh-palette-group:last-child{border-bottom:0;padding-bottom:0}
+    .nlh-palette-drag{cursor:grab}
+    .nlh-palette-drag:active{cursor:grabbing}
     .nlh-canvas{border:1px solid #e5eaf3;border-radius:12px;background:#f4f6fb;padding:18px;min-height:600px}
-    .nlh-email{max-width:640px;margin:0 auto;border:1px solid #e5eaf3;border-radius:16px;overflow:hidden;background:#fff}
-    .nlh-block{position:relative;border:1px solid transparent}
+    .nlh-email{max-width:640px;margin:0 auto;border:1px solid #e5eaf3;border-radius:16px;overflow:hidden;background:#fff;min-height:180px}
+    .nlh-block{position:relative;border:1px solid transparent;background:#fff}
     .nlh-block:hover,.nlh-block.is-active{border-color:#c7d2fe;box-shadow:0 0 0 3px rgba(67,97,238,.08)}
     .nlh-block-actions{position:absolute;right:8px;top:8px;display:none;gap:4px;z-index:5}
-    .nlh-block:hover .nlh-block-actions,.nlh-block.is-active .nlh-block-actions{display:flex}
+    .nlh-block:hover .nlh-block-actions,.nlh-block.is-active .nlh-block-actions,.nlh-child-block:hover .nlh-block-actions,.nlh-child-block.is-active .nlh-block-actions{display:flex}
+    .nlh-drag-handle{cursor:grab}
+    .nlh-drag-handle:active{cursor:grabbing}
+    .nlh-row-preview{padding:12px 16px;background:#fff}
+    .nlh-row-grid{display:flex;gap:10px;width:100%}
+    .nlh-column-preview{min-width:0;border:1px dashed #dbe4f0;border-radius:10px;background:#fbfdff;overflow:hidden}
+    .nlh-column-head{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-bottom:1px solid #eef2f7;color:#94a3b8;font-size:10px;font-weight:900;text-transform:uppercase}
+    .nlh-column-drop{min-height:74px;padding:7px;display:grid;gap:7px}
+    .nlh-child-block{border:1px solid transparent;border-radius:8px;overflow:hidden}
+    .nlh-child-block:hover,.nlh-child-block.is-active{border-color:#c7d2fe;box-shadow:0 0 0 2px rgba(67,97,238,.07)}
+    .nlh-drop-empty{display:grid;place-items:center;min-height:56px;border:1px dashed #d8e0ec;border-radius:8px;color:#a7b4c8;font-size:11px;font-weight:800}
+    .nlh-sortable-ghost{opacity:.35}
+    .nlh-sortable-chosen{box-shadow:0 8px 24px rgba(67,97,238,.14)}
+    .nlh-variable-list{display:grid;gap:7px;max-height:260px;overflow:auto;padding-right:2px}
+    .nlh-variable-btn{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid #eef2f7;background:#fff;border-radius:9px;padding:8px 9px;text-align:left;font-size:12px;color:#334155}
+    .nlh-variable-btn:hover{border-color:#c7d2fe;background:#f8faff;color:#4361ee}
+    .nlh-variable-btn code{font-size:11px;color:#64748b;background:#f1f5f9;border-radius:6px;padding:2px 5px}
     .nlh-icon-btn{width:28px;height:28px;border:1px solid #dfe6f1;background:#fff;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#64748b}
     .nlh-preview-frame{width:100%;min-height:520px;border:1px solid #e5eaf3;border-radius:12px;background:#fff}
     .nlh-empty{display:grid;place-items:center;min-height:150px;border:1px dashed #d8e0ec;border-radius:12px;color:#94a3b8;font-size:12px;text-align:center}
@@ -296,35 +316,72 @@
                             </div>
                             <div>
                                 <div class="nlh-label mb-1">Sujet</div>
-                                <input class="nlh-input" x-model="currentTemplate.subject" placeholder="Bonjour {{title}}">
+                                <input class="nlh-input" x-model="currentTemplate.subject" placeholder="Bonjour {{title}}" @focus="setVariableTarget('template','subject',$event)">
                             </div>
                             <div>
                                 <div class="nlh-label mb-1">Preheader</div>
-                                <input class="nlh-input" x-model="currentTemplate.preheader">
+                                <input class="nlh-input" x-model="currentTemplate.preheader" @focus="setVariableTarget('template','preheader',$event)">
                             </div>
                         </div>
                         <div class="nlh-builder">
                             <div class="nlh-palette">
-                                <div class="nlh-label">Blocs</div>
-                                <button type="button" class="nlh-btn" @click="addBlock('brand')"><iconify-icon icon="solar:flag-bold" width="15"></iconify-icon>Brand</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('hero')"><iconify-icon icon="solar:align-top-bold" width="15"></iconify-icon>Hero</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('text')"><iconify-icon icon="solar:text-bold" width="15"></iconify-icon>Texte</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('image')"><iconify-icon icon="solar:gallery-bold" width="15"></iconify-icon>Image</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('button')"><iconify-icon icon="solar:cursor-square-bold" width="15"></iconify-icon>Bouton</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('divider')"><iconify-icon icon="solar:minus-square-bold" width="15"></iconify-icon>Separateur</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('spacer')"><iconify-icon icon="solar:sort-vertical-bold" width="15"></iconify-icon>Espace</button>
-                                <button type="button" class="nlh-btn" @click="addBlock('footer')"><iconify-icon icon="solar:document-text-bold" width="15"></iconify-icon>Footer</button>
+                                <div class="nlh-palette-group" data-nlh-palette>
+                                    <div class="nlh-label">Structure</div>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="row:1" @click="addRow(1)"><iconify-icon icon="solar:row-vertical-bold" width="15"></iconify-icon>1 colonne</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="row:2" @click="addRow(2)"><iconify-icon icon="solar:posts-carousel-horizontal-bold" width="15"></iconify-icon>2 colonnes</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="row:3" @click="addRow(3)"><iconify-icon icon="solar:widget-5-bold" width="15"></iconify-icon>3 colonnes</button>
+                                </div>
+                                <div class="nlh-palette-group" data-nlh-palette>
+                                    <div class="nlh-label">Blocs</div>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="brand" @click="addBlock('brand')"><iconify-icon icon="solar:flag-bold" width="15"></iconify-icon>Brand</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="hero" @click="addBlock('hero')"><iconify-icon icon="solar:align-top-bold" width="15"></iconify-icon>Hero</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="text" @click="addBlock('text')"><iconify-icon icon="solar:text-bold" width="15"></iconify-icon>Texte</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="image" @click="addBlock('image')"><iconify-icon icon="solar:gallery-bold" width="15"></iconify-icon>Image</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="button" @click="addBlock('button')"><iconify-icon icon="solar:cursor-square-bold" width="15"></iconify-icon>Bouton</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="divider" @click="addBlock('divider')"><iconify-icon icon="solar:minus-square-bold" width="15"></iconify-icon>Separateur</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="spacer" @click="addBlock('spacer')"><iconify-icon icon="solar:sort-vertical-bold" width="15"></iconify-icon>Espace</button>
+                                    <button type="button" class="nlh-btn nlh-palette-drag" data-block-type="footer" @click="addBlock('footer')"><iconify-icon icon="solar:document-text-bold" width="15"></iconify-icon>Footer</button>
+                                </div>
                             </div>
                             <div class="nlh-canvas">
-                                <div class="nlh-email">
+                                <div class="nlh-email" data-nlh-sortable data-nlh-root-sortable>
                                     <template x-for="(block, idx) in (currentTemplate.layout && currentTemplate.layout.blocks) || []" :key="block.id">
-                                        <div class="nlh-block" :class="{ 'is-active': selectedBlockId === block.id }" @click.stop="selectBlock(block.id)">
+                                        <div class="nlh-block" :data-block-id="block.id" :data-block-type="block.type" :class="{ 'is-active': selectedBlockId === block.id }" @click.stop="selectBlock(block.id)">
                                             <div class="nlh-block-actions">
+                                                <button type="button" class="nlh-icon-btn nlh-drag-handle" data-drag-handle title="Deplacer"><iconify-icon icon="solar:hamburger-menu-linear" width="14"></iconify-icon></button>
                                                 <button type="button" class="nlh-icon-btn" @click.stop="moveBlock(idx,-1)"><iconify-icon icon="solar:arrow-up-linear" width="14"></iconify-icon></button>
                                                 <button type="button" class="nlh-icon-btn" @click.stop="moveBlock(idx,1)"><iconify-icon icon="solar:arrow-down-linear" width="14"></iconify-icon></button>
                                                 <button type="button" class="nlh-icon-btn" @click.stop="removeBlock(idx)"><iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon></button>
                                             </div>
-                                            <div x-html="blockPreview(block)"></div>
+                                            <template x-if="block.type !== 'row'">
+                                                <div x-html="blockPreview(block)"></div>
+                                            </template>
+                                            <template x-if="block.type === 'row'">
+                                                <div class="nlh-row-preview" :style="`background:${block.props?.background || '#fff'};padding-top:${block.props?.paddingY || 18}px;padding-bottom:${block.props?.paddingY || 18}px`">
+                                                    <div class="nlh-row-grid" :style="`gap:${block.props?.gap || 16}px`">
+                                                        <template x-for="(column, colIdx) in block.columns || []" :key="column.id">
+                                                            <div class="nlh-column-preview" :style="`flex:${column.width || 1} 1 0`">
+                                                                <div class="nlh-column-head">
+                                                                    <span x-text="'Colonne ' + (colIdx + 1)"></span>
+                                                                    <span x-text="(column.blocks || []).length + ' bloc(s)'"></span>
+                                                                </div>
+                                                                <div class="nlh-column-drop" data-nlh-sortable data-nlh-column-sortable :data-row-id="block.id" :data-column-id="column.id">
+                                                                    <template x-for="(child, childIdx) in column.blocks || []" :key="child.id">
+                                                                        <div class="nlh-child-block" :data-block-id="child.id" :data-block-type="child.type" :class="{ 'is-active': selectedBlockId === child.id }" @click.stop="selectBlock(child.id)">
+                                                                            <div class="nlh-block-actions">
+                                                                                <button type="button" class="nlh-icon-btn nlh-drag-handle" data-drag-handle title="Deplacer"><iconify-icon icon="solar:hamburger-menu-linear" width="14"></iconify-icon></button>
+                                                                                <button type="button" class="nlh-icon-btn" @click.stop="removeChildBlock(block.id,column.id,childIdx)"><iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon></button>
+                                                                            </div>
+                                                                            <div x-html="blockPreview(child)"></div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <div class="nlh-drop-empty" x-show="!(column.blocks || []).length">Deposer un bloc ici</div>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
                                         </div>
                                     </template>
                                 </div>
@@ -415,29 +472,55 @@
                             <div class="font-bold">Proprietes bloc</div>
                         </div>
                         <div class="nlh-card-b nlh-grid" x-show="selectedBlock()">
+                            <template x-if="selectedBlock()?.type === 'row'">
+                                <div class="nlh-grid">
+                                    <div>
+                                        <div class="nlh-label mb-1">Colonnes</div>
+                                        <select class="nlh-select" :value="(selectedBlock().columns || []).length" @change="setRowColumns(selectedBlock(), Number($event.target.value))">
+                                            <option value="1">1 colonne</option>
+                                            <option value="2">2 colonnes</option>
+                                            <option value="3">3 colonnes</option>
+                                        </select>
+                                    </div>
+                                    <div class="nlh-grid-2">
+                                        <div>
+                                            <div class="nlh-label mb-1">Espace</div>
+                                            <input class="nlh-input" type="number" min="0" max="32" x-model.number="selectedBlock().props.gap">
+                                        </div>
+                                        <div>
+                                            <div class="nlh-label mb-1">Hauteur</div>
+                                            <input class="nlh-input" type="number" min="0" max="48" x-model.number="selectedBlock().props.paddingY">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="nlh-label mb-1">Fond ligne</div>
+                                        <input class="nlh-input" type="color" x-model="selectedBlock().props.background">
+                                    </div>
+                                </div>
+                            </template>
                             <template x-if="['brand','hero'].includes(selectedBlock()?.type)">
                                 <div class="nlh-grid">
                                     <div>
                                         <div class="nlh-label mb-1">Titre / Label</div>
-                                        <input class="nlh-input" x-model="selectedBlock().props[selectedBlock().type === 'hero' ? 'title' : 'label']">
+                                        <input class="nlh-input" x-model="selectedBlock().props[selectedBlock().type === 'hero' ? 'title' : 'label']" @focus="setVariableTarget('block', selectedBlock().type === 'hero' ? 'title' : 'label',$event)">
                                     </div>
                                     <div>
                                         <div class="nlh-label mb-1">Sous-titre</div>
-                                        <textarea class="nlh-textarea" x-model="selectedBlock().props.subtitle"></textarea>
+                                        <textarea class="nlh-textarea" x-model="selectedBlock().props.subtitle" @focus="setVariableTarget('block','subtitle',$event)"></textarea>
                                     </div>
                                 </div>
                             </template>
                             <template x-if="selectedBlock()?.type === 'text'">
                                 <div>
                                     <div class="nlh-label mb-1">HTML texte</div>
-                                    <textarea class="nlh-textarea" rows="8" x-model="selectedBlock().props.text"></textarea>
+                                    <textarea class="nlh-textarea" rows="8" x-model="selectedBlock().props.text" @focus="setVariableTarget('block','text',$event)"></textarea>
                                 </div>
                             </template>
                             <template x-if="selectedBlock()?.type === 'image'">
                                 <div class="nlh-grid">
                                     <div>
                                         <div class="nlh-label mb-1">URL image</div>
-                                        <input class="nlh-input" x-model="selectedBlock().props.url">
+                                        <input class="nlh-input" x-model="selectedBlock().props.url" @focus="setVariableTarget('block','url',$event)">
                                     </div>
                                     <div>
                                         <div class="nlh-label mb-1">Largeur %</div>
@@ -449,11 +532,11 @@
                                 <div class="nlh-grid">
                                     <div>
                                         <div class="nlh-label mb-1">Texte bouton</div>
-                                        <input class="nlh-input" x-model="selectedBlock().props.label">
+                                        <input class="nlh-input" x-model="selectedBlock().props.label" @focus="setVariableTarget('block','label',$event)">
                                     </div>
                                     <div>
                                         <div class="nlh-label mb-1">Lien</div>
-                                        <input class="nlh-input" x-model="selectedBlock().props.url">
+                                        <input class="nlh-input" x-model="selectedBlock().props.url" @focus="setVariableTarget('block','url',$event)">
                                     </div>
                                 </div>
                             </template>
@@ -466,10 +549,10 @@
                             <template x-if="selectedBlock()?.type === 'footer'">
                                 <div>
                                     <div class="nlh-label mb-1">Texte footer</div>
-                                    <textarea class="nlh-textarea" x-model="selectedBlock().props.text"></textarea>
+                                    <textarea class="nlh-textarea" x-model="selectedBlock().props.text" @focus="setVariableTarget('block','text',$event)"></textarea>
                                 </div>
                             </template>
-                            <div class="nlh-grid-2">
+                            <div class="nlh-grid-2" x-show="selectedBlock()?.type !== 'row' && selectedBlock()?.type !== 'divider' && selectedBlock()?.type !== 'spacer'">
                                 <div>
                                     <div class="nlh-label mb-1">Couleur</div>
                                     <input class="nlh-input" type="color" x-model="selectedBlock().props.color">
@@ -488,11 +571,18 @@
                         <div class="nlh-card-h">
                             <div class="font-bold">Variables</div>
                         </div>
-                        <div class="nlh-card-b text-xs leading-6 text-slate-600">
-                            <div><code>{{title}}</code> titre du record</div>
-                            <div><code>{{link}}</code> lien du record</div>
-                            <div><code>{{field:ID}}</code> champ specifique</div>
-                            <div><code>{{nom_du_champ}}</code> alias de champ</div>
+                        <div class="nlh-card-b nlh-grid">
+                            <input class="nlh-input" x-model="variableSearch" placeholder="Rechercher une variable...">
+                            <div class="text-[11px] text-white-dark" x-text="'Insertion: ' + variableTargetLabel()"></div>
+                            <div class="nlh-variable-list">
+                                <template x-for="variable in filteredVariables()" :key="variable.token">
+                                    <button type="button" class="nlh-variable-btn" @mousedown.prevent @click="insertVariable(variable.token)">
+                                        <span x-text="variable.label"></span>
+                                        <code x-text="variable.token"></code>
+                                    </button>
+                                </template>
+                            </div>
+                            <div class="nlh-empty" x-show="!filteredVariables().length">Aucune variable</div>
                         </div>
                     </div>
                 </div>
@@ -529,11 +619,17 @@ document.addEventListener('alpine:init', () => {
         currentTemplate: {},
         currentSequence: {},
         selectedBlockId: null,
+        builderSortables: [],
+        variableSearch: '',
+        variableTarget: { scope: 'template', key: 'subject' },
 
         init() {
             const parts = window.location.pathname.split('/');
             const accountIndex = parts.indexOf('account');
             this.apiBase = accountIndex >= 0 ? `/account/${parts[accountIndex + 1]}/api/newsletter` : '/api/newsletter';
+            this.$watch('tab', (value) => {
+                if (value === 'templates') this.$nextTick(() => this.initBuilderSortables());
+            });
             this.loadHub();
         },
 
@@ -583,7 +679,26 @@ document.addEventListener('alpine:init', () => {
             return 'blk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
         },
 
+        makeRow(columnCount = 2) {
+            const count = Math.max(1, Math.min(3, Number(columnCount) || 2));
+            const baseWidth = Math.floor(100 / count);
+            return {
+                id: this.blockId(),
+                type: 'row',
+                props: { background: '#ffffff', gap: 16, paddingY: 18 },
+                columns: Array.from({ length: count }).map((_, index) => ({
+                    id: this.blockId(),
+                    width: index === count - 1 ? 100 - baseWidth * (count - 1) : baseWidth,
+                    blocks: []
+                }))
+            };
+        },
+
         makeBlock(type) {
+            if (String(type || '').startsWith('row')) {
+                const count = String(type).split(':')[1] || 2;
+                return this.makeRow(count);
+            }
             const base = {
                 brand: { type: 'brand', props: { label: 'Dexapp', subtitle: 'Newsletter', align: 'left', background: '#ffffff', color: '#4361ee' } },
                 hero: { type: 'hero', props: { title: 'Titre principal', subtitle: 'Sous-titre...', align: 'left', background: '#eef2ff', color: '#0f172a' } },
@@ -595,6 +710,20 @@ document.addEventListener('alpine:init', () => {
                 footer: { type: 'footer', props: { text: 'Vous recevez cet email car votre contact est present dans un espace Dexapp.', color: '#94a3b8', background: '#ffffff' } }
             }[type] || { type: 'text', props: { text: '<p>Nouveau paragraphe...</p>' } };
             return { id: this.blockId(), ...this.clone(base) };
+        },
+
+        blockLabel(block) {
+            return {
+                brand: 'Brand',
+                hero: 'Hero',
+                text: 'Texte',
+                image: 'Image',
+                button: 'Bouton',
+                divider: 'Separateur',
+                spacer: 'Espace',
+                footer: 'Footer',
+                row: 'Ligne'
+            }[block?.type] || 'Bloc';
         },
 
         entityBySlug(slug) {
@@ -740,13 +869,36 @@ document.addEventListener('alpine:init', () => {
             this.currentTemplate = this.clone(template || this.makeTemplate());
             this.ensureTemplateLayout();
             this.selectedBlockId = this.currentTemplate.layout.blocks[0]?.id || null;
+            this.$nextTick(() => this.initBuilderSortables());
         },
 
         ensureTemplateLayout() {
             if (!this.currentTemplate || typeof this.currentTemplate !== 'object') this.currentTemplate = this.makeTemplate();
             if (!this.currentTemplate.layout) this.currentTemplate.layout = this.clone(this.defaultLayout || this.makeDefaultLayout());
             if (!Array.isArray(this.currentTemplate.layout.blocks)) this.currentTemplate.layout.blocks = [];
+            this.currentTemplate.layout.blocks = this.currentTemplate.layout.blocks.map(block => this.normalizeClientBlock(block));
             return this.currentTemplate.layout;
+        },
+
+        normalizeClientBlock(block) {
+            const item = this.clone(block || this.makeBlock('text'));
+            if (!item.id) item.id = this.blockId();
+            if (!item.props) item.props = {};
+            if (item.type === 'row') {
+                const sourceColumns = Array.isArray(item.columns) && item.columns.length ? item.columns.slice(0, 3) : this.makeRow(2).columns;
+                const width = Math.floor(100 / sourceColumns.length);
+                item.columns = sourceColumns.map((column, index) => ({
+                    id: column.id || this.blockId(),
+                    width: Number(column.width) || (index === sourceColumns.length - 1 ? 100 - width * (sourceColumns.length - 1) : width),
+                    blocks: (Array.isArray(column.blocks) ? column.blocks : []).map(child => this.normalizeClientBlock(child)).filter(child => child.type !== 'row')
+                }));
+                item.props = {
+                    background: item.props.background || '#ffffff',
+                    gap: Number(item.props.gap) || 16,
+                    paddingY: Number(item.props.paddingY) || 18
+                };
+            }
+            return item;
         },
 
         addBlock(type) {
@@ -754,14 +906,36 @@ document.addEventListener('alpine:init', () => {
             const block = this.makeBlock(type);
             layout.blocks.push(block);
             this.selectedBlockId = block.id;
+            this.$nextTick(() => this.initBuilderSortables());
+        },
+
+        addRow(columnCount = 2) {
+            const layout = this.ensureTemplateLayout();
+            const block = this.makeRow(columnCount);
+            layout.blocks.push(block);
+            this.selectedBlockId = block.id;
+            this.$nextTick(() => this.initBuilderSortables());
         },
 
         selectBlock(id) {
             this.selectedBlockId = id;
         },
 
+        findBlockById(blocks, id) {
+            for (const block of blocks || []) {
+                if (block.id === id) return block;
+                if (block.type === 'row') {
+                    for (const column of block.columns || []) {
+                        const found = this.findBlockById(column.blocks || [], id);
+                        if (found) return found;
+                    }
+                }
+            }
+            return null;
+        },
+
         selectedBlock() {
-            return (this.currentTemplate.layout?.blocks || []).find(block => block.id === this.selectedBlockId) || null;
+            return this.findBlockById(this.currentTemplate.layout?.blocks || [], this.selectedBlockId);
         },
 
         moveBlock(index, delta) {
@@ -770,12 +944,240 @@ document.addEventListener('alpine:init', () => {
             if (next < 0 || next >= blocks.length) return;
             const [item] = blocks.splice(index, 1);
             blocks.splice(next, 0, item);
+            this.$nextTick(() => this.initBuilderSortables());
         },
 
         removeBlock(index) {
             const blocks = this.ensureTemplateLayout().blocks;
             const [removed] = blocks.splice(index, 1);
             if (removed?.id === this.selectedBlockId) this.selectedBlockId = blocks[Math.max(0, index - 1)]?.id || null;
+            this.$nextTick(() => this.initBuilderSortables());
+        },
+
+        removeChildBlock(rowId, columnId, index) {
+            const row = this.findBlockById(this.ensureTemplateLayout().blocks, rowId);
+            const column = (row?.columns || []).find(item => item.id === columnId);
+            if (!column) return;
+            const [removed] = column.blocks.splice(index, 1);
+            if (removed?.id === this.selectedBlockId) this.selectedBlockId = row.id;
+            this.$nextTick(() => this.initBuilderSortables());
+        },
+
+        destroyBuilderSortables() {
+            (this.builderSortables || []).forEach(instance => {
+                try { instance.destroy(); } catch (_) {}
+            });
+            this.builderSortables = [];
+        },
+
+        initBuilderSortables() {
+            if (this.tab !== 'templates' || typeof Sortable === 'undefined' || !this.$root) return;
+            this.destroyBuilderSortables();
+
+            this.$root.querySelectorAll('[data-nlh-palette]').forEach((palette) => {
+                this.builderSortables.push(Sortable.create(palette, {
+                    group: { name: 'nlh-email-builder', pull: 'clone', put: false },
+                    sort: false,
+                    draggable: '[data-block-type]',
+                    animation: 150,
+                    ghostClass: 'nlh-sortable-ghost',
+                    chosenClass: 'nlh-sortable-chosen'
+                }));
+            });
+
+            this.$root.querySelectorAll('[data-nlh-sortable]').forEach((list) => {
+                this.builderSortables.push(Sortable.create(list, {
+                    group: { name: 'nlh-email-builder', pull: true, put: true },
+                    draggable: '[data-block-id],[data-block-type]',
+                    handle: '[data-drag-handle]',
+                    animation: 150,
+                    ghostClass: 'nlh-sortable-ghost',
+                    chosenClass: 'nlh-sortable-chosen',
+                    onMove: (evt) => this.canMoveInto(evt.to, evt.dragged),
+                    onAdd: (evt) => this.handleSortableAdd(evt),
+                    onEnd: (evt) => {
+                        if (evt.from === evt.to) this.syncSortableOrder(evt.to);
+                        this.$nextTick(() => this.initBuilderSortables());
+                    }
+                }));
+            });
+        },
+
+        canMoveInto(target, dragged) {
+            const targetIsColumn = target?.hasAttribute('data-nlh-column-sortable');
+            const type = String(dragged?.dataset?.blockType || '');
+            return !(targetIsColumn && type.startsWith('row'));
+        },
+
+        sortableIndex(evt) {
+            return Number.isFinite(evt.newDraggableIndex) ? evt.newDraggableIndex : evt.newIndex;
+        },
+
+        containerBlocks(el) {
+            const layout = this.ensureTemplateLayout();
+            if (el?.hasAttribute('data-nlh-root-sortable')) return layout.blocks;
+            const rowId = el?.dataset?.rowId;
+            const columnId = el?.dataset?.columnId;
+            const row = this.findBlockById(layout.blocks, rowId);
+            const column = (row?.columns || []).find(item => item.id === columnId);
+            if (!column) return layout.blocks;
+            if (!Array.isArray(column.blocks)) column.blocks = [];
+            return column.blocks;
+        },
+
+        takeBlock(blockId, blocks = this.ensureTemplateLayout().blocks) {
+            const index = (blocks || []).findIndex(block => block.id === blockId);
+            if (index >= 0) return blocks.splice(index, 1)[0];
+            for (const block of blocks || []) {
+                if (block.type !== 'row') continue;
+                for (const column of block.columns || []) {
+                    const found = this.takeBlock(blockId, column.blocks || []);
+                    if (found) return found;
+                }
+            }
+            return null;
+        },
+
+        handleSortableAdd(evt) {
+            const target = this.containerBlocks(evt.to);
+            const index = Math.max(0, this.sortableIndex(evt));
+            let block = null;
+
+            if (evt.from?.hasAttribute('data-nlh-palette')) {
+                const type = evt.item?.dataset?.blockType || 'text';
+                if (evt.item?.parentNode) evt.item.parentNode.removeChild(evt.item);
+                if (!this.canMoveInto(evt.to, { dataset: { blockType: type } })) return;
+                block = this.makeBlock(type);
+            } else {
+                const blockId = evt.item?.dataset?.blockId;
+                block = this.takeBlock(blockId);
+            }
+
+            if (!block) return;
+            target.splice(index, 0, block);
+            this.selectedBlockId = block.id;
+            this.$nextTick(() => this.initBuilderSortables());
+        },
+
+        syncSortableOrder(el) {
+            const blocks = this.containerBlocks(el);
+            const order = Array.from(el.children)
+                .map(child => child.dataset?.blockId)
+                .filter(Boolean);
+            if (!order.length) return;
+            const byId = new Map(blocks.map(block => [block.id, block]));
+            const ordered = order.map(id => byId.get(id)).filter(Boolean);
+            const missing = blocks.filter(block => !order.includes(block.id));
+            blocks.splice(0, blocks.length, ...ordered, ...missing);
+        },
+
+        setRowColumns(row, count) {
+            if (!row || row.type !== 'row') return;
+            const nextCount = Math.max(1, Math.min(3, Number(count) || 1));
+            const current = Array.isArray(row.columns) ? row.columns : [];
+            const width = Math.floor(100 / nextCount);
+            const nextColumns = Array.from({ length: nextCount }).map((_, index) => ({
+                id: current[index]?.id || this.blockId(),
+                width: index === nextCount - 1 ? 100 - width * (nextCount - 1) : width,
+                blocks: current[index]?.blocks || []
+            }));
+
+            if (current.length > nextCount) {
+                const overflow = current.slice(nextCount).flatMap(column => column.blocks || []);
+                nextColumns[nextColumns.length - 1].blocks.push(...overflow);
+            }
+
+            row.columns = nextColumns;
+            this.$nextTick(() => this.initBuilderSortables());
+        },
+
+        setVariableTarget(scope, key, event = null) {
+            this.variableTarget = {
+                scope,
+                key,
+                blockId: scope === 'block' ? this.selectedBlockId : null,
+                el: event?.target || null
+            };
+        },
+
+        variableTargetLabel() {
+            if (!this.variableTarget) return 'sujet';
+            if (this.variableTarget.scope === 'template') return this.variableTarget.key === 'preheader' ? 'preheader' : 'sujet';
+            const block = this.findBlockById(this.ensureTemplateLayout().blocks, this.variableTarget.blockId || this.selectedBlockId);
+            return `${this.blockLabel(block)} / ${this.variableTarget.key}`;
+        },
+
+        variableSourceFields() {
+            const entity = this.entityBySlug(this.currentAudience?.entitySlug || this.entities[0]?.slug || '');
+            return entity.fields || [];
+        },
+
+        availableVariables() {
+            const base = [
+                { token: '{{title}}', label: 'Titre du record' },
+                { token: '{{computedTitle}}', label: 'Titre calcule' },
+                { token: '{{description}}', label: 'Description' },
+                { token: '{{content}}', label: 'Contenu' },
+                { token: '{{link}}', label: 'Lien du record' },
+                { token: '{{status}}', label: 'Statut' },
+                { token: '{{date}}', label: 'Date' },
+                { token: '{{createdAt}}', label: 'Date creation' },
+                { token: '{{updatedAt}}', label: 'Date modification' }
+            ];
+            const seen = new Set(base.map(item => item.token));
+            const fields = this.variableSourceFields()
+                .filter(field => field?.id && !['title', 'computedTitle', 'description', 'content', 'link', 'status', 'date', 'createdAt', 'updatedAt'].includes(field.id))
+                .flatMap(field => {
+                    const items = [{ token: `{{field:${field.id}}}`, label: field.label || field.name || 'Champ' }];
+                    if (field.name) items.push({ token: `{{${field.name}}}`, label: `${field.label || field.name} (alias)` });
+                    return items;
+                })
+                .filter(item => {
+                    if (seen.has(item.token)) return false;
+                    seen.add(item.token);
+                    return true;
+                });
+            return [...base, ...fields];
+        },
+
+        filteredVariables() {
+            const q = String(this.variableSearch || '').trim().toLowerCase();
+            const variables = this.availableVariables();
+            if (!q) return variables.slice(0, 40);
+            return variables
+                .filter(item => `${item.label} ${item.token}`.toLowerCase().includes(q))
+                .slice(0, 40);
+        },
+
+        insertIntoValue(value, token, inputEl = null) {
+            const current = String(value || '');
+            if (inputEl && typeof inputEl.selectionStart === 'number' && typeof inputEl.selectionEnd === 'number') {
+                const start = inputEl.selectionStart;
+                const end = inputEl.selectionEnd;
+                const next = current.slice(0, start) + token + current.slice(end);
+                this.$nextTick(() => {
+                    try {
+                        inputEl.focus();
+                        inputEl.selectionStart = inputEl.selectionEnd = start + token.length;
+                    } catch (_) {}
+                });
+                return next;
+            }
+            const separator = !current || /\s$/.test(current) ? '' : ' ';
+            return `${current}${separator}${token}`;
+        },
+
+        insertVariable(token) {
+            const target = this.variableTarget || { scope: 'template', key: 'subject' };
+            if (target.scope === 'template') {
+                this.currentTemplate[target.key] = this.insertIntoValue(this.currentTemplate[target.key], token, target.el);
+                return;
+            }
+
+            const block = this.findBlockById(this.ensureTemplateLayout().blocks, target.blockId || this.selectedBlockId);
+            if (!block) return;
+            if (!block.props) block.props = {};
+            block.props[target.key] = this.insertIntoValue(block.props[target.key], token, target.el);
         },
 
         sample(text) {

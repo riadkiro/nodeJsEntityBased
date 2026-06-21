@@ -89,8 +89,22 @@ function makeBlockId() {
     return `blk_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
 }
 
+const BLOCK_TYPES = ['brand', 'hero', 'text', 'image', 'button', 'divider', 'spacer', 'footer', 'row'];
+
 function defaultBlock(type = 'text') {
     const id = makeBlockId();
+    if (type === 'row') {
+        return {
+            id,
+            type: 'row',
+            props: { background: '#ffffff', gap: 16, paddingY: 18 },
+            columns: [
+                { id: makeBlockId(), width: 50, blocks: [defaultBlock('text')] },
+                { id: makeBlockId(), width: 50, blocks: [defaultBlock('button')] }
+            ]
+        };
+    }
+
     const blocks = {
         brand: {
             id,
@@ -136,8 +150,40 @@ function defaultBlock(type = 'text') {
     return blocks[type] || blocks.text;
 }
 
+function normalizeColumns(columns = []) {
+    const source = Array.isArray(columns) && columns.length
+        ? columns.slice(0, 3)
+        : defaultBlock('row').columns;
+
+    const normalized = source.map((column) => ({
+        id: String(column?.id || makeBlockId()),
+        width: numberBetween(column?.width, 15, 100, Math.round(100 / source.length)),
+        blocks: (Array.isArray(column?.blocks) ? column.blocks : [])
+            .map(normalizeBlock)
+            .filter(Boolean)
+    }));
+
+    const total = normalized.reduce((sum, column) => sum + Number(column.width || 0), 0);
+    if (!total) {
+        const equal = Math.floor(100 / normalized.length);
+        return normalized.map((column, index) => ({
+            ...column,
+            width: index === normalized.length - 1 ? 100 - equal * (normalized.length - 1) : equal
+        }));
+    }
+
+    let used = 0;
+    return normalized.map((column, index) => {
+        const width = index === normalized.length - 1
+            ? Math.max(10, 100 - used)
+            : Math.max(10, Math.round((column.width / total) * 100));
+        used += width;
+        return { ...column, width };
+    });
+}
+
 function normalizeBlock(block) {
-    const type = ['brand', 'hero', 'text', 'image', 'button', 'divider', 'spacer', 'footer'].includes(block?.type)
+    const type = BLOCK_TYPES.includes(block?.type)
         ? block.type
         : 'text';
     const defaults = defaultBlock(type);
@@ -179,12 +225,23 @@ function normalizeBlock(block) {
         props.color = color(props.color, '#94a3b8');
         props.background = color(props.background, '#ffffff');
     }
+    if (type === 'row') {
+        props.background = color(props.background, '#ffffff');
+        props.gap = numberBetween(props.gap, 0, 32, 16);
+        props.paddingY = numberBetween(props.paddingY, 0, 48, 18);
+    }
 
-    return {
+    const normalized = {
         id: String(block?.id || defaults.id || makeBlockId()),
         type,
         props
     };
+
+    if (type === 'row') {
+        normalized.columns = normalizeColumns(block?.columns || defaults.columns);
+    }
+
+    return normalized;
 }
 
 function normalizeLayout(layout) {
@@ -221,9 +278,10 @@ function alignCss(align) {
     return ['left', 'center', 'right'].includes(align) ? align : 'left';
 }
 
-function blockHtml(block, layout, options = {}) {
+function blockHtml(block, layout, options = {}, renderOptions = {}) {
     const p = block.props || {};
-    const pad = 'padding:0 32px;';
+    const nested = renderOptions.nested === true;
+    const pad = nested ? 'padding:0;' : 'padding:0 32px;';
 
     if (block.type === 'brand') {
         return `<tr><td style="${pad}padding-top:28px;padding-bottom:18px;background:${p.background};text-align:${alignCss(p.align)};">
@@ -274,6 +332,30 @@ function blockHtml(block, layout, options = {}) {
         </td></tr>`;
     }
 
+    if (block.type === 'row') {
+        const columns = normalizeColumns(block.columns);
+        const gap = numberBetween(p.gap, 0, 32, 16);
+        const halfGap = Math.round(gap / 2);
+        const cells = columns.map((column, index) => {
+            const left = index > 0 ? halfGap : 0;
+            const right = index < columns.length - 1 ? halfGap : 0;
+            const content = (column.blocks || [])
+                .map(child => blockHtml(child, layout, options, { nested: true }))
+                .join('');
+            return `<td width="${column.width}%" valign="top" style="width:${column.width}%;padding-left:${left}px;padding-right:${right}px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;">
+                    ${content || '<tr><td style="font-size:1px;line-height:1px;">&nbsp;</td></tr>'}
+                </table>
+            </td>`;
+        }).join('');
+
+        return `<tr><td style="${pad}padding-top:${p.paddingY}px;padding-bottom:${p.paddingY}px;background:${p.background};">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;">
+                <tr>${cells}</tr>
+            </table>
+        </td></tr>`;
+    }
+
     return '';
 }
 
@@ -318,6 +400,13 @@ function layoutToText(layout) {
             if (block.type === 'hero') return [p.title, p.subtitle].filter(Boolean).join('\n');
             if (block.type === 'text') return stripTags(p.text);
             if (block.type === 'button') return [p.label, p.url].filter(Boolean).join(': ');
+            if (block.type === 'row') {
+                return (block.columns || [])
+                    .flatMap(column => column.blocks || [])
+                    .map(child => layoutToText({ ...normalized, blocks: [child] }))
+                    .filter(Boolean)
+                    .join('\n\n');
+            }
             if (block.type === 'footer') return stripTags(p.text);
             return '';
         })

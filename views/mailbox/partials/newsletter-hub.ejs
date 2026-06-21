@@ -1,0 +1,976 @@
+<style>
+    .nlh-shell{height:100%;display:flex;flex-direction:column;background:#fff;color:#0f172a}
+    .nlh-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid #e5eaf3}
+    .nlh-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900;letter-spacing:0;color:#0f172a}
+    .nlh-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .nlh-tab{height:34px;padding:0 12px;border:1px solid #e5eaf3;background:#fff;border-radius:9px;font-size:12px;font-weight:800;color:#64748b;transition:.15s}
+    .nlh-tab:hover,.nlh-tab.is-active{border-color:#c7d2fe;background:#eef2ff;color:#4361ee}
+    .nlh-body{min-height:0;flex:1;display:grid;grid-template-columns:280px minmax(0,1fr) 330px;background:#f8fafc}
+    .nlh-rail{min-height:0;border-right:1px solid #e5eaf3;background:#fff;overflow:auto}
+    .nlh-main{min-height:0;overflow:auto;padding:18px}
+    .nlh-side{min-height:0;border-left:1px solid #e5eaf3;background:#fff;overflow:auto;padding:16px}
+    .nlh-card{border:1px solid #e5eaf3;background:#fff;border-radius:12px}
+    .nlh-card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid #eef2f7}
+    .nlh-card-b{padding:14px}
+    .nlh-label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#8390aa}
+    .nlh-input,.nlh-select,.nlh-textarea{width:100%;border:1px solid #dfe6f1;border-radius:10px;background:#fff;color:#0f172a;font-size:13px;line-height:1.4;outline:none;transition:.15s}
+    .nlh-input,.nlh-select{height:38px;padding:8px 10px}
+    .nlh-textarea{min-height:92px;padding:10px;resize:vertical}
+    .nlh-input:focus,.nlh-select:focus,.nlh-textarea:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,.10)}
+    .nlh-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 12px;border:1px solid #dfe6f1;background:#fff;border-radius:9px;color:#334155;font-size:12px;font-weight:900;transition:.15s}
+    .nlh-btn:hover{border-color:#c7d2fe;background:#f8faff;color:#4361ee}
+    .nlh-btn-primary{border-color:#4361ee;background:#4361ee;color:#fff}
+    .nlh-btn-primary:hover{background:#3854d8;color:#fff}
+    .nlh-btn-danger{border-color:#fecaca;background:#fff5f5;color:#ef4444}
+    .nlh-list{display:grid;gap:8px;padding:12px}
+    .nlh-item{width:100%;text-align:left;border:1px solid #eef2f7;background:#fff;border-radius:10px;padding:10px 11px;transition:.15s}
+    .nlh-item:hover,.nlh-item.is-active{border-color:#c7d2fe;background:#f8faff}
+    .nlh-item-title{font-size:13px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .nlh-item-meta{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:#94a3b8}
+    .nlh-pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;background:#eef2ff;color:#4361ee}
+    .nlh-pill-gray{background:#f1f5f9;color:#64748b}
+    .nlh-grid{display:grid;gap:12px}
+    .nlh-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .nlh-builder{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;min-height:620px}
+    .nlh-palette{display:grid;gap:8px;align-content:start}
+    .nlh-palette button{justify-content:flex-start}
+    .nlh-canvas{border:1px solid #e5eaf3;border-radius:12px;background:#f4f6fb;padding:18px;min-height:600px}
+    .nlh-email{max-width:640px;margin:0 auto;border:1px solid #e5eaf3;border-radius:16px;overflow:hidden;background:#fff}
+    .nlh-block{position:relative;border:1px solid transparent}
+    .nlh-block:hover,.nlh-block.is-active{border-color:#c7d2fe;box-shadow:0 0 0 3px rgba(67,97,238,.08)}
+    .nlh-block-actions{position:absolute;right:8px;top:8px;display:none;gap:4px;z-index:5}
+    .nlh-block:hover .nlh-block-actions,.nlh-block.is-active .nlh-block-actions{display:flex}
+    .nlh-icon-btn{width:28px;height:28px;border:1px solid #dfe6f1;background:#fff;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#64748b}
+    .nlh-preview-frame{width:100%;min-height:520px;border:1px solid #e5eaf3;border-radius:12px;background:#fff}
+    .nlh-empty{display:grid;place-items:center;min-height:150px;border:1px dashed #d8e0ec;border-radius:12px;color:#94a3b8;font-size:12px;text-align:center}
+    .dark .nlh-shell,.dark .nlh-title,.dark .nlh-item-title{background:#0e1726;color:#e5e7eb}
+    .dark .nlh-head,.dark .nlh-card,.dark .nlh-card-h,.dark .nlh-rail,.dark .nlh-side,.dark .nlh-input,.dark .nlh-select,.dark .nlh-textarea,.dark .nlh-item{background:#0e1726;border-color:#253b5c;color:#e5e7eb}
+    .dark .nlh-body,.dark .nlh-main{background:#0a1020}
+    @media(max-width:1180px){.nlh-body{grid-template-columns:1fr}.nlh-rail,.nlh-side{border:0}.nlh-builder{grid-template-columns:1fr}.nlh-grid-2{grid-template-columns:1fr}}
+</style>
+
+<div x-show="showNewsletter" x-cloak x-data="newsletterHub()" x-init="init()" class="nlh-shell">
+    <div class="nlh-head">
+        <div>
+            <div class="nlh-title">
+                <iconify-icon icon="solar:mailbox-bold-duotone" width="22" style="color:#4361ee"></iconify-icon>
+                Newsletter
+            </div>
+            <div class="text-xs text-white-dark mt-1">Audiences, templates visuels, sequences et campagnes.</div>
+        </div>
+        <div class="nlh-tabs">
+            <button type="button" class="nlh-tab" :class="{ 'is-active': tab === 'overview' }" @click="tab = 'overview'">Vue globale</button>
+            <button type="button" class="nlh-tab" :class="{ 'is-active': tab === 'audiences' }" @click="tab = 'audiences'">Audiences</button>
+            <button type="button" class="nlh-tab" :class="{ 'is-active': tab === 'templates' }" @click="tab = 'templates'">Templates</button>
+            <button type="button" class="nlh-tab" :class="{ 'is-active': tab === 'sequences' }" @click="tab = 'sequences'">Sequences</button>
+            <button type="button" class="nlh-btn" @click="loadHub(true)" :disabled="loading">
+                <iconify-icon icon="solar:refresh-bold" width="15"></iconify-icon>
+                <span x-text="loading ? 'Chargement...' : 'Actualiser'"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="nlh-body">
+        <aside class="nlh-rail">
+            <div class="nlh-list">
+                <button type="button" class="nlh-btn nlh-btn-primary" @click="newTemplate(); tab = 'templates'">
+                    <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                    Nouveau template
+                </button>
+                <button type="button" class="nlh-btn" @click="newAudience(); tab = 'audiences'">
+                    <iconify-icon icon="solar:users-group-rounded-bold" width="16"></iconify-icon>
+                    Nouvelle audience
+                </button>
+                <button type="button" class="nlh-btn" @click="newSequence(); tab = 'sequences'">
+                    <iconify-icon icon="solar:rewind-forward-bold" width="16"></iconify-icon>
+                    Nouvelle sequence
+                </button>
+            </div>
+
+            <div class="px-3 pb-2 nlh-label">Audiences</div>
+            <div class="nlh-list pt-0">
+                <template x-for="aud in audiences" :key="aud._id">
+                    <button type="button" class="nlh-item" :class="{ 'is-active': currentAudience && currentAudience._id === aud._id }" @click="selectAudience(aud); tab = 'audiences'">
+                        <div class="nlh-item-title" x-text="aud.name"></div>
+                        <div class="nlh-item-meta">
+                            <span x-text="aud.sourceView?.name || aud.entitySlug"></span>
+                            <span class="nlh-pill nlh-pill-gray" x-text="aud.emailField?.fieldName || 'Email'"></span>
+                        </div>
+                    </button>
+                </template>
+                <div class="nlh-empty" x-show="!audiences.length">Aucune audience</div>
+            </div>
+
+            <div class="px-3 pb-2 nlh-label">Templates</div>
+            <div class="nlh-list pt-0">
+                <template x-for="tpl in templates" :key="tpl._id">
+                    <button type="button" class="nlh-item" :class="{ 'is-active': currentTemplate && currentTemplate._id === tpl._id }" @click="selectTemplate(tpl); tab = 'templates'">
+                        <div class="nlh-item-title" x-text="tpl.name"></div>
+                        <div class="nlh-item-meta">
+                            <span class="nlh-pill" x-text="tpl.format || 'builder'"></span>
+                            <span x-text="tpl.subject || 'Sans sujet'"></span>
+                        </div>
+                    </button>
+                </template>
+                <div class="nlh-empty" x-show="!templates.length">Aucun template</div>
+            </div>
+
+            <div class="px-3 pb-2 nlh-label">Sequences</div>
+            <div class="nlh-list pt-0">
+                <template x-for="seq in sequences" :key="seq._id">
+                    <button type="button" class="nlh-item" :class="{ 'is-active': currentSequence && currentSequence._id === seq._id }" @click="selectSequence(seq); tab = 'sequences'">
+                        <div class="nlh-item-title" x-text="seq.name"></div>
+                        <div class="nlh-item-meta">
+                            <span class="nlh-pill nlh-pill-gray" x-text="seq.status || 'draft'"></span>
+                            <span x-text="(seq.steps || []).length + ' email(s)'"></span>
+                        </div>
+                    </button>
+                </template>
+                <div class="nlh-empty" x-show="!sequences.length">Aucune sequence</div>
+            </div>
+        </aside>
+
+        <main class="nlh-main">
+            <div x-show="loading && !loaded" class="nlh-empty">Chargement du hub newsletter...</div>
+
+            <section x-show="loaded && tab === 'overview'" class="nlh-grid">
+                <div class="nlh-grid-2">
+                    <div class="nlh-card">
+                        <div class="nlh-card-h">
+                            <div class="font-bold">Pilotage</div>
+                            <span class="nlh-pill">Email marketing</span>
+                        </div>
+                        <div class="nlh-card-b grid grid-cols-2 gap-3">
+                            <div class="rounded-lg bg-[#f8fafc] p-4">
+                                <div class="text-2xl font-black" x-text="audiences.length"></div>
+                                <div class="text-xs text-white-dark font-bold mt-1">Audiences</div>
+                            </div>
+                            <div class="rounded-lg bg-[#f8fafc] p-4">
+                                <div class="text-2xl font-black" x-text="templates.length"></div>
+                                <div class="text-xs text-white-dark font-bold mt-1">Templates</div>
+                            </div>
+                            <div class="rounded-lg bg-[#f8fafc] p-4">
+                                <div class="text-2xl font-black" x-text="sequences.length"></div>
+                                <div class="text-xs text-white-dark font-bold mt-1">Sequences</div>
+                            </div>
+                            <div class="rounded-lg bg-[#f8fafc] p-4">
+                                <div class="text-2xl font-black" x-text="campaigns.length"></div>
+                                <div class="text-xs text-white-dark font-bold mt-1">Campagnes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nlh-card">
+                        <div class="nlh-card-h">
+                            <div class="font-bold">Logique conseillee</div>
+                        </div>
+                        <div class="nlh-card-b text-sm leading-6 text-slate-600">
+                            <div class="font-bold text-slate-900">1. Audience</div>
+                            <p class="mb-3">Choisis une entite ou une vue comme Associations, puis le champ email.</p>
+                            <div class="font-bold text-slate-900">2. Template</div>
+                            <p class="mb-3">Construis un email avec blocs visuels, variables et preview.</p>
+                            <div class="font-bold text-slate-900">3. Sequence</div>
+                            <p>Assemble plusieurs emails avec delais et conditions.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="nlh-card">
+                    <div class="nlh-card-h">
+                        <div class="font-bold">Campagnes recentes</div>
+                    </div>
+                    <div class="nlh-card-b">
+                        <div class="grid gap-2">
+                            <template x-for="campaign in campaigns.slice(0, 8)" :key="campaign._id">
+                                <div class="flex items-center justify-between rounded-lg border border-[#eef2f7] p-3">
+                                    <div>
+                                        <div class="font-bold text-sm" x-text="campaign.name"></div>
+                                        <div class="text-xs text-white-dark" x-text="campaign.sourceView?.name || campaign.entitySlug"></div>
+                                    </div>
+                                    <span class="nlh-pill" x-text="campaign.status"></span>
+                                </div>
+                            </template>
+                            <div class="nlh-empty" x-show="!campaigns.length">Aucune campagne encore.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="loaded && tab === 'audiences'" class="nlh-card">
+                <div class="nlh-card-h">
+                    <div class="font-bold" x-text="currentAudience?._id ? 'Modifier audience' : 'Nouvelle audience'"></div>
+                    <div class="flex gap-2">
+                        <button type="button" class="nlh-btn" @click="newAudience()">Nouveau</button>
+                        <button type="button" class="nlh-btn nlh-btn-danger" x-show="currentAudience?._id" @click="deleteAudience()" :disabled="saving">Supprimer</button>
+                        <button type="button" class="nlh-btn nlh-btn-primary" @click="saveAudience()" :disabled="saving">Enregistrer</button>
+                    </div>
+                </div>
+                <div class="nlh-card-b nlh-grid">
+                    <div class="nlh-grid-2">
+                        <div>
+                            <div class="nlh-label mb-1">Nom</div>
+                            <input class="nlh-input" x-model="currentAudience.name" placeholder="Newsletter Associations">
+                        </div>
+                        <div>
+                            <div class="nlh-label mb-1">Entite source</div>
+                            <select class="nlh-select" x-model="currentAudience.entitySlug" @change="syncAudienceEntity()">
+                                <template x-for="entity in entities" :key="entity.slug">
+                                    <option :value="entity.slug" x-text="entity.namePlural || entity.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="nlh-label mb-1">Vue ou liste</div>
+                            <select class="nlh-select" x-model="currentAudience.sourceView.slug" @change="syncAudienceView()">
+                                <option value="">Toute l'entite</option>
+                                <template x-for="view in audienceViews()" :key="view.slug">
+                                    <option :value="view.slug" x-text="view.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="nlh-label mb-1">Champ email</div>
+                            <select class="nlh-select" x-model="currentAudience.emailField.field" @change="syncAudienceEmailField()">
+                                <template x-for="field in audienceFields()" :key="field.id">
+                                    <option :value="field.id" x-text="field.label + (field.emailCandidate ? ' - recommande' : '')"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="nlh-label mb-1">Description</div>
+                        <textarea class="nlh-textarea" x-model="currentAudience.description" placeholder="A qui cette liste sert-elle ?"></textarea>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <div class="font-bold text-sm">Filtres</div>
+                                <div class="text-xs text-white-dark">Les filtres de la vue choisie sont repris automatiquement.</div>
+                            </div>
+                            <button type="button" class="nlh-btn" @click="addAudienceFilter()">Filtre</button>
+                        </div>
+                        <div class="grid gap-2">
+                            <template x-for="(filter, idx) in currentAudience.filters" :key="'aud-filter-' + idx">
+                                <div class="grid grid-cols-[1fr_130px_1fr_36px] gap-2">
+                                    <select class="nlh-select" x-model="filter.field" @change="syncFilterName(filter)">
+                                        <template x-for="field in audienceFields()" :key="field.id">
+                                            <option :value="field.id" x-text="field.label"></option>
+                                        </template>
+                                    </select>
+                                    <select class="nlh-select" x-model="filter.operator">
+                                        <option value="contains">Contient</option>
+                                        <option value="equals">Egal</option>
+                                        <option value="not_equals">Different</option>
+                                        <option value="is_not_empty">Renseigne</option>
+                                        <option value="is_empty">Vide</option>
+                                    </select>
+                                    <input class="nlh-input" x-model="filter.value" placeholder="Valeur">
+                                    <button type="button" class="nlh-icon-btn" @click="currentAudience.filters.splice(idx,1)">
+                                        <iconify-icon icon="solar:trash-bin-trash-linear" width="15"></iconify-icon>
+                                    </button>
+                                </div>
+                            </template>
+                            <div class="nlh-empty" x-show="!currentAudience.filters.length">Tous les records avec un email valide seront inclus.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="loaded && tab === 'templates'" class="nlh-grid">
+                <div class="nlh-card">
+                    <div class="nlh-card-h">
+                    <div class="font-bold" x-text="currentTemplate?._id ? 'Template email' : 'Nouveau template'"></div>
+                    <div class="flex gap-2">
+                        <button type="button" class="nlh-btn" @click="newTemplate()">Nouveau</button>
+                        <button type="button" class="nlh-btn nlh-btn-danger" x-show="currentTemplate?._id" @click="deleteTemplate()" :disabled="saving">Supprimer</button>
+                        <button type="button" class="nlh-btn nlh-btn-primary" @click="saveTemplate()" :disabled="saving">Enregistrer</button>
+                    </div>
+                </div>
+                    <div class="nlh-card-b nlh-grid">
+                        <div class="nlh-grid-2">
+                            <div>
+                                <div class="nlh-label mb-1">Nom template</div>
+                                <input class="nlh-input" x-model="currentTemplate.name">
+                            </div>
+                            <div>
+                                <div class="nlh-label mb-1">Categorie</div>
+                                <input class="nlh-input" x-model="currentTemplate.category" placeholder="prospection">
+                            </div>
+                            <div>
+                                <div class="nlh-label mb-1">Sujet</div>
+                                <input class="nlh-input" x-model="currentTemplate.subject" placeholder="Bonjour {{title}}">
+                            </div>
+                            <div>
+                                <div class="nlh-label mb-1">Preheader</div>
+                                <input class="nlh-input" x-model="currentTemplate.preheader">
+                            </div>
+                        </div>
+                        <div class="nlh-builder">
+                            <div class="nlh-palette">
+                                <div class="nlh-label">Blocs</div>
+                                <button type="button" class="nlh-btn" @click="addBlock('brand')"><iconify-icon icon="solar:flag-bold" width="15"></iconify-icon>Brand</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('hero')"><iconify-icon icon="solar:align-top-bold" width="15"></iconify-icon>Hero</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('text')"><iconify-icon icon="solar:text-bold" width="15"></iconify-icon>Texte</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('image')"><iconify-icon icon="solar:gallery-bold" width="15"></iconify-icon>Image</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('button')"><iconify-icon icon="solar:cursor-square-bold" width="15"></iconify-icon>Bouton</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('divider')"><iconify-icon icon="solar:minus-square-bold" width="15"></iconify-icon>Separateur</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('spacer')"><iconify-icon icon="solar:sort-vertical-bold" width="15"></iconify-icon>Espace</button>
+                                <button type="button" class="nlh-btn" @click="addBlock('footer')"><iconify-icon icon="solar:document-text-bold" width="15"></iconify-icon>Footer</button>
+                            </div>
+                            <div class="nlh-canvas">
+                                <div class="nlh-email">
+                                    <template x-for="(block, idx) in (currentTemplate.layout && currentTemplate.layout.blocks) || []" :key="block.id">
+                                        <div class="nlh-block" :class="{ 'is-active': selectedBlockId === block.id }" @click.stop="selectBlock(block.id)">
+                                            <div class="nlh-block-actions">
+                                                <button type="button" class="nlh-icon-btn" @click.stop="moveBlock(idx,-1)"><iconify-icon icon="solar:arrow-up-linear" width="14"></iconify-icon></button>
+                                                <button type="button" class="nlh-icon-btn" @click.stop="moveBlock(idx,1)"><iconify-icon icon="solar:arrow-down-linear" width="14"></iconify-icon></button>
+                                                <button type="button" class="nlh-icon-btn" @click.stop="removeBlock(idx)"><iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon></button>
+                                            </div>
+                                            <div x-html="blockPreview(block)"></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="loaded && tab === 'sequences'" class="nlh-card">
+                <div class="nlh-card-h">
+                    <div class="font-bold" x-text="currentSequence?._id ? 'Modifier sequence' : 'Nouvelle sequence'"></div>
+                    <div class="flex gap-2">
+                        <button type="button" class="nlh-btn" @click="newSequence()">Nouveau</button>
+                        <button type="button" class="nlh-btn nlh-btn-danger" x-show="currentSequence?._id" @click="deleteSequence()" :disabled="saving">Supprimer</button>
+                        <button type="button" class="nlh-btn nlh-btn-primary" @click="saveSequence()" :disabled="saving">Enregistrer</button>
+                    </div>
+                </div>
+                <div class="nlh-card-b nlh-grid">
+                    <div class="nlh-grid-2">
+                        <div>
+                            <div class="nlh-label mb-1">Nom</div>
+                            <input class="nlh-input" x-model="currentSequence.name">
+                        </div>
+                        <div>
+                            <div class="nlh-label mb-1">Audience</div>
+                            <select class="nlh-select" x-model="currentSequence.audienceId">
+                                <template x-for="aud in audiences" :key="aud._id">
+                                    <option :value="aud._id" x-text="aud.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="nlh-label mb-1">Nom expediteur</div>
+                            <input class="nlh-input" x-model="currentSequence.sender.name">
+                        </div>
+                        <div>
+                            <div class="nlh-label mb-1">Email expediteur</div>
+                            <input class="nlh-input" x-model="currentSequence.sender.email">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-bold text-sm">Emails de la sequence</div>
+                            <div class="text-xs text-white-dark">Comme Brevo/Mailchimp: delai, template, ordre.</div>
+                        </div>
+                        <button type="button" class="nlh-btn" @click="addStep()">Ajouter email</button>
+                    </div>
+                    <div class="grid gap-3">
+                        <template x-for="(step, idx) in currentSequence.steps" :key="step.localId || step._id || idx">
+                            <div class="rounded-xl border border-[#e5eaf3] bg-white p-4">
+                                <div class="grid grid-cols-[70px_1fr_1fr_36px] gap-2 items-end">
+                                    <div>
+                                        <div class="nlh-label mb-1">Delai</div>
+                                        <input class="nlh-input" type="number" min="0" x-model.number="step.delayDays">
+                                    </div>
+                                    <div>
+                                        <div class="nlh-label mb-1">Nom</div>
+                                        <input class="nlh-input" x-model="step.name">
+                                    </div>
+                                    <div>
+                                        <div class="nlh-label mb-1">Template</div>
+                                        <select class="nlh-select" x-model="step.templateId" @change="syncStepTemplate(step)">
+                                            <option value="">Choisir...</option>
+                                            <template x-for="tpl in templates" :key="tpl._id">
+                                                <option :value="tpl._id" x-text="tpl.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <button type="button" class="nlh-icon-btn" @click="currentSequence.steps.splice(idx,1)">
+                                        <iconify-icon icon="solar:trash-bin-trash-linear" width="15"></iconify-icon>
+                                    </button>
+                                </div>
+                                <div class="mt-2 text-xs text-white-dark" x-text="'Sujet: ' + (step.subject || 'Sujet depuis template')"></div>
+                            </div>
+                        </template>
+                        <div class="nlh-empty" x-show="!currentSequence.steps.length">Ajoute ton premier email.</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <aside class="nlh-side">
+            <template x-if="tab === 'templates'">
+                <div class="nlh-grid">
+                    <div class="nlh-card">
+                        <div class="nlh-card-h">
+                            <div class="font-bold">Proprietes bloc</div>
+                        </div>
+                        <div class="nlh-card-b nlh-grid" x-show="selectedBlock()">
+                            <template x-if="['brand','hero'].includes(selectedBlock()?.type)">
+                                <div class="nlh-grid">
+                                    <div>
+                                        <div class="nlh-label mb-1">Titre / Label</div>
+                                        <input class="nlh-input" x-model="selectedBlock().props[selectedBlock().type === 'hero' ? 'title' : 'label']">
+                                    </div>
+                                    <div>
+                                        <div class="nlh-label mb-1">Sous-titre</div>
+                                        <textarea class="nlh-textarea" x-model="selectedBlock().props.subtitle"></textarea>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="selectedBlock()?.type === 'text'">
+                                <div>
+                                    <div class="nlh-label mb-1">HTML texte</div>
+                                    <textarea class="nlh-textarea" rows="8" x-model="selectedBlock().props.text"></textarea>
+                                </div>
+                            </template>
+                            <template x-if="selectedBlock()?.type === 'image'">
+                                <div class="nlh-grid">
+                                    <div>
+                                        <div class="nlh-label mb-1">URL image</div>
+                                        <input class="nlh-input" x-model="selectedBlock().props.url">
+                                    </div>
+                                    <div>
+                                        <div class="nlh-label mb-1">Largeur %</div>
+                                        <input class="nlh-input" type="number" x-model.number="selectedBlock().props.width">
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="selectedBlock()?.type === 'button'">
+                                <div class="nlh-grid">
+                                    <div>
+                                        <div class="nlh-label mb-1">Texte bouton</div>
+                                        <input class="nlh-input" x-model="selectedBlock().props.label">
+                                    </div>
+                                    <div>
+                                        <div class="nlh-label mb-1">Lien</div>
+                                        <input class="nlh-input" x-model="selectedBlock().props.url">
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="selectedBlock()?.type === 'spacer'">
+                                <div>
+                                    <div class="nlh-label mb-1">Hauteur</div>
+                                    <input class="nlh-input" type="number" x-model.number="selectedBlock().props.height">
+                                </div>
+                            </template>
+                            <template x-if="selectedBlock()?.type === 'footer'">
+                                <div>
+                                    <div class="nlh-label mb-1">Texte footer</div>
+                                    <textarea class="nlh-textarea" x-model="selectedBlock().props.text"></textarea>
+                                </div>
+                            </template>
+                            <div class="nlh-grid-2">
+                                <div>
+                                    <div class="nlh-label mb-1">Couleur</div>
+                                    <input class="nlh-input" type="color" x-model="selectedBlock().props.color">
+                                </div>
+                                <div>
+                                    <div class="nlh-label mb-1">Fond</div>
+                                    <input class="nlh-input" type="color" x-model="selectedBlock().props.background">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="nlh-card-b" x-show="!selectedBlock()">
+                            <div class="nlh-empty">Selectionne un bloc du canvas.</div>
+                        </div>
+                    </div>
+                    <div class="nlh-card">
+                        <div class="nlh-card-h">
+                            <div class="font-bold">Variables</div>
+                        </div>
+                        <div class="nlh-card-b text-xs leading-6 text-slate-600">
+                            <div><code>{{title}}</code> titre du record</div>
+                            <div><code>{{link}}</code> lien du record</div>
+                            <div><code>{{field:ID}}</code> champ specifique</div>
+                            <div><code>{{nom_du_champ}}</code> alias de champ</div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="tab !== 'templates'">
+                <div class="nlh-card">
+                    <div class="nlh-card-h"><div class="font-bold">Aide rapide</div></div>
+                    <div class="nlh-card-b text-sm leading-6 text-slate-600">
+                        <p>Depuis une vue comme Associations, cree une audience. Ensuite cree un template visuel et assemble une sequence.</p>
+                        <p class="mt-3">Les anciennes campagnes restent visibles dans le pilotage et continuent de fonctionner.</p>
+                    </div>
+                </div>
+            </template>
+        </aside>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('newsletterHub', () => ({
+        loaded: false,
+        loading: false,
+        saving: false,
+        tab: 'overview',
+        apiBase: '',
+        entities: [],
+        audiences: [],
+        templates: [],
+        sequences: [],
+        campaigns: [],
+        defaultLayout: null,
+        currentAudience: {},
+        currentTemplate: {},
+        currentSequence: {},
+        selectedBlockId: null,
+
+        init() {
+            const parts = window.location.pathname.split('/');
+            const accountIndex = parts.indexOf('account');
+            this.apiBase = accountIndex >= 0 ? `/account/${parts[accountIndex + 1]}/api/newsletter` : '/api/newsletter';
+            this.loadHub();
+        },
+
+        clone(value) {
+            return JSON.parse(JSON.stringify(value || null));
+        },
+
+        async loadHub(force = false) {
+            if (this.loaded && !force) return;
+            this.loading = true;
+            try {
+                const res = await fetch(this.apiBase + '/hub', { credentials: 'include' });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.entities = data.entities || [];
+                this.audiences = data.audiences || [];
+                this.templates = data.templates || [];
+                this.sequences = data.sequences || [];
+                this.campaigns = data.campaigns || [];
+                this.defaultLayout = data.defaultLayout || this.makeDefaultLayout();
+                if (!Object.keys(this.currentAudience || {}).length) this.newAudience();
+                if (!Object.keys(this.currentTemplate || {}).length) this.selectTemplate(this.templates[0] || this.makeTemplate());
+                if (!Object.keys(this.currentSequence || {}).length) this.selectSequence(this.sequences[0] || this.makeSequence());
+                this.loaded = true;
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        makeDefaultLayout() {
+            return {
+                version: '1.0',
+                canvas: { background: '#f4f6fb', contentWidth: 640, fontFamily: 'Arial, Helvetica, sans-serif', accentColor: '#4361ee' },
+                blocks: [
+                    { id: this.blockId(), type: 'brand', props: { label: 'Dexapp', subtitle: 'Newsletter', align: 'left', background: '#ffffff', color: '#4361ee' } },
+                    { id: this.blockId(), type: 'hero', props: { title: 'Bonjour {{title}}', subtitle: 'Un message court et clair.', background: '#eef2ff', color: '#0f172a', align: 'left' } },
+                    { id: this.blockId(), type: 'text', props: { text: '<p>Bonjour,</p><p>Votre message ici.</p>', color: '#334155', fontSize: 15, lineHeight: 1.65 } },
+                    { id: this.blockId(), type: 'button', props: { label: 'En savoir plus', url: '{{link}}', align: 'center', background: '#4361ee', color: '#ffffff' } },
+                    { id: this.blockId(), type: 'footer', props: { text: 'Vous recevez cet email car votre contact est present dans un espace Dexapp.', color: '#94a3b8', background: '#ffffff' } }
+                ]
+            };
+        },
+
+        blockId() {
+            return 'blk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        },
+
+        makeBlock(type) {
+            const base = {
+                brand: { type: 'brand', props: { label: 'Dexapp', subtitle: 'Newsletter', align: 'left', background: '#ffffff', color: '#4361ee' } },
+                hero: { type: 'hero', props: { title: 'Titre principal', subtitle: 'Sous-titre...', align: 'left', background: '#eef2ff', color: '#0f172a' } },
+                text: { type: 'text', props: { text: '<p>Nouveau paragraphe...</p>', color: '#334155', fontSize: 15, lineHeight: 1.65 } },
+                image: { type: 'image', props: { url: '', alt: '', width: 100, radius: 12, align: 'center' } },
+                button: { type: 'button', props: { label: 'Action', url: 'https://', align: 'center', background: '#4361ee', color: '#ffffff' } },
+                divider: { type: 'divider', props: { color: '#e5eaf3', size: 1 } },
+                spacer: { type: 'spacer', props: { height: 24 } },
+                footer: { type: 'footer', props: { text: 'Vous recevez cet email car votre contact est present dans un espace Dexapp.', color: '#94a3b8', background: '#ffffff' } }
+            }[type] || { type: 'text', props: { text: '<p>Nouveau paragraphe...</p>' } };
+            return { id: this.blockId(), ...this.clone(base) };
+        },
+
+        entityBySlug(slug) {
+            return this.entities.find(entity => entity.slug === slug) || this.entities[0] || { fields: [], views: [] };
+        },
+
+        audienceViews() {
+            return this.entityBySlug(this.currentAudience.entitySlug).views || [];
+        },
+
+        audienceFields() {
+            return this.entityBySlug(this.currentAudience.entitySlug).fields || [];
+        },
+
+        preferredEmailField(entity = null) {
+            const fields = (entity || this.entityBySlug(this.currentAudience.entitySlug)).fields || [];
+            return fields.find(field => field.emailCandidate) || fields.find(field => field.source === 'custom') || fields[0] || { id: '', label: '', source: 'custom' };
+        },
+
+        makeAudience() {
+            const entity = this.entities[0] || { slug: '', namePlural: '', fields: [], views: [] };
+            const emailField = this.preferredEmailField(entity);
+            return {
+                name: `Newsletter ${entity.namePlural || entity.name || ''}`.trim(),
+                description: '',
+                entitySlug: entity.slug,
+                sourceView: { viewId: '', slug: '', name: '' },
+                emailField: { field: emailField.id, fieldName: emailField.label, source: emailField.source || 'custom' },
+                filters: [],
+                status: 'active'
+            };
+        },
+
+        newAudience() {
+            this.currentAudience = this.makeAudience();
+        },
+
+        selectAudience(audience) {
+            this.currentAudience = this.clone(audience || this.makeAudience());
+            if (!this.currentAudience.sourceView) this.currentAudience.sourceView = { viewId: '', slug: '', name: '' };
+            if (!Array.isArray(this.currentAudience.filters)) this.currentAudience.filters = [];
+        },
+
+        syncAudienceEntity() {
+            const entity = this.entityBySlug(this.currentAudience.entitySlug);
+            const field = this.preferredEmailField(entity);
+            this.currentAudience.emailField = { field: field.id, fieldName: field.label, source: field.source || 'custom' };
+            this.currentAudience.sourceView = { viewId: '', slug: '', name: '' };
+            this.currentAudience.filters = [];
+        },
+
+        syncAudienceView() {
+            const view = this.audienceViews().find(item => item.slug === this.currentAudience.sourceView.slug);
+            this.currentAudience.sourceView = view
+                ? { viewId: view.id, slug: view.slug, name: view.name }
+                : { viewId: '', slug: '', name: '' };
+            this.currentAudience.filters = this.clone(view?.filters || []);
+        },
+
+        syncAudienceEmailField() {
+            const field = this.audienceFields().find(item => item.id === this.currentAudience.emailField.field) || {};
+            this.currentAudience.emailField.fieldName = field.label || '';
+            this.currentAudience.emailField.source = field.source || 'custom';
+        },
+
+        addAudienceFilter() {
+            const field = this.audienceFields()[0] || { id: '', label: '', type: 'text' };
+            this.currentAudience.filters.push({ field: field.id, fieldName: field.label, fieldType: field.type || 'text', operator: 'contains', value: '', logic: 'AND' });
+        },
+
+        syncFilterName(filter) {
+            const field = this.audienceFields().find(item => item.id === filter.field) || {};
+            filter.fieldName = field.label || '';
+            filter.fieldType = field.type || 'text';
+        },
+
+        async saveAudience() {
+            this.saving = true;
+            this.syncAudienceEmailField();
+            try {
+                const isExisting = !!this.currentAudience._id;
+                const url = isExisting ? `${this.apiBase}/audiences/${this.currentAudience._id}` : `${this.apiBase}/audiences`;
+                const res = await fetch(url, {
+                    method: isExisting ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.currentAudience)
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.upsert(this.audiences, data.audience);
+                this.selectAudience(data.audience);
+                this.toast('Audience enregistree');
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async deleteAudience() {
+            if (!this.currentAudience?._id) return;
+            const ok = await this.confirmArchive('Supprimer cette audience ?');
+            if (!ok) return;
+            this.saving = true;
+            try {
+                const res = await fetch(`${this.apiBase}/audiences/${this.currentAudience._id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.removeById(this.audiences, this.currentAudience._id);
+                this.newAudience();
+                this.toast('Audience supprimee');
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        makeTemplate() {
+            return {
+                name: 'Nouveau template',
+                description: '',
+                category: 'general',
+                subject: 'Bonjour {{title}}',
+                preheader: '',
+                format: 'builder',
+                layout: this.clone(this.defaultLayout || this.makeDefaultLayout()),
+                bodyHtml: '',
+                bodyText: '',
+                status: 'draft'
+            };
+        },
+
+        newTemplate() {
+            this.selectTemplate(this.makeTemplate());
+        },
+
+        selectTemplate(template) {
+            this.currentTemplate = this.clone(template || this.makeTemplate());
+            this.ensureTemplateLayout();
+            this.selectedBlockId = this.currentTemplate.layout.blocks[0]?.id || null;
+        },
+
+        ensureTemplateLayout() {
+            if (!this.currentTemplate || typeof this.currentTemplate !== 'object') this.currentTemplate = this.makeTemplate();
+            if (!this.currentTemplate.layout) this.currentTemplate.layout = this.clone(this.defaultLayout || this.makeDefaultLayout());
+            if (!Array.isArray(this.currentTemplate.layout.blocks)) this.currentTemplate.layout.blocks = [];
+            return this.currentTemplate.layout;
+        },
+
+        addBlock(type) {
+            const layout = this.ensureTemplateLayout();
+            const block = this.makeBlock(type);
+            layout.blocks.push(block);
+            this.selectedBlockId = block.id;
+        },
+
+        selectBlock(id) {
+            this.selectedBlockId = id;
+        },
+
+        selectedBlock() {
+            return (this.currentTemplate.layout?.blocks || []).find(block => block.id === this.selectedBlockId) || null;
+        },
+
+        moveBlock(index, delta) {
+            const blocks = this.ensureTemplateLayout().blocks;
+            const next = index + delta;
+            if (next < 0 || next >= blocks.length) return;
+            const [item] = blocks.splice(index, 1);
+            blocks.splice(next, 0, item);
+        },
+
+        removeBlock(index) {
+            const blocks = this.ensureTemplateLayout().blocks;
+            const [removed] = blocks.splice(index, 1);
+            if (removed?.id === this.selectedBlockId) this.selectedBlockId = blocks[Math.max(0, index - 1)]?.id || null;
+        },
+
+        sample(text) {
+            return String(text || '')
+                .replaceAll('{{title}}', 'Association exemple')
+                .replaceAll('{{link}}', 'https://dexapp.actirama.com')
+                .replace(/\{\{\s*field:[^}]+\s*\}\}/g, 'Valeur champ');
+        },
+
+        blockPreview(block) {
+            const p = block.props || {};
+            if (block.type === 'brand') return `<div style="padding:28px 32px 18px;background:${p.background || '#fff'};text-align:${p.align || 'left'}"><div style="font-size:15px;font-weight:800;color:${p.color || '#4361ee'}">${this.escape(this.sample(p.label))}</div><div style="font-size:12px;color:#94a3b8;margin-top:4px">${this.escape(this.sample(p.subtitle))}</div></div>`;
+            if (block.type === 'hero') return `<div style="padding:30px 32px;background:${p.background || '#eef2ff'};text-align:${p.align || 'left'}"><div style="font-size:28px;line-height:1.22;font-weight:800;color:${p.color || '#0f172a'}">${this.escape(this.sample(p.title))}</div><div style="font-size:15px;line-height:1.6;color:#64748b;margin-top:12px">${this.escape(this.sample(p.subtitle))}</div></div>`;
+            if (block.type === 'text') return `<div style="padding:18px 32px;color:${p.color || '#334155'};font-size:${p.fontSize || 15}px;line-height:${p.lineHeight || 1.65}">${this.sample(p.text)}</div>`;
+            if (block.type === 'image') return p.url ? `<div style="padding:18px 32px;text-align:${p.align || 'center'}"><img src="${this.escape(p.url)}" style="width:${p.width || 100}%;border-radius:${p.radius || 12}px;max-width:100%"></div>` : '<div style="padding:28px 32px;color:#94a3b8;text-align:center">Image</div>';
+            if (block.type === 'button') return `<div style="padding:20px 32px 24px;text-align:${p.align || 'center'}"><span style="display:inline-block;padding:13px 24px;background:${p.background || '#4361ee'};color:${p.color || '#fff'};font-size:14px;font-weight:800;border-radius:10px">${this.escape(this.sample(p.label))}</span></div>`;
+            if (block.type === 'divider') return `<div style="padding:0 32px"><div style="border-top:${p.size || 1}px solid ${p.color || '#e5eaf3'}"></div></div>`;
+            if (block.type === 'spacer') return `<div style="height:${p.height || 24}px;background:#fff"></div>`;
+            if (block.type === 'footer') return `<div style="padding:18px 32px 22px;background:${p.background || '#fff'};color:${p.color || '#94a3b8'};font-size:11px;line-height:1.5;text-align:center;border-top:1px solid #eef2f7">${this.escape(this.sample(p.text))}</div>`;
+            return '';
+        },
+
+        async saveTemplate() {
+            this.saving = true;
+            try {
+                const isExisting = !!this.currentTemplate._id;
+                const url = isExisting ? `${this.apiBase}/templates/${this.currentTemplate._id}` : `${this.apiBase}/templates`;
+                const res = await fetch(url, {
+                    method: isExisting ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.currentTemplate)
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.upsert(this.templates, data.template);
+                this.selectTemplate(data.template);
+                this.toast('Template enregistre');
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async deleteTemplate() {
+            if (!this.currentTemplate?._id) return;
+            const ok = await this.confirmArchive('Supprimer ce template ?');
+            if (!ok) return;
+            this.saving = true;
+            try {
+                const res = await fetch(`${this.apiBase}/templates/${this.currentTemplate._id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.removeById(this.templates, this.currentTemplate._id);
+                this.selectTemplate(this.templates[0] || this.makeTemplate());
+                this.toast('Template supprime');
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        makeSequence() {
+            return {
+                name: 'Nouvelle sequence',
+                description: '',
+                audienceId: this.audiences[0]?._id || '',
+                status: 'draft',
+                sender: { name: '', email: '', replyTo: '' },
+                steps: []
+            };
+        },
+
+        newSequence() {
+            this.selectSequence(this.makeSequence());
+        },
+
+        selectSequence(sequence) {
+            this.currentSequence = this.clone(sequence || this.makeSequence());
+            if (!this.currentSequence.sender) this.currentSequence.sender = { name: '', email: '', replyTo: '' };
+            if (!Array.isArray(this.currentSequence.steps)) this.currentSequence.steps = [];
+        },
+
+        addStep() {
+            const tpl = this.templates[0] || {};
+            this.currentSequence.steps.push({
+                localId: this.blockId(),
+                name: tpl.name || `Email ${this.currentSequence.steps.length + 1}`,
+                delayDays: this.currentSequence.steps.length ? 2 : 0,
+                templateId: tpl._id || '',
+                subject: tpl.subject || '',
+                preheader: tpl.preheader || '',
+                layout: this.clone(tpl.layout || this.defaultLayout || this.makeDefaultLayout()),
+                bodyHtml: tpl.bodyHtml || '',
+                bodyText: tpl.bodyText || ''
+            });
+        },
+
+        syncStepTemplate(step) {
+            const tpl = this.templates.find(item => item._id === step.templateId);
+            if (!tpl) return;
+            step.name = tpl.name;
+            step.subject = tpl.subject;
+            step.preheader = tpl.preheader;
+            step.layout = this.clone(tpl.layout || this.defaultLayout || this.makeDefaultLayout());
+            step.bodyHtml = tpl.bodyHtml || '';
+            step.bodyText = tpl.bodyText || '';
+        },
+
+        async saveSequence() {
+            this.saving = true;
+            try {
+                const isExisting = !!this.currentSequence._id;
+                const url = isExisting ? `${this.apiBase}/sequences/${this.currentSequence._id}` : `${this.apiBase}/sequences`;
+                const res = await fetch(url, {
+                    method: isExisting ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.currentSequence)
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.upsert(this.sequences, data.sequence);
+                this.selectSequence(data.sequence);
+                this.toast('Sequence enregistree');
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async deleteSequence() {
+            if (!this.currentSequence?._id) return;
+            const ok = await this.confirmArchive('Supprimer cette sequence ?');
+            if (!ok) return;
+            this.saving = true;
+            try {
+                const res = await fetch(`${this.apiBase}/sequences/${this.currentSequence._id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur');
+                this.removeById(this.sequences, this.currentSequence._id);
+                this.selectSequence(this.sequences[0] || this.makeSequence());
+                this.toast('Sequence supprimee');
+            } catch (error) {
+                this.toast(error.message || 'Erreur', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async confirmArchive(title) {
+            if (!window.Swal) return window.confirm(title);
+            const result = await Swal.fire({
+                title,
+                text: 'L element sera archive et retire de la liste.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Supprimer',
+                cancelButtonText: 'Annuler',
+                confirmButtonColor: '#ef4444'
+            });
+            return result.isConfirmed;
+        },
+
+        removeById(list, id) {
+            const index = list.findIndex(entry => entry._id === id);
+            if (index >= 0) list.splice(index, 1);
+        },
+
+        upsert(list, item) {
+            const idx = list.findIndex(entry => entry._id === item._id);
+            if (idx >= 0) list.splice(idx, 1, item);
+            else list.unshift(item);
+        },
+
+        escape(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        },
+
+        toast(message, type = 'success') {
+            if (window.Swal) {
+                Swal.fire({ toast: true, position: 'top-end', icon: type, title: message, timer: 2200, showConfirmButton: false });
+            } else {
+                alert(message);
+            }
+        }
+    }));
+});
+</script>

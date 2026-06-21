@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const mailer = require('./mailer');
+const emailBuilder = require('./newsletter-email-builder.service');
 const { buildRecordFilterQuery, normalizeOperator } = require('./record-filter-query');
 
 const STANDARD_FIELDS = [
@@ -27,7 +28,8 @@ function defaultTemplates() {
             enabled: true,
             subject: 'Bonjour {{title}}',
             preheader: '',
-            format: 'designed',
+            format: 'builder',
+            layout: emailBuilder.defaultLayout(),
             bodyText: 'Bonjour,\n\nNous voulions vous contacter au sujet de {{title}}.\n\nCordialement,',
             bodyHtml: '<p>Bonjour,</p><p>Nous voulions vous contacter au sujet de <strong>{{title}}</strong>.</p><p>Cordialement,</p>',
             ctaLabel: '',
@@ -41,7 +43,33 @@ function defaultTemplates() {
             enabled: true,
             subject: 'Suite a notre message - {{title}}',
             preheader: '',
-            format: 'html',
+            format: 'builder',
+            layout: (() => {
+                const layout = emailBuilder.defaultLayout();
+                layout.blocks = layout.blocks.map(block => {
+                    if (block.type === 'hero') {
+                        return {
+                            ...block,
+                            props: {
+                                ...block.props,
+                                title: 'Suite a notre message',
+                                subtitle: 'Je me permets de revenir vers vous au sujet de {{title}}.'
+                            }
+                        };
+                    }
+                    if (block.type === 'text') {
+                        return {
+                            ...block,
+                            props: {
+                                ...block.props,
+                                text: '<p>Bonjour,</p><p>Je me permets de revenir vers vous.</p><p>Cordialement,</p>'
+                            }
+                        };
+                    }
+                    return block;
+                });
+                return layout;
+            })(),
             bodyText: 'Bonjour,\n\nJe me permets de revenir vers vous.\n\nCordialement,',
             bodyHtml: '<p>Bonjour,</p><p>Je me permets de revenir vers vous.</p><p>Cordialement,</p>',
             ctaLabel: '',
@@ -219,12 +247,19 @@ function renderTemplate(template, record, fields) {
     const ctaLabel = renderString(template.ctaLabel || '', context, { html: false });
     const ctaUrl = renderString(template.ctaUrl || '', context, { html: false });
     const format = template.format || 'html';
-    const html = format === 'text'
+    const html = (format === 'builder' || template.layout)
+        ? emailBuilder.renderLayoutHtml(template.layout || emailBuilder.defaultLayout(), {
+            preheader,
+            renderToken: (value, opts = {}) => renderString(value, context, { html: opts.html !== false })
+        })
+        : format === 'text'
         ? ''
         : format === 'designed'
             ? designedHtml({ subject, preheader, bodyHtml: rawHtml, ctaLabel, ctaUrl })
             : rawHtml;
-    const text = bodyText || rawHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const text = bodyText || (template.layout
+        ? renderString(emailBuilder.layoutToText(template.layout), context, { html: false })
+        : rawHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
     return { subject, html, text };
 }
 
@@ -325,7 +360,8 @@ function normalizeTemplates(templates = []) {
         enabled: template.enabled !== false,
         subject: String(template.subject || '').trim(),
         preheader: String(template.preheader || ''),
-        format: ['text', 'html', 'designed'].includes(template.format) ? template.format : 'html',
+        format: ['builder', 'text', 'html', 'designed'].includes(template.format) ? template.format : 'html',
+        layout: template.layout ? emailBuilder.normalizeLayout(template.layout) : null,
         bodyText: String(template.bodyText || ''),
         bodyHtml: String(template.bodyHtml || ''),
         ctaLabel: String(template.ctaLabel || ''),

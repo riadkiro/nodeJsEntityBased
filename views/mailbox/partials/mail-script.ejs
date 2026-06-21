@@ -42,6 +42,7 @@ document.addEventListener('alpine:init', () => {
         },
         // Templates
         showTemplates: false,
+        showNewsletter: false,
         templates: [
             { name: 'Welcome Email', subject: 'Welcome to our platform!', body: '<p>Dear User,</p><p>Welcome to our platform! We are excited to have you on board.</p><p>Best regards,<br>The Team</p>' },
             { name: 'Follow Up', subject: 'Following up on our conversation', body: '<p>Hi,</p><p>I wanted to follow up on our recent conversation. Please let me know if you have any questions.</p><p>Best regards</p>' },
@@ -284,6 +285,16 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ===== MAIL ACTIONS =====
+        openNewsletterHub() {
+            this.showNewsletter = true;
+            this.showTemplates = false;
+            this.showSignature = false;
+            this.selectedMail = null;
+            this.isEdit = false;
+            this.isShowMailMenu = false;
+            this._clearEmailContext();
+        },
+
         refreshMails() {
             this.searchMails();
             this.showMessage('Mail refreshed');
@@ -341,6 +352,7 @@ document.addEventListener('alpine:init', () => {
             this.selectedMail = null;
             this.isEdit = false;
             this.showTemplates = false;
+            this.showNewsletter = false;
             this.showSignature = false;
             this.searchTouched = false;
             this.searchInputLocked = true;
@@ -357,6 +369,7 @@ document.addEventListener('alpine:init', () => {
                 this.selectedMail = mail;
                 this.isEdit = false;
                 this.showTemplates = false;
+                this.showNewsletter = false;
                 this.showSignature = false;
                 this.isShowMailMenu = false;
                 // Persist read status
@@ -641,6 +654,7 @@ document.addEventListener('alpine:init', () => {
             this.isShowMailMenu = false;
             this.selectedMail = null;
             this.showTemplates = false;
+            this.showNewsletter = false;
             this.showSignature = false;
             this._clearEmailContext();
 

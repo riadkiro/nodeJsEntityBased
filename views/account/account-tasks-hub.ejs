@@ -167,10 +167,13 @@
 .th-day-dot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.55}
 .th-workload{padding:0 16px 16px}
 .th-workload-bars{height:106px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end}
-.th-workload-bar-wrap{height:100%;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end}
+.th-workload-bar-wrap{height:100%;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;border:0;background:transparent;padding:0;font-family:inherit;cursor:pointer}
 .th-workload-bg{height:74px;width:12px;border-radius:999px;background:#f1f5f9;display:flex;align-items:end;overflow:hidden}
 .th-workload-fill{width:100%;min-height:6px;border-radius:999px;background:linear-gradient(180deg,#a78bfa,#805dca)}
 .th-workload-bar-wrap span{color:#94a3b8;font-size:9.5px;font-weight:850}
+.th-workload-bar-wrap:hover .th-workload-bg{background:#e9eef8}
+.th-workload-bar-wrap.is-active .th-workload-fill{background:linear-gradient(180deg,#7c5cff,#5b4df5)}
+.th-workload-bar-wrap.is-active span{color:#6f55dc}
 .th-center{min-width:0}
 .th-today-card{border:1px solid #dfe8f3;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.025);padding:18px 22px 20px}
 .th-today-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}
@@ -218,6 +221,20 @@
 .th-completed-record{font-size:10px;font-weight:800;color:#8fa0bd;white-space:nowrap}
 .th-empty-simple{min-height:80px;border:1px dashed #dbe4f0;border-radius:10px;background:#fafbff;color:#8fa0bd;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px}
 .th-error-simple{margin-top:8px;color:#ef4444;font-size:12px;font-weight:750}
+.th-task-ctx{position:fixed;z-index:10020;width:240px;background:#fff;border:1px solid #e8ecf1;border-radius:13px;box-shadow:0 18px 46px rgba(15,23,42,.16);padding:8px}
+.th-task-ctx button{width:100%;min-height:32px;border:0;border-radius:9px;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:750;display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer;text-align:left;transition:background .14s,color .14s}
+.th-task-ctx button:hover{background:#f8fafc;color:#4f46e5}
+.th-task-ctx button.danger{color:#ef4444}
+.th-task-ctx button.danger:hover{background:#fef2f2;color:#dc2626}
+.th-task-ctx-label{margin:8px 7px 6px;color:#94a3b8;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.45px}
+.th-task-ctx-priorities{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.th-task-ctx-priorities button{min-height:30px;background:color-mix(in srgb,var(--priority-color,#94a3b8) 12%,#fff);color:var(--priority-color,#64748b);justify-content:flex-start}
+.th-task-ctx-toggle{justify-content:space-between}
+.th-task-ctx-toggle-main{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.th-task-switch{width:34px;height:18px;border-radius:999px;background:#e2e8f0;position:relative;flex:0 0 auto;transition:background .15s}
+.th-task-switch::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.18);transition:transform .15s}
+.th-task-switch.is-on{background:#10b981}
+.th-task-switch.is-on::after{transform:translateX(16px)}
 .dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel{background:#060818;color:#e0e6ed;border-color:#253b5c}
 .dark .th-simple-header h1,.dark .th-today-title,.dark .th-panel-title,.dark .th-completed-head,.dark .th-task-title-simple{color:#e0e6ed}
 .dark .th-simple-header p{color:#8ea0bd}
@@ -227,6 +244,10 @@
 .dark .th-task-row-simple:hover{background:#111f35}
 .dark .th-inline-form input,.dark .th-inline-form button{background:#0e1726;border-color:#253b5c;color:#e0e6ed}
 .dark .th-completed{border-color:#253b5c}
+.dark .th-task-ctx{background:#0e1726;border-color:#253b5c;box-shadow:0 18px 46px rgba(0,0,0,.35)}
+.dark .th-task-ctx button{color:#dbe5f3}
+.dark .th-task-ctx button:hover{background:#111f35;color:#a5b4fc}
+.dark .th-task-ctx-priorities button{background:color-mix(in srgb,var(--priority-color,#94a3b8) 18%,#0e1726)}
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
@@ -234,7 +255,11 @@
 @media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}}
 </style>
 
-<div class="th-wrap th-simple" x-data="tasksHubApp" x-cloak>
+<div class="th-wrap th-simple"
+     x-data="tasksHubApp"
+     x-cloak
+     @click.window="closeTaskMenu()"
+     @keydown.escape.window="closeTaskMenu(); closeTask()">
     <div class="th-simple-shell">
         <header class="th-simple-header">
             <div>
@@ -289,10 +314,14 @@
                     <div class="th-workload">
                         <div class="th-workload-bars">
                             <template x-for="bar in workloadBars" :key="'work-' + bar.label">
-                                <div class="th-workload-bar-wrap">
+                                <button type="button"
+                                        class="th-workload-bar-wrap"
+                                        :class="{ 'is-active': selectedMode === 'date' && selectedDateKey === bar.key }"
+                                        :title="bar.count + ' tâche' + (bar.count > 1 ? 's' : '') + ' le ' + formatDayKey(bar.key, { long: true })"
+                                        @click="selectDate(bar.key)">
                                     <div class="th-workload-bg"><div class="th-workload-fill" :style="'height:' + bar.height + '%'"></div></div>
                                     <span x-text="bar.label"></span>
-                                </div>
+                                </button>
                             </template>
                         </div>
                     </div>
@@ -341,7 +370,10 @@
                     <div class="th-today-body">
                         <div class="th-open-list" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
                             <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
-                                <div class="th-task-row-simple" :class="{ 'is-done': isDone(task) }" :data-task-id="task._id || task.id">
+                                <div class="th-task-row-simple"
+                                     :class="{ 'is-done': isDone(task) }"
+                                     :data-task-id="task._id || task.id"
+                                     @contextmenu.prevent.stop="openTaskMenu($event, task)">
                                     <button type="button"
                                             class="th-task-check-simple"
                                             :class="{ 'is-checked': isDone(task) }"
@@ -359,7 +391,8 @@
                                         <button type="button"
                                                 class="th-priority-simple"
                                                 :style="'--priority-color:' + taskPriorityColor(task)"
-                                                :title="'Priorité ' + taskPriorityText(task)">
+                                                :title="'Priorité ' + taskPriorityText(task)"
+                                                @click.stop="openTaskPriorityMenu($event, task)">
                                             <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
                                             <span x-text="taskPriorityText(task)"></span>
                                         </button>
@@ -404,6 +437,39 @@
         </div>
     </div>
 
+    <div class="th-task-ctx"
+         x-show="taskMenu"
+         x-cloak
+         :style="taskMenu ? 'left:' + taskMenu.x + 'px;top:' + taskMenu.y + 'px' : ''"
+         @click.stop>
+        <button type="button" x-show="!taskMenu?.priorityOnly" @click="editTaskFromMenu()">
+            <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
+            Modifier
+        </button>
+        <button type="button" class="th-task-ctx-toggle" x-show="!taskMenu?.priorityOnly" @click="toggleDayPriorityFromMenu()">
+            <span class="th-task-ctx-toggle-main">
+                <iconify-icon icon="solar:bolt-bold-duotone" width="14"></iconify-icon>
+                <span>À faire aujourd’hui</span>
+            </span>
+            <span class="th-task-switch" :class="{ 'is-on': menuTaskIsDayPriority() }"></span>
+        </button>
+        <div class="th-task-ctx-label">Priorité</div>
+        <div class="th-task-ctx-priorities">
+            <template x-for="priority in taskPriorityMenuOptions()" :key="priority.label">
+                <button type="button"
+                        :style="'--priority-color:' + priority.color"
+                        @click="setTaskPriorityFromMenu(priority)">
+                    <iconify-icon icon="solar:flag-linear" width="11"></iconify-icon>
+                    <span x-text="priority.label"></span>
+                </button>
+            </template>
+        </div>
+        <button type="button" class="danger" x-show="!taskMenu?.priorityOnly" @click="deleteTaskFromMenu()">
+            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+            Supprimer
+        </button>
+    </div>
+
     <!-- ═══ Shared Task Detail Modal ═══ -->
     <%- include('../partials/task-detail-modal') %>
 </div>
@@ -425,6 +491,7 @@ document.addEventListener('alpine:init', () => {
         selectedMode: 'date',
         calendarCursor: '',
         todaySortable: null,
+        taskMenu: null,
         priorityFilter: 'all',
         sortMode: 'all',
         ctxTaskId: null,
@@ -434,6 +501,12 @@ document.addEventListener('alpine:init', () => {
         quickAddStatus: 'À faire',
         quickAddPriority: 'Aucune',
         addError: '',
+        priorityChoices: [
+            { label: 'Aucune', color: '#cbd5e1', order: 0 },
+            { label: 'Normal', color: '#06b6d4', order: 1 },
+            { label: 'Important', color: '#f59e0b', order: 2 },
+            { label: 'Urgent', color: '#ef4444', order: 3 }
+        ],
         fallbackTasks: [
             { _id:'static-1', title:'Pédiatre Adam', status:'À faire', priority:'Haute', dueDate:'2026-06-16', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' },
             { _id:'static-2', title:'Renouveler assurance Clio 4', status:'À faire', priority:'Basse', dueDate:'2026-06-20', startDate:'2026-06-18', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:'Cette semaine', recordTitle:'Clio 4', recordIcon:'solar:car-bold-duotone', recordColor:'#3b82f6', entityName:'Voiture', entitySlug:'voiture', entityIcon:'solar:car-bold-duotone', entityColor:'#3b82f6', scope:'personal' },
@@ -527,7 +600,23 @@ document.addEventListener('alpine:init', () => {
                     const taskListId = String(task.listId || task.taskListId || '');
                     const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === taskListId) || (record.lists || [])[0] || {};
                     const listId = taskListId || String(fallbackList.id || fallbackList.listId || '');
-                    return { ...task, recordId: task.recordId || record.recordId, listId, taskListId: listId, listLabel: task.listLabel || fallbackList.label || 'Liste des tâches', listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone', listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1', recordTitle: task.recordTitle || record.recordTitle, recordIcon: task.recordIcon || record.recordIcon, recordColor: task.recordColor || record.recordColor, entityName: task.entityName || record.entityName, entityIcon: task.entityIcon || record.entityIcon, entityColor: task.entityColor || record.entityColor, scope: record.scope };
+                    return Object.assign(task, {
+                        recordId: task.recordId || record.recordId,
+                        listId,
+                        taskListId: listId,
+                        listLabel: task.listLabel || fallbackList.label || 'Liste des tâches',
+                        listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone',
+                        listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1',
+                        statuses: task.statuses || fallbackList.statuses || [],
+                        priorities: task.priorities || fallbackList.priorities || [],
+                        recordTitle: task.recordTitle || record.recordTitle,
+                        recordIcon: task.recordIcon || record.recordIcon,
+                        recordColor: task.recordColor || record.recordColor,
+                        entityName: task.entityName || record.entityName,
+                        entityIcon: task.entityIcon || record.entityIcon,
+                        entityColor: task.entityColor || record.entityColor,
+                        scope: record.scope
+                    });
                 }));
         },
 
@@ -628,7 +717,11 @@ document.addEventListener('alpine:init', () => {
                 counts[day]++;
             });
             const max = Math.max(1, ...counts);
-            return labels.map((label, index) => ({ label, count: counts[index], height: Math.max(10, Math.round((counts[index] / max) * 92)) }));
+            return labels.map((label, index) => {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + index);
+                return { label, key: this.dateToKey(d), count: counts[index], height: Math.max(10, Math.round((counts[index] / max) * 92)) };
+            });
         },
         get weekTaskCount() { return this.workloadBars.reduce((sum, bar) => sum + (bar.count || 0), 0); },
 
@@ -648,19 +741,89 @@ document.addEventListener('alpine:init', () => {
             Alpine.store('taskModal')._onDelete = () => this.loadHub();
             Alpine.store('taskModal').remove();
         },
+        taskId(task = {}) {
+            return String(task._id || task.id || '');
+        },
+        findTaskById(taskId) {
+            const id = String(taskId || '');
+            if (!id) return null;
+            for (const entity of this.entities || []) {
+                for (const record of entity.records || []) {
+                    const task = (record.tasks || []).find(item => this.taskId(item) === id);
+                    if (!task) continue;
+                    const listId = String(task.listId || task.taskListId || '');
+                    const list = (record.lists || []).find(item => String(item.id || item.listId || '') === listId) || null;
+                    return { task, record, list };
+                }
+            }
+            const fallback = (this.fallbackTasks || []).find(item => this.taskId(item) === id);
+            return fallback ? { task: fallback, record: null, list: null } : null;
+        },
+        patchTaskEverywhere(taskId, patch = {}) {
+            const id = String(taskId || '');
+            if (!id) return;
+            (this.entities || []).forEach(entity => {
+                (entity.records || []).forEach(record => {
+                    (record.tasks || []).forEach(item => {
+                        if (this.taskId(item) === id) Object.assign(item, patch);
+                    });
+                });
+            });
+            (this.fallbackTasks || []).forEach(item => {
+                if (this.taskId(item) === id) Object.assign(item, patch);
+            });
+        },
+        removeTaskEverywhere(taskId) {
+            const id = String(taskId || '');
+            if (!id) return;
+            (this.entities || []).forEach(entity => {
+                (entity.records || []).forEach(record => {
+                    const before = (record.tasks || []).length;
+                    record.tasks = (record.tasks || []).filter(item => this.taskId(item) !== id);
+                    if (record.tasks.length !== before) {
+                        record.totalTasks = Math.max(0, Number(record.totalTasks || before) - 1);
+                        entity.totalTasks = Math.max(0, Number(entity.totalTasks || 0) - 1);
+                    }
+                });
+            });
+            this.fallbackTasks = (this.fallbackTasks || []).filter(item => this.taskId(item) !== id);
+        },
         async toggleTaskStatus(task) {
-            if (!task?._id) return;
+            const id = this.taskId(task);
+            if (!id) return;
             const newStatus = this.isDone(task) ? 'À faire' : 'Terminé';
+            const previous = { status: task.status, statusColor: task.statusColor, completedAt: task.completedAt, updatedAt: task.updatedAt };
+            const optimistic = {
+                status: newStatus,
+                statusColor: newStatus === 'Terminé' ? '#22c55e' : '#9ca3af',
+                completedAt: newStatus === 'Terminé' ? new Date().toISOString() : null,
+                updatedAt: new Date().toISOString()
+            };
+            Object.assign(task, optimistic);
+            this.patchTaskEverywhere(id, optimistic);
+            this.$nextTick(() => this.refreshTodaySortable());
             try {
-                await fetch(API + '/api/record-tasks/' + task._id, {
+                const res = await fetch(API + '/api/record-tasks/' + id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ status: newStatus })
                 });
-                await this.loadHub();
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+                if (data.task) {
+                    Object.assign(task, data.task);
+                    this.patchTaskEverywhere(id, data.task);
+                }
+                this.$nextTick(() => this.refreshTodaySortable());
                 if (window.showMessage) window.showMessage(newStatus === 'Terminé' ? 'Tâche terminée' : 'Tâche rouverte', 'success');
-            } catch (e) { console.error('[TasksHub] Toggle error:', e); }
+            } catch (e) {
+                Object.assign(task, previous);
+                this.patchTaskEverywhere(id, previous);
+                this.$nextTick(() => this.refreshTodaySortable());
+                console.error('[TasksHub] Toggle error:', e);
+                if (window.showMessage) window.showMessage(e.message || 'Erreur', 'danger');
+            }
         },
         toDateInputValue(value) {
             if (!value) return '';
@@ -968,6 +1131,135 @@ document.addEventListener('alpine:init', () => {
                 console.error('[TasksHub] Reorder error:', e);
                 if (window.showMessage) window.showMessage(e.message || 'Réorganisation impossible', 'danger');
                 await this.loadHub();
+            }
+        },
+        closeTaskMenu() {
+            this.taskMenu = null;
+        },
+        openTaskMenu(event, task, options = {}) {
+            const id = this.taskId(task);
+            if (!id) return;
+            const width = 240;
+            const height = options.priorityOnly ? 128 : 264;
+            const source = event?.currentTarget || event?.target;
+            const rect = source?.getBoundingClientRect?.();
+            const rawX = event?.clientX || (rect ? rect.right : 0);
+            const rawY = event?.clientY || (rect ? rect.bottom : 0);
+            const x = Math.max(8, Math.min(rawX, window.innerWidth - width - 8));
+            const y = Math.max(8, Math.min(rawY, window.innerHeight - height - 8));
+            this.taskMenu = { x, y, taskId: id, priorityOnly: options.priorityOnly === true };
+        },
+        openTaskPriorityMenu(event, task) {
+            this.openTaskMenu(event, task, { priorityOnly: true });
+        },
+        menuTask() {
+            return this.findTaskById(this.taskMenu?.taskId)?.task || null;
+        },
+        menuTaskIsDayPriority() {
+            return !!this.menuTask()?.isDayPriority;
+        },
+        editTaskFromMenu() {
+            const task = this.menuTask();
+            this.closeTaskMenu();
+            if (task) this.openTask(task);
+        },
+        normalizePriorityOptions(options = []) {
+            const source = Array.isArray(options) && options.length ? options : this.priorityChoices;
+            const fallbackByLabel = new Map(this.priorityChoices.map(item => [String(item.label).toLowerCase(), item]));
+            const seen = new Set();
+            return source
+                .map((option, index) => {
+                    const label = String(option?.label || option || 'Aucune').trim() || 'Aucune';
+                    const fallback = fallbackByLabel.get(label.toLowerCase()) || this.priorityChoices[index] || {};
+                    return {
+                        label,
+                        color: option?.color || fallback.color || '#94a3b8',
+                        order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
+                    };
+                })
+                .filter(option => {
+                    const key = option.label.toLowerCase();
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                })
+                .sort((a, b) => a.order - b.order);
+        },
+        taskPriorityOptions(task = null) {
+            const found = task ? this.findTaskById(this.taskId(task)) : this.findTaskById(this.taskMenu?.taskId);
+            const options = this.normalizePriorityOptions(task?.priorities || found?.task?.priorities || found?.list?.priorities || []);
+            if (!options.some(option => option.label === 'Aucune')) {
+                return [{ label: 'Aucune', color: '#cbd5e1', order: -1 }, ...options];
+            }
+            return options;
+        },
+        taskPriorityMenuOptions() {
+            return this.taskPriorityOptions(this.menuTask());
+        },
+        async updateTaskPatch(task, updates = {}, optimisticExtra = {}) {
+            const id = this.taskId(task);
+            if (!id || !updates || typeof updates !== 'object') return false;
+            const previous = { ...task };
+            const patch = { ...updates, ...optimisticExtra, updatedAt: new Date().toISOString() };
+            Object.assign(task, patch);
+            this.patchTaskEverywhere(id, patch);
+            this.$nextTick(() => this.refreshTodaySortable());
+            try {
+                const res = await fetch(API + '/api/record-tasks/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(updates)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Modification impossible');
+                if (data.task) {
+                    Object.assign(task, data.task);
+                    this.patchTaskEverywhere(id, data.task);
+                }
+                this.$nextTick(() => this.refreshTodaySortable());
+                return true;
+            } catch (e) {
+                Object.assign(task, previous);
+                this.patchTaskEverywhere(id, previous);
+                this.$nextTick(() => this.refreshTodaySortable());
+                if (window.showMessage) window.showMessage(e.message || 'Modification impossible', 'danger');
+                return false;
+            }
+        },
+        async setTaskPriorityFromMenu(priority) {
+            const task = this.menuTask();
+            if (!task) return;
+            this.closeTaskMenu();
+            const label = String(priority?.label || priority || 'Aucune').trim() || 'Aucune';
+            await this.updateTaskPatch(task, { priority: label }, { priorityColor: priority?.color || this.taskPriorityColor({ priority: label }) });
+        },
+        async toggleDayPriorityFromMenu() {
+            const task = this.menuTask();
+            if (!task) return;
+            this.closeTaskMenu();
+            await this.updateTaskPatch(task, { isDayPriority: !task.isDayPriority });
+        },
+        async deleteTaskFromMenu() {
+            const task = this.menuTask();
+            const id = this.taskId(task);
+            this.closeTaskMenu();
+            if (!task || !id) return;
+            const previousEntities = JSON.parse(JSON.stringify(this.entities || []));
+            const previousFallback = JSON.parse(JSON.stringify(this.fallbackTasks || []));
+            this.removeTaskEverywhere(id);
+            try {
+                const res = await fetch(API + '/api/record-tasks/' + id, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
+                this.$nextTick(() => this.refreshTodaySortable());
+            } catch (e) {
+                this.entities = previousEntities;
+                this.fallbackTasks = previousFallback;
+                if (window.showMessage) window.showMessage(e.message || 'Suppression impossible', 'danger');
             }
         },
 

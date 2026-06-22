@@ -156,12 +156,29 @@
     background: #fbfcff;
 }
 .dx-task-drag {
-    width: 13px;
-    color: #cbd5e1;
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    color: #cbd5e1;
+    opacity: 0;
     cursor: grab;
+    transition: opacity .15s, color .15s;
+}
+.dx-task-drag:active {
+    cursor: grabbing;
+}
+.dx-shopping-row:hover .dx-task-drag,
+.dx-shopping-row:focus-within .dx-task-drag {
+    opacity: 1;
+}
+.dx-task-drag:hover {
+    color: #64748b;
 }
 .dx-check {
     width: 15px;

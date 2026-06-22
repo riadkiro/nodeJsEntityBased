@@ -137,207 +137,271 @@
 .dark .th-task-title-text{color:#e0e6ed}
 .dark .th-task-record-label,.dark .th-task-date-label{color:#6b7f9e}
 .dark .th-inline-add{color:#6b7f9e}.dark .th-inline-add:hover{color:#a5b4fc}
+
+/* ═══ Simple onboarding-style tasks page ═══ */
+.th-wrap.th-simple{height:auto;min-height:calc(100vh - 70px);overflow:visible;background:#fff;color:#0e1726}
+.th-simple-shell{max-width:1180px;margin:0 auto;padding:26px 24px 42px}
+.th-simple-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:28px}
+.th-simple-header h1{margin:0;color:#0e1726;font-size:26px;font-weight:850;line-height:1.2;letter-spacing:0}
+.th-simple-header p{margin:8px 0 0;color:#5c6f98;font-size:13px;font-weight:700;line-height:1.35}
+.th-simple-grid{display:grid;grid-template-columns:264px minmax(0,1fr);gap:24px;align-items:start}
+.th-side-stack{display:flex;flex-direction:column;gap:14px;position:sticky;top:88px}
+.th-panel{border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 26px rgba(15,23,42,.035)}
+.th-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px}
+.th-panel-title{display:inline-flex;align-items:center;gap:8px;color:#0e1726;font-size:13px;font-weight:850}
+.th-panel-icon{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:#efe8ff;color:#805dca;flex:0 0 auto}
+.th-panel-count{height:22px;min-width:24px;padding:0 8px;border-radius:8px;background:#eef2ff;color:#6f55dc;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;justify-content:center}
+.th-calendar-nav{display:flex;align-items:center;gap:4px}
+.th-calendar-nav button{width:24px;height:24px;border:0;border-radius:7px;background:transparent;color:#94a3b8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .14s,color .14s}
+.th-calendar-nav button:hover{background:#f4f6fb;color:#6f55dc}
+.th-mini-calendar{padding:0 14px 14px}
+.th-month-label{font-size:12px;font-weight:850;color:#334155;text-transform:capitalize}
+.th-weekdays,.th-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.th-weekdays{margin:10px 0 6px}
+.th-weekdays span{height:22px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;font-weight:850;text-transform:uppercase}
+.th-day{height:30px;border:0;border-radius:9px;background:transparent;color:#334155;font-family:inherit;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:background .14s,color .14s,box-shadow .14s}
+.th-day:hover{background:#f4f6fb;color:#6f55dc}
+.th-day.is-muted{color:#cbd5e1}
+.th-day.is-today{color:#6f55dc;background:#f7f2ff}
+.th-day.is-active{background:#805dca;color:#fff;box-shadow:0 8px 16px rgba(128,93,202,.22)}
+.th-day-dot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.55}
+.th-workload{padding:0 16px 16px}
+.th-workload-bars{height:106px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end}
+.th-workload-bar-wrap{height:100%;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end}
+.th-workload-bg{height:74px;width:12px;border-radius:999px;background:#f1f5f9;display:flex;align-items:end;overflow:hidden}
+.th-workload-fill{width:100%;min-height:6px;border-radius:999px;background:linear-gradient(180deg,#a78bfa,#805dca)}
+.th-workload-bar-wrap span{color:#94a3b8;font-size:9.5px;font-weight:850}
+.th-center{min-width:0}
+.th-today-card{border:1px solid #dfe8f3;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.025);padding:18px 22px 20px}
+.th-today-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}
+.th-today-title{display:inline-flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;color:#0e1726;font-size:14px;font-weight:850}
+.th-today-icon{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:#efe8ff;color:#805dca;flex:0 0 auto}
+.th-count-pill{height:22px;display:inline-flex;align-items:center;justify-content:center;padding:0 9px;border-radius:8px;background:#efe8ff;color:#9273e8;font-size:10.5px;font-weight:850;white-space:nowrap}
+.th-day-nav{height:22px;border:1px solid #e7defe;border-radius:8px;background:#fff;color:#6f55dc;padding:0 9px;font-family:inherit;font-size:10.5px;font-weight:850;line-height:1;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:background .14s,border-color .14s,color .14s}
+.th-day-nav:hover,.th-day-nav.is-active{background:#efe8ff;border-color:#d7c6ff;color:#7c5cff}
+.th-day-nav.is-overdue{color:#b45309;border-color:#f7d9ab}
+.th-day-nav.is-overdue:hover,.th-day-nav.is-overdue.is-active{background:#fff7ed;border-color:#fdba74;color:#d97706}
+.th-day-calendar-btn{height:22px;min-width:20px;border:0;border-radius:8px;background:transparent;color:#8b7cf8;padding:0 2px;font-family:inherit;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;gap:5px;cursor:pointer;transform:translateY(1px)}
+.th-day-calendar-btn:hover{color:#6f55dc}
+.th-day-calendar-btn.is-active{padding:0 8px;background:#efe8ff;color:#7c5cff}
+.th-card-link{color:#6f55dc;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
+.th-card-link:hover{text-decoration:underline}
+.th-today-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:26px;align-items:stretch}
+.th-open-list{display:flex;flex-direction:column;gap:6px;min-width:0}
+.th-task-row-simple{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:28px;padding:1px 8px;border-radius:8px;position:relative}
+.th-task-row-simple:hover{background:#fbfcff}
+.th-task-check-simple{width:15px;height:15px;border-radius:4px;border:1.5px solid #9aa8c2;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;color:transparent}
+.th-task-check-simple.is-checked{background:#edf3ff;border-color:#90a7d8;color:#647aa8}
+.th-task-check-simple iconify-icon{display:none}
+.th-task-check-simple.is-checked iconify-icon{display:block}
+.th-task-main-simple{min-width:0;display:flex;align-items:center;gap:7px}
+.th-task-title-simple{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#17223c;font-size:13px;font-weight:700;cursor:pointer}
+.th-task-row-simple.is-done .th-task-title-simple{color:#94a3b8;text-decoration:line-through;font-weight:600}
+.th-task-meta-simple{display:flex;align-items:center;gap:9px;justify-content:flex-end;min-width:120px}
+.th-attachment-mini{display:inline-flex;align-items:center;color:#b8c3d6}
+.th-priority-simple{border:0;background:transparent;padding:0;color:var(--priority-color,#cbd5e1);display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:10.5px;font-weight:850;white-space:nowrap;cursor:pointer}
+.th-priority-simple iconify-icon{color:currentColor}
+.th-inline-form{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:8px;margin-top:4px}
+.th-inline-form input{height:31px;border:1px solid #dbe4f0;border-radius:8px;background:#fff;color:#0e1726;padding:0 11px;font-family:inherit;font-size:12.5px;font-weight:600;outline:none}
+.th-inline-form input:focus{border-color:#7c5cff;box-shadow:0 0 0 3px rgba(124,92,255,.11)}
+.th-inline-form input::placeholder{color:#aab6ca}
+.th-inline-form button{height:31px;border:1px solid #dbe4f0;border-radius:9px;background:#fff;color:#4f46e5;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.th-inline-form button:hover{border-color:#c7d2fe;background:#fbfaff}
+.th-completed{border-left:1px solid #e8edf5;padding-left:22px;min-width:0}
+.th-completed-head{display:flex;align-items:center;gap:7px;color:#0e1726;font-size:12px;font-weight:850;margin-bottom:16px}
+.th-completed-list{display:flex;flex-direction:column;gap:7px;max-height:170px;overflow:auto;padding-right:4px}
+.th-completed-list::-webkit-scrollbar{width:5px}
+.th-completed-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
+.th-completed-row{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:7px;align-items:center;min-height:23px;color:#94a3b8;font-size:12px;font-weight:650}
+.th-done-action{border:0;background:transparent;color:#22c55e;padding:0;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.th-completed-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;cursor:pointer}
+.th-completed-record{font-size:10px;font-weight:800;color:#8fa0bd;white-space:nowrap}
+.th-empty-simple{min-height:80px;border:1px dashed #dbe4f0;border-radius:10px;background:#fafbff;color:#8fa0bd;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px}
+.th-error-simple{margin-top:8px;color:#ef4444;font-size:12px;font-weight:750}
+.dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel{background:#060818;color:#e0e6ed;border-color:#253b5c}
+.dark .th-simple-header h1,.dark .th-today-title,.dark .th-panel-title,.dark .th-completed-head,.dark .th-task-title-simple{color:#e0e6ed}
+.dark .th-simple-header p{color:#8ea0bd}
+.dark .th-day,.dark .th-month-label{color:#c1cad6}
+.dark .th-day.is-muted{color:#506690}
+.dark .th-workload-bg,.dark .th-empty-simple{background:#111f35;border-color:#253b5c}
+.dark .th-task-row-simple:hover{background:#111f35}
+.dark .th-inline-form input,.dark .th-inline-form button{background:#0e1726;border-color:#253b5c;color:#e0e6ed}
+.dark .th-completed{border-color:#253b5c}
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
+@media(max-width:980px){.th-simple-grid{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
+@media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}}
 </style>
 
-<div class="th-wrap" x-data="tasksHubApp" x-cloak>
-    <div class="th-shell">
-        <aside class="th-rail">
-            <div class="th-rail-head">
-                <div class="th-brand">
-                    <div class="th-brand-icon"><iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="22"></iconify-icon></div>
-                    <div>
-                        <h1>Tasks Hub</h1>
-                        <p>Toutes les tâches de vos espaces et enregistrements</p>
-                    </div>
-                </div>
-                <div class="th-search">
-                    <iconify-icon icon="solar:magnifer-linear" width="16"></iconify-icon>
-                    <input class="th-input" type="text" placeholder="Rechercher un espace..." x-model="searchQuery">
-                </div>
+<div class="th-wrap th-simple" x-data="tasksHubApp" x-cloak>
+    <div class="th-simple-shell">
+        <header class="th-simple-header">
+            <div>
+                <h1>Bonjour, <%= typeof user !== 'undefined' && user && user.name ? user.name.split(' ')[0] : 'Riad' %> 👋</h1>
+                <p>Voici ce qui se passe aujourd'hui</p>
             </div>
-            <div class="th-rail-body">
-	                <button class="th-space" :class="{'active': activeScope === 'personal' && !activeRecordId && !activeListId}" @click="selectScope('personal')">
-	                    <span class="th-space-icon" style="background:#ede9fe;color:#7c3aed"><iconify-icon icon="solar:user-rounded-bold-duotone" width="16"></iconify-icon></span>
-	                    <span class="th-space-title">Espace perso</span>
-	                </button>
-                <div class="th-rail-widget">
-                    <div class="th-rail-widget-head">
-                        <span><iconify-icon icon="solar:chart-2-bold-duotone" width="15"></iconify-icon> Charge de travail</span>
-                        <b x-text="weekTaskCount"></b>
-                    </div>
-                    <div class="th-rail-bars">
-                        <template x-for="bar in workloadBars" :key="'rail-' + bar.label">
-                            <div class="th-rail-bar-wrap">
-                                <div class="th-rail-bar-bg"><div class="th-rail-bar" :style="'height:' + bar.height + '%'"></div></div>
-                                <span x-text="bar.label"></span>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-                <div class="th-side-title">Perso</div>
-                <template x-if="sideLoading">
-                    <div style="padding:18px;text-align:center"><iconify-icon icon="line-md:loading-twotone-loop" width="22" style="color:#6366f1"></iconify-icon></div>
-                </template>
-	                <template x-for="record in filteredPersonalRecords" :key="record.recordId">
-	                    <div class="th-record-node">
-	                        <button class="th-space" :class="{'active': activeRecordId === record.recordId && !activeListId}" @click="selectRecord(record,'personal')">
-	                            <span class="th-space-icon" :style="'background:' + colorSoft(record.recordColor) + ';color:' + record.recordColor">
-	                                <iconify-icon :icon="record.recordIcon || record.entityIcon || 'solar:folder-bold-duotone'" width="16"></iconify-icon>
-	                            </span>
-	                            <span class="th-space-title" x-text="record.recordTitle"></span>
-	                            <span class="th-badge" x-text="record.totalTasks || 0"></span>
-	                        </button>
-	                        <div class="th-list-node" x-show="(record.lists || []).length">
-	                            <template x-for="list in record.lists" :key="list.id || list.listId">
-	                                <button class="th-space" :class="{'active': activeListId === (list.id || list.listId)}" @click="selectList(record, list, 'personal')">
-	                                    <span class="th-space-icon" :style="'background:' + colorSoft(list.color || record.recordColor) + ';color:' + (list.color || record.recordColor)">
-	                                        <iconify-icon :icon="list.icon || 'solar:checklist-bold-duotone'" width="13"></iconify-icon>
-	                                    </span>
-	                                    <span class="th-space-title" x-text="list.label"></span>
-	                                    <span class="th-badge" x-text="list.totalTasks || list.count || 0"></span>
-	                                </button>
-	                            </template>
-	                        </div>
-	                    </div>
-	                </template>
-            </div>
-            <div class="th-manage">
-                <button class="th-manage-btn" type="button">
-                    <span style="display:flex;align-items:center;gap:9px"><iconify-icon icon="solar:settings-linear" width="17"></iconify-icon> Gérer les espaces</span>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14"></iconify-icon>
-                </button>
-            </div>
-        </aside>
+        </header>
 
-        <main class="th-main th-scroll">
-            <div class="th-main-inner">
-                <div class="th-content-header">
-                    <div>
-                        <h2 class="th-content-title" x-text="mainTitle"></h2>
-                        <p class="th-content-subtitle" x-text="mainSubtitle"></p>
-                    </div>
-                    <button class="th-new-task-btn" type="button" @click="showQuickAdd()">
-                        <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
-                        Nouvelle tâche
-                    </button>
-                </div>
-
-                <div class="th-date-tabs">
-                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'late'}" @click="activeFilter = 'late'">
-                        En retard <span class="th-tab-count" x-text="lateFilterCount"></span>
-                    </button>
-                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'today'}" @click="activeFilter = 'today'">
-                        Aujourd'hui <span class="th-tab-count" x-text="todayFilterCount"></span>
-                    </button>
-                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'tomorrow'}" @click="activeFilter = 'tomorrow'">
-                        Demain <span class="th-tab-count" x-text="tomorrowFilterCount"></span>
-                    </button>
-                    <button class="th-date-tab" type="button" :class="{'active': activeFilter === 'week'}" @click="activeFilter = 'week'">
-                        Cette semaine <span class="th-tab-count" x-text="weekFilterCount"></span>
-                    </button>
-                    <div class="th-date-tabs-right">
-                        <button class="th-view-toggle" type="button" :class="{'active': activeFilter === 'all'}" @click="activeFilter = 'all'; sortMode = 'all'">
-                            <iconify-icon icon="solar:list-bold" width="14"></iconify-icon> Toutes
-                        </button>
-                        <button class="th-view-toggle" type="button" :class="{'active': sortMode === 'recent'}" @click="activeFilter = 'all'; sortMode = sortMode === 'recent' ? 'all' : 'recent'">
-                            <iconify-icon icon="solar:clock-circle-bold" width="14"></iconify-icon> Récentes
-                        </button>
-                    </div>
-                </div>
-
-                <div class="th-priority-pills">
-                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'all'}" @click="priorityFilter = 'all'">
-                        <iconify-icon icon="solar:check-circle-bold" width="14" x-show="priorityFilter === 'all'" style="color:#4f46e5"></iconify-icon>
-                        Toutes
-                    </button>
-                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'Haute'}" @click="priorityFilter = 'Haute'">
-                        <span class="pdot" style="background:#ef4444"></span> Haute
-                    </button>
-                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'Moyenne'}" @click="priorityFilter = 'Moyenne'">
-                        <span class="pdot" style="background:#f97316"></span> Moyenne
-                    </button>
-                    <button class="th-priority-pill" type="button" :class="{'active': priorityFilter === 'Normale'}" @click="priorityFilter = 'Normale'">
-                        <span class="pdot" style="background:#10b981"></span> Normale
-                    </button>
-                </div>
-
-                <form class="th-quick-add" x-show="addingTask" x-transition @submit.prevent="createPersonalTask()">
-                    <span class="th-check"></span>
-                    <input x-ref="newTaskInput" type="text" x-model="newTaskTitle" :placeholder="quickAddPlaceholder" :disabled="creatingTask" @keydown.escape.prevent="cancelQuickAdd()">
-                    <button class="th-new-task-btn" type="submit" :disabled="creatingTask" style="height:34px;padding:0 14px;font-size:12px;box-shadow:none">
-                        <iconify-icon :icon="creatingTask ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="15"></iconify-icon>
-                        Ajouter
-                    </button>
-                    <button class="th-task-menu-btn" type="button" @click="cancelQuickAdd()" :disabled="creatingTask"><iconify-icon icon="solar:close-circle-linear" width="17"></iconify-icon></button>
-                </form>
-                <div class="th-quick-add-error" x-show="addError" x-text="addError"></div>
-
-                <template x-for="section in prioritySections" :key="section.key">
-                    <div x-show="section.tasks.length">
-                        <div class="th-group-header">
-                            <span class="th-group-flag" :style="'background:' + section.bg + ';color:' + section.color">
-                                <iconify-icon :icon="section.icon" width="14"></iconify-icon>
-                            </span>
-                            <span class="th-group-title" x-text="section.title"></span>
-                            <span class="th-group-count" :style="'background:' + section.bg + ';color:' + section.color" x-text="section.tasks.length"></span>
+        <div class="th-simple-grid">
+            <aside class="th-side-stack">
+                <section class="th-panel">
+                    <div class="th-panel-head">
+                        <div class="th-panel-title">
+                            <span class="th-panel-icon"><iconify-icon icon="solar:calendar-bold-duotone" width="16"></iconify-icon></span>
+                            <span x-text="calendarMonthLabel"></span>
                         </div>
-                        <div>
-                            <template x-for="task in section.tasks" :key="task._id">
-                                <div class="th-task-item" :class="{'done': isDone(task)}" @click="openTask(task)">
-                                    <span class="th-task-checkbox" :class="{'checked': isDone(task)}" @click.stop="toggleTaskStatus(task)">
-                                        <iconify-icon icon="solar:check-read-linear" width="13"></iconify-icon>
-                                    </span>
-                                    <div class="th-task-info">
-                                        <div class="th-task-title-text" x-text="task.title"></div>
-                                        <div class="th-task-record-label">
-                                            <span class="th-task-record-dot" :style="'background:' + (task.recordColor || task.entityColor || '#6366f1')"></span>
-                                            <span x-text="task.recordTitle"></span>
-                                        </div>
+                        <div class="th-calendar-nav">
+                            <button type="button" @click="shiftCalendarMonth(-1)" title="Mois précédent">
+                                <iconify-icon icon="solar:alt-arrow-left-linear" width="14"></iconify-icon>
+                            </button>
+                            <button type="button" @click="shiftCalendarMonth(1)" title="Mois suivant">
+                                <iconify-icon icon="solar:alt-arrow-right-linear" width="14"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="th-mini-calendar">
+                        <div class="th-weekdays">
+                            <span>Lu</span><span>Ma</span><span>Me</span><span>Je</span><span>Ve</span><span>Sa</span><span>Di</span>
+                        </div>
+                        <div class="th-days">
+                            <template x-for="day in calendarDays" :key="day.key">
+                                <button type="button"
+                                        class="th-day"
+                                        :class="{ 'is-muted': !day.inMonth, 'is-today': day.isToday, 'is-active': selectedMode === 'date' && selectedDateKey === day.key }"
+                                        @click="selectDate(day.key)">
+                                    <span x-text="day.day"></span>
+                                    <span class="th-day-dot" x-show="day.count > 0"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="th-panel">
+                    <div class="th-panel-head">
+                        <div class="th-panel-title">
+                            <span class="th-panel-icon"><iconify-icon icon="solar:chart-2-bold-duotone" width="16"></iconify-icon></span>
+                            <span>Charge de travail</span>
+                        </div>
+                        <span class="th-panel-count" x-text="weekTaskCount"></span>
+                    </div>
+                    <div class="th-workload">
+                        <div class="th-workload-bars">
+                            <template x-for="bar in workloadBars" :key="'work-' + bar.label">
+                                <div class="th-workload-bar-wrap">
+                                    <div class="th-workload-bg"><div class="th-workload-fill" :style="'height:' + bar.height + '%'"></div></div>
+                                    <span x-text="bar.label"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <main class="th-center">
+                <section class="th-today-card">
+                    <div class="th-today-header">
+                        <div class="th-today-title">
+                            <span class="th-today-icon"><iconify-icon icon="solar:bolt-bold-duotone" width="16"></iconify-icon></span>
+                            <span>Tâches du jour</span>
+                            <span class="th-count-pill" x-text="selectedOpenTasks.length + ' à faire'"></span>
+                            <button type="button"
+                                    class="th-day-nav is-overdue"
+                                    x-show="overdueTasks.length > 0"
+                                    :class="{ 'is-active': selectedMode === 'overdue' }"
+                                    @click="selectOverdue()">
+                                <iconify-icon icon="solar:danger-triangle-linear" width="11"></iconify-icon>
+                                <span x-text="overdueTasks.length + ' en retard'"></span>
+                            </button>
+                            <button type="button"
+                                    class="th-day-nav"
+                                    x-show="!selectedIsToday || selectedMode === 'overdue'"
+                                    @click="selectToday()">
+                                Aujourd'hui
+                            </button>
+                            <button type="button"
+                                    class="th-day-nav"
+                                    :class="{ 'is-active': selectedIsTomorrow }"
+                                    @click="selectTomorrow()">
+                                Demain
+                            </button>
+                            <button type="button"
+                                    class="th-day-calendar-btn"
+                                    :class="{ 'is-active': selectedHasCustomDate }"
+                                    title="Choisir une date"
+                                    @click="focusCalendar()">
+                                <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
+                                <span x-show="selectedHasCustomDate" x-text="selectedShortLabel"></span>
+                            </button>
+                        </div>
+                        <a class="th-card-link" href="/account/<%= account_number %>/tasks">Voir tout</a>
+                    </div>
+
+                    <div class="th-today-body">
+                        <div class="th-open-list" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
+                            <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
+                                <div class="th-task-row-simple" :class="{ 'is-done': isDone(task) }" :data-task-id="task._id || task.id">
+                                    <button type="button"
+                                            class="th-task-check-simple"
+                                            :class="{ 'is-checked': isDone(task) }"
+                                            :title="isDone(task) ? 'Marquer à faire' : 'Marquer terminé'"
+                                            @click.stop="toggleTaskStatus(task)">
+                                        <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
+                                    </button>
+                                    <div class="th-task-main-simple">
+                                        <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
                                     </div>
-                                    <span class="th-task-date-label">
-                                        <iconify-icon icon="solar:calendar-linear" width="14"></iconify-icon>
-                                        <span x-text="formatRelativeDate(taskDisplayDate(task))"></span>
-                                    </span>
-                                    <span class="th-task-priority-badge" :style="priorityStyle(task.priority)" x-text="priorityLabel(task.priority)"></span>
-                                    <div style="position:relative">
-                                        <button class="th-task-menu-btn" type="button" @click.stop="ctxTaskId = ctxTaskId === task._id ? null : task._id">
-                                            <iconify-icon icon="solar:menu-dots-bold" width="17"></iconify-icon>
+                                    <div class="th-task-meta-simple">
+                                        <span class="th-attachment-mini" x-show="taskHasAttachments(task)" title="Pièce jointe">
+                                            <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+                                        </span>
+                                        <button type="button"
+                                                class="th-priority-simple"
+                                                :style="'--priority-color:' + taskPriorityColor(task)"
+                                                :title="'Priorité ' + taskPriorityText(task)">
+                                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+                                            <span x-text="taskPriorityText(task)"></span>
                                         </button>
-                                        <div class="th-ctx-menu" x-show="ctxTaskId === task._id" x-transition.opacity @click.outside="ctxTaskId = null" @click.stop style="display:none">
-                                            <button class="th-ctx-item" type="button" @click="ctxTaskId = null; openTask(task)">
-                                                <iconify-icon icon="solar:pen-new-square-linear" width="14"></iconify-icon> Modifier
-                                            </button>
-                                            <button class="th-ctx-item" type="button" @click="ctxTaskId = null; toggleTaskStatus(task)">
-                                                <iconify-icon icon="solar:check-circle-linear" width="14"></iconify-icon>
-                                                <span x-text="isDone(task) ? 'Rouvrir' : 'Terminer'"></span>
-                                            </button>
-                                            <button class="th-ctx-item danger" type="button" @click="ctxTaskId = null; deleteTask(task)">
-                                                <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon> Supprimer
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </template>
-                            <div class="th-inline-add" @click="showQuickAdd('À faire', section.priorities[0] || 'Aucune')">
-                                <iconify-icon icon="solar:add-circle-linear" width="15"></iconify-icon>
-                                Ajouter une tâche
-                            </div>
+                            <template x-if="selectedOpenTasks.length === 0 && !sideLoading">
+                                <div class="th-empty-simple" x-text="selectedEmptyLabel"></div>
+                            </template>
+                            <form class="th-inline-form" x-show="selectedMode !== 'overdue'" @submit.prevent="createTodayTask()">
+                                <input x-ref="newTaskInput" type="text" x-model="newTaskTitle" :placeholder="addPlaceholder" :disabled="creatingTask">
+                                <button type="submit" :disabled="creatingTask" title="Ajouter">
+                                    <iconify-icon :icon="creatingTask ? 'line-md:loading-twotone-loop' : 'tabler:plus'" width="15"></iconify-icon>
+                                </button>
+                            </form>
+                            <div class="th-error-simple" x-show="addError" x-text="addError"></div>
                         </div>
-                    </div>
-                </template>
 
-                <template x-if="!priorityFilteredTasks.length && !sideLoading">
-                    <div class="th-empty">
-                        <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="42"></iconify-icon>
-                        <h3>Aucune tâche dans cette vue</h3>
-                        <p>Changez de filtre ou sélectionnez un autre espace.</p>
+                        <aside class="th-completed">
+                            <div class="th-completed-head">
+                                <iconify-icon icon="solar:check-circle-bold" width="15" style="color:#22c55e"></iconify-icon>
+                                <strong x-text="completedTitle"></strong>
+                            </div>
+                            <div class="th-completed-list">
+                                <template x-for="task in completedSelectedTasks" :key="task._id || task.id">
+                                    <div class="th-completed-row">
+                                        <button type="button" class="th-done-action" title="Remettre à faire" @click.stop="toggleTaskStatus(task)">
+                                            <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
+                                        </button>
+                                        <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
+                                        <span class="th-completed-record" x-show="task.recordTitle && task.recordTitle !== 'Espace perso'" x-text="task.recordTitle"></span>
+                                    </div>
+                                </template>
+                                <template x-if="completedSelectedTasks.length === 0">
+                                    <div class="th-empty-simple" x-text="completedEmptyLabel"></div>
+                                </template>
+                            </div>
+                        </aside>
                     </div>
-                </template>
-            </div>
-        </main>
+                </section>
+            </main>
+        </div>
     </div>
 
     <!-- ═══ Shared Task Detail Modal ═══ -->
@@ -357,6 +421,10 @@ document.addEventListener('alpine:init', () => {
         activeRecordId: null,
         activeListId: null,
         activeFilter: 'today',
+        selectedDateKey: '',
+        selectedMode: 'date',
+        calendarCursor: '',
+        todaySortable: null,
         priorityFilter: 'all',
         sortMode: 'all',
         ctxTaskId: null,
@@ -375,6 +443,8 @@ document.addEventListener('alpine:init', () => {
         ],
 
         async init() {
+            this.selectedDateKey = this.todayKey();
+            this.calendarCursor = this.monthKeyFromDateKey(this.selectedDateKey);
             window.addEventListener('keydown', e => { if (e.key === 'Escape') this.closeTask(); });
             await this.loadHub();
         },
@@ -390,6 +460,7 @@ document.addEventListener('alpine:init', () => {
                 }
             } catch (e) { console.error('[TasksHub]', e); }
             this.sideLoading = false;
+            this.$nextTick(() => this.refreshTodaySortable());
         },
 
         get allRecords() {
@@ -543,17 +614,23 @@ document.addEventListener('alpine:init', () => {
         get workloadBars() {
             const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
             const counts = [0,0,0,0,0,0,0];
-            this.rawVisibleTasks.forEach(task => {
-                const value = task.startDate || task.dueDate;
-                const date = value ? new Date(value) : null;
-                if (!date || Number.isNaN(date.getTime())) return;
+            const today = this.dateFromKey(this.todayKey());
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            this.rawVisibleTasks.filter(task => !this.isDone(task)).forEach(task => {
+                const key = this.dateKeyFromValue(task.dueDate || task.startDate);
+                if (!key) return;
+                const date = this.dateFromKey(key);
+                if (date < weekStart || date > weekEnd) return;
                 const day = (date.getDay() + 6) % 7;
                 counts[day]++;
             });
             const max = Math.max(1, ...counts);
-            return labels.map((label, index) => ({ label, height: Math.max(10, Math.round((counts[index] / max) * 92)) }));
+            return labels.map((label, index) => ({ label, count: counts[index], height: Math.max(10, Math.round((counts[index] / max) * 92)) }));
         },
-        get weekTaskCount() { return this.rawVisibleTasks.filter(task => this.isTaskInThisWeek(task)).length; },
+        get weekTaskCount() { return this.workloadBars.reduce((sum, bar) => sum + (bar.count || 0), 0); },
 
         async openTask(task) {
             const self = this;
@@ -630,22 +707,279 @@ document.addEventListener('alpine:init', () => {
             } finally { this.creatingTask = false; }
         },
 
+        // ═══ Simple today surface ═══
+        todayKey(offset = 0) {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() + Number(offset || 0));
+            return this.dateToKey(d);
+        },
+        dateToKey(date) {
+            const d = date instanceof Date ? date : new Date(date);
+            if (Number.isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        },
+        dateKeyFromValue(value) {
+            if (!value) return '';
+            const text = String(value);
+            const m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+            return this.dateToKey(new Date(value));
+        },
+        dateFromKey(key) {
+            const m = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return new Date();
+            return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        },
+        monthKeyFromDateKey(key) {
+            return String(key || this.todayKey()).slice(0, 7);
+        },
+        get calendarMonthDate() {
+            const key = this.calendarCursor || this.monthKeyFromDateKey(this.selectedDateKey || this.todayKey());
+            const m = String(key).match(/^(\d{4})-(\d{2})$/);
+            if (!m) return new Date();
+            return new Date(Number(m[1]), Number(m[2]) - 1, 1);
+        },
+        get calendarMonthLabel() {
+            return this.calendarMonthDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        },
+        get calendarDays() {
+            const first = this.calendarMonthDate;
+            const start = new Date(first);
+            const mondayOffset = (first.getDay() + 6) % 7;
+            start.setDate(first.getDate() - mondayOffset);
+            const month = first.getMonth();
+            return Array.from({ length: 42 }, (_, index) => {
+                const d = new Date(start);
+                d.setDate(start.getDate() + index);
+                const key = this.dateToKey(d);
+                return {
+                    key,
+                    day: d.getDate(),
+                    inMonth: d.getMonth() === month,
+                    isToday: key === this.todayKey(),
+                    count: this.dayTaskCount(key)
+                };
+            });
+        },
+        shiftCalendarMonth(delta) {
+            const d = this.calendarMonthDate;
+            d.setMonth(d.getMonth() + Number(delta || 0));
+            this.calendarCursor = this.monthKeyFromDateKey(this.dateToKey(d));
+        },
+        focusCalendar() {
+            const target = this.$el?.querySelector?.('.th-mini-calendar');
+            if (target) target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        },
+        selectDate(key) {
+            this.selectedDateKey = this.dateKeyFromValue(key) || this.todayKey();
+            this.selectedMode = 'date';
+            this.calendarCursor = this.monthKeyFromDateKey(this.selectedDateKey);
+            this.addError = '';
+            this.$nextTick(() => this.refreshTodaySortable());
+        },
+        selectToday() { this.selectDate(this.todayKey()); },
+        selectTomorrow() { this.selectDate(this.todayKey(1)); },
+        selectOverdue() {
+            this.selectedMode = 'overdue';
+            this.addError = '';
+            this.$nextTick(() => this.refreshTodaySortable());
+        },
+        get selectedIsToday() {
+            return this.selectedMode === 'date' && this.selectedDateKey === this.todayKey();
+        },
+        get selectedIsTomorrow() {
+            return this.selectedMode === 'date' && this.selectedDateKey === this.todayKey(1);
+        },
+        get selectedHasCustomDate() {
+            return this.selectedMode === 'date' && !this.selectedIsToday && !this.selectedIsTomorrow;
+        },
+        get selectedShortLabel() {
+            return this.formatDayKey(this.selectedDateKey);
+        },
+        formatDayKey(key, options = {}) {
+            const d = this.dateFromKey(key);
+            if (options.long) return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+            return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+        },
+        taskReferenceKey(task = {}) {
+            return this.dateKeyFromValue(task.dueDate || task.startDate || '');
+        },
+        isTaskOverdueForToday(task = {}) {
+            if (this.isDone(task)) return false;
+            const key = this.taskReferenceKey(task);
+            return !!key && key < this.todayKey();
+        },
+        taskMatchesDate(task = {}, key = this.selectedDateKey) {
+            if (!key) return false;
+            const startKey = this.dateKeyFromValue(task.startDate);
+            const dueKey = this.dateKeyFromValue(task.dueDate);
+            if (key === this.todayKey()) {
+                if (task.isDayPriority && (!startKey || startKey <= key) && (!dueKey || dueKey >= key)) return true;
+                if (startKey && startKey <= key && (!dueKey || dueKey >= key)) return true;
+                return !startKey && dueKey === key;
+            }
+            if (startKey === key || dueKey === key) return true;
+            return !!(startKey && dueKey && startKey <= key && dueKey >= key);
+        },
+        compareDayTasks(a, b) {
+            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+            if (ao !== bo) return ao - bo;
+            const ap = this.taskReferenceKey(a) || '9999-12-31';
+            const bp = this.taskReferenceKey(b) || '9999-12-31';
+            if (ap !== bp) return ap.localeCompare(bp);
+            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+        },
+        get overdueTasks() {
+            return this.rawVisibleTasks
+                .filter(task => this.isTaskOverdueForToday(task))
+                .sort((a, b) => this.compareDayTasks(a, b));
+        },
+        get selectedOpenTasks() {
+            const tasks = this.selectedMode === 'overdue'
+                ? this.overdueTasks
+                : this.rawVisibleTasks.filter(task => !this.isDone(task) && this.taskMatchesDate(task, this.selectedDateKey));
+            return tasks.slice().sort((a, b) => this.compareDayTasks(a, b));
+        },
+        get completedSelectedTasks() {
+            if (this.selectedMode === 'overdue') return [];
+            return this.rawVisibleTasks
+                .filter(task => this.isDone(task))
+                .filter(task => {
+                    const completedKey = this.dateKeyFromValue(task.completedAt || task.updatedAt);
+                    return completedKey === this.selectedDateKey;
+                })
+                .sort((a, b) => new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0));
+        },
+        get completedTitle() {
+            const suffix = ` (${this.completedSelectedTasks.length})`;
+            if (this.selectedIsToday || this.selectedMode === 'overdue') return "Terminées aujourd'hui" + suffix;
+            if (this.selectedIsTomorrow) return 'Terminées demain' + suffix;
+            return 'Terminées le ' + this.formatDayKey(this.selectedDateKey) + suffix;
+        },
+        get completedEmptyLabel() {
+            if (this.selectedIsToday || this.selectedMode === 'overdue') return "Aucune tâche terminée aujourd'hui";
+            return 'Aucune tâche terminée pour cette date';
+        },
+        get selectedEmptyLabel() {
+            if (this.selectedMode === 'overdue') return 'Aucune tâche en retard';
+            if (this.selectedIsToday) return 'Aucune tâche pour le moment';
+            if (this.selectedIsTomorrow) return 'Aucune tâche pour demain';
+            return 'Aucune tâche pour le ' + this.formatDayKey(this.selectedDateKey, { long: true });
+        },
+        get addPlaceholder() {
+            if (this.selectedIsToday) return 'Ajouter une tâche...';
+            if (this.selectedIsTomorrow) return 'Ajouter une tâche pour demain...';
+            return 'Ajouter une tâche pour le ' + this.formatDayKey(this.selectedDateKey, { long: true }) + '...';
+        },
+        dayTaskCount(key) {
+            return this.rawVisibleTasks.filter(task => !this.isDone(task) && this.taskMatchesDate(task, key)).length;
+        },
+        taskHasAttachments(task = {}) {
+            return Array.isArray(task.attachments) && task.attachments.length > 0;
+        },
+        taskPriorityText(task = {}) {
+            const label = String(task.priority || 'Aucune');
+            if (!label || label === 'Aucune' || label === 'Basse' || label === 'Normale') return 'Normal';
+            if (label === 'Moyenne') return 'Important';
+            if (label === 'Haute' || label === 'Urgente') return 'Urgent';
+            return label;
+        },
+        taskPriorityColor(task = {}) {
+            const label = String(task.priority || 'Aucune');
+            if (task.priorityColor) return task.priorityColor;
+            if (label === 'Urgente' || label === 'Haute' || label === 'Urgent') return '#ef4444';
+            if (label === 'Moyenne' || label === 'Important') return '#f59e0b';
+            if (label === 'Basse' || label === 'Normal' || label === 'Normale') return '#06b6d4';
+            return '#cbd5e1';
+        },
+        async createTodayTask() {
+            const title = String(this.newTaskTitle || '').trim();
+            if (!title || this.creatingTask) return;
+            this.creatingTask = true;
+            this.addError = '';
+            try {
+                const res = await fetch(API + '/api/tasks-hub/personal-tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title,
+                        status: 'À faire',
+                        priority: 'Aucune',
+                        isDayPriority: true,
+                        startDate: this.selectedDateKey || this.todayKey(),
+                        taskListId: this.activeListId || ''
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!data.success || !data.task) throw new Error(data.error || 'Impossible de créer la tâche');
+                this.newTaskTitle = '';
+                await this.loadHub();
+                this.$nextTick(() => {
+                    this.$refs.newTaskInput?.focus();
+                    this.refreshTodaySortable();
+                });
+            } catch (e) {
+                console.error('[TasksHub] Create today task error:', e);
+                this.addError = e.message || 'Impossible de créer la tâche';
+                if (window.showMessage) window.showMessage(this.addError, 'danger');
+            } finally {
+                this.creatingTask = false;
+            }
+        },
+        initTodaySortable(el) {
+            if (!el || typeof Sortable === 'undefined') return;
+            if (this.todaySortable) {
+                try { this.todaySortable.destroy(); } catch (e) {}
+                this.todaySortable = null;
+            }
+            this.todaySortable = Sortable.create(el, {
+                animation: 160,
+                draggable: '.th-task-row-simple',
+                filter: 'button,input',
+                preventOnFilter: false,
+                onEnd: evt => this.persistTodayOrder(evt)
+            });
+        },
+        refreshTodaySortable() {
+            const el = this.$el?.querySelector?.('[data-task-widget-id="tasks-page-today"]');
+            if (el) this.initTodaySortable(el);
+        },
+        async persistTodayOrder(evt) {
+            const rows = Array.from(evt?.to?.querySelectorAll?.('.th-task-row-simple[data-task-id]') || []);
+            const ids = rows.map(row => row.dataset.taskId).filter(Boolean);
+            if (ids.length < 2) return;
+            try {
+                const res = await fetch(API + '/api/tasks-hub/reorder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ taskIds: ids })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Réorganisation impossible');
+                await this.loadHub();
+            } catch (e) {
+                console.error('[TasksHub] Reorder error:', e);
+                if (window.showMessage) window.showMessage(e.message || 'Réorganisation impossible', 'danger');
+                await this.loadHub();
+            }
+        },
+
         // ═══ Helpers ═══
         isDone(task) { return (task.status || '').toLowerCase() === 'terminé'; },
         isOverdue(task) {
-            if (this.isDone(task) || !task.dueDate) return false;
-            const due = new Date(task.dueDate);
-            if (Number.isNaN(due.getTime())) return false;
-            due.setHours(23,59,59,999);
-            return due < new Date();
+            return this.isTaskOverdueForToday(task);
         },
         isToday(task) { return task.dueDate ? this.isSameDay(task.dueDate) : false; },
         isTomorrow(task) {
-            const d = task.dueDate ? new Date(task.dueDate) : null;
-            if (!d || Number.isNaN(d.getTime())) return false;
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            return d.getFullYear() === tomorrow.getFullYear() && d.getMonth() === tomorrow.getMonth() && d.getDate() === tomorrow.getDate();
+            const key = this.dateKeyFromValue(task.dueDate || task.startDate);
+            return !!key && key === this.todayKey(1);
         },
         isTaskInThisWeek(task) { return this.isDateThisWeek(task.startDate) || this.isDateThisWeek(task.dueDate); },
         isSameDay(value) {

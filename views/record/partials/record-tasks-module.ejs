@@ -1,5 +1,7 @@
 <%# ═══ TASKS MODULE — Two-level: Lists → Tasks ═══ %>
 <% var _isTasksTabLocal = (typeof _isTasksTab !== 'undefined') ? _isTasksTab : true; %>
+<link rel="stylesheet" href="/css/app/rich-text-editor.css">
+<script src="/js/rich-text-editor.js"></script>
 <style>
     .tl-wrap { max-width: 1120px; }
     /* ─── Full-screen kanban app ─── */
@@ -705,6 +707,13 @@
         transition: border-color 0.2s; box-sizing: border-box; line-height: 1.6;
     }
     .tl-detail-textarea:focus { outline: none; border-color: #4361ee; background: #fff; box-shadow: 0 0 0 3px #4361ee10; }
+    .tl-detail-desc-editor { min-height: 292px; }
+    .tl-detail-desc-area { min-height: 240px; max-height: 48vh; }
+    .tl-detail-desc-status {
+        min-height: 16px; margin-top: 6px;
+        font-size: 11px; font-weight: 600; color: #94a3b8;
+    }
+    .tl-detail-hidden-input { display: none !important; }
 
     /* Sidebar property rows */
     .tl-detail-prop {
@@ -2086,10 +2095,20 @@
                                placeholder="Titre de la tâche...">
 
                         <div class="tl-detail-desc-label">Description</div>
-                        <textarea class="tl-detail-textarea"
-                                  placeholder="Ajouter une description détaillée..."
-                                  x-model="detailTask.description"
-                                  @change="saveDetail('description', detailTask.description)"></textarea>
+                        <div class="tl-detail-desc-editor dx-rte" @click.stop
+                             x-init="initDetailDescriptionEditor($el)"
+                             x-effect="syncDetailDescriptionEditor()">
+                            <div class="dx-rte-toolbar" data-dx-rte-toolbar></div>
+                            <input class="tl-detail-hidden-input" data-task-description-image type="file" accept="image/*" multiple
+                                   @change="detailDescriptionEditor?.handleImageFiles($event.target.files); $event.target.value = ''">
+                            <div class="tl-detail-desc-area"
+                                 data-dx-rte-editor
+                                 contenteditable="true"
+                                 data-placeholder="Ajouter une description détaillée...">
+                            </div>
+                            <div class="dx-rte-image-toolbar" data-dx-rte-image-toolbar></div>
+                        </div>
+                        <div class="tl-detail-desc-status" x-text="detailDescriptionStatus"></div>
                     </div>
 
                     <!-- Right: Properties sidebar -->
@@ -2335,6 +2354,12 @@ document.addEventListener('alpine:init', () => {
         _currentUserId: '',
         detailPostingComment: false,
         detailLoadingComments: false,
+        detailUploadBusy: false,
+        detailDescriptionEditor: null,
+        detailDescriptionStatus: '',
+        _detailDescriptionSaveTimer: null,
+        _detailDescriptionSavedHtml: '',
+        _detailDescriptionEditorSyncing: false,
         statusMgrListId: null,
         statusMgrStatuses: [],
         statusMgrColorIdx: null,
@@ -2569,8 +2594,184 @@ document.addEventListener('alpine:init', () => {
                 priorityColor: typeof task.priorityColor === 'string' ? task.priorityColor : '',
                 isDayPriority: !!task.isDayPriority,
                 taskListId: task.taskListId ? String(task.taskListId) : '',
-                assignedTo: typeof task.assignedTo === 'string' ? task.assignedTo : ''
+                assignedTo: typeof task.assignedTo === 'string' ? task.assignedTo : '',
+                attachments: Array.isArray(task.attachments) ? task.attachments : []
             };
+        },
+
+        escapeHtml(value = '') {
+            return window.DexRichTextEditor
+                ? window.DexRichTextEditor.escapeHtml(value)
+                : String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        },
+
+        plainDescriptionToHtml(value = '') {
+            return window.DexRichTextEditor ? window.DexRichTextEditor.plainToHtml(value) : this.escapeHtml(value);
+        },
+
+        normalizeDescriptionHtml(value = '') {
+            return window.DexRichTextEditor ? window.DexRichTextEditor.normalizeHtml(value) : this.plainDescriptionToHtml(value);
+        },
+
+        sanitizeDescriptionHtml(html = '') {
+            return window.DexRichTextEditor ? window.DexRichTextEditor.sanitizeHtml(html) : String(html || '');
+        },
+
+        initDetailDescriptionEditor(root) {
+            if (!root) return;
+            if (this.detailDescriptionEditor?.root === root) return;
+            if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
+
+            const initialHtml = this.normalizeDescriptionHtml(this.detailTask?.description || '');
+            this._detailDescriptionSavedHtml = initialHtml;
+
+            if (!window.DexRichTextEditor) {
+                const editor = root.querySelector('[data-dx-rte-editor]');
+                if (!editor) return;
+                editor.innerHTML = initialHtml;
+                const onInput = () => this.onDetailDescriptionInput(editor.innerHTML);
+                editor.addEventListener('input', onInput);
+                this.detailDescriptionEditor = {
+                    root,
+                    editor,
+                    getHtml: () => editor.innerHTML,
+                    setHtml: (html = '') => { editor.innerHTML = this.normalizeDescriptionHtml(html); },
+                    destroy: () => editor.removeEventListener('input', onInput),
+                    handleImageFiles: () => []
+                };
+                return;
+            }
+
+            this.detailDescriptionEditor = window.DexRichTextEditor.create(root, {
+                key: String(this.detailTask?._id || ''),
+                initialHtml,
+                placeholder: 'Ajouter une description détaillée...',
+                features: ['heading', 'bold', 'italic', 'underline', 'unorderedList', 'orderedList', 'quote', 'checklist', 'link', 'image', 'clear'],
+                onPickImage: (editor) => editor.root?.querySelector('[data-task-description-image]')?.click(),
+                uploadImages: (files) => this.uploadDetailDescriptionImages(files),
+                onChange: (html) => this.onDetailDescriptionInput(html),
+                onBlur: () => this.flushDetailDescriptionSave()
+            });
+        },
+
+        syncDetailDescriptionEditor() {
+            if (!this.detailDescriptionEditor || !this.detailTask) return;
+            this._detailDescriptionEditorSyncing = true;
+            this.detailDescriptionEditor.setHtml(this.detailTask.description || '', {
+                key: String(this.detailTask._id || '')
+            });
+            this._detailDescriptionEditorSyncing = false;
+        },
+
+        onDetailDescriptionInput(payload) {
+            if (this._detailDescriptionEditorSyncing || !this.detailTask) return;
+            const html = typeof payload === 'string'
+                ? this.sanitizeDescriptionHtml(payload)
+                : (this.detailDescriptionEditor?.getHtml() || '');
+            this.detailTask.description = html;
+            this.detailDescriptionStatus = 'Modifications en cours...';
+            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
+            this._detailDescriptionSaveTimer = setTimeout(() => this.flushDetailDescriptionSave(), 850);
+        },
+
+        async flushDetailDescriptionSave() {
+            if (!this.detailTask?._id) return false;
+            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
+            this._detailDescriptionSaveTimer = null;
+
+            const clean = this.detailDescriptionEditor?.getHtml()
+                || this.sanitizeDescriptionHtml(this.detailTask.description || '');
+            this.detailTask.description = clean;
+            if (clean === this._detailDescriptionSavedHtml) {
+                this.detailDescriptionStatus = '';
+                return true;
+            }
+
+            this.detailDescriptionStatus = 'Enregistrement...';
+            const saved = await this.saveDetail('description', clean, { silent: true });
+            if (saved !== false) {
+                this._detailDescriptionSavedHtml = clean;
+                this.detailDescriptionStatus = 'Enregistré';
+                setTimeout(() => {
+                    if (this.detailDescriptionStatus === 'Enregistré') this.detailDescriptionStatus = '';
+                }, 1100);
+                return true;
+            }
+
+            this.detailDescriptionStatus = 'Erreur d’enregistrement';
+            return false;
+        },
+
+        attachmentUrl(attachment = {}) {
+            return attachment.url || (attachment.filename ? `/account/${this._accountNumber}/uploads/attachments/${attachment.filename}` : '');
+        },
+
+        attachmentName(attachment = {}) {
+            return attachment.originalName || attachment.filename || 'image';
+        },
+
+        isImageAttachment(attachment = {}) {
+            const mime = String(attachment.mimeType || '');
+            const name = String(attachment.originalName || attachment.filename || '');
+            return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
+        },
+
+        syncUpdatedDetailTask(taskData = {}) {
+            if (!taskData?._id) return null;
+            const normalizedTask = this.normalizeTask({
+                ...taskData,
+                taskListId: this.detailList?._id || taskData.taskListId
+            });
+            if (this.detailList) {
+                const arr = this.detailList.tasks || [];
+                const idx = arr.findIndex(t => t._id === normalizedTask._id);
+                if (idx >= 0) Object.assign(arr[idx], normalizedTask);
+                this.detailList.doneCount = arr.filter(t => t.status === 'Terminé').length;
+            }
+            if (this.detailTask && this.detailTask._id === normalizedTask._id) Object.assign(this.detailTask, normalizedTask);
+            return normalizedTask;
+        },
+
+        async uploadDetailDescriptionImages(files) {
+            const images = Array.from(files || []).filter(file => file && String(file.type || '').startsWith('image/'));
+            if (!this.detailTask?._id || !images.length || this.detailUploadBusy) return [];
+
+            const taskId = this.detailTask._id;
+            const before = new Set((this.detailTask.attachments || []).map(att => att._id || att.filename));
+            const draftDescription = this.detailDescriptionEditor?.getHtml()
+                || this.sanitizeDescriptionHtml(this.detailTask.description || '');
+            this.detailUploadBusy = true;
+
+            try {
+                const body = new FormData();
+                images.forEach(file => body.append('files', file, file.name || 'image.png'));
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/attachments`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Upload impossible');
+
+                const updatedTask = data.task
+                    ? { ...data.task, description: draftDescription }
+                    : { ...this.detailTask, attachments: data.attachments || [], description: draftDescription };
+                this.syncUpdatedDetailTask(updatedTask);
+
+                const inserted = (this.detailTask.attachments || [])
+                    .filter(att => !before.has(att._id || att.filename) && this.isImageAttachment(att));
+                if (window.showMessage) window.showMessage('Image ajoutée', 'success');
+                return inserted.map(att => ({
+                    url: this.attachmentUrl(att),
+                    alt: this.attachmentName(att)
+                }));
+            } catch (e) {
+                console.error('[TaskLists] Description image upload error:', e);
+                if (window.showMessage) window.showMessage(e.message || 'Erreur lors de l’ajout de l’image', 'danger');
+                return [];
+            } finally {
+                this.detailUploadBusy = false;
+            }
         },
 
         normalizeList(list = {}) {
@@ -2747,6 +2948,24 @@ document.addEventListener('alpine:init', () => {
         },
 
         closeDetail() {
+            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
+            this._detailDescriptionSaveTimer = null;
+            const pendingDescription = this.detailDescriptionEditor?.getHtml?.()
+                || this.sanitizeDescriptionHtml(this.detailTask?.description || '');
+            if (this.detailTask?._id && pendingDescription !== this._detailDescriptionSavedHtml) {
+                const taskId = this.detailTask._id;
+                fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ description: pendingDescription })
+                }).catch(e => console.error('[TaskLists] Save description on close error:', e));
+            }
+            if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
+            this.detailDescriptionEditor = null;
+            this.detailDescriptionStatus = '';
+            this._detailDescriptionSavedHtml = '';
+            this._detailDescriptionEditorSyncing = false;
             this.detailTask = null;
             this.detailList = null;
             this.detailStatusMenu = false;
@@ -2754,6 +2973,7 @@ document.addEventListener('alpine:init', () => {
             this.detailComments = [];
             this.detailNewComment = '';
             this.detailPostingComment = false;
+            this.detailUploadBusy = false;
         },
 
         // ─── Status Manager ───
@@ -3513,10 +3733,16 @@ document.addEventListener('alpine:init', () => {
             this.previewStatusListId = null;
             this.taskCtx = null;
             this.ctxMenu = null;
+            this.detailDescriptionStatus = '';
+            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
+            this._detailDescriptionSaveTimer = null;
+            if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
+            this.detailDescriptionEditor = null;
             const sourceList = this.resolveTaskList(task, list);
             const sourceTask = sourceList?.tasks?.find(t => t._id === task?._id) || task;
             this.detailList = sourceList;
             this.detailTask = this.normalizeTask({ ...sourceTask, taskListId: sourceList?._id || sourceTask?.taskListId || '' });
+            this._detailDescriptionSavedHtml = this.normalizeDescriptionHtml(this.detailTask.description || '');
             this.detailComments = [];
             this.detailNewComment = '';
             this.loadComments(task._id);
@@ -3571,13 +3797,17 @@ document.addEventListener('alpine:init', () => {
         },
 
 
-        async saveDetail(field, value) {
-            if (!this.detailTask) return;
+        async saveDetail(field, value, options = {}) {
+            if (!this.detailTask) return false;
             const taskId = this.detailTask._id;
             if (field === 'title') {
                 value = this.cleanTaskTitle(value);
-                if (!value) return;
+                if (!value) return false;
                 this.detailTask.title = value;
+            }
+            if (field === 'description') {
+                value = this.sanitizeDescriptionHtml(this.normalizeDescriptionHtml(value || ''));
+                this.detailTask.description = value;
             }
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
@@ -3588,28 +3818,20 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
-                    const normalizedTask = this.normalizeTask({
-                        ...data.task,
-                        taskListId: this.detailList?._id || data.task.taskListId
-                    });
-                    // Sync back into the list.tasks array
-                    if (this.detailList) {
-                        const arr = this.detailList.tasks || [];
-                        const idx = arr.findIndex(t => t._id === taskId);
-                        if (idx >= 0) {
-                            Object.assign(arr[idx], normalizedTask);
-                        }
-                        // Also update detailTask with returned data
-                        Object.assign(this.detailTask, normalizedTask);
-                        // Update counts
-                        this.detailList.doneCount = arr.filter(t => t.status === 'Terminé').length;
-                    }
+                    const normalizedTask = this.syncUpdatedDetailTask(data.task);
+                    if (field === 'description' && normalizedTask) this._detailDescriptionSavedHtml = this.normalizeDescriptionHtml(normalizedTask.description || value);
                     // Refresh comments if status or priority changed (activity logged)
                     if (field === 'status' || field === 'priority') {
                         this.loadComments(taskId);
                     }
+                    return true;
                 }
-            } catch (e) { console.error('[TaskLists] Save detail error:', e); }
+                if (!options.silent) console.error('[TaskLists] Save detail error:', data.error || data);
+                return false;
+            } catch (e) {
+                console.error('[TaskLists] Save detail error:', e);
+                return false;
+            }
         },
 
         async detailDelete() {

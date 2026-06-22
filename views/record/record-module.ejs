@@ -145,6 +145,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 .ov-card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px;font-weight:700;color:#0e1726;}
 .ov-card-link{margin-left:auto;font-size:12px;font-weight:500;color:#888da8;text-decoration:none;transition:color .2s;}
 .ov-card-link:hover{color:#4361ee;}
+<%- include('../partials/today-tasks-widget-styles') %>
 @media(max-width:640px){
     .ov-card-header{flex-wrap:wrap;}
     .ov-card-link{margin-left:0;max-width:100%;white-space:nowrap;}
@@ -556,7 +557,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
         var _ovFields = (typeof overviewFields !== 'undefined' && overviewFields.length > 0) ? overviewFields : _ficheFields.map(function(f){ return Object.assign({}, f, { layoutWidth: 12 }); });
     %>
     <%- include('partials/widget-picker') %>
-    <div x-data="ovLayoutBuilder()" :class="layoutMode ? 'ov-dm' : ''">
+    <div x-data="ovLayoutBuilder()" :class="layoutMode ? 'ov-dm' : ''" @click.window="closeHomeTaskMenu()">
         <!-- Design mode banner -->
         <div class="ov-dm-banner">
             <iconify-icon icon="tabler:layout-dashboard" width="16"></iconify-icon>
@@ -600,6 +601,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                                             <%- include('partials/ov-widget-tasks', { _recBase: _recBase }) %>
                                         </div>
                                         </template>
+                                        <!-- Widget: record today tasks -->
+                                        <%- include('../partials/today-tasks-widget', { todayTasksHref: _recBase + '/tasks' }) %>
                                         <!-- Widget: docs -->
                                         <template x-if="wid === 'docs'">
                                         <div class="ov-card ov-card-docs" x-data="ovSmartDocs()">
@@ -753,6 +756,38 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     </template>
                 </div>
             </template>
+        </div>
+        <div class="dx-task-ctx"
+             x-show="homeTaskMenu"
+             x-cloak
+             :style="homeTaskMenu ? 'left:' + homeTaskMenu.x + 'px;top:' + homeTaskMenu.y + 'px' : ''"
+             @click.stop>
+            <button type="button" x-show="!homeTaskMenu?.priorityOnly" @click="editHomeTaskFromMenu()">
+                <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
+                Modifier
+            </button>
+            <button type="button" class="dx-task-ctx-toggle" x-show="!homeTaskMenu?.priorityOnly" @click="toggleDayPriorityFromMenu()">
+                <span class="dx-task-ctx-toggle-main">
+                    <iconify-icon icon="solar:bolt-bold-duotone" width="14"></iconify-icon>
+                    <span>À faire aujourd’hui</span>
+                </span>
+                <span class="dx-task-switch" :class="{ 'is-on': isTaskDayPriority(homeTaskMenu?.taskId) }"></span>
+            </button>
+            <div class="dx-task-ctx-label">Priorité</div>
+            <div class="dx-task-ctx-priorities">
+                <template x-for="priority in homeTaskPriorityMenuOptions()" :key="priority.label">
+                    <button type="button"
+                            :style="'--priority-color:' + priority.color"
+                            @click="setHomeTaskPriorityFromMenu(priority)">
+                        <iconify-icon icon="solar:flag-linear" width="11"></iconify-icon>
+                        <span x-text="priority.label"></span>
+                    </button>
+                </template>
+            </div>
+            <button type="button" class="danger" x-show="!homeTaskMenu?.priorityOnly" @click="deleteHomeTaskFromMenu()">
+                <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+                Supprimer
+            </button>
         </div>
         <!-- Add row button -->
         <div class="ov-add-row-btn" @click="addRow()">
@@ -1721,26 +1756,51 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             layoutMode: false,
             rows: [],
             _defaultRows: [
+                { id: 'r0', columns: [{ id: 'c0', width: 12, widgetIds: ['today-tasks'] }] },
                 { id: 'r1', columns: [{ id: 'c1', width: 8, widgetIds: ['fields'] }, { id: 'c2', width: 4, widgetIds: ['tasks','docs'] }] },
                 { id: 'r2', columns: [{ id: 'c3', width: 12, widgetIds: ['drive'] }] },
                 { id: 'r3', columns: [{ id: 'c4', width: 12, widgetIds: ['agenda', 'important-dates'] }] }
             ],
             _accountNumber: '<%= account_number %>',
             _entityId: '<%= entity._id %>',
+            _recordId: '<%= record._id %>',
+            _recordTitle: <%- JSON.stringify(record.computedTitle || record.title || 'Record').replace(/</g, '\\u003C') %>,
+            _recordIcon: <%- JSON.stringify(entity.icon || 'solar:folder-bold-duotone').replace(/</g, '\\u003C') %>,
+            _recordColor: <%- JSON.stringify(entity.color || '#4361ee').replace(/</g, '\\u003C') %>,
+            _recordTasksHref: '<%= _recBase %>/tasks',
             _viewId: 'overview_<%= entity._id %>',
-            _layoutVersion: 4,
+            _layoutVersion: 5,
             gridSchemas: [],
             customWidgets: {},
             widgetSettings: {},
             _defaultWidgetCatalog: {
                 fields: { type: 'overview-fields', label: <%- JSON.stringify(entity.nameSingular || entity.name || 'Informations').replace(/</g, '\\u003C') %>, icon: 'solar:card-bold-duotone', color: '#4361ee', config: { limit: 12, showLink: true } },
                 tasks: { type: 'overview-tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true } },
+                'today-tasks': { type: 'overview-today-tasks', label: 'Tâches du jour', icon: 'solar:bolt-bold-duotone', color: '#805dca', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: false } },
                 docs: { type: 'overview-docs', label: 'Documents modèles', icon: 'solar:document-text-bold-duotone', color: '#f59e0b', config: { limit: 3, showLink: true } },
                 drive: { type: 'overview-drive', label: 'Fichiers récents', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', config: { limit: 4, showLink: true } },
                 agenda: { type: 'overview-agenda', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', config: { limit: 4, showLink: true, allowAdd: true } },
                 'important-dates': { type: 'overview-important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', config: { limit: 4, showLink: true, allowAdd: true } },
                 notes: { type: 'overview-notes', label: 'Notes', icon: 'solar:notebook-bold-duotone', color: '#8b5cf6', config: { showLink: true } }
             },
+            recordTaskLists: [],
+            recordTodayTasks: [],
+            newTaskTitles: {},
+            todayWidgetDates: {},
+            todayWidgetModes: {},
+            homeTaskRenderVersions: {},
+            homeTaskMenu: null,
+            editingHomeTaskId: '',
+            editingHomeTaskWidgetId: '',
+            editingHomeTaskTitle: '',
+            _taskSortables: new Map(),
+            homeTaskPriorityChoices: [
+                { label: 'Aucune', color: '#94a3b8', order: 0 },
+                { label: 'Basse', color: '#3b82f6', order: 1 },
+                { label: 'Moyenne', color: '#f59e0b', order: 2 },
+                { label: 'Haute', color: '#ef4444', order: 3 },
+                { label: 'Urgente', color: '#dc2626', order: 4 }
+            ],
             _overviewWidgetListener: null,
             _sortables: [],
             _resizing: null,
@@ -1754,6 +1814,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 this.rows = JSON.parse(JSON.stringify(this._defaultRows));
                 this._loadLayout();
                 this._loadGridSchemas();
+                this._loadRecordTodayTasks();
                 this.$watch('$store.app.layoutMode', (v) => {
                     this.layoutMode = v;
                     if (v) {
@@ -1772,6 +1833,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 this._overviewWidgetListener = (e) => this.insertWidgetFromPicker(e.detail || {});
                 window.addEventListener('insert-overview-widget', this._overviewWidgetListener);
                 window.addEventListener('update-overview-widget', (e) => this.updateWidgetFromPicker(e.detail || {}));
+                window.addEventListener('close-home-task-menu', () => this.closeHomeTaskMenu());
             },
 
             // MutationObserver watches for Alpine x-for DOM changes and re-inits Sortables
@@ -1824,8 +1886,16 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     col.widgetIds = after;
                 }));
 
+                if (storedVersion < 5) {
+                    const placed = this._collectWidgetIds(rows);
+                    if (!placed.includes('today-tasks')) {
+                        rows.unshift({ id: 'r_today_tasks', columns: [{ id: 'c_today_tasks', width: 12, widgetIds: ['today-tasks'] }] });
+                        changed = true;
+                    }
+                }
+
                 if (storedVersion < this._layoutVersion) {
-                    const standardIds = ['fields', 'tasks', 'docs', 'drive', 'agenda', 'important-dates', 'notes'];
+                    const standardIds = ['today-tasks', 'fields', 'tasks', 'docs', 'drive', 'agenda', 'important-dates', 'notes'];
                     const placedStandardIds = this._collectWidgetIds(rows).filter(id => standardIds.includes(id));
                     if (placedStandardIds.length === 1 && placedStandardIds[0] === 'fields') {
                         rows = JSON.parse(JSON.stringify(this._defaultRows));
@@ -2188,6 +2258,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 const overviewWidgetMap = {
                     'overview-fields': 'fields',
                     'overview-tasks': 'tasks',
+                    'overview-today-tasks': 'today-tasks',
                     'overview-docs': 'docs',
                     'overview-drive': 'drive',
                     'overview-agenda': 'agenda',
@@ -2442,6 +2513,920 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     cards: 'Cartes'
                 };
                 return labels[type] || 'Widget';
+            },
+
+            normalizeHomeTask(task = {}, list = null) {
+                const id = String(task._id || task.id || '');
+                const listId = String(task.taskListId || task.listId || list?._id || list?.id || '');
+                const priority = String(task.priority || 'Aucune').trim() || 'Aucune';
+                return {
+                    ...task,
+                    id,
+                    _id: id,
+                    title: String(task.title || '').trim() || 'Sans titre',
+                    status: String(task.status || 'À faire').trim() || 'À faire',
+                    statusColor: task.statusColor || '#9ca3af',
+                    priority,
+                    priorityColor: task.priorityColor || this.homeTaskPriorityColor(priority, task),
+                    taskListId: listId,
+                    listLabel: task.listLabel || list?.label || 'À faire',
+                    listIcon: task.listIcon || list?.icon || 'solar:checklist-bold-duotone',
+                    listColor: task.listColor || list?.color || '#6366f1',
+                    recordTitle: task.recordTitle || this._recordTitle,
+                    recordIcon: task.recordIcon || this._recordIcon,
+                    recordColor: task.recordColor || this._recordColor,
+                    order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
+                    createdAt: task.createdAt || null,
+                    updatedAt: task.updatedAt || null,
+                    completedAt: task.completedAt || null,
+                    startDate: task.startDate || null,
+                    dueDate: task.dueDate || null,
+                    isDayPriority: !!task.isDayPriority,
+                    assignedTo: task.assignedTo || '',
+                    attachments: Array.isArray(task.attachments) ? task.attachments : [],
+                    priorities: Array.isArray(task.priorities) ? task.priorities : (Array.isArray(list?.priorities) ? list.priorities : [])
+                };
+            },
+
+            normalizeHomeTaskList(list = {}) {
+                const id = String(list.id || list._id || '');
+                const normalized = {
+                    ...list,
+                    id,
+                    _id: id,
+                    label: String(list.label || list.rawLabel || 'À faire').trim() || 'À faire',
+                    rawLabel: String(list.rawLabel || list.label || 'À faire'),
+                    color: list.color || '#6366f1',
+                    icon: list.icon || 'solar:checklist-bold-duotone',
+                    statuses: Array.isArray(list.statuses) ? list.statuses : [],
+                    priorities: Array.isArray(list.priorities) ? list.priorities : [],
+                    count: Number(list.count || 0),
+                    doneCount: Number(list.doneCount || 0)
+                };
+                normalized.tasks = Array.isArray(list.tasks)
+                    ? list.tasks.map(task => this.normalizeHomeTask({ ...task, taskListId: id }, normalized))
+                    : [];
+                this.refreshHomeTaskListCounts(normalized);
+                return normalized;
+            },
+
+            async _loadRecordTodayTasks() {
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, { credentials: 'include' });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false) throw new Error(data.error || 'Chargement impossible');
+                    const baseLists = Array.isArray(data.lists) ? data.lists : [];
+                    const fullLists = await Promise.all(baseLists.map(async list => {
+                        const listId = String(list._id || list.id || '');
+                        if (!listId) return list;
+                        try {
+                            const taskRes = await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/tasks`, { credentials: 'include' });
+                            const taskData = await taskRes.json().catch(() => ({}));
+                            if (taskRes.ok && taskData.success !== false && Array.isArray(taskData.tasks)) {
+                                return { ...list, tasks: taskData.tasks };
+                            }
+                        } catch (e) {
+                            console.error('[OvTodayTasks] list tasks error', e);
+                        }
+                        return list;
+                    }));
+                    this.recordTaskLists = fullLists.map(list => this.normalizeHomeTaskList(list));
+                    this.recordTodayTasks = this.recordTaskLists.flatMap(list => (list.tasks || []).map(task => this.normalizeHomeTask(task, list)));
+                    this.bumpHomeTaskRender('today-tasks');
+                    this.$nextTick(() => this.refreshHomeTaskSortables());
+                } catch (e) {
+                    console.error('[OvTodayTasks] load error', e);
+                    this.recordTaskLists = [];
+                    this.recordTodayTasks = [];
+                }
+            },
+
+            getDefaultRecordTaskList() {
+                return (this.recordTaskLists || []).find(list => String(list.label || '').toLowerCase() === 'à faire')
+                    || (this.recordTaskLists || [])[0]
+                    || null;
+            },
+
+            async ensureRecordTaskList(label = 'À faire') {
+                const existing = (this.recordTaskLists || []).find(list => String(list.label || '').toLowerCase() === String(label).toLowerCase());
+                if (existing) return existing;
+                const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ label, color: '#6366f1' })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false || !data.list) throw new Error(data.error || 'Création de liste impossible');
+                const list = this.normalizeHomeTaskList({ ...data.list, tasks: [] });
+                this.recordTaskLists = [...(this.recordTaskLists || []), list];
+                return list;
+            },
+
+            recordAllTasks() {
+                const byId = new Map();
+                const add = task => {
+                    const normalized = this.normalizeHomeTask(task);
+                    if (normalized._id && !byId.has(normalized._id)) byId.set(normalized._id, normalized);
+                };
+                (this.recordTodayTasks || []).forEach(add);
+                (this.recordTaskLists || []).forEach(list => (list.tasks || []).forEach(task => add({ ...task, taskListId: task.taskListId || list.id })));
+                return Array.from(byId.values());
+            },
+
+            homeTaskId(task = {}) {
+                return String(task._id || task.id || '');
+            },
+
+            findHomeTask(taskId) {
+                const id = String(taskId || '');
+                if (!id) return null;
+                for (const list of this.recordTaskLists || []) {
+                    const task = (list.tasks || []).find(item => this.homeTaskId(item) === id);
+                    if (task) return { task, list };
+                }
+                const task = (this.recordTodayTasks || []).find(item => this.homeTaskId(item) === id);
+                return task ? { task, list: this.recordTaskLists.find(list => String(list.id) === String(task.taskListId)) || null } : null;
+            },
+
+            refreshHomeTaskListCounts(list) {
+                if (!list) return;
+                list.count = (list.tasks || []).length;
+                list.doneCount = (list.tasks || []).filter(task => task.status === 'Terminé').length;
+            },
+
+            patchHomeTaskEverywhere(taskId, patch = {}) {
+                const id = String(taskId || '');
+                if (!id) return;
+                this.recordTodayTasks = (this.recordTodayTasks || []).map(task => this.homeTaskId(task) === id ? this.normalizeHomeTask({ ...task, ...patch }) : task);
+                this.recordTaskLists = (this.recordTaskLists || []).map(list => {
+                    let touched = false;
+                    const tasks = (list.tasks || []).map(task => {
+                        if (this.homeTaskId(task) !== id) return task;
+                        touched = true;
+                        return this.normalizeHomeTask({ ...task, ...patch, taskListId: task.taskListId || list.id }, list);
+                    });
+                    if (!touched) return list;
+                    const nextList = { ...list, tasks };
+                    this.refreshHomeTaskListCounts(nextList);
+                    return nextList;
+                });
+                this.bumpHomeTaskRender('today-tasks');
+            },
+
+            removeHomeTaskEverywhere(taskId) {
+                const id = String(taskId || '');
+                if (!id) return;
+                this.recordTodayTasks = (this.recordTodayTasks || []).filter(task => this.homeTaskId(task) !== id);
+                this.recordTaskLists = (this.recordTaskLists || []).map(list => {
+                    const tasks = (list.tasks || []).filter(task => this.homeTaskId(task) !== id);
+                    const nextList = { ...list, tasks };
+                    this.refreshHomeTaskListCounts(nextList);
+                    return nextList;
+                });
+                this.bumpHomeTaskRender('today-tasks');
+            },
+
+            homeTaskListForWidget() {
+                return null;
+            },
+
+            homeTaskWidgetType(wid) {
+                return this.getWidgetSettings(wid).type || wid;
+            },
+
+            homeTaskDisplayOption(wid, key, fallback = true) {
+                const cfg = this.customWidgetConfig(wid);
+                if (Object.prototype.hasOwnProperty.call(cfg, key)) return cfg[key] !== false;
+                return fallback !== false;
+            },
+
+            homeTaskPriorityEnabled(wid) {
+                return this.homeTaskDisplayOption(wid, 'showPriority', ['today-tasks', 'overview-today-tasks'].includes(this.homeTaskWidgetType(wid)) || wid === 'today-tasks');
+            },
+
+            homeTaskAttachmentsEnabled(wid) {
+                return this.homeTaskDisplayOption(wid, 'showAttachments', true);
+            },
+
+            homeTaskRecordEnabled(wid) {
+                return this.homeTaskDisplayOption(wid, 'showRecord', false);
+            },
+
+            taskHasAttachments(task = {}) {
+                return Array.isArray(task.attachments) && task.attachments.length > 0;
+            },
+
+            homeTaskPriorityVisible(wid, task = {}) {
+                if (!this.homeTaskPriorityEnabled(wid)) return false;
+                const label = this.homeTaskPriorityLabel(task.priority);
+                return !!label && label !== 'Aucune';
+            },
+
+            homeTaskPriorityLabel(priority) {
+                return String(priority || 'Aucune').trim() || 'Aucune';
+            },
+
+            normalizeHomeTaskOptions(options = [], fallback = this.homeTaskPriorityChoices) {
+                const source = Array.isArray(options) && options.length ? options : fallback;
+                const seen = new Set();
+                return source.map((option, index) => ({
+                    label: this.homeTaskPriorityLabel(option?.label || option),
+                    color: option?.color || fallback[index]?.color || '#94a3b8',
+                    order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
+                })).filter(option => {
+                    const key = option.label.toLowerCase();
+                    if (!option.label || seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                }).sort((a, b) => a.order - b.order);
+            },
+
+            homeTaskPriorityOptionsForList(list = null) {
+                const options = this.normalizeHomeTaskOptions(list?.priorities, this.homeTaskPriorityChoices);
+                return options.some(option => option.label === 'Aucune')
+                    ? options
+                    : [{ label: 'Aucune', color: '#94a3b8', order: -1 }, ...options];
+            },
+
+            homeTaskPriorityMenuOptions() {
+                const ctx = this.homeTaskMenu || {};
+                const found = this.findHomeTask(ctx.taskId);
+                return this.homeTaskPriorityOptionsForList(found?.list);
+            },
+
+            homeTaskPriorityColor(priority, task = null) {
+                if (task?.priorityColor) return task.priorityColor;
+                const label = this.homeTaskPriorityLabel(priority);
+                const found = this.findHomeTask(this.homeTaskId(task || {}));
+                const option = this.homeTaskPriorityOptionsForList(found?.list).find(item => item.label === label);
+                return option?.color || '#94a3b8';
+            },
+
+            closeHomeTaskMenu() {
+                this.homeTaskMenu = null;
+            },
+
+            openHomeTaskMenu(event, wid, task, options = {}) {
+                if (!task || !this.homeTaskId(task)) return;
+                const width = 240;
+                const height = options.priorityOnly ? 126 : 260;
+                const source = event?.currentTarget || event?.target;
+                const rect = source?.getBoundingClientRect?.();
+                const rawX = event?.clientX || (rect ? rect.right : 0);
+                const rawY = event?.clientY || (rect ? rect.bottom : 0);
+                const x = Math.max(8, Math.min(rawX, window.innerWidth - width - 8));
+                const y = Math.max(8, Math.min(rawY, window.innerHeight - height - 8));
+                this.homeTaskMenu = { x, y, wid, taskId: this.homeTaskId(task), priorityOnly: options.priorityOnly === true };
+            },
+
+            openHomeTaskPriorityMenu(event, wid, task) {
+                this.openHomeTaskMenu(event, wid, task, { priorityOnly: true });
+            },
+
+            editHomeTaskFromMenu() {
+                const ctx = this.homeTaskMenu;
+                const found = this.findHomeTask(ctx?.taskId);
+                this.closeHomeTaskMenu();
+                if (!ctx || !found) return;
+                this.openHomeTaskModal(ctx.wid, found.task);
+            },
+
+            openHomeTaskModal(wid, task) {
+                const id = this.homeTaskId(task);
+                this.closeHomeTaskMenu();
+                if (!id) return;
+                window.location.href = `${this._recordTasksHref}?openTask=${encodeURIComponent(id)}`;
+            },
+
+            async deleteHomeTaskFromMenu() {
+                const ctx = this.homeTaskMenu;
+                const found = this.findHomeTask(ctx?.taskId);
+                this.closeHomeTaskMenu();
+                if (!ctx || !found) return;
+                await this.deleteHomeTaskItem(ctx.wid, found.task);
+            },
+
+            async setHomeTaskPriorityFromMenu(priority) {
+                const ctx = this.homeTaskMenu;
+                const found = this.findHomeTask(ctx?.taskId);
+                if (!ctx || !found) return;
+                const label = this.homeTaskPriorityLabel(priority?.label || priority);
+                this.closeHomeTaskMenu();
+                await this.updateHomeTaskItem(ctx.wid, found.task, { priority: label });
+            },
+
+            isTaskDayPriority(taskId) {
+                return !!this.findHomeTask(taskId)?.task?.isDayPriority;
+            },
+
+            async toggleDayPriorityFromMenu() {
+                const ctx = this.homeTaskMenu;
+                const found = this.findHomeTask(ctx?.taskId);
+                if (!ctx || !found) return;
+                this.closeHomeTaskMenu();
+                await this.updateHomeTaskItem(ctx.wid, found.task, { isDayPriority: !found.task.isDayPriority });
+            },
+
+            newTaskTitleFor(wid) {
+                const value = this.newTaskTitles?.[wid];
+                if (value === undefined || value === null || value === 'undefined') return '';
+                return String(value);
+            },
+
+            setNewTaskTitle(wid, value) {
+                this.newTaskTitles = { ...(this.newTaskTitles || {}), [wid]: String(value || '') };
+            },
+
+            homeTaskRenderKey(wid) {
+                return Number(this.homeTaskRenderVersions?.[wid] || 0);
+            },
+
+            bumpHomeTaskRender(wid) {
+                this.homeTaskRenderVersions = {
+                    ...(this.homeTaskRenderVersions || {}),
+                    [wid]: this.homeTaskRenderKey(wid) + 1
+                };
+            },
+
+            startEditTodayTask(wid, task) {
+                const id = this.homeTaskId(task);
+                if (!id) return;
+                this.closeHomeTaskMenu();
+                this.editingHomeTaskId = id;
+                this.editingHomeTaskWidgetId = wid;
+                this.editingHomeTaskTitle = task.title || '';
+                this.$nextTick(() => {
+                    const input = Array.from(this.$el?.querySelectorAll?.('.dx-task-edit') || [])
+                        .find(el => String(el.dataset.taskId || '') === id);
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                });
+            },
+
+            cancelEditHomeTask() {
+                this.editingHomeTaskId = '';
+                this.editingHomeTaskWidgetId = '';
+                this.editingHomeTaskTitle = '';
+            },
+
+            async saveEditTodayTask(wid, task) {
+                const id = this.homeTaskId(task);
+                if (!id || this.editingHomeTaskId !== id) return;
+                const title = String(this.editingHomeTaskTitle || '').trim();
+                if (!title || title === task.title) {
+                    this.cancelEditHomeTask();
+                    return;
+                }
+                this.cancelEditHomeTask();
+                await this.updateHomeTaskItem(wid, task, { title });
+            },
+
+            async updateHomeTaskItem(wid, task, updates = {}) {
+                const id = this.homeTaskId(task);
+                if (!id || !updates || typeof updates !== 'object') return false;
+                const previous = { ...task };
+                Object.assign(task, updates);
+                if (updates.priority !== undefined) {
+                    task.priority = this.homeTaskPriorityLabel(updates.priority);
+                    task.priorityColor = this.homeTaskPriorityColor(task.priority, task);
+                }
+                this.patchHomeTaskEverywhere(id, task);
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(updates)
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false || !data.task) throw new Error(data.error || 'Modification impossible');
+                    const found = this.findHomeTask(id);
+                    const normalized = this.normalizeHomeTask(data.task, found?.list);
+                    Object.assign(task, normalized);
+                    this.patchHomeTaskEverywhere(id, normalized);
+                    return true;
+                } catch (e) {
+                    Object.assign(task, previous);
+                    this.patchHomeTaskEverywhere(id, previous);
+                    window.showMessage && window.showMessage(e.message || 'Modification impossible', 'danger');
+                    return false;
+                }
+            },
+
+            async deleteHomeTaskItem(wid, task) {
+                const id = this.homeTaskId(task);
+                if (!id) return;
+                const previousLists = (this.recordTaskLists || []).map(list => ({ ...list, tasks: [...(list.tasks || [])] }));
+                const previousTasks = [...(this.recordTodayTasks || [])];
+                this.removeHomeTaskEverywhere(id);
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
+                    this.$nextTick(() => this.refreshHomeTaskSortables());
+                } catch (e) {
+                    this.recordTaskLists = previousLists;
+                    this.recordTodayTasks = previousTasks;
+                    this.bumpHomeTaskRender(wid);
+                    window.showMessage && window.showMessage(e.message || 'Suppression impossible', 'danger');
+                }
+            },
+
+            async toggleTodayTaskItem(wid, task) {
+                const id = this.homeTaskId(task);
+                if (!id) return;
+                const previous = { ...task };
+                const nextStatus = task.status === 'Terminé' ? 'À faire' : 'Terminé';
+                const optimistic = {
+                    ...task,
+                    status: nextStatus,
+                    statusColor: nextStatus === 'Terminé' ? '#22c55e' : '#9ca3af',
+                    completedAt: nextStatus === 'Terminé' ? new Date().toISOString() : null
+                };
+                Object.assign(task, optimistic);
+                this.patchHomeTaskEverywhere(id, optimistic);
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ status: nextStatus })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false || !data.task) throw new Error(data.error || 'Mise à jour impossible');
+                    const found = this.findHomeTask(id);
+                    const normalized = this.normalizeHomeTask(data.task, found?.list);
+                    Object.assign(task, normalized);
+                    this.patchHomeTaskEverywhere(id, normalized);
+                } catch (e) {
+                    Object.assign(task, previous);
+                    this.patchHomeTaskEverywhere(id, previous);
+                    window.showMessage && window.showMessage(e.message || 'Mise à jour impossible', 'danger');
+                }
+            },
+
+            async addTodayTask(wid) {
+                const title = String(this.newTaskTitles[wid] || '').trim();
+                if (!title) return;
+                this.newTaskTitles[wid] = '';
+                try {
+                    let list = this.getDefaultRecordTaskList();
+                    if (!list) list = await this.ensureRecordTaskList('À faire');
+                    if (!list?.id) throw new Error('Liste introuvable');
+                    const selectedDate = this.todayWidgetDate(wid);
+                    const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list.id}/tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            title,
+                            status: 'À faire',
+                            priority: 'Aucune',
+                            isDayPriority: true,
+                            startDate: selectedDate
+                        })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false || !data.task) throw new Error(data.error || 'Ajout impossible');
+                    const normalized = this.normalizeHomeTask(data.task, list);
+                    list.tasks = [...(list.tasks || []), normalized];
+                    this.refreshHomeTaskListCounts(list);
+                    this.recordTodayTasks = [...(this.recordTodayTasks || []), normalized];
+                    this.bumpHomeTaskRender(wid);
+                    this.$nextTick(() => this.refreshHomeTaskSortables());
+                } catch (e) {
+                    this.newTaskTitles[wid] = title;
+                    window.showMessage && window.showMessage(e.message || 'Ajout impossible', 'danger');
+                }
+            },
+
+            initHomeTaskSortable(el, wid) {
+                if (!el || typeof Sortable === 'undefined') return;
+                if (el._homeTaskSortable) {
+                    try { el._homeTaskSortable.destroy(); } catch (e) {}
+                }
+                el._homeTaskSortable = Sortable.create(el, {
+                    animation: 150,
+                    handle: '.dx-task-drag',
+                    draggable: '.dx-task-row',
+                    ghostClass: 'dx-task-ghost',
+                    filter: '.dx-check, .dx-task-priority, .dx-task-attachment-badge, .dx-task-edit, .dx-inline-add, .ov-custom-empty',
+                    preventOnFilter: false,
+                    onEnd: (evt) => this.reorderHomeTaskWidgetFromDom(evt, wid)
+                });
+                this._taskSortables.set(el, el._homeTaskSortable);
+            },
+
+            refreshHomeTaskSortables() {
+                this.$nextTick(() => {
+                    this.$el?.querySelectorAll?.('.dx-shopping-list[data-task-widget-id]').forEach(el => {
+                        this.initHomeTaskSortable(el, el.dataset.taskWidgetId);
+                    });
+                });
+            },
+
+            revertHomeTaskSortableDom(evt) {
+                const container = evt?.from;
+                const item = evt?.item;
+                if (!container || !item) return;
+                const siblings = Array.from(container.querySelectorAll(':scope > .dx-task-row')).filter(row => row !== item);
+                const oldIndex = Number.isInteger(evt.oldDraggableIndex) ? evt.oldDraggableIndex : evt.oldIndex;
+                const ref = Number.isInteger(oldIndex) ? (siblings[oldIndex] || null) : null;
+                container.insertBefore(item, ref);
+            },
+
+            async reorderHomeTaskWidgetFromDom(evt, wid) {
+                const el = evt?.to || evt?.from;
+                if (!el) return;
+                const movedId = String(evt?.item?.dataset?.taskId || '');
+                const orderedIds = Array.from(el.querySelectorAll(':scope > .dx-task-row'))
+                    .map(row => String(row.dataset.taskId || ''))
+                    .filter(Boolean);
+                this.revertHomeTaskSortableDom(evt);
+                if (!movedId || orderedIds.length < 2) return;
+                const previousLists = (this.recordTaskLists || []).map(list => ({ ...list, tasks: [...(list.tasks || [])] }));
+                const previousTasks = [...(this.recordTodayTasks || [])];
+                const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+                const orderedSet = new Set(orderedIds);
+                const byId = new Map(this.recordAllTasks().map(task => [this.homeTaskId(task), task]));
+                const orderedTasks = orderedIds.map(id => byId.get(id)).filter(Boolean);
+                this.recordTodayTasks = this.recordTodayTasks.map(task => orderMap.has(this.homeTaskId(task)) ? { ...task, order: orderMap.get(this.homeTaskId(task)) } : task)
+                    .sort((a, b) => {
+                        const ao = orderMap.has(this.homeTaskId(a)) ? orderMap.get(this.homeTaskId(a)) : 9999 + Number(a.order || 0);
+                        const bo = orderMap.has(this.homeTaskId(b)) ? orderMap.get(this.homeTaskId(b)) : 9999 + Number(b.order || 0);
+                        return ao - bo;
+                    });
+                this.recordTaskLists = (this.recordTaskLists || []).map(list => {
+                    const visible = orderedIds.filter(id => (list.tasks || []).some(task => this.homeTaskId(task) === id));
+                    if (!visible.length) return list;
+                    const visibleTasks = visible.map(id => byId.get(id)).filter(Boolean);
+                    let cursor = 0;
+                    const tasks = (list.tasks || []).map(task => {
+                        if (!orderedSet.has(this.homeTaskId(task))) return task;
+                        const next = visibleTasks[cursor++] || task;
+                        return this.normalizeHomeTask({ ...task, ...next, order: visible.indexOf(this.homeTaskId(next)) }, list);
+                    });
+                    const nextList = { ...list, tasks };
+                    this.refreshHomeTaskListCounts(nextList);
+                    return nextList;
+                });
+                this.bumpHomeTaskRender(wid);
+                this.$nextTick(() => this.refreshHomeTaskSortables());
+                try {
+                    const listGroups = new Map();
+                    orderedTasks.forEach(task => {
+                        const listId = String(task.taskListId || '');
+                        if (!listId) return;
+                        if (!listGroups.has(listId)) listGroups.set(listId, []);
+                        listGroups.get(listId).push(this.homeTaskId(task));
+                    });
+                    await Promise.all(Array.from(listGroups.entries()).map(async ([listId, taskIds]) => {
+                        const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/reorder`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ taskIds })
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || data.success === false) throw new Error(data.error || 'Réorganisation impossible');
+                    }));
+                } catch (e) {
+                    this.recordTaskLists = previousLists;
+                    this.recordTodayTasks = previousTasks;
+                    this.bumpHomeTaskRender(wid);
+                    this.$nextTick(() => this.refreshHomeTaskSortables());
+                    window.showMessage && window.showMessage(e.message || 'Réorganisation impossible', 'danger');
+                }
+            },
+
+            todayDateKey(offsetDays = 0) {
+                const date = new Date();
+                date.setDate(date.getDate() + Number(offsetDays || 0));
+                return [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, '0'),
+                    String(date.getDate()).padStart(2, '0')
+                ].join('-');
+            },
+
+            normalizeDayDateKey(value) {
+                if (!value) return this.todayDateKey();
+                if (value instanceof Date && !Number.isNaN(value.getTime())) {
+                    return [
+                        value.getFullYear(),
+                        String(value.getMonth() + 1).padStart(2, '0'),
+                        String(value.getDate()).padStart(2, '0')
+                    ].join('-');
+                }
+                const raw = String(value || '').trim();
+                const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+                const date = new Date(raw);
+                if (Number.isNaN(date.getTime())) return this.todayDateKey();
+                return [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, '0'),
+                    String(date.getDate()).padStart(2, '0')
+                ].join('-');
+            },
+
+            todayWidgetDate(wid) {
+                return this.normalizeDayDateKey(this.todayWidgetDates?.[wid] || this.todayDateKey());
+            },
+
+            todayWidgetMode(wid) {
+                return this.todayWidgetModes?.[wid] || 'date';
+            },
+
+            todayWidgetIsOverdue(wid) {
+                return this.todayWidgetMode(wid) === 'overdue';
+            },
+
+            setTodayWidgetMode(wid, mode = 'date') {
+                if (!wid) return;
+                this.todayWidgetModes = { ...(this.todayWidgetModes || {}), [wid]: mode };
+                this.bumpHomeTaskRender(wid);
+                this.$nextTick(() => this.refreshHomeTaskSortables());
+            },
+
+            setTodayWidgetDate(wid, value) {
+                if (!wid) return;
+                this.todayWidgetDates = { ...(this.todayWidgetDates || {}), [wid]: this.normalizeDayDateKey(value) };
+                this.todayWidgetModes = { ...(this.todayWidgetModes || {}), [wid]: 'date' };
+                this.bumpHomeTaskRender(wid);
+                this.$nextTick(() => this.refreshHomeTaskSortables());
+            },
+
+            openTodayWidgetDatePicker(event, wid) {
+                this.closeHomeTaskMenu();
+                if (window.DxDatePicker && typeof window.DxDatePicker.open === 'function') {
+                    window.DxDatePicker.open({
+                        anchor: event?.currentTarget,
+                        type: 'date',
+                        value: this.todayWidgetDate(wid),
+                        onSelect: value => this.setTodayWidgetDate(wid, value)
+                    });
+                    return;
+                }
+                const fallback = window.prompt('Choisir une date (AAAA-MM-JJ)', this.todayWidgetDate(wid));
+                if (fallback) this.setTodayWidgetDate(wid, fallback);
+            },
+
+            closeTodayWidgetCalendar() {
+                if (window.DxDatePicker && typeof window.DxDatePicker.close === 'function') {
+                    window.DxDatePicker.close();
+                }
+            },
+
+            resetTodayWidgetDate(wid) {
+                this.setTodayWidgetDate(wid, this.todayDateKey());
+                this.closeTodayWidgetCalendar();
+            },
+
+            selectTomorrowTodayWidget(wid) {
+                this.setTodayWidgetDate(wid, this.todayDateKey(1));
+                this.closeTodayWidgetCalendar();
+            },
+
+            selectOverdueTodayWidget(wid) {
+                this.setTodayWidgetMode(wid, 'overdue');
+                this.closeTodayWidgetCalendar();
+            },
+
+            todayWidgetIsToday(wid) {
+                return !this.todayWidgetIsOverdue(wid) && this.todayWidgetDate(wid) === this.todayDateKey();
+            },
+
+            todayWidgetIsTomorrow(wid) {
+                return !this.todayWidgetIsOverdue(wid) && this.todayWidgetDate(wid) === this.todayDateKey(1);
+            },
+
+            todayWidgetHasCustomDate(wid) {
+                return !this.todayWidgetIsOverdue(wid) && !this.todayWidgetIsToday(wid) && !this.todayWidgetIsTomorrow(wid);
+            },
+
+            formatDayDateKey(dateKey, options = {}) {
+                const key = this.normalizeDayDateKey(dateKey);
+                const [year, month, day] = key.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                const format = options.long ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' };
+                return date.toLocaleDateString('fr-FR', format).replace('.', '');
+            },
+
+            todayWidgetDatePhrase(wid) {
+                if (this.todayWidgetIsOverdue(wid)) return 'les tâches en retard';
+                if (this.todayWidgetIsToday(wid)) return "aujourd'hui";
+                if (this.todayWidgetIsTomorrow(wid)) return 'demain';
+                return 'le ' + this.formatDayDateKey(this.todayWidgetDate(wid), { long: true });
+            },
+
+            todayWidgetSelectedLabel(wid) {
+                return this.formatDayDateKey(this.todayWidgetDate(wid));
+            },
+
+            todayWidgetEmptyLabel(wid) {
+                if (this.todayWidgetIsOverdue(wid)) return 'Aucune tâche en retard';
+                if (this.todayWidgetIsToday(wid)) return 'Aucune tâche pour le moment';
+                return 'Aucune tâche pour ' + this.todayWidgetDatePhrase(wid);
+            },
+
+            todayWidgetAddPlaceholder(wid) {
+                if (this.todayWidgetIsToday(wid)) return 'Ajouter une tâche...';
+                return 'Ajouter une tâche pour ' + this.todayWidgetDatePhrase(wid) + '...';
+            },
+
+            dateValueHasExplicitTime(value) {
+                if (!value) return false;
+                const raw = String(value || '');
+                if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return false;
+                if (!raw.includes('T')) return false;
+                const date = new Date(raw);
+                if (Number.isNaN(date.getTime())) return false;
+                return date.getHours() !== 0 || date.getMinutes() !== 0 || date.getSeconds() !== 0 || date.getMilliseconds() !== 0;
+            },
+
+            taskDateKey(value) {
+                if (!value) return '';
+                const raw = String(value || '').trim();
+                const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+                const date = new Date(raw);
+                if (Number.isNaN(date.getTime())) return '';
+                return [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, '0'),
+                    String(date.getDate()).padStart(2, '0')
+                ].join('-');
+            },
+
+            taskDayDiff(value) {
+                const key = this.taskDateKey(value);
+                if (!key) return 0;
+                const toUtcDay = raw => {
+                    const [year, month, day] = raw.split('-').map(Number);
+                    return Date.UTC(year, month - 1, day);
+                };
+                return Math.round((toUtcDay(key) - toUtcDay(this.todayDateKey())) / 86400000);
+            },
+
+            taskScheduleDateKey(task = {}) {
+                const value = task.dueDate || task.startDate;
+                return value ? this.taskDateKey(value) : '';
+            },
+
+            taskMatchesTodayWidgetDate(task, wid) {
+                const selected = this.todayWidgetDate(wid);
+                const scheduled = this.taskScheduleDateKey(task);
+                if (scheduled) return scheduled === selected;
+                return selected === this.todayDateKey();
+            },
+
+            todayWidgetSourceTasks() {
+                return this.recordAllTasks().sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+            },
+
+            todayWidgetDateTasks(wid) {
+                if (this.todayWidgetIsOverdue(wid)) return this.todayWidgetOverdueTasks(wid);
+                return this.todayWidgetSourceTasks(wid).filter(task => this.taskMatchesTodayWidgetDate(task, wid));
+            },
+
+            todayWidgetTasks(wid) {
+                return this.todayWidgetDateTasks(wid);
+            },
+
+            todayWidgetOpenTasks(wid) {
+                return this.todayWidgetDateTasks(wid).filter(task => task.status !== 'Terminé');
+            },
+
+            isOverdue(task) {
+                if (!task || task.status === 'Terminé') return false;
+                if (task.dueDate) return this.taskDueState(task) === 'overdue';
+                if (!task.startDate) return false;
+                return this.taskDayDiff(task.startDate) < 0;
+            },
+
+            todayWidgetOverdueTasks() {
+                const seen = new Set();
+                return this.todayWidgetSourceTasks().filter(task => {
+                    const id = this.homeTaskId(task);
+                    if (!id || seen.has(id) || !this.isOverdue(task)) return false;
+                    seen.add(id);
+                    return true;
+                });
+            },
+
+            todayWidgetOverdueCount(wid) {
+                return this.todayWidgetOverdueTasks(wid).length;
+            },
+
+            todayWidgetShowCompletedInline(wid) {
+                return this.widgetOption(wid, 'hideCompleted', false) === true
+                    || this.widgetOption(wid, 'showCompleted', false) === true;
+            },
+
+            todayWidgetVisibleTasks(wid) {
+                const all = this.todayWidgetTasks(wid);
+                if (this.todayWidgetShowCompletedInline(wid)) return all;
+                return all.filter(task => task.status !== 'Terminé');
+            },
+
+            completedTodayDayTasks(wid = null) {
+                const source = wid ? this.todayWidgetDateTasks(wid) : this.todayWidgetSourceTasks();
+                return source.filter(task => task && task.status === 'Terminé');
+            },
+
+            completedDayTitle(wid) {
+                const phrase = this.todayWidgetDatePhrase(wid);
+                const prefix = this.todayWidgetIsToday(wid) ? 'Terminées ' : 'Terminées pour ';
+                return prefix + phrase + ' (' + this.completedTodayDayTasks(wid).length + ')';
+            },
+
+            completedDayEmptyLabel(wid) {
+                const phrase = this.todayWidgetDatePhrase(wid);
+                return this.todayWidgetIsToday(wid)
+                    ? 'Aucune tâche terminée ' + phrase
+                    : 'Aucune tâche terminée pour ' + phrase;
+            },
+
+            taskTime(task) {
+                const value = task?.dueDate || task?.startDate;
+                if (!value || !this.dateValueHasExplicitTime(value)) return '';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return '';
+                return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            },
+
+            taskDateLabel(task) {
+                const value = task?.dueDate || task?.startDate;
+                if (!value) return '';
+                const key = this.taskDateKey(value);
+                if (!key) return '';
+                const [year, month, day] = key.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                const diffDays = this.taskDayDiff(value);
+                if (diffDays === 0) return "Aujourd'hui";
+                if (diffDays === 1) return 'Demain';
+                if (diffDays === -1) return 'Hier';
+                if (diffDays < -1) return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+                if (diffDays <= 6) return date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
+                return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+            },
+
+            taskDueLabel(task) {
+                if (!task?.dueDate || task?.status === 'Terminé') return '';
+                const date = new Date(task.dueDate);
+                if (Number.isNaN(date.getTime()) && !this.taskDateKey(task.dueDate)) return '';
+                if (!this.dateValueHasExplicitTime(task.dueDate)) {
+                    const diffDays = this.taskDayDiff(task.dueDate);
+                    if (diffDays < 0) return 'En retard';
+                    return this.taskDateLabel(task);
+                }
+                const diffMs = date.getTime() - Date.now();
+                if (diffMs < 0) return 'En retard';
+                const minutes = Math.max(1, Math.round(diffMs / 60000));
+                if (minutes < 60) return `dans ${minutes} min`;
+                const hours = Math.round(minutes / 60);
+                if (hours < 24) return `dans ${hours}h`;
+                return [this.taskDateLabel(task), this.taskTime(task)].filter(Boolean).join(' ');
+            },
+
+            taskDueState(task) {
+                if (!task?.dueDate || task?.status === 'Terminé') return '';
+                if (this.dateValueHasExplicitTime(task.dueDate)) {
+                    const date = new Date(task.dueDate);
+                    return !Number.isNaN(date.getTime()) && date.getTime() < Date.now() ? 'overdue' : 'upcoming';
+                }
+                return this.taskDayDiff(task.dueDate) < 0 ? 'overdue' : 'upcoming';
+            },
+
+            taskDueTitle(task) {
+                if (!task?.dueDate) return '';
+                const key = this.taskDateKey(task.dueDate);
+                if (!key) return '';
+                const [year, month, day] = key.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                const label = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                const time = this.taskTime(task);
+                return `Échéance ${label}${time ? ' à ' + time : ''}`;
+            },
+
+            taskRecordLabel(task) {
+                const label = String(task?.recordTitle || '').trim();
+                return label && label !== 'Record' ? label : '';
+            },
+
+            taskRecordIcon(task) {
+                return task?.recordIcon || this._recordIcon || 'solar:folder-bold-duotone';
+            },
+
+            taskRecordColor(task) {
+                return task?.recordColor || this._recordColor || '#4361ee';
             },
 
             isEmbeddableVideo(url) {

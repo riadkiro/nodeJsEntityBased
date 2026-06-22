@@ -625,6 +625,7 @@
             catalog: [
                 { type: 'overview-fields', label: 'Informations', icon: 'solar:card-bold-duotone', color: '#4361ee', desc: 'Champs principaux de la fiche', targets: ['overview'], instant: true },
                 { type: 'overview-tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', desc: 'Tâches liées au record', targets: ['overview'], instant: true },
+                { type: 'overview-today-tasks', label: 'Tâches du jour', icon: 'solar:bolt-bold-duotone', color: '#805dca', desc: 'Tâches du jour liées au record', targets: ['overview'], instant: true },
                 { type: 'overview-docs', label: 'Docs', icon: 'solar:document-text-bold-duotone', color: '#f59e0b', desc: 'Documents modèles liés', targets: ['overview'], instant: true },
                 { type: 'overview-drive', label: 'Drive', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', desc: 'Fichiers récents', targets: ['overview'], instant: true },
                 { type: 'overview-agenda', label: 'Agenda', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', desc: '4 prochains événements', targets: ['overview'], instant: true },
@@ -787,6 +788,7 @@
 	                    html: 'solar:code-bold-duotone',
 	                    'overview-fields': 'solar:card-bold-duotone',
 	                    'overview-tasks': 'solar:checklist-minimalistic-bold-duotone',
+	                    'overview-today-tasks': 'solar:bolt-bold-duotone',
 	                    'overview-docs': 'solar:document-text-bold-duotone',
 	                    'overview-drive': 'solar:cloud-storage-bold-duotone',
 	                    'overview-agenda': 'solar:calendar-bold-duotone',
@@ -819,6 +821,7 @@
 	                    html: 'HTML',
 	                    'overview-fields': 'Informations',
 	                    'overview-tasks': 'Tâches',
+	                    'overview-today-tasks': 'Tâches du jour',
 	                    'overview-docs': 'Documents modèles',
 	                    'overview-drive': 'Fichiers récents',
 	                    'overview-agenda': 'Prochains événements',
@@ -866,6 +869,7 @@
 	                const defaults = {
 	                    'overview-fields': { limit: 12, showLink: true },
 	                    'overview-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true },
+	                    'overview-today-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: false },
 	                    'overview-docs': { limit: 3, showLink: true },
 	                    'overview-drive': { limit: 4, showLink: true },
 	                    'overview-agenda': { limit: 4, showLink: true, allowAdd: true },
@@ -921,27 +925,27 @@
 	            },
 
 	            supportsLimit(type = this.newWidget.type) {
-	                return ['overview-fields','overview-tasks','overview-docs','overview-drive','overview-agenda','overview-important-dates','priority-day','today-tasks','tasks','objectives','finance','shopping-list','task-list','tasks-by-record','activity-timeline','recent-records','upcoming-events','important-dates','ai-feed','weekly-timeline','timeline','cards'].includes(String(type || ''));
+	                return ['overview-fields','overview-tasks','overview-today-tasks','overview-docs','overview-drive','overview-agenda','overview-important-dates','priority-day','today-tasks','tasks','objectives','finance','shopping-list','task-list','tasks-by-record','activity-timeline','recent-records','upcoming-events','important-dates','ai-feed','weekly-timeline','timeline','cards'].includes(String(type || ''));
 	            },
 
 	            supportsShowLink(type = this.newWidget.type) {
-	                return ['overview-fields','overview-tasks','overview-docs','overview-drive','overview-agenda','overview-important-dates','overview-notes','today-tasks','tasks','objectives','tasks-by-record','activity-timeline','recent-records','upcoming-events','important-dates'].includes(String(type || ''));
+	                return ['overview-fields','overview-tasks','overview-today-tasks','overview-docs','overview-drive','overview-agenda','overview-important-dates','overview-notes','today-tasks','tasks','objectives','tasks-by-record','activity-timeline','recent-records','upcoming-events','important-dates'].includes(String(type || ''));
 	            },
 
 	            supportsShowCompleted(type = this.newWidget.type) {
-	                return ['overview-tasks','tasks','today-tasks','task-list','shopping-list'].includes(String(type || ''));
+	                return ['overview-tasks','overview-today-tasks','tasks','today-tasks','task-list','shopping-list'].includes(String(type || ''));
 	            },
 
 		            supportsShowPriority(type = this.newWidget.type) {
-		                return this.isTaskListWidgetType(type) || ['overview-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
 		            },
 
 		            supportsShowAttachments(type = this.newWidget.type) {
-		                return this.isTaskListWidgetType(type) || ['overview-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
 		            },
 
 		            supportsShowRecord(type = this.newWidget.type) {
-		                return this.isTaskListWidgetType(type) || ['overview-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
 		            },
 
 	            supportsInlineAdd(type = this.newWidget.type) {

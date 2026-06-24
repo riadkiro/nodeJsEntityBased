@@ -1,7 +1,7 @@
 module.exports = {
     imap: {
-        user: process.env.IMAP_USER || 'direction@da-clean.be',
-        password: process.env.IMAP_PASSWORD || 'DidissNE7**',
+        user: process.env.IMAP_USER || '',
+        password: process.env.IMAP_PASSWORD || '',
         host: process.env.IMAP_HOST || 'imap.one.com',
         port: process.env.IMAP_PORT || 993,
         tls: true,

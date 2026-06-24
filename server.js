@@ -75,6 +75,7 @@ const Routes = require("./routes/routes-inc.js");
 const RoutesAccount = require("./routes/routes-inc-account.js");
 const { connectToTenantDb } = require("./middleware/tenant");
 
+app.use("/api/mobile", require("./routes/api-mobile.router.js"));
 app.use("/", Routes);
 
 // Routes with Tenant DB

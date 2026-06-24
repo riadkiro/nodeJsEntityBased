@@ -355,6 +355,11 @@ function taskDateKey(task, tools) {
     return value ? tools.formatKey?.(value) || '' : '';
 }
 
+function taskOverdueDateKey(task, tools) {
+    const value = task.dueDate || task.startDate || null;
+    return value ? tools.formatKey?.(value) || '' : '';
+}
+
 function taskMatchesDate(task, targetKey, tools) {
     const value = task.startDate || task.dueDate || null;
     if (!value) return false;
@@ -566,7 +571,7 @@ async function taskBoard(req) {
 
     const isDone = task => task.status === STATUS_DONE || task.done;
     const isBeforeTarget = task => {
-        const key = taskDateKey(task, tools);
+        const key = taskOverdueDateKey(task, tools);
         return !!key && key < tools.dateKey;
     };
     const isOverdue = task => !isDone(task) && isBeforeTarget(task);
@@ -579,6 +584,7 @@ async function taskBoard(req) {
                 return taskMatchesDate(task, tools.dateKey, tools);
             }
             const key = taskDateKey(task, tools);
+            if (isOverdue(task)) return true;
             if (key) return key === tools.dateKey;
             return task.isDayPriority || task.listIsToday;
         })

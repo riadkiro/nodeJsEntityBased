@@ -573,6 +573,9 @@ async function taskBoard(req) {
     const isOverdue = task => !isDone(task) && isBeforeTarget(task);
     const selected = rows
         .filter(task => {
+            if (tools.day === 'overdue') {
+                return isOverdue(task);
+            }
             if (tools.day === 'tomorrow' || req.query?.date) {
                 return taskMatchesDate(task, tools.dateKey, tools);
             }
@@ -625,6 +628,7 @@ async function taskBoard(req) {
     });
 
     const doneTasks = rows.filter(isDone).length;
+    const overdueCount = rows.filter(isOverdue).length;
 
     return {
         success: true,
@@ -639,7 +643,7 @@ async function taskBoard(req) {
             doneTasks,
             openTasks: rows.length - doneTasks,
             todayTasks: selected.length,
-            overdueCount: selected.filter(isOverdue).length,
+            overdueCount,
             listsCount: allLists.length,
         },
     };

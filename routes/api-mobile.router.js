@@ -351,17 +351,16 @@ function dayTools(req) {
 }
 
 function taskDateKey(task, tools) {
-    const value = task.dueDate || task.startDate || null;
+    const value = task.startDate || task.dueDate || null;
     return value ? tools.formatKey?.(value) || '' : '';
 }
 
 function taskMatchesDate(task, targetKey, tools) {
-    const values = [task.dueDate, task.startDate].filter(Boolean);
-    return values.some(value => {
-        const date = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(date.getTime())) return false;
-        return tools.formatKey(date) === targetKey;
-    });
+    const value = task.startDate || task.dueDate || null;
+    if (!value) return false;
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+    return tools.formatKey(date) === targetKey;
 }
 
 async function ensurePersonalTaskRecord(req) {
@@ -579,14 +578,16 @@ async function taskBoard(req) {
             if (tools.day === 'tomorrow' || req.query?.date) {
                 return taskMatchesDate(task, tools.dateKey, tools);
             }
-            return task.isDayPriority || task.listIsToday || taskMatchesDate(task, tools.dateKey, tools);
+            const key = taskDateKey(task, tools);
+            if (key) return key === tools.dateKey;
+            return task.isDayPriority || task.listIsToday;
         })
         .sort((a, b) => {
             const aOverdue = isOverdue(a) ? 0 : 1;
             const bOverdue = isOverdue(b) ? 0 : 1;
             if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-            const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
-            const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
+            const ad = new Date(a.startDate || a.dueDate || 8640000000000000).getTime();
+            const bd = new Date(b.startDate || b.dueDate || 8640000000000000).getTime();
             if (ad !== bd) return ad - bd;
             if (a.order !== b.order) return a.order - b.order;
             return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
@@ -877,7 +878,7 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
         const statuses = normalizeOptions(target.list.statuses, defaultStatuses);
 
         const schedule = cleanText(req.body?.schedule || req.query?.day, 'today').toLowerCase();
-        const dueDate = req.body?.dueDate
+        const startDate = req.body?.startDate
             || (schedule === 'tomorrow'
                 ? (() => {
                     const date = new Date();
@@ -896,8 +897,8 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
             priority,
             priorityColor: optionColor(priorities, priority, ''),
             isDayPriority: req.body?.isDayPriority !== undefined ? !!req.body.isDayPriority : schedule !== 'tomorrow',
-            startDate: req.body?.startDate || null,
-            dueDate,
+            startDate,
+            dueDate: req.body?.dueDate || null,
             assignedTo: cleanText(req.body?.assignedTo, ''),
             order,
             completedAt: status === STATUS_DONE ? new Date() : null,
@@ -976,6 +977,19 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         res.json({ success: true, task: await serializeSingleTask(req, task) });
     } catch (error) {
         console.error('[MobileAPI] Update task error:', error);
+        sendError(res, 500, error.message || 'Erreur serveur');
+    }
+});
+
+router.delete('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        await task.deleteOne();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Delete task error:', error);
         sendError(res, 500, error.message || 'Erreur serveur');
     }
 });

@@ -577,10 +577,12 @@ async function taskBoard(req) {
     };
     const isOverdue = task => !isDone(task) && isBeforeTarget(task);
     const compareBoardTasks = (a, b) => {
+        const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+        const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+        if (ao !== bo) return ao - bo;
         const ad = new Date(a.startDate || a.dueDate || 8640000000000000).getTime();
         const bd = new Date(b.startDate || b.dueDate || 8640000000000000).getTime();
         if (ad !== bd) return ad - bd;
-        if (a.order !== b.order) return a.order - b.order;
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
     };
 

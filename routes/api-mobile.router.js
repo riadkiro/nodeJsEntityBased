@@ -536,6 +536,7 @@ async function taskBoard(req) {
             completedToday: [],
             taskLists: [],
             stats: { totalTasks: 0, doneTasks: 0, openTasks: 0, todayTasks: 0, overdueCount: 0, listsCount: 0 },
+            overdueTasks: [],
         };
     }
 
@@ -575,6 +576,18 @@ async function taskBoard(req) {
         return !!key && key < tools.dateKey;
     };
     const isOverdue = task => !isDone(task) && isBeforeTarget(task);
+    const compareBoardTasks = (a, b) => {
+        const ad = new Date(a.startDate || a.dueDate || 8640000000000000).getTime();
+        const bd = new Date(b.startDate || b.dueDate || 8640000000000000).getTime();
+        if (ad !== bd) return ad - bd;
+        if (a.order !== b.order) return a.order - b.order;
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+    };
+
+    const overdueTasks = rows
+        .filter(isOverdue)
+        .sort(compareBoardTasks);
+
     const selected = rows
         .filter(task => {
             if (tools.day === 'overdue') {
@@ -584,20 +597,11 @@ async function taskBoard(req) {
                 return taskMatchesDate(task, tools.dateKey, tools);
             }
             const key = taskDateKey(task, tools);
-            if (isOverdue(task)) return true;
+            if (isOverdue(task)) return false;
             if (key) return key === tools.dateKey;
             return task.isDayPriority || task.listIsToday;
         })
-        .sort((a, b) => {
-            const aOverdue = isOverdue(a) ? 0 : 1;
-            const bOverdue = isOverdue(b) ? 0 : 1;
-            if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-            const ad = new Date(a.startDate || a.dueDate || 8640000000000000).getTime();
-            const bd = new Date(b.startDate || b.dueDate || 8640000000000000).getTime();
-            if (ad !== bd) return ad - bd;
-            if (a.order !== b.order) return a.order - b.order;
-            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-        });
+        .sort(compareBoardTasks);
 
     const completedToday = rows.filter(task => {
         if (!isDone(task)) return false;
@@ -643,6 +647,7 @@ async function taskBoard(req) {
         dateKey: tools.dateKey,
         todayTasks: selected,
         tasks: selected.filter(task => !isDone(task)),
+        overdueTasks,
         completedToday,
         taskLists,
         stats: {

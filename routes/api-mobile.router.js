@@ -936,7 +936,7 @@ router.post('/accounts/:accountNumber/tasks/reorder', async (req, res) => {
         const bulkOps = normalized
             .filter(id => allowed.has(id))
             .map((id, index) => ({
-                updateOne: { filter: { _id: id }, update: { $set: { order: index + 1 } } },
+                updateOne: { filter: { _id: id }, update: { $set: { order: index } } },
             }));
         if (bulkOps.length) await RecordTask.bulkWrite(bulkOps);
 
